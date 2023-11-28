@@ -1,0 +1,35 @@
+name: Build Laravel PHP Project
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+    container:
+      image: kirschbaumdevelopment/laravel-test-runner:8.2
+
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: Install front-end dependencies
+        run: |
+          npm install
+          npm run build
+
+      - name: Install composer dependencies
+        run: |
+          composer update
+          composer install
+      - name: Prepare Laravel Application
+        run: |
+          cp .env.testing .env
+          php artisan migrate:fresh --env=testing
+
+      - name: Run Testsuite
+        run: php artisan test
