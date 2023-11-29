@@ -8,6 +8,7 @@
     "devDependencies": {
         "@headlessui/react": "^1.4.2",
         "@inertiajs/react": "^1.0.0",
+        "@nextui-org/react": "^2.2.9",
         "@tailwindcss/forms": "^0.5.3",
         "@types/node": "^18.13.0",
         "@types/react": "^18.0.28",
@@ -16,6 +17,7 @@
         "@vitejs/plugin-react": "^4.0.3",
         "autoprefixer": "^10.4.12",
         "axios": "^1.6.1",
+        "framer-motion": "^10.16.5",
         "laravel-vite-plugin": "^0.8.0",
         "postcss": "^8.4.18",
         "react": "^18.2.0",
@@ -23,9 +25,5 @@
         "tailwindcss": "^3.2.1",
         "typescript": "^5.0.2",
         "vite": "^4.0.0"
-    },
-    "dependencies": {
-        "@nextui-org/react": "^2.2.9",
-        "framer-motion": "^10.16.5"
     }
 }
