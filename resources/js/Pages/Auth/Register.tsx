@@ -33,10 +33,10 @@ export default function Register() {
 
       <form onSubmit={submit}>
         <div>
-          <InputLabel htmlFor="name_first" value="First Name" />
+          <InputLabel htmlFor="name" value="First Name" />
 
           <TextInput
-            id="name_first"
+            id="name"
             name="name"
             value={data.name_first}
             className="mt-1 block w-full"
@@ -50,7 +50,7 @@ export default function Register() {
         </div>
 
         <div>
-          <InputLabel htmlFor="name_last" value="Last Name" />
+          <InputLabel htmlFor="name" value="Last Name" />
 
           <TextInput
             id="name_last"
@@ -65,7 +65,6 @@ export default function Register() {
 
           <InputError message={errors.name_last} className="mt-2" />
         </div>
-
         <div className="mt-4">
           <InputLabel htmlFor="email" value="Email" />
 
@@ -120,7 +119,7 @@ export default function Register() {
         <div className="flex items-center justify-end mt-4">
           <Link
             href={route('login')}
-            className="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
+            className="underline text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:focus:ring-offset-slate-800"
           >
             Already registered?
           </Link>
