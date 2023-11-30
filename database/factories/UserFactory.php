@@ -33,6 +33,7 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'role' => UserRole::Student,
             'username' => $first . $last,
+            'role' => UserRole::Student,
         ];
     }
     /**
