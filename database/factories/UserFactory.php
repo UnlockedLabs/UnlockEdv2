@@ -34,6 +34,7 @@ class UserFactory extends Factory
             'role' => UserRole::Student,
             'username' => $first . $last,
             'role' => UserRole::Student,
+            'username' => $first . $last,
         ];
     }
     /**
