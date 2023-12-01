@@ -10,10 +10,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('username')->default(DB::raw('CONCAT(name_last, ".", name_first, LENGTH(CONCAT(name_last, name_first)))'));
+            $table->string('username');
         });
     }
 
@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            $table->dropColumn('username');
         });
     }
 };

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\UserRole;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -20,6 +21,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'username',
+        'email',
         'name_first',
         'name_last',
         'password',
@@ -46,4 +48,21 @@ class User extends Authenticatable
         'password' => 'hashed',
         'role' => UserRole::Student || UserRole::Admin,
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            $username = Str::slug($user->name_last . '.' . $user->name_first . Str::length($user->name_last . $user->name_first));
+
+            $count = static::where('username', 'LIKE', $username . '%')->count();
+
+            if ($count > 0) {
+                $username .= $count;
+            }
+
+            $user->username = $username;
+        });
+    }
 }
