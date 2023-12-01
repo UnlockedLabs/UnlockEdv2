@@ -16,6 +16,7 @@ The commands below assume you have a shell alias setup in your .bashrc or .zshrc
 - Run `composer install`
 - Run `sail up`
 - Run `sail artisan migrate`
+- Run `sail npm install`
 - Run `sail npm run dev`
 - Open http://localhost
 - Register a user or login

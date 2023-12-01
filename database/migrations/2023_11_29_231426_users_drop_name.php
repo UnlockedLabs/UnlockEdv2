@@ -22,10 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Reverse the changes if needed
             $table->string('name');
-            $table->dropColumn('name_first');
-            $table->dropColumn('name_last');
         });
     }
 };
