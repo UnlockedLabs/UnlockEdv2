@@ -17,6 +17,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: create test sqlite database
+        run: |
+          touch database/database.sqlite
+
       - name: Install front-end dependencies
         run: |
           npm install
