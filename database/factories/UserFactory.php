@@ -21,13 +21,18 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $first = fake()->firstName();
+        $last = fake()->lastName();
+        $count = strlen($first) + strlen($last);
         return [
             'name_first' => fake()->name(),
-            'name_last' => fake()->name(),            'email' => fake()->unique()->safeEmail(),
+            'name_last' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'role' => UserRole::Student,
+            'username' => $first . $last . $count,
         ];
     }
     /**
