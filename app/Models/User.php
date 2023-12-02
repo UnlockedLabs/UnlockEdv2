@@ -9,8 +9,6 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\UserRole;
 use Illuminate\Support\Str;
-use App\Enums\UserRole;
-use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
