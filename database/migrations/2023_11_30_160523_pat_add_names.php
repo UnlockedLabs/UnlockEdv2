@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('personal_access_tokens', function (Blueprint $table) {
-            $table->string('name_first')->nullable()->after('tokenable');
-            $table->string('name_last')->nullable()->after('name_first');
+            $table->string('name_first')->nullable();
+            $table->string('name_last')->nullable();
         });
     }
 
@@ -22,6 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('personal_access_tokens', function (Blueprint $table) {
+            $table->dropColumn('name_first');
+            $table->dropColumn('name_last');
+        });
     }
 };
