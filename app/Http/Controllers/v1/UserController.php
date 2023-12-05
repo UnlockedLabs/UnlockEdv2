@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\v1\Controllers;
+namespace App\Http\Controllers\v1;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\NewUserResource;
 use App\Http\Resources\UserResource;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 
 class UserController extends Controller
@@ -16,6 +16,8 @@ class UserController extends Controller
      */
     public function index()
     {
+        //TODO:  add pagination
+
         return UserResource::collection(User::all());
     }
 
@@ -40,8 +42,8 @@ class UserController extends Controller
                 'errors' => $th->getMessage(),
             ], 422);
         }
-        $newUser = User::create($user);
-        $newUser->createTemporaryPassword();
+        $newUser = new User($user);
+        $newUser->createTempPassword(); // This saves the user inside the method
         return new NewUserResource($newUser);
     }
 
@@ -50,7 +52,8 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        return new UserResource($user);
     }
 
     /**
@@ -58,15 +61,26 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // return redirect()->route('users.edit', ['user' => $id]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateUserRequest $request, string $id)
     {
-        //
+        try {
+            $validated = $request->validated();
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Request Validation failed.',
+                'errors' => $th->getMessage(),
+            ], 422);
+        }
+        $user = User::findOrFail($id);
+        $user->update($validated);
+        $user->save();
+        return new UserResource($user);
     }
 
     /**
@@ -74,6 +88,10 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        $user->delete();
+        return response()->json([
+            'message' => 'User deleted successfully.',
+        ], 204);
     }
 }

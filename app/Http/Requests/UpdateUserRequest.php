@@ -11,7 +11,8 @@ class UpdateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // TODO: GET AUTH SETUP
+        return true;
     }
 
     /**
@@ -24,7 +25,8 @@ class UpdateUserRequest extends FormRequest
         return [
             'name_first' => 'nullable|string|max:25',
             'name_last' => 'nullable|string|max:25',
-            'email' => 'nullable|email|max:255|unique:users',
+            'username' => 'nullable|max:50|unique:users',
+            'email' => 'nullable|email|max:75|unique:users',
         ];
     }
 }

@@ -9,7 +9,7 @@ class NewUserResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     * This should ONLY
+     * This should ONLY be returned for a new user.
      *
      * @return array<string, mixed>
      */

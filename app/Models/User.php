@@ -52,8 +52,7 @@ class User extends Authenticatable
 
     public function createTempPassword()
     {
-        $this->attributes['password'] = bcrypt(Str::random(8));
-
+        $this->attributes['password'] = md5(Str::random(4));
         $this->save();
     }
 }

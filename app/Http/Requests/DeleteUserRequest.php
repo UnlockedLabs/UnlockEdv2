@@ -11,7 +11,8 @@ class DeleteUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // TODO: GET AUTH SETUP
+        return true;
     }
 
     /**

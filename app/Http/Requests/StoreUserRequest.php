@@ -11,10 +11,8 @@ class StoreUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Only allow logged in users who are admins to create new users
-        if (auth()->check()) {
-            return true;
-        }
+        //TODO: FIX THIS SOON
+        return true;
     }
 
     /**
@@ -27,7 +25,8 @@ class StoreUserRequest extends FormRequest
         return [
             'name_first' => 'required|string|max:25',
             'name_last' => 'required|string|max:25',
-            'email' => 'nullable|email|max:255|unique:users',
+            'email' => 'nullable|email|max:75|unique:users',
+            'username' => 'required|string|max:60|unique:users',
             'role' => 'required|string|in:Student,Admin',
         ];
     }
