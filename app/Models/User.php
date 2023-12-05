@@ -50,20 +50,10 @@ class User extends Authenticatable
         'role' => UserRole::Student || UserRole::Admin,
     ];
 
-    protected static function boot()
+    public function createTempPassword()
     {
-        parent::boot();
+        $this->attributes['password'] = bcrypt(Str::random(8));
 
-        static::creating(function ($user) {
-            $username = Str::slug($user->name_last . '.' . $user->name_first . Str::length($user->name_last . $user->name_first));
-
-            $count = static::where('username', 'LIKE', $username . '%')->count();
-
-            if ($count > 0) {
-                $username .= $count;
-            }
-
-            $user->username = $username;
-        });
+        $this->save();
     }
 }
