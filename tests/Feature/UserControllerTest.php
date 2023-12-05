@@ -38,6 +38,14 @@ class UserControllerTest extends TestCase
         $response->assertCreated();
     }
 
+    public function testUpdateUser()
+    {
+        $user = \App\Models\User::factory()->create();
+        $response = $this->patch($this->uri . $user->id, ['name_first' => 'TestUpdate']);
+        $response->assertStatus(200);
+        assert($response['data']['name_first'] == 'TestUpdate');
+    }
+
     public function testDeleteUser()
     {
         $user = \App\Models\User::factory()->create();

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Enums\UserRole;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -52,7 +53,9 @@ class User extends Authenticatable
 
     public function createTempPassword()
     {
-        $this->attributes['password'] = md5(Str::random(4));
+        $pw = Str::random(8);
+        $this->attributes['password'] = Hash::make($pw);
         $this->save();
+        return $pw;
     }
 }
