@@ -13,7 +13,7 @@ jobs:
       image: kirschbaumdevelopment/laravel-test-runner:8.2
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
