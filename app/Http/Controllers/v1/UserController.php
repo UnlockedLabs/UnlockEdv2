@@ -22,14 +22,6 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        // return redirect()->route('users.create');
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(StoreUserRequest $request)
@@ -55,14 +47,6 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         return new UserResource($user);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        // return redirect()->route('users.edit', ['user' => $id]);
     }
 
     /**
