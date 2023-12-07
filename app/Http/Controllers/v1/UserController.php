@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use App\Http\Resources\PaginateResource;
 
 class UserController extends Controller
 {
@@ -16,9 +17,8 @@ class UserController extends Controller
      */
     public function index()
     {
-        //TODO:  add pagination
-
-        return UserResource::collection(User::all());
+        $users = User::paginate(10);
+        return PaginateResource::make($users, UserResource::class);
     }
 
     /**
