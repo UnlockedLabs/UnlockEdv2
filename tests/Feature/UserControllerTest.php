@@ -23,6 +23,7 @@ class UserControllerTest extends TestCase
     public function testGetUsers()
     {
         $response = $this->get($this->uri);
+        echo $response->getContent();
         $response->assertStatus(200);
     }
 
