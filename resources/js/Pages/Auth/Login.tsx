@@ -33,7 +33,7 @@ export default function Login({ status }: { status?: string }) {
           <TextInput
             id="username"
             type="username"
-            name="Username"
+            name="username"
             value={data.username}
             className="mt-1 block w-full"
             autoComplete="username"

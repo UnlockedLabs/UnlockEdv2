@@ -33,6 +33,21 @@ export default function Register() {
 
       <form onSubmit={submit}>
         <div>
+          <InputLabel htmlFor="username" value="Username" />
+
+          <TextInput
+            id="username"
+            name="username"
+            value={data.username}
+            className="mt-1 block w-full"
+            autoComplete="username"
+            onChange={(e) => setData("username", e.target.value)}
+            required
+          />
+
+          <InputError message={errors.username} className="mt-2" />
+        </div>
+        <div>
           <InputLabel htmlFor="name_first" value="First Name" />
 
           <TextInput
@@ -56,7 +71,7 @@ export default function Register() {
             id="name_last"
             name="name_last"
             value={data.name_last}
-            className="mt-1 block w-full"
+            className="mt-1 block w-full border-gray-300 dark:border-slate-600"
             autoComplete="name"
             isFocused={true}
             onChange={(e) => setData("name_last", e.target.value)}
@@ -64,23 +79,6 @@ export default function Register() {
           />
 
           <InputError message={errors.name_last} className="mt-2" />
-        </div>
-        <div className="mt-4">
-          <InputLabel htmlFor="username" value="Username" />
-
-          <TextInput
-            id="username"
-            type="username"
-            name="username"
-            value={data.username}
-            className="mt-1 block w-full"
-            autoComplete="username"
-            isFocused={true}
-            onChange={(e) => setData('username', e.target.value)}
-            required
-          />
-
-          <InputError message={errors.username} className="mt-2" />
         </div>
 
         <div className="mt-4">
