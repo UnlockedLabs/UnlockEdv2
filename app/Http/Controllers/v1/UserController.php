@@ -37,6 +37,7 @@ class UserController extends Controller
         }
         $newUser = new User($user);
         $newUser->createTempPassword(); // This saves the user inside the method
+
         return new NewUserResource($newUser);
     }
 

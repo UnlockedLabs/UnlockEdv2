@@ -27,7 +27,7 @@ export default function Login({ status }: { status?: string }) {
       {status && <div className="mb-4 font-medium text-sm text-green-600">{status}</div>}
 
       <form onSubmit={submit}>
-        <div>
+        <div className="mt-4">
           <InputLabel htmlFor="username" value="Username" />
 
           <TextInput
@@ -37,7 +37,6 @@ export default function Login({ status }: { status?: string }) {
             value={data.username}
             className="mt-1 block w-full"
             autoComplete="username"
-            isFocused={true}
             onChange={(e) => setData('username', e.target.value)}
           />
 

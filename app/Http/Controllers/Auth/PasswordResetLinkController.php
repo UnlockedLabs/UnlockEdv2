@@ -28,7 +28,7 @@ class PasswordResetLinkController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): JsonResponse | RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $request->validate(['username' => 'required|string|max:50']);
 
@@ -39,12 +39,13 @@ class PasswordResetLinkController extends Controller
         $user = User::where('username', $request->username)->first();
         if ($user['role'] === UserRole::Student) {
             $user->createTempPassword();
+
             return response()->json([
                 'message' => 'Temporary password set, student must set new password upon next login',
                 'data' => [
                     'username' => $user['username'],
                     'password' => $user['password'],
-                ]
+                ],
             ]);
         } else {
             return redirect()->back()->with(
