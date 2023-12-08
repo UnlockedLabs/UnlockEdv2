@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\v1;
 
-use App\Http\Requests\StoreUserRequest;
-use App\Http\Resources\NewUserResource;
-use App\Http\Resources\UserResource;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Models\User;
+use App\Http\Resources\NewUserResource;
 use App\Http\Resources\PaginateResource;
+use App\Http\Resources\UserResource;
+use App\Models\User;
 
 class UserController extends Controller
 {
@@ -18,6 +18,7 @@ class UserController extends Controller
     public function index()
     {
         $users = User::paginate(10);
+
         return PaginateResource::make($users, UserResource::class);
     }
 
@@ -37,6 +38,7 @@ class UserController extends Controller
         $newUser = new User($user);
         $password = $newUser->createTempPassword(); // This saves the user inside the method
         $newUser['password'] = $password;
+
         return new NewUserResource($newUser);
     }
 
@@ -46,6 +48,7 @@ class UserController extends Controller
     public function show(string $id)
     {
         $user = User::findOrFail($id);
+
         return new UserResource($user);
     }
 
@@ -65,6 +68,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->update($validated);
         $user->save();
+
         return new UserResource($user);
     }
 
@@ -75,6 +79,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $user->delete();
+
         return response()->json([
             'message' => 'User deleted successfully.',
         ], 204);

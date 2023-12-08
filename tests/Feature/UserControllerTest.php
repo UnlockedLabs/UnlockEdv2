@@ -15,7 +15,7 @@ class UserControllerTest extends TestCase
     {
         $user = \App\Models\User::factory()->create();
 
-        $response = $this->get($this->uri . $user->id);
+        $response = $this->get($this->uri.$user->id);
 
         $response->assertStatus(200);
     }
@@ -42,7 +42,7 @@ class UserControllerTest extends TestCase
     public function testUpdateUser()
     {
         $user = \App\Models\User::factory()->create();
-        $response = $this->patch($this->uri . $user->id, ['name_first' => 'TestUpdate']);
+        $response = $this->patch($this->uri.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(200);
         assert($response['data']['name_first'] == 'TestUpdate');
     }
@@ -50,7 +50,7 @@ class UserControllerTest extends TestCase
     public function testDeleteUser()
     {
         $user = \App\Models\User::factory()->create();
-        $response = $this->delete($this->uri  . $user->id);
+        $response = $this->delete($this->uri.$user->id);
         $response->assertStatus(204);
     }
 }

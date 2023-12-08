@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 class ProviderPlatformFactory extends Factory
 {
     protected $model = ProviderPlatform::class;
+
     /**
      * Define the model's default state.
      *
@@ -26,9 +27,9 @@ class ProviderPlatformFactory extends Factory
             'icon_url' => fake()->imageUrl(),
             'account_id' => fake()->randomNumber($nbDigits = 9),
             'access_key' => Str::random(16),
-            'base_url' =>  fake()->url(),
+            'base_url' => fake()->url(),
             'state' => fake()->randomElement(['enabled', 'disabled', 'archived']),
-            
+
         ];
     }
 }

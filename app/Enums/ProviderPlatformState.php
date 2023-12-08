@@ -2,7 +2,6 @@
 
 namespace App\Enums;
 
-
 enum ProviderPlatformState: string
 {
     case ENABLED = 'enabled';
