@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Enums\UserRole;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -24,6 +24,7 @@ class UserFactory extends Factory
         $first = fake()->firstName();
         $last = fake()->lastName();
         $count = strlen($first) + strlen($last);
+
         return [
             'name_first' => fake()->name(),
             'name_last' => fake()->name(),
@@ -32,9 +33,10 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'role' => UserRole::Student,
-            'username' => $first . $last . $count,
+            'username' => $first.$last.$count,
         ];
     }
+
     /**
      * User with Admin role
      */

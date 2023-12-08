@@ -16,6 +16,7 @@ class NewUserResource extends JsonResource
     public function toArray(Request $request): array
     {
         $this->resource->makeVisible('password');
+
         return parent::toArray($request);
     }
 }

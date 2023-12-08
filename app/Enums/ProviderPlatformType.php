@@ -2,7 +2,6 @@
 
 namespace App\Enums;
 
-
 enum ProviderPlatformType: string
 {
     case CANVAS_CLOUD = 'canvas_cloud';
