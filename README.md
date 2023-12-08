@@ -2,28 +2,33 @@
 
 ## Requirements
 
-Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Ubuntu. 
+Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Ubuntu.
 
-- Docker (Docker Desktop on WSL)
-- Php and Composer (Platform specific)
+-   Docker (Docker Desktop on WSL)
+-   Php and Composer (Platform specific)
 
 ## Development
 
 The commands below assume you have a shell alias setup in your .bashrc or .zshrc file for the sail command: `alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail`. If you haven't configured that, you can substitute any call to `sail` with `./vendor/bin/sail`.
 
-- Clone the repository
-- Copy ‘.env.example’ to ‘.env’
-- Run `composer install`
-- Run `sail up`
-- Run `sail artisan migrate`
-- Run `sail npm install`
-- Run `sail npm run dev`
-- Open http://localhost
-- Register a user or login
+-   Clone the repository
+-   Copy ‘.env.example’ to ‘.env’
+-   Run `composer install`
+-   Run `sail up`
+-   Run `sail artisan migrate`
+-   Run `sail npm install`
+-   Run `sail npm run dev`
+-   Open http://localhost
+-   Register a user or login
+
+## Style/Linting
+
+-   PHP: Run `./vendor/bin/pint` or adjust your editor to run it on save.
+-   TS: Run `npx prettier -w .` before committing, or adjust your editor to run it on save.
 
 ## Testing
 
-- Run `sail artisan test`
+-   Run `sail artisan test`
 
 ## License
 
