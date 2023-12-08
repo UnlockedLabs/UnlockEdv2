@@ -10,7 +10,7 @@ export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
         name_first: "",
         name_last: "",
-        email: "",
+        username: "",
         password: "",
         password_confirmation: "",
     });
@@ -33,11 +33,26 @@ export default function Register() {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="name" value="First Name" />
+                    <InputLabel htmlFor="username" value="Username" />
 
                     <TextInput
-                        id="name"
-                        name="name"
+                        id="username"
+                        name="username"
+                        value={data.username}
+                        className="mt-1 block w-full"
+                        autoComplete="username"
+                        onChange={(e) => setData("username", e.target.value)}
+                        required
+                    />
+
+                    <InputError message={errors.username} className="mt-2" />
+                </div>
+                <div>
+                    <InputLabel htmlFor="name_first" value="First Name" />
+
+                    <TextInput
+                        id="name_first"
+                        name="name_first"
                         value={data.name_first}
                         className="mt-1 block w-full"
                         autoComplete="name"
@@ -50,13 +65,13 @@ export default function Register() {
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="name" value="Last Name" />
+                    <InputLabel htmlFor="name_last" value="Last Name" />
 
                     <TextInput
                         id="name_last"
                         name="name_last"
                         value={data.name_last}
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full border-gray-300 dark:border-slate-600"
                         autoComplete="name"
                         isFocused={true}
                         onChange={(e) => setData("name_last", e.target.value)}
@@ -64,22 +79,6 @@ export default function Register() {
                     />
 
                     <InputError message={errors.name_last} className="mt-2" />
-                </div>
-                <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        name="email"
-                        value={data.email}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        onChange={(e) => setData("email", e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.email} className="mt-2" />
                 </div>
 
                 <div className="mt-4">
@@ -95,7 +94,6 @@ export default function Register() {
                         onChange={(e) => setData("password", e.target.value)}
                         required
                     />
-
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 

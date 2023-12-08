@@ -124,7 +124,6 @@ export default function UpdatePasswordForm({
                         className="mt-2"
                     />
                 </div>
-
                 <div className="flex items-center gap-4">
                     <PrimaryButton disabled={processing}>Save</PrimaryButton>
 
