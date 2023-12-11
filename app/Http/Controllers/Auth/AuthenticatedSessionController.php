@@ -31,10 +31,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
         $user = User::where('username', $request->username)->first();
+
         if ($user['password_reset']) {
-            return redirect()->route('password.reset', ['token' => $user['password']]);
+            return redirect()->route('password.reset', ['token' => $request->password]);
+        } else {
+            $request->authenticate();
         }
         $request->session()->regenerate();
 

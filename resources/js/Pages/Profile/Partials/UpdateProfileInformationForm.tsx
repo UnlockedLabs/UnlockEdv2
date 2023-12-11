@@ -45,7 +45,7 @@ export default function UpdateProfileInformation({
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div>
-                    <InputLabel htmlFor="name_first" value="Name" />
+                    <InputLabel htmlFor="name_first" value="First Name" />
 
                     <TextInput
                         id="name_first"
@@ -66,7 +66,7 @@ export default function UpdateProfileInformation({
                     <TextInput
                         id="name_last"
                         className="mt-1 block w-full"
-                        value={data.name_first}
+                        value={data.name_last}
                         onChange={(e) => setData("name_last", e.target.value)}
                         required
                         isFocused

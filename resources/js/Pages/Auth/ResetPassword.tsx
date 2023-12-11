@@ -38,12 +38,12 @@ export default function ResetPassword({
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="username" value="Username" />
 
                     <TextInput
                         id="username"
                         type="username"
-                        name="email"
+                        name="username"
                         value={data.username}
                         className="mt-1 block w-full"
                         autoComplete="username"
