@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\NewUserResource;
-use App\Http\Resources\PaginateResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 
@@ -27,8 +26,8 @@ class UserController extends Controller
         // Apply search
         if ($search) {
             $query->where(function ($query) use ($search) {
-                $query->where('last_name', 'like', '%' . $search . '%')
-                    ->orWhere('first_name', 'like', '%' . $search . '%');
+                $query->where('last_name', 'like', '%'.$search.'%')
+                    ->orWhere('first_name', 'like', '%'.$search.'%');
             });
         }
 
