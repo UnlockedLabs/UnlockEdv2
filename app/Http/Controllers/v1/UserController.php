@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\NewUserResource;
-use App\Http\Resources\PaginateResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 
@@ -17,9 +16,26 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::paginate(10);
+        $perPage = request()->query('per_page', 10);
+        $sortBy = request()->query('sort', 'name_last');
+        $sortOrder = request()->query('order', 'desc');
+        $search = request()->query('search', '');
 
-        return PaginateResource::make($users, UserResource::class);
+        $query = User::query();
+
+        // Apply search
+        if ($search) {
+            $query->where(function ($query) use ($search) {
+                $query->where('last_name', 'like', '%'.$search.'%')
+                    ->orWhere('first_name', 'like', '%'.$search.'%');
+            });
+        }
+
+        $query->orderBy($sortBy, $sortOrder);
+
+        $users = $query->paginate($perPage);
+
+        return UserResource::collection($users);
     }
 
     /**
