@@ -18,11 +18,13 @@ The commands below assume you have a shell alias setup in your .bashrc or .zshrc
 -   Run `sail artisan migrate`
 -   Run `sail npm install`
 -   Run `sail npm run dev`
--   Run `sail artisan db:seed`
+-   Run `sail artisan db:seed --class=DefaultAdmin`
 -   Open http://localhost
--   Register a user or login
+-   Login with `SuperAdmin` and password: `ChangeMe!`
 
-#### NOTE: `php artisan db:seed --class=DefaultAdmin` will create a default SuperUser account with the following credentials: Username: SuperAdmin, Password: Ch@ngeMe! (Will redirect immediately on login to change)
+#### NOTE:
+
+-   Run `sail artisan db:seed` to seed the database with test data for local development.
 
 ## Style/Linting
 
