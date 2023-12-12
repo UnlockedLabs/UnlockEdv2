@@ -13,23 +13,40 @@ jobs:
       image: kirschbaumdevelopment/laravel-test-runner:8.2
 
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
+      - name: create test sqlite database
+        run: |
+          touch database/database.sqlite
+
+      - name: create permissions
+        run: |
+          chown -R $(id -u):$(id -g) .
       - name: Install front-end dependencies
         run: |
           npm install
           npm run build
+        env:
+          USER: root
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
 
       - name: Install composer dependencies
         run: |
           composer update
           composer install
+
       - name: Prepare Laravel Application
         run: |
           cp .env.testing .env
           php artisan migrate:fresh --env=testing
+
+      - name: Generate Key
+        run: php artisan key:generate --env=testing
 
       - name: Run Testsuite
         run: php artisan test

@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npx lint-staged
+npx prettier -w .
+./vendor/bin/pint
+./.husky/check_unstaged.py

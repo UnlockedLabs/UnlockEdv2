@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
@@ -32,15 +33,19 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'name_first' => 'required|string|max:50',
+            'name_last' => 'required|string|max:50',
+            'username' => 'required|string|max:50|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'username' => $request->username,
+            'name_first' => $request->name_first,
+            'name_last' => $request->name_last,
             'password' => Hash::make($request->password),
+            'reset_password' => false,
+            'role' => UserRole::Student,
         ]);
 
         event(new Registered($user));
