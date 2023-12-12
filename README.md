@@ -22,7 +22,7 @@ The commands below assume you have a shell alias setup in your .bashrc or .zshrc
 -   Open http://localhost
 -   Register a user or login
 
-#### NOTE: `php artisan db:seed --class=DefaultAdmin` will create a default SuperUser account with the following credentials: Username: SuperAdmin, Password: Ch@ngeMe! (Will redirect immediately on login to change)
+#### NOTE: `sail artisan db:seed --class=DefaultAdmin` will create a default SuperUser account with the following credentials: Username: SuperAdmin, Password: Ch@ngeMe! (Will redirect immediately on login to change)
 
 ## Style/Linting
 
