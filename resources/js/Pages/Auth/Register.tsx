@@ -11,14 +11,9 @@ export default function Register() {
         name_first: "",
         name_last: "",
         username: "",
-        password: "",
-        password_confirmation: "",
     });
-
     useEffect(() => {
-        return () => {
-            reset("password", "password_confirmation");
-        };
+        reset("username", "name_first", "name_last");
     }, []);
 
     const submit: FormEventHandler = (e) => {
@@ -29,11 +24,11 @@ export default function Register() {
 
     return (
         <GuestLayout>
-            <Head title="Register" />
+            <Head title="Register a new Student" />
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="username" value="Username" />
+                    <InputLabel htmlFor="username" value="Student Username" />
 
                     <TextInput
                         id="username"
@@ -48,7 +43,10 @@ export default function Register() {
                     <InputError message={errors.username} className="mt-2" />
                 </div>
                 <div>
-                    <InputLabel htmlFor="name_first" value="First Name" />
+                    <InputLabel
+                        htmlFor="name_first"
+                        value="Student First Name"
+                    />
 
                     <TextInput
                         id="name_first"
@@ -65,7 +63,7 @@ export default function Register() {
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="name_last" value="Last Name" />
+                    <InputLabel htmlFor="name_last" value="Student Last Name" />
 
                     <TextInput
                         id="name_last"
@@ -81,55 +79,7 @@ export default function Register() {
                     <InputError message={errors.name_last} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) => setData("password", e.target.value)}
-                        required
-                    />
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
-
-                <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
-                    <TextInput
-                        id="password_confirmation"
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData("password_confirmation", e.target.value)
-                        }
-                        required
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
-                </div>
-
                 <div className="flex items-center justify-end mt-4">
-                    <Link
-                        href={route("login")}
-                        className="underline text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:focus:ring-offset-slate-800"
-                    >
-                        Already registered?
-                    </Link>
-
                     <PrimaryButton className="ms-4" disabled={processing}>
                         Register
                     </PrimaryButton>

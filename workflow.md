@@ -8,9 +8,11 @@ a. Fork the Repository: Start by forking the main repository to your GitHub acco
 
 b. Clone Your Fork: Clone your forked repository to your local machine.
 
-c. Push Changes: Once your changes are ready, push them to your fork and th
+c. Push Changes: Once your changes are ready, stage and commit them, ensuring that your commit messages follow the Conventional Commits guidelines. Then push your changes to your forked repository. Be aware that the git hooks will format any unformatted code and you may need to re-stage and `git commit --amend` any changes it makes.
 
 d. Pull Request: Submit a pull request from your branch in the fork to the main repository.
+
+e. Code Review: At least one other team member will review your code and provide feedback. If you see any open Pull Requests on the repository, please take time to add your review to those as well. Review with kind but thorough, constructive feedback but if you find something you don't understand or a possible mistake, it might be more kind to message the coworker on Slack instead.
 
 e. Code Review and Merge: After code review, your changes will be merged into the main repository.
 

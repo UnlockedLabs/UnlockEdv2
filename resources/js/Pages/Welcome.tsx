@@ -39,14 +39,6 @@ export default function Welcome({ auth }: PageProps) {
                                         Log in
                                     </Link>
                                 </NavbarItem>
-                                <NavbarItem>
-                                    <Link
-                                        href={route("register")}
-                                        className="ms-4 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
-                                    >
-                                        Register
-                                    </Link>
-                                </NavbarItem>
                             </NavbarContent>
                         ) : (
                             <NavbarContent justify="end">

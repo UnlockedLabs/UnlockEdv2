@@ -45,6 +45,17 @@ class UserControllerTest extends TestCase
         $response = $this->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(200);
         assert($response['data']['name_first'] == 'TestUpdate');
+        $response->assertJsonStructure([
+            'data' => [
+                'id',
+                'name_first',
+                'name_last',
+                'username',
+                'role',
+                'created_at',
+                'updated_at',
+            ],
+        ]);
     }
 
     public function testDeleteUser()
