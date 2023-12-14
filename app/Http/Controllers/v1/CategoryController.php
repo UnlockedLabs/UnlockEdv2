@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\v1;
 
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use App\Http\Controllers\Controller;
 
 class CategoryController extends Controller
 {
@@ -20,7 +20,7 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
 
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -33,22 +33,21 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255',
             // Add other validation rules for your fields
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
+
         $category = Category::create($request->all());
-    
+
         return response()->json($category, Response::HTTP_CREATED);
     }
-    
 
     public function update(Request $request, $id)
     {
         $category = Category::find($id);
 
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -66,7 +65,7 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
 
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 

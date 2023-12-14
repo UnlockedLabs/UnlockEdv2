@@ -10,38 +10,37 @@ class CategoryControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-	public string $uri = '/api/v1/categories';
+    public string $uri = '/api/v1/categories';
 
-	public function testCategoriesAreCreated()
-	{
+    public function testCategoriesAreCreated()
+    {
         // Create 10 categories using the factory
         $categories = Category::factory(10)->create();
 
         // Assert that 10 categories were created
         $this->assertCount(10, $categories);
-	}
+    }
 
-
-	public function testCategoriesIndexReturnsJson()
-	{
+    public function testCategoriesIndexReturnsJson()
+    {
         // Create 10 categories using the factory
-		Category::factory(2)->create();
-		
-		// Make a GET request to the index method
-		$response = $this->get($this->uri);
+        Category::factory(2)->create();
 
-		// Assert that the response status code is 200 (OK)
-		$response->assertStatus(200);
+        // Make a GET request to the index method
+        $response = $this->get($this->uri);
 
-		// Assert that the response contains the categories
-		$response->assertJsonIsArray();
-	}
+        // Assert that the response status code is 200 (OK)
+        $response->assertStatus(200);
+
+        // Assert that the response contains the categories
+        $response->assertJsonIsArray();
+    }
 
     public function testGetCategory()
     {
         $category = Category::factory(1)->create();
 
-        $response = $this->get($this->uri . '/' . $category[0]->id);
+        $response = $this->get($this->uri.'/'.$category[0]->id);
 
         $response->assertStatus(200);
 
@@ -54,15 +53,17 @@ class CategoryControllerTest extends TestCase
             if (in_array($key, ['created_at', 'updated_at'])) {
                 continue;
             }
-        
+
             assert($value, $category[0]->$key);
-        }                
+        }
+
+        // this is a change
     }
 
     public function testUpdateCategory()
     {
         $category = Category::factory(1)->create();
-		$response = $this->patch($this->uri . '/' . $category[0]->id, ['name' => 'TestUpdate']);
+        $response = $this->patch($this->uri.'/'.$category[0]->id, ['name' => 'TestUpdate']);
         $response->assertStatus(200);
         assert($response['name'] == 'TestUpdate');
     }
@@ -70,8 +71,7 @@ class CategoryControllerTest extends TestCase
     public function testDeleteCategory()
     {
         $category = Category::factory(1)->create();
-        $response = $this->delete($this->uri . '/' . $category[0]->id);
+        $response = $this->delete($this->uri.'/'.$category[0]->id);
         $response->assertStatus(204);
     }
-	
 }

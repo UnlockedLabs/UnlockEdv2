@@ -1,4 +1,5 @@
 <?php
+
 // database/factories/CategoryFactory.php
 
 namespace Database\Factories;
@@ -19,6 +20,4 @@ class CategoryFactory extends Factory
             'links' => json_encode([$this->faker->word => $this->faker->word]),
         ];
     }
-	
-	
 }
