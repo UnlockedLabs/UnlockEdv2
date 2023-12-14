@@ -33,7 +33,7 @@ class CategoryControllerTest extends TestCase
         $response->assertStatus(200);
 
         // Assert that the response contains the categories
-        $response->assertJsonIsArray();
+        $response->assertJsonStructure(['data', 'meta', 'links']);
     }
 
     public function testGetCategory()
@@ -65,7 +65,7 @@ class CategoryControllerTest extends TestCase
         $category = Category::factory(1)->create();
         $response = $this->patch($this->uri.'/'.$category[0]->id, ['name' => 'TestUpdate']);
         $response->assertStatus(200);
-        assert($response['name'] == 'TestUpdate');
+        assert($response['data']['name'] == 'TestUpdate');
     }
 
     public function testDeleteCategory()

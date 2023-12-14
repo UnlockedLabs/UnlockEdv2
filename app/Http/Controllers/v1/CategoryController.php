@@ -5,16 +5,34 @@ namespace App\Http\Controllers\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        $perPage = request()->query('per_page', 10);
+        $sortBy = request()->query('sort', 'rank');
+        $sortOrder = request()->query('order', 'asc');
+        $search = request()->query('search', '');
 
-        return response()->json(CategoryResource::Collection($categories), Response::HTTP_OK);
+        $query = Category::query();
+
+        // Apply search
+        if ($search) {
+            $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('links', 'like', '%'.$search.'%');
+            });
+        }
+
+        $query->orderBy($sortBy, $sortOrder);
+
+        $categories = $query->paginate($perPage);
+
+        return CategoryResource::collection($categories);
     }
 
     public function show($id)
@@ -25,42 +43,31 @@ class CategoryController extends Controller
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json(new CategoryResource($category), Response::HTTP_OK);
+        return new CategoryResource($category);
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request)
     {
-        $validator = validator($request->all(), [
-            'name' => 'required|string|max:255',
-            'rank' => 'required|integer',
-            'links' => 'required|array',
-        ]);
+        $validated = $request->validated();
 
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $category = Category::create($validated->all());
 
-        $category = Category::create($request->all());
-
-        return response()->json(CategoryResource::Collection($category), Response::HTTP_CREATED);
+        return CategoryResource::collection($category);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCategoryRequest $request, $id)
     {
+        $validated = $request->validated();
+
         $category = Category::find($id);
 
         if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $request->validate([
-            'name' => 'string|max:255',
-            // Add other validation rules for your fields
-        ]);
+        $category->update($validated);
 
-        $category->update($request->all());
-
-        return response()->json(new CategoryResource($category), Response::HTTP_OK);
+        return new CategoryResource($category);
     }
 
     public function destroy($id)
