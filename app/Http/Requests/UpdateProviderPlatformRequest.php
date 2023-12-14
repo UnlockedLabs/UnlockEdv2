@@ -26,11 +26,14 @@ class UpdateProviderPlatformRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'type' => 'nullable',
             'type' => [Rule::enum(ProviderPlatformType::class)],
             'description' => 'nullable|string|max:255',
-            'icon_url' => 'required|url:http,https',
-            'base_url' => 'required|url:http,https',
+            'icon_url' => 'nullable|url:http,https',
+            'account_id' => 'nullable',
+            'access_key' => 'nullable',
+            'base_url' => 'nullable|url:http,https',
             'state' => [Rule::enum(ProviderPlatformState::class)],
         ];
     }
