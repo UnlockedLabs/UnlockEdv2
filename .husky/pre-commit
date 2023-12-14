@@ -4,4 +4,4 @@
 npx lint-staged
 npx prettier -w .
 ./vendor/bin/pint
-./.husky/check_unstaged.py
+python .husky/check_unstaged.py

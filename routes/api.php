@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\v1\CategoryController;
+use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -31,3 +32,7 @@ Route::get('/v1/users/{id}', [UserController::class, 'show']);
 Route::post('/v1/users', [UserController::class, 'store']);
 Route::patch('/v1/users/{id}', [UserController::class, 'update']);
 Route::delete('/v1/users/{id}', [UserController::class, 'destroy']);
+
+Route::prefix('v1')->group(function () {
+    Route::Resource('provider-platforms', ProviderPlatformController::class);
+});

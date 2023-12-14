@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,7 +14,7 @@ class CategoryController extends Controller
     {
         $categories = Category::all();
 
-        return response()->json($categories, Response::HTTP_OK);
+        return response()->json(CategoryResource::Collection($categories), Response::HTTP_OK);
     }
 
     public function show($id)
@@ -24,14 +25,15 @@ class CategoryController extends Controller
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json($category, Response::HTTP_OK);
+        return response()->json(new CategoryResource($category), Response::HTTP_OK);
     }
 
     public function store(Request $request)
     {
         $validator = validator($request->all(), [
             'name' => 'required|string|max:255',
-            // Add other validation rules for your fields
+            'rank' => 'required|integer',
+            'links' => 'required|array',
         ]);
 
         if ($validator->fails()) {
@@ -40,7 +42,7 @@ class CategoryController extends Controller
 
         $category = Category::create($request->all());
 
-        return response()->json($category, Response::HTTP_CREATED);
+        return response()->json(CategoryResource::Collection($category), Response::HTTP_CREATED);
     }
 
     public function update(Request $request, $id)
@@ -58,7 +60,7 @@ class CategoryController extends Controller
 
         $category->update($request->all());
 
-        return response()->json($category, Response::HTTP_OK);
+        return response()->json(new CategoryResource($category), Response::HTTP_OK);
     }
 
     public function destroy($id)
