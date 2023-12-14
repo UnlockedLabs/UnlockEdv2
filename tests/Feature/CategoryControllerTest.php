@@ -3,14 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-use Database\Factories\CategoryFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\Withfaker;
 use Tests\TestCase;
 
 class CategoryControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+	public string $uri = '/api/v1/categories';
 
 	public function testCategoriesAreCreated()
 	{
@@ -18,17 +18,17 @@ class CategoryControllerTest extends TestCase
         $categories = Category::factory(10)->create();
 
         // Assert that 10 categories were created
-        $response = $this->assertCount(10, $categories);
+        $this->assertCount(10, $categories);
 	}
 
 
 	public function testCategoriesIndexReturnsJson()
 	{
-        // Use fake to generate dummy categories with names
-		Category::factory(10)->create();
+        // Create 10 categories using the factory
+		Category::factory(2)->create();
 		
 		// Make a GET request to the index method
-		$response = $this->get('/api/categories');
+		$response = $this->get($this->uri);
 
 		// Assert that the response status code is 200 (OK)
 		$response->assertStatus(200);
@@ -36,5 +36,42 @@ class CategoryControllerTest extends TestCase
 		// Assert that the response contains the categories
 		$response->assertJsonIsArray();
 	}
+
+    public function testGetCategory()
+    {
+        $category = Category::factory(1)->create();
+
+        $response = $this->get($this->uri . '/' . $category[0]->id);
+
+        $response->assertStatus(200);
+
+        // Decode the JSON response
+        $jsonResponse = $response->json();
+
+        // Assert that the response contains the category
+        foreach ($jsonResponse as $key => $value) {
+            // Skip keys 'created_at' and 'updated_at'
+            if (in_array($key, ['created_at', 'updated_at'])) {
+                continue;
+            }
+        
+            assert($value, $category[0]->$key);
+        }                
+    }
+
+    public function testUpdateCategory()
+    {
+        $category = Category::factory(1)->create();
+		$response = $this->patch($this->uri . '/' . $category[0]->id, ['name' => 'TestUpdate']);
+        $response->assertStatus(200);
+        assert($response['name'] == 'TestUpdate');
+    }
+
+    public function testDeleteCategory()
+    {
+        $category = Category::factory(1)->create();
+        $response = $this->delete($this->uri . '/' . $category[0]->id);
+        $response->assertStatus(204);
+    }
 	
 }
