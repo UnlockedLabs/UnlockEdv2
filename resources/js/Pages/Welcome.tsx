@@ -21,7 +21,6 @@ export default function Welcome({ auth }: PageProps) {
         <>
             <Head title="Welcome" />
             <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
-                <>
                     <Navbar className="bg-slate-900 border-b-1 border-slate-800">
                         <ApplicationLogo className="h-7" />
                         <NavbarBrand className="text-2xl">
@@ -80,42 +79,48 @@ export default function Welcome({ auth }: PageProps) {
                                             , out...
                                         </div>
                                     </div>
-                                </CardBody>
-                            </Card>
-                            <Spacer y={20} />
-                            <h1 className="text-4xl font-semibold text-slate-300 pb-2">
-                                Our Story
-                            </h1>
-                            <div className="text-slate-500 text-xl max-w-[810px] text-justify">
-                                Catalyzing justice reform at a human level... We
-                                run programs to train justice-impacted people in
-                                tech skills We run a development shop employing
-                                returning citizens. We build products to solve
-                                challenges within the justice system helps
-                                catalyze reform at a system level. We are
-                                building Open Source tools to disrupt the cycle
-                                of limited access and data in correctional
-                                programing
-                            </div>
-                            <Spacer y={10} />
-                            <Image
-                                src="/unlockedv1.png"
-                                width={800}
-                                className="object-cover"
-                                shadow="md"
-                            />
-                            <Spacer y={10} />
-                            <div className="text-slate-500 text-xl max-w-[810px] text-justify">
-                                Our mission is to make education accessible to
-                                all justice-impacted people, and to ensure that
-                                their educational progress is recorded and
-                                recognized by institutions allowing for a faster
-                                and more equitable re-entry process.
-                            </div>
-                            <Spacer y={10} />
+                                    <div className="col-span-8 justify-center text-slate-200 text-3xl p-8">
+                                        A better justice system,{" "}
+                                        <span className="text-teal-200">
+                                            built from the inside
+                                        </span>
+                                        , out...
+                                    </div>
+                                </div>
+                            </CardBody>
+                        </Card>
+                        <Spacer y={20} />
+                        <h1 className="text-4xl font-semibold text-slate-300 pb-2">
+                            Our Story
+                        </h1>
+                        <div className="text-slate-500 text-xl max-w-[810px] text-justify">
+                            Catalyzing justice reform at a human level... We run
+                            programs to train justice-impacted people in tech
+                            skills We run a development shop employing returning
+                            citizens. We build products to solve challenges
+                            within the justice system helps catalyze reform at a
+                            system level. We are building Open Source tools to
+                            disrupt the cycle of limited access and data in
+                            correctional programing
                         </div>
+                        <Spacer y={10} />
+                        <Image
+                            src="/unlockedv1.png"
+                            width={800}
+                            className="object-cover"
+                            shadow="md"
+                        />
+                        <Spacer y={10} />
+                        <div className="text-slate-500 text-xl max-w-[810px] text-justify">
+                            Our mission is to make education accessible to all
+                            justice-impacted people, and to ensure that their
+                            educational progress is recorded and recognized by
+                            institutions allowing for a faster and more
+                            equitable re-entry process.
+                        </div>
+                        <Spacer y={10} />
                     </div>
-                </>
+                </div>
             </div>
         </>
     );
