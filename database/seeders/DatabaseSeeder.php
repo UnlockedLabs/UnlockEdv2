@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,7 @@ class DatabaseSeeder extends Seeder
             'username' => 'SuperAdmin',
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
+            'role' => UserRole::Admin,
         ]);
         DB::table('categories')->insert([
             'name' => 'Unlocked Labs',

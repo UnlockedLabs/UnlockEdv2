@@ -51,7 +51,6 @@ class UserControllerTest extends TestCase
                 'name_first',
                 'name_last',
                 'username',
-                'role',
                 'created_at',
                 'updated_at',
             ],
