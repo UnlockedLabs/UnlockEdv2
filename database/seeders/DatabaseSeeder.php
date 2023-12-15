@@ -23,5 +23,10 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
         ]);
+        DB::table('categories')->insert([
+            'name' => 'Unlocked Labs',
+            'rank' => '1',
+            'links' => '["http://www.unlockedlabs.org/"]',
+        ]);
     }
 }

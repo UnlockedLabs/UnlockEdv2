@@ -9,13 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('password_reset_tokens', function (Blueprint $table) {
-            $table->dropColumn('email');
-        });
-    }
-
+    /*
+         public function up(): void
+        {
+            Schema::table('password_reset_tokens', function (Blueprint $table) {
+                $table->dropColumn('email');
+            });
+        }
+    */
     /**
      * Reverse the migrations.
      */

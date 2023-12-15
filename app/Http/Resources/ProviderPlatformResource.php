@@ -15,7 +15,7 @@ class ProviderPlatformResource extends JsonResource
     public function toArray(Request $request): array
     {
         // return parent::toArray($request);
-        return [            
+        return [
             'id' => $this->id,
             'type' => $this->type,
             'name' => $this->name,
