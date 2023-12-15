@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -19,6 +20,7 @@ class DefaultAdmin extends Seeder
             'username' => 'SuperAdmin',
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
+            'role' => UserRole::Admin,
         ]);
     }
 }

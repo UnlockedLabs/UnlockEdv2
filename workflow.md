@@ -12,11 +12,11 @@ We are transitioning to a forking workflow, wherein each team member will fork t
 
 2. Clone Your Fork: Clone your forked repository to your local machine.
 
-3. Push Changes: Once your changes are ready, push them to your fork and th
+3. Push Changes: Once your changes are ready, stage and commit them, ensuring that your commit messages follow the Conventional Commits guidelines. Then push your changes to your forked repository. Be aware that the git hooks will format any unformatted code and you may need to re-stage and `git commit --amend` any changes it makes.
 
 4. Pull Request: Submit a pull request from your branch in the fork to the main repository.
 
-5. Code Review and Merge: After code review, your changes will be merged into the main repository.
+5. Code Review: At least one other team member will review your code and provide feedback. If you see any open Pull Requests on the repository, please take time to add your review to those as well. Review with kind but thorough, constructive feedback but if you find something you don't understand or a possible mistake, it might be more kind to message the coworker on Slack instead.
 
 This approach ensures a clean and organized development process while maintaining the integrity of the main repository.
 
@@ -24,7 +24,7 @@ This approach ensures a clean and organized development process while maintainin
 
 ---
 
-We are also introducing the use of Conventional Commits for our commit messages. Conventional Commits follow a standardized format that provides several benefits:
+Conventional Commits follow a standardized format that provides several benefits:
 
     Semantic Versioning: Conventional Commits help automate versioning by providing clear, structured commit messages that convey the nature of changes.
 

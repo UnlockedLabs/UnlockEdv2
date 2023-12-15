@@ -38,14 +38,6 @@ export default function Welcome({ auth }: PageProps) {
                                     Log in
                                 </Link>
                             </NavbarItem>
-                            <NavbarItem>
-                                <Link
-                                    href={route("register")}
-                                    className="ms-4 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
-                                >
-                                    Register
-                                </Link>
-                            </NavbarItem>
                         </NavbarContent>
                     ) : (
                         <NavbarContent justify="end">
@@ -86,6 +78,13 @@ export default function Welcome({ auth }: PageProps) {
                                         </span>
                                         , out...
                                     </div>
+                                </div>
+                                <div className="col-span-8 justify-center text-slate-200 text-3xl p-8">
+                                    A better justice system,{" "}
+                                    <span className="text-teal-200">
+                                        built from the inside
+                                    </span>
+                                    , out...
                                 </div>
                             </CardBody>
                         </Card>
