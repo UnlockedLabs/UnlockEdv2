@@ -11,12 +11,12 @@ export default function LeftMenu() {
             </li>
 
             <li>
-                <a>
+                <a href="/dashboard">
                     <HomeIcon className="w-4" /> Dashboard
                 </a>
             </li>
             <li>
-                <a>
+                <a href="/users">
                     <UsersIcon className="w-4" /> Users
                 </a>
             </li>
