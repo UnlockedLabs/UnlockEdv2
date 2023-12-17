@@ -6,15 +6,13 @@ export default {
         "./resources/js/**/*.tsx",
     ],
 
-    darkMode: "class",
-
     daisyui: {
         themes: [
             {
                 unlocked: {
                     primary: "#99f6e4",
                     secondary: "#14b8a6",
-                    accent: "#fde047",
+                    accent: "#fbbf24",
                     neutral: "#9ca3af",
                     "base-100": "#1f2937",
                     info: "#0ea5e9",
