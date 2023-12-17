@@ -1,4 +1,4 @@
-name: Build Laravel PHP Project
+name: Build and Test Laravel Project
 
 on:
   push:
