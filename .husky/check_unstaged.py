@@ -4,12 +4,12 @@ import subprocess
 
 
 def print_red(text):
-    return f"\033[91m{text}\033[0m"
+    return "\033[91m{}\033[0m".format(text)
 
 
 def print_green(text):
     # ANSI escape code for green text
-    return f"\033[92m{text}\033[0m"
+    return "\033[92m{}\033[0m".format(text)
 
 
 def check_unstaged_files():
@@ -24,7 +24,7 @@ def check_unstaged_files():
             )
             print(print_red("git commit --amend"))
     except subprocess.CalledProcessError as e:
-        print(f"Error: Unable to execute 'git hook'. {e}")
+        print("Error: Unable to execute 'git hook'. {}".format(e))
 
 
 if __name__ == "__main__":

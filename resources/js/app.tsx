@@ -5,7 +5,6 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
-import { NextUIProvider } from "@nextui-org/react";
 
 const appName = import.meta.env.VITE_APP_NAME || "Laravel";
 
@@ -21,11 +20,9 @@ createInertiaApp({
 
         root.render(
             <React.StrictMode>
-                <NextUIProvider>
-                    <main className="dark text-foreground bg-background">
-                        <App {...props} />
-                    </main>
-                </NextUIProvider>
+                <main className="unlocked">
+                    <App {...props} />
+                </main>
             </React.StrictMode>,
         );
     },
