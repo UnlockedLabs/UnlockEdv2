@@ -16,30 +16,30 @@ export default function Welcome({ auth }: PageProps) {
                             {!auth.user ? (
                                 <>
                                     <li>
-                                        <Link
-                                            href={route("login")}
+                                        <a
+                                            href="login"
                                             className="font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
                                         >
                                             Log in
-                                        </Link>
+                                        </a>
                                     </li>
                                     <li>
-                                        <Link
-                                            href={route("register")}
+                                        <a
+                                            href="register"
                                             className="ms-4 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
                                         >
                                             Register
-                                        </Link>
+                                        </a>
                                     </li>
                                 </>
                             ) : (
                                 <li>
-                                    <Link
-                                        href={route("dashboard")}
+                                    <a
+                                        href="/dashboard"
                                         className="ms-4 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
                                     >
                                         Dashboard
-                                    </Link>
+                                    </a>
                                 </li>
                             )}
                         </ul>

@@ -20,7 +20,7 @@ createInertiaApp({
 
         root.render(
             <React.StrictMode>
-                <main className="unlocked">
+                <main className="dark">
                     <App {...props} />
                 </main>
             </React.StrictMode>,
