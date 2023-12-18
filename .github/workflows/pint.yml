@@ -12,6 +12,6 @@ jobs:
         with:
           fetch-depth: 2
       - name: "laravel-pint"
-        uses: aglipanci/laravel-pint-action@0.1.0
+        uses: aglipanci/laravel-pint-action@2.3.0
         with:
           preset: laravel
