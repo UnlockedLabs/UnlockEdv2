@@ -18,7 +18,7 @@ class UserController extends Controller
     {
         $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'name_last');
-        $sortOrder = request()->query('order', 'desc');
+        $sortOrder = request()->query('order', 'asc');
         $search = request()->query('search', '');
 
         $query = User::query();
