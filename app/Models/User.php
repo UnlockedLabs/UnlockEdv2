@@ -50,6 +50,11 @@ class User extends Authenticatable
         'role' => UserRole::class,
     ];
 
+    public function findForPassport(string $username): User
+    {
+        return $this->where('username', $username)->first();
+    }
+
     public function createTempPassword()
     {
         $pw = Str::random(8);
