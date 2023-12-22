@@ -63,7 +63,8 @@ Two tools you can use to aid in debugging:
 
 -   laravel-debugbar - This is a package to integrate PHP Debug Bar with Laravel: Run `composer require barryvdh/laravel-debugbar --dev`
 -   React Developer Tools. This is available for several browser flavors and available on their website: https://react.dev/learn/react-developer-tools
-    Debugbar for Laravel is a package to integrate [PHP Debug Bar](http://phpdebugbar.com/) with Laravel. React Developer Tools is used to inspect REact components, edit props and state, and identify performance problems.
+
+Debugbar for Laravel is a package to integrate [PHP Debug Bar](http://phpdebugbar.com/) with Laravel. React Developer Tools is used to inspect REACT components, edit props and state, and identify performance problems.
 
 # License
 
