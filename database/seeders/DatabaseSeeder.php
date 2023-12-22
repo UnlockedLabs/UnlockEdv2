@@ -19,8 +19,8 @@ class DatabaseSeeder extends Seeder
         DB::table('users')->insert([
             'name_first' => 'Super',
             'name_last' => 'Admin',
-            'email' => 'admin@unlocked.v2',
-            'username' => 'SuperAdmin',
+            'email' => 'preston.thorpe@maine.edu',
+            'username' => 'unlock-dev',
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
             'role' => UserRole::Admin,
