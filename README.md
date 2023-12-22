@@ -57,6 +57,14 @@ _This could be any one of the following, or a combination_
 -   Run `sail artisan test`
 -   (Or alternatively ./vendor/bin/pest)
 
+# Debugging
+
+Two tools you can use to aid in debugging:
+
+-   laravel-debugbar - This is a package to integrate PHP Debug Bar with Laravel: Run `composer require barryvdh/laravel-debugbar --dev`
+-   React Developer Tools. This is available for several browser flavors and available on their website: https://react.dev/learn/react-developer-tools
+    Debugbar for Laravel is a package to integrate [PHP Debug Bar](http://phpdebugbar.com/) with Laravel. React Developer Tools is used to inspect REact components, edit props and state, and identify performance problems.
+
 # License
 
 UnlockEdv2 is open-sourced software licensed under the [Apache License, Version 2.0](https://opensource.org/license/apache-2-0/).
