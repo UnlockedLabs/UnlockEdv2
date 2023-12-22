@@ -13,7 +13,7 @@ class TestSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create(10);
-        ProviderPlatform::factory()->create(10);
+        User::factory()->createMany(10);
+        ProviderPlatform::factory()->createMany(10);
     }
 }
