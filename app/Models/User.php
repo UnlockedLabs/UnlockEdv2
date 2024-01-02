@@ -37,7 +37,6 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'role',
     ];
 
     /**
@@ -48,7 +47,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'role' => UserRole::Student || UserRole::Admin,
+        'role' => UserRole::class,
     ];
 
     public function createTempPassword()
