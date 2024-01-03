@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Enrollment extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'course_id',
@@ -23,6 +24,4 @@ class Enrollment extends Model
         'provider_start_at' => 'datetime',
         'provider_end_at' => 'datetime',
     ];
-
-
 }

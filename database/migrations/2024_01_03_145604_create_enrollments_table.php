@@ -14,7 +14,7 @@ class CreateEnrollmentsTable extends Migration
     public function up()
     {
         Schema::create('enrollments', function (Blueprint $table) {
-            $table->id();
+            $table->primary('id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('course_id');
             $table->string('provider_id')->nullable();
@@ -22,9 +22,7 @@ class CreateEnrollmentsTable extends Migration
             $table->json('links');
             $table->timestamp('provider_start_at')->nullable();
             $table->timestamp('provider_end_at')->nullable();
-            $table->timestamps();
-
-            $table->primary('id');
+            $table->timestamps();            
         });
 
         Schema::table('enrollments', function (Blueprint $table) {

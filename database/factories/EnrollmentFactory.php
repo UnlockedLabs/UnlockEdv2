@@ -15,7 +15,7 @@ class EnrollmentFactory extends Factory
     {
         $startAt = $this->faker->dateTimeThisMonth();
         $endAt = $this->faker->optional(0.5) // 50% chance of being null
-            ->dateTimeInInterval($startAt, '+120 days'); 
+            ->dateTimeInInterval($startAt, '+120 days');
 
         return [
             'user_id' => $this->faker->numberBetween(1, 1000000),
@@ -28,4 +28,3 @@ class EnrollmentFactory extends Factory
         ];
     }
 }
-
