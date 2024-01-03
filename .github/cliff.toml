@@ -1,4 +1,8 @@
+# git-cliff ~ configuration file
+# https://git-cliff.org/docs/configuration
+
 [changelog]
+# changelog header
 header = """
 # Changelog\n
 All notable changes to this project will be documented in this file.\n
@@ -11,15 +15,20 @@ body = """
 {% else %}\
     ## [unreleased]
 {% endif %}\
+{% if previous %}\
+    {% if previous.commit_id %}
+        [{{ previous.commit_id | truncate(length=7, end="") }}]({{ previous.commit_id }})...\
+            [{{ commit_id | truncate(length=7, end="") }}]({{ commit_id }})
+    {% endif %}\
+{% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
     ### {{ group | upper_first }}
-    {% for group, commits in commits | group_by(attribute="scope") %}
-        #### {{ group | upper_first }}
-        {% for commit in commits %}
-            - {{ commit.message | upper_first }}\
-            Author: {{ commit.author.name }}
-        {% endfor %}
-    {% endfor %}\
+    {% for commit in commits %}
+        - {{ commit.message | upper_first }} ([{{ commit.id | truncate(length=7, end="") }}]({{ commit.id }}))\
+          {% for footer in commit.footers -%}
+            , {{ footer.token }}{{ footer.separator }}{{ footer.value }}\
+          {% endfor %}\
+    {% endfor %}
 {% endfor %}\n
 """
 # template for the changelog footer
@@ -40,13 +49,16 @@ split_commits = false
 commit_parsers = [
     { message = "^feat", group = "Features" },
     { message = "^fix", group = "Bug Fixes" },
-    { message = "^doc", group = "Documentation", default_scope = "unscoped" },
+    { message = "^doc", group = "Documentation" },
     { message = "^perf", group = "Performance" },
     { message = "^refactor", group = "Refactor" },
     { message = "^style", group = "Styling" },
     { message = "^test", group = "Testing" },
+    { message = "^chore\\(deps\\)", skip = true },
+    { message = "^chore\\(pr\\)", skip = true },
+    { message = "^chore\\(pull\\)", skip = true },
     { message = "^chore\\(release\\): prepare for", skip = true },
-    { message = "^chore", group = "Miscellaneous Tasks" },
+    { message = "^chore|ci", group = "Miscellaneous Tasks" },
     { body = ".*security", group = "Security" },
 ]
 # protect breaking changes from being skipped due to matching a skipping commit_parser
@@ -55,9 +67,7 @@ protect_breaking_commits = false
 filter_commits = false
 # regex for matching git tags
 tag_pattern = "v[0-9].*"
-# regex for ignoring tags
 ignore_tags = ""
 # sort the tags topologically
 topo_order = false
-# sort the commits inside sections by oldest/newest order
 sort_commits = "oldest"
