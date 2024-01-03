@@ -1,9 +1,13 @@
 import Brand from "./Brand";
-import { HomeIcon, UsersIcon, ArchiveBoxIcon } from "@heroicons/react/24/solid";
+import {
+    HomeIcon,
+    ArchiveBoxIcon,
+    BookOpenIcon,
+} from "@heroicons/react/24/solid";
 
 export default function LeftMenu() {
     return (
-        <ul className="menu bg-base-200 w-64 rounded-box">
+        <ul className="menu bg-base-100 w-72">
             <li>
                 <a href="/" className="mb-4">
                     <Brand />
@@ -16,8 +20,8 @@ export default function LeftMenu() {
                 </a>
             </li>
             <li>
-                <a href="/users">
-                    <UsersIcon className="w-4" /> Users
+                <a href="/courses">
+                    <BookOpenIcon className="w-4" /> Courses
                 </a>
             </li>
             <li>

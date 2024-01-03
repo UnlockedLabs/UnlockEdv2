@@ -1,5 +1,7 @@
+import { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
+    ChevronDownIcon,
     ArrowPathRoundedSquareIcon,
     ArrowUpRightIcon,
     PencilIcon,
@@ -7,133 +9,125 @@ import {
     UserPlusIcon,
 } from "@heroicons/react/24/solid";
 import { PageProps } from "@/types";
+import { User } from "@/common";
+import PageNav from "@/Components/PageNav";
+import Pagination, { PaginatedData } from "@/Components/Pagination";
+
+const api: PaginatedData<User> = {
+    data: [
+        {
+            id: 1,
+            name_first: "Super",
+            name_last: "Admin",
+            email: "admin@unlocked.v2",
+            role: "admin",
+            username: "SuperAdmin",
+        },
+    ],
+    links: {
+        first: "http://localhost/api/v1/users?page=1",
+        last: "http://localhost/api/v1/users?page=1",
+    },
+    meta: {
+        current_page: 1,
+        from: 1,
+        last_page: 1,
+        per_page: 10,
+        to: 1,
+        total: 1,
+    },
+};
 
 export default function Users({ auth }: PageProps) {
+    const [userData, setUserData] = useState(api);
+    const [queryString, setQueryString] = useState("");
+
+    const onAddUser = () => {
+        alert("add user");
+    };
+
     return (
-        <AuthenticatedLayout user={auth.user} title="User">
-            <h1 className="font-semibold text-3xl mb-8">Users</h1>
-            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg bg-gray-700 p-6">
+        <AuthenticatedLayout user={auth.user} title="Users">
+            <PageNav user={auth.user} path={["Settings", "Users"]} />
+            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <input
                         type="text"
                         placeholder="Search..."
-                        className="input input-bordered input-primary w-full max-w-xs"
+                        className="input input-bordered w-full max-w-xs input-sm"
+                        value={queryString}
+                        onChange={(e) => setQueryString(e.target.value)}
                     />
-                    <button className="btn btn-primary">
-                        <UserPlusIcon className="h-4" />
-                        Add User
-                    </button>
+                    <div className="tooltip tooltip-left" data-tip="Add User">
+                        <button
+                            className="btn btn-primary btn-sm"
+                            onClick={onAddUser}
+                        >
+                            <UserPlusIcon className="h-4" />
+                        </button>
+                    </div>
                 </div>
                 <table className="table">
-                    {/* head */}
                     <thead>
                         <tr className="border-gray-600">
-                            <th>
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-primary bg-gray-800"
-                                    />
-                                </label>
+                            <th className="flex">
+                                <span>Name</span>
+                                <ChevronDownIcon className="h-4 text-accent cursor-pointer" />
                             </th>
-                            <th>Name</th>
+                            <th>Username</th>
                             <th>Role</th>
                             <th>Activity</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {/* row 1 */}
-                        <tr className="border-gray-600">
-                            <th>
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-primary bg-gray-800"
-                                    />
-                                </label>
-                            </th>
-                            <td>
-                                <div className="flex items-center gap-3">
-                                    <div>
-                                        <div className="font-bold">
-                                            Super Admin
+                        {userData.data.map((user) => {
+                            return (
+                                <tr className="border-gray-600">
+                                    <td>
+                                        {user.name_first} {user.name_last}
+                                    </td>
+                                    <td>{user.username}</td>
+                                    <td>{user.role}</td>
+                                    <td>
+                                        <div
+                                            className="tooltip"
+                                            data-tip="User Activity"
+                                        >
+                                            <a className="flex justify-start cursor-pointer">
+                                                <span>Today</span>
+                                                <ArrowUpRightIcon className="w-4 text-accent" />
+                                            </a>
                                         </div>
-                                        <div className="text-sm opacity-50">
-                                            super.admin
+                                    </td>
+                                    <td>
+                                        <div className="flex space-x-2 text-accent cursor-pointer">
+                                            <div
+                                                className="tooltip"
+                                                data-tip="Edit User"
+                                            >
+                                                <PencilIcon className="h-4" />
+                                            </div>
+                                            <div
+                                                className="tooltip"
+                                                data-tip="Reset Password"
+                                            >
+                                                <ArrowPathRoundedSquareIcon className="h-4" />
+                                            </div>
+                                            <div
+                                                className="tooltip"
+                                                data-tip="Delete User"
+                                            >
+                                                <TrashIcon className="h-4" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>Admin</td>
-                            <td>
-                                <div className="flex justify-start">
-                                    <span>Today</span>
-                                    <ArrowUpRightIcon className="w-4 text-primary" />
-                                </div>
-                            </td>
-                            <th>
-                                <div className="flex space-x-2">
-                                    <button className="btn btn-sm btn-primary">
-                                        <PencilIcon className="h-4" />
-                                    </button>
-                                    <button className="btn btn-sm btn-warning">
-                                        <ArrowPathRoundedSquareIcon className="h-4" />
-                                    </button>
-                                </div>
-                            </th>
-                        </tr>
-                        {/* row 2 */}
-                        <tr className="border-gray-600">
-                            <th>
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-primary bg-gray-800"
-                                    />
-                                </label>
-                            </th>
-                            <td>
-                                <div className="flex items-center gap-3">
-                                    <div>
-                                        <div className="font-bold">
-                                            Nokie Rae
-                                        </div>
-                                        <div className="text-sm opacity-50">
-                                            nokie.rae
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>Admin</td>
-                            <td>
-                                <div className="flex justify-start">
-                                    <span>Today</span>
-                                    <ArrowUpRightIcon className="w-4 text-primary" />
-                                </div>
-                            </td>
-                            <th>
-                                <div className="flex space-x-2">
-                                    <button className="btn btn-sm btn-primary">
-                                        <PencilIcon className="h-4" />
-                                    </button>
-                                    <button className="btn btn-sm btn-warning">
-                                        <ArrowPathRoundedSquareIcon className="h-4" />
-                                    </button>
-                                    <button className="btn btn-sm btn-error">
-                                        <TrashIcon className="h-4" />
-                                    </button>
-                                </div>
-                            </th>
-                        </tr>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
-                <div className="join place-content-center">
-                    <button className="join-item btn btn-primary">1</button>
-                    <button className="join-item btn">2</button>
-                    <button className="join-item btn">3</button>
-                    <button className="join-item btn">4</button>
-                </div>
+                <Pagination links={api.links} meta={api.meta} />
             </div>
         </AuthenticatedLayout>
     );
