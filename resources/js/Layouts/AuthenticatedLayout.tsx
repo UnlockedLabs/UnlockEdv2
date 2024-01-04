@@ -13,7 +13,7 @@ export default function Authenticated({
             <Head title={title} />
             <div className="flex">
                 <LeftMenu />
-                <main className="w-full min-h-screen bg-slate-300 text-base-100 p-4">
+                <main className="w-full min-h-screen bg-base-100 px-4">
                     {children}
                 </main>
             </div>

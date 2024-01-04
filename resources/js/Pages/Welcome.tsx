@@ -7,47 +7,32 @@ export default function Welcome({ auth }: PageProps) {
         <>
             <Head title="Welcome" />
             <div className="min-h-screen">
-                <div className="navbar bg-base-200">
+                <div className="navbar bg-base-100">
                     <div className="flex-1 pl-4">
                         <Brand />
                     </div>
                     <div className="flex-none">
-                        <ul className="menu menu-horizontal px-1">
+                        <ul className="menu menu-horizontal px-1 text-white">
                             {!auth.user ? (
                                 <>
                                     <li>
-                                        <Link
-                                            href={route("login")}
-                                            className="font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
-                                        >
-                                            Log in
-                                        </Link>
+                                        <a href="login">Log in</a>
                                     </li>
                                     <li>
-                                        <Link
-                                            href={route("register")}
-                                            className="ms-4 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
-                                        >
-                                            Register
-                                        </Link>
+                                        <a href="register">Register</a>
                                     </li>
                                 </>
                             ) : (
                                 <li>
-                                    <Link
-                                        href={route("dashboard")}
-                                        className="ms-4 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-teal-500"
-                                    >
-                                        Dashboard
-                                    </Link>
+                                    <a href="/dashboard">Dashboard</a>
                                 </li>
                             )}
                         </ul>
                     </div>
                 </div>
 
-                <div className="flex justify-center p-10 bg-base-200">
-                    <div className="prose prose-lg prose-slate text-justify">
+                <div className="flex justify-center p-10 bg-base-100">
+                    <div className="prose prose-lg prose-gray text-justify">
                         <h1>Our Story</h1>
                         <p>
                             Catalyzing justice reform at a human level... We run
