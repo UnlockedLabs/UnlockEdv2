@@ -42,6 +42,7 @@ export default function Pagination({
                             i == meta.current_page - 1 ? "btn-active" : ""
                         }`}
                         onClick={() => setPage(i + 1)}
+                        key={i}
                     >
                         {i + 1}
                     </button>
