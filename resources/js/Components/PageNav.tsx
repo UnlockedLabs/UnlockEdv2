@@ -21,7 +21,7 @@ export default function PageNav({
                         <HomeIcon className="h-5" />
                     </li>
                     {path.map((p) => (
-                        <li>{p}</li>
+                        <li key={p}>{p}</li>
                     ))}
                 </ul>
             </div>
@@ -73,14 +73,12 @@ export default function PageNav({
                                 </li>
 
                                 {user.role == UserRole.Student ? (
-                                    <>
-                                        <li>
-                                            <div>
-                                                <ArrowRightOnRectangleIcon className="h-4" />
-                                                Logout
-                                            </div>
-                                        </li>
-                                    </>
+                                    <li>
+                                        <div>
+                                            <ArrowRightOnRectangleIcon className="h-4" />
+                                            Logout
+                                        </div>
+                                    </li>
                                 ) : (
                                     <>
                                         <li>
