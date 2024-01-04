@@ -3,11 +3,6 @@ import {
     ChevronDoubleRightIcon,
 } from "@heroicons/react/24/solid";
 
-interface PaginationLinks {
-    first: string;
-    last: string;
-}
-
 interface PaginationMeta {
     current_page: number;
     total: number;
@@ -19,16 +14,13 @@ interface PaginationMeta {
 
 export interface PaginatedData<T> {
     data: Array<T>;
-    links: PaginationLinks;
     meta: PaginationMeta;
 }
 
 export default function Pagination({
-    links,
     meta,
     setPage,
 }: {
-    links: PaginationLinks;
     meta: PaginationMeta;
     setPage: (page: number) => void;
 }) {
@@ -44,16 +36,11 @@ export default function Pagination({
             </div>
 
             {[...Array(meta.total).keys()].map((_, i) => {
-                return i == meta.current_page - 1 ? (
+                return (
                     <button
-                        className="join-item btn btn-sm btn-active"
-                        onClick={() => setPage(i + 1)}
-                    >
-                        {i + 1}
-                    </button>
-                ) : (
-                    <button
-                        className="join-item btn btn-sm"
+                        className={`join-item btn btn-sm ${
+                            i == meta.current_page - 1 ? "btn-active" : ""
+                        }`}
                         onClick={() => setPage(i + 1)}
                     >
                         {i + 1}
