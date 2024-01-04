@@ -6,6 +6,10 @@ declare global {
         axios: AxiosInstance;
     }
 
+    interface HTMLDialogElement {
+        showModal: () => void;
+    }
+
     var route: typeof ziggyRoute;
     var Ziggy: ZiggyConfig;
 }

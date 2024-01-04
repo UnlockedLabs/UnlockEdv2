@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDebounce } from "usehooks-ts";
 import useSWR from "swr";
 
@@ -12,12 +12,18 @@ import {
     UserPlusIcon,
     ChevronUpIcon,
 } from "@heroicons/react/24/solid";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { PageProps } from "@/types";
 import { User } from "@/common";
 import PageNav from "@/Components/PageNav";
 import Pagination, { PaginatedData } from "@/Components/Pagination";
 
 export default function Users({ auth }: PageProps) {
+    const addUserModal = useRef<null | HTMLDialogElement>(null);
+    const editUserModal = useRef<null | HTMLDialogElement>(null);
+    const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
+    const deleteUserModal = useRef<null | HTMLDialogElement>(null);
+
     const [searchTerm, setSearchTerm] = useState("");
     const searchQuery = useDebounce(searchTerm, 300);
 
@@ -30,12 +36,6 @@ export default function Users({ auth }: PageProps) {
     );
 
     const userData = data as PaginatedData<User>;
-
-    console.log(error);
-
-    const onAddUser = () => {
-        alert("add user");
-    };
 
     return (
         <AuthenticatedLayout user={auth.user} title="Users">
@@ -52,7 +52,7 @@ export default function Users({ auth }: PageProps) {
                     <div className="tooltip tooltip-left" data-tip="Add User">
                         <button
                             className="btn btn-primary btn-sm"
-                            onClick={onAddUser}
+                            onClick={() => addUserModal.current?.showModal()}
                         >
                             <UserPlusIcon className="h-4" />
                         </button>
@@ -112,19 +112,34 @@ export default function Users({ auth }: PageProps) {
                                                     className="tooltip"
                                                     data-tip="Edit User"
                                                 >
-                                                    <PencilIcon className="h-4" />
+                                                    <PencilIcon
+                                                        className="h-4"
+                                                        onClick={() =>
+                                                            editUserModal.current?.showModal()
+                                                        }
+                                                    />
                                                 </div>
                                                 <div
                                                     className="tooltip"
                                                     data-tip="Reset Password"
                                                 >
-                                                    <ArrowPathRoundedSquareIcon className="h-4" />
+                                                    <ArrowPathRoundedSquareIcon
+                                                        className="h-4"
+                                                        onClick={() =>
+                                                            resetUserPasswordModal.current?.showModal()
+                                                        }
+                                                    />
                                                 </div>
                                                 <div
                                                     className="tooltip"
                                                     data-tip="Delete User"
                                                 >
-                                                    <TrashIcon className="h-4" />
+                                                    <TrashIcon
+                                                        className="h-4"
+                                                        onClick={() =>
+                                                            deleteUserModal.current?.showModal()
+                                                        }
+                                                    />
                                                 </div>
                                             </div>
                                         </td>
@@ -134,11 +149,7 @@ export default function Users({ auth }: PageProps) {
                     </tbody>
                 </table>
                 {!isLoading && !error && data.data.length != 0 && (
-                    <Pagination
-                        links={userData.links}
-                        meta={userData.meta}
-                        setPage={setPageQuery}
-                    />
+                    <Pagination meta={userData.meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">
@@ -148,6 +159,192 @@ export default function Users({ auth }: PageProps) {
                 {!isLoading && !error && data.data.length == 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
+            </div>
+
+            {/* Modals */}
+            <dialog ref={addUserModal} className="modal">
+                <div className="modal-box">
+                    <form method="dialog">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                            ✕
+                        </button>
+                    </form>
+                    <div className="flex flex-col items-center">
+                        <span className="text-3xl font-semibold pb-6 text-white">
+                            Add User
+                        </span>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">First Name</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-xs"
+                            />
+                        </label>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">Last Name</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-xs"
+                            />
+                        </label>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">Username</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-xs"
+                            />
+                        </label>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">Role</span>
+                            </div>
+                            <select className="select select-bordered">
+                                <option disabled selected>
+                                    Pick one
+                                </option>
+                                <option>Student</option>
+                                <option>Admin</option>
+                            </select>
+                        </label>
+                        <label className="p-6">
+                            <div></div>
+                        </label>
+                        <label className="form-control">
+                            <button className="btn btn-primary">Submit</button>
+                        </label>
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog ref={editUserModal} className="modal">
+                <div className="modal-box">
+                    <form method="dialog">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                            ✕
+                        </button>
+                    </form>
+                    <div className="flex flex-col items-center">
+                        <span className="text-3xl font-semibold pb-6 text-white">
+                            Edit User
+                        </span>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">First Name</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-xs"
+                            />
+                        </label>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">Last Name</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-xs"
+                            />
+                        </label>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">Username</span>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Type here"
+                                className="input input-bordered w-full max-w-xs"
+                            />
+                        </label>
+                        <label className="form-control w-full max-w-xs">
+                            <div className="label">
+                                <span className="label-text">Role</span>
+                            </div>
+                            <select className="select select-bordered">
+                                <option disabled selected>
+                                    Pick one
+                                </option>
+                                <option>Student</option>
+                                <option>Admin</option>
+                            </select>
+                        </label>
+                        <label className="p-6">
+                            <div></div>
+                        </label>
+                        <label className="form-control">
+                            <button className="btn btn-primary">Submit</button>
+                        </label>
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog ref={resetUserPasswordModal} className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-xl">
+                        Reset User's Password?
+                    </h3>
+                    <p className="py-4"></p>
+                    <div className="modal-action">
+                        <button className="btn btn-warning">Reset</button>
+                        <form method="dialog">
+                            {/* if there is a button in form, it will close the modal */}
+                            <button className="btn">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog ref={deleteUserModal} className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-xl">Delete User?</h3>
+                    <p className="py-4"></p>
+                    <div className="modal-action">
+                        <button className="btn btn-warning">Delete</button>
+                        <form method="dialog">
+                            {/* if there is a button in form, it will close the modal */}
+                            <button className="btn">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
+
+            {/* Toasts */}
+            <div className="toast transition-opacity duration-500 ease-out opacity-100">
+                <div className="alert alert-success">
+                    <CheckCircleIcon className="h-6" />
+                    <span>User created!</span>
+                </div>
+            </div>
+
+            <div className="toast transition-opacity duration-500 ease-out opacity-0">
+                <div className="alert alert-success">
+                    <CheckCircleIcon className="h-6" />
+                    <span>User updated!</span>
+                </div>
+            </div>
+
+            <div className="toast transition-opacity duration-500 ease-out opacity-0">
+                <div className="alert alert-success">
+                    <CheckCircleIcon className="h-6" />
+                    <span>User password reset!</span>
+                </div>
+            </div>
+
+            <div className="toast transition-opacity duration-500 ease-out opacity-0">
+                <div className="alert alert-success">
+                    <CheckCircleIcon className="h-6" />
+                    <span>User deleted!</span>
+                </div>
             </div>
         </AuthenticatedLayout>
     );
