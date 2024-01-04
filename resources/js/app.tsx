@@ -5,6 +5,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
+import { SWRConfig } from "swr";
 
 const appName = import.meta.env.VITE_APP_NAME || "Laravel";
 
@@ -20,9 +21,16 @@ createInertiaApp({
 
         root.render(
             <React.StrictMode>
-                <main className="">
-                    <App {...props} />
-                </main>
+                <SWRConfig
+                    value={{
+                        fetcher: (url) =>
+                            window.axios.get(url).then((res) => res.data),
+                    }}
+                >
+                    <main className="">
+                        <App {...props} />
+                    </main>
+                </SWRConfig>
             </React.StrictMode>,
         );
     },

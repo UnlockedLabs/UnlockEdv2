@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useDebounce } from "usehooks-ts";
+import useSWR from "swr";
+
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
     ChevronDownIcon,
@@ -7,40 +10,28 @@ import {
     PencilIcon,
     TrashIcon,
     UserPlusIcon,
+    ChevronUpIcon,
 } from "@heroicons/react/24/solid";
 import { PageProps } from "@/types";
 import { User } from "@/common";
 import PageNav from "@/Components/PageNav";
 import Pagination, { PaginatedData } from "@/Components/Pagination";
 
-const api: PaginatedData<User> = {
-    data: [
-        {
-            id: 1,
-            name_first: "Super",
-            name_last: "Admin",
-            email: "admin@unlocked.v2",
-            role: "admin",
-            username: "SuperAdmin",
-        },
-    ],
-    links: {
-        first: "http://localhost/api/v1/users?page=1",
-        last: "http://localhost/api/v1/users?page=1",
-    },
-    meta: {
-        current_page: 1,
-        from: 1,
-        last_page: 1,
-        per_page: 10,
-        to: 1,
-        total: 1,
-    },
-};
-
 export default function Users({ auth }: PageProps) {
-    const [userData, setUserData] = useState(api);
-    const [queryString, setQueryString] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const searchQuery = useDebounce(searchTerm, 300);
+
+    const [pageQuery, setPageQuery] = useState(1);
+
+    const [sortQuery, setSortQuery] = useState("asc");
+
+    const { data, error, isLoading } = useSWR(
+        `/api/v1/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
+    );
+
+    const userData = data as PaginatedData<User>;
+
+    console.log(error);
 
     const onAddUser = () => {
         alert("add user");
@@ -55,8 +46,8 @@ export default function Users({ auth }: PageProps) {
                         type="text"
                         placeholder="Search..."
                         className="input input-bordered w-full max-w-xs input-sm"
-                        value={queryString}
-                        onChange={(e) => setQueryString(e.target.value)}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     <div className="tooltip tooltip-left" data-tip="Add User">
                         <button
@@ -72,7 +63,17 @@ export default function Users({ auth }: PageProps) {
                         <tr className="border-gray-600">
                             <th className="flex">
                                 <span>Name</span>
-                                <ChevronDownIcon className="h-4 text-accent cursor-pointer" />
+                                {sortQuery == "asc" ? (
+                                    <ChevronDownIcon
+                                        className="h-4 text-accent cursor-pointer"
+                                        onClick={() => setSortQuery("desc")}
+                                    />
+                                ) : (
+                                    <ChevronUpIcon
+                                        className="h-4 text-accent cursor-pointer"
+                                        onClick={() => setSortQuery("asc")}
+                                    />
+                                )}
                             </th>
                             <th>Username</th>
                             <th>Role</th>
@@ -81,53 +82,72 @@ export default function Users({ auth }: PageProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {userData.data.map((user) => {
-                            return (
-                                <tr className="border-gray-600">
-                                    <td>
-                                        {user.name_first} {user.name_last}
-                                    </td>
-                                    <td>{user.username}</td>
-                                    <td>{user.role}</td>
-                                    <td>
-                                        <div
-                                            className="tooltip"
-                                            data-tip="User Activity"
-                                        >
-                                            <a className="flex justify-start cursor-pointer">
-                                                <span>Today</span>
-                                                <ArrowUpRightIcon className="w-4 text-accent" />
-                                            </a>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="flex space-x-2 text-accent cursor-pointer">
+                        {!isLoading &&
+                            !error &&
+                            userData.data.map((user: any) => {
+                                return (
+                                    <tr
+                                        key={user.id}
+                                        className="border-gray-600"
+                                    >
+                                        <td>
+                                            {user.name_first} {user.name_last}
+                                        </td>
+                                        <td>{user.username}</td>
+                                        <td>{user.role}</td>
+                                        <td>
                                             <div
                                                 className="tooltip"
-                                                data-tip="Edit User"
+                                                data-tip="User Activity"
                                             >
-                                                <PencilIcon className="h-4" />
+                                                <a className="flex justify-start cursor-pointer">
+                                                    <span>Today</span>
+                                                    <ArrowUpRightIcon className="w-4 text-accent" />
+                                                </a>
                                             </div>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="Reset Password"
-                                            >
-                                                <ArrowPathRoundedSquareIcon className="h-4" />
+                                        </td>
+                                        <td>
+                                            <div className="flex space-x-2 text-accent cursor-pointer">
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Edit User"
+                                                >
+                                                    <PencilIcon className="h-4" />
+                                                </div>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Reset Password"
+                                                >
+                                                    <ArrowPathRoundedSquareIcon className="h-4" />
+                                                </div>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Delete User"
+                                                >
+                                                    <TrashIcon className="h-4" />
+                                                </div>
                                             </div>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="Delete User"
-                                            >
-                                                <TrashIcon className="h-4" />
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                     </tbody>
                 </table>
-                <Pagination links={api.links} meta={api.meta} />
+                {!isLoading && !error && data.data.length != 0 && (
+                    <Pagination
+                        links={userData.links}
+                        meta={userData.meta}
+                        setPage={setPageQuery}
+                    />
+                )}
+                {error && (
+                    <span className="text-center text-error">
+                        Failed to load users.
+                    </span>
+                )}
+                {!isLoading && !error && data.data.length == 0 && (
+                    <span className="text-center text-warning">No results</span>
+                )}
             </div>
         </AuthenticatedLayout>
     );
