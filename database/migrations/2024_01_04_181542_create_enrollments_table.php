@@ -15,8 +15,8 @@ class CreateEnrollmentsTable extends Migration
     {
         Schema::create('enrollments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('course_id');
+            $table->foreignId('user_id');
+            $table->foreignId('course_id');
             $table->string('provider_id')->nullable();
             $table->enum('enrollment_state', ['active', 'inactive', 'completed', 'deleted']);
             $table->json('links');
@@ -25,10 +25,6 @@ class CreateEnrollmentsTable extends Migration
             $table->timestamps();
         });
 
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->foreign('user_id')->references('id')->on('users');
-            // $table->foreign('course_id')->references('id')->on('courses');
-        });
     }
 
     /**
