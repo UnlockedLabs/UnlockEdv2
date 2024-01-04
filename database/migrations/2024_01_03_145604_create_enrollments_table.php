@@ -22,7 +22,7 @@ class CreateEnrollmentsTable extends Migration
             $table->json('links');
             $table->timestamp('provider_start_at')->nullable();
             $table->timestamp('provider_end_at')->nullable();
-            $table->timestamps();            
+            $table->timestamps();
         });
 
         Schema::table('enrollments', function (Blueprint $table) {
