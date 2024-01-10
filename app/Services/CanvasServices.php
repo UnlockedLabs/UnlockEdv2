@@ -100,7 +100,7 @@ class CanvasServices
      *
      * @throws \InvalidArgumentException If the account ID is invalid
      */
-    public static function fmtUrl($id): string
+    public static function fmtUrl(string $id): string
     {
         if (substr($id, -1) !== '/') {
             $id .= '/';
@@ -217,6 +217,7 @@ class CanvasServices
             'force_validations' => true,
         ];
         $base_url = $this->api_url.ACCOUNTS.self.USERS;
+
         try {
             $response = $this->client->post($base_url, $userData);
         } catch (RequestException $e) {

@@ -22,8 +22,8 @@ class CreateProviderUserMappingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|integer',
-            'provider_id' => 'required|integer',
+            'user_id' => 'required|integer|exists:users,id',
+            'provider_platform_id' => 'required|integer|exists:provider_platforms,id',
             'external_id' => 'required|string|max:255',
             'external_username' => 'required|string|max:255',
             'authentication_provider_id' => 'required|string|max:255',

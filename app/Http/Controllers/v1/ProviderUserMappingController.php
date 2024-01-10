@@ -6,10 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateProviderUserMappingRequest;
 use App\Http\Requests\ProviderUserMappingRequest;
 use App\Http\Resources\ProviderUserMappingResource;
-use App\Models\ProviderPlatform;
 use App\Models\ProviderUserMapping;
 use App\Models\User;
-use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
 class CanvasLoginController extends Controller
@@ -47,28 +45,13 @@ class CanvasLoginController extends Controller
      */
     public function create(CreateProviderUserMappingRequest $request)
     {
-        $user = User::findOrFail($userId);
-        $provider = ProviderPlatform::findOrFail($providerId);
-        $client = new Client();
-        $accountId = $provider['account_id'];
-        $canvasUrl = $provider['base_url'];
-        $token = $provider['access_key'];
+        $validated = $request->validated();
         try {
-            $response = $client->post("$canvasUrl/api/v1/accounts/$accountId/logins", [
-                'form_params' => [
-                    'user[id]' => $user->id,
-                    'login[unique_id]' => $user->email,
-                    'login[password]' => $user->password,
-                ],
-                'headers' => [
-                    'Authorization' => "Bearer $token",
-                ],
-            ]);
+            $mapping = ProviderUserMapping::create($validated);
 
-            return response()->json(['message' => 'Login created successfully in Canvas', 'data' => json_decode((string) $response->getBody())], 200);
-        } catch (\Exception $e) {
-
-            return response()->json(['error' => 'Failed to create login in Canvas', 'message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Provider User Mapping created successfully', 'data' => $mapping], 201);
+        } catch (\Throwable $th) {
+            return response()->json(['error' => 'Provider not found'], 404);
         }
     }
 
