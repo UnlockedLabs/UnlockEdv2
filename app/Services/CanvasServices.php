@@ -112,7 +112,7 @@ class CanvasServices
      *
      * @throws \InvalidArgumentException If the account ID is invalid
      */
-    public static function fmtUrl(string $id): string
+    public static function fmtUrl($id): string
     {
         if (substr($id, -1) !== '/') {
             $id .= '/';
