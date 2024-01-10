@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\ProviderPlatform;
+use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
@@ -27,6 +28,7 @@ const SECTIONS = 'sections/';
 const GRADEABLE_STUDENTS = 'gradeable_students/';
 const READ = 'read/';
 const ANONYMOUS_SUBMISSIONS = 'anonymous_submissions/';
+const LOGINS = 'logins/';
 
 class CanvasServices
 {
@@ -92,13 +94,13 @@ class CanvasServices
     }
 
     /**
-     * validate and format the account ID parameter for API URLs
+     * validate and format the account ID parameter for API URis
      *
      * @return string Formatted account or user ID
      *
      * @throws \InvalidArgumentException If the account ID is invalid
      */
-    public static function fmtUrl(string $id): string
+    public static function fmtUrl($id): string
     {
         if (substr($id, -1) !== '/') {
             $id .= '/';
@@ -113,6 +115,39 @@ class CanvasServices
             return json_decode($response->getBody()->__toString());
         } else {
             throw new \Exception('API request failed with status code: '.$response->getStatusCode());
+        }
+    }
+
+    /**
+     * Create a new login to a given provider for a given User.
+     *
+     *
+     * @return mixed JSON decoded
+     */
+    public static function createUserLogin(int $userId, int $providerId, string $authProviderId = 'openid_connect')
+    {
+        $canvasService = self::byProviderId($providerId);
+        $user = User::findOrFail($userId);
+        $accountId = $canvasService['account_id'];
+        $canvasUrl = $canvasService->api_url;
+        $token = $canvasService['access_key'];
+        try {
+            $response = $canvasService->client->post($canvasUrl.ACCOUNTS.$accountId.'/logins', [
+                'form_params' => [
+                    'user[id]' => $user->id,
+                    'login[unique_id]' => $user->email,
+                    'login[password]' => $user->password,
+                    'login[authentication_provider_id]' => $authProviderId,
+                ],
+                'headers' => [
+                    'Authorization' => "Bearer $token",
+                ],
+            ]);
+
+            return response()->json(['message' => 'Login created successfully in Canvas', 'data' => json_decode((string) $response->getBody())], 200);
+        } catch (\Exception $e) {
+
+            return response()->json(['error' => 'Failed to create login in Canvas', 'message' => $e->getMessage()], 500);
         }
     }
 

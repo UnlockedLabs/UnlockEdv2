@@ -23,13 +23,15 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPolicies();
-        Passport::hashClientSecrets();
-        Passport::tokensCan([
-            'openid' => 'Can log into Canvas via OpenID Connect',
-        ]);
 
+        Passport::tokensCan([
+            'openid' => 'OpenID Connect',
+            'email' => 'Email',
+        ]);
+        Passport::hashClientSecrets();
         Passport::setDefaultScope([
             'openid',
+            'email',
         ]);
     }
 }
