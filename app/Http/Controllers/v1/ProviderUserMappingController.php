@@ -23,10 +23,10 @@ class ProviderUserMappingController extends Controller
         $search = request()->query('search', '');
         $query = ProviderUserMapping::query()->getRelation('users')->getQuery();
         if ($search) {
-            $user = User::where('name_last', 'like', '%' . $search . '%')
-                ->orWhere('name_first', 'like', '%' . $search . '%')
-                ->orWhere('email', 'like', '%' . $search . '%')
-                ->orWhere('username', 'like', '%' . $search . '%')
+            $user = User::where('name_last', 'like', '%'.$search.'%')
+                ->orWhere('name_first', 'like', '%'.$search.'%')
+                ->orWhere('email', 'like', '%'.$search.'%')
+                ->orWhere('username', 'like', '%'.$search.'%')
                 ->firstOrFail();
             if ($user) {
                 $query->where('user_id', $user->id);
@@ -69,7 +69,7 @@ class ProviderUserMappingController extends Controller
         } else {
             $user = ProviderUserMapping::with('user_id', $userId)->all();
         }
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
@@ -83,7 +83,7 @@ class ProviderUserMappingController extends Controller
     {
         $validated = $request->validated();
         $user = ProviderUserMapping::with([['user_id', $validated['user_id']], ['provider_platform_id', $validated['provider_platform_id']]]);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         } else {
             $user->update($validated);
@@ -100,7 +100,7 @@ class ProviderUserMappingController extends Controller
         // This request valitates the userid and providerid only, so we are sure of which user mapping to delete
         $validated = $request->validated();
         $user = ProviderUserMapping::where('user_id', $validated['user_id']);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         } else {
             $user->delete();
