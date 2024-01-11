@@ -24,11 +24,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        Passport::tokensCan([
-            'openid' => 'OpenID Connect',
-            'email' => 'Email',
-        ]);
-        Passport::hashClientSecrets();
+        Passport::tokensCan(config('openid.passport.tokens_can'));
         Passport::setDefaultScope([
             'openid',
             'email',
