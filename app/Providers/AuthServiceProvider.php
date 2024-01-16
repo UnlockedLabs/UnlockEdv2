@@ -22,12 +22,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->registerPolicies();
-
-        Passport::tokensCan(config('openid.passport.tokens_can'));
-        Passport::setDefaultScope([
-            'openid',
-            'email',
-        ]);
+        $scopes = config('openid.passport.tokens_can');
+        Passport::tokensCan($scopes);
+        Passport::setDefaultScope($scopes);
     }
 }
