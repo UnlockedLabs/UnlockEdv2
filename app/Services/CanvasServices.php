@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\ProviderPlatform;
+use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
@@ -27,6 +28,7 @@ const SECTIONS = 'sections/';
 const GRADEABLE_STUDENTS = 'gradeable_students/';
 const READ = 'read/';
 const ANONYMOUS_SUBMISSIONS = 'anonymous_submissions/';
+const LOGINS = 'logins/';
 
 class CanvasServices
 {
@@ -42,8 +44,23 @@ class CanvasServices
 
     public Client $client;
 
+    // Constructor, if the URL is missing the protocol or api version , add it.
     public function __construct(int $providerId, int $accountId, string $apiKey, string $url)
     {
+
+        $parsedUrl = parse_url($url);
+        if (! isset($parsedUrl['scheme'])) {
+            $url = 'https://'.$url;
+        }
+
+        if (! isset($parsedUrl['path']) || $parsedUrl['path'] !== CANVAS_API) {
+            $url .= CANVAS_API;
+        }
+
+        if ($accountId === 0 || $accountId === null) {
+            $accountId = 'self';
+        }
+
         $this->provider_id = $providerId;
         $this->account_id = $accountId;
         $this->access_key = $apiKey;
@@ -59,7 +76,7 @@ class CanvasServices
 
     public function getAccessKey(): string
     {
-        return $this->base_url;
+        return $this->access_key;
     }
 
     public function getBaseUrl(): string
@@ -72,7 +89,7 @@ class CanvasServices
     */
     public function getClient(): Client
     {
-        return new Client(['Headers' => ['Authorization' => 'Bearer'.$this->access_key]]);
+        return new Client(['Headers' => ['Authorization' => 'Bearer'.$this->getAccessKey()]]);
     }
 
     // Returns an instance of CanvasServices to make dynamic API calls.
@@ -92,7 +109,7 @@ class CanvasServices
     }
 
     /**
-     * validate and format the account ID parameter for API URLs
+     * validate and format the account ID parameter for API URis
      *
      * @return string Formatted account or user ID
      *
@@ -113,6 +130,39 @@ class CanvasServices
             return json_decode($response->getBody()->__toString());
         } else {
             throw new \Exception('API request failed with status code: '.$response->getStatusCode());
+        }
+    }
+
+    /**
+     * Create a new login to a given provider for a given User.
+     *
+     *
+     * @return mixed JSON decoded
+     */
+    public static function createUserLogin(int $userId, int $providerId, string $authProviderId = 'openid_connect')
+    {
+        $canvasService = self::byProviderId($providerId);
+        $user = User::findOrFail($userId);
+        $accountId = $canvasService['account_id'];
+        $canvasUrl = $canvasService->api_url;
+        $token = $canvasService['access_key'];
+        try {
+            $response = $canvasService->client->post($canvasUrl.ACCOUNTS.$accountId.'/logins', [
+                'form_params' => [
+                    'user[id]' => $user->id,
+                    'login[unique_id]' => $user->email,
+                    'login[password]' => $user->password,
+                    'login[authentication_provider_id]' => $authProviderId,
+                ],
+                'headers' => [
+                    'Authorization' => "Bearer $token",
+                ],
+            ]);
+
+            return response()->json(['message' => 'Login created successfully in Canvas', 'data' => json_decode((string) $response->getBody())], 200);
+        } catch (\Exception $e) {
+
+            return response()->json(['error' => 'Failed to create login in Canvas', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -182,6 +232,7 @@ class CanvasServices
             'force_validations' => true,
         ];
         $base_url = $this->api_url.ACCOUNTS.self.USERS;
+
         try {
             $response = $this->client->post($base_url, $userData);
         } catch (RequestException $e) {
