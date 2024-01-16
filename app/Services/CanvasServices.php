@@ -22,7 +22,7 @@ const ASSIGNMENTS = 'assignments/';
 const SUBMISSIONS = 'submissions/';
 const STUDENTS = 'students/';
 const ACTIVITY_STREAM = 'activity_stream/';
-const SELF = 'self/';
+const SELF_ACCT = 'self/';
 const PROGRESS = 'progress/';
 const SECTIONS = 'sections/';
 const GRADEABLE_STUDENTS = 'gradeable_students/';
@@ -40,8 +40,6 @@ class CanvasServices
 
     private string $base_url;
 
-    private string $api_url;
-
     public Client $client;
 
     // Constructor, if the URL is missing the protocol or api version , add it.
@@ -58,14 +56,13 @@ class CanvasServices
         }
 
         if ($accountId === 0 || $accountId === null) {
-            $accountId = 'self';
+            $accountId = SELF_ACCT;
         }
 
         $this->provider_id = $providerId;
         $this->account_id = $accountId;
         $this->access_key = $apiKey;
         $this->base_url = $url;
-        $this->api_url = $url.CANVAS_API;
         $this->client = $this->getClient();
     }
 
@@ -144,7 +141,7 @@ class CanvasServices
         $canvasService = self::byProviderId($providerId);
         $user = User::findOrFail($userId);
         $accountId = $canvasService['account_id'];
-        $canvasUrl = $canvasService->api_url;
+        $canvasUrl = $canvasService->base_url;
         $token = $canvasService['access_key'];
         try {
             $response = $canvasService->client->post($canvasUrl.ACCOUNTS.$accountId.'/logins', [
@@ -180,7 +177,8 @@ class CanvasServices
      */
     public function listUsers(string $accountId = 'self'): mixed
     {
-        $base_url = $this->api_url.ACCOUNTS.self::fmtUrl($accountId).USERS;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($accountId).USERS;
+
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -198,7 +196,7 @@ class CanvasServices
      */
     public function showUserDetails(string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.$userId;
+        $base_url = $this->base_url.USERS.$userId;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -231,7 +229,7 @@ class CanvasServices
             ],
             'force_validations' => true,
         ];
-        $base_url = $this->api_url.ACCOUNTS.self.USERS;
+        $base_url = $this->base_url.ACCOUNTS.SELF_ACCT.USERS;
 
         try {
             $response = $this->client->post($base_url, $userData);
@@ -253,7 +251,7 @@ class CanvasServices
      */
     public function listActivityStream(string $account = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($account).ACTIVITY_STREAM;
+        $base_url = $this->base_url.USERS.self::fmtUrl($account).ACTIVITY_STREAM;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -274,7 +272,7 @@ class CanvasServices
      */
     public function getActivityStreamSummary(string $account = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($account).ACTIVITY_STREAM.'summary';
+        $base_url = $this->base_url.USERS.self::fmtUrl($account).ACTIVITY_STREAM.'summary';
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -295,7 +293,7 @@ class CanvasServices
      */
     public function listTodoItems(string $account = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($account).'todo';
+        $base_url = $this->base_url.USERS.self::fmtUrl($account).'todo';
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -315,7 +313,7 @@ class CanvasServices
      **/
     public function getTodoItemsCount(string $account = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($account).'todo_item_count';
+        $base_url = $this->base_url.USERS.self::fmtUrl($account).'todo_item_count';
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -336,7 +334,7 @@ class CanvasServices
      */
     public function listUpcomingAssignments(string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($userId).'upcoming_events';
+        $base_url = $this->base_url.USERS.self::fmtUrl($userId).'upcoming_events';
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -357,7 +355,7 @@ class CanvasServices
      */
     public function listMissingSubmissions(string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($userId).'missing_submissions';
+        $base_url = $this->base_url.USERS.self::fmtUrl($userId).'missing_submissions';
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -376,7 +374,7 @@ class CanvasServices
      **/
     public function listCourses(): mixed
     {
-        $base_url = $this->api_url.COURSES;
+        $base_url = $this->base_url.COURSES;
         try {
             $response = $this->client->get($base_url.COURSES);
         } catch (RequestException $e) {
@@ -398,7 +396,7 @@ class CanvasServices
      **/
     public function listCoursesForUser(string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($userId).COURSES;
+        $base_url = $this->base_url.USERS.self::fmtUrl($userId).COURSES;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -423,7 +421,7 @@ class CanvasServices
      * */
     public function getUserCourseProgress(string $userId, string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).USERS.self::fmtUrl($userId).PROGRESS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).USERS.self::fmtUrl($userId).PROGRESS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -442,7 +440,7 @@ class CanvasServices
      * */
     public function getEnrollmentsByUser(string $userId): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
+        $base_url = $this->base_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -462,7 +460,7 @@ class CanvasServices
      **/
     public function getEnrollmentsByCourse(string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -481,7 +479,7 @@ class CanvasServices
      **/
     public function getEnrollmentsBySection(string $sectionId): mixed
     {
-        $base_url = $this->api_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS;
+        $base_url = $this->base_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -509,7 +507,7 @@ class CanvasServices
             'user_id' => [$userId],
             'type' => [$type],
         ];
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.$enrollment;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.$enrollment;
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -536,7 +534,7 @@ class CanvasServices
             'user_id' => [$userId],
             'type' => [$type],
         ];
-        $base_url = $this->api_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS.$enrollment;
+        $base_url = $this->base_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS.$enrollment;
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -557,7 +555,7 @@ class CanvasServices
      */
     public function deleteEnrollment(string $enrollmentId, string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.$enrollmentId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.$enrollmentId;
         try {
             $response = $this->client->delete($base_url);
         } catch (RequestException $e) {
@@ -578,7 +576,7 @@ class CanvasServices
      */
     public function acceptCourseInvitation(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'accept';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'accept';
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -598,7 +596,7 @@ class CanvasServices
      */
     public function rejectCourseInvitation(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'reject';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'reject';
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -618,7 +616,7 @@ class CanvasServices
      **/
     public function reactivateCourseEnrollment(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'reactivate';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'reactivate';
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -638,7 +636,7 @@ class CanvasServices
      **/
     public function addLastAttendedDate(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'last_attended';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'last_attended';
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -658,7 +656,7 @@ class CanvasServices
      **/
     public function queryUserProgress(string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.PROGRESS.$userId;
+        $base_url = $this->base_url.PROGRESS.$userId;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -678,7 +676,7 @@ class CanvasServices
      **/
     public function cancelUserProgress(string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.PROGRESS.$userId;
+        $base_url = $this->base_url.PROGRESS.$userId;
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -699,7 +697,7 @@ class CanvasServices
      **/
     public function listAssignmentsForUser(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.USERS.self::fmtUrl($userId).COURSES.self::fmtUrl($courseId).ASSIGNMENTS;
+        $base_url = $this->base_url.USERS.self::fmtUrl($userId).COURSES.self::fmtUrl($courseId).ASSIGNMENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -718,7 +716,7 @@ class CanvasServices
      **/
     public function listAssignmentsByCourse(string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -737,7 +735,7 @@ class CanvasServices
      **/
     public function listAssignmentGroupsByCourse(string $assignmentGroupId, string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).'assignment_groups/'.self::fmtUrl($assignmentGroupId).ASSIGNMENTS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).'assignment_groups/'.self::fmtUrl($assignmentGroupId).ASSIGNMENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -756,7 +754,7 @@ class CanvasServices
      **/
     public function deleteAssignment(string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentId;
         try {
             $response = $this->client->delete($base_url);
         } catch (RequestException $e) {
@@ -775,7 +773,7 @@ class CanvasServices
      **/
     public function getAssignment(string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentId;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -798,7 +796,7 @@ class CanvasServices
         **/
     public function createAssignmentForCourse(array $assignmentInfo, string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentInfo;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentInfo;
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -822,7 +820,7 @@ class CanvasServices
         **/
     public function editAssignmentForCourse(array $assignmentInfo, string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).$assignmentInfo;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).$assignmentInfo;
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -847,7 +845,7 @@ class CanvasServices
     public function submitAssignment(string $courseId, string $assignmentId, array $assignment): mixed
     {
 
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$assignment;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$assignment;
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -867,7 +865,7 @@ class CanvasServices
         **/
     public function getAssignmentSubmissions(string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -887,7 +885,7 @@ class CanvasServices
         **/
     public function getSubmissionsForMultipleAssignments(string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).STUDENTS.SUBMISSIONS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).STUDENTS.SUBMISSIONS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -908,7 +906,7 @@ class CanvasServices
         **/
     public function getSubmissionForUser(string $courseId, string $assignmentId, string $userId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -929,7 +927,7 @@ class CanvasServices
         **/
     public function getSubmissionForAnonID(string $courseId, string $assignmentId, string $anonId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).ANONYMOUS_SUBMISSIONS.$anonId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).ANONYMOUS_SUBMISSIONS.$anonId;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -950,7 +948,7 @@ class CanvasServices
         **/
     public function uploadFileForSubmission(string $courseId, string $assignmentId, string $userId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).'files';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).'files';
         try {
             $response = $this->client->post($base_url);
         } catch (RequestException $e) {
@@ -971,7 +969,7 @@ class CanvasServices
         **/
     public function gradeOrCommentSubmission(string $courseId, string $assignmentId, string $userId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -992,7 +990,7 @@ class CanvasServices
         **/
     public function gradeOrCommentSubmissionAnon(string $courseId, string $assignmentId, string $anonId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).ANONYMOUS_SUBMISSIONS.$anonId;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).ANONYMOUS_SUBMISSIONS.$anonId;
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -1012,7 +1010,7 @@ class CanvasServices
         **/
     public function listGradeableStudents(string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).GRADEABLE_STUDENTS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).GRADEABLE_STUDENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -1031,7 +1029,7 @@ class CanvasServices
         **/
     public function listMultipleAssignmentsGradeableStudents(string $courseId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.GRADEABLE_STUDENTS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.GRADEABLE_STUDENTS;
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
@@ -1052,7 +1050,7 @@ class CanvasServices
         **/
     public function markSubmissionAsRead(string $courseId, string $assignmentId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ;
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -1074,7 +1072,7 @@ class CanvasServices
         **/
     public function markSubmissionItemAsRead(string $courseId, string $assignmentId, string $userId, string $item): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ.$item;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ.$item;
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -1095,7 +1093,7 @@ class CanvasServices
         **/
     public function markSubmissionAsUnread(string $courseId, string $assignmentId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ;
         try {
             $response = $this->client->delete($base_url);
         } catch (RequestException $e) {
@@ -1115,7 +1113,7 @@ class CanvasServices
         **/
     public function clearUnreadStatusForAllSubmissions(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).SUBMISSIONS.self::fmtUrl($userId).'clear_unread';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).SUBMISSIONS.self::fmtUrl($userId).'clear_unread';
         try {
             $response = $this->client->put($base_url);
         } catch (RequestException $e) {
@@ -1135,7 +1133,7 @@ class CanvasServices
         **/
     public function getSubmissionSummary(string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->api_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).'submission_summary';
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).'submission_summary';
         try {
             $response = $this->client->get($base_url);
         } catch (RequestException $e) {
