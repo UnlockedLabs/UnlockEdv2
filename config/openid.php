@@ -9,7 +9,7 @@ return [
          */
         'tokens_can' => [
             'openid' => 'Enable OpenID Connect',
-            'email' => 'Information about your email address',
+            'email' => 'View your email address',
         ],
     ],
 
