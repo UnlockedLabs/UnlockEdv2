@@ -14,12 +14,12 @@ class DefaultAdmin extends Seeder
     public function run(): void
     {
         DB::table('users')->insert([
-            'name_first' => 'preston',
-            'name_last' => 'thorpe',
-            'email' => 'preston.thorpe@maine.edu',
-            'username' => 'preston.thorpe@maine.edu',
-            'password' => bcrypt('PThorpe92'),
-            'password_reset' => false,
+            'name_first' => 'Super',
+            'name_last' => 'Admin',
+            'email' => 'admin@unlocked.v2',
+            'username' => 'SuperAdmin',
+            'password' => bcrypt('ChangeMe!'),
+            'password_reset' => true,
             'role' => UserRole::Admin,
         ]);
     }

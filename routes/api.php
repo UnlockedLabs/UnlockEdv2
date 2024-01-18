@@ -6,7 +6,6 @@ use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,19 +45,4 @@ Route::delete('/v1/users/{id}', [UserController::class, 'destroy']);
 
 Route::prefix('v1')->group(function () {
     Route::Resource('provider-platforms', ProviderPlatformController::class);
-});
-
-Route::get('/redirect', function (Request $request) {
-    $request->session()->put('state', $state = Str::random(40));
-
-    $query = http_build_query([
-        'client_id' => 'client-id',
-        'redirect_uri' => 'http://third-party-app.com/callback',
-        'response_type' => 'code',
-        'scope' => 'openid',
-        'state' => $state,
-        'prompt' => 'login', // "none", "consent", or "login"
-    ]);
-
-    return redirect('http://172.16.20.2/oauth/authorize?'.$query);
 });
