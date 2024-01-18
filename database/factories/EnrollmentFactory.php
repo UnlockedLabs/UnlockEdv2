@@ -5,6 +5,8 @@
 namespace Database\Factories;
 
 use App\Models\Enrollment;
+use App\Models\User;
+use App\Models\Courses;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EnrollmentFactory extends Factory
@@ -18,13 +20,15 @@ class EnrollmentFactory extends Factory
             ->dateTimeInInterval($startAt, '+120 days');
 
         return [
-            'user_id' => $this->faker->numberBetween(1, 1000000),
+            'user_id' => User::factory(),
+            // Waiting for CoursesFactory
+            // 'course_id' => Courses::factory(),
             'course_id' => $this->faker->numberBetween(1, 1000000),
             'provider_id' => $this->faker->word,
             'enrollment_state' => $this->faker->randomElement(['active', 'inactive', 'completed']),
             'links' => ['link1' => $this->faker->url, 'link2' => $this->faker->url],
             'provider_start_at' => $startAt,
-            'provider_end_at' => $this->faker->$endAt,
+            'provider_end_at' => $endAt,
         ];
     }
 }

@@ -13,7 +13,6 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'rank');
         $sortOrder = request()->query('order', 'asc');
         $search = request()->query('search', '');
@@ -30,7 +29,7 @@ class CategoryController extends Controller
 
         $query->orderBy($sortBy, $sortOrder);
 
-        $categories = $query->paginate($perPage);
+        $categories = $query->get();
 
         return CategoryResource::collection($categories);
     }
