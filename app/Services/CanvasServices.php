@@ -42,17 +42,32 @@ class CanvasServices
 
     public Client $client;
 
+    /**
+     * Adds a trailing slash if none exists.
+     *
+     * @return string Formatted account or user ID
+     *
+     * @throws \InvalidArgumentException If the account ID is invalid
+     */
+    public static function fmtUrl(string $id): string
+    {
+        if (substr($id, -1) !== '/') {
+            $id .= '/';
+        }
+
+        return $id;
+    }
+
     // Constructor, if the URL is missing the protocol or api version , add it.
     public function __construct(int $providerId, int $accountId, string $apiKey, string $url)
     {
-
         $parsedUrl = parse_url($url);
         if (! isset($parsedUrl['scheme'])) {
             $url = 'https://'.$url;
         }
 
         if (! isset($parsedUrl['path']) || $parsedUrl['path'] !== CANVAS_API) {
-            $url .= CANVAS_API;
+            $url = self::fmtUrl($url).CANVAS_API;
         }
 
         if ($accountId === 0 || $accountId === null) {
@@ -83,13 +98,18 @@ class CanvasServices
 
     private function getAuthHeaders(): array
     {
-        return ['Authorization' => "Bearer $this->access_key"];
+        return ['headers' => ['Authorization' => "Bearer $this->access_key"]];
+    }
+
+    private function getAuthHeadersBody(array $body): array
+    {
+        return ['headers' => ['Authorization' => "Bearer $this->access_key"], 'body' => $body];
     }
 
     private function GET(string $url): mixed
     {
         try {
-            $response = $this->client->get($url, ['Authorization' => "Bearer $this->access_key"]);
+            $response = $this->client->get($url, ['headers' => $this->getAuthHeaders()]);
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -100,7 +120,7 @@ class CanvasServices
     private function POST(string $url, array $body): mixed
     {
         try {
-            $response = $this->client->post($url, ['Headers' => $this->getAuthHeaders(), 'body' => $body]);
+            $response = $this->client->post($url, $this->getAuthHeadersBody($body));
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -111,7 +131,7 @@ class CanvasServices
     private function PUT(string $url, array $body): mixed
     {
         try {
-            $response = $this->client->put($url, ['Headers' => $this->getAuthHeaders(), 'body' => $body]);
+            $response = $this->client->put($url, $this->getAuthHeadersBody($body));
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -144,22 +164,6 @@ class CanvasServices
         }
 
         return new self($provider->provider_id, $provider->account_id, $provider->access_key, $provider->base_url);
-    }
-
-    /**
-     * validate and format the account ID parameter for API URis
-     *
-     * @return string Formatted account or user ID
-     *
-     * @throws \InvalidArgumentException If the account ID is invalid
-     */
-    public static function fmtUrl(string $id): string
-    {
-        if (substr($id, -1) !== '/') {
-            $id .= '/';
-        }
-
-        return $id;
     }
 
     public static function handleResponse(ResponseInterface $response): mixed
@@ -366,9 +370,9 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function listCourses(): mixed
+    public function listCourses($accountId = 'self'): mixed
     {
-        $base_url = $this->base_url.COURSES;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($accountId).COURSES;
 
         return $this->GET($base_url);
     }
