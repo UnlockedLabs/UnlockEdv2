@@ -6,17 +6,9 @@ import {
     BookOpenIcon,
 } from "@heroicons/react/24/solid";
 import useSWR from "swr";
+import { Category, CategoryLink } from "@/common";
 
-interface CategoryParameters {
-    categoryName: string;
-    linksArray: Array<LinksArrayParameters>;
-    rank: number;
-}
-interface LinksArrayParameters {
-    [linkName: string]: string;
-}
-
-function Category({ categoryName, linksArray, rank }: CategoryParameters) {
+function CategoryItem({ categoryName, linksArray, rank }: Category) {
     const linksList = linksArray.map((linkPair: { [x: string]: string }) => {
         const key = Object.keys(linkPair)[0];
         return (
@@ -38,32 +30,29 @@ function Category({ categoryName, linksArray, rank }: CategoryParameters) {
     );
 }
 
-function getCategoryItems() {
-    const { data, error, isLoading } = useSWR("/api/v1/categories", (url) =>
-        axios.get(url).then((res) => res.data),
-    );
+function getCategoryItems(
+    data: { data: { name: string; rank: number; links: CategoryLink[] }[] },
+    error: any,
+    isLoading: boolean,
+) {
     if (error) return <div>failed to load</div>;
     if (isLoading) return <div>loading...</div>;
-    return data.data.map(
-        (category: {
-            name: string;
-            rank: number;
-            links: LinksArrayParameters[];
-        }) => {
-            return (
-                <Category
-                    key={category.rank}
-                    categoryName={category.name}
-                    linksArray={category.links}
-                    rank={category.rank}
-                />
-            );
-        },
-    );
+    return data.data.map((category) => {
+        return (
+            <CategoryItem
+                key={category.rank}
+                categoryName={category.name}
+                linksArray={category.links}
+                rank={category.rank}
+            />
+        );
+    });
 }
 
 export default function LeftMenu() {
-    const categoryItems = getCategoryItems();
+    const { data, error, isLoading } = useSWR("/api/v1/categories");
+
+    const categoryItems = getCategoryItems(data, error, isLoading);
 
     return (
         <ul className="menu bg-base-100 w-72">
