@@ -1,11 +1,59 @@
+import axios from "axios";
 import Brand from "./Brand";
 import {
     HomeIcon,
     ArchiveBoxIcon,
     BookOpenIcon,
 } from "@heroicons/react/24/solid";
+import useSWR from "swr";
+import { Category, CategoryLink } from "@/common";
+
+function CategoryItem({ categoryName, linksArray, rank }: Category) {
+    const linksList = linksArray.map((linkPair: { [x: string]: string }) => {
+        const key = Object.keys(linkPair)[0];
+        return (
+            <li key={key.concat(rank.toString())}>
+                <a href={linkPair[key]}>{key}</a>
+            </li>
+        );
+    });
+    return (
+        <li>
+            <details>
+                <summary>
+                    <ArchiveBoxIcon className="w-4" />
+                    {categoryName}
+                </summary>
+                <ul>{linksList}</ul>
+            </details>
+        </li>
+    );
+}
+
+function getCategoryItems(
+    data: { data: { name: string; rank: number; links: CategoryLink[] }[] },
+    error: any,
+    isLoading: boolean,
+) {
+    if (error) return <div>failed to load</div>;
+    if (isLoading) return <div>loading...</div>;
+    return data.data.map((category) => {
+        return (
+            <CategoryItem
+                key={category.rank}
+                categoryName={category.name}
+                linksArray={category.links}
+                rank={category.rank}
+            />
+        );
+    });
+}
 
 export default function LeftMenu() {
+    const { data, error, isLoading } = useSWR("/api/v1/categories");
+
+    const categoryItems = getCategoryItems(data, error, isLoading);
+
     return (
         <ul className="menu bg-base-100 w-72">
             <li>
@@ -24,38 +72,7 @@ export default function LeftMenu() {
                     <BookOpenIcon className="w-4" /> Courses
                 </a>
             </li>
-            <li>
-                <details>
-                    <summary>
-                        <ArchiveBoxIcon className="w-4" />
-                        Category 1
-                    </summary>
-                    <ul>
-                        <li>
-                            <a>Link 1</a>
-                        </li>
-                        <li>
-                            <a>Link 2</a>
-                        </li>
-                    </ul>
-                </details>
-            </li>
-            <li>
-                <details>
-                    <summary>
-                        <ArchiveBoxIcon className="w-4" />
-                        Category 2
-                    </summary>
-                    <ul>
-                        <li>
-                            <a>Link 1</a>
-                        </li>
-                        <li>
-                            <a>Link 2</a>
-                        </li>
-                    </ul>
-                </details>
-            </li>
+            {categoryItems}
         </ul>
     );
 }
