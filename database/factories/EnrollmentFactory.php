@@ -4,9 +4,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Courses;
 use App\Models\Enrollment;
 use App\Models\User;
-use App\Models\Courses;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EnrollmentFactory extends Factory

@@ -62,22 +62,22 @@ class EnrollmentControllerTest extends TestCase
 
     public function testUpdateEnrollment()
     {
-        $enrollment = Enrollment::factory(1)->create();    
-        
+        $enrollment = Enrollment::factory(1)->create();
+
         $response = $this->patch($this->uri.'/'.$enrollment[0]->id, [
             'enrollment_state' => 'completed',
-            'links' => ['link1' => 'Test', 'link2' => 'Update'],
-        ]);         
-       
+            'links' => '[{"link1":"Test"},{"link2":"Update"}]'
+        ]);
+
+        dump($response);
+
         // Assert the final status
         $response->assertStatus(200);
 
         // Check if the 'enrollment_state' is updated to 'completed'
         $this->assertEquals('completed', $response['data']['enrollment_state']);
-        $this->assertEquals(['link1' => 'Test', 'link2' => 'Update'], $response['data']['links']);
+        $this->assertEquals('[{"link1":"Test"},{"link2":"Update"}]', $response['data']['links']);
     }
-    
-    
 
     public function testDeleteEnrollment()
     {
