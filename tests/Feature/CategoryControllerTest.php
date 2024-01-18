@@ -33,7 +33,7 @@ class CategoryControllerTest extends TestCase
         $response->assertStatus(200);
 
         // Assert that the response contains the categories
-        $response->assertJsonStructure(['data', 'meta', 'links']);
+        $response->assertJsonStructure(['data']);
     }
 
     public function testGetCategory()

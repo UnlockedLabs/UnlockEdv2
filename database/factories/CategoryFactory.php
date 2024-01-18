@@ -17,7 +17,7 @@ class CategoryFactory extends Factory
             'id' => $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100
             'name' => $this->faker->word,
             'rank' => $this->faker->numberBetween(1, 10),
-            'links' => json_encode([$this->faker->word => $this->faker->word]),
+            'links' => ['link1' => $this->faker->url, 'link2' => $this->faker->url],
         ];
     }
 }
