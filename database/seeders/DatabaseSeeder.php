@@ -28,7 +28,11 @@ class DatabaseSeeder extends Seeder
         DB::table('categories')->insert([
             'name' => 'Unlocked Labs',
             'rank' => '1',
-            'links' => '[{"Unlocked Labs":"http://www.unlockedlabs.org/"}]',
+            'links' => '
+            [
+                {"Unlocked Labs Website":"http://www.unlockedlabs.org/"},
+                {"Unlocked Labs LinkedIn":"https://www.linkedin.com/company/labs-unlocked/"}
+            ]',
         ]);
     }
 }

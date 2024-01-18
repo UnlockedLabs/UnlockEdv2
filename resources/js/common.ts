@@ -11,3 +11,13 @@ export interface User {
     role: string;
     email: string;
 }
+
+export interface Category {
+    categoryName: string;
+    linksArray: Array<CategoryLink>;
+    rank: number;
+}
+
+export interface CategoryLink {
+    [linkName: string]: string;
+}
