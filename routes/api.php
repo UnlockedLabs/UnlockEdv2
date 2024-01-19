@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\v1\CategoryController;
+use App\Http\Controllers\v1\CoursesController;
 use App\Http\Controllers\v1\EnrollmentController;
 use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\UserController;
@@ -39,6 +40,12 @@ Route::get('/v1/users/{id}', [UserController::class, 'show']);
 Route::post('/v1/users', [UserController::class, 'store']);
 Route::patch('/v1/users/{id}', [UserController::class, 'update']);
 Route::delete('/v1/users/{id}', [UserController::class, 'destroy']);
+
+Route::get('v1/courses', [CoursesController::class, 'index']);
+Route::get('/v1/courses/{id}', [CoursesController::class, 'show']);
+Route::post('/v1/courses', [CoursesController::class, 'store']);
+Route::patch('/v1/courses/{id}', [CoursesController::class, 'update']);
+Route::delete('/v1/courses/{id}', [CoursesController::class, 'destroy']);
 
 Route::prefix('v1')->group(function () {
     Route::Resource('provider-platforms', ProviderPlatformController::class);
