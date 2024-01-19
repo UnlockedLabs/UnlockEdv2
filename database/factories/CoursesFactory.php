@@ -18,10 +18,10 @@ class CoursesFactory extends Factory
     {
         return [
             //
-            'provider_resource_id'=> $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100,
-        'provider_course_name'=> $this->faker->word,
-        'provider_start_at'=>$this->faker->date,
-        'provider_end_at'=>$this->faker->date,
+            'provider_resource_id' => $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100,
+            'provider_course_name' => $this->faker->word,
+            'provider_start_at' => $this->faker->date,
+            'provider_end_at' => $this->faker->date,
         ];
     }
 }

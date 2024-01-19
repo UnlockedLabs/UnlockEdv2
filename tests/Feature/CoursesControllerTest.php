@@ -60,7 +60,6 @@ class CoursesControllerTest extends TestCase
             assert($value, $course[0]->$key);
         }
 
-    
     }
 
     // this test the update method in the controller

@@ -22,8 +22,8 @@ class UpdateCoursesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_resource_id'=>'nullable|string|max:255',
-            'provider_course_name'=>'nullable|string|max:255',
+            'provider_resource_id' => 'nullable|string|max:255',
+            'provider_course_name' => 'nullable|string|max:255',
         ];
     }
 }
