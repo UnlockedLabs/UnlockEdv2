@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+namespace App\Services;
+
 use App\Models\ProviderPlatform;
 use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\App;
-use Laravel\Passport\Passport;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -51,12 +53,12 @@ class CanvasServices
      *
      * @throws \InvalidArgumentException If the account ID is invalid
      */
-    private static function fmtUrl(string $id): string
+    private static function fmtUrl($id): string
     {
+        if (! is_string($id)) {
+            $id = strval($id);
+        }
         if (substr($id, -1) !== '/') {
-            if (! is_string($id)) {
-                $id = strval($id);
-            }
             $id .= '/';
         }
 
@@ -101,20 +103,14 @@ class CanvasServices
         return $this->base_url;
     }
 
-    private function getAuthHeaders(): array
-    {
-        return ['headers' => ['Authorization' => "Bearer $this->access_key"]];
-    }
-
-    private function getAuthHeadersBody(array $body): array
-    {
-        return ['headers' => ['Authorization' => "Bearer $this->access_key"], 'body' => $body];
-    }
-
     private function GET(string $url): mixed
     {
         try {
-            $response = $this->client->get($url, ['headers' => $this->getAuthHeaders()]);
+            $response = $this->client->request(
+                'GET',
+                $url,
+                ['headers' => ['Authorization' => "Bearer $this->access_key"]]
+            );
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -125,7 +121,11 @@ class CanvasServices
     private function POST(string $url, array $body): mixed
     {
         try {
-            $response = $this->client->post($url, $this->getAuthHeadersBody($body));
+            $response = $this->client->request(
+                'POST',
+                $url,
+                ['headers' => ['Authorization' => "Bearer $this->access_key"], 'form_params' => $body]
+            );
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -136,7 +136,11 @@ class CanvasServices
     private function PUT(string $url, array $body): mixed
     {
         try {
-            $response = $this->client->put($url, $this->getAuthHeadersBody($body));
+            $response = $this->client->request(
+                'PUT',
+                $url,
+                ['headers' => ['Authorization' => "Bearer $this->access_key"], 'form_params' => $body]
+            );
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -147,7 +151,7 @@ class CanvasServices
     private function DELETE(string $url): mixed
     {
         try {
-            $response = $this->client->delete($url, $this->getAuthHeaders());
+            $response = $this->client->delete($url, ['headers' => ['Authorization' => "Bearer $this->access_key"]]);
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -181,24 +185,35 @@ class CanvasServices
     }
 
     /**
+     * Get a list of all Authentication providers in Canvas
+     * GET /api/v1/accounts/:account_id/authentication_providers
+     *
+     * @return mixed JSON decoded
+     */
+    public function listAuthenticationProviders(): mixed
+    {
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers';
+
+        return $this->GET($base_url);
+    }
+
+    /**
      * Create a new login to a given provider for a given User.
      *
      *
      * @return mixed JSON decoded
      */
-    public static function createUserLogin(int $userId, int $providerId, string $authProviderId = 'openid_connect')
+    public function createUserLogin(int $userId, string $authProviderId = 'openid_connect')
     {
-        $canvasService = self::byProviderId($providerId);
         $user = User::findOrFail($userId);
-        $accountId = $canvasService['account_id'];
-        $canvasUrl = $canvasService->base_url;
-        $token = $canvasService['access_key'];
+        $accountId = $this->account_id;
+        $canvasUrl = $this->base_url;
+        $token = $this->access_key;
         try {
-            $response = $canvasService->POST($canvasUrl.ACCOUNTS.$accountId.'/logins', [
+            $response = $this->client->request('POST', $canvasUrl.ACCOUNTS.self::fmtUrl($accountId).'logins', [
                 'form_params' => [
                     'user[id]' => $user->id,
                     'login[unique_id]' => $user->email,
-                    'login[password]' => $user->password,
                     'login[authentication_provider_id]' => $authProviderId,
                 ],
                 'headers' => [
@@ -224,12 +239,12 @@ class CanvasServices
      */
     public function createAndRegisterAuthProvider(?string $unlockedUrl = null): mixed
     {
-        // Removve the api/v1/ from the base_url
-        $canvasUrl = substr($this->base_url, 0, strlen(CANVAS_API));
+        // Remove the api/v1/ from the base_url
+        $canvasUrl = substr($this->base_url, 0, -strlen(CANVAS_API)).'login/oauth2/callback';
         // instantiate a new client directly in passport
         $clientRepo = App::make('\Laravel\Passport\ClientRepository');
-        $client = $clientRepo->create(null, 'canvas', $canvasUrl, false, true);
-        $clientSecret = $client->getPlainSecretAttribute();
+        $client = $clientRepo->create(null, 'canvas', $canvasUrl, false, false);
+        $clientSecret = $client->plainSecret;
         $clientId = $client->id;
 
         if (! $unlockedUrl) {
@@ -243,10 +258,10 @@ class CanvasServices
             'client_secret' => $clientSecret,
             'authorize_url' => self::fmtUrl($unlockedUrl).'oauth/authorize',
             'token_url' => self::fmtUrl($unlockedUrl).'oauth/token',
-            'userinfo_endpoint' => self::fmtUrl($unlockedUrl).'/api/user',
+            'userinfo_endpoint' => self::fmtUrl($unlockedUrl).'api/user',
             'login_attribute' => 'email',
         ];
-        $canvasUrl = $this->base_url.ACCOUNTS.$this->account_id.'/authentication_providers';
+        $canvasUrl = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers';
 
         return $this->POST($canvasUrl, $body);
     }
@@ -320,9 +335,9 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function listActivityStream(string $account = 'self'): mixed
+    public function listActivityStream(): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($account).ACTIVITY_STREAM;
+        $base_url = $this->base_url.USERS.SELF_ACCT.ACTIVITY_STREAM;
 
         return $this->GET($base_url);
     }
@@ -336,9 +351,9 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function getActivityStreamSummary(string $account = 'self'): mixed
+    public function getActivityStreamSummary(): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($account).ACTIVITY_STREAM.'summary';
+        $base_url = $this->base_url.USERS.SELF_ACCT.ACTIVITY_STREAM.'summary';
 
         return $this->GET($base_url);
     }
@@ -512,13 +527,15 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function enrollUser(string $userId, string $type, string $courseId): mixed
+    public function enrollUser(int $userId, int $courseId): mixed
     {
         $enrollment = [
-            'user_id' => [$userId],
-            'type' => [$type],
+            'enrollment' => [
+                'user_id' => $userId,
+                'type' => 'StudentEnrollment',
+            ],
         ];
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.$enrollment;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS;
 
         return $this->POST($base_url, $enrollment);
     }
@@ -537,8 +554,10 @@ class CanvasServices
     public function enrollUserInSection(string $sectionId, string $userId, string $type = 'StudentEnrollment'): mixed
     {
         $enrollment = [
-            'user_id' => [$userId],
-            'type' => [$type],
+            'enrollment' => [
+                'user_id' => $userId,
+                'type' => $type,
+            ],
         ];
         $base_url = $this->base_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS.$enrollment;
 
@@ -620,36 +639,6 @@ class CanvasServices
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'last_attended';
 
         return $this->PUT($base_url, []);
-    }
-
-    /**
-     * Query progress of user
-     *
-     * @param  string  $userId (default=self)
-     * @return mixed decoded JSON
-     *
-     * @throws Exception
-     **/
-    public function queryUserProgress(string $userId = 'self'): mixed
-    {
-        $base_url = $this->base_url.PROGRESS.$userId;
-
-        return $this->GET($base_url);
-    }
-
-    /**
-     * Cancel user progress
-     *
-     * @param  string  $userId (default=self)
-     * @return mixed JSON decoded
-     *
-     * @throws Exception
-     **/
-    public function cancelUserProgress(string $userId = 'self'): mixed
-    {
-        $base_url = $this->base_url.PROGRESS.$userId;
-
-        return $this->POST($base_url, []);
     }
 
     /**
@@ -857,131 +846,6 @@ class CanvasServices
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).'files';
 
         return $this->POST($base_url, []);
-    }
-
-    /*
-        * Grade or comment on a submission
-        *
-        * @param string $courseId
-        * @param string $userId
-        * @param string $assignmentId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function gradeOrCommentSubmission(string $courseId, string $assignmentId, string $userId): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
-
-        return $this->PUT($base_url, []);
-    }
-
-    /*
-        * Grade or comment on a submission by anonymous ID
-        *
-        * @param string $anonId
-        * @param string $assignmentId
-        * @param string $courseId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function gradeOrCommentSubmissionAnon(string $courseId, string $assignmentId, string $anonId): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).ANONYMOUS_SUBMISSIONS.$anonId;
-
-        return $this->PUT($base_url, []);
-    }
-
-    /*
-        * List Gradeable Students
-        *
-        * @param string $assignmentId
-        * @param string $courseId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function listGradeableStudents(string $courseId, string $assignmentId): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).GRADEABLE_STUDENTS;
-
-        return $this->GET($base_url);
-    }
-
-    /*
-        * List Multiple Assignments Gradeable Students
-        *
-        * @param string $courseId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function listMultipleAssignmentsGradeableStudents(string $courseId): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.GRADEABLE_STUDENTS;
-
-        return $this->GET($base_url);
-    }
-
-    /*
-        * Mark Submision as read
-        *
-        * @param string $userId
-        * @param string $courseId
-        * @param string $assignmentId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function markSubmissionAsRead(string $courseId, string $assignmentId, string $userId = 'self'): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ;
-
-        return $this->PUT($base_url, []);
-    }
-
-    /*
-        * Mark Submision Item as read
-        *
-        * @param string $userId
-        * @param string $item
-        * @param string $courseId
-        * @param string $assignmentId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function markSubmissionItemAsRead(string $courseId, string $assignmentId, string $userId, string $item): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ.$item;
-
-        return $this->PUT($base_url, []);
-    }
-
-    /*
-        * Mark Submision as unread
-        *
-        * @param string $userId
-        * @param string $courseId
-        * @param string $assignmentId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function markSubmissionAsUnread(string $courseId, string $assignmentId, string $userId = 'self'): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).READ;
-
-        return $this->DELETE($base_url);
-    }
-
-    /*
-        * Clear unread status for all Submisions
-        * Site admin only
-        * @param string $userId
-        * @param string $courseId
-        * @return mixed decoded JSON
-        * @throws Exception
-        **/
-    public function clearUnreadStatusForAllSubmissions(string $courseId, string $userId = 'self'): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).SUBMISSIONS.self::fmtUrl($userId).'clear_unread';
-
-        return $this->PUT($base_url, []);
     }
 
     /*

@@ -15,7 +15,7 @@
         "jeremy379/laravel-openid-connect": "^2.0",
         "laravel/framework": "^10.10",
         "laravel/passport": "^11.10",
-        "laravel/tinker": "^2.8",
+        "laravel/tinker": "^2.9",
         "lcobucci/jwt": "^5.2",
         "tightenco/ziggy": "^1.0"
     },
