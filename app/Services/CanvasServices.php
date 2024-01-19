@@ -6,6 +6,8 @@ use App\Models\ProviderPlatform;
 use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\App;
+use Laravel\Passport\Passport;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -40,7 +42,7 @@ class CanvasServices
 
     private string $base_url;
 
-    public Client $client;
+    private Client $client;
 
     /**
      * Adds a trailing slash if none exists.
@@ -49,9 +51,12 @@ class CanvasServices
      *
      * @throws \InvalidArgumentException If the account ID is invalid
      */
-    public static function fmtUrl(string $id): string
+    private static function fmtUrl(string $id): string
     {
         if (substr($id, -1) !== '/') {
+            if (! is_string($id)) {
+                $id = strval($id);
+            }
             $id .= '/';
         }
 
@@ -166,7 +171,7 @@ class CanvasServices
         return new self($provider->provider_id, $provider->account_id, $provider->access_key, $provider->base_url);
     }
 
-    public static function handleResponse(ResponseInterface $response): mixed
+    private static function handleResponse(ResponseInterface $response): mixed
     {
         if ($response->getStatusCode() == 200) {
             return json_decode($response->getBody()->__toString());
@@ -206,6 +211,44 @@ class CanvasServices
 
             return response()->json(['error' => 'Failed to create login in Canvas', 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Create an identity provider in canvas for UnlockEd
+     * POST /api/v1/accounts/:account_id/authentication_providers
+     *
+     * @param   client_id [Required]:  The Client ID for Canvas to use
+     * @param client_secret [Required]: The Client Secret for Canvas to use
+     * @param unlocked_url [Optional]: The URL for UnlockEd to use (default = APP_URL in .env)
+     * @return mixed JSON decoded
+     */
+    public function createAndRegisterAuthProvider(?string $unlockedUrl = null): mixed
+    {
+        // Removve the api/v1/ from the base_url
+        $canvasUrl = substr($this->base_url, 0, strlen(CANVAS_API));
+        // instantiate a new client directly in passport
+        $clientRepo = App::make('\Laravel\Passport\ClientRepository');
+        $client = $clientRepo->create(null, 'canvas', $canvasUrl, false, true);
+        $clientSecret = $client->getPlainSecretAttribute();
+        $clientId = $client->id;
+
+        if (! $unlockedUrl) {
+            $unlockedUrl = ('APP_URL');
+        }
+        $unlockedUrl = self::fmtUrl($unlockedUrl);
+        $body = [
+            'auth_type' => 'openid_connect',
+            'position' => 1,
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'authorize_url' => self::fmtUrl($unlockedUrl).'oauth/authorize',
+            'token_url' => self::fmtUrl($unlockedUrl).'oauth/token',
+            'userinfo_endpoint' => self::fmtUrl($unlockedUrl).'/api/user',
+            'login_attribute' => 'email',
+        ];
+        $canvasUrl = $this->base_url.ACCOUNTS.$this->account_id.'/authentication_providers';
+
+        return $this->POST($canvasUrl, $body);
     }
 
     /**

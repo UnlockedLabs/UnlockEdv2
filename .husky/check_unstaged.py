@@ -19,7 +19,16 @@ def check_unstaged_files():
             print(print_red("*** Alert ***"))
             print(
                 print_green(
-                    "There are unstaged changes in the working directory, the formatter was run on your last commit and may have changed some files. Please re stage those files and"
+                    "There are unstaged changes in the working directory, the formatter was run on your last commit and may have changed some files."
+                )
+            )
+            print(
+                print_green(
+                    "Please re stage: ( "
+                    + print_red("git add .")
+                    + print_green(
+                        " ) whatever files were changed and then you can amend your last commit with:"
+                    )
                 )
             )
             print(print_red("git commit --amend"))
