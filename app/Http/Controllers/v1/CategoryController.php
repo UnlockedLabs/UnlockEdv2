@@ -49,7 +49,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validated();
 
-        $category = Category::create($validated->all());
+        $category = Category::create($validated);
 
         return CategoryResource::collection($category);
     }
