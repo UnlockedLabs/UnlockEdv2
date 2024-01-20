@@ -258,6 +258,7 @@ class CanvasServices
             'login_attribute' => 'email',
         ];
         $canvasUrl = $this->base_url . ACCOUNTS . self::fmtUrl($this->account_id) . 'authentication_providers';
+        $response = $this->POST($canvasUrl, $body);
 
         return response()->json(['message' => 'Authentication Provider created successfully in Canvas', 'data' => $response], 200);
     }
