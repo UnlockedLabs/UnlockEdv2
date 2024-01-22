@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('auth_provider_mapping', function (Blueprint $table) {
+        Schema::create('provider_user_mappings', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id');
+            $table->foreignId('provider_platform_id');
+            $table->string('external_user_id');
+            $table->string('external_username');
+            $table->string('authentication_provider_id');
             $table->timestamps();
-            $table->foreignId('provider_platform_id')->constrained('provider_platforms')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->integer('authentication_provider_id');
-            $table->string('authenticatable_type')->default('openid_connect');
         });
     }
 
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('auth_provider_mapping');
+        Schema::dropIfExists('provider_user_mappings');
     }
 };
