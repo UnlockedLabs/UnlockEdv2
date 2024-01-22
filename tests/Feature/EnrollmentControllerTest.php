@@ -66,7 +66,7 @@ class EnrollmentControllerTest extends TestCase
 
         $response = $this->patch($this->uri.'/'.$enrollment[0]->id, [
             'enrollment_state' => 'completed',
-            'links' => '[{"link1":"Test"},{"link2":"Update"}]',
+            'links' => '[{"link1":"Test"},{"link2":"Update"}]'
         ]);
 
         dump($response);

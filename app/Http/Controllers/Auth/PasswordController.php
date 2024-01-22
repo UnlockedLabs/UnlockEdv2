@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
@@ -22,10 +20,11 @@ class PasswordController extends Controller
             'password_confirmation' => ['required', 'same:password'],
         ]);
 
-        $user = User::findOrFail(Auth::id());
-        $user['password'] = Hash::make($validated['password']);
-        $user['password_reset'] = false;
-        $user->save();
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+            'password_reset' => false,
+        ]);
+        var_dump($validated);
 
         return redirect()->route('dashboard');
     }
