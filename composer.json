@@ -12,9 +12,11 @@
         "doctrine/dbal": "^3.5.1",
         "guzzlehttp/guzzle": "^7.2",
         "inertiajs/inertia-laravel": "^0.6.3",
+        "jeremy379/laravel-openid-connect": "^2.0",
         "laravel/framework": "^10.10",
         "laravel/passport": "^11.10",
         "laravel/tinker": "^2.8",
+        "lcobucci/jwt": "^5.2",
         "tightenco/ziggy": "^1.0"
     },
     "require-dev": {

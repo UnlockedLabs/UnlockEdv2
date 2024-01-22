@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e11c0f37a5828d31aa7ea18555e3b294",
+    "content-hash": "25757477cc694b707c7fe87384a7eee5",
     "packages": [
         {
             "name": "brick/math",
@@ -1590,6 +1590,80 @@
                 }
             ],
             "time": "2023-10-27T10:59:02+00:00"
+        },
+        {
+            "name": "jeremy379/laravel-openid-connect",
+            "version": "2.0.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jeremy379/laravel-openid-connect.git",
+                "reference": "4f96ec5fedb7a1b8369f3abcddb3e0d74f31872d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jeremy379/laravel-openid-connect/zipball/4f96ec5fedb7a1b8369f3abcddb3e0d74f31872d",
+                "reference": "4f96ec5fedb7a1b8369f3abcddb3e0d74f31872d",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^10.0",
+                "laravel/passport": "^11.0",
+                "lcobucci/jwt": "^4.0|^4.3|^5.0",
+                "league/oauth2-server": "^8.2.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "guzzlehttp/psr7": "^1.7",
+                "http-interop/http-factory-guzzle": "^1.0",
+                "league/oauth2-client": "^2.6",
+                "overtrue/phplint": "^9.0",
+                "phpunit/phpunit": "^9.4.2",
+                "slevomat/coding-standard": "^6.4.1",
+                "slim/slim": "4.*",
+                "symplify/easy-coding-standard": "^9.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "OpenIDConnect\\Laravel\\PassportServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "OpenIDConnect\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jérémy Dillenbourg",
+                    "email": "jeremy@dillenbourg.be"
+                },
+                {
+                    "name": "Ron van der Heijden",
+                    "email": "r.heijden@live.nl"
+                }
+            ],
+            "description": "OpenID Connect support to the PHP League's OAuth2 Server. Compatible with Laravel Passport.",
+            "homepage": "https://github.com/jeremy379/laravel-openid-connect",
+            "keywords": [
+                "OpenId",
+                "laravel",
+                "oauth2",
+                "oidc",
+                "openid-connect",
+                "passport"
+            ],
+            "support": {
+                "issues": "https://github.com/jeremy379/laravel-openid-connect/issues",
+                "source": "https://github.com/jeremy379/laravel-openid-connect/tree/2.0.7"
+            },
+            "time": "2023-10-05T06:55:31+00:00"
         },
         {
             "name": "laravel/framework",
