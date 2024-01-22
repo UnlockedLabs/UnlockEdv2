@@ -2,6 +2,6 @@
 . "$(dirname "$0")/_/husky.sh"
 
 npx lint-staged
-npx oxlint@latest --fix
+npx oxlint --fix
 ./vendor/bin/pint
 python .husky/check_unstaged.py
