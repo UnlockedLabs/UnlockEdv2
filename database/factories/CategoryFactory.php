@@ -2,6 +2,8 @@
 
 // database/factories/CategoryFactory.php
 
+// Cory's small change
+
 namespace Database\Factories;
 
 use App\Models\Category;
