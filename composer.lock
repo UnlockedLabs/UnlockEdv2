@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "13be833925bab921ca982b4bfcd228e6",
+    "content-hash": "766460db40510126e7433b9e55b7e349",
     "packages": [
         {
             "name": "brick/math",
@@ -4324,6 +4324,107 @@
                 "source": "https://github.com/bobthecow/psysh/tree/v0.12.0"
             },
             "time": "2023-12-20T15:28:09+00:00"
+        },
+        {
+            "name": "pthorpe92/laravel-openid-connect",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "vendor/pthorpe92/laravel-openid-connect",
+                "reference": "7b2e87b677480a476b11b6ed5fdaea46239bad30"
+            },
+            "require": {
+                "laravel/framework": "^10.0",
+                "laravel/passport": "^11.0",
+                "lcobucci/jwt": "^4.0|^4.3|^5.0",
+                "league/oauth2-server": "^8.2.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "guzzlehttp/psr7": "^1.7",
+                "http-interop/http-factory-guzzle": "^1.0",
+                "league/oauth2-client": "^2.6",
+                "overtrue/phplint": "^9.0",
+                "phpunit/phpunit": "^9.4.2",
+                "slevomat/coding-standard": "^6.4.1",
+                "slim/slim": "4.*",
+                "symplify/easy-coding-standard": "^9.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "OpenIDConnect\\Laravel\\PassportServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "OpenIDConnect\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "OpenIDConnect\\Example\\": "example/",
+                    "OpenIDConnect\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ],
+                "dev": [
+                    "vendor/bin/phpunit --group dev"
+                ],
+                "ecs-check": [
+                    "vendor/bin/ecs check"
+                ],
+                "ecs-fix": [
+                    "vendor/bin/ecs check --fix"
+                ],
+                "lint": [
+                    "vendor/bin/phplint --exclude=vendor ."
+                ],
+                "fix": [
+                    "composer update",
+                    "composer ecs-fix",
+                    "composer check"
+                ],
+                "check": [
+                    "composer lint",
+                    "composer ecs-check",
+                    "composer test",
+                    "composer check-platform-reqs",
+                    "composer outdated --direct --no-ansi",
+                    "composer outdated --minor-only --strict --direct"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jérémy Dillenbourg",
+                    "email": "jeremy@dillenbourg.be"
+                },
+                {
+                    "name": "Ron van der Heijden",
+                    "email": "r.heijden@live.nl"
+                }
+            ],
+            "description": "OpenID Connect support to the PHP League's OAuth2 Server. Compatible with Laravel Passport.",
+            "homepage": "https://github.com/PThorpe92/laravel-openid-connect",
+            "keywords": [
+                "laravel",
+                "oauth2",
+                "oidc",
+                "openid",
+                "openid-connect",
+                "passport"
+            ],
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "ralouphie/getallheaders",
@@ -10687,7 +10788,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "pthorpe92/laravel-openid-connect": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

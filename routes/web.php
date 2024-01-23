@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -24,6 +25,16 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+Route::get('/oauth/userinfo', function (Request $request) {
+    return response()->json([
+        'sub' => $request->user()->email,
+        'name' => $request->user()->name,
+        'email' => $request->user()->email,
+        'email_verified' => $request->user()->email_verified_at,
+        'updated_at' => $request->user()->updated_at,
+        'created_at' => $request->user()->created_at,
+    ]);
+})->middleware('web')->name('openid.userinfo');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
