@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateProviderUserMappingRequest extends FormRequest
+class CreateProviderUserMappingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,11 @@ class UpdateProviderUserMappingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'integer|max:255',
-            'provider_platform_id' => 'integer|max:255',
-            'external_id' => 'string|max:255',
-            'external_username' => 'string|max:255',
-            'authentication_provider_id' => 'string|max:255',
+            'user_id' => 'required|integer|unique:users',
+            'provider_platform_id' => 'required|max:255',
+            'external_user_id' => 'required|string|max:255',
+            'external_username' => 'required|string|max:255',
+            'authentication_provider_id' => 'required|string|max:255',
         ];
     }
 }

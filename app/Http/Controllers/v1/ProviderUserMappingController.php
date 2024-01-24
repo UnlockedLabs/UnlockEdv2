@@ -4,7 +4,6 @@ namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateProviderUserMappingRequest;
-use App\Http\Requests\UpdateProviderUserMappingRequest;
 use App\Http\Resources\ProviderUserMappingResource;
 use App\Models\ProviderUserMapping;
 
@@ -17,7 +16,7 @@ class ProviderUserMappingController extends Controller
      */
     public function index()
     {
-        return ProviderUserMappingResource::collection(ProviderUserMapping::all());
+        return ProviderUserMappingResource::collection(ProviderUserMapping::all(['*']));
     }
 
     /**
@@ -26,8 +25,8 @@ class ProviderUserMappingController extends Controller
      */
     public function store(CreateProviderUserMappingRequest $request)
     {
-        $validated = $request->validated();
         try {
+            $validated = $request->validated();
             $mapping = ProviderUserMapping::create($validated);
 
             return response()->json(['message' => 'Provider User Mapping created successfully', 'data' => $mapping], 201);
@@ -43,24 +42,12 @@ class ProviderUserMappingController extends Controller
      */
     public function show(string $userId)
     {
-        $user = ProviderUserMapping::with('user_id', $userId)->get();
+        try {
+            $user = ProviderUserMapping::where('user_id', $userId)->get();
 
-        return ProviderUserMappingResource::collection($user);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateProviderUserMappingRequest $request)
-    {
-        $validated = $request->validated();
-        $user = ProviderUserMapping::with('user_id', $validated->user_id)->orWhere('provider_platform_id', $validated->provider_platform_id);
-        if (! $user) {
+            return ProviderUserMappingResource::collection($user);
+        } catch (\Throwable $th) {
             return response()->json(['error' => 'User not found'], 404);
-        } else {
-            $user->update($validated);
-
-            return response()->json(['message' => 'User updated successfully'], 200);
         }
     }
 

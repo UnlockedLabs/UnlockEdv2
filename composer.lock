@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "766460db40510126e7433b9e55b7e349",
+    "content-hash": "254e8ff1f3685c77a7153360856a1a0d",
     "packages": [
         {
             "name": "brick/math",
@@ -1592,17 +1592,91 @@
             "time": "2023-10-27T10:59:02+00:00"
         },
         {
-            "name": "laravel/framework",
-            "version": "v10.41.0",
+            "name": "jeremy379/laravel-openid-connect",
+            "version": "2.0.7",
             "source": {
                 "type": "git",
-                "url": "https://github.com/laravel/framework.git",
-                "reference": "da31969bd35e6ee0bbcd9e876f88952dc754b012"
+                "url": "https://github.com/jeremy379/laravel-openid-connect.git",
+                "reference": "4f96ec5fedb7a1b8369f3abcddb3e0d74f31872d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/da31969bd35e6ee0bbcd9e876f88952dc754b012",
-                "reference": "da31969bd35e6ee0bbcd9e876f88952dc754b012",
+                "url": "https://api.github.com/repos/jeremy379/laravel-openid-connect/zipball/4f96ec5fedb7a1b8369f3abcddb3e0d74f31872d",
+                "reference": "4f96ec5fedb7a1b8369f3abcddb3e0d74f31872d",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^10.0",
+                "laravel/passport": "^11.0",
+                "lcobucci/jwt": "^4.0|^4.3|^5.0",
+                "league/oauth2-server": "^8.2.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "guzzlehttp/psr7": "^1.7",
+                "http-interop/http-factory-guzzle": "^1.0",
+                "league/oauth2-client": "^2.6",
+                "overtrue/phplint": "^9.0",
+                "phpunit/phpunit": "^9.4.2",
+                "slevomat/coding-standard": "^6.4.1",
+                "slim/slim": "4.*",
+                "symplify/easy-coding-standard": "^9.2"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "OpenIDConnect\\Laravel\\PassportServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "OpenIDConnect\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jérémy Dillenbourg",
+                    "email": "jeremy@dillenbourg.be"
+                },
+                {
+                    "name": "Ron van der Heijden",
+                    "email": "r.heijden@live.nl"
+                }
+            ],
+            "description": "OpenID Connect support to the PHP League's OAuth2 Server. Compatible with Laravel Passport.",
+            "homepage": "https://github.com/jeremy379/laravel-openid-connect",
+            "keywords": [
+                "OpenId",
+                "laravel",
+                "oauth2",
+                "oidc",
+                "openid-connect",
+                "passport"
+            ],
+            "support": {
+                "issues": "https://github.com/jeremy379/laravel-openid-connect/issues",
+                "source": "https://github.com/jeremy379/laravel-openid-connect/tree/2.0.7"
+            },
+            "time": "2023-10-05T06:55:31+00:00"
+        },
+        {
+            "name": "laravel/framework",
+            "version": "v10.42.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laravel/framework.git",
+                "reference": "fef1aff874a6749c44f8e142e5764eab8cb96890"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/fef1aff874a6749c44f8e142e5764eab8cb96890",
+                "reference": "fef1aff874a6749c44f8e142e5764eab8cb96890",
                 "shasum": ""
             },
             "require": {
@@ -1794,20 +1868,20 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2024-01-16T15:23:58+00:00"
+            "time": "2024-01-23T15:07:56+00:00"
         },
         {
             "name": "laravel/passport",
-            "version": "v11.10.1",
+            "version": "v11.10.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/passport.git",
-                "reference": "e1a651481cabff0ba174aaefbdc04a59e6a096ec"
+                "reference": "27a4f34aaf8b360eb64f53eb9c555ee50d565560"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/passport/zipball/e1a651481cabff0ba174aaefbdc04a59e6a096ec",
-                "reference": "e1a651481cabff0ba174aaefbdc04a59e6a096ec",
+                "url": "https://api.github.com/repos/laravel/passport/zipball/27a4f34aaf8b360eb64f53eb9c555ee50d565560",
+                "reference": "27a4f34aaf8b360eb64f53eb9c555ee50d565560",
                 "shasum": ""
             },
             "require": {
@@ -1872,7 +1946,7 @@
                 "issues": "https://github.com/laravel/passport/issues",
                 "source": "https://github.com/laravel/passport"
             },
-            "time": "2024-01-10T14:44:24+00:00"
+            "time": "2024-01-17T14:57:00+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -2123,39 +2197,38 @@
         },
         {
             "name": "lcobucci/jwt",
-            "version": "4.3.0",
+            "version": "5.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lcobucci/jwt.git",
-                "reference": "4d7de2fe0d51a96418c0d04004986e410e87f6b4"
+                "reference": "0ba88aed12c04bd2ed9924f500673f32b67a6211"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lcobucci/jwt/zipball/4d7de2fe0d51a96418c0d04004986e410e87f6b4",
-                "reference": "4d7de2fe0d51a96418c0d04004986e410e87f6b4",
+                "url": "https://api.github.com/repos/lcobucci/jwt/zipball/0ba88aed12c04bd2ed9924f500673f32b67a6211",
+                "reference": "0ba88aed12c04bd2ed9924f500673f32b67a6211",
                 "shasum": ""
             },
             "require": {
-                "ext-hash": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
                 "ext-openssl": "*",
                 "ext-sodium": "*",
-                "lcobucci/clock": "^2.0 || ^3.0",
-                "php": "^7.4 || ^8.0"
+                "php": "~8.1.0 || ~8.2.0 || ~8.3.0",
+                "psr/clock": "^1.0"
             },
             "require-dev": {
-                "infection/infection": "^0.21",
-                "lcobucci/coding-standard": "^6.0",
-                "mikey179/vfsstream": "^1.6.7",
-                "phpbench/phpbench": "^1.2",
-                "phpstan/extension-installer": "^1.0",
-                "phpstan/phpstan": "^1.4",
-                "phpstan/phpstan-deprecation-rules": "^1.0",
-                "phpstan/phpstan-phpunit": "^1.0",
-                "phpstan/phpstan-strict-rules": "^1.0",
-                "phpunit/php-invoker": "^3.1",
-                "phpunit/phpunit": "^9.5"
+                "infection/infection": "^0.27.0",
+                "lcobucci/clock": "^3.0",
+                "lcobucci/coding-standard": "^11.0",
+                "phpbench/phpbench": "^1.2.9",
+                "phpstan/extension-installer": "^1.2",
+                "phpstan/phpstan": "^1.10.7",
+                "phpstan/phpstan-deprecation-rules": "^1.1.3",
+                "phpstan/phpstan-phpunit": "^1.3.10",
+                "phpstan/phpstan-strict-rules": "^1.5.0",
+                "phpunit/phpunit": "^10.2.6"
+            },
+            "suggest": {
+                "lcobucci/clock": ">= 3.0"
             },
             "type": "library",
             "autoload": {
@@ -2181,7 +2254,7 @@
             ],
             "support": {
                 "issues": "https://github.com/lcobucci/jwt/issues",
-                "source": "https://github.com/lcobucci/jwt/tree/4.3.0"
+                "source": "https://github.com/lcobucci/jwt/tree/5.2.0"
             },
             "funding": [
                 {
@@ -2193,7 +2266,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2023-01-02T13:28:00+00:00"
+            "time": "2023-11-20T21:17:42+00:00"
         },
         {
             "name": "league/commonmark",
@@ -3008,16 +3081,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "2.72.1",
+            "version": "2.72.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/briannesbitt/Carbon.git",
-                "reference": "2b3b3db0a2d0556a177392ff1a3bf5608fa09f78"
+                "reference": "3e7edc41b58d65509baeb0d4a14c8fa41d627130"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/2b3b3db0a2d0556a177392ff1a3bf5608fa09f78",
-                "reference": "2b3b3db0a2d0556a177392ff1a3bf5608fa09f78",
+                "url": "https://api.github.com/repos/briannesbitt/Carbon/zipball/3e7edc41b58d65509baeb0d4a14c8fa41d627130",
+                "reference": "3e7edc41b58d65509baeb0d4a14c8fa41d627130",
                 "shasum": ""
             },
             "require": {
@@ -3111,7 +3184,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-12-08T23:47:49+00:00"
+            "time": "2024-01-19T00:21:53+00:00"
         },
         {
             "name": "nette/schema",
@@ -4324,107 +4397,6 @@
                 "source": "https://github.com/bobthecow/psysh/tree/v0.12.0"
             },
             "time": "2023-12-20T15:28:09+00:00"
-        },
-        {
-            "name": "pthorpe92/laravel-openid-connect",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "vendor/pthorpe92/laravel-openid-connect",
-                "reference": "7b2e87b677480a476b11b6ed5fdaea46239bad30"
-            },
-            "require": {
-                "laravel/framework": "^10.0",
-                "laravel/passport": "^11.0",
-                "lcobucci/jwt": "^4.0|^4.3|^5.0",
-                "league/oauth2-server": "^8.2.0",
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "guzzlehttp/psr7": "^1.7",
-                "http-interop/http-factory-guzzle": "^1.0",
-                "league/oauth2-client": "^2.6",
-                "overtrue/phplint": "^9.0",
-                "phpunit/phpunit": "^9.4.2",
-                "slevomat/coding-standard": "^6.4.1",
-                "slim/slim": "4.*",
-                "symplify/easy-coding-standard": "^9.2"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "OpenIDConnect\\Laravel\\PassportServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "OpenIDConnect\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "OpenIDConnect\\Example\\": "example/",
-                    "OpenIDConnect\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "vendor/bin/phpunit"
-                ],
-                "dev": [
-                    "vendor/bin/phpunit --group dev"
-                ],
-                "ecs-check": [
-                    "vendor/bin/ecs check"
-                ],
-                "ecs-fix": [
-                    "vendor/bin/ecs check --fix"
-                ],
-                "lint": [
-                    "vendor/bin/phplint --exclude=vendor ."
-                ],
-                "fix": [
-                    "composer update",
-                    "composer ecs-fix",
-                    "composer check"
-                ],
-                "check": [
-                    "composer lint",
-                    "composer ecs-check",
-                    "composer test",
-                    "composer check-platform-reqs",
-                    "composer outdated --direct --no-ansi",
-                    "composer outdated --minor-only --strict --direct"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jérémy Dillenbourg",
-                    "email": "jeremy@dillenbourg.be"
-                },
-                {
-                    "name": "Ron van der Heijden",
-                    "email": "r.heijden@live.nl"
-                }
-            ],
-            "description": "OpenID Connect support to the PHP League's OAuth2 Server. Compatible with Laravel Passport.",
-            "homepage": "https://github.com/PThorpe92/laravel-openid-connect",
-            "keywords": [
-                "laravel",
-                "oauth2",
-                "oidc",
-                "openid",
-                "openid-connect",
-                "passport"
-            ],
-            "transport-options": {
-                "relative": true
-            }
         },
         {
             "name": "ralouphie/getallheaders",
@@ -7883,16 +7855,16 @@
         },
         {
             "name": "laravel/pint",
-            "version": "v1.13.9",
+            "version": "v1.13.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/pint.git",
-                "reference": "e3e269cc5d874c8efd2dc7962b1c7ff2585fe525"
+                "reference": "e2b5060885694ca30ac008c05dc9d47f10ed1abf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/pint/zipball/e3e269cc5d874c8efd2dc7962b1c7ff2585fe525",
-                "reference": "e3e269cc5d874c8efd2dc7962b1c7ff2585fe525",
+                "url": "https://api.github.com/repos/laravel/pint/zipball/e2b5060885694ca30ac008c05dc9d47f10ed1abf",
+                "reference": "e2b5060885694ca30ac008c05dc9d47f10ed1abf",
                 "shasum": ""
             },
             "require": {
@@ -7903,8 +7875,8 @@
                 "php": "^8.1.0"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.47.0",
-                "illuminate/view": "^10.40.0",
+                "friendsofphp/php-cs-fixer": "^3.47.1",
+                "illuminate/view": "^10.41.0",
                 "larastan/larastan": "^2.8.1",
                 "laravel-zero/framework": "^10.3.0",
                 "mockery/mockery": "^1.6.7",
@@ -7945,20 +7917,20 @@
                 "issues": "https://github.com/laravel/pint/issues",
                 "source": "https://github.com/laravel/pint"
             },
-            "time": "2024-01-16T17:39:29+00:00"
+            "time": "2024-01-22T09:04:15+00:00"
         },
         {
             "name": "laravel/sail",
-            "version": "v1.27.1",
+            "version": "v1.27.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sail.git",
-                "reference": "9dc648978e4276f2bfd37a076a52e3bd9394777f"
+                "reference": "2276a8d9d6cfdcaad98bf67a34331d100149d5b6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sail/zipball/9dc648978e4276f2bfd37a076a52e3bd9394777f",
-                "reference": "9dc648978e4276f2bfd37a076a52e3bd9394777f",
+                "url": "https://api.github.com/repos/laravel/sail/zipball/2276a8d9d6cfdcaad98bf67a34331d100149d5b6",
+                "reference": "2276a8d9d6cfdcaad98bf67a34331d100149d5b6",
                 "shasum": ""
             },
             "require": {
@@ -8010,7 +7982,7 @@
                 "issues": "https://github.com/laravel/sail/issues",
                 "source": "https://github.com/laravel/sail"
             },
-            "time": "2024-01-13T18:46:48+00:00"
+            "time": "2024-01-21T17:13:42+00:00"
         },
         {
             "name": "maximebf/debugbar",
@@ -8318,16 +8290,16 @@
         },
         {
             "name": "pestphp/pest",
-            "version": "v2.32.0",
+            "version": "v2.32.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pestphp/pest.git",
-                "reference": "ac5d6c1f6754b4a6b4d16d825e5ebd4725a4f779"
+                "reference": "bb593846e55db4c821aad2a3dad384a972f2c5f5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pestphp/pest/zipball/ac5d6c1f6754b4a6b4d16d825e5ebd4725a4f779",
-                "reference": "ac5d6c1f6754b4a6b4d16d825e5ebd4725a4f779",
+                "url": "https://api.github.com/repos/pestphp/pest/zipball/bb593846e55db4c821aad2a3dad384a972f2c5f5",
+                "reference": "bb593846e55db4c821aad2a3dad384a972f2c5f5",
                 "shasum": ""
             },
             "require": {
@@ -8337,10 +8309,10 @@
                 "pestphp/pest-plugin": "^2.1.1",
                 "pestphp/pest-plugin-arch": "^2.6.1",
                 "php": "^8.1.0",
-                "phpunit/phpunit": "^10.5.7"
+                "phpunit/phpunit": "^10.5.9"
             },
             "conflict": {
-                "phpunit/phpunit": ">10.5.7",
+                "phpunit/phpunit": ">10.5.9",
                 "sebastian/exporter": "<5.1.0",
                 "webmozart/assert": "<1.11.0"
             },
@@ -8411,7 +8383,7 @@
             ],
             "support": {
                 "issues": "https://github.com/pestphp/pest/issues",
-                "source": "https://github.com/pestphp/pest/tree/v2.32.0"
+                "source": "https://github.com/pestphp/pest/tree/v2.32.1"
             },
             "funding": [
                 {
@@ -8423,7 +8395,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-01-20T13:48:00+00:00"
+            "time": "2024-01-23T17:04:48+00:00"
         },
         {
             "name": "pestphp/pest-plugin",
@@ -9284,16 +9256,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "10.5.7",
+            "version": "10.5.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "e5c5b397a95cb0db013270a985726fcae93e61b8"
+                "reference": "0bd663704f0165c9e76fe4f06ffa6a1ca727fdbe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/e5c5b397a95cb0db013270a985726fcae93e61b8",
-                "reference": "e5c5b397a95cb0db013270a985726fcae93e61b8",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/0bd663704f0165c9e76fe4f06ffa6a1ca727fdbe",
+                "reference": "0bd663704f0165c9e76fe4f06ffa6a1ca727fdbe",
                 "shasum": ""
             },
             "require": {
@@ -9365,7 +9337,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/10.5.7"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/10.5.9"
             },
             "funding": [
                 {
@@ -9381,7 +9353,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-01-14T16:40:30+00:00"
+            "time": "2024-01-22T14:35:40+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -10788,9 +10760,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "pthorpe92/laravel-openid-connect": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

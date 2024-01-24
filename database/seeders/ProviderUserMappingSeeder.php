@@ -12,6 +12,6 @@ class ProviderUserMappingSeeder extends Seeder
      */
     public function run(): void
     {
-        ProviderUserMapping::factory()->createMany(10);
+        ProviderUserMapping::factory(10)->create();
     }
 }

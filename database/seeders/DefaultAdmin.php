@@ -16,10 +16,10 @@ class DefaultAdmin extends Seeder
         DB::table('users')->insert([
             'name_first' => 'Super',
             'name_last' => 'Admin',
-            'email' => 'preston.thorpe@maine.edu',
-            'username' => 'preston.thorpe@maine.edu',
-            'password' => bcrypt('PThorpe92'),
-            'password_reset' => false,
+            'email' => 'admin@unlocked.v2',
+            'username' => 'SuperAdmin',
+            'password' => bcrypt('ChangeMe!'),
+            'password_reset' => true,
             'role' => UserRole::Admin,
         ]);
     }

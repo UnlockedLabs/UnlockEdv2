@@ -17,4 +17,13 @@ class ProviderUserMapping extends Model
         'authentication_provider_id',
     ];  // in the case of canvas, this will be 'openid_connect'
 
+    public function user()
+    {
+        return $this->belongsTo('App\Models\User');
+    }
+
+    public function providerPlatform()
+    {
+        return $this->belongsTo('App\Models\ProviderPlatform');
+    }
 }

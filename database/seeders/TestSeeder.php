@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\AuthProviderMapping;
+use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\ProviderUserMapping;
@@ -18,8 +18,8 @@ class TestSeeder extends Seeder
     {
         User::factory(10)->create();
         ProviderPlatform::factory(10)->create();
-        AuthProviderMapping::factory(10)->create();
         Enrollment::factory(10)->create();
         ProviderUserMapping::factory(10)->create();
+        Course::factory(10)->create();
     }
 }

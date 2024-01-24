@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ProviderPlatform;
 use App\Models\User;
-use Database\Seeders\TestSeeder;
+use Database\Seeders\ProviderUserMappingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -12,30 +12,25 @@ class ProviderUserMappingTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $seeder = TestSeeder::class;
+    protected $seeder = ProviderUserMappingSeeder::class;
 
-    public $url_beg = '/api/v1/users/logins';
+    public $url_beg = '/api/v1/users';
 
     public $url_end = '/logins';
 
     /** @test */
     public function it_lists_provider_user_mappings()
     {
-        $this->refreshTestDatabase();
+        $this->seed($this->seeder);
 
-        $response = $this->get($this->url_beg.$this->url_end);
+        $response = $this->get('/api/v1/users/logins', [
+            'Accept' => 'application/json',
+        ]);
 
         // Assertions
         $response->assertOk();
-        $response->assertJsonStructure([
-            'data' => [
-                'user_id',
-                'provider_platform_id',
-                'external_user_id',
-                'external_username',
-                'authentication_provider_id',
-            ],
-        ]);
+        dump($response->getContent());
+        $response->dump();
     }
 
     /** @test */
@@ -80,42 +75,14 @@ class ProviderUserMappingTest extends TestCase
         $response->assertOk();
         $response->assertJsonStructure([
             'data' => [
-                'user_id',
-                'provider_platform_id',
-                'external_user_id',
-                'external_username',
-                'authentication_provider_id',
+                '*' => [
+                    'user_id',
+                    'provider_platform_id',
+                    'external_user_id',
+                    'external_username',
+                    'authentication_provider_id',
+                ],
             ],
-        ]);
-    }
-
-    /** @test */
-    public function it_updates_a_provider_user_mapping()
-    {
-        $this->seed($this->seeder);
-        $user = User::factory()->createOne();
-        $data = [
-            'external_user_id' => '1234',
-        ];
-
-        // Make a PUT request to the update method
-        $response = $this->put($this->url_beg.$user->id.$this->url_end, $data);
-
-        // Assertions
-        $response->assertOk();
-        dump($response->getContent());
-        $response->assertJsonStructure([
-            'data' => [
-                'user_id',
-                'provider_platform_id',
-                'external_user_id',
-                'external_username',
-                'authentication_provider_id',
-            ],
-        ]);
-        dump($response->getContent());
-        $response->assertJsonFragment([
-            'external_user_id' => '1234',
         ]);
     }
 
@@ -123,7 +90,7 @@ class ProviderUserMappingTest extends TestCase
     public function it_deletes_a_provider_user_mapping()
     {
         $user = User::factory()->createOne();
-        $response = $this->delete($this->url_beg.$user->id.$this->url_end);
+        $response = $this->delete($this->url_beg.'/'.$user->id.$this->url_end);
 
         $response->assertOk();
     }

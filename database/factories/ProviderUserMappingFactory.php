@@ -21,8 +21,8 @@ class ProviderUserMappingFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->createOne()->id,
-            'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
+            'user_id' => User::factory()->create(),
+            'provider_platform_id' => ProviderPlatform::factory()->create(),
             'external_user_id' => $this->faker->numberBetween(1, 10),
             'external_username' => $this->faker->word,
             'authentication_provider_id' => $this->faker->numberBetween(1, 10),

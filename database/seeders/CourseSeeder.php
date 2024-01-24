@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Courses;
+use App\Models\Course;
 use Illuminate\Database\Seeder;
 
 class CoursesSeeder extends Seeder
@@ -13,6 +13,6 @@ class CoursesSeeder extends Seeder
     public function run(): void
     {
         //
-        Courses::factory(10)->create(); // Create 10 Provider Platforms using the factory
+        Course::factory(10)->create(); // Create 10 Provider Platforms using the factory
     }
 }
