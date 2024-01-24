@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('provider_platform_id');
             $table->string('external_user_id');
             $table->string('external_username');
-            $table->string('authentication_provider_id');
+            $table->enum('authentication_provider_status', ['none', 'openid_connect'])->default('none');
             $table->timestamps();
         });
     }

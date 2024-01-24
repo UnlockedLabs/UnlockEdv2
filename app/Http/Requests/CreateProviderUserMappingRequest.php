@@ -26,7 +26,7 @@ class CreateProviderUserMappingRequest extends FormRequest
             'provider_platform_id' => 'required|max:255',
             'external_user_id' => 'required|string|max:255',
             'external_username' => 'required|string|max:255',
-            'authentication_provider_id' => 'required|string|max:255',
+            'authentication_provider_status' => 'required|string|max:255',
         ];
     }
 }

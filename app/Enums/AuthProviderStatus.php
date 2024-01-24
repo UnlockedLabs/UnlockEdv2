@@ -2,9 +2,11 @@
 
 namespace App\Enums;
 
-enum AuthProviderType: string
+enum AuthProviderStatus: string
 {
     case OPENID_CONNECT = 'openid_connect';
 
     case OAUTH = 'oauth';
+
+    case NONE = 'none';
 }

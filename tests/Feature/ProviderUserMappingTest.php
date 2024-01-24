@@ -44,7 +44,7 @@ class ProviderUserMappingTest extends TestCase
             'provider_platform_id' => $providerPlatform->id,
             'external_user_id' => '1234567890',
             'external_username' => 'johndoe',
-            'authentication_provider_id' => 'openid_connect',
+            'authentication_provider_status' => 'openid_connect',
         ];
 
         // Make a POST request to the create method
@@ -58,7 +58,7 @@ class ProviderUserMappingTest extends TestCase
                 'provider_platform_id',
                 'external_user_id',
                 'external_username',
-                'authentication_provider_id',
+                'authentication_provider_status',
             ],
         ]);
     }
@@ -80,7 +80,7 @@ class ProviderUserMappingTest extends TestCase
                     'provider_platform_id',
                     'external_user_id',
                     'external_username',
-                    'authentication_provider_id',
+                    'authentication_provider_status',
                 ],
             ],
         ]);

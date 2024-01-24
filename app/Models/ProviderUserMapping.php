@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\AuthProviderType;
+use App\Enums\AuthProviderStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,11 +15,11 @@ class ProviderUserMapping extends Model
         'provider_platform_id',
         'external_user_id',
         'external_username', // if the user has a field in the external platform that is different from 'username'
-        'authentication_provider_id',
+        'authentication_provider_status',
     ];
 
     protected $casts = [
-        'authentication_provider_id' => AuthProviderType::class,
+        'authentication_provider_status' => AuthProviderStatus::class,
     ];
 
     public function user()
