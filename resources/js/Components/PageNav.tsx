@@ -4,6 +4,7 @@ import {
     DocumentTextIcon,
     HomeIcon,
     UsersIcon,
+    PencilSquareIcon,
 } from "@heroicons/react/24/solid";
 
 export default function PageNav({
@@ -85,6 +86,12 @@ export default function PageNav({
                                             <a href="/users">
                                                 <UsersIcon className="h-4" />
                                                 Users
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="/left-menu-management">
+                                                <PencilSquareIcon className="h-4" />
+                                                Left Menu
                                             </a>
                                         </li>
                                         <li>

@@ -33,6 +33,10 @@ Route::get('/users', function () {
     return Inertia::render('Users');
 })->middleware(['auth', 'password_reset'])->name('users');
 
+Route::get('/left-menu-management', function () {
+    return Inertia::render('LeftMenuManagement');
+})->middleware(['auth', 'password_reset'])->name('left-menu-management');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
