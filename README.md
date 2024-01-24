@@ -22,6 +22,20 @@ The commands below assume you have a shell alias setup in your .bashrc or .zshrc
 -   Login with `SuperAdmin` and password: `ChangeMe!`
 -   You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
 
+### AUTH/Passport Setup:
+
+-   In the command line, run: `sail artisan passport:install`
+    This will generate two sets of keys, each one with a client ID and a secret. The first set, you must copy the client ID and SECRET and add them to your .env file like so:
+
+```
+PASSPORT_PERSONAL_ACCESS_CLIENT_ID="1"
+PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET="o06w5S8I71RVMGHhocUVHCy0cbyMoVqxsHB8Rd3I"
+```
+
+### NOTE: If you have previously installed passport, you may need to add a `--force` flag to the command to overwrite the existing keys. (you will still have to manually copy the new client info to the .env file)
+
+#### If you run sail artisan migrate:fresh (unless you use --env=testing), it will overwrite the client info in the database, and you will need to re-install/configure passport.
+
 #### NOTE:
 
 -   Run `sail artisan db:seed --class=TestSeeder` to seed the database with test data for local UI development if you need tables populated with fake data.

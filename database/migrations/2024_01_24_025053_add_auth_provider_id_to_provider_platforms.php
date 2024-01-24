@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('provider_platforms', function (Blueprint $table) {
-            $table->string('auth_provider_id')->nullable();
+            $table->string('external_auth_provider_id')->nullable();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('provider_platforms', function (Blueprint $table) {
-            $table->dropColumn('auth_provider_id');
+            $table->dropColumn('external_auth_provider_id');
         });
     }
 };

@@ -21,7 +21,7 @@ class ProviderPlatform extends Model
         'access_key',
         'base_url',
         'state',
-        'auth_provider_id',
+        'external_auth_provider_id',
     ];
 
     /**

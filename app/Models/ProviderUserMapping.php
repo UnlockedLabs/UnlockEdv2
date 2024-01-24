@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AuthProviderType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +16,11 @@ class ProviderUserMapping extends Model
         'external_user_id',
         'external_username', // if the user has a field in the external platform that is different from 'username'
         'authentication_provider_id',
-    ];  // in the case of canvas, this will be 'openid_connect'
+    ];
+
+    protected $casts = [
+        'authentication_provider_id' => AuthProviderType::class,
+    ];
 
     public function user()
     {

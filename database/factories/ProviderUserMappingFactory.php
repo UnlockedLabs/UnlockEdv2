@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AuthProviderType;
 use App\Models\ProviderPlatform;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,7 +26,7 @@ class ProviderUserMappingFactory extends Factory
             'provider_platform_id' => ProviderPlatform::factory()->create(),
             'external_user_id' => $this->faker->numberBetween(1, 10),
             'external_username' => $this->faker->word,
-            'authentication_provider_id' => $this->faker->numberBetween(1, 10),
+            'authentication_provider_id' => AuthProviderType::OPENID_CONNECT,
         ];
     }
 }
