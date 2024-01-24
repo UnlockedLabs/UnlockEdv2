@@ -8,7 +8,6 @@ import {
     TrashIcon,
     PlusIcon,
 } from "@heroicons/react/24/solid";
-import { link } from "fs";
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 
@@ -42,44 +41,44 @@ function LinkItem({
 
 function CategoryItem({ categoryName, linksArray, rank }: Category) {
     const [links, setLinks] = useState(linksArray);
-    const [activeDeleteLinkModal, setActiveDeleteLinkModal] = useState({
-        "": "",
-    });
+    const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
     const [newURL, setNewURL] = useState("");
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const addLinkModal = useRef<null | HTMLDialogElement>(null);
 
-    useEffect(() => {
-        console.log(links);
-    }, [links]);
-
     function openDeleteLinkModal(linkPair: any) {
-        setActiveDeleteLinkModal(linkPair);
+        setActiveLinkToDelete(linkPair);
         deleteLinkModal.current?.showModal();
     }
 
     function deleteLink() {
-        setLinks(links.filter((pair) => pair !== activeDeleteLinkModal));
+        const newLinks = links.filter((link) => link !== activeLinkToDelete);
+        setLinks(newLinks);
     }
 
-    const linksList = links.map((linkPair: { [x: string]: string }, index) => {
-        const key = Object.keys(linkPair)[0];
+    function LinkRow({
+        linkPair,
+        index,
+        keyString,
+    }: {
+        linkPair: { [x: string]: string };
+        index: number;
+        keyString: string;
+    }) {
         return (
-            <div className="flex flex-row justify-between gap-2" key={index}>
-                <LinkItem linkName={key} linkURL={linkPair[key]} />
+            <div className="flex flex-row justify-between gap-2">
+                <LinkItem linkName={keyString} linkURL={linkPair[keyString]} />
                 <TrashIcon
                     className="w-4"
                     onClick={() => openDeleteLinkModal(linkPair)}
                 />
             </div>
         );
-    });
+    }
 
     function addLink() {
         var newLink: CategoryLink = {};
-        console.log(newTitle);
-        console.log(newURL);
         newLink[newTitle] = newURL;
         setLinks([...links, newLink]);
         setNewTitle("");
@@ -98,7 +97,17 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
                     <h3 className="w-1/3">Title</h3>
                     <h3 className="w-2/3">URL</h3>
                 </div>
-                {linksList}
+                {links.map((linkPair: { [x: string]: string }, index) => {
+                    const key = Object.keys(linkPair)[0];
+                    return (
+                        <LinkRow
+                            key={linkPair[key].concat(index.toString())}
+                            linkPair={linkPair}
+                            index={index}
+                            keyString={key}
+                        />
+                    );
+                })}
                 <button
                     className="btn btn-active
                     bg-base-200 w-full p-2"
