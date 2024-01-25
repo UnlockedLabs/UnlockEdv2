@@ -168,7 +168,7 @@ class CanvasServices
     {
         $provider = ProviderPlatform::where(['id' => $providerId])->firstOrFail();
 
-        return new self($provider->provider_id, $provider->account_id, $provider->access_key, $provider->base_url);
+        return new self($providerId, (int) $provider->account_id, $provider->access_key, $provider->base_url);
     }
 
     private static function handleResponse(ResponseInterface $response): mixed
