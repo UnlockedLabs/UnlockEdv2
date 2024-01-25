@@ -2,17 +2,16 @@
 
 namespace Database\Seeders;
 
-use App\Models\Course;
+use App\Models\ProviderUserMapping;
 use Illuminate\Database\Seeder;
 
-class CoursesSeeder extends Seeder
+class ProviderUserMappingSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        //
-        Course::factory(10)->create(); // Create 10 Provider Platforms using the factory
+        ProviderUserMapping::factory(10)->create();
     }
 }

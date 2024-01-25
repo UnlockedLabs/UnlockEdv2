@@ -24,7 +24,6 @@ class CreateEnrollmentsTable extends Migration
             $table->timestamp('provider_end_at')->nullable();
             $table->timestamps();
         });
-
     }
 
     /**

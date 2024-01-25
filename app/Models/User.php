@@ -50,6 +50,11 @@ class User extends Authenticatable
         'role' => UserRole::class,
     ];
 
+    public function providerUserMappings()
+    {
+        return $this->hasMany('App\Models\ProviderUserMapping');
+    }
+
     public function createTempPassword()
     {
         $pw = Str::random(8);

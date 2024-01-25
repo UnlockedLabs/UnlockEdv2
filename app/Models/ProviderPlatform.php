@@ -21,6 +21,7 @@ class ProviderPlatform extends Model
         'access_key',
         'base_url',
         'state',
+        'external_auth_provider_id',
     ];
 
     /**
@@ -39,5 +40,10 @@ class ProviderPlatform extends Model
         $hashedAccessKey = Hash::make($accessKey);
         $this->access_key = $hashedAccessKey;
         $this->save();
+    }
+
+    public function providerUserMappings()
+    {
+        return $this->hasMany('App\Models\ProviderUserMapping');
     }
 }

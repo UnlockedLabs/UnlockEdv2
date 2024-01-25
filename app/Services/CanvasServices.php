@@ -9,7 +9,6 @@ use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\App;
-use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -256,7 +255,6 @@ class CanvasServices
             'client_secret' => $client->plainSecret,
             'authorize_url' => self::fmtUrl($unlockedUrl).'oauth/authorize',
             'token_url' => self::fmtUrl($unlockedUrl).'oauth/token',
-            'userinfo_endpoint' => self::fmtUrl($unlockedUrl).'api/user',
             'login_attribute' => 'email',
         ];
         $canvasUrl = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers';

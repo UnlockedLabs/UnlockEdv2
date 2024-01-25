@@ -4,6 +4,7 @@ use App\Http\Controllers\v1\CategoryController;
 use App\Http\Controllers\v1\CourseController;
 use App\Http\Controllers\v1\EnrollmentController;
 use App\Http\Controllers\v1\ProviderPlatformController;
+use App\Http\Controllers\v1\ProviderUserMappingController;
 use App\Http\Controllers\v1\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:passport')->get('/user', function (Request $request) {
+Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
@@ -42,10 +43,14 @@ Route::patch('/v1/courses/{id}', [CourseController::class, 'update']);
 Route::delete('/v1/courses/{id}', [CourseController::class, 'destroy']);
 
 Route::get('/v1/users', [UserController::class, 'index']);
-Route::get('/v1/users/{id}', [UserController::class, 'show']);
 Route::post('/v1/users', [UserController::class, 'store']);
+Route::get('/v1/users/logins', [ProviderUserMappingController::class, 'index']);
+Route::get('/v1/users/{id}', [UserController::class, 'show']);
 Route::patch('/v1/users/{id}', [UserController::class, 'update']);
 Route::delete('/v1/users/{id}', [UserController::class, 'destroy']);
+Route::get('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'show']);
+Route::post('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'store']);
+Route::delete('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'destroy']);
 
 Route::prefix('v1')->group(function () {
     Route::Resource('provider-platforms', ProviderPlatformController::class);
