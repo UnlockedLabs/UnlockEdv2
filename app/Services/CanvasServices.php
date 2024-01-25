@@ -150,7 +150,7 @@ class CanvasServices
     private function DELETE(string $url): mixed
     {
         try {
-            $response = $this->client->delete($url, ['headers' => ['Authorization' => "Bearer $this->access_key"]]);
+            $response = $this->client->request('DELETE', $url, ['headers' => ['Authorization' => "Bearer $this->access_key"]]);
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -164,12 +164,9 @@ class CanvasServices
     //* @return  CanvasServices
     //* @throws \InvalidArgumentException
      */
-    public static function byProviderId(int $providerId): CanvasServices|InvalidArgumentException
+    public static function byProviderId(int $providerId): CanvasServices
     {
-        $provider = ProviderPlatform::findOrfFail($providerId);
-        if (! $provider) {
-            throw new \InvalidArgumentException('Invalid provider ID');
-        }
+        $provider = ProviderPlatform::where(['id' => $providerId])->firstOrFail();
 
         return new self($provider->provider_id, $provider->account_id, $provider->access_key, $provider->base_url);
     }
@@ -242,6 +239,7 @@ class CanvasServices
         $canvasUrl = substr($this->base_url, 0, -strlen(CANVAS_API)).'login/oauth2/callback';
         // instantiate a new client directly in passport
         $clientRepo = App::make('\Laravel\Passport\ClientRepository');
+
         $client = $clientRepo->create(null, 'canvas', $canvasUrl, false, false);
 
         if (! $unlockedUrl) {
@@ -253,8 +251,8 @@ class CanvasServices
             'position' => 1,
             'client_id' => $client->id,
             'client_secret' => $client->plainSecret,
-            'authorize_url' => self::fmtUrl($unlockedUrl).'oauth/authorize',
-            'token_url' => self::fmtUrl($unlockedUrl).'oauth/token',
+            'authorize_url' => $unlockedUrl.'oauth/authorize',
+            'token_url' => $unlockedUrl.'oauth/token',
             'login_attribute' => 'email',
         ];
         $canvasUrl = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers';
