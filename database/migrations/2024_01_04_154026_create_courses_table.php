@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('provider_resource_id');
             $table->string('provider_course_name');
-            $table->dateTimeTz('provider_start_at');
-            $table->dateTimeTz('provider_end_at');
+            $table->dateTimeTz('provider_start_at')->nullable();
+            $table->dateTimeTz('provider_end_at')->nullable();
             $table->timestamps();
         });
     }
