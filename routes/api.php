@@ -20,37 +20,37 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/v1/categories', [CategoryController::class, 'index']);
-Route::get('/v1/categories/{id}', [CategoryController::class, 'show']);
-Route::post('/v1/categories', [CategoryController::class, 'store']);
-Route::patch('/v1/categories/{id}', [CategoryController::class, 'update']);
-Route::delete('/v1/categories/{id}', [CategoryController::class, 'destroy']);
+Route::get('/v1/categories', [CategoryController::class, 'index'])->middleware('auth:api');
+Route::get('/v1/categories/{id}', [CategoryController::class, 'show'])->middleware('auth:api');
+Route::post('/v1/categories', [CategoryController::class, 'store'])->middleware('auth:api');
+Route::patch('/v1/categories/{id}', [CategoryController::class, 'update'])->middleware('auth:api');
+Route::delete('/v1/categories/{id}', [CategoryController::class, 'destroy'])->middleware('auth:api');
 
-Route::get('/v1/enrollments', [EnrollmentController::class, 'index']);
-Route::get('/v1/enrollments/{id}', [EnrollmentController::class, 'show']);
-Route::post('/v1/enrollments', [EnrollmentController::class, 'store']);
-Route::patch('/v1/enrollments/{id}', [EnrollmentController::class, 'update']);
-Route::delete('/v1/enrollments/{id}', [EnrollmentController::class, 'destroy']);
+Route::get('/v1/enrollments', [EnrollmentController::class, 'index'])->middleware('auth:api');
+Route::get('/v1/enrollments/{id}', [EnrollmentController::class, 'show'])->middleware('auth:api');
+Route::post('/v1/enrollments', [EnrollmentController::class, 'store'])->middleware('auth:api');
+Route::patch('/v1/enrollments/{id}', [EnrollmentController::class, 'update'])->middleware('auth:api');
+Route::delete('/v1/enrollments/{id}', [EnrollmentController::class, 'destroy'])->middleware('auth:api');
 
-Route::get('v1/courses', [CourseController::class, 'index']);
-Route::get('/v1/courses/{id}', [CourseController::class, 'show']);
-Route::post('/v1/courses', [CourseController::class, 'store']);
-Route::patch('/v1/courses/{id}', [CourseController::class, 'update']);
-Route::delete('/v1/courses/{id}', [CourseController::class, 'destroy']);
+Route::get('v1/courses', [CourseController::class, 'index'])->middleware('auth:api');
+Route::get('/v1/courses/{id}', [CourseController::class, 'show'])->middleware('auth:api');
+Route::post('/v1/courses', [CourseController::class, 'store'])->middleware('auth:api');
+Route::patch('/v1/courses/{id}', [CourseController::class, 'update'])->middleware('auth:api');
+Route::delete('/v1/courses/{id}', [CourseController::class, 'destroy'])->middleware('auth:api');
 
-Route::get('/v1/users', [UserController::class, 'index']);
-Route::post('/v1/users', [UserController::class, 'store']);
-Route::get('/v1/users/logins', [ProviderUserMappingController::class, 'index']);
-Route::get('/v1/users/{id}', [UserController::class, 'show']);
-Route::patch('/v1/users/{id}', [UserController::class, 'update']);
-Route::delete('/v1/users/{id}', [UserController::class, 'destroy']);
-Route::get('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'show']);
-Route::post('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'store']);
-Route::delete('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'destroy']);
+Route::get('/v1/users', [UserController::class, 'index'])->middleware('auth:api');
+Route::post('/v1/users', [UserController::class, 'store'])->middleware('auth:api');
+Route::get('/v1/users/logins', [ProviderUserMappingController::class, 'index'])->middleware('auth:api');
+Route::get('/v1/users/{id}', [UserController::class, 'show'])->middleware('auth:api');
+Route::patch('/v1/users/{id}', [UserController::class, 'update'])->middleware('auth:api');
+Route::delete('/v1/users/{id}', [UserController::class, 'destroy'])->middleware('auth:api');
+Route::get('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'show'])->middleware('auth:api');
+Route::post('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'store'])->middleware('auth:api');
+Route::delete('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'destroy'])->middleware('auth:api');
 
 Route::prefix('v1')->group(function () {
     Route::Resource('provider-platforms', ProviderPlatformController::class);
-});
+})->middleware('auth:api');
 
 /* Actions/RPCs */
 Route::post('/v1/actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);

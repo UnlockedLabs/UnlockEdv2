@@ -5,6 +5,7 @@ namespace App\Http\Controllers\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Requests\UserRequest;
 use App\Http\Resources\NewUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -14,8 +15,9 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(UserRequest $request)
     {
+        $request = $request->validated();
         $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'name_last');
         $sortOrder = request()->query('order', 'asc');
