@@ -89,12 +89,12 @@ function CategoryItem({ name, links, rank }: Category) {
 
     return (
         <details className="">
-            <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded">
-                <TrashIcon className="w-4" />
+            <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg">
+                <div></div>
                 {name}
                 <ChevronDownIcon className="w-4" />
             </summary>
-            <ul className="card shadow-md p-4 gap-y-2">
+            <ul className="card shadow-md p-4 gap-y-2 rounded-bl-none">
                 <div className="flex flex-cols-2 font-bold gap-2 pr-6">
                     <h3 className="w-1/3">Title</h3>
                     <h3 className="w-2/3">URL</h3>
@@ -200,29 +200,15 @@ function CategoryItem({ name, links, rank }: Category) {
     );
 }
 
-function getCategoryItems(data: Category[], error: any, isLoading: boolean) {
-    if (error) return <div>failed to load</div>;
-    if (isLoading) return <div>loading...</div>;
-    return data.map((category) => {
-        return (
-            <div className="py-3" key={category.rank}>
-                <CategoryItem
-                    name={category.name}
-                    links={category.links}
-                    rank={category.rank}
-                />
-            </div>
-        );
-    });
-}
-
 export default function LeftMenuManagement({ auth }: PageProps) {
     const { data, error, isLoading } = useSWR("/api/v1/categories");
     const [categoryList, setCategoryList] = useState(Array<Category>);
     const [newCategoryTitle, setNewCategoryTitle] = useState("");
+    const [categoryToDelete, setCategoryToDelete] = useState<number | null>(
+        null,
+    );
     const addCategoryModal = useRef<null | HTMLDialogElement>(null);
-
-    const categoryItems = getCategoryItems(categoryList, error, isLoading);
+    const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
     useEffect(() => {
         if (data != undefined) {
@@ -230,14 +216,75 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         }
     }, [data]);
 
+    useEffect(() => {
+        console.log(categoryList);
+    }, [categoryList]);
+
+    // const categoryItems = getCategoryItems(categoryList, error, isLoading);
+
+    function CategoryItemsList({
+        data,
+        error,
+        isLoading,
+        deleteCategoryModal,
+        setCategoryToDelete,
+    }: {
+        data: Category[];
+        error: any;
+        isLoading: boolean;
+        deleteCategoryModal: any;
+        setCategoryToDelete: any;
+    }) {
+        if (error) return <div>failed to load</div>;
+        if (isLoading) return <div>loading...</div>;
+        return data.map((category) => {
+            return (
+                <div
+                    className="py-3 flex"
+                    key={category.name.concat(category.rank.toString())}
+                >
+                    <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
+                        <TrashIcon
+                            className="w-4 mt-5 self-start text-base-100"
+                            onClick={() => {
+                                deleteCategoryModal.current?.showModal(),
+                                    setCategoryToDelete(category.rank);
+                            }}
+                        />
+                    </div>
+                    <div className="grow">
+                        <CategoryItem
+                            name={category.name}
+                            links={category.links}
+                            rank={category.rank}
+                        />
+                    </div>
+                </div>
+            );
+        });
+    }
+
     function addCategory() {
         const newCategory = {
             name: newCategoryTitle,
             links: [],
-            rank: data.data.length + 1,
+            rank: categoryList.length + 1,
+            deleteCategory: deleteCategory,
         };
         setCategoryList([...categoryList, newCategory]);
         setNewCategoryTitle("");
+    }
+
+    function deleteCategory(rank: number) {
+        const newCategories = categoryList.filter(
+            (category) => category.rank !== rank,
+        );
+        setCategoryList(newCategories);
+    }
+
+    function deleteAndClose() {
+        if (categoryToDelete != null) deleteCategory(categoryToDelete);
+        deleteCategoryModal.current?.close();
     }
 
     return (
@@ -248,24 +295,62 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             />
             <div className="p-4">
                 <div className="flex justify-between">
-                    <button className="btn btn-primary btn-sm">
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => addCategoryModal.current?.showModal()}
+                    >
                         <PlusCircleIcon className="h-4 text-base-100" />
-                        <span
-                            className="text-base-100"
-                            onClick={() =>
-                                addCategoryModal.current?.showModal()
-                            }
-                        >
-                            Add Category
-                        </span>
+                        <span className="text-base-100">Add Category</span>
                     </button>
                     <button className="btn btn-primary btn-sm">
                         <DocumentCheckIcon className="h-4 text-base-100" />
                     </button>
                 </div>
-                {categoryItems}
+                <CategoryItemsList
+                    data={categoryList}
+                    error={error}
+                    isLoading={isLoading}
+                    deleteCategoryModal={deleteCategoryModal} // pass your deleteCategoryModal ref
+                    setCategoryToDelete={setCategoryToDelete} // pass your setCategoryToDelete function
+                />
             </div>
             {/* Modals */}
+            <dialog ref={deleteCategoryModal} className="modal">
+                <div className="modal-box">
+                    <form method="dialog">
+                        <button
+                            className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                            onClick={() => deleteCategoryModal.current?.close()}
+                        >
+                            ✕
+                        </button>
+                    </form>
+                    <h3 className="font-bold text-lg">Delete Category</h3>
+                    <p className="py-4">
+                        Are you sure you would like to delete this category?
+                        <br /> Deleting this category will delete all links
+                        associated with it.
+                    </p>
+                    <form
+                        method="dialog"
+                        className="flex flex-row justify-between"
+                    >
+                        <button
+                            className="btn"
+                            onClick={() => deleteCategoryModal.current?.close()}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="btn btn-error"
+                            type="button"
+                            onClick={() => deleteAndClose()}
+                        >
+                            Delete Category
+                        </button>
+                    </form>
+                </div>
+            </dialog>
             <dialog ref={addCategoryModal} className="modal">
                 <div className="modal-box">
                     <form method="dialog">
