@@ -39,8 +39,8 @@ function LinkItem({
     );
 }
 
-function CategoryItem({ categoryName, linksArray, rank }: Category) {
-    const [links, setLinks] = useState(linksArray);
+function CategoryItem({ name, links, rank }: Category) {
+    const [linksArray, setLinks] = useState(links);
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
     const [newURL, setNewURL] = useState("");
@@ -53,7 +53,9 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
     }
 
     function deleteLink() {
-        const newLinks = links.filter((link) => link !== activeLinkToDelete);
+        const newLinks = linksArray.filter(
+            (link) => link !== activeLinkToDelete,
+        );
         setLinks(newLinks);
     }
 
@@ -80,7 +82,7 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
     function addLink() {
         var newLink: CategoryLink = {};
         newLink[newTitle] = newURL;
-        setLinks([...links, newLink]);
+        setLinks([...linksArray, newLink]);
         setNewTitle("");
         setNewURL("");
     }
@@ -89,7 +91,7 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
         <details className="">
             <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded">
                 <TrashIcon className="w-4" />
-                {categoryName}
+                {name}
                 <ChevronDownIcon className="w-4" />
             </summary>
             <ul className="card shadow-md p-4 gap-y-2">
@@ -97,7 +99,7 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
                     <h3 className="w-1/3">Title</h3>
                     <h3 className="w-2/3">URL</h3>
                 </div>
-                {links.map((linkPair: { [x: string]: string }, index) => {
+                {linksArray.map((linkPair: { [x: string]: string }, index) => {
                     const key = Object.keys(linkPair)[0];
                     return (
                         <LinkRow
@@ -198,19 +200,15 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
     );
 }
 
-function getCategoryItems(
-    data: { data: { name: string; rank: number; links: CategoryLink[] }[] },
-    error: any,
-    isLoading: boolean,
-) {
+function getCategoryItems(data: Category[], error: any, isLoading: boolean) {
     if (error) return <div>failed to load</div>;
     if (isLoading) return <div>loading...</div>;
-    return data.data.map((category) => {
+    return data.map((category) => {
         return (
             <div className="py-3" key={category.rank}>
                 <CategoryItem
-                    categoryName={category.name}
-                    linksArray={category.links}
+                    name={category.name}
+                    links={category.links}
                     rank={category.rank}
                 />
             </div>
@@ -220,8 +218,27 @@ function getCategoryItems(
 
 export default function LeftMenuManagement({ auth }: PageProps) {
     const { data, error, isLoading } = useSWR("/api/v1/categories");
+    const [categoryList, setCategoryList] = useState(Array<Category>);
+    const [newCategoryTitle, setNewCategoryTitle] = useState("");
+    const addCategoryModal = useRef<null | HTMLDialogElement>(null);
 
-    const categoryItems = getCategoryItems(data, error, isLoading);
+    const categoryItems = getCategoryItems(categoryList, error, isLoading);
+
+    useEffect(() => {
+        if (data != undefined) {
+            setCategoryList(data.data);
+        }
+    }, [data]);
+
+    function addCategory() {
+        const newCategory = {
+            name: newCategoryTitle,
+            links: [],
+            rank: data.data.length + 1,
+        };
+        setCategoryList([...categoryList, newCategory]);
+        setNewCategoryTitle("");
+    }
 
     return (
         <AuthenticatedLayout user={auth.user} title="Categories">
@@ -233,7 +250,14 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 <div className="flex justify-between">
                     <button className="btn btn-primary btn-sm">
                         <PlusCircleIcon className="h-4 text-base-100" />
-                        <span className="text-base-100">Add Category</span>
+                        <span
+                            className="text-base-100"
+                            onClick={() =>
+                                addCategoryModal.current?.showModal()
+                            }
+                        >
+                            Add Category
+                        </span>
                     </button>
                     <button className="btn btn-primary btn-sm">
                         <DocumentCheckIcon className="h-4 text-base-100" />
@@ -241,6 +265,49 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 </div>
                 {categoryItems}
             </div>
+            {/* Modals */}
+            <dialog ref={addCategoryModal} className="modal">
+                <div className="modal-box">
+                    <form method="dialog">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                            ✕
+                        </button>
+                    </form>
+                    <form method="dialog" onSubmit={addCategory}>
+                        <div className="flex flex-col items-center">
+                            <span className="text-3xl font-semibold pb-6 text-neutral">
+                                Add Category
+                            </span>
+                            <label className="form-control w-full max-w-xs">
+                                <div className="label">
+                                    <span className="label-text">Title</span>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Type here"
+                                    className="input input-bordered w-full max-w-xs"
+                                    value={newCategoryTitle}
+                                    onChange={(e) =>
+                                        setNewCategoryTitle(e.target.value)
+                                    }
+                                    required
+                                />
+                            </label>
+                            <label className="p-6">
+                                <div></div>
+                            </label>
+                            <label className="form-control">
+                                <button
+                                    className="btn btn-primary"
+                                    type="submit"
+                                >
+                                    Add
+                                </button>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
         </AuthenticatedLayout>
     );
 }

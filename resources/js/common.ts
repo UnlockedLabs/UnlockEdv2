@@ -13,9 +13,9 @@ export interface User {
 }
 
 export interface Category {
-    categoryName: string;
-    linksArray: Array<CategoryLink>;
     rank: number;
+    name: string;
+    links: Array<CategoryLink>;
 }
 
 export interface CategoryLink {
