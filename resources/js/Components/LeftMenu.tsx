@@ -8,8 +8,8 @@ import {
 import useSWR from "swr";
 import { Category, CategoryLink } from "@/common";
 
-function CategoryItem({ categoryName, linksArray, rank }: Category) {
-    const linksList = linksArray.map((linkPair: { [x: string]: string }) => {
+function CategoryItem({ name, links, rank }: Category) {
+    const linksList = links.map((linkPair: { [x: string]: string }) => {
         const key = Object.keys(linkPair)[0];
         return (
             <li key={key.concat(rank.toString())}>
@@ -22,7 +22,7 @@ function CategoryItem({ categoryName, linksArray, rank }: Category) {
             <details>
                 <summary>
                     <ArchiveBoxIcon className="w-4" />
-                    {categoryName}
+                    {name}
                 </summary>
                 <ul>{linksList}</ul>
             </details>
@@ -41,8 +41,8 @@ function getCategoryItems(
         return (
             <CategoryItem
                 key={category.rank}
-                categoryName={category.name}
-                linksArray={category.links}
+                name={category.name}
+                links={category.links}
                 rank={category.rank}
             />
         );
