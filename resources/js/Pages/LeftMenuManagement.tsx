@@ -216,12 +216,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         }
     }, [data]);
 
-    useEffect(() => {
-        console.log(categoryList);
-    }, [categoryList]);
-
-    // const categoryItems = getCategoryItems(categoryList, error, isLoading);
-
     function CategoryItemsList({
         data,
         error,
@@ -310,8 +304,8 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     data={categoryList}
                     error={error}
                     isLoading={isLoading}
-                    deleteCategoryModal={deleteCategoryModal} // pass your deleteCategoryModal ref
-                    setCategoryToDelete={setCategoryToDelete} // pass your setCategoryToDelete function
+                    deleteCategoryModal={deleteCategoryModal}
+                    setCategoryToDelete={setCategoryToDelete}
                 />
             </div>
             {/* Modals */}
