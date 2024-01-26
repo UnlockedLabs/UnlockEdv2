@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
 use GuzzleHttp\Client;
@@ -167,12 +168,14 @@ class CanvasServices
      */
     public static function byProviderId(int $providerId): CanvasServices|InvalidArgumentException
     {
-        $provider = ProviderPlatform::findOrfFail($providerId);
+        $provider = ProviderPlatform::findOrFail($providerId);
         if (! $provider) {
             throw new \InvalidArgumentException('Invalid provider ID');
         }
 
-        return new self($provider->provider_id, $provider->account_id, $provider->access_key, $provider->base_url);
+        $account_id = (int) $provider->account_id;
+
+        return new self($provider->id, $account_id, $provider->access_key, $provider->base_url);
     }
 
     private static function handleResponse(ResponseInterface $response): mixed
@@ -439,7 +442,7 @@ class CanvasServices
      * This returns the full User object complete with an array of course items
      * that the user should be enrolled in.
      *
-     * @param  string  $userI
+     * @param  string  $user
      * @return mixed JSON decoded
      *
      * @throws \Exception
@@ -472,7 +475,7 @@ class CanvasServices
     }
 
     /**
-     * List Course Assignments from Canvas
+     * List Enrollments from Canvas by User ID
      *
      * @return mixed JSON decoded
      *
@@ -483,6 +486,25 @@ class CanvasServices
         $base_url = $this->base_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
 
         return $this->GET($base_url);
+    }
+
+    /**
+     * Store Enrollments from Canvas by User ID into UnlockEd v2 Database
+     *
+     * @return mixed JSON decoded
+     *
+     * @throws \Exception
+     * */
+    public function storeEnrollmentsByUser(string $userId): mixed
+    {
+        $base_url = $this->base_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
+
+        $enrollment_list = $this->GET($base_url);
+        foreach ($enrollment_list as $enrollment) {
+            Enrollment::create(['user_id' => $enrollment->user_id, 'course_id' => $enrollment->course_id, 'enrollment_state' => $enrollment->enrollment_state, 'links' => [], 'provider_start_at' => $enrollment->start_at, 'provider_end_at' => $enrollment->end_at]);
+        }
+
+        return $enrollment_list;
     }
 
     /**
