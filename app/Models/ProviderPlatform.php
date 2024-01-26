@@ -33,11 +33,11 @@ class ProviderPlatform extends Model
         'state' => ProviderPlatformState::class,
     ];
 
-    public function hashAccessKey()
-    {
-        $accessKey = $this->access_key;
-        $hashedAccessKey = Hash::make($accessKey);
-        $this->access_key = $hashedAccessKey;
-        $this->save();
-    }
+    // public function hashAccessKey()
+    // {
+    //     $accessKey = $this->access_key;
+    //     $hashedAccessKey = Hash::make($accessKey);
+    //     $this->access_key = $hashedAccessKey;
+    //     $this->save();
+    // }
 }
