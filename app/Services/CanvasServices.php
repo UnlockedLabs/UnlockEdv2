@@ -489,25 +489,6 @@ class CanvasServices
     }
 
     /**
-     * Store Enrollments from Canvas by User ID into UnlockEd v2 Database
-     *
-     * @return mixed JSON decoded
-     *
-     * @throws \Exception
-     * */
-    public function storeEnrollmentsByUser(string $userId): mixed
-    {
-        $base_url = $this->base_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
-
-        $enrollment_list = $this->GET($base_url);
-        foreach ($enrollment_list as $enrollment) {
-            Enrollment::create(['user_id' => $enrollment->user_id, 'course_id' => $enrollment->course_id, 'enrollment_state' => $enrollment->enrollment_state, 'links' => [], 'provider_start_at' => $enrollment->start_at, 'provider_end_at' => $enrollment->end_at]);
-        }
-
-        return $enrollment_list;
-    }
-
-    /**
      * List Enrollments from Canvas by Course ID
      *
      * @param string $

@@ -50,7 +50,7 @@ class EnrollmentController extends Controller
     {
         $validated = $request->validated();
 
-        $Enrollment = Enrollment::create($validated->all());
+        $Enrollment = Enrollment::create($validated);
 
         return EnrollmentResource::collection($Enrollment);
     }

@@ -26,7 +26,7 @@ class StoreUserCourseController extends Controller
         $canvasCourses = $this->canvasService->listCoursesForUser($userId);
         $courseCollection = collect();
         foreach ($canvasCourses as $course) {
-            $request->merge(['provider_resource_id' => $course->uuid, 'provider_course_name' => $course->name]);
+            $request->merge(['provider_resource_id' => (string) $course->id, 'provider_course_name' => $course->name]);
             $validated = $request->validate([
                 'provider_resource_id' => 'required|string|max:255|unique:courses',
                 'provider_course_name' => 'required|string|max:255',
