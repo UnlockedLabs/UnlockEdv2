@@ -21,9 +21,10 @@ class ProviderUserMappingTest extends TestCase
     /** @test */
     public function it_lists_provider_user_mappings()
     {
+        $user = User::factory()->createOne();
         $this->seed($this->seeder);
 
-        $response = $this->get('/api/v1/users/logins', [
+        $response = $this->actingAs($user)->get('/api/v1/users/logins', [
             'Accept' => 'application/json',
         ]);
 
@@ -48,7 +49,7 @@ class ProviderUserMappingTest extends TestCase
         ];
 
         // Make a POST request to the create method
-        $response = $this->post('/api/v1/users/'.$user->id.'/logins', $data);
+        $response = $this->actingAs($user)->post('/api/v1/users/'.$user->id.'/logins', $data);
 
         // Assertions
         $response->assertStatus(201);
@@ -69,7 +70,7 @@ class ProviderUserMappingTest extends TestCase
         $this->seed($this->seeder);
         $user = User::factory()->createOne();
         $userId = $user->id;
-        $response = $this->get("/api/v1/users/$userId/logins");
+        $response = $this->actingAs($user)->get("/api/v1/users/$userId/logins");
 
         // Assertions
         $response->assertOk();
@@ -90,7 +91,7 @@ class ProviderUserMappingTest extends TestCase
     public function it_deletes_a_provider_user_mapping()
     {
         $user = User::factory()->createOne();
-        $response = $this->delete($this->url_beg.'/'.$user->id.$this->url_end);
+        $response = $this->actingAs($user)->delete($this->url_beg.'/'.$user->id.$this->url_end);
 
         $response->assertOk();
     }

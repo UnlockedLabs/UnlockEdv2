@@ -14,33 +14,57 @@ class EnrollmentControllerTest extends TestCase
 
     public function testEnrollmentsAreCreated()
     {
+        $user = \App\Models\User::factory()->createOne();
+        Enrollment::factory(10)->create();
+
+        $response = $this->actingAs($user)->get($this->uri, [
+            'Accept' => 'application/json',
+        ]);
+
+        // Assertions
+        $response->assertOk();
         // Create 10 Enrollments using the factory
-        $Enrollments = Enrollment::factory(10)->create();
 
         // Assert that 10 Enrollments were created
-        $this->assertCount(10, $Enrollments);
+        $this->assertCount(10, $response['data']);
     }
 
     public function testEnrollmentsIndexReturnsJson()
     {
         // Create 10 Enrollments using the factory
+        $user = \App\Models\User::factory()->createOne();
         Enrollment::factory(2)->create();
 
         // Make a GET request to the index method
-        $response = $this->get($this->uri);
+        $response = $this->actingAs($user)->get($this->uri);
 
         // Assert that the response status code is 200 (OK)
         $response->assertStatus(200);
 
         // Assert that the response contains the Enrollments
-        $response->assertJsonStructure(['data', 'meta', 'links']);
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'user_id',
+                    'course_id',
+                    'provider_id',
+                    'enrollment_state',
+                    'links',
+                    'provider_start_at',
+                    'provider_end_at',
+                    'created_at',
+                    'updated_at',
+                ],
+            ],
+        ]);
     }
 
     public function testGetEnrollment()
     {
+        $user = \App\Models\User::factory()->createOne();
         $Enrollment = Enrollment::factory(1)->create();
 
-        $response = $this->get($this->uri.'/'.$Enrollment[0]->id);
+        $response = $this->actingAs($user)->get($this->uri.'/'.$Enrollment[0]->id);
 
         $response->assertStatus(200);
 
@@ -62,9 +86,10 @@ class EnrollmentControllerTest extends TestCase
 
     public function testUpdateEnrollment()
     {
+        $user = \App\Models\User::factory()->createOne();
         $enrollment = Enrollment::factory(1)->create();
 
-        $response = $this->patch($this->uri.'/'.$enrollment[0]->id, [
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment[0]->id, [
             'enrollment_state' => 'completed',
             'links' => '[{"link1":"Test"},{"link2":"Update"}]',
         ]);
@@ -81,8 +106,9 @@ class EnrollmentControllerTest extends TestCase
 
     public function testDeleteEnrollment()
     {
+        $user = \App\Models\User::factory()->createOne();
         $Enrollment = Enrollment::factory(1)->create();
-        $response = $this->delete($this->uri.'/'.$Enrollment[0]->id);
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$Enrollment[0]->id);
         $response->assertStatus(204);
     }
 }
