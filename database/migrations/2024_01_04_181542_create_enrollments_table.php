@@ -17,7 +17,9 @@ class CreateEnrollmentsTable extends Migration
             $table->id();
             $table->foreignId('user_id');
             $table->foreignId('course_id');
-            $table->string('provider_id')->nullable();
+            $table->string('provider_user_id');
+            $table->string('provider_course_id');
+            $table->string('provider_id');
             $table->enum('enrollment_state', ['active', 'inactive', 'completed', 'deleted']);
             $table->json('links');
             $table->timestamp('provider_start_at')->nullable();

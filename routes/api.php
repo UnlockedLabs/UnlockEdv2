@@ -6,6 +6,8 @@ use App\Http\Controllers\v1\CourseController;
 use App\Http\Controllers\v1\EnrollmentController;
 use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\ProviderUserMappingController;
+use App\Http\Controllers\v1\StoreUserCourseController;
+use App\Http\Controllers\v1\StoreUserEnrollmentController;
 use App\Http\Controllers\v1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +52,8 @@ Route::delete('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'd
 
 Route::prefix('v1')->group(function () {
     Route::Resource('provider-platforms', ProviderPlatformController::class);
+    Route::post('provider-platforms/{providerId}/users/{userId}/courses', StoreUserCourseController::class);
+    Route::post('provider-platforms/{providerId}/users/{userId}/enrollments', StoreUserEnrollmentController::class);
 });
 
 /* Actions/RPCs */

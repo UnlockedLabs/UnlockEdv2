@@ -13,6 +13,8 @@ class Enrollment extends Model
         'user_id',
         'course_id',
         'provider_id',
+        'provider_user_id',
+        'provider_course_id',
         'enrollment_state',
         'links',
         'provider_start_at',
