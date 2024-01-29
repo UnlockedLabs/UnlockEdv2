@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\v1\Actions\CreateCanvasUserLogin;
 use App\Http\Controllers\v1\Actions\RegisterCanvasAuthProviderAction;
 use App\Http\Controllers\v1\CategoryController;
 use App\Http\Controllers\v1\CourseController;
@@ -20,37 +21,41 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/v1/categories', [CategoryController::class, 'index'])->middleware('auth:api');
-Route::get('/v1/categories/{id}', [CategoryController::class, 'show'])->middleware('auth:api');
-Route::post('/v1/categories', [CategoryController::class, 'store'])->middleware('auth:api');
-Route::patch('/v1/categories/{id}', [CategoryController::class, 'update'])->middleware('auth:api');
-Route::delete('/v1/categories/{id}', [CategoryController::class, 'destroy'])->middleware('auth:api');
-
-Route::get('/v1/enrollments', [EnrollmentController::class, 'index'])->middleware('auth:api');
-Route::get('/v1/enrollments/{id}', [EnrollmentController::class, 'show'])->middleware('auth:api');
-Route::post('/v1/enrollments', [EnrollmentController::class, 'store'])->middleware('auth:api');
-Route::patch('/v1/enrollments/{id}', [EnrollmentController::class, 'update'])->middleware('auth:api');
-Route::delete('/v1/enrollments/{id}', [EnrollmentController::class, 'destroy'])->middleware('auth:api');
-
-Route::get('v1/courses', [CourseController::class, 'index'])->middleware('auth:api');
-Route::get('/v1/courses/{id}', [CourseController::class, 'show'])->middleware('auth:api');
-Route::post('/v1/courses', [CourseController::class, 'store'])->middleware('auth:api');
-Route::patch('/v1/courses/{id}', [CourseController::class, 'update'])->middleware('auth:api');
-Route::delete('/v1/courses/{id}', [CourseController::class, 'destroy'])->middleware('auth:api');
-
-Route::get('/v1/users', [UserController::class, 'index'])->middleware('auth:api');
-Route::post('/v1/users', [UserController::class, 'store'])->middleware('auth:api');
-Route::get('/v1/users/logins', [ProviderUserMappingController::class, 'index'])->middleware('auth:api');
-Route::get('/v1/users/{id}', [UserController::class, 'show'])->middleware('auth:api');
-Route::patch('/v1/users/{id}', [UserController::class, 'update'])->middleware('auth:api');
-Route::delete('/v1/users/{id}', [UserController::class, 'destroy'])->middleware('auth:api');
-Route::get('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'show'])->middleware('auth:api');
-Route::post('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'store'])->middleware('auth:api');
-Route::delete('/v1/users/{id}/logins', [ProviderUserMappingController::class, 'destroy'])->middleware('auth:api');
-
 Route::prefix('v1')->group(function () {
-    Route::Resource('provider-platforms', ProviderPlatformController::class);
-})->middleware('auth:api');
+    Route::middleware(['web', 'auth'])->group(function () {
 
-/* Actions/RPCs */
-Route::post('/v1/actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);
+        Route::get('categories', [CategoryController::class, 'index']);
+        Route::get('categories/{id}', [CategoryController::class, 'show']);
+        Route::post('categories', [CategoryController::class, 'store']);
+        Route::patch('categories/{id}', [CategoryController::class, 'update']);
+        Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
+
+        Route::get('enrollments', [EnrollmentController::class, 'index']);
+        Route::get('enrollments/{id}', [EnrollmentController::class, 'show']);
+        Route::post('enrollments', [EnrollmentController::class, 'store']);
+        Route::patch('enrollments/{id}', [EnrollmentController::class, 'update']);
+        Route::delete('enrollments/{id}', [EnrollmentController::class, 'destroy']);
+
+        Route::get('courses', [CourseController::class, 'index']);
+        Route::get('courses/{id}', [CourseController::class, 'show']);
+        Route::post('courses', [CourseController::class, 'store']);
+        Route::patch('courses/{id}', [CourseController::class, 'update']);
+        Route::delete('courses/{id}', [CourseController::class, 'destroy']);
+
+        Route::get('users', [UserController::class, 'index']);
+        Route::post('users', [UserController::class, 'store']);
+        Route::get('users/logins', [ProviderUserMappingController::class, 'index']);
+        Route::get('users/{id}', [UserController::class, 'show']);
+        Route::patch('users/{id}', [UserController::class, 'update']);
+        Route::delete('users/{id}', [UserController::class, 'destroy']);
+        Route::get('users/{id}/logins', [ProviderUserMappingController::class, 'show']);
+        Route::post('users/{id}/logins', [ProviderUserMappingController::class, 'store']);
+        Route::delete('users/{id}/logins', [ProviderUserMappingController::class, 'destroy']);
+
+        Route::Resource('provider-platforms', ProviderPlatformController::class);
+
+        /* Actions/RPCs */
+        Route::post('actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);
+        Route::post('actions/create-canvas-login', [CreateCanvasUserLogin::class, 'create_canvas_login']);
+    });
+});

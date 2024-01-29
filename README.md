@@ -36,28 +36,6 @@ PASSPORT_PERSONAL_ACCESS_CLIENT_SECRET="o06w5S8I71RVMGHhocUVHCy0cbyMoVqxsHB8Rd3I
 
 #### If you run sail artisan migrate:fresh (unless you use --env=testing), it will overwrite the client info in the database, and you will need to re-install/configure passport.
 
-### API Testing from a client (Postman, curl, etc):
-
-The API is protected by Passport, so you will need to use the client ID and secret to authenticate. You will need to get an OAuth token using a password grant. First, you will need to run the command: `sail artisan passport:client --password`, and save the client ID and secret. Then, you can use the following command to get an OAuth token:
-
-```php
-use Illuminate\Support\Facades\Http;
-
-$response = Http::asForm()->post('http://localhost/oauth/token', [
-    'grant_type' => 'password',
-    'client_id' => '**client-id**',
-    'client_secret' => '**client-secret**',
-    'username' => 'admin@unlocked.v2',
-    'password' => 'ChangeMe!',// will be changed after first login
-    'scope' => '*',
-]);
-
-$access = $response->json()['access_token'];
-```
-
-That will return a response with an access token, that you must include in future requests to the API.
-`curl 'http://localhost/api/v1/users' -H 'Authorization: Bearer ***access_token***'`
-
 #### NOTE:
 
 -   Run `sail artisan db:seed --class=TestSeeder` to seed the database with test data for local UI development if you need tables populated with fake data.
