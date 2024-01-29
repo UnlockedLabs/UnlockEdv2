@@ -24,7 +24,6 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
             'password_reset' => false,
         ]);
-        var_dump($validated);
 
         return redirect()->route('dashboard');
     }

@@ -55,6 +55,11 @@ class User extends Authenticatable
         return $this->hasMany('App\Models\ProviderUserMapping');
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
     public function createTempPassword()
     {
         $pw = Str::random(8);
