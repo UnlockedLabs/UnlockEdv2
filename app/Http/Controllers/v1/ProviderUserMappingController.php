@@ -4,8 +4,8 @@ namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
-use App\Http\Requests\ProviderUserMappingRequest;
 use App\Http\Requests\CreateProviderUserMappingRequest;
+use App\Http\Requests\ProviderUserMappingRequest;
 use App\Http\Resources\ProviderUserMappingResource;
 use App\Models\ProviderUserMapping;
 
@@ -23,6 +23,7 @@ class ProviderUserMappingController extends Controller
         } else {
             $prov = ProviderUserMapping::where('user_id', request()->user()->id)->get();
         }
+
         return ProviderUserMappingResource::collection($prov);
     }
 
@@ -49,11 +50,12 @@ class ProviderUserMappingController extends Controller
      */
     public function show(ProviderUserMappingRequest $req, string $userId)
     {
-        if (!$req->overrideAuthorize($userId)) {
+        if (! $req->overrideAuthorize($userId)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         try {
             $user = ProviderUserMapping::where('user_id', $userId)->get();
+
             return ProviderUserMappingResource::collection($user);
         } catch (\Throwable $th) {
             return response()->json(['error' => 'User not found'], 404);
@@ -68,7 +70,7 @@ class ProviderUserMappingController extends Controller
         $req->authorize();
         // This request valitates the userid and providerid only, so we are sure of which user mapping to delete
         $user = ProviderUserMapping::where('user_id', $id);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         } else {
             $user->delete();

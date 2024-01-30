@@ -23,8 +23,8 @@ class CategoryController extends Controller
         // Apply search
         if ($search) {
             $query->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('links', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('links', 'like', '%'.$search.'%');
             });
         }
 
@@ -39,7 +39,7 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
 
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -61,7 +61,7 @@ class CategoryController extends Controller
 
         $category = Category::find($id);
 
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -75,7 +75,7 @@ class CategoryController extends Controller
         $req->authorize();
         $category = Category::find($id);
 
-        if (!$category) {
+        if (! $category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
         $category->delete();

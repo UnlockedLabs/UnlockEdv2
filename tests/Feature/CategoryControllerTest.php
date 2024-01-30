@@ -14,9 +14,8 @@ class CategoryControllerTest extends TestCase
 
     public function testCategoriesAreCreated()
     {
-        // Create 10 categories using the factory
         Category::factory(10)->create();
-        $user = \App\Models\User::factory()->create();
+        $user = \App\Models\User::factory()->admin()->create();
 
         $response = $this->actingAs($user)->get($this->uri);
 
@@ -34,6 +33,30 @@ class CategoryControllerTest extends TestCase
                 ],
             ],
         ]);
+    }
+
+    public function testActuallyCreateCategoryInsteadOfTestThatTheFactoryWorks()
+    {
+        $user = \App\Models\User::factory()->admin()->create();
+        $category = [
+            'name' => 'testCategory',
+            'rank' => '42',
+            'links' => ['self' => 'http://localhost:8000/api/v1/categories/1'],
+        ];
+        $response = $this->actingAs($user)->post($this->uri, $category);
+        $response->assertStatus(200);
+    }
+
+    public function testActuallyCreateCategoryInsteadOfTestThatTheFactoryWorksUnauthorized()
+    {
+        $user = \App\Models\User::factory()->create();
+        $category = [
+            'name' => 'testCategory',
+            'rank' => '42',
+            'links' => '{"self": "http://localhost:8000/api/v1/categories/1"}',
+        ];
+        $response = $this->actingAs($user)->post($this->uri, $category);
+        $response->assertStatus(403);
     }
 
     public function testCategoriesIndexReturnsJson()
@@ -87,18 +110,35 @@ class CategoryControllerTest extends TestCase
 
     public function testUpdateCategory()
     {
-        $user = \App\Models\User::factory()->create();
+        $user = \App\Models\User::factory()->admin()->create();
         $category = Category::factory(1)->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$category[0]->id, ['name' => 'TestUpdate']);
         $response->assertStatus(200);
         assert($response['data']['name'] == 'TestUpdate');
     }
 
+    public function testUpdateCategoryUnauthorized()
+    {
+        $user = \App\Models\User::factory()->create();
+        $category = Category::factory(1)->create();
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$category[0]->id, ['name' => 'TestUpdate']);
+        $response->assertStatus(403);
+        assert($response['data']['name'] == 'TestUpdate');
+    }
+
     public function testDeleteCategory()
+    {
+        $user = \App\Models\User::factory()->admin()->create();
+        $category = Category::factory(1)->create();
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$category[0]->id);
+        $response->assertStatus(204);
+    }
+
+    public function testDeleteCategoryUnauthorized()
     {
         $user = \App\Models\User::factory()->create();
         $category = Category::factory(1)->create();
         $response = $this->actingAs($user)->delete($this->uri.'/'.$category[0]->id);
-        $response->assertStatus(204);
+        $response->assertStatus(403);
     }
 }

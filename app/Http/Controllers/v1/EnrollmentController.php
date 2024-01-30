@@ -25,12 +25,12 @@ class EnrollmentController extends Controller
         // Apply search
         if ($search) {
             $query->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('links', 'like', '%' . $search . '%');
+                $query->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('links', 'like', '%'.$search.'%');
             });
         }
         // If user is not admin, only show their enrollments
-        if (!$request->user()->isAdmin()) {
+        if (! $request->user()->isAdmin()) {
             $query->where(['user_id' => $request->user()->id]);
         }
 
@@ -45,14 +45,14 @@ class EnrollmentController extends Controller
     {
         if ($request->user()->isAdmin()) {
             $enrollment = Enrollment::findOrFail($id);
-            if (!$enrollment) {
+            if (! $enrollment) {
                 return response()->json(['error' => "Enrollment with this ID not found for User: {$request->user()->username}"], Response::HTTP_NOT_FOUND);
             }
 
             return new EnrollmentResource($enrollment);
         } else {
             $enrollment = Enrollment::findOrFail($id);
-            if (!$enrollment || $enrollment->user_id != $request->user()->id) {
+            if (! $enrollment || $enrollment->user_id != $request->user()->id) {
                 return response()->json(['error' => "Enrollment with this ID not found for User: {$request->user()->username}"], Response::HTTP_NOT_FOUND);
             }
         }
@@ -75,7 +75,7 @@ class EnrollmentController extends Controller
 
         $Enrollment = Enrollment::findOrFail($id);
 
-        if (!$Enrollment) {
+        if (! $Enrollment) {
             return response()->json(['error' => 'Enrollment not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -89,7 +89,7 @@ class EnrollmentController extends Controller
         $req->authorize();
         $Enrollment = Enrollment::find($id);
 
-        if (!$Enrollment) {
+        if (! $Enrollment) {
             return response()->json(['error' => 'Enrollment not found'], Response::HTTP_NOT_FOUND);
         }
 
