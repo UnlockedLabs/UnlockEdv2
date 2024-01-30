@@ -14,8 +14,7 @@ class UpdateProviderPlatformRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        //TODO: FIX THIS
-        return true;
+        return $this->user()->isAdmin();
     }
 
     /**

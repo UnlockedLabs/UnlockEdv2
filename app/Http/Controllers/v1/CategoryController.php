@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminRequest;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
@@ -22,8 +23,8 @@ class CategoryController extends Controller
         // Apply search
         if ($search) {
             $query->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('links', 'like', '%'.$search.'%');
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('links', 'like', '%' . $search . '%');
             });
         }
 
@@ -38,7 +39,7 @@ class CategoryController extends Controller
     {
         $category = Category::find($id);
 
-        if (! $category) {
+        if (!$category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -49,9 +50,9 @@ class CategoryController extends Controller
     {
         $validated = $request->validated();
 
-        $category = Category::create($validated->all());
+        $category = new Category($validated);
 
-        return CategoryResource::collection($category);
+        return new CategoryResource($category);
     }
 
     public function update(UpdateCategoryRequest $request, $id)
@@ -60,7 +61,7 @@ class CategoryController extends Controller
 
         $category = Category::find($id);
 
-        if (! $category) {
+        if (!$category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
 
@@ -69,14 +70,14 @@ class CategoryController extends Controller
         return new CategoryResource($category);
     }
 
-    public function destroy($id)
+    public function destroy(AdminRequest $req, string $id)
     {
+        $req->authorize();
         $category = Category::find($id);
 
-        if (! $category) {
+        if (!$category) {
             return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
         }
-
         $category->delete();
 
         return response(null, Response::HTTP_NO_CONTENT);

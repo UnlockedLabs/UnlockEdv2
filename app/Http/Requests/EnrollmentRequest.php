@@ -2,16 +2,26 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Enrollment;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCourseRequest extends FormRequest
+class EnrollmentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user()->isAdmin();
+        return true;
+    }
+
+    public function overrideAuthorize(Enrollment $enrollment): bool
+    {
+        if ($this->user()->isAdmin()) {
+            return true;
+        } else {
+            return $enrollment->user_id == $this->user()->id;
+        }
     }
 
     /**
@@ -22,8 +32,7 @@ class StoreCourseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_resource_id' => 'required|string|max:255',
-            'provider_course_name' => 'required|string|max:255',
+            //
         ];
     }
 }
