@@ -11,8 +11,7 @@ class StoreUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        //TODO: FIX THIS SOON
-        return true;
+        return $this->user()->isAdmin();
     }
 
     /**

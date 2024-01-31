@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminRequest;
 use App\Http\Requests\StoreProviderPlatformRequest;
 use App\Http\Requests\UpdateProviderPlatformRequest;
 use App\Http\Resources\PaginateResource;
@@ -14,8 +15,9 @@ class ProviderPlatformController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(AdminRequest $request)
     {
+        $request->authorize();
         $providerPlatforms = ProviderPlatform::paginate(10);
 
         return PaginateResource::make($providerPlatforms, ProviderPlatformResource::class);
@@ -43,9 +45,11 @@ class ProviderPlatformController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ProviderPlatform $providerPlatform)
+    public function show(AdminRequest $request, string $id)
     {
-        return ProviderPlatformResource::make($providerPlatform);
+        $request->authorize();
+
+        return ProviderPlatformResource::make(ProviderPlatform::findOrFail($id));
     }
 
     /**
@@ -70,9 +74,10 @@ class ProviderPlatformController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ProviderPlatform $providerPlatform)
+    public function destroy(AdminRequest $request, string $id)
     {
-        $providerPlatform = ProviderPlatform::findOrFail($providerPlatform->id);
+        $request->authorize();
+        $providerPlatform = ProviderPlatform::findOrFail($id);
         $providerPlatform->delete();
 
         return response()->noContent();

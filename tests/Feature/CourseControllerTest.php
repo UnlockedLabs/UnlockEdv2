@@ -16,7 +16,7 @@ class CourseControllerTest extends TestCase
     public function testCoursesAreCreated()
     {
         Course::factory(10)->create();
-        $user = \App\Models\User::factory()->create();
+        $user = \App\Models\User::factory()->admin()->create();
 
         $response = $this->actingAs($user)->get($this->uri);
 
@@ -60,7 +60,7 @@ class CourseControllerTest extends TestCase
     // this test the update method in the controller
     public function testUpdateCourse()
     {
-        $user = \App\Models\User::factory()->create();
+        $user = \App\Models\User::factory()->admin()->create();
         $course = Course::factory(1)->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$course[0]->id, ['provider_course_name' => 'TestUpdate']);
         $response->assertStatus(200);
@@ -70,9 +70,18 @@ class CourseControllerTest extends TestCase
     // this tests the destroy method in the controller
     public function testDeleteCourse()
     {
-        $user = \App\Models\User::factory()->create();
+        $user = \App\Models\User::factory()->admin()->create();
         $course = Course::factory(1)->create();
         $response = $this->actingAs($user)->delete($this->uri.'/'.$course[0]->id);
         $response->assertStatus(204);
+    }
+
+    // this tests the destroy method in the controller
+    public function testDeleteCourseUnauthorized()
+    {
+        $user = \App\Models\User::factory()->create();
+        $course = Course::factory(1)->create();
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$course[0]->id);
+        $response->assertStatus(403);
     }
 }
