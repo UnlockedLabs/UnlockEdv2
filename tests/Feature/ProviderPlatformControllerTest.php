@@ -44,7 +44,6 @@ class ProviderPlatformControllerTest extends TestCase
     {
         $user = \App\Models\User::factory()->admin()->create();
         $response = $this->actingAs($user)->get($this->uri);
-        echo $response->getContent();
         $response->assertStatus(200);
     }
 

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\v1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
 use App\Http\Requests\CreateProviderUserMappingRequest;
-use App\Http\Requests\ProviderUserMappingRequest;
+use App\Http\Requests\ValidateUserRequest;
 use App\Http\Resources\ProviderUserMappingResource;
 use App\Models\ProviderUserMapping;
 
@@ -48,7 +48,7 @@ class ProviderUserMappingController extends Controller
      *
      * GET: /api/v1/users/{user_id}/logins
      */
-    public function show(ProviderUserMappingRequest $req, string $userId)
+    public function show(ValidateUserRequest $req, string $userId)
     {
         if (! $req->overrideAuthorize($userId)) {
             return response()->json(['error' => 'Unauthorized'], 403);
