@@ -12,7 +12,7 @@ class Enrollment extends Model
     protected $fillable = [
         'user_id',
         'course_id',
-        'provider_id',
+        'provider_platform_id',
         'provider_user_id',
         'provider_course_id',
         'enrollment_state',

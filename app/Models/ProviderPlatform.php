@@ -41,7 +41,7 @@ class ProviderPlatform extends Model
     //     $this->access_key = $hashedAccessKey;
     //     $this->save();
     // }
-    
+
     public function providerUserMappings()
     {
         return $this->hasMany('App\Models\ProviderUserMapping');

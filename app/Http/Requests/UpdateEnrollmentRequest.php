@@ -27,6 +27,9 @@ class UpdateEnrollmentRequest extends FormRequest
             'links' => 'nullable|json',
             'provider_start_at' => 'nullable|date',
             'provider_end_at' => 'nullable|date|after_or_equal:provider_start_at',
+            'provider_platform_id' => 'nullable|exists:provider_platforms,id',
+            'provider_user_id' => 'nullable|max:255',
+            'provider_course_id' => 'nullable|max:255',
         ];
     }
 }

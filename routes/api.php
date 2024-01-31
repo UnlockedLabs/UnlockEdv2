@@ -24,8 +24,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
-Route::middleware(['web', 'auth'])->group(function () {
-  
+    Route::middleware(['web', 'auth'])->group(function () {
+
         Route::Resource('provider-platforms', ProviderPlatformController::class);
         Route::post('provider-platforms/{providerId}/users/{userId}/courses', StoreUserCourseController::class);
         Route::post('provider-platforms/{providerId}/users/{userId}/enrollments', StoreUserEnrollmentController::class);
