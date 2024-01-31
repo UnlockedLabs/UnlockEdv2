@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ProviderPlatform;
+use App\Models\ProviderUserMapping;
 use App\Models\User;
 use Database\Seeders\ProviderUserMappingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,7 +22,7 @@ class ProviderUserMappingTest extends TestCase
     /** @test */
     public function it_lists_provider_user_mappings()
     {
-        $user = User::factory()->createOne();
+        $user = User::factory()->admin()->createOne();
         $this->seed($this->seeder);
 
         $response = $this->actingAs($user)->get('/api/v1/users/logins', [
@@ -30,15 +31,52 @@ class ProviderUserMappingTest extends TestCase
 
         // Assertions
         $response->assertOk();
-        dump($response->getContent());
-        $response->dump();
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'user_id',
+                    'provider_platform_id',
+                    'external_user_id',
+                    'external_username',
+                    'authentication_provider_status',
+                ],
+            ],
+        ]);
+    }
+
+    public function it_lists_only_users_mappings_non_admin()
+    {
+        $user = User::factory()->createOne();
+        ProviderUserMapping::factory()->count(5)->create(['user_id' => $user->id]);
+        $this->seed($this->seeder);
+
+        $response = $this->actingAs($user)->get('/api/v1/users/logins', [
+            'Accept' => 'application/json',
+        ]);
+
+        // Assertions
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'user_id',
+                    'provider_platform_id',
+                    'external_user_id',
+                    'external_username',
+                    'authentication_provider_status',
+                ],
+            ],
+        ]);
+        foreach ($response->json('data') as $mapping) {
+            $this->assertEquals($user->id, $mapping['user_id']);
+        }
     }
 
     /** @test */
     public function it_creates_a_provider_user_mapping_successfully()
     {
         $this->seed($this->seeder);
-        $user = User::factory()->createOne();
+        $user = User::factory()->admin()->createOne();
         $providerPlatform = ProviderPlatform::factory()->createOne();
         $data = [
             'user_id' => $user->id,
@@ -88,11 +126,32 @@ class ProviderUserMappingTest extends TestCase
     }
 
     /** @test */
+    public function it_doesnt_provider_user_mappings_for_a_user_non_admin()
+    {
+        $this->seed($this->seeder);
+        $user = User::factory()->createOne();
+        $user2 = User::factory()->createOne();
+        $userId = $user2->id;
+        $response = $this->actingAs($user)->get("/api/v1/users/$userId/logins");
+
+        $response->assertStatus(403);
+    }
+
+    /** @test */
     public function it_deletes_a_provider_user_mapping()
+    {
+        $user = User::factory()->admin()->createOne();
+        $response = $this->actingAs($user)->delete($this->url_beg.'/'.$user->id.$this->url_end);
+
+        $response->assertOk();
+    }
+
+    /** @test */
+    public function it_wont_delete_a_provider_user_mapping_non_admin()
     {
         $user = User::factory()->createOne();
         $response = $this->actingAs($user)->delete($this->url_beg.'/'.$user->id.$this->url_end);
 
-        $response->assertOk();
+        $response->assertStatus(403);
     }
 }

@@ -11,8 +11,7 @@ class UpdateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // TODO: GET AUTH SETUP
-        return true;
+        return $this->user()->isAdmin();
     }
 
     /**

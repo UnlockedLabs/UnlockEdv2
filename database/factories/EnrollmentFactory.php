@@ -4,7 +4,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Courses;
 use App\Models\Enrollment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -30,5 +29,13 @@ class EnrollmentFactory extends Factory
             'provider_start_at' => $startAt,
             'provider_end_at' => $endAt,
         ];
+    }
+
+    // Create an enrollment for a specific user
+    public function forUser(string $id): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $id,
+        ]);
     }
 }
