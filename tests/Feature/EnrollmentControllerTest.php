@@ -36,8 +36,11 @@ class EnrollmentControllerTest extends TestCase
         $provider = ProviderPlatform::factory()->createOne();
         $enrollment = [
             'user_id' => User::factory()->createOne()->id,
-            'course_id' => $course->id,
-            'provider_id' => $provider->id,
+            'course_id' => Course::factory()->createOne()->id,
+            'provider_course_id' => $course->id,
+            'provider_platform_id' => $provider->id,
+            'provider_enrollment_id' => '123',
+            'provider_user_id' => '35',
             'enrollment_state' => 'active',
             'links' => '[{"link1":"Test"},{"link2":"Test"}]',
             'provider_start_at' => '2021-01-01 00:00:00',
@@ -45,7 +48,7 @@ class EnrollmentControllerTest extends TestCase
         ];
         $response = $this->actingAs($user)->post($this->uri, $enrollment);
 
-        $response->assertOk();
+        $response->assertStatus(201);
     }
 
     public function testEnrollmentsCannotBeCreatedByUnauthorizedUser()
@@ -54,7 +57,9 @@ class EnrollmentControllerTest extends TestCase
         $enrollment = [
             'user_id' => User::factory()->createOne()->id,
             'course_id' => Course::factory()->createOne()->id,
-            'provider_id' => ProviderPlatform::factory()->createOne()->id,
+            'provider_course_id' => Course::factory()->createOne()->id,
+            'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
+            'provider_user_id' => '43',
             'enrollment_state' => 'active',
             'links' => '[{"link1":"Test"},{"link2":"Test"}]',
             'provider_start_at' => '2021-01-01 00:00:00',
@@ -95,7 +100,10 @@ class EnrollmentControllerTest extends TestCase
                 '*' => [
                     'user_id',
                     'course_id',
-                    'provider_id',
+                    'provider_platform_id',
+                    'provider_course_id',
+                    'provider_enrollment_id',
+                    'provider_user_id',
                     'enrollment_state',
                     'links',
                     'provider_start_at',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
 use GuzzleHttp\Client;
@@ -435,7 +436,7 @@ class CanvasServices
      * This returns the full User object complete with an array of course items
      * that the user should be enrolled in.
      *
-     * @param  string  $userI
+     * @param  string  $user
      * @return mixed JSON decoded
      *
      * @throws \Exception
@@ -468,7 +469,7 @@ class CanvasServices
     }
 
     /**
-     * List Course Assignments from Canvas
+     * List Enrollments from Canvas by User ID
      *
      * @return mixed JSON decoded
      *

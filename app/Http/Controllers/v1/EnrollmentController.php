@@ -64,7 +64,7 @@ class EnrollmentController extends Controller
     {
         $validated = $request->validated();
 
-        $enrollment = new Enrollment($validated);
+        $enrollment = Enrollment::create($validated);
 
         return EnrollmentResource::make($enrollment);
     }

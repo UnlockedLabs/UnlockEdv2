@@ -37,7 +37,7 @@ class ProviderPlatformController extends Controller
             ], 422);
         }
         $newProviderPlatform = ProviderPlatform::create($providerPlatform);
-        $newProviderPlatform->hashAccessKey();
+        // $newProviderPlatform->hashAccessKey();
 
         return ProviderPlatformResource::make($newProviderPlatform);
     }
