@@ -20,6 +20,7 @@ class CreateEnrollmentsTable extends Migration
             $table->string('provider_user_id');
             $table->string('provider_course_id');
             $table->string('provider_platform_id');
+            $table->string('provider_enrollment_id');
             $table->enum('enrollment_state', ['active', 'inactive', 'completed', 'deleted']);
             $table->json('links');
             $table->timestamp('provider_start_at')->nullable();

@@ -14,6 +14,7 @@ class Enrollment extends Model
         'course_id',
         'provider_platform_id',
         'provider_user_id',
+        'provider_enrollment_id',
         'provider_course_id',
         'enrollment_state',
         'links',
