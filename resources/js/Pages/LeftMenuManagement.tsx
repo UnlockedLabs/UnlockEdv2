@@ -20,7 +20,6 @@ function LinkItem({
 }) {
     const [name, setName] = useState(linkName);
     const [url, setURL] = useState(linkURL);
-
     return (
         <li className="flex flex-cols-2 gap-2 w-full">
             <input
@@ -39,8 +38,15 @@ function LinkItem({
     );
 }
 
-function CategoryItem({ name, links, rank }: Category) {
-    const [linksArray, setLinks] = useState(links);
+function CategoryItem({
+    category,
+    deleteLink,
+    addLink,
+}: {
+    category: Category;
+    deleteLink: any;
+    addLink: any;
+}) {
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
     const [newURL, setNewURL] = useState("");
@@ -50,13 +56,6 @@ function CategoryItem({ name, links, rank }: Category) {
     function openDeleteLinkModal(linkPair: any) {
         setActiveLinkToDelete(linkPair);
         deleteLinkModal.current?.showModal();
-    }
-
-    function deleteLink() {
-        const newLinks = linksArray.filter(
-            (link) => link !== activeLinkToDelete,
-        );
-        setLinks(newLinks);
     }
 
     function LinkRow({
@@ -79,19 +78,11 @@ function CategoryItem({ name, links, rank }: Category) {
         );
     }
 
-    function addLink() {
-        var newLink: CategoryLink = {};
-        newLink[newTitle] = newURL;
-        setLinks([...linksArray, newLink]);
-        setNewTitle("");
-        setNewURL("");
-    }
-
     return (
         <details className="">
             <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg">
                 <div></div>
-                {name}
+                {category.name}
                 <ChevronDownIcon className="w-4" />
             </summary>
             <ul className="card shadow-md p-4 gap-y-2 rounded-bl-none">
@@ -99,17 +90,19 @@ function CategoryItem({ name, links, rank }: Category) {
                     <h3 className="w-1/3">Title</h3>
                     <h3 className="w-2/3">URL</h3>
                 </div>
-                {linksArray.map((linkPair: { [x: string]: string }, index) => {
-                    const key = Object.keys(linkPair)[0];
-                    return (
-                        <LinkRow
-                            key={linkPair[key].concat(index.toString())}
-                            linkPair={linkPair}
-                            index={index}
-                            keyString={key}
-                        />
-                    );
-                })}
+                {category.links.map(
+                    (linkPair: { [x: string]: string }, index) => {
+                        const key = Object.keys(linkPair)[0];
+                        return (
+                            <LinkRow
+                                key={linkPair[key].concat(index.toString())}
+                                linkPair={linkPair}
+                                index={index}
+                                keyString={key}
+                            />
+                        );
+                    },
+                )}
                 <button
                     className="btn btn-active
                     bg-base-200 w-full p-2"
@@ -135,7 +128,12 @@ function CategoryItem({ name, links, rank }: Category) {
                         className="flex flex-row justify-between"
                     >
                         <button className="btn">Cancel</button>
-                        <button className="btn btn-error" onClick={deleteLink}>
+                        <button
+                            className="btn btn-error"
+                            onClick={() =>
+                                deleteLink(category, activeLinkToDelete)
+                            }
+                        >
                             Delete Link
                         </button>
                     </form>
@@ -148,7 +146,14 @@ function CategoryItem({ name, links, rank }: Category) {
                             ✕
                         </button>
                     </form>
-                    <form method="dialog" onSubmit={addLink}>
+                    <form
+                        method="dialog"
+                        onSubmit={() => {
+                            addLink(category, newTitle, newURL);
+                            setNewTitle("");
+                            setNewURL("");
+                        }}
+                    >
                         <div className="flex flex-col items-center">
                             <span className="text-3xl font-semibold pb-6 text-neutral">
                                 Add Link
@@ -216,6 +221,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         }
     }, [data]);
 
+    useEffect(() => {
+        console.log(categoryList);
+    }, [categoryList]);
+
     function CategoryItemsList({
         data,
         error,
@@ -248,9 +257,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     </div>
                     <div className="grow">
                         <CategoryItem
-                            name={category.name}
-                            links={category.links}
-                            rank={category.rank}
+                            category={category}
+                            deleteLink={deleteLink}
+                            addLink={addLink}
                         />
                     </div>
                 </div>
@@ -263,7 +272,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             name: newCategoryTitle,
             links: [],
             rank: categoryList.length + 1,
-            deleteCategory: deleteCategory,
         };
         setCategoryList([...categoryList, newCategory]);
         setNewCategoryTitle("");
@@ -279,6 +287,36 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     function deleteAndClose() {
         if (categoryToDelete != null) deleteCategory(categoryToDelete);
         deleteCategoryModal.current?.close();
+    }
+
+    function addLink(category: Category, newTitle: string, newURL: string) {
+        let newLink: CategoryLink = {};
+        newLink[newTitle] = newURL;
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                // add link to the category
+                c.links.push(newLink);
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+        setCategoryList(newCategoryList);
+    }
+
+    function deleteLink(category: Category, activeLinkToDelete: CategoryLink) {
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                // delete link of the category
+                c.links = c.links.filter((link) => link !== activeLinkToDelete);
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+        setCategoryList(newCategoryList);
     }
 
     return (
