@@ -31,7 +31,7 @@ function CategoryItem({ name, links, rank }: Category) {
 }
 
 function getCategoryItems(
-    data: { data: { name: string; rank: number; links: CategoryLink[] }[] },
+    data: { data: Category[] },
     error: any,
     isLoading: boolean,
 ) {
@@ -40,7 +40,8 @@ function getCategoryItems(
     return data.data.map((category) => {
         return (
             <CategoryItem
-                key={category.rank}
+                key={category.id}
+                id={category.id}
                 name={category.name}
                 links={category.links}
                 rank={category.rank}
