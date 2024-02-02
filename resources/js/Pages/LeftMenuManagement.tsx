@@ -8,7 +8,6 @@ import {
     TrashIcon,
     PlusIcon,
 } from "@heroicons/react/24/solid";
-import { randomInt, randomUUID } from "crypto";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
