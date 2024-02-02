@@ -4,8 +4,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Courses;
 use App\Models\Enrollment;
+use App\Models\ProviderPlatform;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,14 +21,23 @@ class EnrollmentFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            // Waiting for CoursesFactory
-            // 'course_id' => Courses::factory(),
             'course_id' => $this->faker->numberBetween(1, 1000000),
-            'provider_id' => $this->faker->word,
+            'provider_platform_id' => ProviderPlatform::factory()->create()->id,
+            'provider_user_id' => $this->faker->numberBetween(1, 1000000),
+            'provider_course_id' => $this->faker->numberBetween(1, 1000000),
+            'provider_enrollment_id' => $this->faker->numberBetween(1, 1000000),
             'enrollment_state' => $this->faker->randomElement(['active', 'inactive', 'completed']),
             'links' => ['link1' => $this->faker->url, 'link2' => $this->faker->url],
             'provider_start_at' => $startAt,
             'provider_end_at' => $endAt,
         ];
+    }
+
+    // Create an enrollment for a specific user
+    public function forUser(string $id): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $id,
+        ]);
     }
 }

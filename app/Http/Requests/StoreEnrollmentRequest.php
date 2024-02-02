@@ -11,7 +11,7 @@ class StoreEnrollmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->isAdmin();
     }
 
     /**
@@ -24,6 +24,12 @@ class StoreEnrollmentRequest extends FormRequest
         return [
             'user_id' => 'required|exists:users,id',
             'course_id' => 'required|exists:courses,id',
+            'enrollment_state' => 'nullable|in:active,inactive,completed,deleted',
+            'links' => 'nullable|json|json:links',
+            'provider_platform_id' => 'required|exists:provider_platforms,id',
+            'provider_user_id' => 'required|max:255',
+            'provider_course_id' => 'required|max:255',
+            'provider_enrollment_id' => 'required|max:255',
         ];
     }
 }

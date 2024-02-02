@@ -11,8 +11,7 @@ class UpdateCategoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // Todo add authorization
-        return true;
+        return $this->user()->isAdmin();
     }
 
     /**

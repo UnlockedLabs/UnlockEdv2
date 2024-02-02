@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminRequest;
+use App\Http\Requests\ShowUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\NewUserResource;
@@ -14,8 +16,9 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(AdminRequest $request)
     {
+        $request = $request->validated();
         $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'name_last');
         $sortOrder = request()->query('order', 'asc');
@@ -60,11 +63,17 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(ShowUserRequest $request, string $id)
     {
-        $user = User::findOrFail($id);
+        if (! $request->overrideAuthorize($id)) {
+            return response()->json([
+                'message' => "Non-Admin User with ID: {$request->user()->id} are not authorized to view this user.",
+            ], 403);
+        } else {
+            $user = User::findOrFail($id);
 
-        return new UserResource($user);
+            return new UserResource($user);
+        }
     }
 
     /**
@@ -90,8 +99,9 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(AdminRequest $request, string $id)
     {
+        $request->authorize();
         $user = User::findOrFail($id);
         $user->delete();
 

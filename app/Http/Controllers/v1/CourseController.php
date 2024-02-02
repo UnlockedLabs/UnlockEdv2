@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminRequest;
 use App\Http\Requests\StoreCourseRequest;
 use App\Http\Requests\UpdateCourseRequest;
 use App\Http\Resources\CourseResource;
@@ -24,6 +25,17 @@ class CourseController extends Controller
         return CourseResource::collection($courses);
     }
 
+    public function show(string $id)
+    {
+        $course = Course::find($id);
+
+        if (! $course) {
+            return response()->json(['error' => 'Course not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return new CourseResource($course);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -34,17 +46,6 @@ class CourseController extends Controller
         $course = Course::create($validated->all());
 
         return CourseResource::collection($course);
-    }
-
-    public function show(string $id)
-    {
-        $course = Course::find($id);
-
-        if (! $course) {
-            return response()->json(['error' => 'Course not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        return new CourseResource($course);
     }
 
     public function update(UpdateCourseRequest $request, string $id)
@@ -61,8 +62,9 @@ class CourseController extends Controller
         return new CourseResource($course);
     }
 
-    public function destroy(string $id)
+    public function destroy(AdminRequest $request, string $id)
     {
+        $request->authorize();
         $course = Course::find($id);
 
         if (! $course) {

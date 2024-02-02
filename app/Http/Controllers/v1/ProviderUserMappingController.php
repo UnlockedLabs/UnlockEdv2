@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminRequest;
 use App\Http\Requests\CreateProviderUserMappingRequest;
+use App\Http\Requests\ValidateUserRequest;
 use App\Http\Resources\ProviderUserMappingResource;
 use App\Models\ProviderUserMapping;
 
@@ -16,7 +18,13 @@ class ProviderUserMappingController extends Controller
      */
     public function index()
     {
-        return ProviderUserMappingResource::collection(ProviderUserMapping::all(['*']));
+        if (request()->user()->isAdmin()) {
+            $prov = ProviderUserMapping::all(['*']);
+        } else {
+            $prov = ProviderUserMapping::where('user_id', request()->user()->id)->get();
+        }
+
+        return ProviderUserMappingResource::collection($prov);
     }
 
     /**
@@ -40,8 +48,11 @@ class ProviderUserMappingController extends Controller
      *
      * GET: /api/v1/users/{user_id}/logins
      */
-    public function show(string $userId)
+    public function show(ValidateUserRequest $req, string $userId)
     {
+        if (! $req->overrideAuthorize($userId)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
         try {
             $user = ProviderUserMapping::where('user_id', $userId)->get();
 
@@ -54,8 +65,9 @@ class ProviderUserMappingController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(AdminRequest $req, string $id)
     {
+        $req->authorize();
         // This request valitates the userid and providerid only, so we are sure of which user mapping to delete
         $user = ProviderUserMapping::where('user_id', $id);
         if (! $user) {
