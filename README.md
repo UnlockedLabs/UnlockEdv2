@@ -71,6 +71,12 @@ _This could be any one of the following, or a combination_
 -   Run `sail artisan test`
 -   (Or alternatively ./vendor/bin/pest)
 
+-   To generate a template for a Controller crud test, run:
+    #### `'sail artisan app:make-controller-test {name_of_controller}'`
+    and follow the prompts to generate the test for your handler.
+
+NOTE: This is only a template and will need to be modified to fit your specific needs
+
 # Debugging
 
 Two tools you can use to aid in debugging:
