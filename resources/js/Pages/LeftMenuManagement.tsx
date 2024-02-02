@@ -8,7 +8,7 @@ import {
     TrashIcon,
     PlusIcon,
 } from "@heroicons/react/24/solid";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
 function LinkItem({
@@ -79,7 +79,7 @@ function CategoryItem({
     }
 
     return (
-        <details className="">
+        <details open>
             <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg">
                 <div></div>
                 {category.name}
@@ -225,22 +225,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         console.log(categoryList);
     }, [categoryList]);
 
-    function CategoryItemsList({
-        data,
-        error,
-        isLoading,
-        deleteCategoryModal,
-        setCategoryToDelete,
-    }: {
-        data: Category[];
-        error: any;
-        isLoading: boolean;
-        deleteCategoryModal: any;
-        setCategoryToDelete: any;
-    }) {
+    const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
         if (isLoading) return <div>loading...</div>;
-        return data.map((category) => {
+        return categoryList.map((category) => {
             return (
                 <div
                     className="py-3 flex"
@@ -265,7 +253,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 </div>
             );
         });
-    }
+    }, [categoryList]);
 
     function addCategory() {
         const newCategory = {
@@ -338,13 +326,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         <DocumentCheckIcon className="h-4 text-base-100" />
                     </button>
                 </div>
-                <CategoryItemsList
-                    data={categoryList}
-                    error={error}
-                    isLoading={isLoading}
-                    deleteCategoryModal={deleteCategoryModal}
-                    setCategoryToDelete={setCategoryToDelete}
-                />
+                {MemoizedCategoryList}
             </div>
             {/* Modals */}
             <dialog ref={deleteCategoryModal} className="modal">
