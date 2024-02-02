@@ -8,6 +8,7 @@ import {
     TrashIcon,
     PlusIcon,
 } from "@heroicons/react/24/solid";
+import { randomInt, randomUUID } from "crypto";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
@@ -232,14 +233,14 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             return (
                 <div
                     className="py-3 flex"
-                    key={category.name.concat(category.rank.toString())}
+                    key={category.name.concat(category.id.toString())}
                 >
                     <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
                         <TrashIcon
                             className="w-4 mt-5 self-start text-base-100"
                             onClick={() => {
                                 deleteCategoryModal.current?.showModal(),
-                                    setCategoryToDelete(category.rank);
+                                    setCategoryToDelete(category.id);
                             }}
                         />
                     </div>
@@ -257,6 +258,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
 
     function addCategory() {
         const newCategory = {
+            id: Math.random(),
             name: newCategoryTitle,
             links: [],
             rank: categoryList.length + 1,
@@ -265,9 +267,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         setNewCategoryTitle("");
     }
 
-    function deleteCategory(rank: number) {
+    function deleteCategory(id: number) {
         const newCategories = categoryList.filter(
-            (category) => category.rank !== rank,
+            (category) => category.id !== id,
         );
         setCategoryList(newCategories);
     }
