@@ -26,7 +26,7 @@ class EnrollmentFactory extends Factory
             'provider_platform_id' => ProviderPlatform::factory()->create()->id,
             'provider_user_id' => $this->faker->numberBetween(1, 1000000),
             'provider_course_id' => $this->faker->numberBetween(1, 1000000),
-            'provider_enrollment_id' => $this->faker->numberBetween(1, 1000000),
+            'provider_enrollment_id' => $this->faker->unique()->numberBetween(1, 1000),
             'enrollment_state' => $this->faker->randomElement(['active', 'inactive', 'completed']),
             'links' => json_encode(['link1' => $this->faker->url, 'link2' => $this->faker->url]),
             'provider_start_at' => $startAt,

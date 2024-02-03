@@ -83,7 +83,7 @@ class MakeControllerTest extends Command
             ];
          TAG;
         $fileHeader = <<<TEXT
-            <?php
+        <?php
             namespace Tests\Feature;
             use App\Models\\{$model};
             use Database\Seeders\TestSeeder;
@@ -98,6 +98,11 @@ class MakeControllerTest extends Command
             $singleJsonStructure
             $arrayJsonStructure
 
+
+            /* You may need to edit these tests to match the actual behavior of the controller
+            * this is just a template and a good starting point, be sure to test for any edge cases
+            * and any other behavior that is not covered here
+            */
             public function testAdminCanAccess{$modelName}()
             {
                 \$this->seed(\$this->seeder);
@@ -111,11 +116,19 @@ class MakeControllerTest extends Command
             {
                 // seed to assert there is more than 3 records in the database
                 \$this->seed(\$this->seeder);
-                {$model}::factory(3)->forUser()->create();
+                // create a regular user
                 \$user = \App\Models\User::factory()->createOne();
+                // create 3 records for the user
+                {$model}::factory(3)->forUser(\$user->id)->create();
+                // assert that the user can access the resource
                 \$response = \$this->actingAs(\$user)->get(\$this->url);
                 \$response->assertStatus(200);
+                // assert that the response contains only the 3 records for the user
                 \$response->assertJsonCount(3, 'data');
+                foreach (\$response->json('data') as \$record) {
+                    // assert that only the users data is returned
+                    \$this->assertEquals(\$user->id, \$record['user_id']);
+                }
             }
 
             public function testAdminCanCreate{$modelName}()
@@ -123,7 +136,7 @@ class MakeControllerTest extends Command
                 \$this->seed(\$this->seeder);
                 \$admin = \App\Models\User::factory()->admin()->createOne();
                 \$model = {$model}::factory()->makeOne();
-                \$response = \$this->actingAs(\$admin)->post(\$this->url, \$model->toArray());
+                \$response = \$this->actingAs(\$admin)->postJson(\$this->url, \$model->toArray());
                 \$response->assertStatus(201);
                 \$response->assertJsonStructure(\$this->single_json_structure);
             }
@@ -133,7 +146,7 @@ class MakeControllerTest extends Command
                 \$this->seed(\$this->seeder);
                 \$user = \App\Models\User::factory()->createOne();
                 \$model = {$model}::factory()->makeOne();
-                \$response = \$this->actingAs(\$user)->post(\$this->url, \$model->toArray());
+                \$response = \$this->actingAs(\$user)->postJson(\$this->url, \$model->toArray());
                 \$response->assertStatus(403);
             }
 
@@ -142,7 +155,7 @@ class MakeControllerTest extends Command
                 \$this->seed(\$this->seeder);
                 \$admin = \App\Models\User::factory()->admin()->createOne();
                 \$model = {$model}::factory()->createOne();
-                \$response = \$this->actingAs(\$admin)->put(\$this->url . '/' . \$model->id, \$model->toArray());
+                \$response = \$this->actingAs(\$admin)->patchJson(\$this->url . '/' . \$model->id, \$model->toArray());
                 \$response->assertStatus(200);
                 \$response->assertJsonStructure(\$this->single_json_structure);
             }
@@ -173,16 +186,6 @@ class MakeControllerTest extends Command
                 \$response = \$this->actingAs(\$user)->delete(\$this->url . '/' . \$model->id);
                 \$response->assertStatus(403);
             }
-
-            public function testUserAccessView{$modelName}()
-            {
-                \$this->seed(\$this->seeder);
-                \$admin = \App\Models\User::factory()->createOne();
-                \$model = {$model}::factory()->forUser()->createOne();
-                \$response = \$this->actingAs(\$admin)->get(\$this->url . '/' . \$model->id);
-                \$response->assertStatus(200);
-                \$response->assertJsonStructure(\$this->single_json_structure);
-            }
         }
         TEXT;
 
@@ -197,7 +200,7 @@ class MakeControllerTest extends Command
         $columns = Schema::getColumnListing($modelTable);
         $className = "{$controllerName}Test";
         $model = ucfirst($modelName);
-        $seederField = "public \$seeder = \Database\Seeders\TestSeeder::class;";
+        $seederField = 'public $seeder = TestSeeder::class;';
         $routeField = 'public string $url = '."'$route';";
         $jsonScheme = [];
         foreach ($columns as $column) {
@@ -221,12 +224,13 @@ class MakeControllerTest extends Command
             ];
          TAG;
         $fileHeader = <<<TEXT
-            <?php
-            namespace Tests\Feature;
-            use App\Models\\{$model};
-            user \Database\Seeders\TestSeeder;
-            use Illuminate\Foundation\Testing\RefreshDatabase;
-            use Tests\TestCase;
+        <?php
+        namespace Tests\Feature;
+
+        use Database\Seeders\TestSeeder;
+        use App\Models\\{$model};
+        use Illuminate\Foundation\Testing\RefreshDatabase;
+        use Tests\TestCase;
 
         class {$className} extends TestCase
         {
@@ -264,7 +268,7 @@ class MakeControllerTest extends Command
                 \$this->seed(\$this->seeder);
                 \$admin = \App\Models\User::factory()->admin()->createOne();
                 \$model = {$model}::factory()->makeOne();
-                \$response = \$this->actingAs(\$admin)->post(\$this->url, \$model->toArray());
+                \$response = \$this->actingAs(\$admin)->postJson(\$this->url, \$model->toArray());
                 \$response->assertStatus(201);
                 \$response->assertJsonStructure(\$this->single_json_structure);
             }
@@ -274,7 +278,7 @@ class MakeControllerTest extends Command
                 \$this->seed(\$this->seeder);
                 \$user = \App\Models\User::factory()->createOne();
                 \$model = {$model}::factory()->makeOne();
-                \$response = \$this->actingAs(\$user)->post(\$this->url, \$model->toArray());
+                \$response = \$this->actingAs(\$user)->postJson(\$this->url, \$model->toArray());
                 \$response->assertStatus(403);
             }
 
@@ -293,7 +297,7 @@ class MakeControllerTest extends Command
                 \$this->seed(\$this->seeder);
                 \$user = \App\Models\User::factory()->createOne();
                 \$model = {$model}::factory()->createOne();
-                \$response = \$this->actingAs(\$user)->put(\$this->url . '/' . \$model->id, \$model->toArray());
+                \$response = \$this->actingAs(\$user)->patchJson(\$this->url . '/' . \$model->id, \$model->toArray());
                 \$response->assertStatus(403);
             }
 
