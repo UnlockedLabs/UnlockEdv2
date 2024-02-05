@@ -61,7 +61,7 @@ class MakeControllerTest extends Command
         $className = "{$controllerName}Test";
         $model = ucfirst($modelName);
         $seederField = "public \$seeder = \Database\Seeders\TestSeeder::class;";
-        $routeField = 'public string $url = ' . "'$route';";
+        $routeField = 'public string $url = '."'$route';";
         $jsonScheme = [];
         foreach ($columns as $column) {
             $jsonScheme[] = "'$column'";
@@ -202,7 +202,7 @@ class MakeControllerTest extends Command
         $className = "{$controllerName}Test";
         $model = ucfirst($modelName);
         $seederField = 'public $seeder = TestSeeder::class;';
-        $routeField = 'public string $url = ' . "'$route';";
+        $routeField = 'public string $url = '."'$route';";
         $jsonScheme = [];
         foreach ($columns as $column) {
             $jsonScheme[] = "'$column'";
