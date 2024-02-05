@@ -43,15 +43,22 @@ function CategoryItem({
     category,
     deleteLink,
     addLink,
+    handleSort,
+    setDraggedItem,
+    setDraggedOverItem,
 }: {
     index: number;
     category: Category;
     deleteLink: any;
     addLink: any;
+    handleSort: any;
+    setDraggedItem: any;
+    setDraggedOverItem: any;
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
     const [newURL, setNewURL] = useState("");
+    const [showEmptyDiv, setShowEmptyDiv] = useState(false);
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const addLinkModal = useRef<null | HTMLDialogElement>(null);
 
@@ -82,7 +89,26 @@ function CategoryItem({
 
     return (
         <details open>
-            <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg">
+            <summary
+                draggable
+                onDragStart={(e) => setDraggedItem(index)}
+                onDragEnter={(e) => {
+                    setDraggedOverItem(index);
+                }}
+                onDragEnd={(e) => {
+                    e.preventDefault(), handleSort();
+                }}
+                onDragOver={(e) => {
+                    e.preventDefault(), setShowEmptyDiv(true);
+                }}
+                onDragLeave={(e) => {
+                    e.preventDefault(), setShowEmptyDiv(false);
+                }}
+                onDrop={() => {
+                    console.log("dropped");
+                }}
+                className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg"
+            >
                 <div></div>
                 {category.name}
                 <ChevronDownIcon className="w-4" />
@@ -226,9 +252,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         }
     }, [data]);
 
-    useEffect(() => {
-        console.log(categoryList);
-    }, [categoryList]);
+    // useEffect(() => {
+    //     console.log(categoryList);
+    // }, [categoryList]);
 
     const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
@@ -248,18 +274,15 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                             }}
                         />
                     </div>
-                    <div
-                        className="grow"
-                        draggable
-                        onDragStart={(e) => (draggedItem.current = index)}
-                        onDragEnter={(e) => (dragOverItem.current = index)}
-                        onDragEnd={() => handleSort()}
-                    >
+                    <div className="grow">
                         <CategoryItem
                             index={index}
                             category={category}
                             deleteLink={deleteLink}
                             addLink={addLink}
+                            handleSort={handleSort}
+                            setDraggedItem={setDraggedItem}
+                            setDraggedOverItem={setDraggedOverItem}
                         />
                     </div>
                 </div>
@@ -336,10 +359,16 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         //switch the position
         newCategoryList.splice(dragOverItem.current, 0, draggedItemContent);
 
-        console.log(newCategoryList);
-
         //update the actual array
         setCategoryList(newCategoryList);
+    }
+
+    function setDraggedItem(index: number) {
+        draggedItem.current = index;
+    }
+
+    function setDraggedOverItem(index: number) {
+        dragOverItem.current = index;
     }
 
     return (
@@ -361,7 +390,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         <DocumentCheckIcon className="h-4 text-base-100" />
                     </button>
                 </div>
-                {MemoizedCategoryList}
+                <div>{MemoizedCategoryList}</div>
             </div>
             {/* Modals */}
             <dialog ref={deleteCategoryModal} className="modal">
