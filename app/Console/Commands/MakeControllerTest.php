@@ -34,11 +34,12 @@ class MakeControllerTest extends Command
              method that creates a model with the user_id field of a specific user'");
 
         $modelName = $this->ask('What is the name of the model?');
-        $route = $this->ask('What is the route for the controller?');
+        $route = $this->ask('What is the route for the controller?(always use `id` for dynamic routes: e.g. api/v1/users/id/logins)');
         $protected = $this->choice('Is this a Admin only resource?', ['admin access only', 'user can access']);
+        $isDynamicRoute = false;
         if ($protected === 'admin access only') {
             $this->info('Tests will assert failed status for non-admin users');
-            $testContent = $this->generateTestContentAdmin($controllerName, $modelName, $route);
+            $testContent = $this->generateTestContentAdmin($controllerName, $modelName, $route, $isDynamicRoute);
         } else {
             $this->info('Tests will assert users can access their own data at the resource, but cannot create or delete');
             $testContent = $this->generateTestContent($controllerName, $modelName, $route);
@@ -60,7 +61,7 @@ class MakeControllerTest extends Command
         $className = "{$controllerName}Test";
         $model = ucfirst($modelName);
         $seederField = "public \$seeder = \Database\Seeders\TestSeeder::class;";
-        $routeField = 'public string $url = '."'$route';";
+        $routeField = 'public string $url = ' . "'$route';";
         $jsonScheme = [];
         foreach ($columns as $column) {
             $jsonScheme[] = "'$column'";
@@ -201,7 +202,7 @@ class MakeControllerTest extends Command
         $className = "{$controllerName}Test";
         $model = ucfirst($modelName);
         $seederField = 'public $seeder = TestSeeder::class;';
-        $routeField = 'public string $url = '."'$route';";
+        $routeField = 'public string $url = ' . "'$route';";
         $jsonScheme = [];
         foreach ($columns as $column) {
             $jsonScheme[] = "'$column'";
