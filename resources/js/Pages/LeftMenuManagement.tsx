@@ -39,10 +39,12 @@ function LinkItem({
 }
 
 function CategoryItem({
+    index,
     category,
     deleteLink,
     addLink,
 }: {
+    index: number;
     category: Category;
     deleteLink: any;
     addLink: any;
@@ -215,6 +217,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const addCategoryModal = useRef<null | HTMLDialogElement>(null);
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
+    const draggedItem = useRef<null | number>(null);
+    const dragOverItem = useRef<null | number>(null);
+
     useEffect(() => {
         if (data != undefined) {
             setCategoryList(data.data);
@@ -228,10 +233,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
         if (isLoading) return <div>loading...</div>;
-        return categoryList.map((category) => {
+        return categoryList.map((category, index) => {
             return (
                 <div
-                    className="py-3 flex"
+                    className="pt-6 flex"
                     key={category.name.concat(category.id.toString())}
                 >
                     <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
@@ -243,8 +248,15 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                             }}
                         />
                     </div>
-                    <div className="grow">
+                    <div
+                        className="grow"
+                        draggable
+                        onDragStart={(e) => (draggedItem.current = index)}
+                        onDragEnter={(e) => (dragOverItem.current = index)}
+                        onDragEnd={() => handleSort()}
+                    >
                         <CategoryItem
+                            index={index}
                             category={category}
                             deleteLink={deleteLink}
                             addLink={addLink}
@@ -305,6 +317,28 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 return c;
             }
         });
+        setCategoryList(newCategoryList);
+    }
+
+    function handleSort() {
+        if (draggedItem.current == null || dragOverItem.current == null) return;
+        if (draggedItem.current == dragOverItem.current) return;
+
+        //duplicate items
+        let newCategoryList = [...categoryList];
+
+        //remove and save the dragged item content
+        const draggedItemContent = newCategoryList.splice(
+            draggedItem.current,
+            1,
+        )[0];
+
+        //switch the position
+        newCategoryList.splice(dragOverItem.current, 0, draggedItemContent);
+
+        console.log(newCategoryList);
+
+        //update the actual array
         setCategoryList(newCategoryList);
     }
 
