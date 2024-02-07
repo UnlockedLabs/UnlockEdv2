@@ -39,26 +39,17 @@ function LinkItem({
 }
 
 function CategoryItem({
-    index,
     category,
     deleteLink,
     addLink,
-    handleSort,
-    setDraggedItem,
-    setDraggedOverItem,
 }: {
-    index: number;
     category: Category;
     deleteLink: any;
     addLink: any;
-    handleSort: any;
-    setDraggedItem: any;
-    setDraggedOverItem: any;
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
     const [newURL, setNewURL] = useState("");
-    const [showEmptyDiv, setShowEmptyDiv] = useState(false);
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const addLinkModal = useRef<null | HTMLDialogElement>(null);
 
@@ -91,22 +82,6 @@ function CategoryItem({
         <details open>
             <summary
                 draggable
-                onDragStart={(e) => setDraggedItem(index)}
-                onDragEnter={(e) => {
-                    setDraggedOverItem(index);
-                }}
-                onDragEnd={(e) => {
-                    e.preventDefault(), handleSort();
-                }}
-                onDragOver={(e) => {
-                    e.preventDefault(), setShowEmptyDiv(true);
-                }}
-                onDragLeave={(e) => {
-                    e.preventDefault(), setShowEmptyDiv(false);
-                }}
-                onDrop={() => {
-                    console.log("dropped");
-                }}
                 className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg"
             >
                 <div></div>
@@ -244,7 +219,8 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
     const draggedItem = useRef<null | number>(null);
-    const dragOverItem = useRef<null | number>(null);
+    //const dragOverItem = useRef<null | number>(null);
+    const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
 
     useEffect(() => {
         if (data != undefined) {
@@ -261,34 +237,74 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         if (isLoading) return <div>loading...</div>;
         return categoryList.map((category, index) => {
             return (
-                <div
-                    className="pt-6 flex"
-                    key={category.name.concat(category.id.toString())}
-                >
-                    <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
-                        <TrashIcon
-                            className="w-4 mt-5 self-start text-base-100"
-                            onClick={() => {
-                                deleteCategoryModal.current?.showModal(),
-                                    setCategoryToDelete(category.id);
+                <div key={category.name.concat(category.id.toString())}>
+                    <div
+                        className={
+                            draggedItem.current == index
+                                ? "hidden"
+                                : "block grow"
+                        }
+                    >
+                        <div
+                            className={
+                                dragOverItem == index
+                                    ? "pt-36 flex"
+                                    : "pt-6 flex"
+                            }
+                            onDragOver={(e) => {
+                                e.preventDefault(), setDraggedOverItem(index);
                             }}
-                        />
+                            onDragLeave={(e) => {
+                                e.preventDefault(), setDraggedOverItem(null);
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault(), draggedItem.current == null;
+                            }}
+                            onDragStart={() => (draggedItem.current = index)}
+                            onDragEnd={(e) => {
+                                e.preventDefault();
+                                // TO DO: FIND HOW TO RE RENDER THIS / CHANGE THE CLASS BACK TO BLOCK
+                                if (dragOverItem == null) return;
+                                else handleSort();
+                            }}
+                        >
+                            <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
+                                <TrashIcon
+                                    className="w-4 mt-5 self-start text-base-100"
+                                    onClick={() => {
+                                        deleteCategoryModal.current?.showModal(),
+                                            setCategoryToDelete(category.id);
+                                    }}
+                                />
+                            </div>
+                            <div className="grow">
+                                <CategoryItem
+                                    category={category}
+                                    deleteLink={deleteLink}
+                                    addLink={addLink}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className="grow">
-                        <CategoryItem
-                            index={index}
-                            category={category}
-                            deleteLink={deleteLink}
-                            addLink={addLink}
-                            handleSort={handleSort}
-                            setDraggedItem={setDraggedItem}
-                            setDraggedOverItem={setDraggedOverItem}
-                        />
-                    </div>
+                    {index == categoryList.length - 1 ? (
+                        <div
+                            className="h-screen"
+                            onDragOver={(e) => {
+                                e.preventDefault(),
+                                    setDraggedOverItem(index + 1);
+                            }}
+                            onDragLeave={(e) => {
+                                e.preventDefault(), setDraggedOverItem(null);
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault(), draggedItem.current == null;
+                            }}
+                        ></div>
+                    ) : null}
                 </div>
             );
         });
-    }, [categoryList]);
+    }, [categoryList, dragOverItem, draggedItem]);
 
     function addCategory() {
         const newCategory = {
@@ -344,8 +360,14 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     }
 
     function handleSort() {
-        if (draggedItem.current == null || dragOverItem.current == null) return;
-        if (draggedItem.current == dragOverItem.current) return;
+        if (draggedItem.current == null || dragOverItem == null) {
+            return;
+        }
+
+        let insertAtIndex = dragOverItem;
+        // if dragged item is higher in the list, then should subtract a number from where it needs to be placed
+        if (draggedItem.current < dragOverItem)
+            insertAtIndex = insertAtIndex - 1;
 
         //duplicate items
         let newCategoryList = [...categoryList];
@@ -356,19 +378,19 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             1,
         )[0];
 
-        //switch the position
-        newCategoryList.splice(dragOverItem.current, 0, draggedItemContent);
+        if (insertAtIndex == categoryList.length) {
+            // add it to end of list
+            newCategoryList.push(draggedItemContent);
+        } else {
+            //switch the position
+            newCategoryList.splice(insertAtIndex, 0, draggedItemContent);
+        }
 
         //update the actual array
         setCategoryList(newCategoryList);
-    }
 
-    function setDraggedItem(index: number) {
-        draggedItem.current = index;
-    }
-
-    function setDraggedOverItem(index: number) {
-        dragOverItem.current = index;
+        draggedItem.current = null;
+        setDraggedOverItem(null);
     }
 
     return (
