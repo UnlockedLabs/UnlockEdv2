@@ -241,7 +241,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     <div
                         className={
                             draggedItem.current == index
-                                ? "hidden"
+                                ? dragOverItem == -1
+                                    ? "block grow"
+                                    : "hidden"
                                 : "block grow"
                         }
                     >
@@ -264,7 +266,8 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                             onDragEnd={(e) => {
                                 e.preventDefault();
                                 // TO DO: FIND HOW TO RE RENDER THIS / CHANGE THE CLASS BACK TO BLOCK
-                                if (dragOverItem == null) return;
+                                if (dragOverItem == null)
+                                    setDraggedOverItem(-1);
                                 else handleSort();
                             }}
                         >
@@ -304,7 +307,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 </div>
             );
         });
-    }, [categoryList, dragOverItem, draggedItem]);
+    }, [categoryList, dragOverItem]);
 
     function addCategory() {
         const newCategory = {
