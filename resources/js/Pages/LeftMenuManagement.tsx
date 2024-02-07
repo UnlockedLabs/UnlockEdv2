@@ -265,7 +265,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                             onDragStart={() => (draggedItem.current = index)}
                             onDragEnd={(e) => {
                                 e.preventDefault();
-                                // TO DO: FIND HOW TO RE RENDER THIS / CHANGE THE CLASS BACK TO BLOCK
                                 if (dragOverItem == null)
                                     setDraggedOverItem(-1);
                                 else handleSort();
