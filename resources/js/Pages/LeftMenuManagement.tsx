@@ -80,7 +80,10 @@ function CategoryItem({
 
     return (
         <details open>
-            <summary className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg">
+            <summary
+                draggable
+                className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg"
+            >
                 <div></div>
                 {category.name}
                 <ChevronDownIcon className="w-4" />
@@ -215,45 +218,95 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const addCategoryModal = useRef<null | HTMLDialogElement>(null);
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
+    const draggedItem = useRef<null | number>(null);
+    //const dragOverItem = useRef<null | number>(null);
+    const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
+
     useEffect(() => {
         if (data != undefined) {
             setCategoryList(data.data);
         }
     }, [data]);
 
-    useEffect(() => {
-        console.log(categoryList);
-    }, [categoryList]);
+    // useEffect(() => {
+    //     console.log(categoryList);
+    // }, [categoryList]);
 
     const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
         if (isLoading) return <div>loading...</div>;
-        return categoryList.map((category) => {
+        return categoryList.map((category, index) => {
             return (
-                <div
-                    className="py-3 flex"
-                    key={category.name.concat(category.id.toString())}
-                >
-                    <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
-                        <TrashIcon
-                            className="w-4 mt-5 self-start text-base-100"
-                            onClick={() => {
-                                deleteCategoryModal.current?.showModal(),
-                                    setCategoryToDelete(category.id);
+                <div key={category.name.concat(category.id.toString())}>
+                    <div
+                        className={
+                            draggedItem.current == index
+                                ? dragOverItem == -1
+                                    ? "block grow"
+                                    : "hidden"
+                                : "block grow"
+                        }
+                    >
+                        <div
+                            className={
+                                dragOverItem == index
+                                    ? "pt-36 flex"
+                                    : "pt-6 flex"
+                            }
+                            onDragOver={(e) => {
+                                e.preventDefault(), setDraggedOverItem(index);
                             }}
-                        />
+                            onDragLeave={(e) => {
+                                e.preventDefault(), setDraggedOverItem(null);
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault(), draggedItem.current == null;
+                            }}
+                            onDragStart={() => (draggedItem.current = index)}
+                            onDragEnd={(e) => {
+                                e.preventDefault();
+                                if (dragOverItem == null)
+                                    setDraggedOverItem(-1);
+                                else handleSort();
+                            }}
+                        >
+                            <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
+                                <TrashIcon
+                                    className="w-4 mt-5 self-start text-base-100"
+                                    onClick={() => {
+                                        deleteCategoryModal.current?.showModal(),
+                                            setCategoryToDelete(category.id);
+                                    }}
+                                />
+                            </div>
+                            <div className="grow">
+                                <CategoryItem
+                                    category={category}
+                                    deleteLink={deleteLink}
+                                    addLink={addLink}
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className="grow">
-                        <CategoryItem
-                            category={category}
-                            deleteLink={deleteLink}
-                            addLink={addLink}
-                        />
-                    </div>
+                    {index == categoryList.length - 1 ? (
+                        <div
+                            className="h-screen"
+                            onDragOver={(e) => {
+                                e.preventDefault(),
+                                    setDraggedOverItem(index + 1);
+                            }}
+                            onDragLeave={(e) => {
+                                e.preventDefault(), setDraggedOverItem(null);
+                            }}
+                            onDrop={(e) => {
+                                e.preventDefault(), draggedItem.current == null;
+                            }}
+                        ></div>
+                    ) : null}
                 </div>
             );
         });
-    }, [categoryList]);
+    }, [categoryList, dragOverItem]);
 
     function addCategory() {
         const newCategory = {
@@ -308,6 +361,40 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         setCategoryList(newCategoryList);
     }
 
+    function handleSort() {
+        if (draggedItem.current == null || dragOverItem == null) {
+            return;
+        }
+
+        let insertAtIndex = dragOverItem;
+        // if dragged item is higher in the list, then should subtract a number from where it needs to be placed
+        if (draggedItem.current < dragOverItem)
+            insertAtIndex = insertAtIndex - 1;
+
+        //duplicate items
+        let newCategoryList = [...categoryList];
+
+        //remove and save the dragged item content
+        const draggedItemContent = newCategoryList.splice(
+            draggedItem.current,
+            1,
+        )[0];
+
+        if (insertAtIndex == categoryList.length) {
+            // add it to end of list
+            newCategoryList.push(draggedItemContent);
+        } else {
+            //switch the position
+            newCategoryList.splice(insertAtIndex, 0, draggedItemContent);
+        }
+
+        //update the actual array
+        setCategoryList(newCategoryList);
+
+        draggedItem.current = null;
+        setDraggedOverItem(null);
+    }
+
     return (
         <AuthenticatedLayout user={auth.user} title="Categories">
             <PageNav
@@ -327,7 +414,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         <DocumentCheckIcon className="h-4 text-base-100" />
                     </button>
                 </div>
-                {MemoizedCategoryList}
+                <div>{MemoizedCategoryList}</div>
             </div>
             {/* Modals */}
             <dialog ref={deleteCategoryModal} className="modal">
