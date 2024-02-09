@@ -30,6 +30,8 @@ class StoreEnrollmentRequest extends FormRequest
             'provider_user_id' => 'required|max:255',
             'provider_course_id' => 'required|max:255',
             'provider_enrollment_id' => 'required|max:255',
+            'provider_start_at' => 'required|date',
+            'provider_end_at' => 'nullable|date|after_or_equal:provider_start_at',
         ];
     }
 }

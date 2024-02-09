@@ -29,16 +29,19 @@ class EnrollmentController extends Controller
                     ->orWhere('links', 'like', '%'.$search.'%');
             });
         }
-        // If user is not admin, only show their enrollments
-        if (! $request->user()->isAdmin()) {
+        if ($request->user()->isAdmin()) {
+            $query->orderBy($sortBy, $sortOrder);
+            $categories = $query->paginate($perPage);
+
+            return EnrollmentResource::collection($categories);
+        } else {
+
             $query->where(['user_id' => $request->user()->id]);
+            $query->orderBy($sortBy, $sortOrder);
+            $categories = $query->paginate($perPage);
+
+            return EnrollmentResource::collection($categories);
         }
-
-        $query->orderBy($sortBy, $sortOrder);
-
-        $categories = $query->paginate($perPage);
-
-        return EnrollmentResource::collection($categories);
     }
 
     public function show(Request $request, string $id)
