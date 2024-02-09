@@ -18,9 +18,6 @@ export default function Welcome({ auth }: PageProps) {
                                     <li>
                                         <a href="login">Log in</a>
                                     </li>
-                                    <li>
-                                        <a href="register">Register</a>
-                                    </li>
                                 </>
                             ) : (
                                 <li>
