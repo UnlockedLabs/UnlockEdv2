@@ -6,6 +6,7 @@ import {
     UsersIcon,
     PencilSquareIcon,
 } from "@heroicons/react/24/solid";
+import { Link } from "@inertiajs/react";
 
 export default function PageNav({
     user,
@@ -75,10 +76,13 @@ export default function PageNav({
 
                                 {user.role == UserRole.Student ? (
                                     <li>
-                                        <div>
+                                        <Link
+                                            href={route("logout")}
+                                            method="post"
+                                        >
                                             <ArrowRightOnRectangleIcon className="h-4" />
                                             Logout
-                                        </div>
+                                        </Link>
                                     </li>
                                 ) : (
                                     <>
@@ -104,10 +108,10 @@ export default function PageNav({
                                 )}
 
                                 <li>
-                                    <div>
+                                    <Link href={route("logout")} method="post">
                                         <ArrowRightOnRectangleIcon className="h-4" />
                                         Logout
-                                    </div>
+                                    </Link>
                                 </li>
                             </ul>
                         </details>
