@@ -36,10 +36,9 @@ class MakeControllerTest extends Command
         $modelName = $this->ask('What is the name of the model?');
         $route = $this->ask('What is the route for the controller?(always use `id` for dynamic routes: e.g. api/v1/users/id/logins)');
         $protected = $this->choice('Is this a Admin only resource?', ['admin access only', 'user can access']);
-        $isDynamicRoute = false;
         if ($protected === 'admin access only') {
             $this->info('Tests will assert failed status for non-admin users');
-            $testContent = $this->generateTestContentAdmin($controllerName, $modelName, $route, $isDynamicRoute);
+            $testContent = $this->generateTestContentAdmin($controllerName, $modelName, $route);
         } else {
             $this->info('Tests will assert users can access their own data at the resource, but cannot create or delete');
             $testContent = $this->generateTestContent($controllerName, $modelName, $route);

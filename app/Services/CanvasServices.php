@@ -83,6 +83,7 @@ class CanvasServices
         $this->account_id = $accountId;
         $this->access_key = $apiKey;
         $this->base_url = $url;
+        $this->client = new Client();
     }
 
     public function getAccountId(): int
