@@ -3,16 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\Enrollment;
-use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class EnrollmentControllerTestGen extends TestCase
 {
     use RefreshDatabase;
+
     public string $url = 'api/v1/enrollments';
+
     public $seeder = \Database\Seeders\TestSeeder::class;
-    public  $single_json_structure = [
+
+    public $single_json_structure = [
         'data' => [
             'id',
             'user_id',
@@ -26,10 +28,11 @@ class EnrollmentControllerTestGen extends TestCase
             'provider_start_at',
             'provider_end_at',
             'created_at',
-            'updated_at'
-        ]
+            'updated_at',
+        ],
     ];
-    public  $array_json_structure = [
+
+    public $array_json_structure = [
         'data' => [
             '*' => [
                 'id',
@@ -44,11 +47,10 @@ class EnrollmentControllerTestGen extends TestCase
                 'provider_start_at',
                 'provider_end_at',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ],
         ],
     ];
-
 
     /* You may need to edit these tests to match the actual behavior of the controller
     * this is just a template and a good starting point, be sure to test for any edge cases
@@ -106,7 +108,7 @@ class EnrollmentControllerTestGen extends TestCase
         $this->seed($this->seeder);
         $admin = \App\Models\User::factory()->admin()->createOne();
         $model = Enrollment::factory()->createOne();
-        $response = $this->actingAs($admin)->patchJson($this->url . '/' . $model->id, $model->toArray());
+        $response = $this->actingAs($admin)->patchJson($this->url.'/'.$model->id, $model->toArray());
         $response->assertStatus(200);
         $response->assertJsonStructure($this->single_json_structure);
     }
@@ -116,7 +118,7 @@ class EnrollmentControllerTestGen extends TestCase
         $this->seed($this->seeder);
         $user = \App\Models\User::factory()->createOne();
         $model = Enrollment::factory()->createOne();
-        $response = $this->actingAs($user)->patch($this->url . '/' . $model->id, $model->toArray());
+        $response = $this->actingAs($user)->patch($this->url.'/'.$model->id, $model->toArray());
         $response->assertStatus(403);
     }
 
@@ -125,7 +127,7 @@ class EnrollmentControllerTestGen extends TestCase
         $this->seed($this->seeder);
         $admin = \App\Models\User::factory()->admin()->createOne();
         $model = Enrollment::factory()->createOne();
-        $response = $this->actingAs($admin)->delete($this->url . '/' . $model->id);
+        $response = $this->actingAs($admin)->delete($this->url.'/'.$model->id);
         $response->assertStatus(204);
     }
 
@@ -134,7 +136,7 @@ class EnrollmentControllerTestGen extends TestCase
         $this->seed($this->seeder);
         $user = \App\Models\User::factory()->createOne();
         $model = Enrollment::factory()->createOne();
-        $response = $this->actingAs($user)->delete($this->url . '/' . $model->id);
+        $response = $this->actingAs($user)->delete($this->url.'/'.$model->id);
         $response->assertStatus(403);
     }
 }

@@ -24,6 +24,7 @@ class CourseFactory extends Factory
             'provider_end_at' => $this->faker->date,
         ];
     }
+
     public function withResourceId(int $id): static
     {
         return $this->state(fn (array $attributes) => [

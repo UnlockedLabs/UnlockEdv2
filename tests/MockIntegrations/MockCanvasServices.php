@@ -2,16 +2,15 @@
 
 namespace Tests\MockIntegrations;
 
-
 class MockCanvasServices
 {
     public function __call($method, $arguments)
     {
         $jsonBaseName = 'Canvas';
-        $methodName = $jsonBaseName . ucfirst($method); // Prefix method name with 'Canvas'
+        $methodName = $jsonBaseName.ucfirst($method); // Prefix method name with 'Canvas'
         $mockDataFile = base_path("tests/Fixtures/{$methodName}.json");
 
-        if (!file_exists($mockDataFile)) {
+        if (! file_exists($mockDataFile)) {
             throw new \Exception("Mock data file {$mockDataFile} does not exist.");
         }
 
@@ -132,10 +131,12 @@ class MockCanvasServices
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
+
     public function getUserCourseProgress(string $userId, string $courseId)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
+
     public function getActivityStreamSummary()
     {
         return $this->__call(__FUNCTION__, func_get_args());

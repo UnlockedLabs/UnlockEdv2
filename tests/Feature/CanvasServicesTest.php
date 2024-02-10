@@ -2,21 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Http\Resources\EnrollmentResource;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Tests\TestCase;
-use Tests\MockIntegrations\MockCanvasServices;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-
-use function Pest\Laravel\withCookies;
+use Illuminate\Http\Request;
+use Tests\MockIntegrations\MockCanvasServices;
+use Tests\TestCase;
 
 class CanvasServicesTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
      * this tests the current action implemented at /actions/register-canvas-auth-provider
      */

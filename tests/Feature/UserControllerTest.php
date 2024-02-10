@@ -15,7 +15,7 @@ class UserControllerTest extends TestCase
     {
         $user = \App\Models\User::factory()->create();
 
-        $response = $this->actingAs($user)->get($this->uri . '/' . $user->id);
+        $response = $this->actingAs($user)->get($this->uri.'/'.$user->id);
 
         $response->assertStatus(200);
     }
@@ -37,7 +37,7 @@ class UserControllerTest extends TestCase
     public function testCreateUser()
     {
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->post($this->uri . '/', [
+        $response = $this->actingAs($user)->post($this->uri.'/', [
             'name_first' => 'Test',
             'name_last' => 'User',
             'username' => 'testuser',
@@ -50,7 +50,7 @@ class UserControllerTest extends TestCase
     public function testCreateUserUnauthorized()
     {
         $user = \App\Models\User::factory()->create();
-        $response = $this->actingAs($user)->post($this->uri . '/', [
+        $response = $this->actingAs($user)->post($this->uri.'/', [
             'name_first' => 'Test',
             'name_last' => 'User',
             'username' => 'testuser',
@@ -62,7 +62,7 @@ class UserControllerTest extends TestCase
     public function testUpdateUser()
     {
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->patch($this->uri . '/' . $user->id, ['name_first' => 'TestUpdate']);
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(200);
         assert($response['data']['name_first'] == 'TestUpdate');
         $response->assertJsonStructure([
@@ -80,21 +80,21 @@ class UserControllerTest extends TestCase
     public function testUpdateUserUnauthorized()
     {
         $user = \App\Models\User::factory()->create();
-        $response = $this->actingAs($user)->patch($this->uri . '/' . $user->id, ['name_first' => 'TestUpdate']);
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(403);
     }
 
     public function testDeleteUser()
     {
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->delete($this->uri . '/' . $user->id);
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$user->id);
         $response->assertStatus(204);
     }
 
     public function testDeleteUserUnauthorized()
     {
         $user = \App\Models\User::factory()->create();
-        $response = $this->actingAs($user)->delete($this->uri . '/' . $user->id);
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$user->id);
         $response->assertStatus(403);
     }
 }
