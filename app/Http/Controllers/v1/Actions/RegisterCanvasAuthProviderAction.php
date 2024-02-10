@@ -15,7 +15,7 @@ class RegisterCanvasAuthProviderAction extends Controller
 
         $provider = ProviderPlatform::where(['id' => $valid['provider_platform_id']])->firstOrFail();
 
-        if (! $provider || ! in_array($provider->type, ['canvas_cloud', 'canvas_oss'])) {
+        if (!$provider || !in_array($provider->type, ['canvas_cloud', 'canvas_oss'])) {
             return response()->json(['Provider Platform was either not found or is not a Canvas instance', 404]);
         }
 
@@ -23,11 +23,11 @@ class RegisterCanvasAuthProviderAction extends Controller
 
         $resp = $cs->createAndRegisterAuthProvider($valid->auth_provider_url);
 
-        if (! array_key_exists('id', $resp)) {
+        if (!array_key_exists('id', $resp)) {
             return response()->json(["Unexpected response from Canvas: $resp", 400]);
         }
         $auth_provider_id = $resp['id'];
-        $provider->auth_provider_id = $auth_provider_id;
+        $provider->external_auth_provider_id = $auth_provider_id;
         $provider->update(['external_auth_provider_id' => $auth_provider_id]);
         $provider->save();
 

@@ -1,0 +1,27 @@
+[
+    {
+        "id": 3,
+        "auth_type": "canvas",
+        "position": 1,
+        "mfa_required": false,
+        "skip_internal_mfa": false,
+        "self_registration": "all",
+        "enable_captcha": false
+    },
+    {
+        "id": 21,
+        "auth_type": "openid_connect",
+        "position": 2,
+        "mfa_required": false,
+        "skip_internal_mfa": false,
+        "client_id": "3",
+        "authorize_url": "http://unlocked_base_url/oauth/authorize",
+        "token_url": "http://unlocked_base_url/oauth/token",
+        "scope": "",
+        "login_attribute": "email",
+        "end_session_endpoint": "http://unlocked_base_url/oauth/logout",
+        "userinfo_endpoint": null,
+        "jit_provisioning": false,
+        "federated_attributes": {}
+    }
+]
