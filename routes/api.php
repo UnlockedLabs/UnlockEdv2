@@ -9,6 +9,7 @@ use App\Http\Controllers\v1\CourseController;
 use App\Http\Controllers\v1\EnrollmentController;
 use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\ProviderUserMappingController;
+use App\Http\Controllers\v1\UserActivityController;
 use App\Http\Controllers\v1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,12 @@ Route::prefix('v1')->group(function () {
         Route::get('users/{id}/logins', [ProviderUserMappingController::class, 'show']);
         Route::post('users/{id}/logins', [ProviderUserMappingController::class, 'store']);
         Route::delete('users/{id}/logins', [ProviderUserMappingController::class, 'destroy']);
+
+        Route::get('user-activities', [UserActivityController::class, 'index']);
+        Route::get('user-activities/{id}', [UserActivityController::class, 'show']);
+        Route::post('user-activities', [UserActivityController::class, 'store']);
+        Route::patch('user-activities/{id}', [UserActivityController::class, 'update']);
+        Route::delete('user-activities/{id}', [UserActivityController::class, 'destroy']);
 
         /* Actions/RPCs */
         Route::post('actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);
