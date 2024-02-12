@@ -34,7 +34,7 @@ class MakeControllerTest extends Command
              method that creates a model with the user_id field of a specific user'");
 
         $modelName = $this->ask('What is the name of the model?');
-        $route = $this->ask('What is the route for the controller?');
+        $route = $this->ask('What is the route for the controller?(always use `id` for dynamic routes: e.g. api/v1/users/id/logins)');
         $protected = $this->choice('Is this a Admin only resource?', ['admin access only', 'user can access']);
         if ($protected === 'admin access only') {
             $this->info('Tests will assert failed status for non-admin users');

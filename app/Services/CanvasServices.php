@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
 use GuzzleHttp\Client;
@@ -65,7 +64,6 @@ class CanvasServices
         return $id;
     }
 
-    // Constructor, if the URL is missing the protocol or api version , add it.
     public function __construct(int $providerId, int $accountId, string $apiKey, string $url)
     {
         $parsedUrl = parse_url($url);
@@ -303,7 +301,7 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function createStudentInCanvas(string $name, string $email, bool $terms = true): mixed
+    public function createStudent(string $name, string $email, bool $terms = true): mixed
     {
         $userData = [
             'user' => [
@@ -347,7 +345,7 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function getActivityStreamSummary(): mixed
+    public function listActivityStreamSummary(): mixed
     {
         $base_url = $this->base_url.USERS.SELF_ACCT.ACTIVITY_STREAM.'summary';
 
@@ -461,7 +459,7 @@ class CanvasServices
      * in a course. To query another user’s progress, you must be a
      * teacher in the course, an administrator, or a linked observer of the user."
      * */
-    public function getUserCourseProgress(string $userId, string $courseId): mixed
+    public function listUserCourseProgress(string $userId, string $courseId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).USERS.self::fmtUrl($userId).PROGRESS;
 
@@ -475,7 +473,7 @@ class CanvasServices
      *
      * @throws \Exception
      * */
-    public function getEnrollmentsByUser(string $userId): mixed
+    public function listEnrollmentsForUser(string $userId = 'self'): mixed
     {
         $base_url = $this->base_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
 
@@ -490,7 +488,7 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function getEnrollmentsByCourse(string $courseId): mixed
+    public function listEnrollmentsByCourse(string $courseId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS;
 
@@ -504,7 +502,7 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function getEnrollmentsBySection(string $sectionId): mixed
+    public function listEnrollmentsBySection(string $sectionId): mixed
     {
         $base_url = $this->base_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS;
 
@@ -774,7 +772,7 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function getAssignmentSubmissions(string $courseId, string $assignmentId): mixed
+    public function listAssignmentSubmissions(string $courseId, string $assignmentId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS;
 
@@ -789,7 +787,7 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function getSubmissionsForMultipleAssignments(string $courseId): mixed
+    public function listSubmissionsForMultipleAssignments(string $courseId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).STUDENTS.SUBMISSIONS;
 
@@ -805,7 +803,7 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function getSubmissionForUser(string $courseId, string $assignmentId, string $userId): mixed
+    public function listSubmissionsForUser(string $courseId, string $assignmentId, string $userId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
 
@@ -821,7 +819,7 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function getSubmissionForAnonID(string $courseId, string $assignmentId, string $anonId): mixed
+    public function listSubmissionForAnonID(string $courseId, string $assignmentId, string $anonId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).ANONYMOUS_SUBMISSIONS.$anonId;
 
@@ -852,7 +850,7 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function getSubmissionSummary(string $courseId, string $assignmentId): mixed
+    public function listSubmissionSummary(string $courseId, string $assignmentId): mixed
     {
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).'submission_summary';
 

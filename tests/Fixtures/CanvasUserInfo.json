@@ -1,0 +1,21 @@
+{
+    "id": 1,
+    "name": "user@unlockedlabs.org",
+    "created_at": "2024-01-11T19:05:56-07:00",
+    "sortable_name": "user@unlockedlabs.org",
+    "short_name": "user@unlockedlabs.org",
+    "sis_user_id": null,
+    "integration_id": null,
+    "sis_import_id": null,
+    "login_id": "user@unlockedlabs.org",
+    "last_name": "",
+    "first_name": "user@unlockedlabs.org",
+    "email": "user@unlockedlabs.org",
+    "locale": null,
+    "effective_locale": "en",
+    "permissions": {
+        "can_update_name": true,
+        "can_update_avatar": false,
+        "limit_parent_app_web_access": false
+    }
+}
