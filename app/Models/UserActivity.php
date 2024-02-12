@@ -20,5 +20,5 @@ class UserActivity extends Model
 
     protected $hidden = [
         'ip',
-    ];    
+    ];
 }
