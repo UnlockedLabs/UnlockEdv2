@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Models\UserActivity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -10,12 +11,22 @@ class UserActivityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testUserActivitiesAreCreated(): void
+    public function testUserActivityFactoryCreatesValidModel(): void
     {
-        // Create 10 user activities using the factory
-        UserActivity::factory(10)->create();
+        $userActivity = UserActivity::factory()->create();
 
-        // Assert that there are 10 user activities in the database
-        $this->assertEquals(10, UserActivity::count());
+        $this->assertInstanceOf(UserActivity::class, $userActivity);
+        $this->assertDatabaseCount('user_activities', 1);
+    }
+
+    public function testUserActivityFactoryCanCreateForSpecificUser(): void
+    {
+        $user = User::factory()->create();
+
+        $userActivity = UserActivity::factory()->forUser($user->id)->create();
+
+        $this->assertInstanceOf(UserActivity::class, $userActivity);
+        $this->assertEquals($user->id, $userActivity->user_id);
+        $this->assertDatabaseCount('user_activities', 1);
     }
 }

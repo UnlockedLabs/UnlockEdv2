@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('user_activities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id');  
+            $table->foreignId('user_id');
             $table->string('browser_name');
             $table->string('platform');
             $table->string('device');
             $table->string('ip');
-            $table->text('clicked_url');                     
+            $table->text('clicked_url');
             $table->timestamps();
         });
     }

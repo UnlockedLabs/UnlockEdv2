@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Factories;
+
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -27,4 +28,12 @@ class UserActivityFactory extends Factory
             'updated_at' => now(),
         ];
     }
+
+    // Create for a specific user
+    public function forUser(string $id): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $id,
+        ]);
+    }    
 }

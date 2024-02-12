@@ -15,6 +15,10 @@ class UserActivity extends Model
         'platform',
         'device',
         'ip',
-        'clicked_url'
+        'clicked_url',
+    ];
+
+    protected $hidden = [
+        'ip',
     ];    
 }
