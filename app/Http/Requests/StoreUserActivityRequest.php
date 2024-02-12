@@ -32,7 +32,7 @@ class StoreUserActivityRequest extends FormRequest
             'browser_name' => 'required|string|max:255',
             'platform' => 'required|string|max:255',
             'device' => 'required|string|max:255',
-            'ip' => 'required|ip',
+            'ip' => 'nullable|ip',
             'clicked_url' => 'required|url',
         ];
     }

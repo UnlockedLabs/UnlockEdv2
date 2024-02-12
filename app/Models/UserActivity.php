@@ -18,7 +18,7 @@ class UserActivity extends Model
         'clicked_url',
     ];
 
-    // protected $hidden = [
-    //     'ip',
-    // ];
+    protected $hidden = [
+        'ip',
+    ];
 }

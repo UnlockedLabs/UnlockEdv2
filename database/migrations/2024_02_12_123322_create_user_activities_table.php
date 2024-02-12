@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('browser_name');
             $table->string('platform');
             $table->string('device');
-            $table->string('ip');
+            $table->string('ip')->nullable();
             $table->text('clicked_url');
             $table->timestamps();
         });
