@@ -1,0 +1,41 @@
+[
+    {
+        "id": 2,
+        "user_id": 1,
+        "course_id": 4,
+        "type": "TeacherEnrollment",
+        "created_at": "2024-01-23T22:27:00Z",
+        "updated_at": "2024-01-23T22:27:00Z",
+        "associated_user_id": null,
+        "start_at": null,
+        "end_at": null,
+        "course_section_id": 2,
+        "root_account_id": 2,
+        "limit_privileges_to_course_section": false,
+        "enrollment_state": "active",
+        "role": "TeacherEnrollment",
+        "role_id": 20,
+        "last_activity_at": "2024-01-23T22:33:09Z",
+        "last_attended_at": null,
+        "total_activity_time": 366,
+        "sis_import_id": null,
+        "sis_account_id": null,
+        "sis_course_id": null,
+        "course_integration_id": null,
+        "sis_section_id": null,
+        "section_integration_id": null,
+        "sis_user_id": null,
+        "html_url": "http://172.16.20.41/courses/4/users/1",
+        "user": {
+            "id": 1,
+            "name": "user@unlockedlabs.org",
+            "created_at": "2024-01-11T19:05:56-07:00",
+            "sortable_name": "user@unlockedlabs.org",
+            "short_name": "user@unlockedlabs.org",
+            "sis_user_id": null,
+            "integration_id": null,
+            "sis_import_id": null,
+            "login_id": "user@unlockedlabs.org"
+        }
+    }
+]

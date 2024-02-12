@@ -17,7 +17,7 @@ class StoreUserEnrollmentController extends Controller
     public function __invoke(AdminRequest $request, int $providerId, string $userId)
     {
         $canvasService = CanvasServices::byProviderId($providerId);
-        $canvasEnrollments = $canvasService->getEnrollmentsByUser($userId);
+        $canvasEnrollments = $canvasService->listEnrollmentsForUser($userId);
         $enrollmentCollection = collect();
         foreach ($canvasEnrollments as $enrollment) {
             if ($course = Course::where('provider_resource_id', $enrollment->course_id)->firstOrFail()) {

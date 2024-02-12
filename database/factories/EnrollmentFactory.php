@@ -41,4 +41,11 @@ class EnrollmentFactory extends Factory
             'user_id' => $id,
         ]);
     }
+
+    public function forCourse(string $id): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'course_id' => $id,
+        ]);
+    }
 }

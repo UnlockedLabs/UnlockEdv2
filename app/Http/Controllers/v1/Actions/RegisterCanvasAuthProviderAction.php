@@ -27,7 +27,7 @@ class RegisterCanvasAuthProviderAction extends Controller
             return response()->json(["Unexpected response from Canvas: $resp", 400]);
         }
         $auth_provider_id = $resp['id'];
-        $provider->auth_provider_id = $auth_provider_id;
+        $provider->external_auth_provider_id = $auth_provider_id;
         $provider->update(['external_auth_provider_id' => $auth_provider_id]);
         $provider->save();
 
