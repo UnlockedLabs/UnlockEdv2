@@ -86,7 +86,7 @@ class ProviderPlatformControllerTest extends TestCase
         $providerPlatform = \App\Models\ProviderPlatform::factory()->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$providerPlatform->id, ['name' => 'TestUpdate']);
         $response->assertStatus(200);
-        assert($response['data']['name'] == 'TestUpdate');
+        $this->assertTrue($response['data']['name'] == 'TestUpdate');
     }
 
     public function testUpdateProviderPlatformUnauthorized()
@@ -95,7 +95,6 @@ class ProviderPlatformControllerTest extends TestCase
         $providerPlatform = \App\Models\ProviderPlatform::factory()->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$providerPlatform->id, ['name' => 'TestUpdate']);
         $response->assertStatus(403);
-        assert($response['data']['name'] == 'TestUpdate');
     }
 
     public function testDeleteProviderPlatform()

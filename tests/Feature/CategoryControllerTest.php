@@ -67,16 +67,13 @@ class CategoryControllerTest extends TestCase
         $category = Category::factory(2)->create();
 
         $response = $this->actingAs($user)->get($this->uri.'/'.$category[0]->id);
-
         $response->assertStatus(200);
-
-        $jsonResponse = $response->json();
-
-        foreach ($jsonResponse as $key => $value) {
+        $data = $response->json()['data'];
+        foreach ($data as $key => $value) {
             if (in_array($key, ['created_at', 'updated_at'])) {
                 continue;
             }
-            assert($value, $category[0]->$key);
+            $this->assertEquals($value, $category[0][$key]);
         }
         $response->assertStatus(200);
 
@@ -89,7 +86,7 @@ class CategoryControllerTest extends TestCase
         $category = Category::factory(1)->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$category[0]->id, ['name' => 'TestUpdate']);
         $response->assertStatus(200);
-        assert($response['data']['name'] == 'TestUpdate');
+        $this->assertTrue($response['data']['name'] == 'TestUpdate');
     }
 
     public function testUpdateCategoryUnauthorized()
@@ -98,7 +95,6 @@ class CategoryControllerTest extends TestCase
         $category = Category::factory(1)->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$category[0]->id, ['name' => 'TestUpdate']);
         $response->assertStatus(403);
-        assert($response['data']['name'] == 'TestUpdate');
     }
 
     public function testDeleteCategory()
