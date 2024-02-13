@@ -15,11 +15,14 @@ class CanvasServicesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public $seeder = \Database\Seeders\TestSeeder::class;
+
     /**
      * this tests the current action implemented at /actions/register-canvas-auth-provider
      */
     public function test_list_authproviders(): void
     {
+        $this->seed($this->seeder);
         $cs = new MockCanvasServices();
         // This provides a mock response of creating a new auth provider
         $course = Course::factory()->withResourceId(4)->createOne();
@@ -36,6 +39,7 @@ class CanvasServicesTest extends TestCase
     // this tests the current action implemented at /actions/store-user-enrollments
     public function testStoreEnrollments()
     {
+        $this->seed($this->seeder);
         $user = User::factory()->createOne();
         $provider = ProviderPlatform::factory()->createOne();
 
