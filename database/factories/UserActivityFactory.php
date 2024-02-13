@@ -35,5 +35,5 @@ class UserActivityFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'user_id' => $id,
         ]);
-    }    
+    }
 }
