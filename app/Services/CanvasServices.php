@@ -201,13 +201,14 @@ class CanvasServices
     public function createUserLogin(int $userId)
     {
         $user = User::findOrFail($userId);
+        $mapping = $user->providerUserMappings()->where('provider_platform_id', $this->provider_id)->firstOrFail();
         $accountId = $this->account_id;
         $canvasUrl = $this->base_url;
         $token = $this->access_key;
         try {
             $response = $this->client->request('POST', $canvasUrl.ACCOUNTS.self::fmtUrl($accountId).'logins', [
                 'form_params' => [
-                    'user[id]' => $user->id,
+                    'user[id]' => $mapping->external_user_id,
                     'login[unique_id]' => $user->email,
                     'login[authentication_provider_id]' => 'openid_connect',
                 ],
