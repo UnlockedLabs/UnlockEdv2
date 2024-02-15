@@ -8,8 +8,6 @@ import {
     TrashIcon,
     PlusIcon,
     ChevronUpIcon,
-    PencilSquareIcon,
-    CheckIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
@@ -257,7 +255,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
     const draggedItem = useRef<null | number>(null);
-    //const dragOverItem = useRef<null | number>(null);
     const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
 
     useEffect(() => {
