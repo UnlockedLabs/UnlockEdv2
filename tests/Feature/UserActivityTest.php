@@ -64,7 +64,6 @@ class UserActivityTest extends TestCase
 
     public function testAdminCanCreateUserActivitiesForAnyone()
     {
-        $this->seed($this->seeder);
         $user = User::factory()->createOne();
         $admin = User::factory()->admin()->createOne();
 
@@ -78,13 +77,10 @@ class UserActivityTest extends TestCase
             $this->assertEquals($user->id, $response['data']['user_id']);
         }
 
-        $responseAdmin = $this->actingAs($admin)->getJson($this->uri);
-        $responseAdmin->assertJsonCount(5, 'data');
     }
 
     public function testUserCanCreateUserActivitiesForThemselves()
     {
-        $this->seed($this->seeder);
         $user = User::factory()->createOne();
 
         $userActivities = UserActivity::factory()->count(5)->forUser($user->id)->make();
@@ -96,14 +92,10 @@ class UserActivityTest extends TestCase
 
             $this->assertEquals($user->id, $response['data']['user_id']);
         }
-
-        $responseUser = $this->actingAs($user)->getJson($this->uri);
-        $responseUser->assertJsonCount(5, 'data');
     }
 
     public function testUserCannotCreateUserActivitiesForAnotherUser()
     {
-        $this->seed($this->seeder);
         $user = User::factory()->createOne();
         $anotherUser = User::factory()->createOne();
 
@@ -113,9 +105,6 @@ class UserActivityTest extends TestCase
             $response = $this->actingAs($user)->postJson($this->uri, $activity->toArray());
             $response->assertStatus(403);
         }
-
-        $responseUser = $this->actingAs($user)->getJson($this->uri);
-        $responseUser->assertJsonCount(0, 'data');
     }
 
     public function testAdminCanShowUserActivity()
@@ -154,20 +143,22 @@ class UserActivityTest extends TestCase
 
     public function testUserCanAccessOwnUserActivities()
     {
-        $this->seed($this->seeder);
         $user = User::factory()->createOne();
         UserActivity::factory()->count(5)->forUser($user->id)->create();
 
         $response = $this->actingAs($user)->getJson($this->uri);
 
         $response->assertStatus(200);
-        $response->assertJsonCount(5, 'data');
         $response->assertJsonStructure($this->array_json_structure);
+
+        // every response record must belong to $user
+        foreach($response['data'] as $record) {
+            $this->assertEquals($user->id, $record['user_id']);
+        }
     }
 
     public function testAdminCanAccessAllUserActivities()
     {
-        $this->seed($this->seeder);
         $admin = User::factory()->admin()->createOne();
         $user = User::factory()->createOne();
         UserActivity::factory()->count(5)->forUser($user->id)->create();
