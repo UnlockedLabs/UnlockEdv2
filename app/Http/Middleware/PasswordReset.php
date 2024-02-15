@@ -18,7 +18,6 @@ class PasswordReset
         // Check if the user is authenticated
         if (Auth::check()) {
             $user = Auth::user();
-
             // Check if the route is not the password reset route
             if ($request->route()->getName() !== 'password.reset' && $request->route()->getName() !== 'password.update' && $user->password_reset) {
                 // Redirect to the password reset route
