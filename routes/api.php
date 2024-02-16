@@ -30,10 +30,7 @@ Route::prefix('v1')->group(function () {
         Route::Resource('provider-platforms', ProviderPlatformController::class);
 
         Route::get('categories', [CategoryController::class, 'index']);
-        Route::get('categories/{id}', [CategoryController::class, 'show']);
-        Route::post('categories', [CategoryController::class, 'store']);
-        Route::patch('categories/{id}', [CategoryController::class, 'update']);
-        Route::delete('categories/{id}', [CategoryController::class, 'destroy']);
+        Route::put('categories', [CategoryController::class, 'update']);
 
         Route::get('enrollments', [EnrollmentController::class, 'index']);
         Route::get('enrollments/{id}', [EnrollmentController::class, 'show']);

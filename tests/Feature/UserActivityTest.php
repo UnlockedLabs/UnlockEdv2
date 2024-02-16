@@ -152,7 +152,7 @@ class UserActivityTest extends TestCase
         $response->assertJsonStructure($this->array_json_structure);
 
         // every response record must belong to $user
-        foreach($response['data'] as $record) {
+        foreach ($response['data'] as $record) {
             $this->assertEquals($user->id, $record['user_id']);
         }
     }
