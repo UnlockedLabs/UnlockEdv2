@@ -7,6 +7,7 @@ import {
     ChevronDownIcon,
     TrashIcon,
     PlusIcon,
+    ChevronUpIcon,
 } from "@heroicons/react/24/solid";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
@@ -14,24 +15,37 @@ import useSWR from "swr";
 function LinkItem({
     linkName,
     linkURL,
+    callUpdateLink,
 }: {
     linkName: string;
     linkURL: string;
+    callUpdateLink: any;
 }) {
     const [name, setName] = useState(linkName);
     const [url, setURL] = useState(linkURL);
+
     return (
         <li className="flex flex-cols-2 gap-2 w-full">
             <input
                 type="text"
                 defaultValue={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={() => {
+                    let newLinkPair: CategoryLink = {};
+                    newLinkPair[name] = url;
+                    callUpdateLink(newLinkPair);
+                }}
                 className="input input-bordered w-1/3"
             />
             <input
                 type="text"
                 defaultValue={url}
                 onChange={(e) => setURL(e.target.value)}
+                onBlur={() => {
+                    let newLinkPair: CategoryLink = {};
+                    newLinkPair[name] = url;
+                    callUpdateLink(newLinkPair);
+                }}
                 className="input input-bordered w-2/3"
             />
         </li>
@@ -42,10 +56,16 @@ function CategoryItem({
     category,
     deleteLink,
     addLink,
+    moveLinkUp,
+    moveLinkDown,
+    updateLink,
 }: {
     category: Category;
     deleteLink: any;
     addLink: any;
+    moveLinkUp: any;
+    moveLinkDown: any;
+    updateLink: any;
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
@@ -67,12 +87,28 @@ function CategoryItem({
         index: number;
         keyString: string;
     }) {
+        function callUpdateLink(newLinkPair: CategoryLink) {
+            updateLink(category, index, newLinkPair);
+        }
+
         return (
             <div className="flex flex-row justify-between gap-2">
-                <LinkItem linkName={keyString} linkURL={linkPair[keyString]} />
+                <LinkItem
+                    linkName={keyString}
+                    linkURL={linkPair[keyString]}
+                    callUpdateLink={callUpdateLink}
+                />
                 <TrashIcon
                     className="w-4"
                     onClick={() => openDeleteLinkModal(linkPair)}
+                />
+                <ChevronUpIcon
+                    className="w-5"
+                    onClick={() => moveLinkUp(category, index)}
+                />
+                <ChevronDownIcon
+                    className="w-5"
+                    onClick={() => moveLinkDown(category, index)}
                 />
             </div>
         );
@@ -219,7 +255,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
     const draggedItem = useRef<null | number>(null);
-    //const dragOverItem = useRef<null | number>(null);
     const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
 
     useEffect(() => {
@@ -284,6 +319,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                                     category={category}
                                     deleteLink={deleteLink}
                                     addLink={addLink}
+                                    moveLinkUp={moveLinkUp}
+                                    moveLinkDown={moveLinkDown}
+                                    updateLink={updateLink}
                                 />
                             </div>
                         </div>
@@ -359,6 +397,60 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             }
         });
         setCategoryList(newCategoryList);
+    }
+
+    function moveLinkUp(category: Category, linkIndex: number) {
+        if (linkIndex == 0) return;
+        const prevLinkIndex = linkIndex - 1;
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                const linksArray = c.links;
+                const temp = linksArray[prevLinkIndex];
+                linksArray[prevLinkIndex] = linksArray[linkIndex];
+                linksArray[linkIndex] = temp;
+                c.links = linksArray;
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+        setCategoryList(newCategoryList);
+    }
+
+    function moveLinkDown(category: Category, linkIndex: number) {
+        if (linkIndex == category.links.length - 1) return;
+        const postLinkIndex = linkIndex + 1;
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                const linksArray = c.links;
+                const temp = linksArray[postLinkIndex];
+                linksArray[postLinkIndex] = linksArray[linkIndex];
+                linksArray[linkIndex] = temp;
+                c.links = linksArray;
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+        setCategoryList(newCategoryList);
+    }
+
+    function updateLink(
+        category: Category,
+        linkIndex: number,
+        newLinkPair: any,
+    ) {
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                category.links[linkIndex] = newLinkPair;
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
     }
 
     function handleSort() {
