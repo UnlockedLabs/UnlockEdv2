@@ -61,4 +61,18 @@ class CategoryControllerTest extends TestCase
         $response = $this->actingAs($admin)->get($this->uri);
         $this->assertCount(3, $response['data']);
     }
+
+    public function testUpdateCategoryAuth()
+    {
+        $user = \App\Models\User::factory()->create();
+        $category = Category::factory(3)->make()->toArray();
+        $response = $this->actingAs($user)->put($this->uri, $category);
+        $response->assertStatus(403);
+
+        $admin = \App\Models\User::factory()->admin()->create();
+        $response = $this->actingAs($admin)->put($this->uri, $category);
+        $response->assertStatus(200);
+        $response = $this->actingAs($admin)->get($this->uri);
+        $this->assertCount(3, $response['data']);
+    }
 }
