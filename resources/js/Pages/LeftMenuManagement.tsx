@@ -2,13 +2,19 @@ import PageNav from "@/Components/PageNav";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Category, CategoryLink } from "@/common";
 import { PageProps } from "@/types";
-import { PlusCircleIcon, DocumentCheckIcon } from "@heroicons/react/24/outline";
+import {
+    PlusCircleIcon,
+    DocumentCheckIcon,
+    CheckCircleIcon,
+    ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 import {
     ChevronDownIcon,
     TrashIcon,
     PlusIcon,
     ChevronUpIcon,
 } from "@heroicons/react/24/solid";
+import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
@@ -253,6 +259,8 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     );
     const addCategoryModal = useRef<null | HTMLDialogElement>(null);
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
+    const categoriesSavedSuccessToast = useRef<null | HTMLDivElement>(null);
+    const categoriesSavedFailureToast = useRef<null | HTMLDivElement>(null);
 
     const draggedItem = useRef<null | number>(null);
     const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
@@ -262,10 +270,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             setCategoryList(data.data);
         }
     }, [data]);
-
-    // useEffect(() => {
-    //     console.log(categoryList);
-    // }, [categoryList]);
 
     const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
@@ -487,6 +491,47 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         setDraggedOverItem(null);
     }
 
+    async function updateFinalState(e: any) {
+        e.preventDefault();
+        try {
+            let response = await axios("/api/v1/categories", {
+                method: "PUT",
+                headers: { ContentType: "application/json" },
+                data: categoryList,
+            });
+            // check response is okay, and give notification
+            if (response.status !== 200) {
+                // show error
+                categoriesSavedFailureToast.current?.classList.add(
+                    "opacity-100",
+                );
+                setTimeout(() => {
+                    categoriesSavedFailureToast.current?.classList.remove(
+                        "opacity-100",
+                    );
+                }, 5000);
+            } else {
+                // show success
+                categoriesSavedSuccessToast.current?.classList.add(
+                    "opacity-100",
+                );
+                setTimeout(() => {
+                    categoriesSavedSuccessToast.current?.classList.remove(
+                        "opacity-100",
+                    );
+                }, 5000);
+            }
+        } catch {
+            // show error
+            categoriesSavedFailureToast.current?.classList.add("opacity-100");
+            setTimeout(() => {
+                categoriesSavedFailureToast.current?.classList.remove(
+                    "opacity-100",
+                );
+            }, 5000);
+        }
+    }
+
     return (
         <AuthenticatedLayout user={auth.user} title="Categories">
             <PageNav
@@ -502,7 +547,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         <PlusCircleIcon className="h-4 text-base-100" />
                         <span className="text-base-100">Add Category</span>
                     </button>
-                    <button className="btn btn-primary btn-sm">
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={(e) => updateFinalState(e)}
+                    >
                         <DocumentCheckIcon className="h-4 text-base-100" />
                     </button>
                 </div>
@@ -587,6 +635,25 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     </form>
                 </div>
             </dialog>
+            {/* Toasts */}
+            <div
+                ref={categoriesSavedSuccessToast}
+                className="toast transition-opacity duration-500 ease-out opacity-0"
+            >
+                <div className="alert alert-success">
+                    <CheckCircleIcon className="h-6" />
+                    <span>Categories saved!</span>
+                </div>
+            </div>
+            <div
+                ref={categoriesSavedFailureToast}
+                className="toast transition-opacity duration-500 ease-out opacity-0"
+            >
+                <div className="alert alert-error text-white">
+                    <ExclamationCircleIcon className="h-6" />
+                    <span>Error saving categories</span>
+                </div>
+            </div>
         </AuthenticatedLayout>
     );
 }
