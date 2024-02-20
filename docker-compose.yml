@@ -1,4 +1,6 @@
 services:
+
+
     laravel.test:
         build:
             context: ./vendor/laravel/sail/runtimes/8.2
@@ -47,6 +49,14 @@ services:
                 - "-p${DB_PASSWORD}"
             retries: 3
             timeout: 5s
+   
+    fluentd:
+        build: ./fluentd
+        volumes:
+            - ./fluentd/conf:/fluentd/etc
+            - ./logs:/output/ 
+            - ./storage/logs:/fluentd/log/files/
+
 networks:
     sail:
         driver: bridge
