@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/solid";
 import useSWR from "swr";
 import { Category, CategoryLink } from "@/common";
+import { useMemo } from "react";
 
 function CategoryItem({ name, links, rank }: Category) {
     const linksList = links.map((linkPair: { [x: string]: string }) => {
@@ -30,30 +31,24 @@ function CategoryItem({ name, links, rank }: Category) {
     );
 }
 
-function getCategoryItems(
-    data: { data: Category[] },
-    error: any,
-    isLoading: boolean,
-) {
-    if (error) return <div>failed to load</div>;
-    if (isLoading) return <div>loading...</div>;
-    return data.data.map((category) => {
-        return (
-            <CategoryItem
-                key={category.id}
-                id={category.id}
-                name={category.name}
-                links={category.links}
-                rank={category.rank}
-            />
-        );
-    });
-}
-
 export default function LeftMenu() {
     const { data, error, isLoading } = useSWR("/api/v1/categories");
 
-    const categoryItems = getCategoryItems(data, error, isLoading);
+    const categoryItems = useMemo(() => {
+        if (error) return <div>failed to load</div>;
+        if (isLoading) return <div>loading...</div>;
+        return data.data.map((category: Category) => {
+            return (
+                <CategoryItem
+                    key={category.id}
+                    id={category.id}
+                    name={category.name}
+                    links={category.links}
+                    rank={category.rank}
+                />
+            );
+        });
+    }, [data]);
 
     return (
         <ul className="menu bg-base-100 w-72">
