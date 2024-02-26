@@ -1,4 +1,3 @@
-import InputError from "@/Components/InputError";
 import PageNav from "@/Components/PageNav";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Category, CategoryLink } from "@/common";
@@ -271,10 +270,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             setCategoryList(data.data);
         }
     }, [data]);
-
-    useEffect(() => {
-        console.log(categoryList);
-    }, [categoryList]);
 
     const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
@@ -552,25 +547,16 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         <PlusCircleIcon className="h-4 text-base-100" />
                         <span className="text-base-100">Add Category</span>
                     </button>
-<<<<<<< HEAD
-    <button
-        className="btn btn-primary btn-sm"
-        onClick={(e) => updateFinalState(e)}
-    >
-||||||| parent of 31b0d7f (fix: add update state to left menu management)
-                    <button className="btn btn-primary btn-sm">
-=======
                     <button
-                className="btn btn-primary btn-sm"
-                onClick={() => updateFinalState()}
-            >
->>>>>>> 31b0d7f (fix: add update state to left menu management)
-                <DocumentCheckIcon className="h-4 text-base-100" />
-            </button>
-        </div>
-        <div>{MemoizedCategoryList}</div>
-    </div>
-    {/* Modals */ }
+                        className="btn btn-primary btn-sm"
+                        onClick={(e) => updateFinalState(e)}
+                    >
+                        <DocumentCheckIcon className="h-4 text-base-100" />
+                    </button>
+                </div>
+                <div>{MemoizedCategoryList}</div>
+            </div>
+            {/* Modals */}
             <dialog ref={deleteCategoryModal} className="modal">
                 <div className="modal-box">
                     <form method="dialog">
@@ -649,7 +635,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     </form>
                 </div>
             </dialog>
-    {/* Toasts */ }
+            {/* Toasts */}
             <div
                 ref={categoriesSavedSuccessToast}
                 className="toast transition-opacity duration-500 ease-out opacity-0"
@@ -668,6 +654,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     <span>Error saving categories</span>
                 </div>
             </div>
-        </AuthenticatedLayout >
+        </AuthenticatedLayout>
     );
 }
