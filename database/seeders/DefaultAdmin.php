@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\AuthProviderStatus;
 use App\Enums\ProviderPlatformState;
 use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
@@ -44,15 +45,23 @@ class DefaultAdmin extends Seeder
             foreach ($users as $user) {
                 $userInfo = str_getcsv($user, ',', "'");
 
-                if (count($userInfo) == 4) {
-                    DB::table('users')->insert([
-                        'username' => $userInfo[0],
-                        'email' => $userInfo[1],
-                        'name_first' => $userInfo[2],
-                        'name_last' => $userInfo[3],
-                        'password' => bcrypt('ChangeMe!'),
-                        'password_reset' => true,
-                        'role' => UserRole::Admin,
+                DB::table('users')->insert([
+                    'username' => $userInfo[0],
+                    'email' => $userInfo[1],
+                    'name_first' => $userInfo[2],
+                    'name_last' => $userInfo[3],
+                    'password' => bcrypt('ChangeMe!'),
+                    'password_reset' => true,
+                    'role' => UserRole::Admin,
+                ]);
+                if (count($userInfo) > 4) {
+                    // there is provider info included
+                    DB::table('provider_user_mappings')->insert([
+                        'user_id' => $userInfo[0],
+                        'provider_platform_id' => $userInfo[4],
+                        'external_user_id' => $userInfo[5],
+                        'external_username' => $userInfo[6],
+                        'authentication_provider_status' => AuthProviderStatus::OPENID_CONNECT,
                     ]);
                 }
             }
