@@ -20,10 +20,14 @@ class EnrollmentFactory extends Factory
         $endAt = $this->faker->optional(0.5) // 50% chance of being null
             ->dateTimeInInterval($startAt, '+120 days');
 
+        $random_user = User::all()->random();
+        $random_course = Course::all()->random();
+        $random_provider_platform = ProviderPlatform::all()->random();
+
         return [
-            'user_id' => User::factory(),
-            'course_id' => Course::factory()->createOne()->id,
-            'provider_platform_id' => ProviderPlatform::factory()->create()->id,
+            'user_id' => $random_user["id"],
+            'course_id' => $random_course["id"],
+            'provider_platform_id' => $random_provider_platform["id"],
             'provider_user_id' => $this->faker->numberBetween(1, 1000000),
             'provider_course_id' => $this->faker->numberBetween(1, 1000000),
             'provider_enrollment_id' => $this->faker->unique()->numberBetween(1, 1000),
