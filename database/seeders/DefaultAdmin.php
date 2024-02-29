@@ -45,7 +45,7 @@ class DefaultAdmin extends Seeder
             foreach ($users as $user) {
                 $userInfo = str_getcsv($user, ',', "'");
 
-                DB::table('users')->insert([
+                $userId = DB::table('users')->insertGetId([
                     'username' => $userInfo[0],
                     'email' => $userInfo[1],
                     'name_first' => $userInfo[2],
@@ -57,10 +57,10 @@ class DefaultAdmin extends Seeder
                 if (count($userInfo) > 4) {
                     // there is provider info included
                     DB::table('provider_user_mappings')->insert([
-                        'user_id' => $userInfo[0],
-                        'provider_platform_id' => $userInfo[4],
-                        'external_user_id' => $userInfo[5],
-                        'external_username' => $userInfo[6],
+                        'user_id' => $userId,
+                        'provider_platform_id' => $userInfo[6],
+                        'external_user_id' => $userInfo[4],
+                        'external_username' => $userInfo[5],
                         'authentication_provider_status' => AuthProviderStatus::OPENID_CONNECT,
                     ]);
                 }
