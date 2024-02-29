@@ -2,36 +2,56 @@ import PageNav from "@/Components/PageNav";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Category, CategoryLink } from "@/common";
 import { PageProps } from "@/types";
-import { PlusCircleIcon, DocumentCheckIcon } from "@heroicons/react/24/outline";
+import {
+    PlusCircleIcon,
+    DocumentCheckIcon,
+    CheckCircleIcon,
+    ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 import {
     ChevronDownIcon,
     TrashIcon,
     PlusIcon,
+    ChevronUpIcon,
 } from "@heroicons/react/24/solid";
+import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
 function LinkItem({
     linkName,
     linkURL,
+    callUpdateLink,
 }: {
     linkName: string;
     linkURL: string;
+    callUpdateLink: any;
 }) {
     const [name, setName] = useState(linkName);
     const [url, setURL] = useState(linkURL);
+
     return (
         <li className="flex flex-cols-2 gap-2 w-full">
             <input
                 type="text"
                 defaultValue={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={() => {
+                    let newLinkPair: CategoryLink = {};
+                    newLinkPair[name] = url;
+                    callUpdateLink(newLinkPair);
+                }}
                 className="input input-bordered w-1/3"
             />
             <input
                 type="text"
                 defaultValue={url}
                 onChange={(e) => setURL(e.target.value)}
+                onBlur={() => {
+                    let newLinkPair: CategoryLink = {};
+                    newLinkPair[name] = url;
+                    callUpdateLink(newLinkPair);
+                }}
                 className="input input-bordered w-2/3"
             />
         </li>
@@ -42,10 +62,16 @@ function CategoryItem({
     category,
     deleteLink,
     addLink,
+    moveLinkUp,
+    moveLinkDown,
+    updateLink,
 }: {
     category: Category;
     deleteLink: any;
     addLink: any;
+    moveLinkUp: any;
+    moveLinkDown: any;
+    updateLink: any;
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
     const [newTitle, setNewTitle] = useState("");
@@ -67,12 +93,28 @@ function CategoryItem({
         index: number;
         keyString: string;
     }) {
+        function callUpdateLink(newLinkPair: CategoryLink) {
+            updateLink(category, index, newLinkPair);
+        }
+
         return (
             <div className="flex flex-row justify-between gap-2">
-                <LinkItem linkName={keyString} linkURL={linkPair[keyString]} />
+                <LinkItem
+                    linkName={keyString}
+                    linkURL={linkPair[keyString]}
+                    callUpdateLink={callUpdateLink}
+                />
                 <TrashIcon
                     className="w-4"
                     onClick={() => openDeleteLinkModal(linkPair)}
+                />
+                <ChevronUpIcon
+                    className="w-5"
+                    onClick={() => moveLinkUp(category, index)}
+                />
+                <ChevronDownIcon
+                    className="w-5"
+                    onClick={() => moveLinkDown(category, index)}
                 />
             </div>
         );
@@ -217,9 +259,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     );
     const addCategoryModal = useRef<null | HTMLDialogElement>(null);
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
+    const categoriesSavedSuccessToast = useRef<null | HTMLDivElement>(null);
+    const categoriesSavedFailureToast = useRef<null | HTMLDivElement>(null);
 
     const draggedItem = useRef<null | number>(null);
-    //const dragOverItem = useRef<null | number>(null);
     const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
 
     useEffect(() => {
@@ -227,10 +270,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             setCategoryList(data.data);
         }
     }, [data]);
-
-    // useEffect(() => {
-    //     console.log(categoryList);
-    // }, [categoryList]);
 
     const MemoizedCategoryList = useMemo(() => {
         if (error) return <div>failed to load</div>;
@@ -284,6 +323,9 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                                     category={category}
                                     deleteLink={deleteLink}
                                     addLink={addLink}
+                                    moveLinkUp={moveLinkUp}
+                                    moveLinkDown={moveLinkDown}
+                                    updateLink={updateLink}
                                 />
                             </div>
                         </div>
@@ -361,6 +403,60 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         setCategoryList(newCategoryList);
     }
 
+    function moveLinkUp(category: Category, linkIndex: number) {
+        if (linkIndex == 0) return;
+        const prevLinkIndex = linkIndex - 1;
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                const linksArray = c.links;
+                const temp = linksArray[prevLinkIndex];
+                linksArray[prevLinkIndex] = linksArray[linkIndex];
+                linksArray[linkIndex] = temp;
+                c.links = linksArray;
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+        setCategoryList(newCategoryList);
+    }
+
+    function moveLinkDown(category: Category, linkIndex: number) {
+        if (linkIndex == category.links.length - 1) return;
+        const postLinkIndex = linkIndex + 1;
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                const linksArray = c.links;
+                const temp = linksArray[postLinkIndex];
+                linksArray[postLinkIndex] = linksArray[linkIndex];
+                linksArray[linkIndex] = temp;
+                c.links = linksArray;
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+        setCategoryList(newCategoryList);
+    }
+
+    function updateLink(
+        category: Category,
+        linkIndex: number,
+        newLinkPair: any,
+    ) {
+        const newCategoryList = categoryList.map((c, i) => {
+            if (c == category) {
+                category.links[linkIndex] = newLinkPair;
+                return c;
+            } else {
+                // The rest haven't changed
+                return c;
+            }
+        });
+    }
+
     function handleSort() {
         if (draggedItem.current == null || dragOverItem == null) {
             return;
@@ -395,6 +491,47 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         setDraggedOverItem(null);
     }
 
+    async function updateFinalState(e: any) {
+        e.preventDefault();
+        try {
+            let response = await axios("/api/v1/categories", {
+                method: "PUT",
+                headers: { ContentType: "application/json" },
+                data: categoryList,
+            });
+            // check response is okay, and give notification
+            if (response.status !== 200) {
+                // show error
+                categoriesSavedFailureToast.current?.classList.add(
+                    "opacity-100",
+                );
+                setTimeout(() => {
+                    categoriesSavedFailureToast.current?.classList.remove(
+                        "opacity-100",
+                    );
+                }, 5000);
+            } else {
+                // show success
+                categoriesSavedSuccessToast.current?.classList.add(
+                    "opacity-100",
+                );
+                setTimeout(() => {
+                    categoriesSavedSuccessToast.current?.classList.remove(
+                        "opacity-100",
+                    );
+                }, 5000);
+            }
+        } catch {
+            // show error
+            categoriesSavedFailureToast.current?.classList.add("opacity-100");
+            setTimeout(() => {
+                categoriesSavedFailureToast.current?.classList.remove(
+                    "opacity-100",
+                );
+            }, 5000);
+        }
+    }
+
     return (
         <AuthenticatedLayout user={auth.user} title="Categories">
             <PageNav
@@ -410,7 +547,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         <PlusCircleIcon className="h-4 text-base-100" />
                         <span className="text-base-100">Add Category</span>
                     </button>
-                    <button className="btn btn-primary btn-sm">
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={(e) => updateFinalState(e)}
+                    >
                         <DocumentCheckIcon className="h-4 text-base-100" />
                     </button>
                 </div>
@@ -495,6 +635,25 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     </form>
                 </div>
             </dialog>
+            {/* Toasts */}
+            <div
+                ref={categoriesSavedSuccessToast}
+                className="toast transition-opacity duration-500 ease-out opacity-0"
+            >
+                <div className="alert alert-success">
+                    <CheckCircleIcon className="h-6" />
+                    <span>Categories saved!</span>
+                </div>
+            </div>
+            <div
+                ref={categoriesSavedFailureToast}
+                className="toast transition-opacity duration-500 ease-out opacity-0"
+            >
+                <div className="alert alert-error text-white">
+                    <ExclamationCircleIcon className="h-6" />
+                    <span>Error saving categories</span>
+                </div>
+            </div>
         </AuthenticatedLayout>
     );
 }

@@ -64,7 +64,7 @@ class UserControllerTest extends TestCase
         $user = \App\Models\User::factory()->admin()->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(200);
-        assert($response['data']['name_first'] == 'TestUpdate');
+        $this->assertTrue($response['data']['name_first'] == 'TestUpdate');
         $response->assertJsonStructure([
             'data' => [
                 'id',

@@ -59,8 +59,8 @@ services:
             - ./storage/logs:/fluentd/log/files/
             - sail-mysql:/fluentd/log/files/      
 networks:
-    sail:
-        driver: bridge
+  sail:
+    driver: bridge
 volumes:
-    sail-mysql:
-        driver: local
+  sail-mysql:
+    driver: local

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Course;
+use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -39,22 +40,21 @@ class CourseControllerTest extends TestCase
     // this tests the show method in the controller
     public function testGetCourses()
     {
-        $course = Course::factory(1)->create();
+        $this->seed(TestSeeder::class);
+        $course = Course::factory()->createOne();
         $user = \App\Models\User::factory()->create();
-        $response = $this->actingAs($user)->get($this->uri.'/'.$course[0]->id);
+        $response = $this->actingAs($user)->get($this->uri.'/'.$course->id);
 
         $response->assertStatus(200);
 
-        $jsonResponse = $response->json();
-
-        // Assert that the response contains the category
-        foreach ($jsonResponse as $key => $value) {
-            // Skip keys 'created_at' and 'updated_at'
-            if (in_array($key, ['created_at', 'updated_at'])) {
-                continue;
-            }
-            assert($value, $course[0]->$key);
-        }
+        $response->assertJsonStructure([
+            'data' => [
+                'id',
+                'provider_course_name',
+                'created_at',
+                'updated_at',
+            ],
+        ]);
     }
 
     // this test the update method in the controller
@@ -64,7 +64,7 @@ class CourseControllerTest extends TestCase
         $course = Course::factory(1)->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$course[0]->id, ['provider_course_name' => 'TestUpdate']);
         $response->assertStatus(200);
-        assert($response['data']['provider_course_name'] == 'TestNameUpdate');
+        $this->assertTrue($response['data']['provider_course_name'] == 'TestUpdate');
     }
 
     // this tests the destroy method in the controller

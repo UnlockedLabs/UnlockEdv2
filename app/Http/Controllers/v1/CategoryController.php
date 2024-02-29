@@ -4,8 +4,6 @@ namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
-use App\Http\Requests\StoreCategoryRequest;
-use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Response;
@@ -35,51 +33,21 @@ class CategoryController extends Controller
         return CategoryResource::collection($categories);
     }
 
-    public function show($id)
+    public function update(AdminRequest $request)
     {
-        $category = Category::find($id);
+        $valid = $request->validate([
+            '*.name' => 'required|string',
+            '*.rank' => 'required|integer',
+            '*.links' => 'required|array',
+        ]);
 
-        if (! $category) {
-            return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
+        // delete the current state of the left-menu categories
+        Category::truncate();
+        // store the updated state
+        foreach ($valid as $category) {
+            Category::create($category);
         }
 
-        return new CategoryResource($category);
-    }
-
-    public function store(StoreCategoryRequest $request)
-    {
-        $validated = $request->validated();
-
-        $category = new Category($validated);
-
-        return new CategoryResource($category);
-    }
-
-    public function update(UpdateCategoryRequest $request, $id)
-    {
-        $validated = $request->validated();
-
-        $category = Category::find($id);
-
-        if (! $category) {
-            return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $category->update($validated);
-
-        return new CategoryResource($category);
-    }
-
-    public function destroy(AdminRequest $req, string $id)
-    {
-        $req->authorize();
-        $category = Category::find($id);
-
-        if (! $category) {
-            return response()->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
-        }
-        $category->delete();
-
-        return response(null, Response::HTTP_NO_CONTENT);
+        return response()->json(['message' => 'Category state reset successfully'], Response::HTTP_OK);
     }
 }
