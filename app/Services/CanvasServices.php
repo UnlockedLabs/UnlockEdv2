@@ -193,6 +193,20 @@ class CanvasServices
     }
 
     /**
+     * Delete the authentication provider associated with the instance in Canvas
+     * GET /api/v1/accounts/:account_id/authentication_providers/:id
+     *
+     * @return mixed JSON decoded
+     */
+    public function deleteAuthProvider(): mixed
+    {
+        $authProviderId = ProviderPlatform::where('id', $this->provider_id)->firstOrFail()->authentication_provider_id;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers/'.$authProviderId;
+
+        return $this->DELETE($base_url);
+    }
+
+    /**
      * Create a new login to a given provider for a given User.
      *
      *
@@ -202,22 +216,15 @@ class CanvasServices
     {
         $user = User::findOrFail($userId);
         $mapping = $user->providerUserMappings()->where('provider_platform_id', $this->provider_id)->firstOrFail();
-        $accountId = $this->account_id;
-        $canvasUrl = $this->base_url;
-        $token = $this->access_key;
         try {
-            $response = $this->client->request('POST', $canvasUrl.ACCOUNTS.self::fmtUrl($accountId).'logins', [
-                'form_params' => [
-                    'user[id]' => $mapping->external_user_id,
-                    'login[unique_id]' => $user->email,
-                    'login[authentication_provider_id]' => 'openid_connect',
-                ],
-                'headers' => [
-                    'Authorization' => "Bearer $token",
-                ],
-            ]);
+            $body = [
+                'user[id]' => $mapping->external_user_id,
+                'login[unique_id]' => $user->email,
+                'login[authentication_provider_id]' => 'openid_connect',
+            ];
+            $response = $this->POST($this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'logins', $body);
 
-            return response()->json(['message' => 'Login created successfully in Canvas', 'data' => [$response->getBody()->__toString()]], 200);
+            return response()->json(['message' => 'Login created successfully in Canvas', 'data' => $response], 200);
         } catch (\Exception $e) {
 
             return response()->json(['error' => 'Failed to create login in Canvas', 'message' => $e->getMessage()], 500);
@@ -243,7 +250,7 @@ class CanvasServices
         $client = $clientRepo->create(null, 'canvas', $canvasUrl, false, false);
 
         if (! $unlockedUrl) {
-            $unlockedUrl = ('APP_URL');
+            $unlockedUrl = env('APP_URL');
         }
         $unlockedUrl = self::fmtUrl($unlockedUrl);
         $body = [
