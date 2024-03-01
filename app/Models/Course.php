@@ -11,6 +11,7 @@ class Course extends Model
 
     protected $fillable = [
         'provider_resource_id',
+        'description',
         'provider_course_name',
         'provider_start_at',
         'provider_end_at',
