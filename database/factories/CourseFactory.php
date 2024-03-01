@@ -20,6 +20,8 @@ class CourseFactory extends Factory
             //
             'provider_resource_id' => $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100,
             'provider_course_name' => $this->faker->word,
+            // 'description' => fake()->sentence($nbWords = 3),
+            'description' => $this->faker->paragraph($nbSentences = 3, $variableNbSentences = true),
             'provider_start_at' => $this->faker->date,
             'provider_end_at' => $this->faker->date,
         ];
