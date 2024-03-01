@@ -22,3 +22,14 @@ export interface Category {
 export interface CategoryLink {
     [linkName: string]: string;
 }
+
+export interface Activity {
+    browser_name: string;
+    clicked_url: string;
+    created_at: string;
+    device: string;
+    id: number;
+    platform: string;
+    updated_at: Date;
+    user_id: number;
+}

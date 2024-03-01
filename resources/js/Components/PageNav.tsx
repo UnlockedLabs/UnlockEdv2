@@ -5,6 +5,7 @@ import {
     HomeIcon,
     UsersIcon,
     PencilSquareIcon,
+    ChartBarIcon,
 } from "@heroicons/react/24/solid";
 import { Link } from "@inertiajs/react";
 
@@ -90,6 +91,12 @@ export default function PageNav({
                                             <a href="/users">
                                                 <UsersIcon className="h-4" />
                                                 Users
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="/user-activity">
+                                                <ChartBarIcon className="h-4" />
+                                                Activity
                                             </a>
                                         </li>
                                         <li>

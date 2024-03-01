@@ -37,6 +37,10 @@ Route::get('/left-menu-management', function () {
     return Inertia::render('LeftMenuManagement');
 })->middleware(['auth', 'password_reset'])->name('left-menu-management');
 
+Route::get('/user-activity', function () {
+    return Inertia::render('UserActivity');
+})->middleware(['auth', 'password_reset'])->name('user-activity');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
