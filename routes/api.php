@@ -29,6 +29,8 @@ Route::prefix('v1')->group(function () {
 
         Route::Resource('provider-platforms', ProviderPlatformController::class);
 
+        Route::get('provider-platforms/{id}', [ProviderPlatformController::class, 'show']);
+
         Route::get('categories', [CategoryController::class, 'index']);
         Route::put('categories', [CategoryController::class, 'update']);
 

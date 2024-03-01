@@ -1,63 +1,63 @@
-const data = [
-    {
-        title: "Introduction to Cyber Security",
-        description:
-            "Master the art of protecting systems and data against complex cyber threat and vulnerability.",
-        logo: "https://www.instructure.com/sites/default/files/image/2021-12/Canvas_Horizontal_ByInstructure_Color_RGB.png",
-        providerCourseId: 11111,
-    },
-    {
-        title: "Business Analytics",
-        description:
-            "Drive strategic decisions by mastering analytical tools that transform data into business insights.",
-        logo: "https://grow.google/root/static/images/logo_GwG.svg",
-        providerCourseId: 22222,
-    },
-    {
-        title: "Entrepreneuership",
-        description:
-            "Learn to launch and grow innovative business with essential entrepreneurial skills and strategies.",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/e/e5/EdX_Logo.PNG",
-        providerCourseId: 33333,
-    },
-    {
-        title: "Anger Management",
-        description:
-            "Develop skills to effectively manage anger, fostering personal growth and stronger relationships.",
-        logo: "https://grow.google/root/static/images/logo_GwG.svg",
-        providerCourseId: 44444,
-    },
-];
+import { User } from "@/common";
+import useSWR from "swr";
 
-export default function CourseContent(course: any) {
+export default function CourseContent({ user }: { user: User }) {
+    const {
+        data: enrollments,
+        error,
+        isLoading,
+    } = useSWR(`/api/v1/enrollments`);
+
     function CourseCard({ course }: { course: any }) {
+        const {
+            data: courseInfo,
+            error: courseInfoError,
+            isLoading: courseInfoLoading,
+        } = useSWR(`/api/v1/courses/${course.course_id}`);
+        if (!courseInfoError && !courseInfoLoading) console.log(courseInfo);
+        const {
+            data: providerInfo,
+            error: providerInfoError,
+            isLoading: providerInfoLoading,
+        } = useSWR(`/api/v1/provider-platforms/${course.provider_platform_id}`);
+        if (!providerInfoError && !providerInfoLoading)
+            console.log(providerInfo);
         return (
-            <div className="card card-compact bg-base-100 shadow-xl">
-                <figure>
-                    <img
-                        src="https://endoftheroll.com/wp-content/uploads/2022/12/dt_X714RCT28MT.jpg"
-                        alt=""
-                    />
-                </figure>
-                <div className="card-body">
-                    <h2 className="card-title">{course.title}</h2>
-                    <p>{course.description}</p>
-                    <div className="card-actions grid grid-cols-2 gap-32 justify-between">
-                        <img
-                            src={course.logo}
-                            className="object-contain h-10 my-auto"
-                        />
+            <div>
+                {!courseInfoError &&
+                !courseInfoLoading &&
+                !providerInfoLoading &&
+                !providerInfoError ? (
+                    <div className="card card-compact bg-base-100 shadow-xl">
+                        <figure>
+                            <img src={providerInfo.data.icon_url} alt="" />
+                        </figure>
+                        <div className="card-body">
+                            <h2 className="card-title">
+                                {courseInfo.data.provider_course_name}
+                            </h2>
+                            <p>{courseInfo.data.description}</p>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div></div>
+                )}
             </div>
         );
     }
 
     return (
-        <div className="p-4 grid grid-cols-3 gap-5">
-            {data.map((course: any) => (
-                <CourseCard course={course} key={course.providerCourseId} />
-            ))}
+        <div className="p-4 grid grid-cols-4 gap-5">
+            {!isLoading && !error ? (
+                enrollments.data.map((course: any) => (
+                    <CourseCard
+                        course={course}
+                        key={course.provider_course_id}
+                    />
+                ))
+            ) : (
+                <div></div>
+            )}
         </div>
     );
 }
