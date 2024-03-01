@@ -2,7 +2,7 @@ name: Build and Test Laravel Project
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "prod"]
   pull_request:
     branches: ["main"]
 
@@ -50,3 +50,19 @@ jobs:
 
       - name: Run Testsuite
         run: php artisan test
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [phpunit]
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push' && github.repository == 'UnlockedLabs/UnlockEdv2'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Deploy
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+          HOSTNAME: ${{ secrets.SSH_HOST }}
+          USER_NAME: ${{ secrets.USER_NAME }}
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} '~/deploy.sh'
