@@ -27,6 +27,7 @@ services:
             - mysql
     mysql:
         image: "mysql/mysql-server:8.0"
+        command: "mysqld --log_error=/var/lib/mysql/error.log && --log_error_verbosity=3"
         ports:
             - "${FORWARD_DB_PORT:-3306}:3306"
         environment:
@@ -56,10 +57,10 @@ services:
             - ./fluentd/conf:/fluentd/etc
             - ./logs:/output/ 
             - ./storage/logs:/fluentd/log/files/
-
+            - sail-mysql:/fluentd/log/files/      
 networks:
-    sail:
-        driver: bridge
+  sail:
+    driver: bridge
 volumes:
-    sail-mysql:
-        driver: local
+  sail-mysql:
+    driver: local

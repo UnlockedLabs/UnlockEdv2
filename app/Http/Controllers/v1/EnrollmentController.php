@@ -16,7 +16,7 @@ class EnrollmentController extends Controller
     public function index(Request $request)
     {
         $perPage = request()->query('per_page', 10);
-        $sortBy = request()->query('sort', 'rank');
+        $sortBy = request()->query('sort', 'user_id');
         $sortOrder = request()->query('order', 'asc');
         $search = request()->query('search', '');
 

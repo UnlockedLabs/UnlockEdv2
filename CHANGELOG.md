@@ -2,6 +2,79 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.5] - 2024-02-29
+
+[0f35d93](0f35d933ba29adcd2e54194325c12a7baf3c7b2f)...[f5337d5](f5337d537c0e9fd3313d631ae44670362f4c1ee6)
+
+### Bug Fixes
+
+-   Remove assertion causing windows test failure ([d331ec2](d331ec24314beecc36c1bc568ccdb418ca9b0fe3))
+-   Correct behavior of canvasservice/action for creation of user logins ([cdbe727](cdbe7277b755f263069ef5a67fe141f93b9205ba))
+-   Add update state to left menu management ([15501ca](15501cac57a6d877878e6f83eb52f622094acce3))
+-   Correct CourseSeeder class name ([50fb0ef](50fb0ef7362440f9b200de3059ff3f7d8e66876e))
+-   Add logging config to sail dev environment ([1b4b2ec](1b4b2ec16176eb94d5f088638dc2fa5914a02977))
+-   Correct seeder and canvas services createUserLogin, add delete authprovider ([f5337d5](f5337d537c0e9fd3313d631ae44670362f4c1ee6))
+
+### Features
+
+-   Add user activity middleware ([f91a70e](f91a70e24924514762e84c294bb254cc0ae81488))
+-   Allow admin to change the order of links and when editing a link categoryList updates ([d545143](d54514308c8758f61c9e8bce03293e5673f44072))
+-   Saves categories to backend, adds useMemo to left menu ([312b4ba](312b4ba727c5fe760ca0c99b13620adbfbfbcce1))
+-   Add dynamic user seeding from .env file ([870994c](870994cf121c1c5c7d71633b02c1d786e0f3e89c))
+-   Add provider user mapping to env variable seeding ([14f01bc](14f01bcd36f5420f06ec99fef32b36b191b218df))
+-   Adds courses UI onto dashboard with hardcoded data ([fbea33b](fbea33becaf005762fb3fa694f9f75a48977d6e6))
+
+### Refactor
+
+-   Removes comments and imports on leftmenumanagement ([5e54ba2](5e54ba2ac3f7f2a97c2544d43f2b85bbb2b99b90))
+-   Udpate category controller to match behavior of lefthand menu ([6e8a4e3](6e8a4e33aa0ae1a8f96b3d773f6996452abb3c10))
+
+### Testing
+
+-   Add authorization test to category controller ([c3a15db](c3a15dbea04577e2d5740d5b6464866e704bbbc7))
+
+## [0.0.4] - 2024-02-13
+
+[84e4484](84e448402544a7fcdc3d2efd4fe26318c2f17b99)...[0f35d93](0f35d933ba29adcd2e54194325c12a7baf3c7b2f)
+
+### Bug Fixes
+
+-   Updates categoryList with each link modification ([04a69ad](04a69ad0fbc91aff67e4b2ad7d576090f01c5f84))
+-   Memoization fixes constant category list rerender ([86b938c](86b938cd896b209d9d6050a9734877602d9f76ef))
+-   Deletes category based on id rather than rank ([aacf012](aacf012f452d55cfa2e4e3c5473f64bdb639fed8))
+-   Updates LeftMenu to take in id and uses Category type ([65623a0](65623a070902384744cf10150de5498410402e17))
+-   Add scope middleware that merge conflict removed ([31306fc](31306fcc7b1dffcf767e926638f1199655818644))
+-   If user does not drop category in drop zone, will show it in list again at same place ([21b9c8b](21b9c8bbec769244306e59caf72d644262d46467))
+-   Formatting issues ([402349e](402349ecfd45d638966f0e0ce0399ba2949f9aad))
+-   Formatting issues with previous commit ([63f5964](63f596462bc4d5e4836378bc86d59daa8ab93bb6))
+-   Remove generated duplicate tests for enrollments ([c1e21eb](c1e21ebfa2cba09a3aa2dc52b664d35ba0e4d7fb))
+-   Add ability to create UserActivity for specific user ([c1789bb](c1789bba256f203df521f316940c674bef0bf913))
+-   Handle user activity ip nullable ([247073f](247073f40916c3f72750d8f0722baf91163c2fb1))
+-   Correct testing behavior discovered through useractivity pr ([7afab80](7afab8042b5dec7eb04a13a968bdf50413efd00b))
+
+### Documentation
+
+-   Add changelog for sprint 14 ([fb1b5d4](fb1b5d42282b682b0c97323a221f0af167cbe20b))
+-   Add canvas authentication and oidc documentation ([d7600ff](d7600ff1b3caa380f7074eb7bf292554a31da6c2))
+-   Add canvas authentication and oidc documentation ([d56ca0e](d56ca0eb119998eb3a574a0b18b6dfe5f56f6a64))
+
+### Features
+
+-   Add controller test generation command rough draft ([a8c4d9a](a8c4d9a8dfd5c801a21fc5b4c66a90ebc3f033d3))
+-   Finish first implementation of dynamic controller test generation ([8286183](82861836198ea47232022dcaf3455d0db02511cf))
+-   Introduces draggable categories and rearranges them correctly (bug when categories are not collapsed) ([214e0e1](214e0e1570598b6ff1d692f719346f3fb062ac21))
+-   Adapts draggable to switch components correctly, needs animations still ([e6c7837](e6c783793ba4cfaec0b26e98af89738ea4673254))
+-   Hides dragged item on drag, adds padding on elements where moving category to ([c416998](c4169986c711cdb2bef22f606e4afa3f90895387))
+-   Add logout button to menu and remove register button ([f2bfb19](f2bfb194dd2503a59d3e77028d7f0fdd1421dc6e))
+-   Add canvas mocking json response for actions testing ([1cb3f18](1cb3f18c72c84c8f3c4bc9fd8856452d825066cb))
+-   Add user activity model and migrations ([cf24594](cf245944ffaaec9cc4e52cadb12264373e48a533))
+-   Add user activity CRUD api ([dabceb2](dabceb2b2725302206a291037e57abb62c592a8c))
+
+### Refactor
+
+-   Removes unneccesary imports from left menu management ([58e22fe](58e22febdd263c8c12d5cd007b9c8d93d918344c))
+-   Removes todo ([ec1c060](ec1c060233f0a7c7348da807c751174dd085dc09))
+
 ## [0.0.3] - 2024-02-01
 
 [55b3166](55b3166de3f5a5ef3c25a418f3f2f36e3912cf9c)...[84e4484](84e448402544a7fcdc3d2efd4fe26318c2f17b99)
