@@ -21,4 +21,9 @@ class UserActivity extends Model
     protected $hidden = [
         'ip',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
