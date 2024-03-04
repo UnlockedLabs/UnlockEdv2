@@ -27,4 +27,19 @@ class Enrollment extends Model
         'provider_start_at' => 'datetime',
         'provider_end_at' => 'datetime',
     ];
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function providerPlatform()
+    {
+        return $this->belongsTo(ProviderPlatform::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
