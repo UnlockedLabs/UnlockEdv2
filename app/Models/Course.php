@@ -16,4 +16,14 @@ class Course extends Model
         'provider_start_at',
         'provider_end_at',
     ];
+
+    public function providerPlatform()
+    {
+        return $this->belongsTo(ProviderPlatform::class);
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
 }
