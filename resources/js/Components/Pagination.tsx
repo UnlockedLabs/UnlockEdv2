@@ -35,7 +35,7 @@ export default function Pagination({
                 </button>
             </div>
 
-            {[...Array(meta.total).keys()].map((_, i) => {
+            {[...Array(meta.last_page).keys()].map((_, i) => {
                 return (
                     <button
                         className={`join-item btn btn-sm ${
