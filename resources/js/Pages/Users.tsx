@@ -17,6 +17,7 @@ import { PageProps } from "@/types";
 import { User } from "@/common";
 import PageNav from "@/Components/PageNav";
 import Pagination, { PaginatedData } from "@/Components/Pagination";
+import AddUserForm from "@/Components/forms/AddUserForm";
 
 export default function Users({ auth }: PageProps) {
     const addUserModal = useRef<null | HTMLDialogElement>(null);
@@ -163,6 +164,25 @@ export default function Users({ auth }: PageProps) {
 
             {/* Modals */}
             <dialog ref={addUserModal} className="modal">
+                <div className="modal-box">
+                    <form method="dialog">
+                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                            ✕
+                        </button>
+                    </form>
+
+                    <div className="flex flex-col items-centerz">
+                        <span className="text-3xl font-semibold pb-6 text-white">
+                            Add User
+                        </span>
+                        <AddUserForm
+                            onSuccess={() => addUserModal.current?.close()}
+                        />
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog className="modal">
                 <div className="modal-box">
                     <form method="dialog">
                         <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
@@ -319,7 +339,7 @@ export default function Users({ auth }: PageProps) {
             </dialog>
 
             {/* Toasts */}
-            <div className="toast transition-opacity duration-500 ease-out opacity-100">
+            <div className="toast transition-opacity duration-500 ease-out opacity-0">
                 <div className="alert alert-success">
                     <CheckCircleIcon className="h-6" />
                     <span>User created!</span>
