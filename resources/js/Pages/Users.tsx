@@ -182,69 +182,6 @@ export default function Users({ auth }: PageProps) {
                 </div>
             </dialog>
 
-            <dialog className="modal">
-                <div className="modal-box">
-                    <form method="dialog">
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                            ✕
-                        </button>
-                    </form>
-                    <div className="flex flex-col items-center">
-                        <span className="text-3xl font-semibold pb-6 text-white">
-                            Add User
-                        </span>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">First Name</span>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Type here"
-                                className="input input-bordered w-full max-w-xs"
-                            />
-                        </label>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">Last Name</span>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Type here"
-                                className="input input-bordered w-full max-w-xs"
-                            />
-                        </label>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">Username</span>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Type here"
-                                className="input input-bordered w-full max-w-xs"
-                            />
-                        </label>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">Role</span>
-                            </div>
-                            <select className="select select-bordered">
-                                <option disabled selected>
-                                    Pick one
-                                </option>
-                                <option>Student</option>
-                                <option>Admin</option>
-                            </select>
-                        </label>
-                        <label className="p-6">
-                            <div></div>
-                        </label>
-                        <label className="form-control">
-                            <button className="btn btn-primary">Submit</button>
-                        </label>
-                    </div>
-                </div>
-            </dialog>
-
             <dialog ref={editUserModal} className="modal">
                 <div className="modal-box">
                     <form method="dialog">
