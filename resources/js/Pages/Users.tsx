@@ -176,7 +176,7 @@ export default function Users({ auth }: PageProps) {
                     </form>
 
                     <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-white">
+                        <span className="text-3xl font-semibold pb-6 text-neutral">
                             Add User
                         </span>
                         <AddUserForm
@@ -195,7 +195,7 @@ export default function Users({ auth }: PageProps) {
                     </form>
 
                     <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-white">
+                        <span className="text-3xl font-semibold pb-6 text-neutral">
                             Edit User
                         </span>
                         <EditUserForm
