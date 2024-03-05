@@ -66,5 +66,7 @@ class User extends Authenticatable
         $this->attributes['password'] = Hash::make($pw);
         $this->attributes['password_reset'] = true;
         $this->save();
+
+        return $pw;
     }
 }

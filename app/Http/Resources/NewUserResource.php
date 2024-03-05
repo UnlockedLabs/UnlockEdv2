@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,8 +16,16 @@ class NewUserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $this->resource->makeVisible('password');
-
         return parent::toArray($request);
+    }
+
+    public static function withPassword(User $user, $pw): array
+    {
+        return [
+            'status' => 'success',
+            'message' => 'User created. Temporary password set',
+            'temp_password' => $pw,
+            'user' => $user,
+        ];
     }
 }

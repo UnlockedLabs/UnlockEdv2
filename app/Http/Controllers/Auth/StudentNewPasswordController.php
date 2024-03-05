@@ -26,13 +26,13 @@ class StudentNewPasswordController extends Controller
         // prompted to set their new password.
         $user = User::where('username', $request->username)->first();
         if ($user['role'] === UserRole::Student) {
-            $user->createTempPassword();
+            $pw = $user->createTempPassword();
 
             return response()->json([
                 'message' => 'Temporary password set, student must set new password upon next login',
                 'data' => [
                     'username' => $user['username'],
-                    'password' => $user['password'],
+                    'password' => $pw,
                 ],
             ]);
         } else {

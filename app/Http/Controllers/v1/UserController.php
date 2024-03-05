@@ -55,9 +55,9 @@ class UserController extends Controller
             ], 422);
         }
         $newUser = new User($user);
-        $newUser->createTempPassword(); // This saves the user inside the method
+        $pw = $newUser->createTempPassword();
 
-        return new NewUserResource($newUser);
+        return response(NewUserResource::withPassword($newUser, $pw), 201);
     }
 
     /**

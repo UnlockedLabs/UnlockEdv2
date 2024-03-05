@@ -37,12 +37,13 @@ class UserControllerTest extends TestCase
     public function testCreateUser()
     {
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->post($this->uri.'/', [
+        $response = $this->actingAs($user)->post($this->uri, [
             'name_first' => 'Test',
             'name_last' => 'User',
             'username' => 'testuser',
             'role' => 'student',
         ]);
+        echo $response->getContent();
         $response->assertStatus(201);
         $response->assertCreated();
     }
@@ -50,7 +51,7 @@ class UserControllerTest extends TestCase
     public function testCreateUserUnauthorized()
     {
         $user = \App\Models\User::factory()->create();
-        $response = $this->actingAs($user)->post($this->uri.'/', [
+        $response = $this->actingAs($user)->post($this->uri, [
             'name_first' => 'Test',
             'name_last' => 'User',
             'username' => 'testuser',
