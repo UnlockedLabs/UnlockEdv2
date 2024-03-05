@@ -18,12 +18,15 @@ import { User } from "@/common";
 import PageNav from "@/Components/PageNav";
 import Pagination, { PaginatedData } from "@/Components/Pagination";
 import AddUserForm from "@/Components/forms/AddUserForm";
+import EditUserForm from "@/Components/forms/EditUserForm";
 
 export default function Users({ auth }: PageProps) {
     const addUserModal = useRef<null | HTMLDialogElement>(null);
     const editUserModal = useRef<null | HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
     const deleteUserModal = useRef<null | HTMLDialogElement>(null);
+
+    const [targetUser, setTargetUser] = useState<null | User>(null);
 
     const [searchTerm, setSearchTerm] = useState("");
     const searchQuery = useDebounce(searchTerm, 300);
@@ -32,7 +35,7 @@ export default function Users({ auth }: PageProps) {
 
     const [sortQuery, setSortQuery] = useState("asc");
 
-    const { data, error, isLoading } = useSWR(
+    const { data, mutate, error, isLoading } = useSWR(
         `/api/v1/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
     );
 
@@ -115,9 +118,10 @@ export default function Users({ auth }: PageProps) {
                                                 >
                                                     <PencilIcon
                                                         className="h-4"
-                                                        onClick={() =>
-                                                            editUserModal.current?.showModal()
-                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            editUserModal.current?.showModal();
+                                                        }}
                                                     />
                                                 </div>
                                                 <div
@@ -171,7 +175,7 @@ export default function Users({ auth }: PageProps) {
                         </button>
                     </form>
 
-                    <div className="flex flex-col items-centerz">
+                    <div className="flex flex-col">
                         <span className="text-3xl font-semibold pb-6 text-white">
                             Add User
                         </span>
@@ -189,58 +193,18 @@ export default function Users({ auth }: PageProps) {
                             ✕
                         </button>
                     </form>
-                    <div className="flex flex-col items-center">
+
+                    <div className="flex flex-col">
                         <span className="text-3xl font-semibold pb-6 text-white">
                             Edit User
                         </span>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">First Name</span>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Type here"
-                                className="input input-bordered w-full max-w-xs"
-                            />
-                        </label>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">Last Name</span>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Type here"
-                                className="input input-bordered w-full max-w-xs"
-                            />
-                        </label>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">Username</span>
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Type here"
-                                className="input input-bordered w-full max-w-xs"
-                            />
-                        </label>
-                        <label className="form-control w-full max-w-xs">
-                            <div className="label">
-                                <span className="label-text">Role</span>
-                            </div>
-                            <select className="select select-bordered">
-                                <option disabled selected>
-                                    Pick one
-                                </option>
-                                <option>Student</option>
-                                <option>Admin</option>
-                            </select>
-                        </label>
-                        <label className="p-6">
-                            <div></div>
-                        </label>
-                        <label className="form-control">
-                            <button className="btn btn-primary">Submit</button>
-                        </label>
+                        <EditUserForm
+                            onSuccess={() => {
+                                mutate();
+                                editUserModal.current?.close();
+                            }}
+                            user={targetUser}
+                        />
                     </div>
                 </div>
             </dialog>
