@@ -1,4 +1,4 @@
-import { UserRole } from "@/common";
+import { User, UserRole } from "@/common";
 import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -10,7 +10,17 @@ type Inputs = {
     role: UserRole;
 };
 
-export default function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
+export default function EditUserForm({
+    onSuccess,
+    user,
+}: {
+    onSuccess: () => void;
+    user: null | User;
+}) {
+    if (user === null) {
+        return <div>No user defined!</div>;
+    }
+
     const [errorMessage, setErrorMessage] = useState("");
 
     const {
@@ -23,9 +33,13 @@ export default function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
         try {
             setErrorMessage("");
 
-            let response = await axios.post("/api/v1/users", data);
+            // TODO: Temporary fix because validation fails when it shouldn't
+            const cleanData = data as any;
+            if (data.username == user.username) {
+                delete cleanData.username;
+            }
 
-            alert(`password: ${response.data.data.password}`);
+            await axios.patch(`/api/v1/users/${user.id}`, cleanData);
 
             onSuccess();
         } catch (error: any) {
@@ -42,6 +56,7 @@ export default function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                 <input
                     type="text"
                     className="input input-bordered w-full"
+                    defaultValue={user.name_first}
                     {...register("name_first", {
                         required: "First name is required",
                         maxLength: {
@@ -62,6 +77,7 @@ export default function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                 <input
                     type="text"
                     className="input input-bordered w-full"
+                    defaultValue={user.name_last}
                     {...register("name_last", {
                         required: "Last name is required",
                         maxLength: {
@@ -83,6 +99,7 @@ export default function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                 <input
                     type="text"
                     className="input input-bordered w-full"
+                    defaultValue={user.username}
                     {...register("username", {
                         required: "Username is required",
                         maxLength: {
@@ -102,6 +119,7 @@ export default function AddUserForm({ onSuccess }: { onSuccess: () => void }) {
                 </div>
                 <select
                     className="select select-bordered"
+                    defaultValue={user.role}
                     {...register("role", { required: "Role is required" })}
                 >
                     <option value="student">Student</option>
