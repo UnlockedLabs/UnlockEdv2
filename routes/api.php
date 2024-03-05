@@ -27,7 +27,11 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::middleware(['web', 'auth'])->group(function () {
 
-        Route::Resource('provider-platforms', ProviderPlatformController::class);
+        Route::get('provider-platforms', [ProviderPlatformController::class, 'index']);
+        Route::get('provider-platforms/{id}', [ProviderPlatformController::class, 'show']);
+        Route::post('provider-platforms', [ProviderPlatformController::class, 'store']);
+        Route::patch('provider-platforms/{id}', [ProviderPlatformController::class, 'update']);
+        Route::delete('provider-platforms/{id}', [ProviderPlatformController::class, 'destroy']);
 
         Route::get('categories', [CategoryController::class, 'index']);
         Route::put('categories', [CategoryController::class, 'update']);
