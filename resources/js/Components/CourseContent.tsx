@@ -17,18 +17,29 @@ export default function CourseContent({ user }: { user: User }) {
                 return description;
             }
         };
+        const coverImage = JSON.parse(course.links)["logo"];
+        const url =
+            course.provider_platform_url + "/courses/" + course.course_id;
         return (
             // temp solution for height, make sure they are all the same height without fixing it
             <div className="h-[400px]">
-                <div className="card card-compact bg-base-100 shadow-xl h-full">
-                    <figure>
-                        <img src={course.provider_platform_icon_url} alt="" />
-                    </figure>
-                    <div className="card-body">
-                        <h2 className="card-title">{course.course_name}</h2>
-                        <p>{truncateDescription(course.course_description)}</p>
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                    <div className="card card-compact bg-base-100 shadow-xl h-full">
+                        <figure className="h-[60%] p-2">
+                            <img
+                                src={coverImage}
+                                alt=""
+                                className="object-contain"
+                            />
+                        </figure>
+                        <div className="card-body">
+                            <h2 className="card-title">{course.course_name}</h2>
+                            <p>
+                                {truncateDescription(course.course_description)}
+                            </p>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
         );
     }
