@@ -32,10 +32,10 @@ const data = [
 export default function CourseContent(course: any) {
     function CourseCard({ course }: { course: any }) {
         return (
-            <div className="card card-compact bg-base-100 shadow-xl">
+            <div className="card card-compact bg-neutral text-neutral-content shadow-md">
                 <figure>
                     <img
-                        src="https://endoftheroll.com/wp-content/uploads/2022/12/dt_X714RCT28MT.jpg"
+                        src={`https://picsum.photos/320/160?blur=2&?random=${course.providerCourseId}`}
                         alt=""
                     />
                 </figure>
@@ -54,10 +54,13 @@ export default function CourseContent(course: any) {
     }
 
     return (
-        <div className="p-4 grid grid-cols-3 gap-5">
-            {data.map((course: any) => (
-                <CourseCard course={course} key={course.providerCourseId} />
-            ))}
+        <div>
+            <h1 className="text-3xl pb-4 font-semibold">Courses</h1>
+            <div className="grid grid-cols-3 gap-5">
+                {data.map((course: any) => (
+                    <CourseCard course={course} key={course.providerCourseId} />
+                ))}
+            </div>
         </div>
     );
 }

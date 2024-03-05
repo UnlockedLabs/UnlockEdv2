@@ -27,7 +27,7 @@ createInertiaApp({
                             window.axios.get(url).then((res) => res.data),
                     }}
                 >
-                    <main className="">
+                    <main>
                         <App {...props} />
                     </main>
                 </SWRConfig>
