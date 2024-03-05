@@ -24,8 +24,9 @@ class UpdateUserRequest extends FormRequest
         return [
             'name_first' => 'nullable|string|max:25',
             'name_last' => 'nullable|string|max:25',
-            'username' => 'nullable|max:50|unique:users',
             'email' => 'nullable|email|max:75|unique:users',
+            'username' => 'nullable|max:50|unique:users',
+            'role' => 'nullable|string|in:student,admin',
         ];
     }
 }
