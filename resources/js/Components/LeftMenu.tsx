@@ -14,7 +14,13 @@ function CategoryItem({ name, links, rank }: Category) {
         const key = Object.keys(linkPair)[0];
         return (
             <li key={key.concat(rank.toString())}>
-                <a href={linkPair[key]}>{key}</a>
+                <a
+                    href={linkPair[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    {key}
+                </a>
             </li>
         );
     });
