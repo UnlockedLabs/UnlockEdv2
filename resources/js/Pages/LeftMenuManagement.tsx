@@ -490,11 +490,15 @@ export default function LeftMenuManagement({ auth }: PageProps) {
 
     async function updateFinalState(e: any) {
         e.preventDefault();
+        const newCategoryList = categoryList.map((c, i) => {
+            c.rank = i + 1;
+            return c;
+        });
         try {
             let response = await axios("/api/v1/categories", {
                 method: "PUT",
                 headers: { ContentType: "application/json" },
-                data: categoryList,
+                data: newCategoryList,
             });
             // check response is okay, and give notification
             if (response.status !== 200) {
