@@ -29,8 +29,6 @@ export default function UserActivity({ auth }: PageProps) {
 
     const userActivityData = data as PaginatedData<Activity>;
 
-    console.log(userActivityData);
-
     return (
         <AuthenticatedLayout user={auth.user} title="User Activity">
             <PageNav user={auth.user} path={["Settings", "User Activity"]} />
@@ -80,7 +78,11 @@ export default function UserActivity({ auth }: PageProps) {
                                             key={activityInstance.id}
                                             className="border-gray-600"
                                         >
-                                            <td>{activityInstance.user_id}</td>
+                                            <td>
+                                                {activityInstance.user_name_first +
+                                                    " " +
+                                                    activityInstance.user_name_last}
+                                            </td>
                                             <td>
                                                 {activityInstance.browser_name}
                                             </td>
@@ -114,9 +116,12 @@ export default function UserActivity({ auth }: PageProps) {
                             )}
                     </tbody>
                 </table>
-                {/* {!isLoading && !error && data.data.length != 0 && (
-                    <Pagination meta={userActivityData.meta} setPage={setPageQuery} />
-                )} */}
+                {!isLoading && !error && data.data.length != 0 && (
+                    <Pagination
+                        meta={userActivityData.meta}
+                        setPage={setPageQuery}
+                    />
+                )}
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
