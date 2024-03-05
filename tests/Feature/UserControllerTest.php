@@ -41,7 +41,7 @@ class UserControllerTest extends TestCase
             'name_first' => 'Test',
             'name_last' => 'User',
             'username' => 'testuser',
-            'role' => 'Student',
+            'role' => 'student',
         ]);
         $response->assertStatus(201);
         $response->assertCreated();
@@ -54,7 +54,7 @@ class UserControllerTest extends TestCase
             'name_first' => 'Test',
             'name_last' => 'User',
             'username' => 'testuser',
-            'role' => 'Student',
+            'role' => 'student',
         ]);
         $response->assertStatus(403);
     }
