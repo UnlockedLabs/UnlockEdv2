@@ -200,7 +200,7 @@ function CategoryItem({
                         }}
                     >
                         <div className="flex flex-col">
-                            <span className="text-3xl font-semibold pb-6 text-white">
+                            <span className="text-3xl font-semibold pb-6 text-neutral">
                                 Add Link
                             </span>
                             <label className="form-control w-full">
@@ -605,7 +605,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     </form>
                     <form method="dialog" onSubmit={addCategory}>
                         <div className="flex flex-col">
-                            <span className="text-3xl font-semibold pb-6 text-white">
+                            <span className="text-3xl font-semibold pb-6 text-neutral">
                                 Add Category
                             </span>
                             <label className="form-control w-full">
@@ -649,7 +649,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 ref={categoriesSavedFailureToast}
                 className="toast transition-opacity duration-500 ease-out opacity-0"
             >
-                <div className="alert alert-error text-white">
+                <div className="alert alert-error text-neutral">
                     <ExclamationCircleIcon className="h-6" />
                     <span>Error saving categories</span>
                 </div>
