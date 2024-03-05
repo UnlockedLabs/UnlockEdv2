@@ -9,7 +9,7 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ user: User; title: string }>) {
     return (
-        <div>
+        <div className="font-lato">
             <Head title={title} />
             <div className="flex">
                 <LeftMenu />
