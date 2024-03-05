@@ -39,7 +39,7 @@ class DefaultAdmin extends Seeder
         }
 
         $usersInfo = env('USERS_INFO', '');
-        if (! empty($usersInfo)) {
+        if (!empty($usersInfo)) {
             $users = explode(';', $usersInfo);
 
             foreach ($users as $user) {
