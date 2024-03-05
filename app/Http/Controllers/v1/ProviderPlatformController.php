@@ -55,7 +55,7 @@ class ProviderPlatformController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProviderPlatformRequest $request, ProviderPlatform $providerPlatform)
+    public function update(UpdateProviderPlatformRequest $request, int $id)
     {
         try {
             $validated = $request->validated();
@@ -65,7 +65,7 @@ class ProviderPlatformController extends Controller
                 'errors' => $th->getMessage(),
             ], 422);
         }
-        $providerPlatform = ProviderPlatform::findOrFail($providerPlatform->id);
+        $providerPlatform = ProviderPlatform::findOrFail($id);
         $providerPlatform->update($validated);
 
         return ProviderPlatformResource::make($providerPlatform);
