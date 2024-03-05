@@ -21,9 +21,9 @@ class EnrollmentFactory extends Factory
             ->dateTimeInInterval($startAt, '+120 days');
 
         return [
-            'user_id' => User::factory(),
+            'user_id' => User::factory()->createOne()->id,
             'course_id' => Course::factory()->createOne()->id,
-            'provider_platform_id' => ProviderPlatform::factory()->create()->id,
+            'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
             'provider_user_id' => $this->faker->numberBetween(1, 1000000),
             'provider_course_id' => $this->faker->numberBetween(1, 1000000),
             'provider_enrollment_id' => $this->faker->unique()->numberBetween(1, 1000),

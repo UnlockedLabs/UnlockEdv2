@@ -7,7 +7,7 @@ export default function Dashboard({ auth }: PageProps) {
     return (
         <AuthenticatedLayout user={auth.user} title="Dashboard">
             <PageNav user={auth.user} path={["Dashboard"]} />
-            <CourseContent />
+            <CourseContent user={auth.user} />
         </AuthenticatedLayout>
     );
 }
