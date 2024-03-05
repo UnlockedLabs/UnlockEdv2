@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
 use App\Http\Requests\StoreEnrollmentRequest;
 use App\Http\Requests\UpdateEnrollmentRequest;
+use App\Http\Resources\EnrollmentCourseJoinResource;
 use App\Http\Resources\EnrollmentResource;
 use App\Models\Enrollment;
 use Illuminate\Http\Request;
@@ -33,14 +34,14 @@ class EnrollmentController extends Controller
             $query->orderBy($sortBy, $sortOrder);
             $categories = $query->paginate($perPage);
 
-            return EnrollmentResource::collection($categories);
+            return EnrollmentCourseJoinResource::collection($categories);
         } else {
 
             $query->where(['user_id' => $request->user()->id]);
             $query->orderBy($sortBy, $sortOrder);
             $categories = $query->paginate($perPage);
 
-            return EnrollmentResource::collection($categories);
+            return EnrollmentCourseJoinResource::collection($categories);
         }
     }
 
@@ -52,7 +53,7 @@ class EnrollmentController extends Controller
                 return response()->json(['error' => "Enrollment with this ID not found for User: {$request->user()->username}"], Response::HTTP_NOT_FOUND);
             }
 
-            return new EnrollmentResource($enrollment);
+            return new EnrollmentCourseJoinResource($enrollment);
         } else {
             $enrollment = Enrollment::findOrFail($id);
             if (! $enrollment || $enrollment->user_id != $request->user()->id) {
@@ -60,7 +61,7 @@ class EnrollmentController extends Controller
             }
         }
 
-        return new EnrollmentResource($enrollment);
+        return new EnrollmentCourseJoinResource($enrollment);
     }
 
     public function store(StoreEnrollmentRequest $request)
@@ -69,7 +70,7 @@ class EnrollmentController extends Controller
 
         $enrollment = Enrollment::create($validated);
 
-        return EnrollmentResource::make($enrollment);
+        return new EnrollmentResource($enrollment);
     }
 
     public function update(UpdateEnrollmentRequest $request, $id)
