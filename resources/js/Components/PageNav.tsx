@@ -1,7 +1,6 @@
 import { User, UserRole } from "@/common";
 import {
     ArrowRightOnRectangleIcon,
-    DocumentTextIcon,
     HomeIcon,
     UsersIcon,
     PencilSquareIcon,
@@ -18,7 +17,7 @@ export default function PageNav({
 }) {
     return (
         <div className="navbar">
-            <div className="navbar-start breadcrumbs pl-2">
+            <div className="navbar-start breadcrumbs pl-0">
                 <ul>
                     <li>
                         <HomeIcon className="h-5" />
@@ -37,7 +36,7 @@ export default function PageNav({
                                     {user.name_first} {user.name_last}
                                 </span>
                             </summary>
-                            <ul className="p-2 bg-base-300 z-[1]">
+                            <ul className="bg-base-300 z-[1]">
                                 <li>
                                     <label className="flex cursor-pointer gap-2">
                                         <svg
@@ -73,13 +72,7 @@ export default function PageNav({
 
                                 {user.role == UserRole.Student ? (
                                     <li>
-                                        <Link
-                                            href={route("logout")}
-                                            method="post"
-                                        >
-                                            <ArrowRightOnRectangleIcon className="h-4" />
-                                            Logout
-                                        </Link>
+                                        {/* Student specific options go here */}
                                     </li>
                                 ) : (
                                     <>
@@ -95,14 +88,10 @@ export default function PageNav({
                                                 Left Menu
                                             </a>
                                         </li>
-                                        <li>
-                                            <div>
-                                                <DocumentTextIcon className="h-4" />
-                                                Content
-                                            </div>
-                                        </li>
                                     </>
                                 )}
+
+                                <div className="divider mt-0 mb-0"></div>
 
                                 <li>
                                     <Link href={route("logout")} method="post">
