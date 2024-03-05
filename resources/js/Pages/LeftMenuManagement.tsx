@@ -105,15 +105,15 @@ function CategoryItem({
                     callUpdateLink={callUpdateLink}
                 />
                 <TrashIcon
-                    className="w-4"
+                    className="w-4 cursor-pointer"
                     onClick={() => openDeleteLinkModal(linkPair)}
                 />
                 <ChevronUpIcon
-                    className="w-5"
+                    className="w-5 cursor-pointer"
                     onClick={() => moveLinkUp(category, index)}
                 />
                 <ChevronDownIcon
-                    className="w-5"
+                    className="w-5 cursor-pointer"
                     onClick={() => moveLinkDown(category, index)}
                 />
             </div>
@@ -128,9 +128,9 @@ function CategoryItem({
             >
                 <div></div>
                 {category.name}
-                <ChevronDownIcon className="w-4" />
+                <ChevronDownIcon className="w-4 cursor-pointer" />
             </summary>
-            <ul className="card shadow-md p-4 gap-y-2 rounded-bl-none">
+            <ul className="card p-4 gap-y-2 rounded-bl-none">
                 <div className="flex flex-cols-2 font-bold gap-2 pr-6">
                     <h3 className="w-1/3">Title</h3>
                     <h3 className="w-2/3">URL</h3>
@@ -199,18 +199,18 @@ function CategoryItem({
                             setNewURL("");
                         }}
                     >
-                        <div className="flex flex-col items-center">
-                            <span className="text-3xl font-semibold pb-6 text-neutral">
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-semibold pb-6 text-white">
                                 Add Link
                             </span>
-                            <label className="form-control w-full max-w-xs">
+                            <label className="form-control w-full">
                                 <div className="label">
                                     <span className="label-text">Title</span>
                                 </div>
                                 <input
                                     type="text"
                                     placeholder="Type here"
-                                    className="input input-bordered w-full max-w-xs"
+                                    className="input input-bordered w-full"
                                     value={newTitle}
                                     onChange={(e) =>
                                         setNewTitle(e.target.value)
@@ -218,23 +218,20 @@ function CategoryItem({
                                     required
                                 />
                             </label>
-                            <label className="form-control w-full max-w-xs">
+                            <label className="form-control w-full">
                                 <div className="label">
                                     <span className="label-text">URL</span>
                                 </div>
                                 <input
                                     type="url"
                                     placeholder="Type here"
-                                    className="input input-bordered w-full max-w-xs"
+                                    className="input input-bordered w-full"
                                     value={newURL}
                                     onChange={(e) => setNewURL(e.target.value)}
                                     required
                                 />
                             </label>
-                            <label className="p-6">
-                                <div></div>
-                            </label>
-                            <label className="form-control">
+                            <label className="form-control pt-6">
                                 <button
                                     className="btn btn-primary"
                                     type="submit"
@@ -251,7 +248,7 @@ function CategoryItem({
 }
 
 export default function LeftMenuManagement({ auth }: PageProps) {
-    const { data, error, isLoading } = useSWR("/api/v1/categories");
+    const { data, error, mutate, isLoading } = useSWR("/api/v1/categories");
     const [categoryList, setCategoryList] = useState(Array<Category>);
     const [newCategoryTitle, setNewCategoryTitle] = useState("");
     const [categoryToDelete, setCategoryToDelete] = useState<number | null>(
@@ -311,7 +308,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         >
                             <div className="bg-neutral rounded-bl-lg rounded-tl-lg pl-3 h-15">
                                 <TrashIcon
-                                    className="w-4 mt-5 self-start text-base-100"
+                                    className="w-4 mt-5 self-start text-base-100 cursor-pointer"
                                     onClick={() => {
                                         deleteCategoryModal.current?.showModal(),
                                             setCategoryToDelete(category.id);
@@ -511,6 +508,8 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     );
                 }, 5000);
             } else {
+                mutate();
+
                 // show success
                 categoriesSavedSuccessToast.current?.classList.add(
                     "opacity-100",
@@ -601,18 +600,18 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         </button>
                     </form>
                     <form method="dialog" onSubmit={addCategory}>
-                        <div className="flex flex-col items-center">
-                            <span className="text-3xl font-semibold pb-6 text-neutral">
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-semibold pb-6 text-white">
                                 Add Category
                             </span>
-                            <label className="form-control w-full max-w-xs">
+                            <label className="form-control w-full">
                                 <div className="label">
                                     <span className="label-text">Title</span>
                                 </div>
                                 <input
                                     type="text"
                                     placeholder="Type here"
-                                    className="input input-bordered w-full max-w-xs"
+                                    className="input input-bordered w-full"
                                     value={newCategoryTitle}
                                     onChange={(e) =>
                                         setNewCategoryTitle(e.target.value)
@@ -620,10 +619,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                                     required
                                 />
                             </label>
-                            <label className="p-6">
-                                <div></div>
-                            </label>
-                            <label className="form-control">
+                            <label className="form-control pt-6">
                                 <button
                                     className="btn btn-primary"
                                     type="submit"
