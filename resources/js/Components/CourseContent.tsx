@@ -9,17 +9,6 @@ export default function CourseContent({ user }: { user: User }) {
     } = useSWR(`/api/v1/enrollments`);
 
     function CourseCard({ course }: { course: any }) {
-        const {
-            data: courseInfo,
-            error: courseInfoError,
-            isLoading: courseInfoLoading,
-        } = useSWR(`/api/v1/courses/${course.course_id}`);
-        const {
-            data: providerInfo,
-            error: providerInfoError,
-            isLoading: providerInfoLoading,
-        } = useSWR(`/api/v1/provider-platforms/${course.provider_platform_id}`);
-
         // Function to truncate the description to the first 100 characters
         const truncateDescription = (description: string) => {
             if (description.length > 100) {
@@ -31,28 +20,15 @@ export default function CourseContent({ user }: { user: User }) {
         return (
             // temp solution for height, make sure they are all the same height without fixing it
             <div className="h-[400px]">
-                {!courseInfoError &&
-                !courseInfoLoading &&
-                !providerInfoLoading &&
-                !providerInfoError ? (
-                    <div className="card card-compact bg-base-100 shadow-xl h-full">
-                        <figure>
-                            <img src={providerInfo.data.icon_url} alt="" />
-                        </figure>
-                        <div className="card-body">
-                            <h2 className="card-title">
-                                {courseInfo.data.provider_course_name}
-                            </h2>
-                            <p>
-                                {truncateDescription(
-                                    courseInfo.data.description,
-                                )}
-                            </p>
-                        </div>
+                <div className="card card-compact bg-base-100 shadow-xl h-full">
+                    <figure>
+                        <img src={course.provider_platform_icon_url} alt="" />
+                    </figure>
+                    <div className="card-body">
+                        <h2 className="card-title">{course.course_name}</h2>
+                        <p>{truncateDescription(course.course_description)}</p>
                     </div>
-                ) : (
-                    <div></div>
-                )}
+                </div>
             </div>
         );
     }
@@ -61,10 +37,7 @@ export default function CourseContent({ user }: { user: User }) {
         <div className="p-4 grid grid-cols-3 gap-5 w-[85%]">
             {!isLoading && !error ? (
                 enrollments.data.map((course: any) => (
-                    <CourseCard
-                        course={course}
-                        key={course.provider_course_id}
-                    />
+                    <CourseCard course={course} key={course.id} />
                 ))
             ) : (
                 <div></div>
