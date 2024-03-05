@@ -57,15 +57,9 @@ export default function LeftMenu() {
                     <Brand />
                 </a>
             </li>
-
             <li>
                 <a href="/dashboard">
                     <HomeIcon className="w-4" /> Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="/courses">
-                    <BookOpenIcon className="w-4" /> Courses
                 </a>
             </li>
             {categoryItems}

@@ -25,8 +25,8 @@ class StoreUserRequest extends FormRequest
             'name_first' => 'required|string|max:25',
             'name_last' => 'required|string|max:25',
             'email' => 'nullable|email|max:75|unique:users',
-            'username' => 'required|string|max:60|unique:users',
-            'role' => 'required|string|in:Student,Admin',
+            'username' => 'required|string|max:50|unique:users',
+            'role' => 'required|string|in:student,admin',
         ];
     }
 }
