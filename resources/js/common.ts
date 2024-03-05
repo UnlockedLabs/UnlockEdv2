@@ -32,4 +32,6 @@ export interface Activity {
     platform: string;
     updated_at: Date;
     user_id: number;
+    user_name_first: string;
+    user_name_last: string;
 }

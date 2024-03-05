@@ -7,13 +7,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { useDebounce } from "usehooks-ts";
 
-import {
-    ChevronDownIcon,
-    ArrowPathRoundedSquareIcon,
-    PencilIcon,
-    TrashIcon,
-    ChevronUpIcon,
-} from "@heroicons/react/24/solid";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
 
 export default function UserActivity({ auth }: PageProps) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -21,7 +15,7 @@ export default function UserActivity({ auth }: PageProps) {
 
     const [pageQuery, setPageQuery] = useState(1);
 
-    const [sortQuery, setSortQuery] = useState("asc");
+    const [sortQuery, setSortQuery] = useState("desc");
 
     const { data, error, isLoading } = useSWR(
         `/api/v1/user-activities?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
