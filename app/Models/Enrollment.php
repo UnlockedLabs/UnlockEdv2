@@ -12,10 +12,8 @@ class Enrollment extends Model
     protected $fillable = [
         'user_id',
         'course_id',
-        'provider_platform_id',
         'provider_user_id',
         'provider_enrollment_id',
-        'provider_course_id',
         'enrollment_state',
         'links',
         'provider_start_at',
@@ -31,11 +29,6 @@ class Enrollment extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
-    }
-
-    public function providerPlatform()
-    {
-        return $this->belongsTo(ProviderPlatform::class);
     }
 
     public function user()

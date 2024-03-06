@@ -17,9 +17,14 @@ export default function CourseContent({ user }: { user: User }) {
                 return description;
             }
         };
-        const coverImage = JSON.parse(course.links)["logo"];
-        const url =
-            course.provider_platform_url + "/courses/" + course.course_id;
+        const coverImage = course.links.logo;
+        let url =
+            course.provider_platform_url +
+            "/courses/" +
+            course.provider_course_id;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
         return (
             // temp solution for height, make sure they are all the same height without fixing it
             <div className="h-[400px]">
