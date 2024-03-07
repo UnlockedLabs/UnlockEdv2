@@ -18,10 +18,7 @@ export default function CourseContent({ user }: { user: User }) {
             }
         };
         const coverImage = course.img_url;
-        let url =
-            course.provider_platform_url +
-            "/courses/" +
-            course.provider_course_id;
+        let url = course.link_url;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "https://" + url;
         }
