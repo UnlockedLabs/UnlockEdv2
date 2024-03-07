@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StoreCanvasCoursesController;
 use App\Http\Controllers\v1\Actions\CreateCanvasUserLogin;
 use App\Http\Controllers\v1\Actions\RegisterCanvasAuthProviderAction;
 use App\Http\Controllers\v1\Actions\StoreUserCourseController;
@@ -68,6 +69,7 @@ Route::prefix('v1')->group(function () {
         Route::post('actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);
         Route::post('actions/create-canvas-login', [CreateCanvasUserLogin::class, 'create_canvas_login']);
         Route::post('actions/store-user-courses', StoreUserCourseController::class);
+        Route::post('actions/store-canvas-courses', StoreCanvasCoursesController::class);
         Route::post('actions/store-user-enrollments', StoreUserEnrollmentController::class);
     });
 });
