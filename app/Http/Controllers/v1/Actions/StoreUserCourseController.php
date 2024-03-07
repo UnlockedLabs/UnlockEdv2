@@ -24,13 +24,12 @@ class StoreUserCourseController extends Controller
         } catch (\Exception) {
             return response()->json(['message' => 'Provider not found'], 404);
         }
-        // list all the courses in the account
         $canvasCourses = $canvasService->listCoursesForUser($request->user_id);
         $courseCollection = collect();
         foreach ($canvasCourses as $course) {
             $request->merge([
                 'provider_resource_id' => $course->id, 'provider_course_name' => $course->name, 'provider_platform_id' => $request->provider_platform_id, 'description' => $course->public_description,
-                'provider_start_at' => $course->start_at, 'provider_end_at' => $course->end_at,
+                'provider_start_at' => $course->start_at, 'provider_end_at' => $course->end_at, 'img_url' => $course->course_image,
             ]);
             $request->validate([
                 'provider_platform_id' => 'required|exists:platforms,id',
