@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->integer('provider_user_id')->change();
+            $table->dropColumn('provider_course_id');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->string('provider_user_id')->change();
+            $table->string('provider_course_id');
         });
     }
 };

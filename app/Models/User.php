@@ -50,6 +50,11 @@ class User extends Authenticatable
         'role' => UserRole::class,
     ];
 
+    public function externalIdFor(int $provider_platform_id)
+    {
+        return $this->providerUserMappings()->where('provider_platform_id', $provider_platform_id)->first()->external_user_id;
+    }
+
     public function providerUserMappings()
     {
         return $this->hasMany('App\Models\ProviderUserMapping');

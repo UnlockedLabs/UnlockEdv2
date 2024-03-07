@@ -13,7 +13,7 @@ class RegisterCanvasAuthProviderAction extends Controller
     {
         $valid = $request->validated();
 
-        $provider = ProviderPlatform::where(['id' => $valid['provider_platform_id']])->firstOrFail();
+        $provider = ProviderPlatform::findOrFail($valid->provider_platform_id)->firstOrFail();
 
         if (! $provider || ! in_array($provider->type, ['canvas_cloud', 'canvas_oss'])) {
             return response()->json(['Provider Platform was either not found or is not a Canvas instance', 404]);

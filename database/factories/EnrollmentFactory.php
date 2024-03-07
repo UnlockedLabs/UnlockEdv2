@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Course;
 use App\Models\Enrollment;
-use App\Models\ProviderPlatform;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,14 +22,12 @@ class EnrollmentFactory extends Factory
         return [
             'user_id' => User::factory()->createOne()->id,
             'course_id' => Course::factory()->createOne()->id,
-            'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
             'provider_user_id' => $this->faker->numberBetween(1, 1000000),
-            'provider_course_id' => $this->faker->numberBetween(1, 1000000),
             'provider_enrollment_id' => $this->faker->unique()->numberBetween(1, 1000),
             'enrollment_state' => $this->faker->randomElement(['active', 'inactive', 'completed']),
-            'links' => json_encode(['link1' => $this->faker->url, 'link2' => $this->faker->url]),
             'provider_start_at' => $startAt,
             'provider_end_at' => $endAt,
+            'link_url' => $this->faker->url,
         ];
     }
 

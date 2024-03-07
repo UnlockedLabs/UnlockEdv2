@@ -12,9 +12,11 @@ class Course extends Model
     protected $fillable = [
         'provider_resource_id',
         'description',
+        'provider_platform_id',
         'provider_course_name',
         'provider_start_at',
         'provider_end_at',
+        'img_url',
     ];
 
     public function providerPlatform()

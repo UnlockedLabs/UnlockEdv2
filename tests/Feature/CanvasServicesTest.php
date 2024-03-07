@@ -45,35 +45,29 @@ class CanvasServicesTest extends TestCase
 
         $canvasService = new MockCanvasServices();
         $canvasEnrollments = $canvasService->listEnrollmentsForUser();
-        $course = Course::factory()->withResourceId(4)->createOne();
+        $course = Course::factory()->forProviderPlatform($provider->id)->withResourceId(4)->createOne();
         $enrollmentCollection = collect();
         $request = new Request();
         foreach ($canvasEnrollments as $enrollment) {
-            if ($course = Course::where(['provider_resource_id' => $enrollment['course_id']])->firstOrFail()) {
-                $request->merge([
+            if ($course = Course::findOrFail($enrollment['course_id'])) {
+                $request = $request->merge([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
                     'provider_user_id' => $enrollment['user_id'],
-                    'provider_course_id' => $enrollment['course_id'],
-                    'provider_platform_id' => $provider['id'],
                     'provider_enrollment_id' => $enrollment['id'],
-                    // 'provider_course_name' => $enrollment->sis_course_id,
                     'enrollment_state' => $enrollment['enrollment_state'],
-                    'links' => [],
                     'provider_start_at' => $enrollment['start_at'],
                     'provider_end_at' => $enrollment['end_at'],
+                    'link_url' => $enrollment['html_url'],
                 ]);
                 $validated = $request->validate([
                     'user_id' => 'required|exists:users,id',
                     'course_id' => 'required|exists:courses,id',
                     'provider_user_id' => 'required',
-                    'provider_course_id' => 'required',
-                    'provider_platform_id' => 'required|exists:provider_platforms,id',
                     'provider_enrollment_id' => 'required|unique:enrollments,provider_enrollment_id',
                     'enrollment_state' => 'required',
-                    'links' => 'nullable',
+                    'link_url' => 'required|url',
                 ]);
-
                 $enrollmentCollection->push(Enrollment::create($validated));
             }
         }
@@ -86,14 +80,12 @@ class CanvasServicesTest extends TestCase
                     'id',
                     'user_id',
                     'course_id',
-                    'provider_platform_id',
                     'provider_user_id',
                     'provider_enrollment_id',
-                    'provider_course_id',
                     'enrollment_state',
-                    'links',
                     'provider_start_at',
                     'provider_end_at',
+                    'link_url',
                 ],
             ],
         ]);

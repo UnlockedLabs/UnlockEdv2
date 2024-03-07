@@ -15,13 +15,12 @@ class Enrollment extends Model
         'provider_user_id',
         'provider_enrollment_id',
         'enrollment_state',
-        'links',
         'provider_start_at',
         'provider_end_at',
+        'link_url',
     ];
 
     protected $casts = [
-        'links' => 'json',
         'provider_start_at' => 'datetime',
         'provider_end_at' => 'datetime',
     ];

@@ -17,7 +17,7 @@ export default function CourseContent({ user }: { user: User }) {
                 return description;
             }
         };
-        const coverImage = course.links.logo;
+        const coverImage = course.img_url;
         let url =
             course.provider_platform_url +
             "/courses/" +
