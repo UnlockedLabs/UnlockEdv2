@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropColumn('provider_user_id');
+            $table->renameColumn('provider_start_at', 'external_start_at');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->string('provider_user_id')->change();
+            $table->renameColumn('external_start_at', 'provider_start_at');
         });
     }
 };

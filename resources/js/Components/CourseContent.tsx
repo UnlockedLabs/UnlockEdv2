@@ -35,7 +35,10 @@ export default function CourseContent({ user }: { user: User }) {
                             />
                         </figure>
                         <div className="card-body">
-                            <h2 className="card-title">{course.course_name}</h2>
+                            <h2 className="text-slate-600">
+                                {course.course_code}
+                            </h2>
+                            <h1 className="card-title">{course.course_name}</h1>
                             <p>
                                 {truncateDescription(course.course_description)}
                             </p>

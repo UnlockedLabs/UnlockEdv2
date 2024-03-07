@@ -12,17 +12,16 @@ class Enrollment extends Model
     protected $fillable = [
         'user_id',
         'course_id',
-        'provider_user_id',
-        'provider_enrollment_id',
+        'external_enrollment_id',
         'enrollment_state',
-        'provider_start_at',
-        'provider_end_at',
+        'external_start_at',
+        'external_end_at',
         'link_url',
     ];
 
     protected $casts = [
-        'provider_start_at' => 'datetime',
-        'provider_end_at' => 'datetime',
+        'external_start_at' => 'datetime',
+        'external_end_at' => 'datetime',
     ];
 
     public function course()

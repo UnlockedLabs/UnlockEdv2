@@ -22,11 +22,10 @@ class EnrollmentFactory extends Factory
         return [
             'user_id' => User::factory()->createOne()->id,
             'course_id' => Course::factory()->createOne()->id,
-            'provider_user_id' => $this->faker->numberBetween(1, 1000000),
-            'provider_enrollment_id' => $this->faker->unique()->numberBetween(1, 1000),
+            'external_enrollment_id' => $this->faker->unique()->numberBetween(1, 1000),
             'enrollment_state' => $this->faker->randomElement(['active', 'inactive', 'completed']),
-            'provider_start_at' => $startAt,
-            'provider_end_at' => $endAt,
+            'external_start_at' => $startAt,
+            'external_end_at' => $endAt,
             'link_url' => $this->faker->url,
         ];
     }

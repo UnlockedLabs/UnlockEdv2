@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropColumn('provider_user_id');
+        Schema::table('courses', function (Blueprint $table) {
+            $table->string('external_course_code')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->string('provider_user_id')->change();
+        Schema::table('courses', function (Blueprint $table) {
+            $table->dropColumn('external_course_code');
         });
     }
 };

@@ -28,17 +28,16 @@ class StoreUserCourseController extends Controller
         $courseCollection = collect();
         foreach ($canvasCourses as $course) {
             $request->merge([
-                'provider_resource_id' => $course->id, 'provider_course_name' => $course->name, 'provider_platform_id' => $request->provider_platform_id, 'description' => $course->public_description,
-                'provider_start_at' => $course->start_at, 'provider_end_at' => $course->end_at, 'img_url' => $course->course_image,
+                'external_resource_id' => $course->id, 'external_course_name' => $course->name, 'provider_platform_id' => $request->provider_platform_id,
+                'description' => $course->public_description, 'img_url' => $course->course_image, 'external_course_code' => $course->course_code,
             ]);
             $request->validate([
-                'provider_platform_id' => 'required|exists:platforms,id',
-                'provider_resource_id' => 'required|string|max:255|unique:courses,provider_resource_id',
-                'provider_course_name' => 'required|string|max:255',
+                'provider_platform_id' => 'required|exists:provider_platforms,id',
+                'external_resource_id' => 'required|string|max:255|unique:courses,external_resource_id',
+                'external_course_name' => 'required|string|max:255',
                 'description' => 'required|string|max:255',
-                'provider_start_at' => 'required|date',
-                'provider_end_at' => 'required|date',
                 'img_url' => 'nullable|string|max:255',
+                'external_course_code' => 'required|string|max:255',
             ]);
 
             $courseCollection->push(Course::create($request->all()));

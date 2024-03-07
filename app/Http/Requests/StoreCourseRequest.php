@@ -27,8 +27,9 @@ class StoreCourseRequest extends FormRequest
 
         return [
             'provider_platform_id' => 'required|exists:provider_platforms,id',
-            'provider_resource_id' => 'required|string|max:255',
-            'provider_course_name' => 'required|string|max:255',
+            'external_resource_id' => 'required|string|max:255',
+            'external_course_name' => 'required|string|max:255',
+            'external_course_code' => 'required|string|max:255',
             'img_url' => 'nullable|url|max:255',
         ];
     }

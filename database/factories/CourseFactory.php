@@ -18,12 +18,11 @@ class CourseFactory extends Factory
     public function definition(): array
     {
         return [
-            'provider_resource_id' => $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100,
-            'provider_course_name' => $this->faker->word,
+            'external_resource_id' => $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100,
+            'external_course_name' => $this->faker->word,
+            'external_course_code' => $this->faker->word, // Example: 'CS-101'
             'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
             'description' => $this->faker->paragraph($nbSentences = 3, $variableNbSentences = true),
-            'provider_start_at' => $this->faker->date,
-            'provider_end_at' => $this->faker->date,
             'img_url' => $this->faker->imageUrl($width = 640, $height = 480),
         ];
     }
@@ -38,7 +37,7 @@ class CourseFactory extends Factory
     public function withResourceId(int $id): static
     {
         return $this->state(fn (array $attributes) => [
-            'provider_resource_id' => $id,
+            'external_resource_id' => $id,
         ]);
     }
 }

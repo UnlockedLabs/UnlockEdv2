@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('courses', function (Blueprint $table) {
             $table->integer('provider_resource_id')->change();
+            $table->renameColumn('provider_resource_id', 'external_resource_id');
         });
     }
 
@@ -22,6 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('courses', function (Blueprint $table) {
+            $table->renameColumn('external_resource_id', 'provider_resource_id');
             $table->string('provider_resource_id')->change();
         });
     }
