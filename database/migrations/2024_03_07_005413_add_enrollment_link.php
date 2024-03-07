@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->string('link_url');
+            $table->string('link_url')->default(env('CANVAS_BASE_URL', ''));
         });
     }
 
