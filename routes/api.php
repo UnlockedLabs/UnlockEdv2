@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\StoreCanvasCoursesController;
 use App\Http\Controllers\v1\Actions\CreateCanvasUserLogin;
 use App\Http\Controllers\v1\Actions\RegisterCanvasAuthProviderAction;
+use App\Http\Controllers\v1\Actions\StoreCanvasCoursesController;
 use App\Http\Controllers\v1\Actions\StoreUserCourseController;
 use App\Http\Controllers\v1\Actions\StoreUserEnrollmentController;
 use App\Http\Controllers\v1\CategoryController;
