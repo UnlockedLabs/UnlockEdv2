@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,22 +14,23 @@ class UserControllerTest extends TestCase
 
     public function testGetUser()
     {
-        $user = \App\Models\User::factory()->create();
-
+        $this->seed(TestSeeder::class);
+        $user = \App\Models\User::inRandomOrder()->first();
         $response = $this->actingAs($user)->get($this->uri.'/'.$user->id);
-
         $response->assertStatus(200);
     }
 
     public function testGetUserUnauthorized()
     {
-        $user = \App\Models\User::factory()->create();
+        $this->seed(TestSeeder::class);
+        $user = \App\Models\User::inRandomOrder()->first();
         $response = $this->actingAs($user)->get($this->uri);
         $response->assertStatus(403);
     }
 
     public function testGetUsersAuthorized()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
         $response = $this->actingAs($user)->get($this->uri);
         $response->assertStatus(200);
@@ -37,31 +39,24 @@ class UserControllerTest extends TestCase
     public function testCreateUser()
     {
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->post($this->uri, [
-            'name_first' => 'Test',
-            'name_last' => 'User',
-            'username' => 'testuser',
-            'role' => 'student',
-        ]);
-        echo $response->getContent();
+        $created = \App\Models\User::factory()->makeOne();
+        $response = $this->actingAs($user)->post($this->uri, $created->toArray());
         $response->assertStatus(201);
         $response->assertCreated();
     }
 
     public function testCreateUserUnauthorized()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->create();
-        $response = $this->actingAs($user)->post($this->uri, [
-            'name_first' => 'Test',
-            'name_last' => 'User',
-            'username' => 'testuser',
-            'role' => 'student',
-        ]);
+        $created = \App\Models\User::factory()->makeOne();
+        $response = $this->actingAs($user)->post($this->uri, $created->toArray());
         $response->assertStatus(403);
     }
 
     public function testUpdateUser()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(200);
@@ -80,6 +75,7 @@ class UserControllerTest extends TestCase
 
     public function testUpdateUserUnauthorized()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->create();
         $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
         $response->assertStatus(403);
@@ -87,8 +83,10 @@ class UserControllerTest extends TestCase
 
     public function testDeleteUser()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->delete($this->uri.'/'.$user->id);
+        $delete = \App\Models\User::inRandomOrder()->first();
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$delete->id);
         $response->assertStatus(204);
     }
 

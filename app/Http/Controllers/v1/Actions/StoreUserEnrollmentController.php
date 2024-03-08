@@ -35,8 +35,8 @@ class StoreUserEnrollmentController extends Controller
                     'course_id' => 'integer|required|exists:courses,id',
                     'external_enrollment_id' => 'integer|required|unique:enrollments,external_enrollment_id',
                     'enrollment_state' => 'required',
-                    'external_start_at' => 'required|date',
-                    'external_end_at' => 'required|date',
+                    'external_start_at' => 'nullable|date',
+                    'external_end_at' => 'nullable|date|after_or_equal:external_start_at',
                     'link_url' => 'required|url',
                 ]);
                 $enrollmentCollection->push(Enrollment::create($validated));

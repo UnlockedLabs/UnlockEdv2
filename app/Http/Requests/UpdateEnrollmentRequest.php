@@ -22,15 +22,11 @@ class UpdateEnrollmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_platform_id' => 'nullable|string',
             'enrollment_state' => 'nullable|in:active,inactive,completed,deleted',
-            'links' => 'nullable|json',
-            'provider_start_at' => 'nullable|date',
-            'provider_end_at' => 'nullable|date|after_or_equal:provider_start_at',
-            'provider_platform_id' => 'nullable|exists:provider_platforms,id',
-            'provider_user_id' => 'nullable|max:255',
-            'provider_course_id' => 'nullable|max:255',
-            'provider_enrollment_id' => 'nullable|max:255',
+            'link_url' => 'nullable|url',
+            'external_start_at' => 'nullable|date',
+            'external_end_at' => 'nullable|date|after_or_equal:provider_start_at',
+            'external_enrollment_id' => 'nullable|max:255',
         ];
     }
 }

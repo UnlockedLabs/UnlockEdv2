@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,8 +14,6 @@ class EnrollmentCourseJoinResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $external_id = User::findOrFail($this->user_id)->externalIdFor($this->course->provider_platform_id);
-
         return [
             'id' => $this->id,
             'course_name' => $this->course->external_course_name,
@@ -28,7 +25,7 @@ class EnrollmentCourseJoinResource extends JsonResource
             'provider_platform_id' => $this->course->provider_platform_id,
             'external_course_id' => $this->course->external_resource_id,
             'external_enrollment_id' => $this->external_enrollment_id,
-            'external_user_id' => $external_id,
+            'external_user_id' => $this->user->externalIdFor($this->course->provider_platform_id),
             'provider_platform_name' => $this->course->providerPlatform->name,
             'provider_platform_url' => $this->course->providerPlatform->base_url,
             'provider_platform_icon_url' => $this->course->providerPlatform->icon_url,

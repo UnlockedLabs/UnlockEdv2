@@ -25,10 +25,9 @@ class StoreEnrollmentRequest extends FormRequest
             'user_id' => 'required|exists:users,id',
             'course_id' => 'required|exists:courses,id',
             'enrollment_state' => 'nullable|in:active,inactive,completed,deleted',
-            'provider_user_id' => 'required|max:255',
-            'provider_enrollment_id' => 'required|max:255',
-            'provider_start_at' => 'required|date',
-            'provider_end_at' => 'nullable|date|after_or_equal:provider_start_at',
+            'external_enrollment_id' => 'required|max:255',
+            'external_start_at' => 'required|date',
+            'external_end_at' => 'nullable|date|after_or_equal:provider_start_at',
             'link_url' => 'nullable|url|max:255',
         ];
     }

@@ -49,24 +49,24 @@ class CanvasServicesTest extends TestCase
         $enrollmentCollection = collect();
         $request = new Request();
         foreach ($canvasEnrollments as $enrollment) {
-            if ($course = Course::findOrFail($enrollment['course_id'])) {
-                $request = $request->merge([
+            if ($course = Course::where('external_resource_id', $enrollment['course_id'])->firstOrFail()) {
+                $request->merge([
                     'user_id' => $user->id,
                     'course_id' => $course->id,
-                    'provider_user_id' => $enrollment['user_id'],
-                    'provider_enrollment_id' => $enrollment['id'],
+                    'external_enrollment_id' => $enrollment['id'],
                     'enrollment_state' => $enrollment['enrollment_state'],
-                    'provider_start_at' => $enrollment['start_at'],
-                    'provider_end_at' => $enrollment['end_at'],
+                    'external_start_at' => $enrollment['start_at'],
+                    'external_end_at' => $enrollment['end_at'],
                     'link_url' => $enrollment['html_url'],
                 ]);
                 $validated = $request->validate([
                     'user_id' => 'required|exists:users,id',
                     'course_id' => 'required|exists:courses,id',
-                    'provider_user_id' => 'required',
-                    'provider_enrollment_id' => 'required|unique:enrollments,provider_enrollment_id',
-                    'enrollment_state' => 'required',
-                    'link_url' => 'required|url',
+                    'enrollment_state' => 'nullable|in:active,inactive,completed,deleted',
+                    'external_enrollment_id' => 'required|max:255',
+                    'external_start_at' => 'nullable|date',
+                    'external_end_at' => 'nullable|date|after_or_equal:external_start_at',
+                    'link_url' => 'nullable|url|max:255',
                 ]);
                 $enrollmentCollection->push(Enrollment::create($validated));
             }
@@ -80,11 +80,10 @@ class CanvasServicesTest extends TestCase
                     'id',
                     'user_id',
                     'course_id',
-                    'provider_user_id',
-                    'provider_enrollment_id',
+                    'external_enrollment_id',
                     'enrollment_state',
-                    'provider_start_at',
-                    'provider_end_at',
+                    'external_start_at',
+                    'external_end_at',
                     'link_url',
                 ],
             ],
