@@ -67,6 +67,11 @@ class User extends Authenticatable
         return $this->role === UserRole::Admin;
     }
 
+    public function userActivity()
+    {
+        return $this->hasMany('App\Models\UserActivity');
+    }
+
     public function createTempPassword()
     {
         $pw = Str::random(8);
