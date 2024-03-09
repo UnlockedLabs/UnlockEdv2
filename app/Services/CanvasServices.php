@@ -59,8 +59,8 @@ class CanvasServices
         if (! is_string($id)) {
             $id = strval($id);
         }
-        if (substr($id, -1) !== '/') {
-            $id .= '/';
+        if (! str_ends_with($id, '/')) {
+            return $id.'/';
         }
 
         return $id;
@@ -165,7 +165,7 @@ class CanvasServices
     //* @return  CanvasServices
     //* @throws \InvalidArgumentException
      */
-    public static function byProviderId(int $providerId): CanvasServices
+    public static function byProviderId(int $providerId): self
     {
         $provider = ProviderPlatform::where(['id' => $providerId])->firstOrFail();
 
