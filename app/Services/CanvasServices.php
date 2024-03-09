@@ -437,7 +437,7 @@ class CanvasServices
      **/
     public function listCourses(): mixed
     {
-        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).COURSES.'?include[]=course_image';
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'courses?include[]=course_image';
 
         return $this->GET($base_url);
     }
@@ -455,7 +455,7 @@ class CanvasServices
     public function listCoursesForUser(int $userId): mixed
     {
         $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
-        $base_url = $this->base_url.USERS.self::fmtUrl($prov_user_id).COURSES.'?include[]=course_image';
+        $base_url = $this->base_url.USERS.self::fmtUrl($prov_user_id).'courses?include[]=course_image';
 
         return $this->GET($base_url);
     }
@@ -489,13 +489,13 @@ class CanvasServices
      *
      * @throws \Exception
      * */
-    public function listEnrollmentsForUser(int $userId): mixed
+    public function listEnrollmentsForUser(int $user_id): mixed
     {
-        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
-        $course_id = $this->listCoursesForUser($prov_user_id);
+        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
+        $course_id = $this->listCoursesForUser($user_id);
         $enrollments = [];
         foreach ($course_id as $course) {
-            $base_url = $this->base_url.COURSES.self::fmtUrl($course->id).ENROLLMENTS."?user_id=$prov_user_id";
+            $base_url = $this->base_url.COURSES.self::fmtUrl($course->id)."enrollments?user_id=$prov_user_id";
             $enrollments[] = $this->GET($base_url);
         }
 
