@@ -19,6 +19,9 @@ class CreateCanvasUserLogin extends Controller
         } catch (\Exception) {
             return response()->json(['error' => 'User or Provider not found'], 404);
         }
+        if ($provider->type->value != 'canvas_cloud' && $provider->type->value != 'canvas_oss') {
+            return response()->json(['error' => 'Provider is not a Canvas instance'], 400);
+        }
         $canvasService = CanvasServices::byProviderId($provider->id);
 
         $response = $canvasService->createUserLogin($user->id);

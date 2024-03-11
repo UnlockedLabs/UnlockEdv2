@@ -22,7 +22,7 @@ class RegisterCanvasAuthProviderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'provider_platform_id' => 'required|string|exists:provider_platforms,id',
+            'provider_platform_id' => 'required|int|exists:provider_platforms,id',
             'auth_provider_url' => 'nullable|string|url', // Just in case base URL is different (e.g. testing environment)
         ];
     }

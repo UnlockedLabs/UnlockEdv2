@@ -13,21 +13,23 @@ class RegisterCanvasAuthProviderAction extends Controller
     {
         $valid = $request->validated();
 
-        $provider = ProviderPlatform::findOrFail($valid->provider_platform_id)->firstOrFail();
+        $provider = ProviderPlatform::findOrFail($valid['provider_platform_id'])->firstOrFail();
 
-        if (! $provider || ! in_array($provider->type, ['canvas_cloud', 'canvas_oss'])) {
+        if (! $provider || ! in_array($provider->type->value, ['canvas_cloud', 'canvas_oss'])) {
             return response()->json(['Provider Platform was either not found or is not a Canvas instance', 404]);
         }
-
         $cs = CanvasServices::byProviderId($provider->id);
+        $resp = $cs->createAndRegisterAuthProvider($valid['auth_provider_url'])->content();
+        $resp = json_decode($resp, true);
+        $data = $resp['data'];
 
-        $resp = $cs->createAndRegisterAuthProvider($valid->auth_provider_url);
+        if (! isset($data['id'])) {
+            $err = $resp['error'] ?? 'External error';
+            $msg = $resp['message'] ?? 'Unexpected response from Canvas';
 
-        if (! array_key_exists('id', $resp)) {
-            return response()->json(["Unexpected response from Canvas: $resp", 400]);
+            return response()->json(["$err: $msg", 400]);
         }
-        $auth_provider_id = $resp['id'];
-        $provider->external_auth_provider_id = $auth_provider_id;
+        $auth_provider_id = $data['id'];
         $provider->update(['external_auth_provider_id' => $auth_provider_id]);
         $provider->save();
 
