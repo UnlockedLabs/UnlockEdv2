@@ -40,7 +40,11 @@ export default function CourseContent({ user }: { user: User }) {
                             </h2>
                             <h1 className="card-title">{course.course_name}</h1>
                             <p>
-                                {truncateDescription(course.course_description)}
+                                {truncateDescription(
+                                    course.course_description
+                                        ? course.coursse_description
+                                        : "",
+                                )}
                             </p>
                         </div>
                     </div>
