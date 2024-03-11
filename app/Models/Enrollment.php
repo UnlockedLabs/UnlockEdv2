@@ -16,7 +16,7 @@ class Enrollment extends Model
         'enrollment_state',
         'external_start_at',
         'external_end_at',
-        'link_url',
+        'external_link_url',
     ];
 
     protected $casts = [

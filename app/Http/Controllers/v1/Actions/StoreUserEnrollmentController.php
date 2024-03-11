@@ -28,7 +28,7 @@ class StoreUserEnrollmentController extends Controller
                     'enrollment_state' => $enrollment->enrollment_state,
                     'external_start_at' => $enrollment->start_at,
                     'external_end_at' => $enrollment->end_at,
-                    'link_url' => $enrollment->html_url,
+                    'external_link_url' => $enrollment->html_url,
                 ]);
                 $validated = $request->validate([
                     'user_id' => 'integer|required|exists:users,id',
@@ -37,7 +37,7 @@ class StoreUserEnrollmentController extends Controller
                     'enrollment_state' => 'required',
                     'external_start_at' => 'nullable|date',
                     'external_end_at' => 'nullable|date|after_or_equal:external_start_at',
-                    'link_url' => 'required|url',
+                    'external_link_url' => 'required|url',
                 ]);
                 $enrollmentCollection->push(Enrollment::create($validated));
             }

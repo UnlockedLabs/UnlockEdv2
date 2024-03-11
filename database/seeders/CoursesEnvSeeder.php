@@ -41,7 +41,7 @@ class CoursesEnvSeeder extends Seeder
                 'enrollment_state' => 'active',
                 'external_start_at' => '2024-03-05',
                 'external_end_at' => '2024-07-05',
-                'link_url' => $url,
+                'external_link_url' => $url,
             ]);
         }
     }

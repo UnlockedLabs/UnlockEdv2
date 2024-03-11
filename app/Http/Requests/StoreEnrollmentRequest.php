@@ -28,7 +28,7 @@ class StoreEnrollmentRequest extends FormRequest
             'external_enrollment_id' => 'required|max:255',
             'external_start_at' => 'required|date',
             'external_end_at' => 'nullable|date|after_or_equal:provider_start_at',
-            'link_url' => 'nullable|url|max:255',
+            'external_link_url' => 'nullable|url|max:255',
         ];
     }
 }

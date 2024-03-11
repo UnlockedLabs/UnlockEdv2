@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->string('external_link_url')->default(env('CANVAS_BASE_URL', ''));
+        Schema::table('provider_user_mappings', function (Blueprint $table) {
+            $table->integer('external_login_id')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('enrollments', function (Blueprint $table) {
-            $table->dropColumn('external_link_url');
+        Schema::table('provider_user_mappings', function (Blueprint $table) {
+            $table->dropColumn('external_login_id');
         });
     }
 };

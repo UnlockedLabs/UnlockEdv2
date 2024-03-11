@@ -32,7 +32,7 @@ class EnrollmentFactory extends Factory
             'enrollment_state' => $this->faker->randomElement(['active', 'inactive', 'completed']),
             'external_start_at' => $startAt,
             'external_end_at' => $endAt,
-            'link_url' => $this->faker->url,
+            'external_link_url' => $this->faker->url,
         ];
     }
 

@@ -31,7 +31,7 @@ class EnrollmentCourseJoinResource extends JsonResource
             'provider_platform_icon_url' => $this->course->providerPlatform->icon_url,
             'enrollment_state' => $this->enrollment_state,
             'img_url' => $this->course->img_url,
-            'link_url' => $this->link_url,
+            'external_link_url' => $this->external_link_url,
             'external_start_at' => $this->external_start_at,
             'external_end_at' => $this->external_end_at,
             'created_at' => $this->created_at,

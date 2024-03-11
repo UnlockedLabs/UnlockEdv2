@@ -23,7 +23,7 @@ class UpdateEnrollmentRequest extends FormRequest
     {
         return [
             'enrollment_state' => 'nullable|in:active,inactive,completed,deleted',
-            'link_url' => 'nullable|url',
+            'external_link_url' => 'nullable|url',
             'external_start_at' => 'nullable|date',
             'external_end_at' => 'nullable|date|after_or_equal:provider_start_at',
             'external_enrollment_id' => 'nullable|max:255',

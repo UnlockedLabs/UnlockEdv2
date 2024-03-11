@@ -25,7 +25,7 @@ class EnrollmentControllerTest extends TestCase
             'enrollment_state',
             'external_start_at',
             'external_end_at',
-            'link_url',
+            'external_link_url',
         ],
     ];
 
@@ -47,7 +47,7 @@ class EnrollmentControllerTest extends TestCase
             'provider_platform_icon_url',
             'enrollment_state',
             'img_url',
-            'link_url',
+            'external_link_url',
             'provider_start_at',
             'provider_end_at',
             'created_at',
@@ -73,7 +73,7 @@ class EnrollmentControllerTest extends TestCase
                 'provider_platform_icon_url',
                 'enrollment_state',
                 'img_url',
-                'link_url',
+                'external_link_url',
                 'external_start_at',
                 'external_end_at',
                 'created_at',
@@ -115,7 +115,7 @@ class EnrollmentControllerTest extends TestCase
 
         $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment->id, [
             'enrollment_state' => 'completed',
-            'link_url' => 'http://example.com',
+            'external_link_url' => 'http://example.com',
         ]);
 
         // Assert the final status
@@ -132,7 +132,7 @@ class EnrollmentControllerTest extends TestCase
 
         $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment->id, [
             'enrollment_state' => 'completed',
-            'link_url' => 'http://example.com',
+            'external_link_url' => 'http://example.com',
         ]);
 
         $response->assertStatus(403);

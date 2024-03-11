@@ -174,8 +174,8 @@ class CanvasServices
 
     private static function handleResponse(ResponseInterface $response): mixed
     {
-        if ($response->getStatusCode() == 200) {
-            return json_decode($response->getBody()->__toString());
+        if ($response->getStatusCode() === 200 || $response->getStatusCode() === 201 || $response->getStatusCode() === 204) {
+            return json_decode($response->getBody()->getContents(), true);
         } else {
             throw new \Exception('API request failed with status code: '.$response->getStatusCode());
         }

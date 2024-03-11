@@ -57,7 +57,7 @@ class CanvasServicesTest extends TestCase
                     'enrollment_state' => $enrollment['enrollment_state'],
                     'external_start_at' => $enrollment['start_at'],
                     'external_end_at' => $enrollment['end_at'],
-                    'link_url' => $enrollment['html_url'],
+                    'external_link_url' => $enrollment['html_url'],
                 ]);
                 $validated = $request->validate([
                     'user_id' => 'required|exists:users,id',
@@ -66,7 +66,7 @@ class CanvasServicesTest extends TestCase
                     'external_enrollment_id' => 'required|max:255',
                     'external_start_at' => 'nullable|date',
                     'external_end_at' => 'nullable|date|after_or_equal:external_start_at',
-                    'link_url' => 'nullable|url|max:255',
+                    'external_link_url' => 'nullable|url|max:255',
                 ]);
                 $enrollmentCollection->push(Enrollment::create($validated));
             }
@@ -84,7 +84,7 @@ class CanvasServicesTest extends TestCase
                     'enrollment_state',
                     'external_start_at',
                     'external_end_at',
-                    'link_url',
+                    'external_link_url',
                 ],
             ],
         ]);
