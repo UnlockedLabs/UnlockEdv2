@@ -13,75 +13,95 @@ class CourseControllerTest extends TestCase
 
     public string $uri = '/api/v1/courses';
 
-    // this tests the store method in the controller
-    public function testCoursesAreCreated()
+    public array $structure = [
+        'data' => [
+            'id',
+            'external_course_name',
+            'external_course_code',
+            'description',
+            'provider_platform_id',
+            'img_url',
+            'created_at',
+            'updated_at',
+        ],
+    ];
+
+    public array $list_structure = [
+        'data' => [
+            '*' => [
+                'id',
+                'external_course_name',
+                'external_course_code',
+                'description',
+                'provider_platform_id',
+                'img_url',
+                'created_at',
+                'updated_at',
+            ],
+        ],
+    ];
+
+    public function testCoursesIndex()
     {
-        Course::factory(10)->create();
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
-
         $response = $this->actingAs($user)->get($this->uri);
-
         $response->assertStatus(200);
-
         $this->assertCount(10, $response['data']);
         $response->assertJsonIsArray('data');
-        $response->assertJsonStructure([
-            'data' => [
-                '*' => [
-                    'id',
-                    'provider_course_name',
-                    'created_at',
-                    'updated_at',
-                ],
-            ],
-        ]);
+        $response->assertJsonStructure($this->list_structure);
     }
 
     // this tests the show method in the controller
-    public function testGetCourses()
+    public function testGetCourse()
     {
         $this->seed(TestSeeder::class);
-        $course = Course::factory()->createOne();
-        $user = \App\Models\User::factory()->create();
+        $course = Course::inRandomOrder()->first();
+        $user = \App\Models\User::inRandomOrder()->first();
         $response = $this->actingAs($user)->get($this->uri.'/'.$course->id);
 
         $response->assertStatus(200);
 
-        $response->assertJsonStructure([
-            'data' => [
-                'id',
-                'provider_course_name',
-                'created_at',
-                'updated_at',
-            ],
-        ]);
+        $response->assertJsonStructure($this->structure);
     }
 
     // this test the update method in the controller
     public function testUpdateCourse()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
         $course = Course::factory(1)->create();
-        $response = $this->actingAs($user)->patch($this->uri.'/'.$course[0]->id, ['provider_course_name' => 'TestUpdate']);
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$course[0]->id, ['external_course_name' => 'TestUpdate']);
         $response->assertStatus(200);
-        $this->assertTrue($response['data']['provider_course_name'] == 'TestUpdate');
+        $this->assertTrue($response['data']['external_course_name'] == 'TestUpdate');
+    }
+
+    // this test the update method in the controller
+    public function testUpdateCourseUnauthorized()
+    {
+        $user = \App\Models\User::factory()->create();
+        $course = Course::factory(1)->create();
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$course[0]->id, ['external_course_name' => 'TestUpdate']);
+        $response->assertStatus(403);
     }
 
     // this tests the destroy method in the controller
     public function testDeleteCourse()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
-        $course = Course::factory(1)->create();
-        $response = $this->actingAs($user)->delete($this->uri.'/'.$course[0]->id);
+        $course = Course::inRandomOrder()->first();
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$course->id);
         $response->assertStatus(204);
     }
 
     // this tests the destroy method in the controller
     public function testDeleteCourseUnauthorized()
     {
+        $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->create();
-        $course = Course::factory(1)->create();
-        $response = $this->actingAs($user)->delete($this->uri.'/'.$course[0]->id);
+        $course = Course::inRandomOrder()->first();
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$course->id);
         $response->assertStatus(403);
     }
 }

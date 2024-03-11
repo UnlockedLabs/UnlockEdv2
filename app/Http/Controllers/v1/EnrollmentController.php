@@ -36,7 +36,6 @@ class EnrollmentController extends Controller
 
             return EnrollmentCourseJoinResource::collection($categories);
         } else {
-
             $query->where(['user_id' => $request->user()->id]);
             $query->orderBy($sortBy, $sortOrder);
             $categories = $query->paginate($perPage);
@@ -59,9 +58,9 @@ class EnrollmentController extends Controller
             if (! $enrollment || $enrollment->user_id != $request->user()->id) {
                 return response()->json(['error' => "Enrollment with this ID not found for User: {$request->user()->username}"], Response::HTTP_NOT_FOUND);
             }
-        }
 
-        return new EnrollmentCourseJoinResource($enrollment);
+            return new EnrollmentCourseJoinResource($enrollment);
+        }
     }
 
     public function store(StoreEnrollmentRequest $request)

@@ -16,6 +16,7 @@ class ProviderUserMapping extends Model
         'external_user_id',
         'external_username', // if the user has a field in the external platform that is different from 'username'
         'authentication_provider_status',
+        'external_login_id',
     ];
 
     protected $casts = [

@@ -12,30 +12,21 @@ class Enrollment extends Model
     protected $fillable = [
         'user_id',
         'course_id',
-        'provider_platform_id',
-        'provider_user_id',
-        'provider_enrollment_id',
-        'provider_course_id',
+        'external_enrollment_id',
         'enrollment_state',
-        'links',
-        'provider_start_at',
-        'provider_end_at',
+        'external_start_at',
+        'external_end_at',
+        'external_link_url',
     ];
 
     protected $casts = [
-        'links' => 'json',
-        'provider_start_at' => 'datetime',
-        'provider_end_at' => 'datetime',
+        'external_start_at' => 'datetime',
+        'external_end_at' => 'datetime',
     ];
 
     public function course()
     {
         return $this->belongsTo(Course::class);
-    }
-
-    public function providerPlatform()
-    {
-        return $this->belongsTo(ProviderPlatform::class);
     }
 
     public function user()

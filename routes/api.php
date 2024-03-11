@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\v1\Actions\CreateCanvasUserLogin;
 use App\Http\Controllers\v1\Actions\RegisterCanvasAuthProviderAction;
+use App\Http\Controllers\v1\Actions\StoreCanvasCoursesController;
 use App\Http\Controllers\v1\Actions\StoreUserCourseController;
 use App\Http\Controllers\v1\Actions\StoreUserEnrollmentController;
 use App\Http\Controllers\v1\CategoryController;
@@ -67,7 +68,8 @@ Route::prefix('v1')->group(function () {
         /* Actions/RPCs */
         Route::post('actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);
         Route::post('actions/create-canvas-login', [CreateCanvasUserLogin::class, 'create_canvas_login']);
-        Route::post('provider-platforms/{providerId}/users/{userId}/courses', StoreUserCourseController::class);
-        Route::post('provider-platforms/{providerId}/users/{userId}/enrollments', StoreUserEnrollmentController::class);
+        Route::post('actions/store-user-courses', StoreUserCourseController::class);
+        Route::post('actions/store-canvas-courses', StoreCanvasCoursesController::class);
+        Route::post('actions/store-user-enrollments', StoreUserEnrollmentController::class);
     });
 });

@@ -10,12 +10,18 @@ class Course extends Model
     use HasFactory;
 
     protected $fillable = [
-        'provider_resource_id',
+        'external_resource_id',
+        'external_course_code',
         'description',
-        'provider_course_name',
-        'provider_start_at',
-        'provider_end_at',
+        'provider_platform_id',
+        'external_course_name',
+        'img_url',
     ];
+
+    public function hasEnrollmentForUser($user_id): bool
+    {
+        return $this->enrollments()->where('user_id', $user_id)->exists();
+    }
 
     public function providerPlatform()
     {

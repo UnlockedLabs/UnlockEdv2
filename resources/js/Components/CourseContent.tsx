@@ -17,9 +17,11 @@ export default function CourseContent({ user }: { user: User }) {
                 return description;
             }
         };
-        const coverImage = JSON.parse(course.links)["logo"];
-        const url =
-            course.provider_platform_url + "/courses/" + course.course_id;
+        const coverImage = course.img_url;
+        let url = course.external_link_url;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
         return (
             // temp solution for height, make sure they are all the same height without fixing it
             <div className="h-[400px]">
@@ -33,7 +35,10 @@ export default function CourseContent({ user }: { user: User }) {
                             />
                         </figure>
                         <div className="card-body">
-                            <h2 className="card-title">{course.course_name}</h2>
+                            <h2 className="text-slate-600">
+                                {course.course_code}
+                            </h2>
+                            <h1 className="card-title">{course.course_name}</h1>
                             <p>
                                 {truncateDescription(course.course_description)}
                             </p>

@@ -24,9 +24,19 @@ class ProviderUserMappingFactory extends Factory
         return [
             'user_id' => User::factory()->create(),
             'provider_platform_id' => ProviderPlatform::factory()->create(),
-            'external_user_id' => $this->faker->numberBetween(1, 10),
+            'external_user_id' => $this->faker->numberBetween(1, 1000),
             'external_username' => $this->faker->word,
             'authentication_provider_status' => AuthProviderStatus::OPENID_CONNECT,
         ];
+    }
+
+    public function forUser(int $user_id): static
+    {
+        return $this->state(fn (array $attributes) => ['user_id' => $user_id]);
+    }
+
+    public function forProvider(int $provider_id): static
+    {
+        return $this->state(fn (array $attributes) => ['provider_platform_id' => $provider_id]);
     }
 }

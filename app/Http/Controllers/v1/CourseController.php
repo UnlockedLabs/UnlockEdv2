@@ -28,7 +28,6 @@ class CourseController extends Controller
     public function show(string $id)
     {
         $course = Course::find($id);
-
         if (! $course) {
             return response()->json(['error' => 'Course not found'], Response::HTTP_NOT_FOUND);
         }
@@ -36,9 +35,6 @@ class CourseController extends Controller
         return new CourseResource($course);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreCourseRequest $request)
     {
         $validated = $request->validated();
@@ -56,21 +52,17 @@ class CourseController extends Controller
         if (! $course) {
             return response()->json(['error' => 'Course not found'], Response::HTTP_NOT_FOUND);
         }
-
         $course->update($validated);
 
         return new CourseResource($course);
     }
 
-    public function destroy(AdminRequest $request, string $id)
+    public function destroy(AdminRequest $req, string $id)
     {
-        $request->authorize();
         $course = Course::find($id);
-
         if (! $course) {
             return response()->json(['error' => 'Course not found'], Response::HTTP_NOT_FOUND);
         }
-
         $course->delete();
 
         return response(null, Response::HTTP_NO_CONTENT);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
 use GuzzleHttp\Client;
@@ -172,8 +174,8 @@ class CanvasServices
 
     private static function handleResponse(ResponseInterface $response): mixed
     {
-        if ($response->getStatusCode() == 200) {
-            return json_decode($response->getBody()->__toString());
+        if ($response->getStatusCode() === 200 || $response->getStatusCode() === 201 || $response->getStatusCode() === 204) {
+            return json_decode($response->getBody()->getContents(), true);
         } else {
             throw new \Exception('API request failed with status code: '.$response->getStatusCode());
         }
@@ -215,10 +217,10 @@ class CanvasServices
     public function createUserLogin(int $userId)
     {
         $user = User::findOrFail($userId);
-        $mapping = $user->providerUserMappings()->where('provider_platform_id', $this->provider_id)->firstOrFail();
+        $prov_user_id = $user->externalIdFor($this->provider_id);
         try {
             $body = [
-                'user[id]' => $mapping->external_user_id,
+                'user[id]' => $prov_user_id,
                 'login[unique_id]' => $user->email,
                 'login[authentication_provider_id]' => 'openid_connect',
             ];
@@ -280,9 +282,9 @@ class CanvasServices
      * AccountId can be accessed via the field in the class,
      * but it seems most of the time it will be self.
      */
-    public function listUsers(string $accountId = 'self'): mixed
+    public function listUsers(): mixed
     {
-        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($accountId).USERS;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).USERS;
 
         return $this->GET($base_url);
     }
@@ -293,9 +295,10 @@ class CanvasServices
      * @return mixed JSON decoded
      * @throws \Exception
      */
-    public function showUserDetails(string $userId = 'self'): mixed
+    public function showUserDetails(int $userId): mixed
     {
-        $base_url = $this->base_url.USERS.$userId;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.USERS.$prov_user_id;
 
         return $this->GET($base_url);
     }
@@ -369,9 +372,9 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function listTodoItems(string $account = 'self'): mixed
+    public function listTodoItems(): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($account).'todo';
+        $base_url = $this->base_url.USERS.self::fmtUrl($this->account_id).'todo';
 
         return $this->GET($base_url);
     }
@@ -384,9 +387,9 @@ class CanvasServices
      * @return mixed (decoded json)
      *
      **/
-    public function getTodoItemsCount(string $account = 'self'): mixed
+    public function getTodoItemsCount(): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($account).'todo_item_count';
+        $base_url = $this->base_url.USERS.self::fmtUrl($this->account_id).'todo_item_count';
 
         return $this->GET($base_url);
     }
@@ -400,9 +403,10 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function listUpcomingAssignments(string $userId = 'self'): mixed
+    public function listUpcomingAssignments(int $userId): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($userId).'upcoming_events';
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.USERS.self::fmtUrl($prov_user_id).'upcoming_events';
 
         return $this->GET($base_url);
     }
@@ -416,9 +420,10 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function listMissingSubmissions(string $userId = 'self'): mixed
+    public function listMissingSubmissions(int $userId): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($userId).'missing_submissions';
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.USERS.self::fmtUrl($prov_user_id).'missing_submissions';
 
         return $this->GET($base_url);
     }
@@ -430,9 +435,9 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function listCourses($accountId = 'self'): mixed
+    public function listCourses(): mixed
     {
-        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($accountId).COURSES;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'courses?include[]=course_image';
 
         return $this->GET($base_url);
     }
@@ -447,9 +452,10 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function listCoursesForUser(string $userId = 'self'): mixed
+    public function listCoursesForUser(int $userId): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($userId).COURSES;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.USERS.self::fmtUrl($prov_user_id).'courses?include[]=course_image';
 
         return $this->GET($base_url);
     }
@@ -467,9 +473,11 @@ class CanvasServices
      * in a course. To query another user’s progress, you must be a
      * teacher in the course, an administrator, or a linked observer of the user."
      * */
-    public function listUserCourseProgress(string $userId, string $courseId): mixed
+    public function listUserCourseProgress(int $userId, int $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).USERS.self::fmtUrl($userId).PROGRESS;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $prov_course_id = Course::findOrFail($courseId)->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).USERS.self::fmtUrl($prov_user_id).PROGRESS;
 
         return $this->GET($base_url);
     }
@@ -481,11 +489,17 @@ class CanvasServices
      *
      * @throws \Exception
      * */
-    public function listEnrollmentsForUser(string $userId = 'self'): mixed
+    public function listEnrollmentsForUser(int $user_id): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($userId).ENROLLMENTS;
+        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
+        $course_id = $this->listCoursesForUser($user_id);
+        $enrollments = [];
+        foreach ($course_id as $course) {
+            $base_url = $this->base_url.COURSES.self::fmtUrl($course->id)."enrollments?user_id=$prov_user_id";
+            $enrollments[] = $this->GET($base_url);
+        }
 
-        return $this->GET($base_url);
+        return $enrollments;
     }
 
     /**
@@ -496,9 +510,11 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function listEnrollmentsByCourse(string $courseId): mixed
+    public function listEnrollmentsByCourse(int $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS;
 
         return $this->GET($base_url);
     }
@@ -510,7 +526,7 @@ class CanvasServices
      *
      * @throws \Exception
      **/
-    public function listEnrollmentsBySection(string $sectionId): mixed
+    public function listEnrollmentsBySection(int $sectionId): mixed
     {
         $base_url = $this->base_url.SECTIONS.self::fmtUrl($sectionId).ENROLLMENTS;
 
@@ -531,13 +547,16 @@ class CanvasServices
      **/
     public function enrollUser(int $userId, int $courseId): mixed
     {
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
         $enrollment = [
             'enrollment' => [
-                'user_id' => $userId,
+                'user_id' => $prov_user_id,
                 'type' => 'StudentEnrollment',
             ],
         ];
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS;
 
         return $this->POST($base_url, $enrollment);
     }
@@ -553,11 +572,12 @@ class CanvasServices
      *
      * @throws Exception
      **/
-    public function enrollUserInSection(string $sectionId, string $userId, string $type = 'StudentEnrollment'): mixed
+    public function enrollUserInSection(string $sectionId, int $userId, string $type = 'StudentEnrollment'): mixed
     {
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
         $enrollment = [
             'enrollment' => [
-                'user_id' => $userId,
+                'user_id' => $prov_user_id,
                 'type' => $type,
             ],
         ];
@@ -575,9 +595,13 @@ class CanvasServices
      *
      * @throws Exception
      */
-    public function deleteEnrollment(string $enrollmentId, string $courseId): mixed
+    public function deleteEnrollment(int $enrollmentId, int $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.$enrollmentId;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $our_id = Enrollment::findOrFail($enrollmentId);
+        $prov_enrollment_id = $our_id->provider_enrollment_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.$prov_enrollment_id;
 
         return $this->DELETE($base_url);
     }
@@ -591,9 +615,12 @@ class CanvasServices
      *
      * @throws Exception
      */
-    public function acceptCourseInvitation(string $courseId, string $userId = 'self'): mixed
+    public function acceptCourseInvitation(int $courseId, int $userId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'accept';
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'accept';
 
         return $this->POST($base_url, []);
     }
@@ -606,9 +633,12 @@ class CanvasServices
      *
      * @throws Exception
      */
-    public function rejectCourseInvitation(string $courseId, string $userId = 'self'): mixed
+    public function rejectCourseInvitation(int $courseId, int $userId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'reject';
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'reject';
 
         return $this->POST($base_url, []);
     }
@@ -621,9 +651,12 @@ class CanvasServices
      *
      * @throws Exception
      **/
-    public function reactivateCourseEnrollment(string $courseId, string $userId = 'self'): mixed
+    public function reactivateCourseEnrollment(int $courseId, int $userId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'reactivate';
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'reactivate';
 
         return $this->PUT($base_url, []);
     }
@@ -638,7 +671,8 @@ class CanvasServices
      **/
     public function addLastAttendedDate(string $courseId, string $userId = 'self'): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($userId).'last_attended';
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ENROLLMENTS.self::fmtUrl($prov_user_id).'last_attended';
 
         return $this->PUT($base_url, []);
     }
@@ -652,9 +686,12 @@ class CanvasServices
      *
      * @throws Exception
      **/
-    public function listAssignmentsForUser(string $courseId, string $userId = 'self'): mixed
+    public function listAssignmentsForUser(int $courseId, int $userId): mixed
     {
-        $base_url = $this->base_url.USERS.self::fmtUrl($userId).COURSES.self::fmtUrl($courseId).ASSIGNMENTS;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.USERS.self::fmtUrl($prov_user_id).COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS;
 
         return $this->GET($base_url);
     }
@@ -666,9 +703,11 @@ class CanvasServices
      *
      * @throws Exception
      **/
-    public function listAssignmentsByCourse(string $courseId): mixed
+    public function listAssignmentsByCourse(int $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS;
 
         return $this->GET($base_url);
     }
@@ -680,9 +719,11 @@ class CanvasServices
      *
      * @throws Exception
      **/
-    public function listAssignmentGroupsByCourse(string $assignmentGroupId, string $courseId): mixed
+    public function listAssignmentGroupsByCourse(int $assignmentGroupId, int $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).'assignment_groups/'.self::fmtUrl($assignmentGroupId).ASSIGNMENTS;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).'assignment_groups/'.self::fmtUrl($assignmentGroupId).ASSIGNMENTS;
 
         return $this->GET($base_url);
     }
@@ -708,9 +749,11 @@ class CanvasServices
      *
      * @throws Exception
      **/
-    public function getAssignment(string $courseId, string $assignmentId): mixed
+    public function getAssignment(int $courseId, int $assignmentId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentId;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.$assignmentId;
 
         return $this->DELETE($base_url);
     }
@@ -728,7 +771,9 @@ class CanvasServices
         **/
     public function createAssignmentForCourse(array $assignmentInfo, string $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.$assignmentInfo;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.$assignmentInfo;
 
         return $this->POST($base_url, $assignmentInfo);
     }
@@ -745,9 +790,11 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function editAssignmentForCourse(array $assignmentInfo, string $courseId, string $assignmentId): mixed
+    public function editAssignmentForCourse(array $assignmentInfo, int $courseId, int $assignmentId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).$assignmentInfo;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.self::fmtUrl($assignmentId).$assignmentInfo;
 
         return $this->PUT($base_url, $assignmentInfo);
     }
@@ -764,7 +811,7 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function submitAssignment(string $courseId, string $assignmentId, array $assignment): mixed
+    public function submitAssignment(int $courseId, int $assignmentId, array $assignment): mixed
     {
 
         $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$assignment;
@@ -780,9 +827,11 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function listAssignmentSubmissions(string $courseId, string $assignmentId): mixed
+    public function listAssignmentSubmissions(int $courseId, int $assignmentId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS;
 
         return $this->GET($base_url);
     }
@@ -795,9 +844,11 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function listSubmissionsForMultipleAssignments(string $courseId): mixed
+    public function listSubmissionsForMultipleAssignments(int $courseId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).STUDENTS.SUBMISSIONS;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).STUDENTS.SUBMISSIONS;
 
         return $this->GET($base_url);
     }
@@ -811,9 +862,12 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function listSubmissionsForUser(string $courseId, string $assignmentId, string $userId): mixed
+    public function listSubmissionsForUser(int $courseId, int $assignmentId, int $userId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$userId;
+        $our_id = Course::findOrFail($courseId);
+        $prov_course_id = $our_id->provider_resource_id;
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.$prov_user_id;
 
         return $this->GET($base_url);
     }
@@ -843,9 +897,11 @@ class CanvasServices
         * @return mixed decoded JSON
         * @throws Exception
         **/
-    public function uploadFileForSubmission(string $courseId, string $assignmentId, string $userId): mixed
+    public function uploadFileForSubmission(int $courseId, int $assignmentId, int $userId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($userId).'files';
+        $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
+        $prov_course_id = Course::findOrFail($courseId)->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.self::fmtUrl($assignmentId).SUBMISSIONS.self::fmtUrl($prov_user_id).'files';
 
         return $this->POST($base_url, []);
     }
@@ -860,7 +916,8 @@ class CanvasServices
         **/
     public function listSubmissionSummary(string $courseId, string $assignmentId): mixed
     {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($courseId).ASSIGNMENTS.self::fmtUrl($assignmentId).'submission_summary';
+        $prov_course_id = Course::findOrFail($courseId)->provider_resource_id;
+        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.self::fmtUrl($assignmentId).'submission_summary';
 
         return $this->GET($base_url);
     }

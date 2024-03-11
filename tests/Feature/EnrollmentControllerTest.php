@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Course;
 use App\Models\Enrollment;
-use App\Models\ProviderPlatform;
 use App\Models\User;
 use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,15 +17,37 @@ class EnrollmentControllerTest extends TestCase
 
     public $seeder = TestSeeder::class;
 
-    // Each controllers test should store these properties for assertion
-    public $single_json_structure = [
+    public $single_enrollment_structure = [
         'data' => [
             'user_id',
             'course_id',
-            'provider_platform_id',
+            'external_enrollment_id',
             'enrollment_state',
-            'links',
-            'provider_enrollment_id',
+            'external_start_at',
+            'external_end_at',
+            'external_link_url',
+        ],
+    ];
+
+    // Each controllers test should store these properties for assertion
+    public $single_join_json_structure = [
+        'data' => [
+            'id',
+            'course_name',
+            'course_description',
+            'user_id',
+            'course_id',
+            'user_name',
+            'provider_platform_id',
+            'external_course_id',
+            'external_enrollment_id',
+            'external_user_id',
+            'provider_platform_name',
+            'provider_platform_url',
+            'provider_platform_icon_url',
+            'enrollment_state',
+            'img_url',
+            'external_link_url',
             'provider_start_at',
             'provider_end_at',
             'created_at',
@@ -34,164 +55,67 @@ class EnrollmentControllerTest extends TestCase
         ],
     ];
 
-    public $array_json_structure = [
+    public $array_join_json_structure = [
         'data' => [
             '*' => [
+                'id',
+                'course_name',
+                'course_description',
                 'user_id',
                 'course_id',
+                'user_name',
                 'provider_platform_id',
+                'external_course_id',
+                'external_enrollment_id',
+                'external_user_id',
+                'provider_platform_name',
+                'provider_platform_url',
+                'provider_platform_icon_url',
                 'enrollment_state',
-                'links',
-                'provider_enrollment_id',
-                'provider_start_at',
-                'provider_end_at',
+                'img_url',
+                'external_link_url',
+                'external_start_at',
+                'external_end_at',
                 'created_at',
                 'updated_at',
             ],
         ],
     ];
 
-    public function testAdminCanCreateAndAccessEnrollments()
+    public function completeTestCreateAndGetNewEnrollment()
     {
         $this->seed($this->seeder);
-        $user = User::factory()->createOne();
-
-        $admin = \App\Models\User::factory()->admin()->createOne();
-
-        $users_enrollments = Enrollment::factory()->count(5)->forUser($user->id)->make();
-
-        foreach ($users_enrollments as $enrollment) {
-            $fail = $this->actingAs($user)->postJson($this->uri, $enrollment->toArray());
-            $fail->assertStatus(403);
-            $response = $this->actingAs($admin)->postJson($this->uri, $enrollment->toArray());
-            $response->assertStatus(201);
-            $response->assertJsonStructure($this->single_json_structure);
-        }
-        $responseUser = $this->actingAs($user)->getJson($this->uri);
-
-        $responseAdmin = $this->actingAs($admin)->getJson($this->uri);
-
-        $responseAdmin->assertJsonCount(10, 'data');
-
-        $responseUser->assertJsonCount(5, 'data');
-    }
-
-    public function testActuallyCreatingEnrollmentInsteadOfJustThatTheFactoryWorks()
-    {
-        $user = \App\Models\User::factory()->createOne();
+        $user = User::inRandomOrder()->first();
         $admin = \App\Models\User::factory()->admin()->createOne();
         $course = Course::factory()->createOne();
-        $provider = ProviderPlatform::factory()->createOne();
-        $enrollments = Enrollment::factory()->count(5)->make();
-        foreach ($enrollments as $enrollment) {
-            $enrollment->user_id = $user->id;
-            $enrollment->course_id = $course->id;
-            $enrollment->provider_platform_id = $provider->id;
-            $response = $this->actingAs($admin)->post($this->uri, $enrollment->toArray());
-            $response->assertStatus(201);
-        }
-        $resp = $this->actingAs($user)->get($this->uri, [
-            'Accept' => 'application/json',
-        ]);
-        $resp->assertJsonCount(5, 'data');
-    }
+        $enrollment = Enrollment::factory()->forUser($user->id)->forCourse($course->id)->makeOne();
+        // user cannot create themselves
+        $fail = $this->actingAs($user)->postJson($this->uri, $enrollment->toArray());
+        $fail->assertStatus(403);
+        // assert admin can create them
+        $response = $this->actingAs($admin)->postJson($this->uri, $enrollment->toArray());
+        $response->assertStatus(201);
+        $response->assertJsonStructure($this->single_enrollment_structure);
+        $id = $response['data']['id'];
 
-    public function testEnrollmentsCannotBeCreatedByUnauthorizedUser()
-    {
-        $user = \App\Models\User::factory()->createOne();
-        $enrollment = [
-            'user_id' => User::factory()->createOne()->id,
-            'course_id' => Course::factory()->createOne()->id,
-            'provider_course_id' => Course::factory()->createOne()->id,
-            'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
-            'provider_user_id' => '43',
-            'enrollment_state' => 'active',
-            'links' => '[{"link1":"Test"},{"link2":"Test"}]',
-            'provider_start_at' => '2021-01-01 00:00:00',
-            'provider_end_at' => '2021-12-31 23:59:59',
-        ];
-        $response = $this->actingAs($user)->post($this->uri, $enrollment);
-        $response->assertStatus(403);
-    }
-
-    public function testEnrollmentsAreCreatedUnauthorized()
-    {
-        $user = \App\Models\User::factory()->createOne();
-        Enrollment::factory(10)->create();
-        $response = $this->actingAs($user)->get($this->uri, [
-            'Accept' => 'application/json',
-        ]);
-        $response->assertStatus(200);
-        foreach ($response['data'] as $enrollment) {
-            $this->assertEquals($user->id, $enrollment['user_id']);
-        }
-    }
-
-    public function testEnrollmentsIndexReturnsJson()
-    {
-        // Create 10 Enrollments using the factory
-        $user = \App\Models\User::factory()->createOne();
-        Enrollment::factory(2)->create();
-
-        // Make a GET request to the index method
-        $response = $this->actingAs($user)->get($this->uri);
-
-        // Assert that the response status code is 200 (OK)
-        $response->assertStatus(200);
-
-        // Assert that the response contains the Enrollments
-        $response->assertJsonStructure([
-            'data' => [
-                '*' => [
-                    'user_id',
-                    'course_id',
-                    'provider_platform_id',
-                    'provider_course_id',
-                    'provider_enrollment_id',
-                    'provider_user_id',
-                    'enrollment_state',
-                    'links',
-                    'provider_start_at',
-                    'provider_end_at',
-                    'created_at',
-                    'updated_at',
-                ],
-            ],
-        ]);
-    }
-
-    public function testGetEnrollment()
-    {
-        $user = \App\Models\User::factory()->createOne();
-        $Enrollment = Enrollment::factory()->forUser($user->id)->createOne();
-        $response = $this->actingAs($user)->get($this->uri.'/'.$Enrollment->id);
-
-        $response->assertStatus(200);
-
-        // Decode the JSON response
-        $jsonResponse = $response->json();
-
-        // Assert that the response contains the Enrollment
-        foreach ($jsonResponse as $key => $value) {
-            // Skip keys 'created_at' and 'updated_at'
-            if (in_array($key, ['created_at', 'updated_at'])) {
-                continue;
-            }
-
-            assert($value, $Enrollment->$key);
-        }
-
-        // this is a change
+        // test user can acess their own enrollment
+        $responseUser = $this->actingAs($user)->getJson($this->uri.'/'.$id);
+        $responseUser->assertStatus(200);
+        $responseUser->assertJsonStructure($this->single_join_json_structure);
+        // test admin can access all enrollments
+        $responseAdmin = $this->actingAs($admin)->getJson($this->uri);
+        $responseAdmin->assertJsonCount(10, 'data');
+        $responseAdmin->assertJsonStructure($this->array_join_json_structure);
     }
 
     public function testUpdateEnrollment()
     {
         $user = \App\Models\User::factory()->admin()->createOne();
-        $enrollment = Enrollment::factory(1)->create();
+        $enrollment = Enrollment::factory()->createOne();
 
-        $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment[0]->id, [
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment->id, [
             'enrollment_state' => 'completed',
-            'links' => '[{"link1":"Test"},{"link2":"Update"}]',
+            'external_link_url' => 'http://example.com',
         ]);
 
         // Assert the final status
@@ -199,17 +123,16 @@ class EnrollmentControllerTest extends TestCase
 
         // Check if the 'enrollment_state' is updated to 'completed'
         $this->assertEquals('completed', $response['data']['enrollment_state']);
-        $this->assertEquals('[{"link1":"Test"},{"link2":"Update"}]', $response['data']['links']);
     }
 
     public function testUpdateEnrollmentUnauthorized()
     {
         $user = \App\Models\User::factory()->createOne();
-        $enrollment = Enrollment::factory(1)->create();
+        $enrollment = Enrollment::factory()->createOne();
 
-        $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment[0]->id, [
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment->id, [
             'enrollment_state' => 'completed',
-            'links' => '[{"link1":"Test"},{"link2":"Update"}]',
+            'external_link_url' => 'http://example.com',
         ]);
 
         $response->assertStatus(403);

@@ -21,9 +21,17 @@ class StoreCourseRequest extends FormRequest
      */
     public function rules(): array
     {
+        if (substr($this->input('img_url'), 0, 4) !== 'http' && $this->input('img_url') !== null) {
+            $this->merge(['img_url' => 'http://'.$this->input('img_url')]);
+        }
+
         return [
-            'provider_resource_id' => 'required|string|max:255',
-            'provider_course_name' => 'required|string|max:255',
+            'provider_platform_id' => 'required|exists:provider_platforms,id',
+            'external_resource_id' => 'required|int|min:1',
+            'external_course_name' => 'required|string|max:255',
+            'external_course_code' => 'required|string|max:255',
+            'description' => 'required|string|max:255',
+            'img_url' => 'nullable|url|max:255',
         ];
     }
 }

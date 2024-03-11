@@ -50,6 +50,13 @@ class User extends Authenticatable
         'role' => UserRole::class,
     ];
 
+    public function externalIdFor(int $provider_platform_id): ?int
+    {
+        return $this->providerUserMappings()
+            ->where('provider_platform_id', $provider_platform_id)
+            ->value('external_user_id');
+    }
+
     public function providerUserMappings()
     {
         return $this->hasMany('App\Models\ProviderUserMapping');
@@ -58,6 +65,11 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    public function userActivity()
+    {
+        return $this->hasMany('App\Models\UserActivity');
     }
 
     public function createTempPassword()
