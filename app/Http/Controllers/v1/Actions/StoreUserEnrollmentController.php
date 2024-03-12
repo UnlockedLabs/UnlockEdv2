@@ -16,19 +16,20 @@ class StoreUserEnrollmentController extends Controller
      */
     public function __invoke(AdminRequest $request)
     {
-        $canvasService = CanvasServices::byProviderId($request->provider_platform_id);
-        $canvasEnrollments = $canvasService->listEnrollmentsForUser($request->user_id);
+        $canvasService = CanvasServices::byProviderId($request['provider_platform_id']);
+        $canvasEnrollments = $canvasService->listEnrollmentsForUser($request['user_id']);
         $enrollmentCollection = collect();
         foreach ($canvasEnrollments as $enrollment) {
-            if ($course = Course::where('external_resource_id', $enrollment->course_id)->firstOrFail()) {
+            $enrollment = $enrollment[0];
+            if ($course = Course::where('external_resource_id', $enrollment['course_id'])->firstOrFail()) {
                 $request->merge([
-                    'user_id' => $request->user_id,
-                    'course_id' => $course->id,
-                    'external_enrollment_id' => $enrollment->id,
-                    'enrollment_state' => $enrollment->enrollment_state,
-                    'external_start_at' => $enrollment->start_at,
-                    'external_end_at' => $enrollment->end_at,
-                    'external_link_url' => $enrollment->html_url,
+                    'user_id' => $request['user_id'],
+                    'course_id' => $course['id'],
+                    'external_enrollment_id' => $enrollment['id'],
+                    'enrollment_state' => $enrollment['enrollment_state'],
+                    'external_start_at' => $enrollment['start_at'],
+                    'external_end_at' => $enrollment['end_at'],
+                    'external_link_url' => $enrollment['html_url'],
                 ]);
                 $validated = $request->validate([
                     'user_id' => 'integer|required|exists:users,id',
