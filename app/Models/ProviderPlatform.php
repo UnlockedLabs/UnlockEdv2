@@ -33,6 +33,11 @@ class ProviderPlatform extends Model
         'state' => ProviderPlatformState::class,
     ];
 
+    public function getCanvasServices(): \App\Services\CanvasServices
+    {
+        return \App\Services\CanvasServices::byProviderId($this['id']);
+    }
+
     // public function hashAccessKey()
     // {
     //     $accessKey = $this->access_key;

@@ -195,6 +195,20 @@ class CanvasServices
     }
 
     /**
+     * This takes a canvas user id (EXTERNAL)
+     * and returns the users profile from canvas
+     * GET /api/v1/users/:id
+     *
+     * @return mixed JSON decoded
+     */
+    public function getUserProfile(int $user_id)
+    {
+        $base_url = $this->base_url.USERS.self::fmtUrl($user_id);
+
+        return $this->GET($base_url);
+    }
+
+    /**
      * Delete the authentication provider associated with the instance in Canvas
      * GET /api/v1/accounts/:account_id/authentication_providers/:id
      *
