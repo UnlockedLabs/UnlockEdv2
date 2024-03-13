@@ -27,7 +27,12 @@ return [
     | running in. This may determine how you prefer to configure various
     | services the application utilizes. Set this in your ".env" file.
     |
-    */
+     */
+    'seed_users' => env('USERS_INFO', ''),
+    'seed_courses' => env('COURSES_INFO', ''),
+    'canvas_base_url' => env('CANVAS_BASE_URL', ''),
+    'canvas_account_id' => env('CANVAS_ACCOUNT_ID', ''),
+    'canvas_api_key' => env('CANVAS_API_KEY', ''),
 
     'env' => env('APP_ENV', 'production'),
 

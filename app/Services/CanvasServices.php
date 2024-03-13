@@ -284,7 +284,7 @@ class CanvasServices
      */
     public function listUsers(): mixed
     {
-        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).USERS;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'users?enrollment_type=student';
 
         return $this->GET($base_url);
     }
