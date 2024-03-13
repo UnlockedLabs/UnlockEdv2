@@ -12,7 +12,7 @@ export default function Welcome({ auth }: PageProps) {
                         <Brand />
                     </div>
                     <div className="flex-none">
-                        <ul className="menu menu-horizontal px-1 text-white">
+                        <ul className="menu menu-horizontal px-1 text-primary">
                             {!auth.user ? (
                                 <>
                                     <li>
