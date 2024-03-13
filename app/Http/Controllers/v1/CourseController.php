@@ -15,7 +15,7 @@ class CourseController extends Controller
     public function index()
     {
         $perPage = request()->query('per_page', 10);
-        $sortBy = request()->query('sort', 'provider_course_name');
+        $sortBy = request()->query('sort', 'external_course_name');
         $sortOrder = request()->query('order', 'asc');
 
         $query = Course::query();
