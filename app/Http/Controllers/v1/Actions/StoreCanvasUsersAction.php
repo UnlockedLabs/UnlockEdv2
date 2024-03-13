@@ -20,6 +20,9 @@ class StoreCanvasUsersAction extends Controller
         $new_users = [];
         foreach ($users as $user) {
             // Check if we have the user already by the mapping so we have a unique key
+            if ($provider->providerUserMappings()->where('external_user_id', $user['id'])->exists()) {
+                continue;
+            }
             $user_profile = $canvas->getUserProfile($user['id']);
             $v2_user = User::create([
                 'username' => $user['login_id'],
