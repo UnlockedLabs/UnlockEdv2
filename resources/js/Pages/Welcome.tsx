@@ -66,20 +66,16 @@ export default function Welcome({ auth }: PageProps) {
                                 </div>
                                 <div className="timeline-start md:text-end mb-10">
                                     <time className="font-mono italic text-secondary">
-                                        1984
+                                        1997
                                     </time>
                                     <div className="text-lg font-black text-white">
-                                        First Macintosh computer
+                                        Young Beginnings
                                     </div>
-                                    The Apple Macintosh—later rebranded as the
-                                    Macintosh 128K—is the original Apple
-                                    Macintosh personal computer. It played a
-                                    pivotal role in establishing desktop
-                                    publishing as a general office function. The
-                                    motherboard, a 9 in (23 cm) CRT monitor, and
-                                    a floppy drive were housed in a beige case
-                                    with integrated carrying handle; it came
-                                    with a keyboard and single-button mouse.
+                                    Co-Founders Jessica Hicklin and Chris
+                                    Santillan met at Potosi Correctional Center
+                                    before both of their 18th birthdays. They
+                                    were sentenced to life without parole and
+                                    told they would die behind bars.
                                 </div>
                                 <hr />
                             </li>
@@ -101,17 +97,22 @@ export default function Welcome({ auth }: PageProps) {
                                 </div>
                                 <div className="timeline-end mb-10">
                                     <time className="font-mono italic text-secondary">
-                                        1998
+                                        1998 - 2017
                                     </time>
                                     <div className="text-lg font-black text-white">
-                                        iMac
+                                        Education Against the Odds
                                     </div>
-                                    iMac is a family of all-in-one Mac desktop
-                                    computers designed and built by Apple Inc.
-                                    It has been the primary part of Apple's
-                                    consumer desktop offerings since its debut
-                                    in August 1998, and has evolved through
-                                    seven distinct forms
+                                    Despite residing in a facility without
+                                    access to formal education for over a
+                                    quarter of a century, they were determined
+                                    to make a positive impact upon their own
+                                    lives and upon those with whom they lived
+                                    and worked with in their community. They
+                                    both maximized their circumstances, spending
+                                    years tutoring others to pass their
+                                    GED/Hi-Set exams and organizing victim
+                                    empathy and anger management courses for the
+                                    community.
                                 </div>
                                 <hr />
                             </li>
@@ -133,22 +134,17 @@ export default function Welcome({ auth }: PageProps) {
                                 </div>
                                 <div className="timeline-start md:text-end mb-10">
                                     <time className="font-mono italic text-secondary">
-                                        2001
+                                        2012 - 2017
                                     </time>
                                     <div className="text-lg font-black text-white">
-                                        iPod
+                                        Coding for Change
                                     </div>
-                                    The iPod is a discontinued series of
-                                    portable media players and multi-purpose
-                                    mobile devices designed and marketed by
-                                    Apple Inc. The first version was released on
-                                    October 23, 2001, about 8+1⁄2 months after
-                                    the Macintosh version of iTunes was
-                                    released. Apple sold an estimated 450
-                                    million iPod products as of 2022. Apple
-                                    discontinued the iPod product line on May
-                                    10, 2022. At over 20 years, the iPod brand
-                                    is the oldest to be discontinued by Apple
+                                    With limited resources, Jessica and Chris
+                                    both taught themselves how to code without
+                                    the internet. They dreamed of a day when
+                                    they could create a solution for ways to
+                                    track rehabilitation and educational
+                                    programs on the inside.
                                 </div>
                                 <hr />
                             </li>
@@ -170,21 +166,22 @@ export default function Welcome({ auth }: PageProps) {
                                 </div>
                                 <div className="timeline-end mb-10">
                                     <time className="font-mono italic text-secondary">
-                                        2007
+                                        2022
                                     </time>
                                     <div className="text-lg font-black text-white">
-                                        iPhone
+                                        Establishing Unlocked Labs
                                     </div>
-                                    iPhone is a line of smartphones produced by
-                                    Apple Inc. that use Apple's own iOS mobile
-                                    operating system. The first-generation
-                                    iPhone was announced by then-Apple CEO Steve
-                                    Jobs on January 9, 2007. Since then, Apple
-                                    has annually released new iPhone models and
-                                    iOS updates. As of November 1, 2018, more
-                                    than 2.2 billion iPhones had been sold. As
-                                    of 2022, the iPhone accounts for 15.6% of
-                                    global smartphone market share
+                                    Their lives took a turn when a Supreme Court
+                                    declared life sentences for juveniles
+                                    unconstitutional. In 2017, Jessica and Chris
+                                    shared their aspirations of reimagining
+                                    education within the correctional system
+                                    with Haley Shoaf. Released in early 2022,
+                                    they teamed up with Haley, who helped them
+                                    expand upon their vision, to form Unlocked
+                                    Labs, a non-profit dedicated to consulting
+                                    and developing products addressing
+                                    challenges within the justice system.
                                 </div>
                                 <hr />
                             </li>
@@ -206,17 +203,18 @@ export default function Welcome({ auth }: PageProps) {
                                 </div>
                                 <div className="timeline-start md:text-end mb-10">
                                     <time className="font-mono italic text-secondary">
-                                        2015
+                                        2022 - present
                                     </time>
                                     <div className="text-lg font-black text-white">
-                                        Apple Watch
+                                        UnlockED: A Vision Realized
                                     </div>
-                                    The Apple Watch is a line of smartwatches
-                                    produced by Apple Inc. It incorporates
-                                    fitness tracking, health-oriented
-                                    capabilities, and wireless
-                                    telecommunication, and integrates with iOS
-                                    and other Apple products and services
+                                    Teaming up with external partners, they
+                                    developed UnlockEd, a non-profit, open
+                                    source education access and program
+                                    management system providing free education
+                                    to incarcerated individuals across the
+                                    country, fulfilling a long time dream, and
+                                    bringing the project full circle.
                                 </div>
                             </li>
                         </ul>
