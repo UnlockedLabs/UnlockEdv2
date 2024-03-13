@@ -42,7 +42,7 @@ export default function CourseContent({ user }: { user: User }) {
                             <p>
                                 {truncateDescription(
                                     course.course_description
-                                        ? course.coursse_description
+                                        ? course.course_description
                                         : "",
                                 )}
                             </p>
