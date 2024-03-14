@@ -18,16 +18,17 @@ class UserActivityController extends Controller
         $sortOrder = $request->query('order', 'asc');
         $search = $request->query('search', '');
 
-        $query = UserActivity::query();
-
+        $query = UserActivity::query()->join('users', 'users.id', '=', 'user_activities.user_id');
+    
         // Apply search
-        if ($search) {
+        if ($search !== null) {
             $query->where(function ($query) use ($search) {
-                $query->where('browser_name', 'like', '%'.$search.'%')
-                    ->orWhere('clicked_url', 'like', '%'.$search.'%');
+                $query->where('name_first', 'like', '%' . $search . '%')
+                      ->orWhere('name_last', 'like', '%' . $search . '%')
+                      ->orWhere('clicked_url', 'like', '%' . $search . '%');
             });
         }
-
+        
         // Check if the user is an admin
         if ($request->user()->isAdmin()) {
             $query->orderBy($sortBy, $sortOrder);
