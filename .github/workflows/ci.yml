@@ -49,6 +49,8 @@ jobs:
         run: php artisan key:generate --env=testing
 
       - name: Run Testsuite
+        env:
+          CANVAS_API_KEY: ${{ secrets.CANVAS_API_KEY }}
         run: php artisan test
 
   deploy:
