@@ -35,7 +35,7 @@ class ProviderPlatform extends Model
 
     public function getCanvasServices(): \App\Services\CanvasServices
     {
-        return \App\Services\CanvasServices::byProviderId($this['id']);
+        return new \App\Services\CanvasServices($this['id'], $this['account_id'], $this['access_key'], $this['base_url']);
     }
 
     // public function hashAccessKey()
@@ -48,6 +48,6 @@ class ProviderPlatform extends Model
 
     public function providerUserMappings()
     {
-        return $this->hasMany('App\Models\ProviderUserMapping');
+        return $this->hasMany('\App\Models\ProviderUserMapping');
     }
 }
