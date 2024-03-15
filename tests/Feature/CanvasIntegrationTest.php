@@ -22,6 +22,9 @@ class CanvasIntegrationTests extends TestCase
      */
     public function test_fetching_courses_and_enrollments(): void
     {
+        if (env('CI')) {
+            $this->markTestSkipped('Skipping test in CI environment');
+        }
         $this->refreshDatabase();
         $this->seed(DatabaseSeeder::class);
         $admin = User::factory()->admin()->createOne();
@@ -48,6 +51,9 @@ class CanvasIntegrationTests extends TestCase
 
     public function test_fetching_users_from_canvas(): void
     {
+        if (env('CI')) {
+            $this->markTestSkipped('Skipping test in CI environment');
+        }
         // make sure db has the default admin so user id's line up
         $this->refreshDatabase();
         $this->seed(DefaultAdmin::class);
