@@ -40,7 +40,7 @@ class Enrollment extends Model
 
     public function isForProvider(int $provider_id)
     {
-        return ($this->course->provider_platform_id == $provider_id);
+        return $this->course->provider_platform_id == $provider_id;
     }
 
     public function course()

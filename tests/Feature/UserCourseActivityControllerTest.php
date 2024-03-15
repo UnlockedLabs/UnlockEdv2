@@ -3,15 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\Course;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use App\Models\User;
-use Tests\TestCase;
 use Database\Seeders\TestSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class UserCourseActivityControllerTest extends TestCase
 {
     use RefreshDatabase;
+
     /**
      * A basic feature test example.
      */
@@ -67,6 +67,7 @@ class UserCourseActivityControllerTest extends TestCase
         ]);
         $response->assertStatus(200);
     }
+
     public function test_get_all_course_activity_for_user_and_course(): void
     {
         $this->seed(TestSeeder::class);

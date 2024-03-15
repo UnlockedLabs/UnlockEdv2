@@ -2,12 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Enums\ProviderPlatformState;
 use App\Enums\UserRole;
 use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
-use App\Models\UserCanvasActivity;
 use App\Models\UserCourseActivity;
 use DateTimeImmutable;
 use Illuminate\Bus\Queueable;
@@ -21,24 +19,22 @@ use Illuminate\Queue\SerializesModels;
  *
  * Currently this will fetch from canvas, but will be added to
  * in the future to include other platforms
- *
- * @package App\Jobs
  */
 class UserCourseActivityTask implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $users;
+
     protected $providers;
+
     /**
      * Create a new job instance.
      */
     public function __construct()
     {
         $this->users = User::where('role', UserRole::Student)->get();
-        echo "Users: " . $this->users;
         $this->providers = ProviderPlatform::all();
-        echo "Providers: " . $this->providers;
     }
 
     /**
@@ -70,7 +66,7 @@ class UserCourseActivityTask implements ShouldQueue
                         'user_id' => $user->id,
                         'enrollment_id' => $enrollment_id,
                         'has_activity' => $had_activity,
-                        'total_activity' => $total_activity
+                        'total_activity' => $total_activity,
                     ]);
                 }
             }

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class UserCourseActivityFactory extends Factory
 {
     protected $model = UserCourseActivity::class;
+
     /**
      * Define the model's default state.
      *
@@ -32,6 +33,7 @@ class UserCourseActivityFactory extends Factory
             'date' => $date,
         ]);
     }
+
     public function forUser($user_id): static
     {
         return $this->state(fn (array $attributes) => [

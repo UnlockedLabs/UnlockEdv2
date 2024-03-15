@@ -36,7 +36,7 @@ class TestSeeder extends Seeder
                 $random_start_time = rand(1000, 100000);
                 while ($date < $now) {
                     $activity = UserCourseActivity::factory()->forDate($date)->forUser($user->id)->forEnrollment($enrollment->id)->makeOne();
-                    if (!$activity->has_activity) {
+                    if (! $activity->has_activity) {
                         $activity['external_total_activity_time'] = $random_start_time;
                         $activity->save();
                     } else {

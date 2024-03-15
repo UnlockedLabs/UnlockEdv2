@@ -21,7 +21,7 @@ class UserCourseActivityTest extends TestCase
         $this->seed(DefaultAdmin::class);
         $admin = User::factory()->admin()->createOne();
         // import canvas users into the system
-        $resp =  $this->actingAs($admin)->post('api/v1/actions/import-canvas-users', ['provider_platform_id' => 1]);
+        $resp = $this->actingAs($admin)->post('api/v1/actions/import-canvas-users', ['provider_platform_id' => 1]);
         $resp->assertSuccessful();
         $resp = $this->actingAs($admin)->post('api/v1/actions/store-canvas-courses', ['provider_platform_id' => 1]);
         $resp->assertSuccessful();
