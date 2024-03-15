@@ -35,3 +35,26 @@ export interface Activity {
     user_name_first: string;
     user_name_last: string;
 }
+
+export interface ProviderPlatform {
+    access_key: string;
+    account_id: string;
+    base_url: string;
+    description: string;
+    icon_url: string;
+    id: number;
+    name: string;
+    state: ProviderPlatformState;
+    type: ProviderPlatformType;
+}
+
+export enum ProviderPlatformState {
+    ENABLED = "enabled",
+    DISABLED = "disabled",
+    ARCHIVED = "archived",
+}
+
+export enum ProviderPlatformType {
+    CANVAS_CLOUD = "canvas_cloud",
+    CANVAS_OSS = "canvas_oss",
+}
