@@ -3,8 +3,9 @@ import {
     ArrowRightOnRectangleIcon,
     HomeIcon,
     UsersIcon,
-    PencilSquareIcon,
     ChartBarIcon,
+    RectangleStackIcon,
+    ArchiveBoxIcon,
 } from "@heroicons/react/24/solid";
 import { Link } from "@inertiajs/react";
 import ThemeToggle from "./ThemeToggle";
@@ -91,8 +92,14 @@ export default function PageNav({
                                         </li>
                                         <li>
                                             <a href="/left-menu-management">
-                                                <PencilSquareIcon className="h-4" />
+                                                <ArchiveBoxIcon className="h-4" />
                                                 Left Menu
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="/provider-platform-management">
+                                                <RectangleStackIcon className="h-4" />
+                                                Platforms
                                             </a>
                                         </li>
                                     </>

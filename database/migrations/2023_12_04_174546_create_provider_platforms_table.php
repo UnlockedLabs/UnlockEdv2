@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('type');
             $table->string('name');
             $table->string('description')->nullable();
-            $table->string('icon_url');
+            $table->string('icon_url')->nullable();
             $table->string('account_id');
             $table->string('access_key');
             $table->string('base_url');
