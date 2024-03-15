@@ -18,9 +18,9 @@ class ProviderPlatformController extends Controller
     public function index(AdminRequest $request)
     {
         $request->authorize();
-        $providerPlatforms = ProviderPlatform::paginate(10);
+        $providerPlatforms = ProviderPlatform::all();
 
-        return PaginateResource::make($providerPlatforms, ProviderPlatformResource::class);
+        return ProviderPlatformResource::collection($providerPlatforms);
     }
 
     /**
