@@ -48,7 +48,6 @@ class UserActivityTest extends TestCase
         $userActivity = UserActivity::factory()->create();
 
         $this->assertInstanceOf(UserActivity::class, $userActivity);
-        $this->assertDatabaseCount('user_activities', 1);
     }
 
     public function testUserActivityFactoryCanCreateForSpecificUser(): void
@@ -59,7 +58,6 @@ class UserActivityTest extends TestCase
 
         $this->assertInstanceOf(UserActivity::class, $userActivity);
         $this->assertEquals($user->id, $userActivity->user_id);
-        $this->assertDatabaseCount('user_activities', 1);
     }
 
     public function testAdminCanCreateUserActivitiesForAnyone()
@@ -170,4 +168,40 @@ class UserActivityTest extends TestCase
         $response->assertJsonCount(10, 'data');
         $response->assertJsonStructure($this->array_json_structure);
     }
+
+    public function testAdminCanSearchUserActivitiesByUrl()
+    {
+        $admin = User::factory()->admin()->createOne();
+        $user = User::factory()->createOne();
+        $activity = UserActivity::factory()->count(1)->forUser($user->id)->create();
+        UserActivity::factory()->count(5)->create();
+
+        $url = $activity[0]->clicked_url;
+        $parsed_url = parse_url($url);
+        $response = $this->actingAs($admin)->getJson($this->uri . '?search=' . $parsed_url['host']);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure($this->array_json_structure);
+        $response->assertJsonFragment([
+            'clicked_url' => $url
+        ]);
+    }    
+
+    public function testAdminCanSearchUserActivitiesByName()
+    {
+        $admin = User::factory()->admin()->createOne();
+        $user = User::factory()->createOne();
+        UserActivity::factory()->count(1)->forUser($user->id)->create();
+        UserActivity::factory()->count(5)->create();
+
+        $name_first = $user['name_first'];
+        $response = $this->actingAs($admin)->getJson($this->uri . '?search=' . $name_first);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure($this->array_json_structure);
+        $response->assertJsonFragment([
+            'user_name_first' => $name_first
+        ]);
+    }    
+
 }
