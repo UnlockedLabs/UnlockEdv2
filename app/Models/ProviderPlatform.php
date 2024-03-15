@@ -38,6 +38,11 @@ class ProviderPlatform extends Model
         return new \App\Services\CanvasServices($this['id'], $this['account_id'], $this['access_key'], $this['base_url']);
     }
 
+    public function hasUserMapping($user)
+    {
+        return $this->providerUserMappings()->where('user_id', $user->id)->exists();
+    }
+
     // public function hashAccessKey()
     // {
     //     $accessKey = $this->access_key;

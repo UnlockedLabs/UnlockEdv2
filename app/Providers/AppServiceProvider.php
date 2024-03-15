@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Jobs\UserCourseActivityTask;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->app->bindMethod([UserCourseActivityTask::class, 'handle'], function ($job, $app) {
+            return $job->handle();
+        });
     }
 }
