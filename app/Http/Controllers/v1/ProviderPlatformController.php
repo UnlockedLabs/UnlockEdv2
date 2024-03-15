@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
 use App\Http\Requests\StoreProviderPlatformRequest;
 use App\Http\Requests\UpdateProviderPlatformRequest;
-use App\Http\Resources\PaginateResource;
 use App\Http\Resources\ProviderPlatformResource;
 use App\Models\ProviderPlatform;
 
