@@ -14,21 +14,22 @@ class UserActivityController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->query('per_page', 10);
-        $sortBy = $request->query('sort', 'created_at'); // Change 'rank' to 'created_at' for timestamps
+        $sortBy = $request->query('sort', 'user_activities.created_at'); // Change 'rank' to 'created_at' for timestamps
         $sortOrder = $request->query('order', 'asc');
         $search = $request->query('search', '');
 
         $query = UserActivity::query()->join('users', 'users.id', '=', 'user_activities.user_id');
-    
+        $query->orderBy('user_activities.created_at', $sortOrder);
+
         // Apply search
         if ($search !== null) {
             $query->where(function ($query) use ($search) {
-                $query->where('name_first', 'like', '%' . $search . '%')
-                      ->orWhere('name_last', 'like', '%' . $search . '%')
-                      ->orWhere('clicked_url', 'like', '%' . $search . '%');
+                $query->where('name_first', 'like', '%'.$search.'%')
+                    ->orWhere('name_last', 'like', '%'.$search.'%')
+                    ->orWhere('clicked_url', 'like', '%'.$search.'%');
             });
         }
-        
+
         // Check if the user is an admin
         if ($request->user()->isAdmin()) {
             $query->orderBy($sortBy, $sortOrder);
