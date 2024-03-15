@@ -8,6 +8,7 @@ use App\Enums\AuthProviderStatus;
 use App\Enums\ProviderPlatformState;
 use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
@@ -43,7 +44,7 @@ class DatabaseSeeder extends Seeder
             'icon_url' => 'https://www.instructure.com/images/favicon.ico',
             'account_id' => env('CANVAS_ACCOUNT_ID'),
             'base_url' => env('CANVAS_BASE_URL'),
-            'access_key' => env('CANVAS_API_KEY'),
+            'access_key' => Crypt::encryptString(env('CANVAS_API_KEY')),
             'state' => ProviderPlatformState::ENABLED,
         ]);
         $usersInfo = env('USERS_INFO', '');

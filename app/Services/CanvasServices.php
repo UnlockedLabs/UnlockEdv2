@@ -11,6 +11,7 @@ use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Crypt;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -83,7 +84,7 @@ class CanvasServices
 
         $this->provider_id = $providerId;
         $this->account_id = $accountId;
-        $this->access_key = $apiKey;
+        $this->access_key = Crypt::decryptString($apiKey);
         $this->base_url = $url;
         $this->client = new Client();
     }

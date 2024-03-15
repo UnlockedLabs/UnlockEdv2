@@ -30,7 +30,7 @@ class StoreProviderPlatformRequest extends FormRequest
             'description' => 'nullable|string|max:255',
             'icon_url' => 'nullable|url:http,https',
             'account_id' => 'required|unique:provider_platforms,account_id',
-            'access_key' => 'required|unique:provider_platforms,access_key',
+            'access_key' => 'required|string|max:255',
             'base_url' => 'required|url:http,https',
             'state' => [Rule::enum(ProviderPlatformState::class)],
         ];

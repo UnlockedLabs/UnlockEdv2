@@ -17,7 +17,7 @@ class UserCourseActivityResource extends JsonResource
         return [
             'user_id' => $this->user_id,
             'username' => $this->user->username,
-            'course_name' => $this->course->external_course_name,
+            'course_name' => $this->enrollment->course->external_course_name,
             'enrollment_id' => $this->enrollment_id,
             'total_time' => $this->external_total_activity_time,
             'has_activity' => $this->external_has_activity,
