@@ -51,7 +51,7 @@ class ProviderPlatformController extends Controller
         $show_key = $request->query('show_key', false);
         $request->authorize();
         $provider_platform = ProviderPlatform::findOrFail($id);
-        if (!$show_key) {
+        if (! $show_key) {
             return ProviderPlatformResource::make($provider_platform);
         }
         $key = $provider_platform->access_key;
@@ -78,7 +78,7 @@ class ProviderPlatformController extends Controller
             ], 422);
         }
         $providerPlatform = ProviderPlatform::findOrFail($id);
-        if (array_key_exists('access_key', $validated) && !is_null($validated['access_key'])) {
+        if (array_key_exists('access_key', $validated) && ! is_null($validated['access_key'])) {
             $providerPlatform->encryptAccessKey($validated['access_key']);
             $providerPlatform->save();
         }

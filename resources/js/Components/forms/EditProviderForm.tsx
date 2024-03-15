@@ -27,7 +27,8 @@ export default function EditProviderForm({
 }) {
     const [errorMessage, setErrorMessage] = useState("");
     const [showAdditionalFields, setShowAdditionalFields] = useState(false);
-
+    const [showAccessKey, setShowAccessKey] = useState(false);
+    const [accessKey, setAccessKey] = useState("");
     const {
         register,
         handleSubmit,
@@ -45,6 +46,22 @@ export default function EditProviderForm({
             state: provider.state,
         },
     });
+
+    const getAccessKey = async () => {
+        if (showAccessKey) {
+            setShowAccessKey(false);
+            return;
+        }
+        try {
+            const response = await axios.get(
+                `/api/v1/provider-platforms/${provider?.id}?show_key=true`,
+            );
+            setAccessKey(response.data.data["access_key"]);
+            setShowAccessKey(true);
+        } catch (error: any) {
+            setErrorMessage(error.response.data.message);
+        }
+    };
 
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         console.log(data);
@@ -211,23 +228,31 @@ export default function EditProviderForm({
                         {errors.account_id && errors.account_id?.message}
                     </div>
                 </label>
-
                 <label className="form-control">
                     <div className="label">
                         <span className="label-text">Access Key</span>
                     </div>
+                    {
+                        <div className="btn btn-primary" onClick={getAccessKey}>
+                            {showAccessKey
+                                ? `Hide Access Key`
+                                : `Show Access Key`}
+                        </div>
+                    }
+                    {showAccessKey && (
+                        <div className="text-xs pt-5 pb-5">{accessKey}</div>
+                    )}
                     <input
                         type="text"
                         className="input input-bordered w-full"
                         {...register("access_key", {
-                            required: "Access key is required",
+                            required: "Access Key is required",
                         })}
                     />
                     <div className="text-error text-sm">
                         {errors.access_key && errors.access_key?.message}
                     </div>
                 </label>
-
                 <label className="form-control">
                     <div className="label">
                         <span className="label-text">Icon URL</span>
