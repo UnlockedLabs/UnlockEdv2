@@ -28,10 +28,14 @@ class StoreUserCourseController extends Controller
         $courseCollection = collect();
         foreach ($canvasCourses as $course) {
             if (isset($course['public_description'])) {
-                $request->merge(['public_description' => $course['public_description'] ?? '']);
+                $request->merge(['description' => $course['public_description']]);
+            } else {
+                $request->merge(['description' => '']);
             }
-            if (isset($course['course_image'])) {
-                $request->merge(['img_url' => $course['course_image'] ?? '']);
+            if (isset($course['image_download_url'])) {
+                $request->merge(['img_url' => $course['image_download_url']]);
+            } else {
+                $request->merge(['img_url' => '']);
             }
             $request->merge([
                 'external_resource_id' => $course['id'], 'external_course_name' => $course['name'], 'provider_platform_id' => $request['provider_platform_id'],
