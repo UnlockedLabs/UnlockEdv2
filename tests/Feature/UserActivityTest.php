@@ -178,14 +178,14 @@ class UserActivityTest extends TestCase
 
         $url = $activity[0]->clicked_url;
         $parsed_url = parse_url($url);
-        $response = $this->actingAs($admin)->getJson($this->uri . '?search=' . $parsed_url['host']);
+        $response = $this->actingAs($admin)->getJson($this->uri.'?search='.$parsed_url['host']);
 
         $response->assertStatus(200);
         $response->assertJsonStructure($this->array_json_structure);
         $response->assertJsonFragment([
-            'clicked_url' => $url
+            'clicked_url' => $url,
         ]);
-    }    
+    }
 
     public function testAdminCanSearchUserActivitiesByName()
     {
@@ -195,13 +195,13 @@ class UserActivityTest extends TestCase
         UserActivity::factory()->count(5)->create();
 
         $name_first = $user['name_first'];
-        $response = $this->actingAs($admin)->getJson($this->uri . '?search=' . $name_first);
+        $response = $this->actingAs($admin)->getJson($this->uri.'?search='.$name_first);
 
+        print_r($response);
         $response->assertStatus(200);
         $response->assertJsonStructure($this->array_json_structure);
         $response->assertJsonFragment([
-            'user_name_first' => $name_first
+            'user_name_first' => $name_first,
         ]);
-    }    
-
+    }
 }
