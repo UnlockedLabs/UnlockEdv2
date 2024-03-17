@@ -189,7 +189,12 @@ export default function Users({ auth }: PageProps) {
             <dialog ref={editUserModal} className="modal">
                 <div className="modal-box">
                     <form method="dialog">
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                        <button
+                            className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+                            onClick={() => {
+                                setTargetUser(null);
+                            }}
+                        >
                             ✕
                         </button>
                     </form>
@@ -202,6 +207,7 @@ export default function Users({ auth }: PageProps) {
                             onSuccess={() => {
                                 mutate();
                                 editUserModal.current?.close();
+                                setTargetUser(null);
                             }}
                             user={targetUser}
                         />
