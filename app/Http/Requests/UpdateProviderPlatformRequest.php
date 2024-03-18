@@ -23,13 +23,13 @@ class UpdateProviderPlatformRequest extends FormRequest
     {
         return [
             'name' => 'nullable|string|max:255',
-            'type' => 'required|string',
+            'type' => 'nullable|string',
             'description' => 'nullable|string|max:255',
             'icon_url' => 'nullable|url:http,https',
             'account_id' => 'nullable|int',
             'access_key' => 'nullable|string|max:255',
             'base_url' => 'nullable|url:http,https',
-            'state' => 'required|string',
+            'state' => 'nullable|string',
         ];
     }
 }

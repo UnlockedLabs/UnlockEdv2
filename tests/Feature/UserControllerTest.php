@@ -59,9 +59,10 @@ class UserControllerTest extends TestCase
     {
         $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate', 'role' => UserRole::ADMIN]);
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate', 'role' => UserRole::ADMIN->value]);
         $response->assertStatus(200);
         $this->assertTrue($response['data']['name_first'] == 'TestUpdate');
+        $this->assertTrue($response['data']['role'] == UserRole::ADMIN->value);
         $response->assertJsonStructure([
             'data' => [
                 'id',

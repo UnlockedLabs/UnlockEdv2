@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enums\ProviderPlatformState;
 use App\Enums\UserRole;
 use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
@@ -34,7 +35,7 @@ class UserCourseActivityTask implements ShouldQueue
     public function __construct()
     {
         $this->users = User::where('role', UserRole::STUDENT)->get();
-        $this->providers = ProviderPlatform::all();
+        $this->providers = ProviderPlatform::where('state', ProviderPlatformState::ENABLED)->get();
     }
 
     /**
