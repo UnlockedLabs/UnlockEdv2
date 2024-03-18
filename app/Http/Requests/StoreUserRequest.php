@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -26,7 +28,7 @@ class StoreUserRequest extends FormRequest
             'name_last' => 'required|string|max:35',
             'email' => 'nullable|email|max:90|unique:users',
             'username' => 'required|string|max:70|unique:users',
-            'role' => 'required|string|in:student,admin',
+            'role' => [Rule::Enum(UserRole::class)],
         ];
     }
 }

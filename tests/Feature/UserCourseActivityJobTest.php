@@ -29,7 +29,7 @@ class UserCourseActivityJob extends TestCase
         $resp = $this->actingAs($admin)->post('api/v1/actions/store-canvas-courses', ['provider_platform_id' => 1]);
         $resp->assertSuccessful();
 
-        $users = User::where('role', UserRole::Student)->get();
+        $users = User::where('role', UserRole::STUDENT)->get();
         foreach ($users as $user) {
             $id = $user->id;
             $resp = $this->actingAs($admin)->post('api/v1/actions/store-user-enrollments', ['provider_platform_id' => 1, 'user_id' => $id]);

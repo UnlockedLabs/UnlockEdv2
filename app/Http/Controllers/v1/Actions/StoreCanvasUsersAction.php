@@ -29,7 +29,7 @@ class StoreCanvasUsersAction extends Controller
                 'email' => $user_profile['email'],
                 'name_first' => $user_profile['first_name'],
                 'name_last' => $user_profile['last_name'],
-                'role' => UserRole::Student,
+                'role' => UserRole::STUDENT,
                 'password' => bcrypt('ChangeMe!'),
                 'password_reset' => true,
             ]);

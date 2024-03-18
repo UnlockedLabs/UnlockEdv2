@@ -29,7 +29,7 @@ class StoreProviderPlatformRequest extends FormRequest
             'type' => [Rule::enum(ProviderPlatformType::class)],
             'description' => 'nullable|string|max:255',
             'icon_url' => 'nullable|url:http,https',
-            'account_id' => 'required|unique:provider_platforms,account_id',
+            'account_id' => 'required|integer',
             'access_key' => 'required|string|max:255',
             'base_url' => 'required|url:http,https',
             'state' => [Rule::enum(ProviderPlatformState::class)],

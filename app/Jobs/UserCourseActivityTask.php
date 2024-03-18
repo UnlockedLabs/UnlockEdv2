@@ -33,7 +33,7 @@ class UserCourseActivityTask implements ShouldQueue
      */
     public function __construct()
     {
-        $this->users = User::where('role', UserRole::Student)->get();
+        $this->users = User::where('role', UserRole::STUDENT)->get();
         $this->providers = ProviderPlatform::all();
     }
 

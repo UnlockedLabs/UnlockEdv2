@@ -63,7 +63,7 @@ class CanvasIntegrationTests extends TestCase
         ];
         $resp = $this->actingAs($admin)->post('api/v1/actions/import-canvas-users', $req);
         $resp->assertSuccessful();
-        $users = User::where(['role' => UserRole::Student])->get();
+        $users = User::where(['role' => UserRole::STUDENT])->get();
         $this->assertDatabaseCount('users', 7);
         foreach ($users as $user) {
             // assert each has a provider mapping, and that they exist

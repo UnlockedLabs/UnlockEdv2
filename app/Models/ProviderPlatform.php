@@ -46,7 +46,7 @@ class ProviderPlatform extends Model
 
     public function getCanvasServices(): \App\Services\CanvasServices
     {
-        return new \App\Services\CanvasServices($this['id'], $this['account_id'], $this['access_key'], $this['base_url']);
+        return new \App\Services\CanvasServices($this->attributes['id'], $this->attributes['account_id'], $this->attributes['access_key'], $this->attributes['base_url']);
     }
 
     public function hasUserMapping($user)

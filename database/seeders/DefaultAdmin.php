@@ -23,7 +23,7 @@ class DefaultAdmin extends Seeder
             'username' => 'SuperAdmin',
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
-            'role' => UserRole::Admin,
+            'role' => UserRole::ADMIN,
         ]);
         DB::table('provider_platforms')->insert([
             'type' => ProviderPlatformType::CANVAS_OSS,

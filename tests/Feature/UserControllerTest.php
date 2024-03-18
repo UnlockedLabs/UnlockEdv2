@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -58,7 +59,7 @@ class UserControllerTest extends TestCase
     {
         $this->seed(TestSeeder::class);
         $user = \App\Models\User::factory()->admin()->create();
-        $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate']);
+        $response = $this->actingAs($user)->patch($this->uri.'/'.$user->id, ['name_first' => 'TestUpdate', 'role' => UserRole::ADMIN]);
         $response->assertStatus(200);
         $this->assertTrue($response['data']['name_first'] == 'TestUpdate');
         $response->assertJsonStructure([

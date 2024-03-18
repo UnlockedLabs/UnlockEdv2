@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'username' => 'SuperAdmin',
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
-            'role' => UserRole::Admin,
+            'role' => UserRole::ADMIN,
         ]);
         DB::table('categories')->insert([
             'name' => 'Unlocked Labs',
@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
                     'name_last' => $userInfo[3],
                     'password' => bcrypt('ChangeMe!'),
                     'password_reset' => true,
-                    'role' => UserRole::Admin,
+                    'role' => UserRole::ADMIN,
                 ]);
                 if (count($userInfo) > 4) {
                     // there is provider info included
