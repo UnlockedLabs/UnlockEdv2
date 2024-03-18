@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\v1;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
 use App\Http\Requests\ShowUserRequest;
@@ -45,7 +46,14 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(StoreUserRequest $request)
+    /* enum validation not working properly regardless of what I did had to manually assign */
     {
+
+        $role = match ($request['role']) {
+            'admin' => UserRole::Admin,
+            'student' => UserRole::Student,
+        };
+
         try {
             $user = $request->validated();
         } catch (\Throwable $th) {
@@ -55,6 +63,7 @@ class UserController extends Controller
             ], 422);
         }
         $newUser = new User($user);
+        $newUser->role = $role;
         $pw = $newUser->createTempPassword();
 
         return response(NewUserResource::withPassword($newUser, $pw), 201);

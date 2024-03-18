@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useDebounce } from "usehooks-ts";
 import useSWR from "swr";
+import axios from "axios";
 
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
@@ -28,6 +29,14 @@ export default function Users({ auth }: PageProps) {
 
     const [targetUser, setTargetUser] = useState<null | User>(null);
 
+    const showUserPassword = useRef<null | HTMLDialogElement>(null);
+    const [tempPassword, setTempPassword] = useState("");
+    const [toast, setToast] = useState({
+        message: "",
+        type: "success",
+        isVisible: false,
+    });
+
     const [searchTerm, setSearchTerm] = useState("");
     const searchQuery = useDebounce(searchTerm, 300);
 
@@ -40,6 +49,63 @@ export default function Users({ auth }: PageProps) {
     );
 
     const userData = data as PaginatedData<User>;
+
+    const showToast = (message: string, type = "success") => {
+        setToast({ message, type, isVisible: true });
+        setTimeout(() => {
+            setToast((t) => ({ ...t, isVisible: false }));
+        }, 5000);
+    };
+
+    const getTempPassword = async () => {
+        resetUserPasswordModal.current?.close();
+        showUserPassword.current?.showModal();
+
+        try {
+            const response = await axios("/student-password", {
+                method: "post",
+                headers: { ContentType: "application/json" },
+                data: { user_id: targetUser?.id },
+            });
+
+            if (response.status !== 201) {
+                showUserPassword.current?.close();
+                showToast(response.data.data.message, "error");
+                return;
+            }
+
+            setTempPassword(response.data.data["password"]);
+            showToast(response.data.message, "success");
+            return;
+        } catch (error: any) {
+            showUserPassword.current?.close();
+            showToast(error.response.data.message, "error");
+            return;
+        }
+    };
+
+    const deleteUser = async () => {
+        const response = await axios("/api/v1/users/" + targetUser?.id, {
+            method: "delete",
+            headers: { ContentType: "application/json" },
+        });
+        const toastType = response.status == 204 ? "success" : "error";
+        const message =
+            response.status == 204
+                ? "User deleted successfully"
+                : response.statusText;
+        deleteUserModal.current?.close();
+        showToast(message, toastType);
+        setTargetUser(null);
+        return;
+    };
+
+    const onAddUserSuccess = (pswd = "", msg: string, type: string) => {
+        showToast(msg, type);
+        addUserModal.current?.close();
+        setTempPassword(pswd);
+        showUserPassword.current?.showModal();
+    };
 
     return (
         <AuthenticatedLayout user={auth.user} title="Users">
@@ -130,9 +196,10 @@ export default function Users({ auth }: PageProps) {
                                                 >
                                                     <ArrowPathRoundedSquareIcon
                                                         className="h-4"
-                                                        onClick={() =>
-                                                            resetUserPasswordModal.current?.showModal()
-                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            resetUserPasswordModal.current?.showModal();
+                                                        }}
                                                     />
                                                 </div>
                                                 <div
@@ -141,9 +208,10 @@ export default function Users({ auth }: PageProps) {
                                                 >
                                                     <TrashIcon
                                                         className="h-4"
-                                                        onClick={() =>
-                                                            deleteUserModal.current?.showModal()
-                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            deleteUserModal.current?.showModal();
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
@@ -169,19 +237,11 @@ export default function Users({ auth }: PageProps) {
             {/* Modals */}
             <dialog ref={addUserModal} className="modal">
                 <div className="modal-box">
-                    <form method="dialog">
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                            ✕
-                        </button>
-                    </form>
-
                     <div className="flex flex-col">
                         <span className="text-3xl font-semibold pb-6 text-neutral">
                             Add User
                         </span>
-                        <AddUserForm
-                            onSuccess={() => addUserModal.current?.close()}
-                        />
+                        <AddUserForm onSuccess={onAddUserSuccess} />
                     </div>
                 </div>
             </dialog>
@@ -218,15 +278,52 @@ export default function Users({ auth }: PageProps) {
             <dialog ref={resetUserPasswordModal} className="modal">
                 <div className="modal-box">
                     <h3 className="font-bold text-xl">
-                        Reset User's Password?
+                        <p>Reset User's Password?</p>
                     </h3>
+                    <h4 className="font-bold text-l text-secondary">
+                        <br />
+                        <p>Note: Only for non-administrator accounts.</p>
+                    </h4>
                     <p className="py-4"></p>
                     <div className="modal-action">
-                        <button className="btn btn-warning">Reset</button>
+                        <button
+                            className="btn btn-warning"
+                            onClick={() => {
+                                getTempPassword();
+                            }}
+                        >
+                            Reset
+                        </button>
                         <form method="dialog">
                             {/* if there is a button in form, it will close the modal */}
-                            <button className="btn">Close</button>
+                            <button
+                                className="btn"
+                                onClick={() => setTempPassword("")}
+                            >
+                                Close
+                            </button>
                         </form>
+                    </div>
+                </div>
+            </dialog>
+
+            <dialog ref={showUserPassword} className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-xl">
+                        Temporary Password for {targetUser?.username}
+                    </h3>
+                    <br />
+                    <p className="py-4 text-xl">{tempPassword}</p>
+                    <h4 className="font-bold text-l text-secondary">
+                        <p>Be sure to write this down</p>
+                    </h4>
+                    <div className="modal-action">
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => showUserPassword.current?.close()}
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             </dialog>
@@ -236,43 +333,38 @@ export default function Users({ auth }: PageProps) {
                     <h3 className="font-bold text-xl">Delete User?</h3>
                     <p className="py-4"></p>
                     <div className="modal-action">
-                        <button className="btn btn-warning">Delete</button>
+                        <button
+                            className="btn btn-warning"
+                            onClick={deleteUser}
+                        >
+                            Delete
+                        </button>
                         <form method="dialog">
                             {/* if there is a button in form, it will close the modal */}
-                            <button className="btn">Close</button>
+                            <button
+                                className="btn"
+                                onClick={() => setTargetUser(null)}
+                            >
+                                Close
+                            </button>
                         </form>
                     </div>
                 </div>
             </dialog>
 
             {/* Toasts */}
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User created!</span>
+            {toast.isVisible && (
+                <div
+                    className={`toast transition-opacity duration-500 ease-out ${
+                        toast.isVisible ? "opacity-100" : "opacity-0"
+                    }`}
+                >
+                    <div className={`alert alert-${toast.type}`}>
+                        <CheckCircleIcon className="h-6" />
+                        <span>{toast.message}</span>
+                    </div>
                 </div>
-            </div>
-
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User updated!</span>
-                </div>
-            </div>
-
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User password reset!</span>
-                </div>
-            </div>
-
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User deleted!</span>
-                </div>
-            </div>
+            )}
         </AuthenticatedLayout>
     );
 }
