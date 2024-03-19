@@ -8,6 +8,7 @@ use App\Models\ProviderPlatform;
 use App\Models\ProviderUserMapping;
 use App\Models\User;
 use App\Models\UserActivity;
+use App\Models\UserCourseActivity;
 use Illuminate\Database\Seeder;
 
 class TestSeeder extends Seeder
@@ -28,7 +29,23 @@ class TestSeeder extends Seeder
             UserActivity::factory(5)->forUser($user->id)->createOne();
             // create an enrollment for each user and course
             foreach ($courses as $course) {
-                Enrollment::factory()->forUser($user->id)->forCourse($course->id)->createOne();
+                $enrollment = Enrollment::factory()->forUser($user->id)->forCourse($course->id)->createOne();
+                // we need to create activity for each day since the enrollment began
+                $date = $enrollment->external_start_at;
+                $now = new \DateTimeImmutable('now');
+                $random_start_time = rand(1000, 100000);
+                while ($date < $now) {
+                    $activity = UserCourseActivity::factory()->forDate($date)->forUser($user->id)->forEnrollment($enrollment->id)->makeOne();
+                    if (! $activity->has_activity) {
+                        $activity['external_total_activity_time'] = $random_start_time;
+                        $activity->save();
+                    } else {
+                        $activity['external_total_activity_time'] = $random_start_time + rand(100, 1000);
+                        $activity->save();
+                        $random_start_time = $activity->total_activity_time;
+                    }
+                    $date = $date->add(new \DateInterval('P1D'));
+                }
             }
         }
     }

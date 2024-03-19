@@ -18,9 +18,9 @@ class UserActivityController extends Controller
         $sortOrder = $request->query('order', 'asc');
         $search = $request->query('search', '');
 
-        $query = UserActivity::query()->join('users', 'users.id', '=', 'user_activities.user_id');
+        $query = UserActivity::query()->join('users', 'user_activities.user_id', '=', 'users.id')
+            ->select('user_activities.*', 'users.name_first', 'users.name_last');
         $query->orderBy('user_activities.created_at', $sortOrder);
-
         // Apply search
         if ($search !== null) {
             $query->where(function ($query) use ($search) {
@@ -29,7 +29,6 @@ class UserActivityController extends Controller
                     ->orWhere('clicked_url', 'like', '%'.$search.'%');
             });
         }
-
         // Check if the user is an admin
         if ($request->user()->isAdmin()) {
             $query->orderBy($sortBy, $sortOrder);

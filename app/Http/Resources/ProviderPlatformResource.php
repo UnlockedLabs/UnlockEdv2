@@ -14,15 +14,14 @@ class ProviderPlatformResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // return parent::toArray($request);
         return [
             'id' => $this->id,
             'type' => $this->type,
             'name' => $this->name,
             'description' => $this->description,
             'icon_url' => $this->icon_url,
+            // don't return an access key unless they call 'show' with the id
             'account_id' => $this->account_id,
-            'access_key' => $this->access_key,
             'base_url' => $this->base_url,
             'state' => $this->state,
         ];

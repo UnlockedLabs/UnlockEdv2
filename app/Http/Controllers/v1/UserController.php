@@ -48,12 +48,11 @@ class UserController extends Controller
     public function store(StoreUserRequest $request)
     /* enum validation not working properly regardless of what I did had to manually assign */
     {
-
-        $role = match ($request['role']) {
-            'admin' => UserRole::Admin,
-            'student' => UserRole::Student,
+        $role = match ($request->role) {
+            'admin' => 'admin',
+            'student' => 'student',
+            default => 'student',
         };
-
         try {
             $user = $request->validated();
         } catch (\Throwable $th) {

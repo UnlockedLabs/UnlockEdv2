@@ -58,6 +58,11 @@ class User extends Authenticatable
             ->value('external_user_id') : $this->providerUserMappings()->sole()->external_user_id;
     }
 
+    public function userCourseActivity()
+    {
+        return $this->hasMany('App\Models\UserCourseActivity');
+    }
+
     public function providerUserMappings()
     {
         return $this->hasMany('App\Models\ProviderUserMapping');
@@ -65,7 +70,7 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::Admin;
+        return $this->role === UserRole::ADMIN;
     }
 
     public function userActivity()

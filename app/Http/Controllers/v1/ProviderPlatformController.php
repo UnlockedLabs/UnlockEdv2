@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
 use App\Http\Requests\StoreProviderPlatformRequest;
 use App\Http\Requests\UpdateProviderPlatformRequest;
+use App\Http\Resources\ProviderPlatformAccessKeyResource;
 use App\Http\Resources\ProviderPlatformResource;
 use App\Models\ProviderPlatform;
 
@@ -35,8 +36,9 @@ class ProviderPlatformController extends Controller
                 'errors' => $th->getMessage(),
             ], 422);
         }
-        $newProviderPlatform = ProviderPlatform::create($providerPlatform);
-        // $newProviderPlatform->hashAccessKey();
+        $newProviderPlatform = new ProviderPlatform($providerPlatform);
+        $newProviderPlatform->encryptAccessKey($request['access_key']);
+        $newProviderPlatform->save();
 
         return ProviderPlatformResource::make($newProviderPlatform);
     }
@@ -46,15 +48,26 @@ class ProviderPlatformController extends Controller
      */
     public function show(AdminRequest $request, string $id)
     {
+        $show_key = $request->query('show_key', false);
         $request->authorize();
+        $provider_platform = ProviderPlatform::findOrFail($id);
+        if (! $show_key) {
+            return ProviderPlatformResource::make($provider_platform);
+        }
+        $key = $provider_platform->access_key;
+        try {
+            $provider_platform->access_key = $provider_platform->decryptAccessKey();
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            $provider_platform->access_key = $key;
+        }
 
-        return ProviderPlatformResource::make(ProviderPlatform::findOrFail($id));
+        return ProviderPlatformAccessKeyResource::make($provider_platform);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProviderPlatformRequest $request, int $id)
+    public function update(UpdateProviderPlatformRequest $request, string $id)
     {
         try {
             $validated = $request->validated();
@@ -65,6 +78,10 @@ class ProviderPlatformController extends Controller
             ], 422);
         }
         $providerPlatform = ProviderPlatform::findOrFail($id);
+        if (array_key_exists('access_key', $validated) && ! is_null($validated['access_key'])) {
+            $providerPlatform->encryptAccessKey($validated['access_key']);
+            $providerPlatform->save();
+        }
         $providerPlatform->update($validated);
 
         return ProviderPlatformResource::make($providerPlatform);

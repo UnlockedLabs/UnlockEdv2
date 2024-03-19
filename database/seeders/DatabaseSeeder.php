@@ -8,6 +8,7 @@ use App\Enums\AuthProviderStatus;
 use App\Enums\ProviderPlatformState;
 use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
@@ -25,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'username' => 'SuperAdmin',
             'password' => bcrypt('ChangeMe!'),
             'password_reset' => true,
-            'role' => UserRole::Admin,
+            'role' => UserRole::ADMIN,
         ]);
         DB::table('categories')->insert([
             'name' => 'Unlocked Labs',
@@ -36,18 +37,16 @@ class DatabaseSeeder extends Seeder
                 {"Unlocked Labs LinkedIn":"https://www.linkedin.com/company/labs-unlocked/"}
             ]',
         ]);
-        if (env('CANVAS_BASE_URL') != null && env('CANVAS_API_KEY') != null) {
-            DB::table('provider_platforms')->insert([
-                'type' => 'canvas_oss',
-                'name' => 'CanvasLMS',
-                'description' => 'Canvas LMS Cloud Instance',
-                'icon_url' => 'https://www.instructure.com/images/favicon.ico',
-                'account_id' => env('CANVAS_ACCOUNT_ID'),
-                'base_url' => env('CANVAS_BASE_URL'),
-                'access_key' => env('CANVAS_API_KEY'),
-                'state' => ProviderPlatformState::ENABLED,
-            ]);
-        }
+        DB::table('provider_platforms')->insert([
+            'type' => 'canvas_oss',
+            'name' => 'CanvasLMS',
+            'description' => 'Canvas LMS Cloud Instance',
+            'icon_url' => 'https://www.instructure.com/images/favicon.ico',
+            'account_id' => env('CANVAS_ACCOUNT_ID'),
+            'base_url' => env('CANVAS_BASE_URL'),
+            'access_key' => Crypt::encryptString(env('CANVAS_API_KEY')),
+            'state' => ProviderPlatformState::ENABLED,
+        ]);
         $usersInfo = env('USERS_INFO', '');
         if (! empty($usersInfo)) {
             $users = explode(';', $usersInfo);
@@ -62,7 +61,7 @@ class DatabaseSeeder extends Seeder
                     'name_last' => $userInfo[3],
                     'password' => bcrypt('ChangeMe!'),
                     'password_reset' => true,
-                    'role' => UserRole::Admin,
+                    'role' => UserRole::ADMIN,
                 ]);
                 if (count($userInfo) > 4) {
                     // there is provider info included
