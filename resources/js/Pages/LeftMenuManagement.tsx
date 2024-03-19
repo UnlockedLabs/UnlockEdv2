@@ -1,4 +1,6 @@
 import PageNav from "@/Components/PageNav";
+import AddCategoryForm from "@/Components/forms/AddCategoryForm";
+import AddLinkForm from "@/Components/forms/AddLinkForm";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Category, CategoryLink } from "@/common";
 import { PageProps } from "@/types";
@@ -74,8 +76,6 @@ function CategoryItem({
     updateLink: any;
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] = useState({ "": "" });
-    const [newTitle, setNewTitle] = useState("");
-    const [newURL, setNewURL] = useState("");
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const addLinkModal = useRef<null | HTMLDialogElement>(null);
 
@@ -186,61 +186,17 @@ function CategoryItem({
             </dialog>
             <dialog ref={addLinkModal} className="modal">
                 <div className="modal-box">
-                    <form method="dialog">
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                            ✕
-                        </button>
-                    </form>
-                    <form
-                        method="dialog"
-                        onSubmit={() => {
-                            addLink(category, newTitle, newURL);
-                            setNewTitle("");
-                            setNewURL("");
-                        }}
-                    >
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-semibold pb-6 text-neutral">
-                                Add Link
-                            </span>
-                            <label className="form-control w-full">
-                                <div className="label">
-                                    <span className="label-text">Title</span>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Type here"
-                                    className="input input-bordered w-full"
-                                    value={newTitle}
-                                    onChange={(e) =>
-                                        setNewTitle(e.target.value)
-                                    }
-                                    required
-                                />
-                            </label>
-                            <label className="form-control w-full">
-                                <div className="label">
-                                    <span className="label-text">URL</span>
-                                </div>
-                                <input
-                                    type="url"
-                                    placeholder="Type here"
-                                    className="input input-bordered w-full"
-                                    value={newURL}
-                                    onChange={(e) => setNewURL(e.target.value)}
-                                    required
-                                />
-                            </label>
-                            <label className="form-control pt-6">
-                                <button
-                                    className="btn btn-primary"
-                                    type="submit"
-                                >
-                                    Add
-                                </button>
-                            </label>
-                        </div>
-                    </form>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-semibold pb-6 text-neutral">
+                            Add Link
+                        </span>
+                        <AddLinkForm
+                            onSuccess={(title: string, url: string) => {
+                                addLink(category, title, url),
+                                    addLinkModal.current?.close();
+                            }}
+                        />
+                    </div>
                 </div>
             </dialog>
         </details>
@@ -250,7 +206,6 @@ function CategoryItem({
 export default function LeftMenuManagement({ auth }: PageProps) {
     const { data, error, mutate, isLoading } = useSWR("/api/v1/categories");
     const [categoryList, setCategoryList] = useState(Array<Category>);
-    const [newCategoryTitle, setNewCategoryTitle] = useState("");
     const [categoryToDelete, setCategoryToDelete] = useState<number | null>(
         null,
     );
@@ -347,7 +302,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
         });
     }, [categoryList, dragOverItem]);
 
-    function addCategory() {
+    function addCategory(newCategoryTitle: string) {
         const newCategory = {
             id: Math.random(),
             name: newCategoryTitle,
@@ -355,7 +310,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             rank: categoryList.length + 1,
         };
         setCategoryList([...categoryList, newCategory]);
-        setNewCategoryTitle("");
+        addCategoryModal.current?.close();
     }
 
     function deleteCategory(id: number) {
@@ -580,12 +535,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         method="dialog"
                         className="flex flex-row justify-between"
                     >
-                        <button
-                            className="btn"
-                            onClick={() => deleteCategoryModal.current?.close()}
-                        >
-                            Cancel
-                        </button>
+                        <button className="btn">Cancel</button>
                         <button
                             className="btn btn-error"
                             type="button"
@@ -598,41 +548,14 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             </dialog>
             <dialog ref={addCategoryModal} className="modal">
                 <div className="modal-box">
-                    <form method="dialog">
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                            ✕
-                        </button>
-                    </form>
-                    <form method="dialog" onSubmit={addCategory}>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-semibold pb-6 text-neutral">
-                                Add Category
-                            </span>
-                            <label className="form-control w-full">
-                                <div className="label">
-                                    <span className="label-text">Title</span>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Type here"
-                                    className="input input-bordered w-full"
-                                    value={newCategoryTitle}
-                                    onChange={(e) =>
-                                        setNewCategoryTitle(e.target.value)
-                                    }
-                                    required
-                                />
-                            </label>
-                            <label className="form-control pt-6">
-                                <button
-                                    className="btn btn-primary"
-                                    type="submit"
-                                >
-                                    Add
-                                </button>
-                            </label>
-                        </div>
-                    </form>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-semibold pb-6 text-neutral">
+                            Add Category
+                        </span>
+                        <AddCategoryForm
+                            onSuccess={(title: string) => addCategory(title)}
+                        />
+                    </div>
                 </div>
             </dialog>
             {/* Toasts */}
