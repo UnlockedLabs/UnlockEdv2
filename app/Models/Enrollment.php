@@ -24,6 +24,25 @@ class Enrollment extends Model
         'external_end_at' => 'datetime',
     ];
 
+    public function userCourseActivity()
+    {
+        return $this->hasMany('App\Models\UserCourseActivity');
+    }
+
+    public function allEnrollmentsForProviderUser(int $user_id, int $provider_id)
+    {
+        return $this->where('user_id', $user_id)
+            ->whereHas('course', function ($query) use ($provider_id) {
+                $query->where('provider_platform_id', $provider_id);
+            })
+            ->get();
+    }
+
+    public function isForProvider(int $provider_id)
+    {
+        return $this->course->provider_platform_id == $provider_id;
+    }
+
     public function course()
     {
         return $this->belongsTo(Course::class);

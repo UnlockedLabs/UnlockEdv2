@@ -3,6 +3,7 @@ import {
     ProviderPlatformState,
     ProviderPlatformType,
 } from "@/common";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -27,7 +28,8 @@ export default function EditProviderForm({
 }) {
     const [errorMessage, setErrorMessage] = useState("");
     const [showAdditionalFields, setShowAdditionalFields] = useState(false);
-
+    const [showAccessKey, setShowAccessKey] = useState(false);
+    const [accessKey, setAccessKey] = useState("");
     const {
         register,
         handleSubmit,
@@ -40,11 +42,30 @@ export default function EditProviderForm({
             type: provider.type,
             base_url: provider.base_url,
             account_id: provider.account_id,
-            access_key: provider.access_key,
             icon_url: provider.icon_url,
             state: provider.state,
         },
     });
+
+    const getAccessKey = async () => {
+        if (showAccessKey) {
+            setShowAccessKey(false);
+            return;
+        }
+        if (accessKey) {
+            setShowAccessKey(true);
+            return;
+        }
+        try {
+            const response = await axios.get(
+                `/api/v1/provider-platforms/${provider?.id}?show_key=true`,
+            );
+            setAccessKey(response.data.data["access_key"]);
+            setShowAccessKey(true);
+        } catch (error: any) {
+            setErrorMessage(error.response.data.message);
+        }
+    };
 
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         console.log(data);
@@ -211,23 +232,51 @@ export default function EditProviderForm({
                         {errors.account_id && errors.account_id?.message}
                     </div>
                 </label>
-
                 <label className="form-control">
                     <div className="label">
                         <span className="label-text">Access Key</span>
                     </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        {...register("access_key", {
-                            required: "Access key is required",
-                        })}
-                    />
+                    <div className="relative">
+                        {showAccessKey ? (
+                            <input
+                                type="text"
+                                className="input input-bordered w-full pr-10"
+                                value={accessKey}
+                                {...register("access_key", {
+                                    required: "Access Key is required",
+                                    value: accessKey,
+                                    onChange: (e) =>
+                                        setAccessKey(e.target.value),
+                                })}
+                            />
+                        ) : (
+                            <input
+                                type="password"
+                                className="input input-bordered w-full"
+                                value="**********"
+                                readOnly // Make the input read-only when showAccessKey is false
+                            />
+                        )}
+                        {showAccessKey ? (
+                            <EyeSlashIcon
+                                className="w-4 z-10 top-4 right-4 absolute"
+                                onClick={() => {
+                                    console.log(accessKey),
+                                        setAccessKey(accessKey),
+                                        setShowAccessKey(false);
+                                }}
+                            />
+                        ) : (
+                            <EyeIcon
+                                className="w-4 z-10 top-4 right-4 absolute"
+                                onClick={getAccessKey}
+                            />
+                        )}
+                    </div>
                     <div className="text-error text-sm">
                         {errors.access_key && errors.access_key?.message}
                     </div>
                 </label>
-
                 <label className="form-control">
                     <div className="label">
                         <span className="label-text">Icon URL</span>

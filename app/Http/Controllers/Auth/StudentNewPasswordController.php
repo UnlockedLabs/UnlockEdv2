@@ -25,7 +25,7 @@ class StudentNewPasswordController extends Controller
         // set `reset_password` to `true` so that on next login they can be
         // prompted to set their new password.
         $user = User::where('username', $request->username)->first();
-        if ($user['role'] === UserRole::Student) {
+        if ($user['role'] === UserRole::STUDENT) {
             $pw = $user->createTempPassword();
 
             return response()->json([

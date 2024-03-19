@@ -17,7 +17,7 @@ class EnrollmentFactory extends Factory
 
     public function definition()
     {
-        $startAt = $this->faker->dateTimeThisMonth();
+        $startAt = $this->faker->dateTimeThisYear();
         $endAt = $this->faker->optional(0.5) // 50% chance of being null
             ->dateTimeInInterval($startAt, '+120 days');
         $provider = ProviderPlatform::factory()->createOne();

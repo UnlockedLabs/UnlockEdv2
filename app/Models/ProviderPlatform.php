@@ -6,6 +6,7 @@ use App\Enums\ProviderPlatformState;
 use App\Enums\ProviderPlatformType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
 class ProviderPlatform extends Model
 {
@@ -33,16 +34,28 @@ class ProviderPlatform extends Model
         'state' => ProviderPlatformState::class,
     ];
 
-    // public function hashAccessKey()
-    // {
-    //     $accessKey = $this->access_key;
-    //     $hashedAccessKey = Hash::make($accessKey);
-    //     $this->access_key = $hashedAccessKey;
-    //     $this->save();
-    // }
+    public function encryptAccessKey(string $value)
+    {
+        $this->attributes['access_key'] = Crypt::encryptString($value);
+    }
+
+    public function decryptAccessKey()
+    {
+        return Crypt::decryptString($this->attributes['access_key']);
+    }
+
+    public function getCanvasServices(): \App\Services\CanvasServices
+    {
+        return new \App\Services\CanvasServices($this->attributes['id'], $this->attributes['account_id'], $this->attributes['access_key'], $this->attributes['base_url']);
+    }
+
+    public function hasUserMapping($user)
+    {
+        return $this->providerUserMappings()->where('user_id', $user->id)->exists();
+    }
 
     public function providerUserMappings()
     {
-        return $this->hasMany('App\Models\ProviderUserMapping');
+        return $this->hasMany('\App\Models\ProviderUserMapping');
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\v1\Actions\CreateCanvasUserLogin;
 use App\Http\Controllers\v1\Actions\RegisterCanvasAuthProviderAction;
 use App\Http\Controllers\v1\Actions\StoreCanvasCoursesController;
+use App\Http\Controllers\v1\Actions\StoreCanvasUsersAction;
 use App\Http\Controllers\v1\Actions\StoreUserCourseController;
 use App\Http\Controllers\v1\Actions\StoreUserEnrollmentController;
 use App\Http\Controllers\v1\CategoryController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\ProviderUserMappingController;
 use App\Http\Controllers\v1\UserActivityController;
 use App\Http\Controllers\v1\UserController;
+use App\Http\Controllers\v1\UserCourseActivityController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -58,6 +60,8 @@ Route::prefix('v1')->group(function () {
         Route::get('users/{id}/logins', [ProviderUserMappingController::class, 'show']);
         Route::post('users/{id}/logins', [ProviderUserMappingController::class, 'store']);
         Route::delete('users/{id}/logins', [ProviderUserMappingController::class, 'destroy']);
+        Route::get('users/{id}/course-activity', [UserCourseActivityController::class, 'index']);
+        Route::get('users/{id}/course-activity/{courseId}', [UserCourseActivityController::class, 'show']);
 
         Route::get('user-activities', [UserActivityController::class, 'index']);
         Route::get('user-activities/{id}', [UserActivityController::class, 'show']);
@@ -71,5 +75,6 @@ Route::prefix('v1')->group(function () {
         Route::post('actions/store-user-courses', StoreUserCourseController::class);
         Route::post('actions/store-canvas-courses', StoreCanvasCoursesController::class);
         Route::post('actions/store-user-enrollments', StoreUserEnrollmentController::class);
+        Route::post('actions/import-canvas-users', StoreCanvasUsersAction::class);
     });
 });

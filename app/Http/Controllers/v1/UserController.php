@@ -46,6 +46,11 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
+        $role = match ($request->role) {
+            'admin' => 'admin',
+            'student' => 'student',
+            default => 'student',
+        };
         try {
             $user = $request->validated();
         } catch (\Throwable $th) {
@@ -55,6 +60,7 @@ class UserController extends Controller
             ], 422);
         }
         $newUser = new User($user);
+        $newUser->role = $role;
         $pw = $newUser->createTempPassword();
 
         return response(NewUserResource::withPassword($newUser, $pw), 201);

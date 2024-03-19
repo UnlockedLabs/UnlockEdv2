@@ -11,6 +11,7 @@ use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Crypt;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -59,8 +60,8 @@ class CanvasServices
         if (! is_string($id)) {
             $id = strval($id);
         }
-        if (substr($id, -1) !== '/') {
-            $id .= '/';
+        if (! str_ends_with($id, '/')) {
+            return $id.'/';
         }
 
         return $id;
@@ -83,7 +84,7 @@ class CanvasServices
 
         $this->provider_id = $providerId;
         $this->account_id = $accountId;
-        $this->access_key = $apiKey;
+        $this->access_key = Crypt::decryptString($apiKey);
         $this->base_url = $url;
         $this->client = new Client();
     }
@@ -165,7 +166,7 @@ class CanvasServices
     //* @return  CanvasServices
     //* @throws \InvalidArgumentException
      */
-    public static function byProviderId(int $providerId): CanvasServices
+    public static function byProviderId(int $providerId): self
     {
         $provider = ProviderPlatform::where(['id' => $providerId])->firstOrFail();
 
@@ -190,6 +191,20 @@ class CanvasServices
     public function listAuthenticationProviders(): mixed
     {
         $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers';
+
+        return $this->GET($base_url);
+    }
+
+    /**
+     * This takes a canvas user id (EXTERNAL)
+     * and returns the users profile from canvas
+     * GET /api/v1/users/:id
+     *
+     * @return mixed JSON decoded
+     */
+    public function getUserProfile(int $user_id)
+    {
+        $base_url = $this->base_url.USERS.self::fmtUrl($user_id);
 
         return $this->GET($base_url);
     }
@@ -284,7 +299,7 @@ class CanvasServices
      */
     public function listUsers(): mixed
     {
-        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).USERS;
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'users?enrollment_type=student';
 
         return $this->GET($base_url);
     }
@@ -478,6 +493,20 @@ class CanvasServices
         $prov_user_id = User::findOrFail($userId)->externalIdFor($this->provider_id);
         $prov_course_id = Course::findOrFail($courseId)->provider_resource_id;
         $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).USERS.self::fmtUrl($prov_user_id).PROGRESS;
+
+        return $this->GET($base_url);
+    }
+
+    /**
+     * Get information about an enrollment by it's ID in canvas
+     *
+     * @return mixed JSON decoded
+     *
+     * @throws \Exception
+     */
+    public function getEnrollmentById(int $enrollment_id): mixed
+    {
+        $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).ENROLLMENTS.$enrollment_id;
 
         return $this->GET($base_url);
     }
