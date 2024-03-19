@@ -3,6 +3,7 @@ import {
     ProviderPlatformState,
     ProviderPlatformType,
 } from "@/common";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -41,7 +42,6 @@ export default function EditProviderForm({
             type: provider.type,
             base_url: provider.base_url,
             account_id: provider.account_id,
-            access_key: provider.access_key,
             icon_url: provider.icon_url,
             state: provider.state,
         },
@@ -50,6 +50,10 @@ export default function EditProviderForm({
     const getAccessKey = async () => {
         if (showAccessKey) {
             setShowAccessKey(false);
+            return;
+        }
+        if (accessKey) {
+            setShowAccessKey(true);
             return;
         }
         try {
@@ -232,23 +236,43 @@ export default function EditProviderForm({
                     <div className="label">
                         <span className="label-text">Access Key</span>
                     </div>
-                    {
-                        <div className="btn btn-primary" onClick={getAccessKey}>
-                            {showAccessKey
-                                ? `Hide Access Key`
-                                : `Show Access Key`}
-                        </div>
-                    }
-                    {showAccessKey && (
-                        <div className="text-xs pt-5 pb-5">{accessKey}</div>
-                    )}
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        {...register("access_key", {
-                            required: "Access Key is required",
-                        })}
-                    />
+                    <div className="relative">
+                        {showAccessKey ? (
+                            <input
+                                type="text"
+                                className="input input-bordered w-full pr-10"
+                                value={accessKey}
+                                {...register("access_key", {
+                                    required: "Access Key is required",
+                                    value: accessKey,
+                                    onChange: (e) =>
+                                        setAccessKey(e.target.value),
+                                })}
+                            />
+                        ) : (
+                            <input
+                                type="password"
+                                className="input input-bordered w-full"
+                                value="**********"
+                                readOnly // Make the input read-only when showAccessKey is false
+                            />
+                        )}
+                        {showAccessKey ? (
+                            <EyeSlashIcon
+                                className="w-4 z-10 top-4 right-4 absolute"
+                                onClick={() => {
+                                    console.log(accessKey),
+                                        setAccessKey(accessKey),
+                                        setShowAccessKey(false);
+                                }}
+                            />
+                        ) : (
+                            <EyeIcon
+                                className="w-4 z-10 top-4 right-4 absolute"
+                                onClick={getAccessKey}
+                            />
+                        )}
+                    </div>
                     <div className="text-error text-sm">
                         {errors.access_key && errors.access_key?.message}
                     </div>
