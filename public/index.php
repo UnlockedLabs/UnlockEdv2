@@ -32,8 +32,11 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 */
 
 require __DIR__.'/../vendor/autoload.php';
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+if (env('APP_ENV', 'local') != 'production') {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__.'/../');
+    $dotenv->load();
+}
+
 /*
 |--------------------------------------------------------------------------
 | Run The Application
