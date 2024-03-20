@@ -22,7 +22,7 @@ class CourseFactory extends Factory
             'external_course_name' => $this->faker->word,
             'external_course_code' => $this->faker->word, // Example: 'CS-101'
             'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
-            'description' => $this->faker->paragraph($nbSentences = 3, $variableNbSentences = true),
+            'description' => substr($this->faker->paragraph($nbSentences = 3, $variableNbSentences = true), 0, 254),
             'img_url' => $this->faker->imageUrl($width = 640, $height = 480),
         ];
     }

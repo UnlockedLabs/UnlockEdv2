@@ -12,6 +12,7 @@ use App\Http\Controllers\v1\EnrollmentController;
 use App\Http\Controllers\v1\ProviderPlatformController;
 use App\Http\Controllers\v1\ProviderUserMappingController;
 use App\Http\Controllers\v1\UserActivityController;
+use App\Http\Controllers\v1\UserActivityMapController;
 use App\Http\Controllers\v1\UserController;
 use App\Http\Controllers\v1\UserCourseActivityController;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +69,8 @@ Route::prefix('v1')->group(function () {
         Route::post('user-activities', [UserActivityController::class, 'store']);
         Route::patch('user-activities/{id}', [UserActivityController::class, 'update']);
         Route::delete('user-activities/{id}', [UserActivityController::class, 'destroy']);
+
+        Route::get('user-activity-map/{id}', [UserActivityMapController::class, 'show']);
 
         /* Actions/RPCs */
         Route::post('actions/register-canvas-auth', [RegisterCanvasAuthProviderAction::class, 'register']);

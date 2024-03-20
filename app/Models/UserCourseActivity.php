@@ -14,6 +14,7 @@ class UserCourseActivity extends Model
         'enrollment_id',
         'external_has_activity',
         'external_total_activity_time',
+        'external_total_activity_time_delta',
         'date',
     ];
 
