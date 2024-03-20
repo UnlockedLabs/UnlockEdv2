@@ -18,7 +18,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // This needs to be defaulted and ran every time.. maybe needs to be a migration?
         DB::table('users')->insert([
             'name_first' => 'Super',
             'name_last' => 'Admin',
@@ -37,16 +36,19 @@ class DatabaseSeeder extends Seeder
                 {"Unlocked Labs LinkedIn":"https://www.linkedin.com/company/labs-unlocked/"}
             ]',
         ]);
-        DB::table('provider_platforms')->insert([
-            'type' => 'canvas_oss',
-            'name' => 'CanvasLMS',
-            'description' => 'Canvas LMS Cloud Instance',
-            'icon_url' => 'https://www.instructure.com/images/favicon.ico',
-            'account_id' => env('CANVAS_ACCOUNT_ID'),
-            'base_url' => env('CANVAS_BASE_URL'),
-            'access_key' => Crypt::encryptString(env('CANVAS_API_KEY')),
-            'state' => ProviderPlatformState::ENABLED,
-        ]);
+        $prov = env('CANVAS_BASE_URL', '');
+        if (! empty($prov)) {
+            DB::table('provider_platforms')->insert([
+                'type' => 'canvas_oss',
+                'name' => 'CanvasLMS',
+                'description' => 'Canvas LMS Cloud Instance',
+                'icon_url' => 'https://www.instructure.com/images/favicon.ico',
+                'account_id' => env('CANVAS_ACCOUNT_ID'),
+                'base_url' => env('CANVAS_BASE_URL'),
+                'access_key' => Crypt::encryptString(env('CANVAS_API_KEY')),
+                'state' => ProviderPlatformState::ENABLED,
+            ]);
+        }
         $usersInfo = env('USERS_INFO', '');
         if (! empty($usersInfo)) {
             $users = explode(';', $usersInfo);
