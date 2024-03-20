@@ -232,6 +232,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     }
 
     async function updateFinalState(e: any) {
+        setToast({ state: null, message: "" });
         e.preventDefault();
         const newCategoryList = categoryList.map((c, i) => {
             c.rank = i + 1;

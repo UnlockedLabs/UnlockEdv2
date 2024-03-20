@@ -16,7 +16,9 @@ export default function Toast({ state, message, reset }: ToastProps) {
 
     setTimeout(() => {
         setIsVisible(false);
-        reset();
+        setTimeout(() => {
+            reset();
+        }, 1000);
     }, 5000);
 
     return (
