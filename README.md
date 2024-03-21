@@ -5,7 +5,7 @@
 Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Ubuntu.
 
 -   Docker (Docker Desktop on WSL)
--   Php and Composer (Platform specific)
+-   PHP and Composer (Platform specific)
 
 ## Development
 
