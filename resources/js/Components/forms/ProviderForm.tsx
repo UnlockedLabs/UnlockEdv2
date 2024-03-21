@@ -5,9 +5,12 @@ import {
 } from "@/common";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { CloseX, TextInput, TextAreaInput, DropdownInput } from "./inputs";
+import DropdownInput from "./inputs/DropdownInput";
+import TextInput from "./inputs/TextInput";
+import TextAreaInput from "./inputs/TextAreaInput";
+import CloseX from "./inputs/CloseX";
 
 type ProviderInputs = {
     name: string;
@@ -20,12 +23,12 @@ type ProviderInputs = {
     state: ProviderPlatformState;
 };
 
-export default function EditProviderForm({
+export default function ProviderForm({
     onSuccess,
     provider,
 }: {
-    onSuccess: Function;
-    provider: ProviderPlatform;
+    onSuccess: () => void;
+    provider: ProviderPlatform | null;
 }) {
     const [errorMessage, setErrorMessage] = useState("");
     const [showAdditionalFields, setShowAdditionalFields] = useState(false);
@@ -38,15 +41,20 @@ export default function EditProviderForm({
         formState: { errors },
     } = useForm<ProviderInputs>({
         defaultValues: {
-            name: provider.name,
-            description: provider.description,
-            type: provider.type,
-            base_url: provider.base_url,
-            account_id: provider.account_id,
-            icon_url: provider.icon_url,
-            state: provider.state,
+            name: provider?.name,
+            description: provider?.description,
+            type: provider?.type,
+            base_url: provider?.base_url,
+            account_id: provider?.account_id,
+            icon_url: provider?.icon_url,
+            state: provider?.state,
         },
     });
+
+    // on first render, checks if provider is null
+    useEffect(() => {
+        if (provider == null) setShowAdditionalFields(true);
+    }, []);
 
     const getAccessKey = async () => {
         if (showAccessKey) {
@@ -73,10 +81,14 @@ export default function EditProviderForm({
         try {
             setErrorMessage("");
 
-            await axios.patch(
-                `/api/v1/provider-platforms/${provider?.id}`,
-                data,
-            );
+            if (provider !== null) {
+                await axios.patch(
+                    `/api/v1/provider-platforms/${provider?.id}`,
+                    data,
+                );
+            } else {
+                await axios.post("/api/v1/provider-platforms", data);
+            }
 
             successAndReset();
         } catch (error: any) {
@@ -127,18 +139,19 @@ export default function EditProviderForm({
                 />
 
                 {/* Button to toggle additional fields */}
-                <div className="pt-4">
-                    <button
-                        className="btn btn-ghost"
-                        type="button"
-                        onClick={() =>
-                            setShowAdditionalFields(!showAdditionalFields)
-                        }
-                    >
-                        {showAdditionalFields ? "Show Less" : "Show More"}
-                    </button>
-                </div>
-
+                {provider !== null && (
+                    <div className="pt-4">
+                        <button
+                            className="btn btn-ghost"
+                            type="button"
+                            onClick={() =>
+                                setShowAdditionalFields(!showAdditionalFields)
+                            }
+                        >
+                            {showAdditionalFields ? "Show Less" : "Show More"}
+                        </button>
+                    </div>
+                )}
                 <div className={showAdditionalFields ? "contents" : "hidden"}>
                     <TextInput
                         label="Base URL"
@@ -156,51 +169,63 @@ export default function EditProviderForm({
                         length={null}
                         errors={errors}
                     />
-                    <label className="form-control">
-                        <div className="label">
-                            <span className="label-text">Access Key</span>
-                        </div>
-                        <div className="relative">
-                            {showAccessKey ? (
-                                <input
-                                    type="text"
-                                    className="input input-bordered w-full pr-10"
-                                    value={accessKey}
-                                    {...register("access_key", {
-                                        required: "Access Key is required",
-                                        value: accessKey,
-                                        onChange: (e) =>
-                                            setAccessKey(e.target.value),
-                                    })}
-                                />
-                            ) : (
-                                <input
-                                    type="password"
-                                    className="input input-bordered w-full"
-                                    value="**********"
-                                    readOnly // Make the input read-only when showAccessKey is false
-                                />
-                            )}
-                            {showAccessKey ? (
-                                <EyeSlashIcon
-                                    className="w-4 z-10 top-4 right-4 absolute"
-                                    onClick={() => {
-                                        console.log(accessKey),
-                                            setAccessKey(accessKey),
-                                            setShowAccessKey(false);
-                                    }}
-                                />
-                            ) : (
-                                <EyeIcon
-                                    className="w-4 z-10 top-4 right-4 absolute"
-                                    onClick={getAccessKey}
-                                />
-                            )}
-                        </div>
-                        <div className="text-error text-sm">
-                            {errors.access_key && errors.access_key?.message}
-                        </div>
-                    </label>
+                    {provider == null ? (
+                        <TextInput
+                            label="Access Key"
+                            register={register}
+                            interfaceRef="access_key"
+                            required={true}
+                            length={null}
+                            errors={errors}
+                        />
+                    ) : (
+                        <label className="form-control">
+                            <div className="label">
+                                <span className="label-text">Access Key</span>
+                            </div>
+                            <div className="relative">
+                                {showAccessKey ? (
+                                    <input
+                                        type="text"
+                                        className="input input-bordered w-full pr-10"
+                                        value={accessKey}
+                                        {...register("access_key", {
+                                            required: "Access Key is required",
+                                            value: accessKey,
+                                            onChange: (e) =>
+                                                setAccessKey(e.target.value),
+                                        })}
+                                    />
+                                ) : (
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value="**********"
+                                        readOnly // Make the input read-only when showAccessKey is false
+                                    />
+                                )}
+                                {showAccessKey ? (
+                                    <EyeSlashIcon
+                                        className="w-4 z-10 top-4 right-4 absolute"
+                                        onClick={() => {
+                                            console.log(accessKey),
+                                                setAccessKey(accessKey),
+                                                setShowAccessKey(false);
+                                        }}
+                                    />
+                                ) : (
+                                    <EyeIcon
+                                        className="w-4 z-10 top-4 right-4 absolute"
+                                        onClick={getAccessKey}
+                                    />
+                                )}
+                            </div>
+                            <div className="text-error text-sm">
+                                {errors.access_key &&
+                                    errors.access_key?.message}
+                            </div>
+                        </label>
+                    )}
                     <TextInput
                         label="Icon URL"
                         register={register}

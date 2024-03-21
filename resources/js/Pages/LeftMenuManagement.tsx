@@ -1,4 +1,5 @@
 import CategoryItem from "@/Components/CategoryItem";
+import Modal from "@/Components/modals/Modal";
 import PageNav from "@/Components/PageNav";
 import Toast from "@/Components/Toast";
 import AddCategoryForm from "@/Components/forms/AddCategoryForm";
@@ -307,6 +308,16 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                     />
                 }
                 ref={addCategoryModal}
+            />
+            <Modal
+                type="Delete"
+                item="Category"
+                form={null}
+                onSuccess={() => {
+                    deleteCategory(categoryToDelete),
+                        deleteCategoryModal.current?.close();
+                }}
+                onCancel={() => setCategoryToDelete(null)}
             />
             {/* Toasts */}
             {toast.state !== null && (

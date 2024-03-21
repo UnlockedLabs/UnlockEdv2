@@ -29,7 +29,6 @@ export default function AddProviderForm({
         register,
         handleSubmit,
         reset,
-        setValue,
         formState: { errors },
     } = useForm<ProviderInputs>();
 
