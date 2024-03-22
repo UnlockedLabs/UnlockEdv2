@@ -28,8 +28,12 @@ export default function Pagination({
 
     return (
         <div className="join place-content-center">
-            <div className="tooltip tooltip-left" data-tip="First Page">
+            <div
+                className={`${page > 0 ? "tooltip tooltip-left" : ""}`}
+                data-tip="First Page"
+            >
                 <button
+                    disabled={page == 0}
                     className="join-item btn btn-sm"
                     onClick={() => setPage(1)}
                 >
@@ -53,10 +57,16 @@ export default function Pagination({
                     );
                 })}
 
-            <div className="tooltip tooltip-right" data-tip="Last Page">
+            <div
+                className={`${
+                    page != meta.last_page - 1 ? "tooltip tooltip-right" : ""
+                }`}
+                data-tip="Last Page"
+            >
                 <button
                     className="join-item btn btn-sm"
                     onClick={() => setPage(meta.last_page)}
+                    disabled={page == meta.last_page - 1}
                 >
                     <ChevronDoubleRightIcon className="h-4" />
                 </button>
