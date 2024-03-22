@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserActivityMapResource;
 use App\Models\UserCourseActivity;
 use Illuminate\Support\Facades\DB;
 
@@ -20,9 +21,10 @@ class UserActivityMapController extends Controller
             ->groupBy('user_id', DB::raw('DATE(date)')) // Grouping by date part
             ->get();
 
-        if (count($aggregatedData) == 0) {
-            return response()->json(['error' => 'Resource not found'], 404);
+        if ($aggregatedData->isEmpty()) {
+            return response()->json([]); // Return an empty array
         }
+
         // Calculate quartiles for total_activity_time
         $totalActivityTimes = $aggregatedData->pluck('total_activity_time')->toArray();
         $totalActivityTimeQuartiles = $this->calculateQuartiles($totalActivityTimes);
@@ -33,9 +35,14 @@ class UserActivityMapController extends Controller
             $aggregatedData[$key]->total_activity_time_quartile = $this->getQuartileScore($totalActivityTime, $totalActivityTimeQuartiles);
         }
 
-        return response()->json($aggregatedData);
+        return response()->json(UserActivityMapResource::collection($aggregatedData));
     }
 
+    /**
+     * Calculate quartiles for a given dataset.
+     * This function handles zero values differently than a standard quartile function.
+     * It excludes zero values and splits only non-zero values into approximately equally sized buckets.
+     */
     private function calculateQuartiles($data)
     {
         // Remove zeros from the data
@@ -45,11 +52,6 @@ class UserActivityMapController extends Controller
 
         // Count the non-zero values
         $count = count($data);
-
-        // // If there are no non-zero values, return null for all quartiles
-        // if ($count === 0) {
-        //     return ['q1' => null, 'q2' => null, 'q3' => null];
-        // }
 
         // Sort the non-zero data
         sort($data);
@@ -64,19 +66,12 @@ class UserActivityMapController extends Controller
 
     private function getQuartileScore($value, $quartiles)
     {
-        if ($value == 0) {
-            return 0;
-        }
-        if ($value <= $quartiles['q1']) {
-            return 1;
-        }
-        if ($value <= $quartiles['q2']) {
-            return 2;
-        }
-        if ($value <= $quartiles['q3']) {
-            return 3;
-        }
-
-        return 4;
+        return match (true) {
+            ($value == 0) => 0,
+            ($value <= $quartiles['q1']) => 1,
+            ($value <= $quartiles['q2']) => 2,
+            ($value <= $quartiles['q3']) => 3,
+            default => 4,
+        };
     }
 }

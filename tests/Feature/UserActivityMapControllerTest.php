@@ -3,6 +3,7 @@
 use App\Models\User;
 use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class UserActivityMapControllerTest extends TestCase
@@ -12,7 +13,11 @@ class UserActivityMapControllerTest extends TestCase
     public function testGetUserActivityMap()
     {
         $this->seed(TestSeeder::class);
-        $randomUserId = mt_rand(1, 6);
+        // Retrieve a random user_id from the user_course_activities table
+        // TestSeeder generates user_course_activities for only some of the users, not all
+        $randomUserId = DB::table('user_course_activities')->inRandomOrder()->value('user_id');
+
+        // Find the user using the randomly selected user_id
         $user = User::find($randomUserId);
 
         $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id);
