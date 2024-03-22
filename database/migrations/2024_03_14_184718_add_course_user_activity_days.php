@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('enrollment_id')->constrained()->onDelete('cascade');
             $table->unsignedBigInteger('external_total_activity_time')->default(0);
-            $table->unsignedBigInteger('external_total_activity_time_delta')->default(0);
             $table->boolean('external_has_activity')->default(false);
             $table->date('date')->default(now()->toDateString());
             $table->timestamps();
