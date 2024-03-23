@@ -68,7 +68,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         1997
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-gray-700">
                                         Young Beginnings
                                     </div>
                                     Co-Founders Jessica Hicklin and Chris
@@ -99,7 +99,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         1998 - 2017
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-gray-700">
                                         Education Against the Odds
                                     </div>
                                     Despite residing in a facility without
@@ -136,7 +136,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         2012 - 2017
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-gray-700">
                                         Coding for Change
                                     </div>
                                     With limited resources, Jessica and Chris
@@ -168,7 +168,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         2022
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-gray-700">
                                         Establishing Unlocked Labs
                                     </div>
                                     Their lives took a turn when a Supreme Court
@@ -205,7 +205,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         2022 - present
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-gray-700">
                                         UnlockED: A Vision Realized
                                     </div>
                                     Teaming up with external partners, they
