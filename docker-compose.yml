@@ -52,9 +52,13 @@ services:
     build: ./fluentd
     volumes:
       - ./fluentd/conf:/fluentd/etc
-      - ./logs:/output/
-      - ./storage/logs:/fluentd/log/files/
-      - sail-mysql:/fluentd/log/files/
+      - ./logs:/output/ # where Fluentd logs will be stored
+      - ./storage/logs:/fluentd/log/files/ # where laravel logs will be stored to be collected by Fluentd
+      - sail-mysql:/fluentd/log/files/sql # where mysql logs will be stored to be collected by Fluentd
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+      - "9880:9880"   # Port where http logs will be sent to
 networks:
   sail:
     driver: bridge
