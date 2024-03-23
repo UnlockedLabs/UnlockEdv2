@@ -8,7 +8,7 @@ export default function Welcome({ auth }: PageProps) {
             <Head title="Welcome" />
             <div className="min-h-screen font-lato">
                 <div className="navbar bg-base-100">
-                    <div className="flex-1 pl-4">
+                    <div className="flex-1 pl-4 cursor-default">
                         <Brand />
                     </div>
                     <div className="flex-none">
