@@ -1,8 +1,19 @@
+import { useState, useEffect } from "react";
 import { Head, Link } from "@inertiajs/react";
 import { PageProps } from "@/types";
 import Brand from "@/Components/Brand";
 
 export default function Welcome({ auth }: PageProps) {
+    const [imgSrc, setImgSrc] = useState("unlockedv1Sm.webp");
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = "unlockedv1.png";
+        img.onload = () => {
+            setImgSrc("unlockedv1.png");
+        };
+    }, []);
+
     return (
         <>
             <Head title="Welcome" />
@@ -41,7 +52,11 @@ export default function Welcome({ auth }: PageProps) {
                         </p>
 
                         <div className="flex flex-col">
-                            <img src="unlockedv1.png" className="mb-2" />
+                            <img
+                                src={imgSrc}
+                                className="mb-2 w-full h-auto"
+                                loading="lazy"
+                            />
                             <span className="italic text-sm">
                                 Version 1 of UnlockEd was built inside without
                                 the help of the internet.
