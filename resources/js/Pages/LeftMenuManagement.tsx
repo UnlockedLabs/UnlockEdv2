@@ -3,8 +3,6 @@ import Modal from "@/Components/modals/Modal";
 import PageNav from "@/Components/PageNav";
 import Toast from "@/Components/Toast";
 import AddCategoryForm from "@/Components/forms/AddCategoryForm";
-import AddModal from "@/Components/modals/AddModal";
-import DeleteModal from "@/Components/modals/DeleteModal";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Category, CategoryLink } from "@/common";
 import { PageProps } from "@/types";
@@ -13,6 +11,7 @@ import { TrashIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
+import DeleteForm from "@/Components/forms/DeleteForm";
 
 interface ToastProps {
     state: "success" | "error" | null;
@@ -291,18 +290,10 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 <div>{MemoizedCategoryList}</div>
             </div>
             {/* Modals */}
-            <DeleteModal
+            <Modal
+                type="Add"
                 item="Category"
-                deleteFunction={() => {
-                    deleteCategory(categoryToDelete),
-                        deleteCategoryModal.current?.close();
-                }}
-                onClose={() => setCategoryToDelete(null)}
-                ref={deleteCategoryModal}
-            />
-            <AddModal
-                item="Category"
-                addForm={
+                form={
                     <AddCategoryForm
                         onSuccess={(title: string) => addCategory(title)}
                     />
@@ -312,12 +303,16 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             <Modal
                 type="Delete"
                 item="Category"
-                form={null}
-                onSuccess={() => {
-                    deleteCategory(categoryToDelete),
-                        deleteCategoryModal.current?.close();
-                }}
-                onCancel={() => setCategoryToDelete(null)}
+                form={
+                    <DeleteForm
+                        item="Category"
+                        onCancel={() => setCategoryToDelete(null)}
+                        onSuccess={() => {
+                            deleteCategory(categoryToDelete),
+                                deleteCategoryModal.current?.close();
+                        }}
+                    />
+                }
             />
             {/* Toasts */}
             {toast.state !== null && (

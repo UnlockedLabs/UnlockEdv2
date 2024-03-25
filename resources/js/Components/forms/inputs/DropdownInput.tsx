@@ -9,7 +9,7 @@ interface DropdownProps {
     enumType: Record<string, string>;
 }
 
-export default function DropdownInput({
+export function DropdownInput({
     label,
     interfaceRef,
     required,

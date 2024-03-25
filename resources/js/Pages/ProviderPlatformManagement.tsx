@@ -1,11 +1,7 @@
 import PageNav from "@/Components/PageNav";
 import ProviderCard from "@/Components/ProviderCard";
-import SecondaryButton from "@/Components/SecondaryButton";
 import AddProviderForm from "@/Components/forms/AddProviderForm";
 import EditProviderForm from "@/Components/forms/EditProviderForm";
-import ProviderForm from "@/Components/forms/ProviderForm";
-import AddModal from "@/Components/modals/AddModal";
-import EditModal from "@/Components/modals/EditModal";
 import Modal from "@/Components/modals/Modal";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { ProviderPlatform } from "@/common";
@@ -101,23 +97,24 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                 </div>
             </div>
             {/* Modals */}
-            <AddModal
+            <Modal
+                type="Add"
                 item="Provider"
-                addForm={
-                    <ProviderForm
+                form={
+                    <AddProviderForm
                         onSuccess={() => {
-                            mutate(), addProviderModal.current?.close();
+                            updateProvider();
                         }}
-                        provider={null}
                     />
                 }
                 ref={addProviderModal}
             />
-            <EditModal
+            <Modal
+                type="Edit"
                 item="Provider"
-                editForm={
+                form={
                     editProvider ? (
-                        <ProviderForm
+                        <EditProviderForm
                             onSuccess={() => updateProvider()}
                             provider={editProvider}
                         />
@@ -125,7 +122,6 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                         <></>
                     )
                 }
-                onClose={() => setEditProvider(null)}
                 ref={editProviderModal}
             />
         </AuthenticatedLayout>

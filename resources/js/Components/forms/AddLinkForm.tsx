@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { CloseX, TextInput } from "./inputs";
 
 type Inputs = {
     title: string;
@@ -27,51 +28,24 @@ export default function AddLinkForm({
 
     return (
         <div>
-            <form method="dialog">
-                <button
-                    className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                    onClick={() => reset()}
-                >
-                    ✕
-                </button>
-            </form>
+            <CloseX close={() => reset()} />
             <form onSubmit={handleSubmit(onSubmit)}>
-                <label className="form-control">
-                    <div className="label">
-                        <span className="label-text">Title</span>
-                    </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        {...register("title", {
-                            required: "Title is required",
-                            maxLength: {
-                                value: 25,
-                                message:
-                                    "Title should be 25 characters or less",
-                            },
-                        })}
-                    />
-                    <div className="text-error text-sm">
-                        {errors.title && errors.title?.message}
-                    </div>
-                </label>
-
-                <label className="form-control">
-                    <div className="label">
-                        <span className="label-text">URL</span>
-                    </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        {...register("url", {
-                            required: "URL is required",
-                        })}
-                    />
-                    <div className="text-error text-sm">
-                        {errors.url && errors.url?.message}
-                    </div>
-                </label>
+                <TextInput
+                    label="Title"
+                    interfaceRef="title"
+                    required={true}
+                    length={25}
+                    errors={errors}
+                    register={register}
+                />
+                <TextInput
+                    label="URL"
+                    interfaceRef="url"
+                    required={true}
+                    length={null}
+                    errors={errors}
+                    register={register}
+                />
 
                 <label className="form-control pt-4">
                     <input className="btn btn-primary" type="submit" />

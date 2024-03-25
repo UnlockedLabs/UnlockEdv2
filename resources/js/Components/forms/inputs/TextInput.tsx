@@ -9,7 +9,7 @@ interface TextProps {
     register: Function;
 }
 
-export default function TextInput({
+export function TextInput({
     label,
     interfaceRef,
     required,

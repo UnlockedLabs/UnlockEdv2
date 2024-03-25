@@ -9,7 +9,7 @@ interface TextAreaProps {
     register: Function;
 }
 
-export default function TextAreaInput({
+export function TextAreaInput({
     label,
     interfaceRef,
     required,

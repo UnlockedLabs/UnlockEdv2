@@ -1,8 +1,6 @@
 import { Category, CategoryLink } from "@/common";
 import { useRef, useState } from "react";
 import LinkItem from "./LinkItem";
-import DeleteModal from "./modals/DeleteModal";
-import AddModal from "./modals/AddModal";
 import AddLinkForm from "./forms/AddLinkForm";
 
 import {
@@ -11,6 +9,8 @@ import {
     PlusIcon,
     ChevronUpIcon,
 } from "@heroicons/react/24/solid";
+import Modal from "./modals/Modal";
+import DeleteForm from "./forms/DeleteForm";
 
 export default function CategoryItem({
     category,
@@ -104,15 +104,24 @@ export default function CategoryItem({
                 </button>
             </ul>
             {/* Modals */}
-            <DeleteModal
+            <Modal
+                type="Delete"
                 item="Link"
-                deleteFunction={() => deleteLink(category, activeLinkToDelete)}
-                onClose={() => setActiveLinkToDelete(null)}
+                form={
+                    <DeleteForm
+                        item="Link"
+                        onCancel={() => setActiveLinkToDelete(null)}
+                        onSuccess={() =>
+                            deleteLink(category, activeLinkToDelete)
+                        }
+                    />
+                }
                 ref={deleteLinkModal}
             />
-            <AddModal
+            <Modal
+                type="Add"
                 item="Link"
-                addForm={
+                form={
                     <AddLinkForm
                         onSuccess={(title: string, url: string) => {
                             addLink(category, title, url),

@@ -1,4 +1,4 @@
-export default function CloseX({ close }: { close: () => void }) {
+export function CloseX({ close }: { close: () => void }) {
     return (
         <form method="dialog">
             <button

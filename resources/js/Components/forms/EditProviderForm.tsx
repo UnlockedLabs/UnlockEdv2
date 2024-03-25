@@ -77,21 +77,20 @@ export default function EditProviderForm({
                 `/api/v1/provider-platforms/${provider?.id}`,
                 data,
             );
-
-            successAndReset();
+            closeAndReset();
         } catch (error: any) {
             setErrorMessage(error.response.data.message);
         }
     };
 
-    function successAndReset() {
+    function closeAndReset() {
         onSuccess();
         reset();
     }
 
     return (
         <div>
-            <CloseX close={() => successAndReset()} />
+            <CloseX close={() => closeAndReset()} />
             <form onSubmit={handleSubmit(onSubmit)}>
                 <TextInput
                     label="Name"
