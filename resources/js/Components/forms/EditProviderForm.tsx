@@ -7,7 +7,13 @@ import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { CloseX, TextInput, TextAreaInput, DropdownInput } from "./inputs";
+import {
+    CloseX,
+    TextInput,
+    TextAreaInput,
+    DropdownInput,
+    SubmitButton,
+} from "./inputs";
 
 type ProviderInputs = {
     name: string;
@@ -209,17 +215,7 @@ export default function EditProviderForm({
                         errors={errors}
                     />
                 </div>
-
-                <label className="form-control pt-4">
-                    <input
-                        className="btn btn-primary"
-                        type="submit"
-                        value="Save"
-                    />
-                    <div className="text-error text-center pt-2">
-                        {errorMessage}
-                    </div>
-                </label>
+                <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>
     );

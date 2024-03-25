@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { TextInput, CloseX } from "./inputs";
+import { TextInput, CloseX, SubmitButton } from "./inputs";
 
 type Inputs = {
     title: string;
@@ -37,13 +37,7 @@ export default function AddCategoryForm({
                     errors={errors}
                     register={register}
                 />
-
-                <label className="form-control pt-4">
-                    <input className="btn btn-primary" type="submit" />
-                    <div className="text-error text-center pt-2">
-                        {errorMessage}
-                    </div>
-                </label>
+                <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>
     );

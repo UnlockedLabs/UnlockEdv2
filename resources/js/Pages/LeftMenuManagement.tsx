@@ -1,5 +1,5 @@
 import CategoryItem from "@/Components/CategoryItem";
-import Modal from "@/Components/modals/Modal";
+import Modal from "@/Components/Modal";
 import PageNav from "@/Components/PageNav";
 import Toast from "@/Components/Toast";
 import AddCategoryForm from "@/Components/forms/AddCategoryForm";

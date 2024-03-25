@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { CloseX, TextInput } from "./inputs";
+import { CloseX, TextInput, SubmitButton } from "./inputs";
 
 type Inputs = {
     title: string;
@@ -46,13 +46,7 @@ export default function AddLinkForm({
                     errors={errors}
                     register={register}
                 />
-
-                <label className="form-control pt-4">
-                    <input className="btn btn-primary" type="submit" />
-                    <div className="text-error text-center pt-2">
-                        {errorMessage}
-                    </div>
-                </label>
+                <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>
     );

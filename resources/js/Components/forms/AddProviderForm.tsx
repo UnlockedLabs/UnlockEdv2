@@ -2,7 +2,13 @@ import { ProviderPlatformState, ProviderPlatformType } from "@/common";
 import axios from "axios";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { CloseX, DropdownInput, TextAreaInput, TextInput } from "./inputs";
+import {
+    CloseX,
+    DropdownInput,
+    SubmitButton,
+    TextAreaInput,
+    TextInput,
+} from "./inputs";
 
 type ProviderInputs = {
     name: string;
@@ -76,7 +82,6 @@ export default function AddProviderForm({
                     required={true}
                     errors={errors}
                 />
-
                 <TextInput
                     label="Base URL"
                     register={register}
@@ -93,7 +98,6 @@ export default function AddProviderForm({
                     length={null}
                     errors={errors}
                 />
-
                 <TextInput
                     label="Access Key"
                     register={register}
@@ -102,7 +106,6 @@ export default function AddProviderForm({
                     length={null}
                     errors={errors}
                 />
-
                 <TextInput
                     label="Icon URL"
                     register={register}
@@ -111,17 +114,7 @@ export default function AddProviderForm({
                     length={null}
                     errors={errors}
                 />
-
-                <label className="form-control pt-4">
-                    <input
-                        className="btn btn-primary"
-                        type="submit"
-                        value="Save"
-                    />
-                    <div className="text-error text-center pt-2">
-                        {errorMessage}
-                    </div>
-                </label>
+                <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>
     );

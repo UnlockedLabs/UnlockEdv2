@@ -2,7 +2,7 @@ import PageNav from "@/Components/PageNav";
 import ProviderCard from "@/Components/ProviderCard";
 import AddProviderForm from "@/Components/forms/AddProviderForm";
 import EditProviderForm from "@/Components/forms/EditProviderForm";
-import Modal from "@/Components/modals/Modal";
+import Modal from "@/Components/Modal";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { ProviderPlatform } from "@/common";
 import { PageProps } from "@/types";

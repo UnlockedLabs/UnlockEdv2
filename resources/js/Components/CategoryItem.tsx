@@ -9,7 +9,7 @@ import {
     PlusIcon,
     ChevronUpIcon,
 } from "@heroicons/react/24/solid";
-import Modal from "./modals/Modal";
+import Modal from "./Modal";
 import DeleteForm from "./forms/DeleteForm";
 
 export default function CategoryItem({
