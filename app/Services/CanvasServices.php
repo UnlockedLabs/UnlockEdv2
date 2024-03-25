@@ -79,7 +79,7 @@ class CanvasServices
         }
 
         if ($accountId === 0 || $accountId === null) {
-            $accountId = SELF_ACCT;
+            $accountId = 1; // Default to the root account
         }
 
         $this->provider_id = $providerId;
