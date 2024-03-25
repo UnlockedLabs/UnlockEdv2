@@ -313,6 +313,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                         }}
                     />
                 }
+                ref={deleteCategoryModal}
             />
             {/* Toasts */}
             {toast.state !== null && (
