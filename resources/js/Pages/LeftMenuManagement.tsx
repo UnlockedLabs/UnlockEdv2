@@ -245,7 +245,6 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 data: newCategoryList,
             });
             // check response is okay, and give notification
-            console.log(response);
             if (response.status !== 200) {
                 // show error
                 setToast({
@@ -257,9 +256,20 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 // show success
                 setToast({ state: "success", message: "Categories Saved!" });
             }
-        } catch {
-            // show error
-            setToast({ state: "error", message: "Error Saving Categories" });
+        } catch (err: any) {
+            console.log(err);
+            if (err.response.status == 422) {
+                setToast({
+                    state: "error",
+                    message: "All categories must have associated links",
+                });
+            } else {
+                // show general error
+                setToast({
+                    state: "error",
+                    message: "Error Saving Categories",
+                });
+            }
         }
     }
 
