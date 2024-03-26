@@ -3,6 +3,7 @@ import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { ToastState } from "../Toast";
+import { CloseX } from "../inputs/CloseX";
 type Inputs = {
     name_first: string;
     name_last: string;
@@ -47,14 +48,7 @@ export default function AddUserForm({
     return (
         <div>
             <form method="dialog">
-                <button
-                    className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                    onClick={() => {
-                        reset();
-                    }}
-                >
-                    ✕
-                </button>
+                <CloseX close={() => {}} />
             </form>
 
             <form onSubmit={handleSubmit(onSubmit)}>
