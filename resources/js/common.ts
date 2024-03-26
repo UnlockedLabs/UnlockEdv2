@@ -10,6 +10,7 @@ export interface User {
     username: string;
     role: string;
     email: string;
+    [key: string]: any;
 }
 
 export interface Category {
@@ -46,6 +47,7 @@ export interface ProviderPlatform {
     name: string;
     state: ProviderPlatformState;
     type: ProviderPlatformType;
+    [key: string | ProviderPlatformState | ProviderPlatformType]: any;
 }
 
 export enum ProviderPlatformState {

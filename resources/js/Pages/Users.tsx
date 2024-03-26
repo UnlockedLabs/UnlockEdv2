@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useDebounce } from "usehooks-ts";
 import useSWR from "swr";
+import axios from "axios";
 
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import {
@@ -12,34 +13,114 @@ import {
     UserPlusIcon,
     ChevronUpIcon,
 } from "@heroicons/react/24/solid";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { PageProps } from "@/types";
 import { User } from "@/common";
 import PageNav from "@/Components/PageNav";
 import Pagination, { PaginatedData } from "@/Components/Pagination";
 import AddUserForm from "@/Components/forms/AddUserForm";
 import EditUserForm from "@/Components/forms/EditUserForm";
+import Toast, { ToastState } from "@/Components/Toast";
+import Modal, { ModalType } from "@/Components/Modal";
+import DeleteForm from "@/Components/DeleteForm";
+import ResetPasswordForm from "@/Components/forms/ResetPasswordForm";
+import ShowTempPasswordForm from "@/Components/forms/ShowTempPasswordForm";
 
 export default function Users({ auth }: PageProps) {
     const addUserModal = useRef<null | HTMLDialogElement>(null);
     const editUserModal = useRef<null | HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
     const deleteUserModal = useRef<null | HTMLDialogElement>(null);
-
+    const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<null | User>(null);
+    const [tempPassword, setTempPassword] = useState<string>("");
+    const showUserPassword = useRef<null | HTMLDialogElement>(null);
+    const [toast, setToast] = useState({
+        state: ToastState.null,
+        message: "",
+        reset: () => {},
+    });
 
     const [searchTerm, setSearchTerm] = useState("");
     const searchQuery = useDebounce(searchTerm, 300);
-
     const [pageQuery, setPageQuery] = useState(1);
-
     const [sortQuery, setSortQuery] = useState("asc");
-
     const { data, mutate, error, isLoading } = useSWR(
         `/api/v1/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
     );
-
     const userData = data as PaginatedData<User>;
+    const showToast = (message: string, state: ToastState) => {
+        setToast({
+            state,
+            message,
+            reset: () => {
+                setToast({
+                    state: ToastState.success,
+                    message: "",
+                    reset: () => {
+                        setDisplayToast(false);
+                    },
+                });
+            },
+        });
+        setDisplayToast(true);
+    };
+
+    const deleteUser = async () => {
+        const response = await axios("/api/v1/users/" + targetUser?.id, {
+            method: "delete",
+            headers: { ContentType: "application/json" },
+        });
+        const toastType =
+            response.status == 204 ? ToastState.success : ToastState.error;
+        const message =
+            response.status == 204
+                ? "User deleted successfully"
+                : response.statusText;
+        deleteUserModal.current?.close();
+        showToast(message, toastType);
+        setTargetUser(null);
+        mutate();
+        return;
+    };
+
+    const onAddUserSuccess = (pswd = "", msg: string, type: ToastState) => {
+        showToast(msg, type);
+        setTempPassword(pswd);
+        addUserModal.current?.close();
+        showUserPassword.current?.showModal();
+        mutate();
+    };
+
+    const hanldleEditUser = () => {
+        editUserModal.current?.close();
+        setTargetUser(null);
+        mutate();
+    };
+
+    const handleDeleteUserCancel = () => {
+        deleteUserModal.current?.close();
+        setTargetUser(null);
+    };
+
+    const handleResetPasswordCancel = (msg: string, err: boolean) => {
+        const state = err ? ToastState.error : ToastState.success;
+        if (msg === "" && !err) {
+            setTargetUser(null);
+            return;
+        }
+        showToast(msg, state);
+        setTargetUser(null);
+    };
+    const handleDisplayTempPassword = (psw: string) => {
+        setTempPassword(psw);
+        resetUserPasswordModal.current?.close();
+        showUserPassword.current?.showModal();
+        showToast("Password Successfully Reset", ToastState.success);
+    };
+    const handleShowPasswordClose = () => {
+        showUserPassword.current?.close();
+        setTempPassword("");
+    };
 
     return (
         <AuthenticatedLayout user={auth.user} title="Users">
@@ -130,9 +211,10 @@ export default function Users({ auth }: PageProps) {
                                                 >
                                                     <ArrowPathRoundedSquareIcon
                                                         className="h-4"
-                                                        onClick={() =>
-                                                            resetUserPasswordModal.current?.showModal()
-                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            resetUserPasswordModal.current?.showModal();
+                                                        }}
                                                     />
                                                 </div>
                                                 <div
@@ -141,9 +223,10 @@ export default function Users({ auth }: PageProps) {
                                                 >
                                                     <TrashIcon
                                                         className="h-4"
-                                                        onClick={() =>
-                                                            deleteUserModal.current?.showModal()
-                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            deleteUserModal.current?.showModal();
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
@@ -166,113 +249,61 @@ export default function Users({ auth }: PageProps) {
                 )}
             </div>
 
-            {/* Modals */}
-            <dialog ref={addUserModal} className="modal">
-                <div className="modal-box">
-                    <form method="dialog">
-                        <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                            ✕
-                        </button>
-                    </form>
-
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-neutral">
-                            Add User
-                        </span>
-                        <AddUserForm
-                            onSuccess={() => addUserModal.current?.close()}
-                        />
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={editUserModal} className="modal">
-                <div className="modal-box">
-                    <form method="dialog">
-                        <button
-                            className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                            onClick={() => {
-                                setTargetUser(null);
-                            }}
-                        >
-                            ✕
-                        </button>
-                    </form>
-
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-neutral">
-                            Edit User
-                        </span>
-                        <EditUserForm
-                            onSuccess={() => {
-                                mutate();
-                                editUserModal.current?.close();
-                                setTargetUser(null);
-                            }}
-                            user={targetUser}
-                        />
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={resetUserPasswordModal} className="modal">
-                <div className="modal-box">
-                    <h3 className="font-bold text-xl">
-                        Reset User's Password?
-                    </h3>
-                    <p className="py-4"></p>
-                    <div className="modal-action">
-                        <button className="btn btn-warning">Reset</button>
-                        <form method="dialog">
-                            {/* if there is a button in form, it will close the modal */}
-                            <button className="btn">Close</button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={deleteUserModal} className="modal">
-                <div className="modal-box">
-                    <h3 className="font-bold text-xl">Delete User?</h3>
-                    <p className="py-4"></p>
-                    <div className="modal-action">
-                        <button className="btn btn-warning">Delete</button>
-                        <form method="dialog">
-                            {/* if there is a button in form, it will close the modal */}
-                            <button className="btn">Close</button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
-
+            <Modal
+                ref={addUserModal}
+                type={ModalType.Add}
+                item="User"
+                form={<AddUserForm onSuccess={onAddUserSuccess} />}
+            />
+            <Modal
+                ref={editUserModal}
+                type={ModalType.Edit}
+                item="User"
+                form={
+                    <EditUserForm
+                        onSuccess={hanldleEditUser}
+                        user={targetUser}
+                    />
+                }
+            />
+            <Modal
+                ref={deleteUserModal}
+                type={ModalType.Delete}
+                item="User"
+                form={
+                    <DeleteForm
+                        item="User"
+                        onCancel={handleDeleteUserCancel}
+                        onSuccess={deleteUser}
+                    />
+                }
+            />
+            <Modal
+                ref={resetUserPasswordModal}
+                type={ModalType.Blank}
+                item=""
+                form={
+                    <ResetPasswordForm
+                        user={targetUser}
+                        onCancel={handleResetPasswordCancel}
+                        onSuccess={handleDisplayTempPassword}
+                    />
+                }
+            />
+            <Modal
+                ref={showUserPassword}
+                type={""}
+                item={""}
+                form={
+                    <ShowTempPasswordForm
+                        username={targetUser?.username || "New User"}
+                        tempPassword={tempPassword}
+                        onClose={handleShowPasswordClose}
+                    />
+                }
+            />
             {/* Toasts */}
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User created!</span>
-                </div>
-            </div>
-
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User updated!</span>
-                </div>
-            </div>
-
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User password reset!</span>
-                </div>
-            </div>
-
-            <div className="toast transition-opacity duration-500 ease-out opacity-0">
-                <div className="alert alert-success">
-                    <CheckCircleIcon className="h-6" />
-                    <span>User deleted!</span>
-                </div>
-            </div>
+            {displayToast && <Toast {...toast} />}
         </AuthenticatedLayout>
     );
 }
