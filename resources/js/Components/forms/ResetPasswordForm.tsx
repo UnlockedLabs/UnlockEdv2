@@ -36,11 +36,15 @@ export default function ResetPasswordForm({
     return (
         <div>
             <CloseX close={() => onCancel("", false)} />
-            <h4 className="font-bold text-error py-4">
-                <p>Note: Only for non-administrator accounts.</p>
-            </h4>
+            <p>
+                Are you sure you would like to reset {user?.name_first}{" "}
+                {user?.name_last}'s password?
+            </p>
+            <p className="font-bold text-error py-4">
+                Note: Only valid for non-administrator accounts.
+            </p>
             <p className="py-4"></p>
-            <form method="dialog" className="flex flex-row justify-between">
+            <div className="flex flex-row justify-between">
                 <button className="btn" onClick={() => onCancel("", false)}>
                     Cancel
                 </button>
@@ -52,7 +56,7 @@ export default function ResetPasswordForm({
                 >
                     Reset Password
                 </button>
-            </form>
+            </div>
         </div>
     );
 }
