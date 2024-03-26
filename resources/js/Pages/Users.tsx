@@ -111,15 +111,18 @@ export default function Users({ auth }: PageProps) {
         showToast(msg, state);
         setTargetUser(null);
     };
+
     const handleDisplayTempPassword = (psw: string) => {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
         showToast("Password Successfully Reset", ToastState.success);
     };
+
     const handleShowPasswordClose = () => {
         showUserPassword.current?.close();
         setTempPassword("");
+        setTargetUser(null);
     };
 
     return (
