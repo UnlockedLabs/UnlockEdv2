@@ -74,14 +74,26 @@ export default function EditProviderForm({
         }
     };
 
+    function diffFormData(formData: any, currentUserData: any) {
+        const changes: Partial<ProviderPlatform> = {};
+        Object.keys(formData).forEach((key) => {
+            if (
+                formData[key] !== currentUserData[key] &&
+                formData[key] !== undefined
+            ) {
+                changes[key] = formData[key];
+            }
+        });
+        return changes;
+    }
+
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
-        console.log(data);
+        const cleanData = diffFormData(data, provider);
         try {
             setErrorMessage("");
-
             await axios.patch(
                 `/api/v1/provider-platforms/${provider?.id}`,
-                data,
+                cleanData,
             );
             closeAndReset();
         } catch (error: any) {

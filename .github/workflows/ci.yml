@@ -54,8 +54,24 @@ jobs:
           CI: true
         run: php artisan test
 
+  deploy_to_demo:
+    name: Deploy to Demo Instance
+    runs-on: ubuntu-latest
+    needs: [phpunit]
+    if: github.ref == 'refs/heads/demo' && github.event_name == 'push' && github.repository == 'UnlockedLabs/UnlockEdv2'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Deploy
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+          HOSTNAME: ${{ secrets.SSH_HOST_DEMO }}
+          USER_NAME: ${{ secrets.USER_NAME }}
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOSTNAME} '~/deploy.sh'
+
   deploy:
-    name: Deploy to EC2
+    name: Deploy to Staging instance
     runs-on: ubuntu-latest
     needs: [phpunit]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && github.repository == 'UnlockedLabs/UnlockEdv2'

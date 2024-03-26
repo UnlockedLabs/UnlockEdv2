@@ -58,6 +58,19 @@ class User extends Authenticatable
             ->value('external_user_id') : $this->providerUserMappings()->sole()->external_user_id;
     }
 
+    public function mapToProvider(int $provider_platform_id, int $external_user_id)
+    {
+        $default_ext_username = $this->attributes['email'] != null ?
+            $this->attributes['email'] :
+            $this->attributes['username'].'@unlockEd.v2';
+        $this->providerUserMappings()
+            ->create([
+                'provider_platform_id' => $provider_platform_id,
+                'external_user_id' => $external_user_id,
+                'external_username' => $default_ext_username,
+            ]);
+    }
+
     public function userCourseActivity()
     {
         return $this->hasMany('App\Models\UserCourseActivity');

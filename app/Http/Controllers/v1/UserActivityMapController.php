@@ -1,0 +1,77 @@
+<?php
+
+namespace App\Http\Controllers\v1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Resources\UserActivityMapResource;
+use App\Models\UserCourseActivity;
+use Illuminate\Support\Facades\DB;
+
+class UserActivityMapController extends Controller
+{
+    public function show($id)
+    {
+        $aggregatedData = UserCourseActivity::where('user_id', $id)
+            ->select(
+                'user_id',
+                DB::raw('DATE(date) as date'), // Extracting date part
+                DB::raw('SUM(external_has_activity) as active_course_count'),
+                DB::raw('SUM(external_total_activity_time_delta) as total_activity_time')
+            )
+            ->groupBy('user_id', DB::raw('DATE(date)')) // Grouping by date part
+            ->get();
+
+        if ($aggregatedData->isEmpty()) {
+            return response()->json([]); // Return an empty array
+        }
+
+        // Calculate quartiles for total_activity_time
+        $totalActivityTimes = $aggregatedData->pluck('total_activity_time')->toArray();
+        $totalActivityTimeQuartiles = $this->calculateQuartiles($totalActivityTimes);
+
+        // Assign quartile scores for each day
+        foreach ($aggregatedData as $key => $data) {
+            $totalActivityTime = $data->total_activity_time;
+            $aggregatedData[$key]->total_activity_time_quartile = $this->getQuartileScore($totalActivityTime, $totalActivityTimeQuartiles);
+        }
+
+        return response()->json(UserActivityMapResource::collection($aggregatedData));
+    }
+
+    /**
+     * Calculate quartiles for a given dataset.
+     * This function handles zero values differently than a standard quartile function.
+     * It excludes zero values and splits only non-zero values into approximately equally sized buckets.
+     */
+    private function calculateQuartiles($data)
+    {
+        // Remove zeros from the data
+        $data = array_filter($data, function ($value) {
+            return $value != 0;
+        });
+
+        // Count the non-zero values
+        $count = count($data);
+
+        // Sort the non-zero data
+        sort($data);
+
+        // Calculate quartiles
+        $q1 = $data[floor($count / 4)];
+        $q2 = $data[floor($count / 2)];
+        $q3 = $data[floor(3 * $count / 4)];
+
+        return compact('q1', 'q2', 'q3');
+    }
+
+    private function getQuartileScore($value, $quartiles)
+    {
+        return match (true) {
+            ($value == 0) => 0,
+            ($value <= $quartiles['q1']) => 1,
+            ($value <= $quartiles['q2']) => 2,
+            ($value <= $quartiles['q3']) => 3,
+            default => 4,
+        };
+    }
+}

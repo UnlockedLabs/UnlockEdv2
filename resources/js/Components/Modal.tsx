@@ -1,9 +1,16 @@
 import { ReactNode, forwardRef } from "react";
 
 export interface ModalProps {
-    type: "Edit" | "Add" | "Delete";
+    type: ModalType | string;
     item: string;
     form: ReactNode | null;
+}
+
+export enum ModalType {
+    Edit = "Edit",
+    Add = "Add",
+    Delete = "Delete",
+    Blank = "",
 }
 
 const Modal = forwardRef<HTMLDialogElement, ModalProps>(function Modal(

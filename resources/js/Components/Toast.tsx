@@ -2,13 +2,19 @@ import {
     CheckCircleIcon,
     ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 // params needed: error or success, message, isVisible
 interface ToastProps {
-    state: "success" | "error" | null;
+    state: ToastState;
     message: string;
     reset: () => void;
+}
+
+export enum ToastState {
+    success = "success",
+    error = "error",
+    null = "",
 }
 
 export default function Toast({ state, message, reset }: ToastProps) {

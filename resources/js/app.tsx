@@ -7,7 +7,7 @@ import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 import { SWRConfig } from "swr";
 
-const appName = import.meta.env.VITE_APP_NAME || "Laravel";
+const appName = import.meta.env.VITE_APP_NAME || "UnlockEdv2";
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
