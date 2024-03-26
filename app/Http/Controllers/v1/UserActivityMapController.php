@@ -3,15 +3,31 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UserActivityMapRequest;
 use App\Http\Resources\UserActivityMapResource;
 use App\Models\UserCourseActivity;
 use Illuminate\Support\Facades\DB;
 
 class UserActivityMapController extends Controller
 {
-    public function show($id)
+    public function show($id, UserActivityMapRequest $request)
     {
-        $aggregatedData = UserCourseActivity::where('user_id', $id)
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+    
+        $query = UserCourseActivity::where('user_id', $id);
+    
+        // If start_date is provided, filter records with a date greater than or equal to start_date
+        if ($startDate) {
+            $query->whereDate(DB::raw('DATE(date)'), '>=', $startDate);
+        }
+
+        // If end_date is provided, filter records with a date less than or equal to end_date
+        if ($endDate) {
+            $query->whereDate(DB::raw('DATE(date)'), '<=', $endDate);
+        }
+
+        $aggregatedData = $query
             ->select(
                 'user_id',
                 DB::raw('DATE(date) as date'), // Extracting date part
