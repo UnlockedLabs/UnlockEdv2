@@ -13,28 +13,32 @@ import {
     UserPlusIcon,
     ChevronUpIcon,
 } from "@heroicons/react/24/solid";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { PageProps } from "@/types";
 import { User } from "@/common";
 import PageNav from "@/Components/PageNav";
 import Pagination, { PaginatedData } from "@/Components/Pagination";
 import AddUserForm from "@/Components/forms/AddUserForm";
 import EditUserForm from "@/Components/forms/EditUserForm";
+import Toast, { ToastState } from "@/Components/Toast";
+import Modal, { ModalType } from "@/Components/Modal";
+import DeleteForm from "@/Components/DeleteForm";
+import ResetPasswordForm from "@/Components/forms/ResetPasswordForm";
+import ShowTempPasswordForm from "@/Components/forms/ShowTempPasswordForm";
 
 export default function Users({ auth }: PageProps) {
     const addUserModal = useRef<null | HTMLDialogElement>(null);
     const editUserModal = useRef<null | HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
     const deleteUserModal = useRef<null | HTMLDialogElement>(null);
-
+    const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<null | User>(null);
-
+    const [tempPassword, setTempPassword] = useState<string>("");
     const showUserPassword = useRef<null | HTMLDialogElement>(null);
-    const [tempPassword, setTempPassword] = useState("");
+
     const [toast, setToast] = useState({
+        state: ToastState.null,
         message: "",
-        type: "success",
-        isVisible: false,
+        reset: () => {},
     });
 
     const [searchTerm, setSearchTerm] = useState("");
@@ -49,39 +53,21 @@ export default function Users({ auth }: PageProps) {
     );
 
     const userData = data as PaginatedData<User>;
-
-    const showToast = (message: string, type = "success") => {
-        setToast({ message, type, isVisible: true });
-        setTimeout(() => {
-            setToast((t) => ({ ...t, isVisible: false }));
-        }, 5000);
-    };
-
-    const getTempPassword = async () => {
-        resetUserPasswordModal.current?.close();
-        showUserPassword.current?.showModal();
-
-        try {
-            const response = await axios("/student-password", {
-                method: "post",
-                headers: { ContentType: "application/json" },
-                data: { user_id: targetUser?.id },
-            });
-
-            if (response.status !== 201) {
-                showUserPassword.current?.close();
-                showToast(response.data.data.message, "error");
-                return;
-            }
-
-            setTempPassword(response.data.data["password"]);
-            showToast(response.data.message, "success");
-            return;
-        } catch (error: any) {
-            showUserPassword.current?.close();
-            showToast(error.response.data.message, "error");
-            return;
-        }
+    const showToast = (message: string, state: ToastState) => {
+        setToast({
+            state,
+            message,
+            reset: () => {
+                setToast({
+                    state: ToastState.success,
+                    message: "",
+                    reset: () => {
+                        setDisplayToast(false);
+                    },
+                });
+            },
+        });
+        setDisplayToast(true);
     };
 
     const deleteUser = async () => {
@@ -89,7 +75,8 @@ export default function Users({ auth }: PageProps) {
             method: "delete",
             headers: { ContentType: "application/json" },
         });
-        const toastType = response.status == 204 ? "success" : "error";
+        const toastType =
+            response.status == 204 ? ToastState.success : ToastState.error;
         const message =
             response.status == 204
                 ? "User deleted successfully"
@@ -100,11 +87,40 @@ export default function Users({ auth }: PageProps) {
         return;
     };
 
-    const onAddUserSuccess = (pswd = "", msg: string, type: string) => {
+    const onAddUserSuccess = (pswd = "", msg: string, type: ToastState) => {
         showToast(msg, type);
-        addUserModal.current?.close();
         setTempPassword(pswd);
+        addUserModal.current?.close();
         showUserPassword.current?.showModal();
+    };
+    const hanldleEditUser = () => {
+        editUserModal.current?.close();
+        setTargetUser(null);
+    };
+
+    const handleDeleteUserCancel = () => {
+        deleteUserModal.current?.close();
+        setTargetUser(null);
+    };
+
+    const handleResetPasswordCancel = (msg: string, err: boolean) => {
+        const state = err ? ToastState.error : ToastState.success;
+        if (msg === "" && !err) {
+            setTargetUser(null);
+            return;
+        }
+        showToast(msg, state);
+        setTargetUser(null);
+    };
+    const handleDisplayTempPassword = (psw: string) => {
+        setTempPassword(psw);
+        resetUserPasswordModal.current?.close();
+        showUserPassword.current?.showModal();
+        showToast("Password Successfully Reset", ToastState.success);
+    };
+    const handleShowPasswordClose = () => {
+        showUserPassword.current?.close();
+        setTempPassword("");
     };
 
     return (
@@ -234,137 +250,64 @@ export default function Users({ auth }: PageProps) {
                 )}
             </div>
 
-            {/* Modals */}
-            <dialog ref={addUserModal} className="modal">
-                <div className="modal-box">
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-neutral">
-                            Add User
-                        </span>
-                        <AddUserForm onSuccess={onAddUserSuccess} />
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={editUserModal} className="modal">
-                <div className="modal-box">
-                    <form method="dialog">
-                        <button
-                            className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                            onClick={() => {
-                                setTargetUser(null);
-                            }}
-                        >
-                            ✕
-                        </button>
-                    </form>
-
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-neutral">
-                            Edit User
-                        </span>
-                        <EditUserForm
-                            onSuccess={() => {
-                                mutate();
-                                editUserModal.current?.close();
-                                setTargetUser(null);
-                            }}
-                            user={targetUser}
-                        />
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={resetUserPasswordModal} className="modal">
-                <div className="modal-box">
-                    <h3 className="font-bold text-xl">
-                        <p>Reset User's Password?</p>
-                    </h3>
-                    <h4 className="font-bold text-l text-secondary">
-                        <br />
-                        <p>Note: Only for non-administrator accounts.</p>
-                    </h4>
-                    <p className="py-4"></p>
-                    <div className="modal-action">
-                        <button
-                            className="btn btn-warning"
-                            onClick={() => {
-                                getTempPassword();
-                            }}
-                        >
-                            Reset
-                        </button>
-                        <form method="dialog">
-                            {/* if there is a button in form, it will close the modal */}
-                            <button
-                                className="btn"
-                                onClick={() => setTempPassword("")}
-                            >
-                                Close
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={showUserPassword} className="modal">
-                <div className="modal-box">
-                    <h3 className="font-bold text-xl">
-                        Temporary Password for {targetUser?.username}
-                    </h3>
-                    <br />
-                    <p className="py-4 text-xl">{tempPassword}</p>
-                    <h4 className="font-bold text-l text-secondary">
-                        <p>Be sure to write this down</p>
-                    </h4>
-                    <div className="modal-action">
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => showUserPassword.current?.close()}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </dialog>
-
-            <dialog ref={deleteUserModal} className="modal">
-                <div className="modal-box">
-                    <h3 className="font-bold text-xl">Delete User?</h3>
-                    <p className="py-4"></p>
-                    <div className="modal-action">
-                        <button
-                            className="btn btn-warning"
-                            onClick={deleteUser}
-                        >
-                            Delete
-                        </button>
-                        <form method="dialog">
-                            {/* if there is a button in form, it will close the modal */}
-                            <button
-                                className="btn"
-                                onClick={() => setTargetUser(null)}
-                            >
-                                Close
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
-
+            {/* Add User Modal */}
+            <Modal
+                ref={addUserModal}
+                type={ModalType.Add}
+                item="User"
+                form={<AddUserForm onSuccess={onAddUserSuccess} />}
+            />
+            {/* Edit User Modal */}
+            <Modal
+                ref={editUserModal}
+                type={ModalType.Edit}
+                item="User"
+                form={
+                    <EditUserForm
+                        onSuccess={hanldleEditUser}
+                        user={targetUser}
+                    />
+                }
+            />
+            {/* Delete User Modal */}
+            <Modal
+                ref={deleteUserModal}
+                type={ModalType.Delete}
+                item="User"
+                form={
+                    <DeleteForm
+                        item="User"
+                        onCancel={handleDeleteUserCancel}
+                        onSuccess={deleteUser}
+                    />
+                }
+            />
+            {/* Reset Password Modal */}
+            <Modal
+                ref={resetUserPasswordModal}
+                type={ModalType.Reset}
+                item="Password"
+                form={
+                    <ResetPasswordForm
+                        user={targetUser}
+                        onCancel={handleResetPasswordCancel}
+                        onSuccess={handleDisplayTempPassword}
+                    />
+                }
+            />
+            <Modal
+                ref={showUserPassword}
+                type={""}
+                item={""}
+                form={
+                    <ShowTempPasswordForm
+                        tempPassword={tempPassword}
+                        onClose={handleShowPasswordClose}
+                    />
+                }
+            />
             {/* Toasts */}
-            {toast.isVisible && (
-                <div
-                    className={`toast transition-opacity duration-500 ease-out ${
-                        toast.isVisible ? "opacity-100" : "opacity-0"
-                    }`}
-                >
-                    <div className={`alert alert-${toast.type}`}>
-                        <CheckCircleIcon className="h-6" />
-                        <span>{toast.message}</span>
-                    </div>
-                </div>
-            )}
+            {displayToast && <Toast {...toast} />}
         </AuthenticatedLayout>
     );
 }

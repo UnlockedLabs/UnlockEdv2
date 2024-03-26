@@ -14,7 +14,7 @@ class StudentNewPasswordController extends Controller
     public function store(AdminRequest $request): JsonResponse|RedirectResponse
     {
         $user = User::findOrFail($request['user_id']);
-        if ($user->role != UserRole::Student) {
+        if ($user->role != UserRole::STUDENT) {
             return response()->json([
                 'message' => 'Only non-admin accounts can have their passwords reset',
             ], 403);

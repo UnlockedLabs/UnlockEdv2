@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\v1;
 
-use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminRequest;
 use App\Http\Requests\ShowUserRequest;

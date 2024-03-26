@@ -2,7 +2,7 @@ import { UserRole } from "@/common";
 import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-
+import { ToastState } from "../Toast";
 type Inputs = {
     name_first: string;
     name_last: string;
@@ -13,7 +13,7 @@ type Inputs = {
 export default function AddUserForm({
     onSuccess,
 }: {
-    onSuccess: (psw: string, msg: string, err: string) => void;
+    onSuccess: (psw: string, msg: string, err: ToastState) => void;
 }) {
     const [errorMessage, setErrorMessage] = useState("");
 
@@ -31,13 +31,13 @@ export default function AddUserForm({
             let response = await axios.post("/api/v1/users", data);
 
             if (response.status !== 201) {
-                onSuccess("", "Failed to create user", "error");
+                onSuccess("", "Failed to create user", ToastState.error);
             }
             reset();
             onSuccess(
                 response.data.temp_password,
                 "User created successfully with temporary password",
-                "success",
+                ToastState.success,
             );
         } catch (error: any) {
             setErrorMessage(error.response.data.message);
@@ -111,7 +111,7 @@ export default function AddUserForm({
                             maxLength: {
                                 value: 50,
                                 message:
-                                    "Username shoudl be 50 characters or less",
+                                    "Username should be 50 characters or less",
                             },
                         })}
                     />
