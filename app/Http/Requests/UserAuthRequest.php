@@ -4,19 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ShowUserRequest extends FormRequest
+class UserAuthRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
-    }
-
-    public function overrideAuthorize($id): bool
-    {
-        return $this->user()->isAdmin() || $this->user()->id == $id;
+        return $this->user()->isAdmin() || $this->user()->id == $this->route('id');
     }
 
     /**
