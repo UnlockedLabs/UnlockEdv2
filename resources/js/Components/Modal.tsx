@@ -10,7 +10,7 @@ export enum ModalType {
     Edit = "Edit",
     Add = "Add",
     Delete = "Delete",
-    Reset = "Reset",
+    Blank = "",
 }
 
 const Modal = forwardRef<HTMLDialogElement, ModalProps>(function Modal(

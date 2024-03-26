@@ -2,12 +2,14 @@ import { User, UserRole } from "@/common";
 import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
+import { CloseX } from "../inputs/CloseX";
 
 type Inputs = {
     name_first: string;
     name_last: string;
     username: string;
     role: UserRole;
+    email: string;
 };
 
 export default function EditUserForm({
@@ -29,16 +31,23 @@ export default function EditUserForm({
         formState: { errors },
     } = useForm<Inputs>();
 
+    function diffFormData(formData: any, currentUserData: any) {
+        const changes: Partial<User> = {};
+        Object.keys(formData).forEach((key) => {
+            if (
+                formData[key] !== currentUserData[key] &&
+                formData[key] !== undefined
+            ) {
+                changes[key] = formData[key];
+            }
+        });
+        return changes;
+    }
+
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         try {
             setErrorMessage("");
-
-            // TODO: Temporary fix because validation fails when it shouldn't
-            const cleanData = data as any;
-            if (data.username == user.username) {
-                delete cleanData.username;
-            }
-
+            const cleanData = diffFormData(data, user);
             await axios.patch(`/api/v1/users/${user.id}`, cleanData);
 
             onSuccess();
@@ -50,14 +59,7 @@ export default function EditUserForm({
     return (
         <>
             <form method="dialog">
-                <button
-                    className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                    onClick={() => {
-                        onSuccess();
-                    }}
-                >
-                    ✕
-                </button>
+                <CloseX close={() => onSuccess()} />
             </form>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <label className="form-control">
@@ -116,12 +118,33 @@ export default function EditUserForm({
                             maxLength: {
                                 value: 50,
                                 message:
-                                    "Username shoudl be 50 characters or less",
+                                    "Username should be 50 characters or less",
                             },
                         })}
                     />
                     <div className="text-error text-sm">
                         {errors.username && errors.username?.message}
+                    </div>
+                </label>
+
+                <label className="form-control">
+                    <div className="label">
+                        <span className="label-text">Email</span>
+                    </div>
+                    <input
+                        type="text"
+                        className="input input-bordered w-full"
+                        defaultValue={user.email}
+                        {...register("email", {
+                            maxLength: {
+                                value: 50,
+                                message:
+                                    "Email should be 50 characters or less",
+                            },
+                        })}
+                    />
+                    <div className="text-error text-sm">
+                        {errors.email && errors.email?.message}
                     </div>
                 </label>
 

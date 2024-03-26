@@ -45,7 +45,6 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(StoreUserRequest $request)
-    /* enum validation not working properly regardless of what I did had to manually assign */
     {
         $role = match ($request->role) {
             'admin' => 'admin',

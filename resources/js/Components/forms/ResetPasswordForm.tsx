@@ -1,5 +1,7 @@
 import axios from "axios";
 import { User } from "@/common";
+import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { CloseX } from "../inputs/CloseX";
 
 interface ResetPasswordFormProps {
     onCancel: (message: string, is_err: boolean) => void;
@@ -51,10 +53,7 @@ export default function ResetPasswordForm({
                     Reset
                 </button>
                 <form method="dialog">
-                    {/* if there is a button in form, it will close the modal */}
-                    <button className="btn" onClick={() => onCancel("", false)}>
-                        Close
-                    </button>
+                    <CloseX close={() => onCancel("", false)} />
                 </form>
             </div>
         </div>

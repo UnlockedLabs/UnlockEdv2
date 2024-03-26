@@ -34,7 +34,6 @@ export default function Users({ auth }: PageProps) {
     const [targetUser, setTargetUser] = useState<null | User>(null);
     const [tempPassword, setTempPassword] = useState<string>("");
     const showUserPassword = useRef<null | HTMLDialogElement>(null);
-
     const [toast, setToast] = useState({
         state: ToastState.null,
         message: "",
@@ -43,15 +42,11 @@ export default function Users({ auth }: PageProps) {
 
     const [searchTerm, setSearchTerm] = useState("");
     const searchQuery = useDebounce(searchTerm, 300);
-
     const [pageQuery, setPageQuery] = useState(1);
-
     const [sortQuery, setSortQuery] = useState("asc");
-
     const { data, mutate, error, isLoading } = useSWR(
         `/api/v1/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
     );
-
     const userData = data as PaginatedData<User>;
     const showToast = (message: string, state: ToastState) => {
         setToast({
@@ -84,6 +79,7 @@ export default function Users({ auth }: PageProps) {
         deleteUserModal.current?.close();
         showToast(message, toastType);
         setTargetUser(null);
+        mutate();
         return;
     };
 
@@ -92,10 +88,13 @@ export default function Users({ auth }: PageProps) {
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
+        mutate();
     };
+
     const hanldleEditUser = () => {
         editUserModal.current?.close();
         setTargetUser(null);
+        mutate();
     };
 
     const handleDeleteUserCancel = () => {
@@ -250,14 +249,12 @@ export default function Users({ auth }: PageProps) {
                 )}
             </div>
 
-            {/* Add User Modal */}
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
                 item="User"
                 form={<AddUserForm onSuccess={onAddUserSuccess} />}
             />
-            {/* Edit User Modal */}
             <Modal
                 ref={editUserModal}
                 type={ModalType.Edit}
@@ -269,7 +266,6 @@ export default function Users({ auth }: PageProps) {
                     />
                 }
             />
-            {/* Delete User Modal */}
             <Modal
                 ref={deleteUserModal}
                 type={ModalType.Delete}
@@ -282,11 +278,10 @@ export default function Users({ auth }: PageProps) {
                     />
                 }
             />
-            {/* Reset Password Modal */}
             <Modal
                 ref={resetUserPasswordModal}
-                type={ModalType.Reset}
-                item="Password"
+                type={ModalType.Blank}
+                item=""
                 form={
                     <ResetPasswordForm
                         user={targetUser}
@@ -301,6 +296,7 @@ export default function Users({ auth }: PageProps) {
                 item={""}
                 form={
                     <ShowTempPasswordForm
+                        username={targetUser?.username || "New User"}
                         tempPassword={tempPassword}
                         onClose={handleShowPasswordClose}
                     />
