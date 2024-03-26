@@ -34,28 +34,25 @@ export default function ResetPasswordForm({
     };
 
     return (
-        <div className="card-normal">
-            <h3 className="font-bold text-xl">
-                <p>Reset User's Password?</p>
-            </h3>
-            <h4 className="font-bold text-l text-secondary">
-                <br />
+        <div>
+            <CloseX close={() => onCancel("", false)} />
+            <h4 className="font-bold text-error py-4">
                 <p>Note: Only for non-administrator accounts.</p>
             </h4>
             <p className="py-4"></p>
-            <div className="modal-action">
+            <form method="dialog" className="flex flex-row justify-between">
+                <button className="btn" onClick={() => onCancel("", false)}>
+                    Cancel
+                </button>
                 <button
                     className="btn btn-error"
                     onClick={() => {
                         getTempPassword();
                     }}
                 >
-                    Reset
+                    Reset Password
                 </button>
-                <form method="dialog">
-                    <CloseX close={() => onCancel("", false)} />
-                </form>
-            </div>
+            </form>
         </div>
     );
 }

@@ -280,7 +280,7 @@ export default function Users({ auth }: PageProps) {
             />
             <Modal
                 ref={resetUserPasswordModal}
-                type={ModalType.Blank}
+                type={`Reset ${targetUser?.name_first} ${targetUser?.name_last}'s Password?`}
                 item=""
                 form={
                     <ResetPasswordForm
@@ -292,11 +292,12 @@ export default function Users({ auth }: PageProps) {
             />
             <Modal
                 ref={showUserPassword}
-                type={""}
+                type={`Temporary Password for ${
+                    targetUser?.username || "New User"
+                }:`}
                 item={""}
                 form={
                     <ShowTempPasswordForm
-                        username={targetUser?.username || "New User"}
                         tempPassword={tempPassword}
                         onClose={handleShowPasswordClose}
                     />

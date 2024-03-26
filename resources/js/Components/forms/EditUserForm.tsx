@@ -3,6 +3,9 @@ import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { CloseX } from "../inputs/CloseX";
+import { TextInput } from "../inputs/TextArea";
+import { DropdownInput } from "../inputs/DropdownInput";
+import { SubmitButton } from "../inputs/SubmitButton";
 
 type Inputs = {
     name_first: string;
@@ -29,7 +32,15 @@ export default function EditUserForm({
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<Inputs>();
+    } = useForm<Inputs>({
+        defaultValues: {
+            name_first: user.name_first,
+            name_last: user.name_last,
+            username: user.username,
+            role: user.role as UserRole,
+            email: user.email,
+        },
+    });
 
     function diffFormData(formData: any, currentUserData: any) {
         const changes: Partial<User> = {};
@@ -58,119 +69,49 @@ export default function EditUserForm({
 
     return (
         <>
-            <form method="dialog">
-                <CloseX close={() => onSuccess()} />
-            </form>
+            <CloseX close={() => onSuccess()} />
             <form onSubmit={handleSubmit(onSubmit)}>
-                <label className="form-control">
-                    <div className="label">
-                        <span className="label-text">First Name</span>
-                    </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        defaultValue={user.name_first}
-                        {...register("name_first", {
-                            required: "First name is required",
-                            maxLength: {
-                                value: 25,
-                                message:
-                                    "First name should be 25 characters or less",
-                            },
-                        })}
-                    />
-                    <div className="text-error text-sm">
-                        {errors.name_first && errors.name_first?.message}
-                    </div>
-                </label>
-                <label className="form-control">
-                    <div className="label">
-                        <span className="label-text">Last Name</span>
-                    </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        defaultValue={user.name_last}
-                        {...register("name_last", {
-                            required: "Last name is required",
-                            maxLength: {
-                                value: 25,
-                                message:
-                                    "Last name should be 25 characters or less",
-                            },
-                        })}
-                    />
-                    <div className="text-error text-sm">
-                        {errors.name_last && errors.name_last?.message}
-                    </div>
-                </label>
-
-                <label className="form-control">
-                    <div className="label">
-                        <span className="label-text">Username</span>
-                    </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        defaultValue={user.username}
-                        {...register("username", {
-                            required: "Username is required",
-                            maxLength: {
-                                value: 50,
-                                message:
-                                    "Username should be 50 characters or less",
-                            },
-                        })}
-                    />
-                    <div className="text-error text-sm">
-                        {errors.username && errors.username?.message}
-                    </div>
-                </label>
-
-                <label className="form-control">
-                    <div className="label">
-                        <span className="label-text">Email</span>
-                    </div>
-                    <input
-                        type="text"
-                        className="input input-bordered w-full"
-                        defaultValue={user.email}
-                        {...register("email", {
-                            maxLength: {
-                                value: 50,
-                                message:
-                                    "Email should be 50 characters or less",
-                            },
-                        })}
-                    />
-                    <div className="text-error text-sm">
-                        {errors.email && errors.email?.message}
-                    </div>
-                </label>
-
-                <label className="form-control w-full">
-                    <div className="label">
-                        <span className="label-text">Role</span>
-                    </div>
-                    <select
-                        className="select select-bordered"
-                        defaultValue={user.role}
-                        {...register("role", { required: "Role is required" })}
-                    >
-                        <option value="student">Student</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                    <div className="text-error text-sm">
-                        {errors.role && errors.role?.message}
-                    </div>
-                </label>
-
-                <label className="form-control pt-4">
-                    <input className="btn btn-primary" type="submit" />
-                    <div className="text-error text-center pt-2">
-                        {errorMessage}
-                    </div>
-                </label>
+                <TextInput
+                    label={"First Name"}
+                    interfaceRef={"name_first"}
+                    required={true}
+                    length={25}
+                    errors={errors}
+                    register={register}
+                />
+                <TextInput
+                    label={"Last Name"}
+                    interfaceRef={"name_last"}
+                    required={true}
+                    length={25}
+                    errors={errors}
+                    register={register}
+                />
+                <TextInput
+                    label={"Username"}
+                    interfaceRef={"username"}
+                    required={true}
+                    length={50}
+                    errors={errors}
+                    register={register}
+                />
+                <TextInput
+                    label={"Email"}
+                    interfaceRef={"email"}
+                    required={false}
+                    length={50}
+                    errors={errors}
+                    register={register}
+                />
+                <DropdownInput
+                    label={"Role"}
+                    interfaceRef={"role"}
+                    required={true}
+                    errors={errors}
+                    register={register}
+                    enumType={UserRole}
+                />
+                <SubmitButton errorMessage={errorMessage} />
             </form>
         </>
     );
