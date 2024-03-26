@@ -37,7 +37,7 @@ class UserActivityMapControllerTest extends TestCase
         foreach ($responseData as $data) {
             $this->assertGreaterThanOrEqual(0, $data['total_activity_time_quartile']);
             $this->assertLessThanOrEqual(4, $data['total_activity_time_quartile']);
-        }                
+        }
     }
 
     public function testGetUserActivityMapStartDateOnly()
@@ -54,11 +54,11 @@ class UserActivityMapControllerTest extends TestCase
             ->take(1)
             ->value('date');
 
-
         // Find the user using the randomly selected user_id
         $user = User::find($randomUserId);
 
-        $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.'?start_date='.$startDate);
+        $params = '?start_date='.$startDate;
+        $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.$params);
         $response->assertStatus(200)
             ->assertJsonStructure([
                 '*' => [
@@ -78,8 +78,8 @@ class UserActivityMapControllerTest extends TestCase
             $this->assertGreaterThanOrEqual(date('Y-m-d', strtotime($startDate)), $dateFormatted);
             $this->assertGreaterThanOrEqual(0, $data['total_activity_time_quartile']);
             $this->assertLessThanOrEqual(4, $data['total_activity_time_quartile']);
-        }                
-    }    
+        }
+    }
 
     public function testGetUserActivityMapEndDateOnly()
     {
@@ -98,7 +98,8 @@ class UserActivityMapControllerTest extends TestCase
         // Find the user using the randomly selected user_id
         $user = User::find($randomUserId);
 
-        $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.'?end_date='.$endDate);
+        $params = '?end_date='.$endDate;
+        $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.$params);
         $response->assertStatus(200)
             ->assertJsonStructure([
                 '*' => [
@@ -118,8 +119,8 @@ class UserActivityMapControllerTest extends TestCase
             $this->assertLessThanOrEqual(date('Y-m-d', strtotime($endDate)), $dateFormatted);
             $this->assertGreaterThanOrEqual(0, $data['total_activity_time_quartile']);
             $this->assertLessThanOrEqual(4, $data['total_activity_time_quartile']);
-        }                
-    }     
+        }
+    }
 
     public function testGetUserActivityMapDateRange()
     {
@@ -133,7 +134,7 @@ class UserActivityMapControllerTest extends TestCase
             ->orderBy('date', 'asc')
             ->skip(DB::table('user_course_activities')->count() / 4)
             ->take(1)
-            ->value('date');        
+            ->value('date');
         // Select date for testing where 25% of the values are after it
         $endDate = DB::table('user_course_activities')
             ->select('date')
@@ -145,7 +146,9 @@ class UserActivityMapControllerTest extends TestCase
         // Find the user using the randomly selected user_id
         $user = User::find($randomUserId);
 
-        $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.'?start_date='.$startDate.'&end_date='.$endDate);        $response->assertStatus(200)
+        $params = '?start_date='.$startDate.'&end_date='.$endDate;
+        $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.$params);
+        $response->assertStatus(200)
             ->assertJsonStructure([
                 '*' => [
                     'user_id',
@@ -165,6 +168,6 @@ class UserActivityMapControllerTest extends TestCase
             $this->assertLessThanOrEqual(date('Y-m-d', strtotime($endDate)), $dateFormatted);
             $this->assertGreaterThanOrEqual(0, $data['total_activity_time_quartile']);
             $this->assertLessThanOrEqual(4, $data['total_activity_time_quartile']);
-        }                
-    }      
+        }
+    }
 }

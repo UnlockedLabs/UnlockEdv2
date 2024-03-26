@@ -27,8 +27,8 @@ class UserActivityMapRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'start_date' => 'nullable|date', 
-            'end_date' => 'nullable|date', 
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
         ];
     }
 }

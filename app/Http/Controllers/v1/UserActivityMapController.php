@@ -14,9 +14,9 @@ class UserActivityMapController extends Controller
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
-    
+
         $query = UserCourseActivity::where('user_id', $id);
-    
+
         // If start_date is provided, filter records with a date greater than or equal to start_date
         if ($startDate) {
             $query->whereDate(DB::raw('DATE(date)'), '>=', $startDate);
