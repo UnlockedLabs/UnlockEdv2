@@ -47,7 +47,8 @@ class CourseControllerTest extends TestCase
         $user = \App\Models\User::factory()->admin()->create();
         $response = $this->actingAs($user)->get($this->uri);
         $response->assertStatus(200);
-        $this->assertCount(10, $response['data']);
+        // 5 courses are created in the seeder
+        $this->assertCount(5, $response['data']);
         $response->assertJsonIsArray('data');
         $response->assertJsonStructure($this->list_structure);
     }

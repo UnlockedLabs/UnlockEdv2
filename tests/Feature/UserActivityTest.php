@@ -74,7 +74,6 @@ class UserActivityTest extends TestCase
 
             $this->assertEquals($user->id, $response['data']['user_id']);
         }
-
     }
 
     public function testUserCanCreateUserActivitiesForThemselves()
@@ -110,42 +109,38 @@ class UserActivityTest extends TestCase
         $admin = User::factory()->admin()->create();
         $userActivity = UserActivity::factory()->create();
 
-        $response = $this->actingAs($admin)->getJson($this->uri.'/'.$userActivity->id);
+        $response = $this->actingAs($admin)->getJson($this->uri.'/'.$userActivity->user_id);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure($this->single_json_structure);
+        $response->assertJsonStructure($this->array_json_structure);
     }
 
     public function testUserCanShowOwnUserActivity()
     {
         $user = User::factory()->create();
         $userActivity = UserActivity::factory()->forUser($user->id)->create();
-
-        $response = $this->actingAs($user)->getJson($this->uri.'/'.$userActivity->id);
+        $response = $this->actingAs($user)->getJson($this->uri.'/'.$user->id);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure($this->single_json_structure);
+        $response->assertJsonStructure($this->array_json_structure);
     }
 
     public function testUserCannotShowOtherUserActivity()
     {
-        $user = User::factory()->create();
+        $this->seed(TestSeeder::class);
+        $user = User::inRandomOrder()->first();
         $otherUser = User::factory()->create();
         $otherUserActivity = UserActivity::factory()->forUser($otherUser->id)->create();
-
-        $response = $this->actingAs($user)->getJson($this->uri.'/'.$otherUserActivity->id);
-
-        $response->assertStatus(404);
-        $response->assertJson(['error' => "UserActivity with this ID not found for User: {$user->username}"]);
+        $response = $this->actingAs($user)->getJson($this->uri.'/'.$otherUser->id);
+        $response->assertStatus(403);
     }
 
     public function testUserCanAccessOwnUserActivities()
     {
+        $this->seed(TestSeeder::class);
         $user = User::factory()->createOne();
         UserActivity::factory()->count(5)->forUser($user->id)->create();
-
         $response = $this->actingAs($user)->getJson($this->uri);
-
         $response->assertStatus(200);
         $response->assertJsonStructure($this->array_json_structure);
 
@@ -197,7 +192,6 @@ class UserActivityTest extends TestCase
         $name_first = $user['name_first'];
         $response = $this->actingAs($admin)->getJson($this->uri.'?search='.$name_first);
 
-        print_r($response);
         $response->assertStatus(200);
         $response->assertJsonStructure($this->array_json_structure);
         $response->assertJsonFragment([
