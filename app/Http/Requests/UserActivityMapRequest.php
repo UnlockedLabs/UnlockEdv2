@@ -11,12 +11,7 @@ class UserActivityMapRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
-    }
-
-    public function overrideAuthorize($id): bool
-    {
-        return $this->user()->isAdmin() || $this->user()->id == $id;
+        return $this->user()->isAdmin() || $this->user()->id == $this->route('id');
     }
 
     /**
