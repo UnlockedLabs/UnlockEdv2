@@ -1,4 +1,6 @@
 #!/bin/sh
+# get commit message from recent commit that triggered this
+# will it be in the log if the commit is not yet committed
 . "$(dirname "$0")/_/husky.sh"
 git diff --cached --name-only --diff-filter=ACMRTUXB >.husky/staged-files
 npx lint-staged
