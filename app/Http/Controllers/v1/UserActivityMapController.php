@@ -13,7 +13,7 @@ class UserActivityMapController extends Controller
     public function show($id, UserActivityMapRequest $request)
     {
         $valid = $request->validated();
-        $startDate = $valid['start_date'] ?? null;  
+        $startDate = $valid['start_date'] ?? null;
         $endDate = $valid['end_date'] ?? null;
 
         $query = UserCourseActivity::where('user_id', $id);
