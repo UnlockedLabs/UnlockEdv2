@@ -263,10 +263,14 @@ export default function Users({ auth }: PageProps) {
                 type={ModalType.Edit}
                 item="User"
                 form={
-                    <EditUserForm
-                        onSuccess={hanldleEditUser}
-                        user={targetUser}
-                    />
+                    targetUser ? (
+                        <EditUserForm
+                            onSuccess={hanldleEditUser}
+                            user={targetUser}
+                        />
+                    ) : (
+                        <div>No user defined!</div>
+                    )
                 }
             />
             <Modal

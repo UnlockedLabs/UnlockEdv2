@@ -20,12 +20,8 @@ export default function EditUserForm({
     user,
 }: {
     onSuccess: () => void;
-    user: null | User;
+    user: User;
 }) {
-    if (user === null) {
-        return <div>No user defined!</div>;
-    }
-
     const [errorMessage, setErrorMessage] = useState("");
 
     const {
