@@ -79,12 +79,16 @@ class CanvasServices
         }
 
         if ($accountId === 0 || $accountId === null) {
-            $accountId = SELF_ACCT;
+            $accountId = 1; // Default to the root account
         }
 
         $this->provider_id = $providerId;
         $this->account_id = $accountId;
-        $this->access_key = Crypt::decryptString($apiKey);
+        try {
+            $this->access_key = Crypt::decryptString($apiKey);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            $this->access_key = $apiKey;
+        }
         $this->base_url = $url;
         $this->client = new Client();
     }

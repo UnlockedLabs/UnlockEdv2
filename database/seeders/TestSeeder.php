@@ -22,14 +22,16 @@ class TestSeeder extends Seeder
         $provider = ProviderPlatform::factory()->createOne();
         // Create 5 courses and 10 users for mapped to provider
         $users = User::factory(10)->create();
-        $courses = Course::factory(5)->forProviderPlatform($provider->id)->create();
+        $courses = Course::factory(5)->forProviderPlatform($provider->id)->make();
+        $courses->each->save();
         foreach ($users as $user) {
             ProviderUserMapping::factory()->forUser($user->id)->forProvider($provider->id)->createOne();
             // Create a relationship between each user and provider with a ProviderUserMapping
             UserActivity::factory(5)->forUser($user->id)->createOne();
             // create an enrollment for each user and course
             foreach ($courses as $course) {
-                $enrollment = Enrollment::factory()->forUser($user->id)->forCourse($course->id)->createOne();
+                $enrollment = Enrollment::factory()->forUser($user->id)->forCourse($course->id)->makeOne();
+                $enrollment->save();
                 // we need to create activity for each day since the enrollment began
                 $date = $enrollment->external_start_at;
                 $now = new \DateTimeImmutable('now');

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UserAuthRequest;
 use App\Http\Resources\UserCourseActivityResource;
 use App\Models\UserCourseActivity;
-use Illuminate\Http\Request;
 
 class UserCourseActivityController extends Controller
 {
@@ -13,11 +13,9 @@ class UserCourseActivityController extends Controller
      * GET /api/v1/users/{id}/course-activity
      * Get user course activity
      */
-    public function index(Request $request, $id)
+    public function index(UserAuthRequest $request, $id)
     {
-        if ($request->user()->id != $id && ! $request->user()->isAdmin()) {
-            return response()->json(['Message' => 'Unauthorized'], 403);
-        }
+        $request->authorize();
         $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'date');
         $sortOrder = request()->query('order', 'asc');
@@ -39,11 +37,9 @@ class UserCourseActivityController extends Controller
      * GET /api/v1/users/{id}/course-activity/{courseId}
      * Get user course activity by course id
      */
-    public function show($user_id, $course_id, Request $request)
+    public function show($user_id, $course_id, UserAuthRequest $request)
     {
-        if (! $request->user()->isAdmin() && $user_id != $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized to view this user'], 403);
-        }
+        $request->authorize();
         $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'date');
         $sortOrder = request()->query('order', 'asc');

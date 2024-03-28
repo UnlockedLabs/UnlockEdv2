@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\ProviderPlatform;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,7 +20,7 @@ class CourseFactory extends Factory
             'external_resource_id' => $this->faker->unique()->numberBetween(1, 1000000), // Example: Generate a unique ID between 1 and 100,
             'external_course_name' => $this->faker->word,
             'external_course_code' => $this->faker->word, // Example: 'CS-101'
-            'provider_platform_id' => ProviderPlatform::factory()->createOne()->id,
+            'provider_platform_id' => $this->faker->randomDigitNotNull,
             'description' => substr($this->faker->paragraph($nbSentences = 3, $variableNbSentences = true), 0, 254),
             'img_url' => $this->faker->imageUrl($width = 640, $height = 480),
         ];

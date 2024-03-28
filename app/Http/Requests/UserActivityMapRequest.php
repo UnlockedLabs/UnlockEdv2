@@ -4,23 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ValidateUserRequest extends FormRequest
+class UserActivityMapRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
-    }
-
-    public function overrideAuthorize(string $id): bool
-    {
-        if ($this->user()->isAdmin()) {
-            return true;
-        } else {
-            return $this->user()->id == $id;
-        }
+        return $this->user()->isAdmin() || $this->user()->id == $this->route('id');
     }
 
     /**
@@ -31,7 +22,8 @@ class ValidateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
         ];
     }
 }

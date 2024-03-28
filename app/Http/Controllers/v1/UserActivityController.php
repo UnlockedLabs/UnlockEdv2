@@ -4,10 +4,11 @@ namespace App\Http\Controllers\v1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserActivityRequest;
+use App\Http\Requests\UserAuthRequest;
 use App\Http\Resources\UserActivityResource;
+use App\Models\User;
 use App\Models\UserActivity;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class UserActivityController extends Controller
 {
@@ -41,21 +42,17 @@ class UserActivityController extends Controller
         return UserActivityResource::collection($userActivities);
     }
 
-    public function show(Request $request, string $id)
+    public function show(UserAuthRequest $request, string $id)
     {
-        $userActivity = UserActivity::findOrFail($id);
+        $request->authorize();
+        $userActivity = User::findOrFail($id)->userActivity()->get();
 
-        if ($request->user()->isAdmin() || $userActivity->user_id == $request->user()->id) {
-            return new UserActivityResource($userActivity);
-        }
-
-        return response()->json(['error' => "UserActivity with this ID not found for User: {$request->user()->username}"], Response::HTTP_NOT_FOUND);
+        return UserActivityResource::collection($userActivity);
     }
 
     public function store(StoreUserActivityRequest $request)
     {
         $validated = $request->validated();
-
         $userActivity = UserActivity::create($validated);
 
         return UserActivityResource::make($userActivity);

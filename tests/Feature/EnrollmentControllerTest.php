@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\User;
 use Database\Seeders\TestSeeder;
@@ -82,13 +81,23 @@ class EnrollmentControllerTest extends TestCase
         ],
     ];
 
+    public function properlySeedEnrollment(bool $persist): Enrollment
+    {
+        $provider = \App\Models\ProviderPlatform::factory()->createOne();
+        $course = \App\Models\Course::factory()->forProviderPlatform($provider->id)->makeOne();
+        $course->save();
+        $enrollment = Enrollment::factory()->forCourse($course->id)->makeOne();
+        $persist ? $enrollment->save() : null;
+
+        return $enrollment;
+    }
+
     public function completeTestCreateAndGetNewEnrollment()
     {
         $this->seed($this->seeder);
         $user = User::inRandomOrder()->first();
         $admin = \App\Models\User::factory()->admin()->createOne();
-        $course = Course::factory()->createOne();
-        $enrollment = Enrollment::factory()->forUser($user->id)->forCourse($course->id)->makeOne();
+        $enrollment = $this->properlySeedEnrollment(false);
         // user cannot create themselves
         $fail = $this->actingAs($user)->postJson($this->uri, $enrollment->toArray());
         $fail->assertStatus(403);
@@ -111,7 +120,7 @@ class EnrollmentControllerTest extends TestCase
     public function testUpdateEnrollment()
     {
         $user = \App\Models\User::factory()->admin()->createOne();
-        $enrollment = Enrollment::factory()->createOne();
+        $enrollment = $this->properlySeedEnrollment(true);
 
         $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment->id, [
             'enrollment_state' => 'completed',
@@ -128,7 +137,7 @@ class EnrollmentControllerTest extends TestCase
     public function testUpdateEnrollmentUnauthorized()
     {
         $user = \App\Models\User::factory()->createOne();
-        $enrollment = Enrollment::factory()->createOne();
+        $enrollment = $this->properlySeedEnrollment(true);
 
         $response = $this->actingAs($user)->patch($this->uri.'/'.$enrollment->id, [
             'enrollment_state' => 'completed',
@@ -141,16 +150,16 @@ class EnrollmentControllerTest extends TestCase
     public function testDeleteEnrollment()
     {
         $user = \App\Models\User::factory()->admin()->createOne();
-        $Enrollment = Enrollment::factory(1)->create();
-        $response = $this->actingAs($user)->delete($this->uri.'/'.$Enrollment[0]->id);
+        $enrollment = $this->properlySeedEnrollment(true);
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$enrollment->id);
         $response->assertStatus(204);
     }
 
     public function testDeleteEnrollmentUnauthorized()
     {
         $user = \App\Models\User::factory()->createOne();
-        $Enrollment = Enrollment::factory(1)->create();
-        $response = $this->actingAs($user)->delete($this->uri.'/'.$Enrollment[0]->id);
+        $enrollment = $this->properlySeedEnrollment(true);
+        $response = $this->actingAs($user)->delete($this->uri.'/'.$enrollment->id);
         $response->assertStatus(403);
     }
 }

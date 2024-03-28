@@ -2,7 +2,7 @@ name: Build and Test Laravel Project
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "demo"]
   pull_request:
     branches: ["main"]
 
@@ -28,6 +28,11 @@ jobs:
           chown -R $(id -u):$(id -g) .
       - name: Install front-end dependencies
         run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install v21.6.2
+          nvm use v21.6.2
           npm install
           npm run build
         env:
