@@ -22,6 +22,7 @@ export default function ThemeToggle() {
                 let newTheme = e.target.checked ? "dark" : "light";
                 localStorage.setItem("theme", newTheme);
                 document.documentElement.setAttribute("data-theme", newTheme);
+                e.target.blur();
             }}
         />
     );
