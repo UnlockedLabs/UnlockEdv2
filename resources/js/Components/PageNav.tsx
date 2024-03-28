@@ -1,4 +1,5 @@
 import { User, UserRole } from "@/common";
+import { useEffect, useRef } from "react";
 import {
     ArrowRightOnRectangleIcon,
     HomeIcon,
@@ -17,6 +18,24 @@ export default function PageNav({
     user: User;
     path: Array<string>;
 }) {
+    const detailsRef = useRef<HTMLDetailsElement>(null);
+    useEffect(() => {
+        const closeDropdown = ({ target }: MouseEvent) => {
+            if (
+                detailsRef.current &&
+                !detailsRef.current?.contains(target as Node)
+            ) {
+                detailsRef.current.removeAttribute("open");
+            }
+        };
+
+        window.addEventListener("click", closeDropdown);
+
+        return () => {
+            window.removeEventListener("click", closeDropdown);
+        };
+    }, []);
+
     return (
         <div className="navbar">
             <div className="navbar-start breadcrumbs pl-0">
@@ -32,7 +51,7 @@ export default function PageNav({
             <div className="navbar-end">
                 <ul className="menu menu-horizontal px-1">
                     <li>
-                        <details>
+                        <details ref={detailsRef}>
                             <summary>
                                 <span className="font-semibold">
                                     {user.name_first} {user.name_last}
