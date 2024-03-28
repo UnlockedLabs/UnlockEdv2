@@ -137,8 +137,7 @@ class UserActivityTest extends TestCase
     {
         $admin = User::factory()->admin()->createOne();
         $user = User::factory()->createOne();
-        UserActivity::factory()->count(5)->forUser($user->id)->create();
-        UserActivity::factory()->count(5)->create();
+        UserActivity::factory()->count(10)->forUser($user->id)->create();
 
         $response = $this->actingAs($admin)->getJson($this->uri);
 
