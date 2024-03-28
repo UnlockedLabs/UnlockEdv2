@@ -14,6 +14,7 @@ import {
     DropdownInput,
     SubmitButton,
 } from "./inputs";
+import { ToastState } from "../Toast";
 
 type ProviderInputs = {
     name: string;
@@ -91,11 +92,21 @@ export default function EditProviderForm({
         const cleanData = diffFormData(data, provider);
         try {
             setErrorMessage("");
-            await axios.patch(
+            let response = await axios.patch(
                 `/api/v1/provider-platforms/${provider?.id}`,
                 cleanData,
             );
-            closeAndReset();
+            if (response.status !== 201) {
+                onSuccess(
+                    ToastState.error,
+                    "Failed to update provider platform",
+                );
+            }
+            reset();
+            onSuccess(
+                ToastState.success,
+                "Provider platform updated successfully",
+            );
         } catch (error: any) {
             setErrorMessage(error.response.data.message);
         }

@@ -9,6 +9,7 @@ import {
     TextAreaInput,
     TextInput,
 } from "./inputs";
+import { ToastState } from "../Toast";
 
 type ProviderInputs = {
     name: string;
@@ -38,9 +39,15 @@ export default function AddProviderForm({
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         try {
             setErrorMessage("");
-            await axios.post("/api/v1/provider-platforms", data);
-            onSuccess();
+            let response = await axios.post("/api/v1/provider-platforms", data);
+            if (response.status !== 201) {
+                onSuccess(ToastState.error, "Failed to add provider platform");
+            }
             reset();
+            onSuccess(
+                ToastState.success,
+                "Provider platform created successfully",
+            );
         } catch (error: any) {
             setErrorMessage(error.response.data.message);
         }

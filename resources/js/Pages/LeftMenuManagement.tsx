@@ -1,7 +1,7 @@
 import CategoryItem from "@/Components/CategoryItem";
 import Modal from "@/Components/Modal";
 import PageNav from "@/Components/PageNav";
-import Toast from "@/Components/Toast";
+import Toast, { ToastState } from "@/Components/Toast";
 import AddCategoryForm from "@/Components/forms/AddCategoryForm";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Category, CategoryLink } from "@/common";
@@ -14,7 +14,7 @@ import useSWR from "swr";
 import DeleteForm from "@/Components/forms/DeleteForm";
 
 interface ToastProps {
-    state: "success" | "error" | null;
+    state: ToastState;
     message: string;
 }
 
@@ -29,7 +29,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
     const [toast, setToast] = useState<ToastProps>({
-        state: null,
+        state: ToastState.null,
         message: "",
     });
 
@@ -232,7 +232,7 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     }
 
     async function updateFinalState(e: any) {
-        setToast({ state: null, message: "" });
+        setToast({ state: ToastState.null, message: "" });
         e.preventDefault();
         const newCategoryList = categoryList.map((c, i) => {
             c.rank = i + 1;
@@ -248,25 +248,28 @@ export default function LeftMenuManagement({ auth }: PageProps) {
             if (response.status !== 200) {
                 // show error
                 setToast({
-                    state: "error",
+                    state: ToastState.error,
                     message: "Error Saving Categories",
                 });
             } else {
                 mutate();
                 // show success
-                setToast({ state: "success", message: "Categories Saved!" });
+                setToast({
+                    state: ToastState.success,
+                    message: "Categories Saved!",
+                });
             }
         } catch (err: any) {
             console.log(err);
             if (err.response.status == 422) {
                 setToast({
-                    state: "error",
+                    state: ToastState.error,
                     message: "All categories must have associated links",
                 });
             } else {
                 // show general error
                 setToast({
-                    state: "error",
+                    state: ToastState.error,
                     message: "Error Saving Categories",
                 });
             }
@@ -326,11 +329,13 @@ export default function LeftMenuManagement({ auth }: PageProps) {
                 ref={deleteCategoryModal}
             />
             {/* Toasts */}
-            {toast.state !== null && (
+            {toast.state !== ToastState.null && (
                 <Toast
                     state={toast.state}
                     message={toast.message}
-                    reset={() => setToast({ state: null, message: "" })}
+                    reset={() =>
+                        setToast({ state: ToastState.null, message: "" })
+                    }
                 />
             )}
         </AuthenticatedLayout>

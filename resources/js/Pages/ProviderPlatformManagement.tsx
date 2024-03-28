@@ -9,6 +9,12 @@ import { PageProps } from "@/types";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
+import Toast, { ToastState } from "@/Components/Toast";
+
+interface ToastProps {
+    state: ToastState;
+    message: string;
+}
 
 export default function ProviderPlatformManagement({ auth }: PageProps) {
     const addProviderModal = useRef<null | HTMLDialogElement>(null);
@@ -16,6 +22,10 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
     const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
         null,
     );
+    const [toast, setToast] = useState<ToastProps>({
+        state: ToastState.null,
+        message: "",
+    });
 
     const {
         data: providers,
@@ -54,9 +64,17 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
         setEditProvider(provider), editProviderModal.current?.showModal();
     }
 
-    function updateProvider() {
+    function updateProvider(state: ToastState, message: string) {
         mutate();
-        editProviderModal.current?.close(), setEditProvider(null);
+        if (state && message) {
+            setToast({
+                state: state,
+                message: message,
+            });
+        }
+        editProviderModal.current?.close();
+        addProviderModal.current?.close();
+        setEditProvider(null);
     }
 
     return (
@@ -102,8 +120,8 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                 item="Provider"
                 form={
                     <AddProviderForm
-                        onSuccess={() => {
-                            updateProvider();
+                        onSuccess={(state: ToastState, message: string) => {
+                            updateProvider(state, message);
                         }}
                     />
                 }
@@ -115,7 +133,9 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                 form={
                     editProvider ? (
                         <EditProviderForm
-                            onSuccess={() => updateProvider()}
+                            onSuccess={(state: ToastState, message: string) => {
+                                updateProvider(state, message);
+                            }}
                             provider={editProvider}
                         />
                     ) : (
@@ -124,6 +144,16 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                 }
                 ref={editProviderModal}
             />
+            {/* Toasts */}
+            {toast.state !== ToastState.null && (
+                <Toast
+                    state={toast.state}
+                    message={toast.message}
+                    reset={() =>
+                        setToast({ state: ToastState.null, message: "" })
+                    }
+                />
+            )}
         </AuthenticatedLayout>
     );
 }
