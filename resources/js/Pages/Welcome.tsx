@@ -1,14 +1,25 @@
+import { useState, useEffect } from "react";
 import { Head, Link } from "@inertiajs/react";
 import { PageProps } from "@/types";
 import Brand from "@/Components/Brand";
 
 export default function Welcome({ auth }: PageProps) {
+    const [imgSrc, setImgSrc] = useState("unlockedv1Sm.webp");
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = "unlockedv1.png";
+        img.onload = () => {
+            setImgSrc("unlockedv1.png");
+        };
+    }, []);
+
     return (
         <>
             <Head title="Welcome" />
             <div className="min-h-screen font-lato">
                 <div className="navbar bg-base-100">
-                    <div className="flex-1 pl-4">
+                    <div className="flex-1 pl-4 cursor-default select-none">
                         <Brand />
                     </div>
                     <div className="flex-none">
@@ -41,7 +52,11 @@ export default function Welcome({ auth }: PageProps) {
                         </p>
 
                         <div className="flex flex-col">
-                            <img src="unlockedv1.png" className="mb-2" />
+                            <img
+                                src={imgSrc}
+                                className="mb-2 w-full h-auto"
+                                loading="lazy"
+                            />
                             <span className="italic text-sm">
                                 Version 1 of UnlockEd was built inside without
                                 the help of the internet.
@@ -68,7 +83,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         1997
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-neutral">
                                         Young Beginnings
                                     </div>
                                     Co-Founders Jessica Hicklin and Chris
@@ -99,7 +114,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         1998 - 2017
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-neutral">
                                         Education Against the Odds
                                     </div>
                                     Despite residing in a facility without
@@ -136,7 +151,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         2012 - 2017
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-neutral">
                                         Coding for Change
                                     </div>
                                     With limited resources, Jessica and Chris
@@ -168,7 +183,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         2022
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-neutral">
                                         Establishing Unlocked Labs
                                     </div>
                                     Their lives took a turn when a Supreme Court
@@ -205,7 +220,7 @@ export default function Welcome({ auth }: PageProps) {
                                     <time className="font-mono italic text-secondary">
                                         2022 - present
                                     </time>
-                                    <div className="text-lg font-black text-white">
+                                    <div className="text-lg font-black text-neutral">
                                         UnlockED: A Vision Realized
                                     </div>
                                     Teaming up with external partners, they
