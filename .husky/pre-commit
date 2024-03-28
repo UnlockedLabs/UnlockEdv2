@@ -1,7 +1,7 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
-
+git diff --cached --name-only --diff-filter=ACMRTUXB >.husky/staged-files
 npx lint-staged
 npx oxlint --fix
 ./vendor/bin/pint
-python .husky/check_unstaged.py
+git add $(cat .husky/staged-files)
