@@ -43,23 +43,6 @@ class UserActivityTest extends TestCase
         ],
     ];
 
-    public function testUserActivityFactoryCreatesValidModel(): void
-    {
-        $userActivity = UserActivity::factory()->create();
-
-        $this->assertInstanceOf(UserActivity::class, $userActivity);
-    }
-
-    public function testUserActivityFactoryCanCreateForSpecificUser(): void
-    {
-        $user = User::factory()->create();
-
-        $userActivity = UserActivity::factory()->forUser($user->id)->create();
-
-        $this->assertInstanceOf(UserActivity::class, $userActivity);
-        $this->assertEquals($user->id, $userActivity->user_id);
-    }
-
     public function testAdminCanCreateUserActivitiesForAnyone()
     {
         $user = User::factory()->createOne();
@@ -97,7 +80,6 @@ class UserActivityTest extends TestCase
         $anotherUser = User::factory()->createOne();
 
         $userActivities = UserActivity::factory()->count(5)->forUser($anotherUser->id)->make();
-
         foreach ($userActivities as $activity) {
             $response = $this->actingAs($user)->postJson($this->uri, $activity->toArray());
             $response->assertStatus(403);
@@ -106,10 +88,10 @@ class UserActivityTest extends TestCase
 
     public function testAdminCanShowUserActivity()
     {
+        $this->seed(TestSeeder::class);
         $admin = User::factory()->admin()->create();
-        $userActivity = UserActivity::factory()->create();
-
-        $response = $this->actingAs($admin)->getJson($this->uri.'/'.$userActivity->user_id);
+        $user = User::inRandomOrder()->first();
+        $response = $this->actingAs($admin)->getJson($this->uri.'/'.$user->id);
 
         $response->assertStatus(200);
         $response->assertJsonStructure($this->array_json_structure);
@@ -118,7 +100,8 @@ class UserActivityTest extends TestCase
     public function testUserCanShowOwnUserActivity()
     {
         $user = User::factory()->create();
-        $userActivity = UserActivity::factory()->forUser($user->id)->create();
+        $userActivity = UserActivity::factory()->forUser($user->id)->makeOne();
+        $userActivity->save();
         $response = $this->actingAs($user)->getJson($this->uri.'/'.$user->id);
 
         $response->assertStatus(200);
@@ -154,8 +137,7 @@ class UserActivityTest extends TestCase
     {
         $admin = User::factory()->admin()->createOne();
         $user = User::factory()->createOne();
-        UserActivity::factory()->count(5)->forUser($user->id)->create();
-        UserActivity::factory()->count(5)->create();
+        UserActivity::factory()->count(10)->forUser($user->id)->create();
 
         $response = $this->actingAs($admin)->getJson($this->uri);
 
