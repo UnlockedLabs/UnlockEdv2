@@ -8,7 +8,7 @@ import {
     SubmitButton,
     TextAreaInput,
     TextInput,
-} from "./inputs";
+} from "../inputs";
 import { ToastState } from "../Toast";
 
 type ProviderInputs = {

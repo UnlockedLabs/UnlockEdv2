@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { CloseX, TextInput, SubmitButton } from "./inputs";
+import { CloseX, TextInput, SubmitButton } from "../inputs";
 
 type Inputs = {
     title: string;

@@ -1,4 +1,4 @@
-import { CloseX } from "./inputs";
+import { CloseX } from "../inputs";
 
 interface DeleteProps {
     item: string;

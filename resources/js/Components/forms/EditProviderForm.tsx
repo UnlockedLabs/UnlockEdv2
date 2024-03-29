@@ -13,7 +13,7 @@ import {
     TextAreaInput,
     DropdownInput,
     SubmitButton,
-} from "./inputs";
+} from "../inputs";
 import { ToastState } from "../Toast";
 
 type ProviderInputs = {
