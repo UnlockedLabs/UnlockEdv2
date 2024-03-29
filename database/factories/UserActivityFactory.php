@@ -18,10 +18,10 @@ class UserActivityFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
-            'browser_name' => $this->faker->word,
-            'platform' => $this->faker->word,
-            'device' => $this->faker->word,
+            'user_id' => $this->faker->randomDigitNotNull,
+            'browser_name' => $this->faker->randomElement(['Chrome', 'Firefox', 'Safari', 'Edge', 'Opera']),
+            'platform' => $this->faker->randomElement(['Windows', 'Mac', 'Linux', 'Android', 'iOS']),
+            'device' => $this->faker->randomElement(['Desktop', 'Mobile', 'Tablet']),
             'ip' => $this->faker->ipv4,
             'clicked_url' => $this->faker->url,
             'created_at' => now(),

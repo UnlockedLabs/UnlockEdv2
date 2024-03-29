@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { ToastState } from "../Toast";
 import { TextInput, DropdownInput, CloseX, SubmitButton } from "../inputs";
-
 type Inputs = {
     name_first: string;
     name_last: string;
