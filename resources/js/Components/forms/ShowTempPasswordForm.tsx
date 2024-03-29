@@ -1,4 +1,4 @@
-import { CloseX } from "../inputs/CloseX";
+import { CloseX } from "../inputs";
 
 export interface TempPasswordProps {
     tempPassword: string;

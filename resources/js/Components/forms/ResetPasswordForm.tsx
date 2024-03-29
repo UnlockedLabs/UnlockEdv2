@@ -1,7 +1,6 @@
 import axios from "axios";
 import { User } from "@/common";
-import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
-import { CloseX } from "../inputs/CloseX";
+import { CloseX } from "../inputs";
 
 interface ResetPasswordFormProps {
     onCancel: (message: string, is_err: boolean) => void;
