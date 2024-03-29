@@ -43,7 +43,7 @@ When submitting a pull request, please ensure the following:
 
 ### Frontend
 
-=====================
+=============
 
 We use the following libraries to help keep our frontend consistent:
 
@@ -84,7 +84,7 @@ Checkout the [daisyUI documentation](https://daisyui.com/docs) for more informat
 
 ### Backend
 
-==============
+============
 
 #### Style and Naming-Conventions:
 
