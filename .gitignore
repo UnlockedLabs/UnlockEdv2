@@ -19,3 +19,4 @@ yarn-error.log
 /.vscode
 /storage/logs
 /logs/
+/.husky/staged-files
