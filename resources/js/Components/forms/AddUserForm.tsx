@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { ToastState } from "../Toast";
 import { CloseX } from "../inputs/CloseX";
-import { TextInput } from "../inputs/TextArea";
+import { TextInput } from "../inputs/TextInput";
 import { DropdownInput } from "../inputs/DropdownInput";
 import { SubmitButton } from "../inputs/SubmitButton";
 type Inputs = {
