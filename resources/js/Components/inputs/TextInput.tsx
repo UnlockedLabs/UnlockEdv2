@@ -7,6 +7,7 @@ interface TextProps {
     length: number | null;
     errors: FieldErrors<any>;
     register: Function;
+    password?: boolean;
 }
 
 export function TextInput({
@@ -16,6 +17,7 @@ export function TextInput({
     length,
     errors,
     register,
+    password = false,
 }: TextProps) {
     const options = {
         required: {
@@ -35,7 +37,7 @@ export function TextInput({
                 <span className="label-text">{label}</span>
             </div>
             <input
-                type="text"
+                type={`${password ? "password" : "text"}`}
                 className="input input-bordered w-full"
                 {...register(interfaceRef, options)}
             />
