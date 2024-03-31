@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -51,7 +53,7 @@ class User extends Authenticatable
     ];
 
     // fallback to the only provider usr mapping should the argument be null
-    public function externalIdFor(?int $provider_platform_id): ?int
+    public function externalIdFor(?int $provider_platform_id): ?string
     {
         return $provider_platform_id ? $this->providerUserMappings()
             ->where('provider_platform_id', $provider_platform_id)

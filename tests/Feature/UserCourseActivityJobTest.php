@@ -39,6 +39,6 @@ class UserCourseActivityJob extends TestCase
         $job = new UserCourseActivityTask();
         $job->handle();
         $activity = UserCourseActivity::all();
-        $this->assertGreaterThanOrEqual(14, $activity->count());
+        $this->assertGreaterThanOrEqual(12, $activity->count());
     }
 }

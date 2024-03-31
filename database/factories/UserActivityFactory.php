@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\User;
@@ -30,7 +32,7 @@ class UserActivityFactory extends Factory
     }
 
     // Create for a specific user
-    public function forUser(string $id): static
+    public function forUser(int $id): static
     {
         return $this->state(fn (array $attributes) => [
             'user_id' => $id,
