@@ -1,80 +1,83 @@
-import { useEffect, FormEventHandler } from "react";
-import Checkbox from "@/Components/Checkbox";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import Checkbox from "@/Components/inputs/Checkbox";
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/Components/InputError";
-import InputLabel from "@/Components/InputLabel";
 import PrimaryButton from "@/Components/PrimaryButton";
-import TextInput from "@/Components/TextInput";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { TextInput } from "@/Components/inputs/TextInput";
+import { Head, Link } from "@inertiajs/react";
+type Inputs = {
+    username: string;
+    password: string;
+    remember: boolean;
+};
 
 export default function Login({ status }: { status?: string }) {
-    const { data, setData, post, processing, errors } = useForm({
-        username: "",
-        password: "",
-        remember: false,
-    });
+    const [errorMessage, setErrorMessage] = useState("");
+    const [processing, setProcessing] = useState(false);
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<Inputs>();
 
-        post(route("login"));
+    const submit: SubmitHandler<Inputs> = async (data) => {
+        try {
+            setErrorMessage("");
+            setProcessing(true);
+            await axios.post(route("login", data));
+            window.location.replace(route("dashboard"));
+        } catch (error: any) {
+            setProcessing(false);
+            setErrorMessage(error.response.data.message);
+        }
     };
 
     return (
         <GuestLayout>
             <Head title="Log in" />
-
             {status && (
                 <div className="mb-4 font-medium text-sm text-green-600">
                     {status}
                 </div>
             )}
 
-            <form onSubmit={submit}>
+            <form onSubmit={handleSubmit(submit)}>
                 <div className="mt-4">
-                    <InputLabel htmlFor="username" value="Username" />
-
                     <TextInput
-                        id="username"
-                        type="username"
-                        name="username"
-                        value={data.username}
-                        className="mt-1 block w-full"
-                        autoComplete="username"
-                        onChange={(e) => setData("username", e.target.value)}
+                        label={"Username"}
+                        interfaceRef={"username"}
+                        required={true}
+                        length={50}
+                        errors={errors}
+                        register={register}
                     />
-
-                    <InputError message={errors.username} className="mt-2" />
+                    <div className="h-6">
+                        <InputError message={errorMessage} className="pt-2" />
+                    </div>
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
                     <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="current-password"
-                        onChange={(e) => setData("password", e.target.value)}
+                        label={"Password"}
+                        interfaceRef={"password"}
+                        required={true}
+                        length={50}
+                        errors={errors}
+                        register={register}
+                        password={true}
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
                 </div>
 
                 <div className="block mt-4">
                     <label className="flex items-center">
                         <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData("remember", e.target.checked)
-                            }
+                            label={"Remember me"}
+                            interfaceRef={"remember"}
+                            register={register}
                         />
-                        <span className="ms-2 text-sm text-slate-600 dark:text-slate-400">
-                            Remember me
-                        </span>
                     </label>
                 </div>
 
