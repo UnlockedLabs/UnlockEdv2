@@ -35,7 +35,7 @@ class UserCourseActivityJob extends TestCase
             $resp = $this->actingAs($admin)->post('api/v1/actions/store-user-enrollments', ['provider_platform_id' => 1, 'user_id' => $id]);
             // run the user course activity task
         }
-        $this->assertDatabaseCount('users', 7);
+        $this->assertDatabaseCount('users', 11);
         $job = new UserCourseActivityTask();
         $job->handle();
         $activity = UserCourseActivity::all();

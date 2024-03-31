@@ -44,7 +44,7 @@ class UserCourseActivityTask implements ShouldQueue
     public function handle(): void
     {
         foreach ($this->providers as $provider) {
-            $cs = $provider->getCanvasServices();
+            $cs = $provider->getProviderServices();
             foreach ($this->users as $user) {
                 $enrollments = Enrollment::where('user_id', $user->id)
                     ->whereHas('course', function ($query) use ($provider) {

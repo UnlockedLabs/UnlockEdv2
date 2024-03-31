@@ -59,4 +59,5 @@ export enum ProviderPlatformState {
 export enum ProviderPlatformType {
     CANVAS_CLOUD = "canvas_cloud",
     CANVAS_OSS = "canvas_oss",
+    KOLIBRI = "kolibri",
 }

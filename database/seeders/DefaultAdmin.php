@@ -26,11 +26,11 @@ class DefaultAdmin extends Seeder
             'role' => UserRole::ADMIN,
         ]);
         DB::table('provider_platforms')->insert([
-            'type' => ProviderPlatformType::CANVAS_OSS,
+            'type' => ProviderPlatformType::CANVAS_OSS->value,
             'name' => 'Canvas',
             'description' => 'Canvas LMS',
             'icon_url' => 'https://www.instructure.com/themes/custom/instructure_bootstrap/logo.svg',
-            'account_id' => env('CANVAS_ACCOUNT_ID'),
+            'account_id' => 1,
             'access_key' => Crypt::encryptString(env('CANVAS_API_KEY')),
             'base_url' => env('CANVAS_BASE_URL'),
             'state' => ProviderPlatformState::ENABLED,
