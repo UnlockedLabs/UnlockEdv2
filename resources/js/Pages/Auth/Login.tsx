@@ -82,8 +82,15 @@ export default function Login({ status }: { status?: string }) {
                 </div>
 
                 <div className="flex items-center justify-end mt-4">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
+                    <PrimaryButton
+                        className="ms-4 w-24 h-10"
+                        disabled={processing}
+                    >
+                        {processing ? (
+                            <span className="loading loading-spinner loading-sm mx-auto"></span>
+                        ) : (
+                            <div className="m-auto">Log in</div>
+                        )}
                     </PrimaryButton>
                 </div>
             </form>
