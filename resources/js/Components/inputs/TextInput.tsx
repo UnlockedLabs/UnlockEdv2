@@ -8,6 +8,8 @@ interface TextProps {
     errors: FieldErrors<any>;
     register: Function;
     password?: boolean;
+    isFocused?: boolean;
+    autoComplete?: string;
 }
 
 export function TextInput({
@@ -18,6 +20,8 @@ export function TextInput({
     errors,
     register,
     password = false,
+    isFocused = false,
+    autoComplete = "on",
 }: TextProps) {
     const options = {
         required: {
@@ -40,6 +44,8 @@ export function TextInput({
                 type={`${password ? "password" : "text"}`}
                 className="input input-bordered w-full"
                 {...register(interfaceRef, options)}
+                autoComplete={autoComplete}
+                autoFocus={isFocused}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message?.toString()}
