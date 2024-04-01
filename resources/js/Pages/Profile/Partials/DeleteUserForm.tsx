@@ -2,7 +2,7 @@ import { useRef, useState, FormEventHandler } from "react";
 import DangerButton from "@/Components/DangerButton";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
-import Modal from "@/Components/Modal-Old";
+//import Modal from "@/Components/Modal-Old";
 import SecondaryButton from "@/Components/SecondaryButton";
 import TextInput from "@/Components/TextInput";
 import { useForm } from "@inertiajs/react";
@@ -66,7 +66,7 @@ export default function DeleteUserForm({
                 Delete Account
             </DangerButton>
 
-            <Modal show={confirmingUserDeletion} onClose={closeModal}>
+            {/* <Modal show={confirmingUserDeletion} onClose={closeModal}>
                 <form onSubmit={deleteUser} className="p-6">
                     <h2 className="text-lg font-medium text-slate-900 dark:text-slate-100">
                         Are you sure you want to delete your account?
@@ -116,7 +116,7 @@ export default function DeleteUserForm({
                         </DangerButton>
                     </div>
                 </form>
-            </Modal>
+            </Modal> */}
         </section>
     );
 }
