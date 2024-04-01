@@ -2,7 +2,7 @@ import {
     CheckCircleIcon,
     ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // params needed: error or success, message, isVisible
 interface ToastProps {
@@ -20,12 +20,18 @@ export enum ToastState {
 export default function Toast({ state, message, reset }: ToastProps) {
     const [isVisible, setIsVisible] = useState<boolean>(true);
 
-    setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => {
-            reset();
-        }, 1000);
-    }, 5000);
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            setIsVisible(false);
+            setTimeout(() => {
+                reset();
+            }, 1000);
+        }, 5000);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [reset]);
 
     return (
         <div

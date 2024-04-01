@@ -2,10 +2,7 @@ import { User, UserRole } from "@/common";
 import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { CloseX } from "../inputs/CloseX";
-import { TextInput } from "../inputs/TextInput";
-import { DropdownInput } from "../inputs/DropdownInput";
-import { SubmitButton } from "../inputs/SubmitButton";
+import { TextInput, DropdownInput, CloseX, SubmitButton } from "../inputs";
 
 type Inputs = {
     name_first: string;
