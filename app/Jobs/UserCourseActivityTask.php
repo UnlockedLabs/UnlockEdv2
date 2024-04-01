@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Enums\ProviderPlatformState;
@@ -44,7 +46,7 @@ class UserCourseActivityTask implements ShouldQueue
     public function handle(): void
     {
         foreach ($this->providers as $provider) {
-            $cs = $provider->getCanvasServices();
+            $cs = $provider->getProviderServices();
             foreach ($this->users as $user) {
                 $enrollments = Enrollment::where('user_id', $user->id)
                     ->whereHas('course', function ($query) use ($provider) {
@@ -53,8 +55,11 @@ class UserCourseActivityTask implements ShouldQueue
                     ->get();
 
                 foreach ($enrollments as $entry) {
-                    $cs->getEnrollmentById($entry->external_enrollment_id);
+                    $entry = $cs->getEnrollmentById((int) $entry->external_enrollment_id);
                     $total_activity = $entry['total_activity_time'];
+                    if ($total_activity == 0) {
+                        continue;
+                    }
                     $last_activity = $entry['last_activity_at'];
                     $now = new DateTimeImmutable('now');
                     $difference = $now->diff(new DateTimeImmutable($last_activity), true);
@@ -62,7 +67,7 @@ class UserCourseActivityTask implements ShouldQueue
                     if ($difference->days < 1) {
                         $had_activity = true;
                     }
-                    $enrollment_id = $entry->id;
+                    $enrollment_id = $entry['id'];
                     UserCourseActivity::create([
                         'user_id' => $user->id,
                         'enrollment_id' => $enrollment_id,

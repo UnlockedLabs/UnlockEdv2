@@ -8,11 +8,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Crypt;
-use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class CanvasServices
@@ -36,154 +32,18 @@ const READ = 'read/';
 const ANONYMOUS_SUBMISSIONS = 'anonymous_submissions/';
 const LOGINS = 'logins/';
 
-class CanvasServices
+class CanvasServices extends ProviderServices
 {
-    private int $provider_id;
-
-    private int $account_id;
-
-    private string $access_key;
-
-    private string $base_url;
-
-    private Client $client;
-
-    /**
-     * Adds a trailing slash if none exists.
-     *
-     * @return string Formatted account or user ID
-     *
-     * @throws \InvalidArgumentException If the account ID is invalid
-     */
-    private static function fmtUrl($id): string
+    public function __construct(int $provider_id, string $account_id, string $api_key, string $url)
     {
-        if (! is_string($id)) {
-            $id = strval($id);
-        }
-        if (! str_ends_with($id, '/')) {
-            return $id.'/';
-        }
-
-        return $id;
+        return parent::__construct($provider_id, (int) $account_id, $api_key, $url);
     }
 
-    public function __construct(int $providerId, int $accountId, string $apiKey, string $url)
-    {
-        $parsedUrl = parse_url($url);
-        if (! isset($parsedUrl['scheme'])) {
-            $url = 'https://'.$url;
-        }
-
-        if (! isset($parsedUrl['path']) || $parsedUrl['path'] !== CANVAS_API) {
-            $url = self::fmtUrl($url).CANVAS_API;
-        }
-
-        if ($accountId === 0 || $accountId === null) {
-            $accountId = 1; // Default to the root account
-        }
-
-        $this->provider_id = $providerId;
-        $this->account_id = $accountId;
-        try {
-            $this->access_key = Crypt::decryptString($apiKey);
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            $this->access_key = $apiKey;
-        }
-        $this->base_url = $url;
-        $this->client = new Client();
-    }
-
-    public function getAccountId(): int
-    {
-        return $this->account_id;
-    }
-
-    public function getAccessKey(): string
-    {
-        return $this->access_key;
-    }
-
-    public function getBaseUrl(): string
-    {
-        return $this->base_url;
-    }
-
-    private function GET(string $url): mixed
-    {
-        try {
-            $response = $this->client->request(
-                'GET',
-                $url,
-                ['headers' => ['Authorization' => "Bearer $this->access_key"]]
-            );
-        } catch (RequestException $e) {
-            throw new \Exception('API_ERROR '.$e->getMessage());
-        }
-
-        return self::handleResponse($response);
-    }
-
-    private function POST(string $url, array $body): mixed
-    {
-        try {
-            $response = $this->client->request(
-                'POST',
-                $url,
-                ['headers' => ['Authorization' => "Bearer $this->access_key"], 'form_params' => $body]
-            );
-        } catch (RequestException $e) {
-            throw new \Exception('API_ERROR '.$e->getMessage());
-        }
-
-        return self::handleResponse($response);
-    }
-
-    private function PUT(string $url, array $body): mixed
-    {
-        try {
-            $response = $this->client->request(
-                'PUT',
-                $url,
-                ['headers' => ['Authorization' => "Bearer $this->access_key"], 'form_params' => $body]
-            );
-        } catch (RequestException $e) {
-            throw new \Exception('API_ERROR '.$e->getMessage());
-        }
-
-        return self::handleResponse($response);
-    }
-
-    private function DELETE(string $url): mixed
-    {
-        try {
-            $response = $this->client->request('DELETE', $url, ['headers' => ['Authorization' => "Bearer $this->access_key"]]);
-        } catch (RequestException $e) {
-            throw new \Exception('API_ERROR '.$e->getMessage());
-        }
-
-        return self::handleResponse($response);
-    }
-
-    // Returns an instance of CanvasServices to make dynamic API calls.
-    /*****************************************************
-    //* @param int $providerId
-    //* @return  CanvasServices
-    //* @throws \InvalidArgumentException
-     */
     public static function byProviderId(int $providerId): self
     {
-        $provider = ProviderPlatform::where(['id' => $providerId])->firstOrFail();
+        $provider = ProviderPlatform::findOrFail($providerId);
 
-        return new self($providerId, (int) $provider->account_id, $provider->access_key, $provider->base_url);
-    }
-
-    private static function handleResponse(ResponseInterface $response): mixed
-    {
-        if ($response->getStatusCode() === 200 || $response->getStatusCode() === 201 || $response->getStatusCode() === 204) {
-            return json_decode($response->getBody()->getContents(), true);
-        } else {
-            throw new \Exception('API request failed with status code: '.$response->getStatusCode());
-        }
+        return new CanvasServices($provider->id, $provider->account_id, $provider->access_key, $provider->base_url);
     }
 
     /**
@@ -331,13 +191,13 @@ class CanvasServices
      *
      * @throws \Exception
      */
-    public function createStudent(string $name, string $email, bool $terms = true): mixed
+    public function createStudent(string $name, string $email): mixed
     {
         $userData = [
             'user' => [
                 'name' => $name,
                 'skip_registration' => true,
-                'terms_of_use' => $terms,
+                'terms_of_use' => true,
             ],
             'pseudonym' => [
                 'unique_id' => $email,

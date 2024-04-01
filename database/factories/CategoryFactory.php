@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // database/factories/CategoryFactory.php
 
 namespace Database\Factories;
