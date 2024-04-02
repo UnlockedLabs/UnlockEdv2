@@ -1,77 +1,89 @@
-import { useEffect, FormEventHandler } from "react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
 import GuestLayout from "@/Layouts/GuestLayout";
 import InputError from "@/Components/InputError";
-import InputLabel from "@/Components/InputLabel";
+import Spinner from "@/Components/Spinner";
 import PrimaryButton from "@/Components/PrimaryButton";
-import TextInput from "@/Components/TextInput";
-import { Head, useForm } from "@inertiajs/react";
+import { TextInput } from "@/Components/inputs/TextInput";
+import { Head } from "@inertiajs/react";
+type Inputs = {
+    password: string;
+    confirmation: string;
+};
 
 export default function ResetPassword() {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        password: "",
-        password_confirmation: "",
-    });
+    const [errorMessage, setErrorMessage] = useState("");
+    const [processing, setProcessing] = useState(false);
 
-    useEffect(() => {
-        return () => {
-            reset("password", "password_confirmation");
-        };
-    }, []);
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = useForm<Inputs>();
 
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-
-        post(route("password.update"));
+    const submit: SubmitHandler<Inputs> = async (data) => {
+        try {
+            setErrorMessage("");
+            setProcessing(true);
+            await axios.post(route("password.update", data));
+            window.location.replace(route("dashboard"));
+        } catch (error: any) {
+            setProcessing(false);
+            setErrorMessage(error.response.data.message);
+            reset();
+        }
     };
 
     return (
         <GuestLayout>
             <Head title="Reset Password" />
 
-            <form onSubmit={submit}>
+            <form onSubmit={handleSubmit(submit)}>
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="New Password" />
-
                     <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
+                        label={"password"}
+                        labelText={"New Password"}
+                        interfaceRef={"password"}
+                        length={50}
+                        required={true}
+                        errors={errors}
+                        register={register}
+                        password={true}
                         autoComplete="new-password"
                         isFocused={true}
-                        onChange={(e) => setData("password", e.target.value)}
                     />
 
-                    <InputError message={errors.password} className="mt-2" />
+                    <div className="h-6">
+                        <InputError message={errorMessage} className="pt-2" />
+                    </div>
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
-
                     <TextInput
-                        type="password"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
+                        label={"confirm"}
+                        labelText={"Confirm Password"}
+                        interfaceRef={"password_confirmation"}
+                        length={50}
+                        required={true}
+                        errors={errors}
+                        register={register}
+                        password={true}
                         autoComplete="new-password"
-                        onChange={(e) =>
-                            setData("password_confirmation", e.target.value)
-                        }
-                    />
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
                     />
                 </div>
 
                 <div className="flex items-center justify-end mt-4">
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Reset Password
+                    <PrimaryButton
+                        className="ms-4 w-40 h-10"
+                        disabled={processing}
+                    >
+                        {processing ? (
+                            <Spinner extraClasses="m-auto" />
+                        ) : (
+                            <div className="m-auto">Reset Password</div>
+                        )}
                     </PrimaryButton>
                 </div>
             </form>
