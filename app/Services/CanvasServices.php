@@ -81,7 +81,7 @@ class CanvasServices extends ProviderServices
      */
     public function deleteAuthProvider(): mixed
     {
-        $authProviderId = ProviderPlatform::where('id', $this->provider_id)->firstOrFail()->authentication_provider_id;
+        $authProviderId = ProviderPlatform::where('id', $this->provider_id)->firstOrFail()->external_auth_provider_id;
         $base_url = $this->base_url.ACCOUNTS.self::fmtUrl($this->account_id).'authentication_providers/'.$authProviderId;
 
         return $this->DELETE($base_url);
