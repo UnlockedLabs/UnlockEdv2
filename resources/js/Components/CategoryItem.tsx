@@ -5,6 +5,7 @@ import AddLinkForm from "./forms/AddLinkForm";
 
 import {
     ChevronDownIcon,
+    ChevronRightIcon,
     TrashIcon,
     PlusIcon,
     ChevronUpIcon,
@@ -27,6 +28,7 @@ export default function CategoryItem({
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] =
         useState<CategoryLink | null>(null);
+    const [open, setOpen] = useState(true);
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const addLinkModal = useRef<null | HTMLDialogElement>(null);
 
@@ -35,10 +37,15 @@ export default function CategoryItem({
             <summary
                 draggable
                 className="flex flex-cols-3 justify-between text-base-100 font-bold bg-neutral p-4 rounded-br-lg rounded-tr-lg"
+                onClick={() => setOpen(!open)}
             >
                 <div></div>
                 {category.name}
-                <ChevronDownIcon className="w-4 cursor-pointer" />
+                {open ? (
+                    <ChevronDownIcon className="w-4 cursor-pointer" />
+                ) : (
+                    <ChevronRightIcon className="w-4 cursor-pointer" />
+                )}
             </summary>
             <ul className="card p-4 gap-y-2 rounded-bl-none">
                 <div className="flex flex-cols-2 font-bold gap-2 pr-6">
