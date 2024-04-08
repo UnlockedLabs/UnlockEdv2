@@ -137,7 +137,10 @@ export default function Users({ auth }: PageProps) {
                         placeholder="Search..."
                         className="input input-bordered w-full max-w-xs input-sm"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setPageQuery(1);
+                        }}
                     />
                     <div className="tooltip tooltip-left" data-tip="Add User">
                         <button
