@@ -2,7 +2,7 @@ import axios from "axios";
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import Checkbox from "@/Components/inputs/Checkbox";
-import InputError from "@/Components/InputError";
+import InputError from "@/Components/inputs/InputError";
 import PrimaryButton from "@/Components/PrimaryButton";
 import { TextInput } from "@/Components/inputs/TextInput";
 type Inputs = {
