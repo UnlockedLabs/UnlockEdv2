@@ -1,5 +1,5 @@
 import axios from "axios";
-import { User } from "@/common";
+import { User, UserRole } from "@/common";
 import { CloseX } from "../inputs";
 
 interface ResetPasswordFormProps {
@@ -31,31 +31,39 @@ export default function ResetPasswordForm({
             return;
         }
     };
-
     return (
         <div>
             <CloseX close={() => onCancel("", false)} />
-            <p>
-                Are you sure you would like to reset {user?.name_first}{" "}
-                {user?.name_last}'s password?
-            </p>
-            <p className="font-bold text-error py-4">
-                Note: Only valid for non-administrator accounts.
-            </p>
-            <p className="py-4"></p>
-            <div className="flex flex-row justify-between">
-                <button className="btn" onClick={() => onCancel("", false)}>
-                    Cancel
-                </button>
-                <button
-                    className="btn btn-error"
-                    onClick={() => {
-                        getTempPassword();
-                    }}
-                >
-                    Reset Password
-                </button>
-            </div>
+            {user?.role == UserRole.Admin ? (
+                <p className="font-bold text-error py-4 pb-8">
+                    You may only reset the password for non-administrator
+                    accounts.
+                </p>
+            ) : (
+                <div>
+                    <p>
+                        Are you sure you would like to reset {user?.name_first}{" "}
+                        {user?.name_last}'s password?
+                    </p>
+                    <p className="py-4"></p>
+                    <div className="flex flex-row justify-between">
+                        <button
+                            className="btn"
+                            onClick={() => onCancel("", false)}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="btn btn-error"
+                            onClick={() => {
+                                getTempPassword();
+                            }}
+                        >
+                            Reset Password
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -49,7 +49,6 @@ export default function Users({ auth }: PageProps) {
     );
     const userData = data as PaginatedData<User>;
     const showToast = (message: string, state: ToastState) => {
-        console.log("show toast called");
         setToast({
             state,
             message,
@@ -66,6 +65,12 @@ export default function Users({ auth }: PageProps) {
         setDisplayToast(true);
     };
 
+    function resetModal() {
+        setTimeout(() => {
+            setTargetUser(null);
+        }, 200);
+    }
+
     const deleteUser = async () => {
         const response = await axios("/api/v1/users/" + targetUser?.id, {
             method: "delete",
@@ -79,7 +84,7 @@ export default function Users({ auth }: PageProps) {
                 : response.statusText;
         deleteUserModal.current?.close();
         showToast(message, toastType);
-        setTargetUser(null);
+        resetModal();
         mutate();
         return;
     };
@@ -94,24 +99,24 @@ export default function Users({ auth }: PageProps) {
 
     const hanldleEditUser = () => {
         editUserModal.current?.close();
-        setTargetUser(null);
+        resetModal();
         mutate();
     };
 
     const handleDeleteUserCancel = () => {
         deleteUserModal.current?.close();
-        setTargetUser(null);
+        resetModal();
     };
 
     const handleResetPasswordCancel = (msg: string, err: boolean) => {
-        console.log("handle reset password cancel");
         const state = err ? ToastState.error : ToastState.success;
         if (msg === "" && !err) {
-            setTargetUser(null);
+            resetUserPasswordModal.current?.close();
+            resetModal();
             return;
         }
         showToast(msg, state);
-        setTargetUser(null);
+        resetModal();
     };
 
     const handleDisplayTempPassword = (psw: string) => {
@@ -124,7 +129,7 @@ export default function Users({ auth }: PageProps) {
     const handleShowPasswordClose = () => {
         showUserPassword.current?.close();
         setTempPassword("");
-        setTargetUser(null);
+        resetModal();
     };
 
     return (
