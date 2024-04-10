@@ -35,7 +35,7 @@ Route::get('/users', function () {
 
 Route::get('/left-menu-management', function () {
     return Inertia::render('LeftMenuManagement');
-})->middleware(['auth', 'password_reset'])->name('left-menu-management');
+})->middleware(['auth', 'password_reset', 'check_user_role'])->name('left-menu-management');
 
 Route::get('/provider-platform-management', function () {
     return Inertia::render('ProviderPlatformManagement');
