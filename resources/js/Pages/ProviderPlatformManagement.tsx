@@ -1,14 +1,20 @@
 import PageNav from "@/Components/PageNav";
-import SecondaryButton from "@/Components/SecondaryButton";
+import ProviderCard from "@/Components/ProviderCard";
 import AddProviderForm from "@/Components/forms/AddProviderForm";
 import EditProviderForm from "@/Components/forms/EditProviderForm";
+import Modal from "@/Components/Modal";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { ProviderPlatform } from "@/common";
 import { PageProps } from "@/types";
-import { DocumentCheckIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
-import { PencilSquareIcon } from "@heroicons/react/24/solid";
+import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
+import Toast, { ToastState } from "@/Components/Toast";
+
+interface ToastProps {
+    state: ToastState;
+    message: string;
+}
 
 export default function ProviderPlatformManagement({ auth }: PageProps) {
     const addProviderModal = useRef<null | HTMLDialogElement>(null);
@@ -16,6 +22,10 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
     const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
         null,
     );
+    const [toast, setToast] = useState<ToastProps>({
+        state: ToastState.null,
+        message: "",
+    });
 
     const {
         data: providers,
@@ -23,10 +33,6 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
         error,
         isLoading,
     } = useSWR(`/api/v1/provider-platforms`);
-
-    useEffect(() => {
-        console.log(providers);
-    }, [providers]);
 
     providers?.data.sort(function (
         providerA: ProviderPlatform,
@@ -54,54 +60,21 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
         }
     });
 
-    function ProviderCard({ provider }: { provider: ProviderPlatform }) {
-        let cardImg = provider.icon_url;
-        if (cardImg == null) {
-            cardImg = "/" + provider.type + ".jpg";
+    function openEditProvider(provider: ProviderPlatform) {
+        setEditProvider(provider), editProviderModal.current?.showModal();
+    }
+
+    function updateProvider(state: ToastState, message: string) {
+        mutate();
+        if (state && message) {
+            setToast({
+                state: state,
+                message: message,
+            });
         }
-        return (
-            <div className="">
-                <div className="card card-compact bg-base-100 shadow-xl h-full">
-                    <figure className="h-1/2">
-                        <img src={cardImg} alt="" className="object-contain" />
-                    </figure>
-                    <div
-                        className={`inline-flex items-center px-4 py-2 dark:bg-gray-800 font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest
-                                ${
-                                    provider.state == "archived"
-                                        ? "bg-accent"
-                                        : provider.state == "disabled"
-                                          ? "bg-neutral"
-                                          : "bg-primary"
-                                }`}
-                    >
-                        <span className="mx-auto">{provider.state}</span>
-                    </div>
-                    <div className="card-body flex flex-col gap-2 content-between">
-                        <div className="flex flex-row justify-between">
-                            <h2 className="card-title">{provider.name}</h2>
-                            <SecondaryButton
-                                className="gap-2"
-                                onClick={() => {
-                                    setEditProvider(provider),
-                                        editProviderModal.current?.showModal();
-                                }}
-                            >
-                                <PencilSquareIcon className="w-4" />
-                            </SecondaryButton>
-                        </div>
-                        <p>
-                            <span className="font-bold">Description: </span>
-                            {provider.description}
-                        </p>
-                        <p>
-                            <span className="font-bold">Type: </span>
-                            {provider.type}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
+        editProviderModal.current?.close();
+        addProviderModal.current?.close();
+        setEditProvider(null);
     }
 
     return (
@@ -131,6 +104,7 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                             return (
                                 <ProviderCard
                                     provider={provider}
+                                    openEditProvider={openEditProvider}
                                     key={provider.id}
                                 />
                             );
@@ -141,54 +115,45 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
                 </div>
             </div>
             {/* Modals */}
-            <dialog ref={addProviderModal} className="modal">
-                <div className="modal-box">
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-neutral">
-                            Add Provider Platform
-                        </span>
-                        <AddProviderForm
-                            onSuccess={() => {
-                                mutate();
-                                addProviderModal.current?.close();
+            <Modal
+                type="Add"
+                item="Provider"
+                form={
+                    <AddProviderForm
+                        onSuccess={(state: ToastState, message: string) => {
+                            updateProvider(state, message);
+                        }}
+                    />
+                }
+                ref={addProviderModal}
+            />
+            <Modal
+                type="Edit"
+                item="Provider"
+                form={
+                    editProvider ? (
+                        <EditProviderForm
+                            onSuccess={(state: ToastState, message: string) => {
+                                updateProvider(state, message);
                             }}
+                            provider={editProvider}
                         />
-                    </div>
-                </div>
-            </dialog>
-            <dialog ref={editProviderModal} className="modal">
-                <div className="modal-box">
-                    <form method="dialog">
-                        <button
-                            className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
-                            onClick={() => {
-                                setEditProvider(null);
-                            }}
-                        >
-                            ✕
-                        </button>
-                    </form>
-                    <div className="flex flex-col">
-                        <span className="text-3xl font-semibold pb-6 text-neutral">
-                            Edit Provider Platform
-                        </span>
-                        {editProvider ? (
-                            <EditProviderForm
-                                onSuccess={() => {
-                                    mutate();
-                                    editProviderModal.current?.close(),
-                                        setEditProvider(null);
-                                }}
-                                provider={editProvider}
-                            />
-                        ) : (
-                            <div>
-                                Could not load form. Please try again later.
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </dialog>
+                    ) : (
+                        <></>
+                    )
+                }
+                ref={editProviderModal}
+            />
+            {/* Toasts */}
+            {toast.state !== ToastState.null && (
+                <Toast
+                    state={toast.state}
+                    message={toast.message}
+                    reset={() =>
+                        setToast({ state: ToastState.null, message: "" })
+                    }
+                />
+            )}
         </AuthenticatedLayout>
     );
 }

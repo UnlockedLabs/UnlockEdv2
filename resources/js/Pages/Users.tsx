@@ -49,6 +49,7 @@ export default function Users({ auth }: PageProps) {
     );
     const userData = data as PaginatedData<User>;
     const showToast = (message: string, state: ToastState) => {
+        console.log("show toast called");
         setToast({
             state,
             message,
@@ -103,6 +104,7 @@ export default function Users({ auth }: PageProps) {
     };
 
     const handleResetPasswordCancel = (msg: string, err: boolean) => {
+        console.log("handle reset password cancel");
         const state = err ? ToastState.error : ToastState.success;
         if (msg === "" && !err) {
             setTargetUser(null);
@@ -135,7 +137,10 @@ export default function Users({ auth }: PageProps) {
                         placeholder="Search..."
                         className="input input-bordered w-full max-w-xs input-sm"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setPageQuery(1);
+                        }}
                     />
                     <div className="tooltip tooltip-left" data-tip="Add User">
                         <button
@@ -299,12 +304,16 @@ export default function Users({ auth }: PageProps) {
             />
             <Modal
                 ref={showUserPassword}
-                type={`Successfully Reset Password`}
+                type={`New Password`}
                 item={""}
                 form={
                     <ShowTempPasswordForm
                         tempPassword={tempPassword}
-                        userName={`${targetUser?.name_first} ${targetUser?.name_last}`}
+                        userName={
+                            targetUser
+                                ? `${targetUser.name_first} ${targetUser.name_last}`
+                                : null
+                        }
                         onClose={handleShowPasswordClose}
                     />
                 }

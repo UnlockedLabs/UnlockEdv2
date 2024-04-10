@@ -2,6 +2,88 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.7] - 2024-03-29
+
+[5afc0b9](5afc0b992fc6e30cf10dbc54334fbde033ec7dfc)...[d4f6634](d4f663430318dcf93027479799596834fdd177cb)
+
+### Bug Fixes
+
+-   Only insert provider if env var is set ([230b0f2](230b0f2ae946902b72d06d97fa0e1b1daff67636))
+-   Adds modal component back in ([cb9e96a](cb9e96ac0db419b90fde91ab56e603f9b9c9c1a6))
+-   Fix title so that it says 'UnlockEdv2' instead of 'Laravel' ([063f35d](063f35ddd287fe109e5a03f176e7a60422b2ffc6))
+-   Fix pagination chevrons to be disabled when they are in an unusable state ([5172cc3](5172cc356c739e7dff70a889e7654cdebce0b9a3))
+-   Implement PR review suggestions ([2a9dda5](2a9dda5f06aa542b66e9b5bc953d26c7db313c98))
+-   Implement PR review suggestions ([911cb34](911cb345a16eb10aa7a556b53d3165e3669a4c96))
+-   Decrease lines in getQuartileScore ([c215bc7](c215bc792784b71303e4c714441b82cc8880813f))
+-   Locally host fonts instead of use Google ([796132c](796132c85473b911b886d3be4a0432b89741c484))
+-   Adds ref to delete category modal ([fdd0016](fdd00168aff4746d4289f6feb5f1dab772e0dad9))
+-   Shows specific error message for no links ([a7134cc](a7134cce4078cc45272b3549070ec3bd4d488f79))
+-   Add generic components from @calisio, finish user mgmt ([65e13ad](65e13ad58ed4f87303736a6477523e70e6df03b1))
+-   Finish implementing generic components in user mgmt ([f2bd806](f2bd806344b0c0c0ea4add9313d8420ff59a8c45))
+-   Add closex to adduser form ([5582eb7](5582eb75c9a7180c0942e8e0088191bdc339167b))
+-   Changes user management forms to use general input components ([b1ac1eb](b1ac1eb95233c7e53508ef1b235532e648bcd9c3))
+-   Cleans up user password reset modals ([3af20ee](3af20ee7b6d368d0fcdf200fc023121a2199e338))
+-   Minor changes from usermgmt pr ([d4b5dfa](d4b5dfa3bc239fbeeaa2b1aeba70bb876f26e1bc))
+-   Add proxy to middleware for SSL termination ([26a3e62](26a3e62c35dcf013ab1e76e0e44b3b178a8a36dc))
+-   Try to correct provider behavior w/ access_key on remote deployments ([06e1ba2](06e1ba2d0d9148c289b3180b932b6a805127626e))
+-   Assorted server issues ([a7ad66e](a7ad66e6633b68c3bad605364a1961e1ed391170))
+-   Default to root account in canvas services instance ([9e23308](9e233086473e5f8f88d248c8311da558e8ecc1fc))
+-   Default to root account in canvas services instance ([a40fa04](a40fa04ad1a90730065bb86d6839e010dd0b6bbd))
+-   Add demo branch to github actions workflow ([4c50b57](4c50b570ab5d67a76d882199c8bc02cdeb4c8563))
+-   Adjust nvm use for deployments and CI ([64ba52b](64ba52b764ad0d2c5cce482fc333a25d19cda400))
+-   Create generic userauth request for users to access their own resources ([c69c006](c69c006cc3568ff883a06faf5ee9571ac6ad83fb))
+-   Fix increased contrast of timeline titles on welcome page ([34dcba6](34dcba6efd967fe1a402743a24459e7196cfce5a))
+-   Fix logo style to act like svg image, not selectable text block ([35bdf1b](35bdf1b6ba052cedbe9fd4070f44779eee7e71f6))
+-   Add validate params and remove overrideAuthorize ([1115140](111514068f6e12f89949ef5df2ca15b37ec31f67))
+-   Remove recursive creation of provider platforms in seeding test data ([bb491bb](bb491bb54d5730bd41143fa736721279d9164a34))
+-   Tests for new proper seeding method ([8138e03](8138e03a34ec2968691a70cd3db7757466fdc49a))
+-   Correct more seeder/factory behavior for better mock data in staging ([e827a5b](e827a5bcc2b5a219afde2a7a9ce48ff34f8ff98d))
+-   User acitivity test to reflect new seeder ([e406da9](e406da96020b6d85909f530c9077c1dd00ca674e))
+-   Fix theme toggle indicator being invisible when it is clicked on ([7371fda](7371fda35dfe76d6db31f238563116d99bb5759e))
+-   Fixes invalid use of hooks in edit user form ([afc577d](afc577d3a03f310b3ac7be8101ddbfaf02775fcc))
+-   Shows correct temp password modal depending on edit or add user ([6c4ea74](6c4ea74f47f088a1201fa4585229c88bb13dc47d))
+-   Fixed toast states in left menu management and adds toasts to provider platforms ([68b305f](68b305f7a37e52520275b4826898160af8c65fb8))
+-   Correct more seeder/factory behavior for better mock data in staging ([65bed5d](65bed5dc6327fa3093cb63565c24bd104803ed02))
+-   User acitivity test to reflect new seeder ([745564a](745564af928ae25800062cf93993d9692595a3cb))
+-   Re add staged changes after git hook ([a6a05e7](a6a05e72a739c91bb23a0d33f705bafabe6a8290))
+-   Remove check for staged files since githook is fixed ([2723104](2723104c2e1dfb7a1aafa3825dacacfef1b713ad))
+-   Fixes input imports ([229f5ff](229f5fff135d6eb31d09b6e9d1da60f5dc71cd6f))
+-   Fixes input imports ([7a19e7e](7a19e7e3a3db34f760edc411ff3ba0c1261c8171))
+
+### Documentation
+
+-   Add + edit readme, license and contrib.md ([e8abdbc](e8abdbca8015bb21737dfab808aef1e6c90e9211))
+-   Creates contributing.md file ([be36b86](be36b86ab4481f47f2f7131bbcdce028858fcc24))
+
+### Features
+
+-   Add user activity map ([9370e95](9370e955f9186739e21aba6721368dea1589566c))
+-   Creates submit button component and fixes all forms ([ac93646](ac936461bfe46432a232a24f29ec0386be1d6134))
+-   Add demo auto deployment ([164526c](164526c899fa9a86d46b16ba3f3c30d62469a30f))
+-   Add start_date and end_date parameters for UserActivityMap ([4120d7d](4120d7d8a200f528ab8674230988d79aedf6057f))
+-   Add start_date and end_date parameters for UserActivityMap ([8a1efa8](8a1efa85887fb39d853e5de65f149d8ccdf805a8))
+-   Add progressive loading to the large image in Welcome ([cf2a7a6](cf2a7a61358bd0823902fa9b59cf41e520f0c70d))
+-   Close menu dropdown when clicking outside of it ([b460c4d](b460c4deb2e9356c73f8d228cfe687e50bffa641))
+
+### Miscellaneous Tasks
+
+-   Add changelog for sprint 17 ([8b32b1f](8b32b1fe11153010a7cccbf5cf26c5d209caeec0))
+-   Test Jira issue review transition automation ([cd4c51e](cd4c51e3dcf69a25ff834da9b276aca055040988))
+-   Update issue templates ([24208de](24208ded15f754e13a659eaebe5a19d56b2445db))
+
+### Refactor
+
+-   Adds components for add category form and add link form ([8ca64fa](8ca64faeca8a04f8830d51ac2bd0b798964920d4))
+-   Creates modal and toast components and separates components into different files for left menu management. adds tooltips to link items ([696098c](696098ce1665929ed1726e39a90746312997e896))
+-   Toast waits to ease out ([32af32d](32af32d6d94a7c3a2c709eb274e1fb13267ac4e2))
+-   Creates form components, first pass at condensing forms for provider platforms ([f85dbd8](f85dbd8e85da402eda1c017c23d168c6a9a4ae25))
+-   General modal component fixed, keeps separate forms ([07ab523](07ab52386561d5efa7ccd27303f6269f651d9522))
+-   Merges main into generalizing ui components ([acc5f9b](acc5f9b7324a98ee38716ada026f9f235fd8a012))
+-   Changes file name of TextInput ([0b51612](0b51612b44e2f76a8f5192fdf5de89961f228f24))
+-   Removes duplicate input folder ([ffaa57d](ffaa57db60c7c07b432f68d980d0fed3021d279b))
+-   Condenses imports for forms ([989b60b](989b60b3dbe6c825bdb9d218c13e63c2096c36d8))
+-   Prevent large format changes to unnecessary files ([d4f6634](d4f663430318dcf93027479799596834fdd177cb))
+
 ## [0.0.6] - 2024-03-19
 
 [f5337d5](f5337d537c0e9fd3313d631ae44670362f4c1ee6)...[5afc0b9](5afc0b992fc6e30cf10dbc54334fbde033ec7dfc)
@@ -111,6 +193,7 @@ All notable changes to this project will be documented in this file.
 -   Add scheduled cron job to retrieve user data ([5a54814](5a54814a686a3b3f121ad7533e3c26e452be5909))
 -   Complete protection of provider keys ([851ea35](851ea35148e14e7e158147c62dd8e58f6de37951))
 -   Make front end show/hide access key to match back-end behavior ([4d739fa](4d739fa139e8f9464cf35857d5ae2732d0307c28))
+-   Add functionality to reset password and delete user buttons and fix: add user modal close and edit user reset values issues ([eb1e5ea](eb1e5eaff9e7f62232b382692b80d2b75ee22bd0))
 
 ## [0.0.5] - 2024-02-29
 

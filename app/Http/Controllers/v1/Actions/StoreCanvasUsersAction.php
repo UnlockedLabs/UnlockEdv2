@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\v1\Actions;
 
 use App\Enums\UserRole;
@@ -14,8 +16,8 @@ class StoreCanvasUsersAction extends Controller
 {
     public function __invoke(Request $request)
     {
-        $provider = ProviderPlatform::findOrFail($request->provider_platform_id);
-        $canvas = $provider->getCanvasServices();
+        $provider = ProviderPlatform::findOrFail($request['provider_platform_id']);
+        $canvas = $provider->getProviderServices();
         $users = $canvas->listUsers();
         $new_users = [];
         foreach ($users as $user) {

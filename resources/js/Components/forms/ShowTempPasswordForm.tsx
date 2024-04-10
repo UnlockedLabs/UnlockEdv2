@@ -1,8 +1,8 @@
-import { CloseX } from "../inputs/CloseX";
+import { CloseX } from "../inputs";
 
 export interface TempPasswordProps {
     tempPassword: string;
-    userName: string;
+    userName: string | null;
     onClose: () => void;
 }
 export default function ShowTempPasswordForm({
@@ -13,13 +13,19 @@ export default function ShowTempPasswordForm({
     return (
         <div>
             <CloseX close={() => onClose()} />
-            <p className="py-4">
-                You have successfully reset {userName}'s password.
-            </p>
+            {userName == null ? (
+                <p className="py-4">
+                    You have successfully created a new user.
+                </p>
+            ) : (
+                <p className="py-4">
+                    You have successfully reset {userName}'s password.
+                </p>
+            )}
             <div className="flex flex-row">
                 <div className="stats shadow mx-auto">
                     <div className="stat">
-                        <div className="stat-title">New Temporary Password</div>
+                        <div className="stat-title">Temporary Password</div>
                         <div className="stat-value">{tempPassword}</div>
                     </div>
                 </div>

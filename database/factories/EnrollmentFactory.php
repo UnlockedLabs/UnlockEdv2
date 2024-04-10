@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // database/factories/EnrollmentFactory.php
 
 namespace Database\Factories;
@@ -37,7 +39,7 @@ class EnrollmentFactory extends Factory
         ]);
     }
 
-    public function forCourse(string $id): static
+    public function forCourse(int $id): static
     {
         return $this->state(fn (array $attributes) => [
             'course_id' => $id,

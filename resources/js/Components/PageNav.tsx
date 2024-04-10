@@ -127,7 +127,11 @@ export default function PageNav({
                                 <div className="divider mt-0 mb-0"></div>
 
                                 <li>
-                                    <Link href={route("logout")} method="post">
+                                    <Link
+                                        href={route("logout")}
+                                        method="post"
+                                        as="button"
+                                    >
                                         <ArrowRightOnRectangleIcon className="h-4" />
                                         Logout
                                     </Link>

@@ -35,7 +35,7 @@ class CanvasIntegrationTests extends TestCase
         $courses->assertSuccessful();
         $data = $courses->json()['data'];
         // there are 6 courses on canvas instance
-        $this->assertCount(6, $data);
+        $this->assertCount(7, $data);
         $enroll = [
             'user_id' => $this->USER_ID,
             'provider_platform_id' => $this->PROV_ID,
@@ -45,7 +45,7 @@ class CanvasIntegrationTests extends TestCase
         // Chris is enrolled in 5 of the courses
         $this->assertCount(5, $enrollments);
         // Ensure that the database has the expected number of courses and enrollments
-        $this->assertDatabaseCount('courses', 6);
+        $this->assertDatabaseCount('courses', 7);
         $this->assertDatabaseCount('enrollments', 5);
     }
 
@@ -64,7 +64,7 @@ class CanvasIntegrationTests extends TestCase
         $resp = $this->actingAs($admin)->post('api/v1/actions/import-canvas-users', $req);
         $resp->assertSuccessful();
         $users = User::where(['role' => UserRole::STUDENT])->get();
-        $this->assertDatabaseCount('users', 7);
+        $this->assertDatabaseCount('users', 11);
         foreach ($users as $user) {
             // assert each has a provider mapping, and that they exist
             $this->assertNotNull($user->externalIdFor($this->PROV_ID));

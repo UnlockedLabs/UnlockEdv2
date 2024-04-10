@@ -7,6 +7,9 @@ interface TextProps {
     length: number | null;
     errors: FieldErrors<any>;
     register: Function;
+    password?: boolean;
+    isFocused?: boolean;
+    autoComplete?: string;
 }
 
 export function TextInput({
@@ -16,6 +19,9 @@ export function TextInput({
     length,
     errors,
     register,
+    password = false,
+    isFocused = false,
+    autoComplete = "on",
 }: TextProps) {
     const options = {
         required: {
@@ -35,9 +41,11 @@ export function TextInput({
                 <span className="label-text">{label}</span>
             </div>
             <input
-                type="text"
+                type={`${password ? "password" : "text"}`}
                 className="input input-bordered w-full"
                 {...register(interfaceRef, options)}
+                autoComplete={autoComplete}
+                autoFocus={isFocused}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message?.toString()}

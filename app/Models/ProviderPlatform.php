@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\ProviderPlatformState;
@@ -44,9 +46,12 @@ class ProviderPlatform extends Model
         return Crypt::decryptString($this->attributes['access_key']);
     }
 
-    public function getCanvasServices(): \App\Services\CanvasServices
+    public function getProviderServices(): \App\Services\ProviderServices
     {
-        return new \App\Services\CanvasServices($this->attributes['id'], $this->attributes['account_id'], $this->attributes['access_key'], $this->attributes['base_url']);
+        return match ($this->attributes['type']) {
+            'kolibri' => new \App\Services\KolibriServices($this->attributes['id'], $this->attributes['account_id'], $this->attributes['access_key'], $this->attributes['base_url']),
+            default => new \App\Services\CanvasServices($this->attributes['id'], $this->attributes['account_id'], $this->attributes['access_key'], $this->attributes['base_url']),
+        };
     }
 
     public function hasUserMapping($user)

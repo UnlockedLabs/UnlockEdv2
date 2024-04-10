@@ -42,7 +42,8 @@ When submitting a pull request, please ensure the following:
 > **Note**: On commit, the project will run `prettier` and `pint` to format your code, so things like indentation and line breaks will be taken care of for you automatically.
 
 ### Frontend
-=====================
+
+=============
 
 We use the following libraries to help keep our frontend consistent:
 
@@ -82,7 +83,8 @@ These colors are used throughout the project, so please try to use them where po
 Checkout the [daisyUI documentation](https://daisyui.com/docs) for more information.
 
 ### Backend
-==============
+
+============
 
 #### Style and Naming-Conventions:
 
