@@ -60,8 +60,15 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
         }
     });
 
+    function resetModal() {
+        setTimeout(() => {
+            setEditProvider(null);
+        }, 200);
+    }
+
     function openEditProvider(provider: ProviderPlatform) {
-        setEditProvider(provider), editProviderModal.current?.showModal();
+        setEditProvider(provider);
+        editProviderModal.current?.showModal();
     }
 
     function updateProvider(state: ToastState, message: string) {
@@ -74,7 +81,7 @@ export default function ProviderPlatformManagement({ auth }: PageProps) {
         }
         editProviderModal.current?.close();
         addProviderModal.current?.close();
-        setEditProvider(null);
+        resetModal();
     }
 
     return (
