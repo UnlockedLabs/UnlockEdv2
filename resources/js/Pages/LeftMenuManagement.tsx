@@ -12,6 +12,7 @@ import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import DeleteForm from "@/Components/forms/DeleteForm";
+import { useDebounce } from "usehooks-ts";
 
 interface ToastProps {
     state: ToastState;
@@ -34,7 +35,8 @@ export default function LeftMenuManagement({ auth }: PageProps) {
     });
 
     const draggedItem = useRef<null | number>(null);
-    const [dragOverItem, setDraggedOverItem] = useState<null | number>(null);
+    const [draggedOverItem, setDraggedOverItem] = useState<null | number>(null);
+    const dragOverItem = useDebounce(draggedOverItem, 100);
 
     useEffect(() => {
         if (data != undefined) {
