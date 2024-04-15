@@ -36,7 +36,10 @@ class IdentityEntity implements IdentityEntityInterface
     public function getClaims(): array
     {
         return [
+            'username' => $this->user->username,
             'email' => $this->user->email,
+            'name' => $this->user->name_last + ' ' + $this->user->name_first,
+            'role' => $this->user->role,
         ];
     }
 }
