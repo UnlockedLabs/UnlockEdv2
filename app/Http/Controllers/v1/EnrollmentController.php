@@ -46,7 +46,7 @@ class EnrollmentController extends Controller
         }
     }
 
-    public function show(Request $request, string $id): \Illuminate\Http\JsonResponse
+    public function show(Request $request, string $id): EnrollmentCourseJoinResource
     {
         if ($request->user()->isAdmin()) {
             $enrollment = Enrollment::findOrFail($id);
@@ -74,7 +74,7 @@ class EnrollmentController extends Controller
         return new EnrollmentResource($enrollment);
     }
 
-    public function update(UpdateEnrollmentRequest $request, $id): \Illuminate\Http\JsonResponse
+    public function update(UpdateEnrollmentRequest $request, $id): EnrollmentResource
     {
         $validated = $request->validated();
 
