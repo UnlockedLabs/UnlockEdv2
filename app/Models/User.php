@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -52,15 +51,31 @@ class User extends Authenticatable
         'role' => UserRole::class,
     ];
 
-    // fallback to the only provider usr mapping should the argument be null
+    /**
+     * Get the user's external ID in the specified provider platform.
+     * If no provider platform ID is provided, and there is exactly one mapping, it returns that one.
+     * Otherwise, it returns null or throws a custom exception if there are multiple/no mappings when no ID is provided.
+     */
     public function externalIdFor(?int $provider_platform_id): ?string
     {
-        return $provider_platform_id ? $this->providerUserMappings()
-            ->where('provider_platform_id', $provider_platform_id)
-            ->value('external_user_id') : $this->providerUserMappings()->sole()->external_user_id;
+        if ($provider_platform_id !== null) {
+            // Fetch external ID for the specified platform
+            return $this->providerUserMappings()
+                ->where('provider_platform_id', $provider_platform_id)
+                ->value('external_user_id');
+        } else {
+            try {
+                return $this->providerUserMappings()->sole()->external_user_id;
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                return null;
+            }
+        }
     }
 
-    public function mapToProvider(int $provider_platform_id, int $external_user_id)
+    /**
+     * Map the user to the specified provider platform.
+     */
+    public function mapToProvider(int $provider_platform_id, int $external_user_id): void
     {
         $default_ext_username = $this->attributes['email'] != null ?
             $this->attributes['email'] :
@@ -73,27 +88,46 @@ class User extends Authenticatable
             ]);
     }
 
-    public function userCourseActivity()
+    /**
+     * Course Activity for the user.
+     *
+     * @return \Illiminate\Database\Eloquent\Relations\HasMany
+     */
+    public function userCourseActivity(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany('\App\Models\UserCourseActivity');
     }
 
-    public function providerUserMappings()
+    /**
+     *  Provider user mappings for the user.
+     */
+    public function providerUserMappings(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany('\App\Models\ProviderUserMapping');
     }
 
+    /**
+     * Check if the user has the role of admin.
+     */
     public function isAdmin(): bool
     {
         return $this->role === UserRole::ADMIN;
     }
 
-    public function userActivity()
+    /**
+     * Check if the user has the role of student.
+     *
+     * @return bool
+     */
+    public function userActivity(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany('\App\Models\UserActivity');
     }
 
-    public function createTempPassword()
+    /**
+     * Set the users password to a random string and return it.
+     */
+    public function createTempPassword(): string
     {
         $pw = Str::random(8);
         $this->attributes['password'] = Hash::make($pw);

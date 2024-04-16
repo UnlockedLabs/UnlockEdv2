@@ -52,7 +52,7 @@ class UserCourseActivityTask implements ShouldQueue
         foreach ($this->providers as $provider) {
             $cs = $provider->getProviderServices();
             foreach ($this->users as $user) {
-                $enrollments = Enrollment::allEnrollmentsForProviderUser($user->id, $provider->id);
+                $enrollments = Enrollment::forProviderUser($provider->id, $user->id);
 
                 foreach ($enrollments as $entry) {
                     $entry = $cs->getEnrollmentById((int) $entry->external_enrollment_id);

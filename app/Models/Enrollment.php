@@ -39,9 +39,14 @@ class Enrollment extends Model
     /**
      * Get all enrollments for a provider user.
      */
-    public static function allEnrollmentsForProviderUser(int $user_id, int $provider_id): array
+    public static function forProviderUser(int $provider_id, int $user_id): array
     {
-        return self::where('user_id', $user_id)->get()->filter(fn ($enrollment) => $enrollment->isForProvider($provider_id))->toArray();
+        return self::with('course')
+            ->where('user_id', $user_id)
+            ->whereHas('course', function ($query) use ($provider_id) {
+                $query->where('provider_platform_id', $provider_id);
+            })
+            ->get()->toArray();
     }
 
     /**
