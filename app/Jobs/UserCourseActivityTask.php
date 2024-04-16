@@ -33,6 +33,8 @@ class UserCourseActivityTask implements ShouldQueue
 
     /**
      * Create a new job instance.
+     *
+     * @mixin \Illuminate\Database\Query\Builder
      */
     public function __construct()
     {
@@ -42,17 +44,15 @@ class UserCourseActivityTask implements ShouldQueue
 
     /**
      * Execute the job.
+     *
+     * @mixin \Illuminate\Database\Query\Builder
      */
     public function handle(): void
     {
         foreach ($this->providers as $provider) {
             $cs = $provider->getProviderServices();
             foreach ($this->users as $user) {
-                $enrollments = Enrollment::where('user_id', $user->id)
-                    ->whereHas('course', function ($query) use ($provider) {
-                        $query->where('provider_platform_id', $provider->id);
-                    })
-                    ->get();
+                $enrollments = Enrollment::allEnrollmentsForProviderUser($user->id, $provider->id);
 
                 foreach ($enrollments as $entry) {
                     $entry = $cs->getEnrollmentById((int) $entry->external_enrollment_id);
@@ -68,11 +68,12 @@ class UserCourseActivityTask implements ShouldQueue
                         $had_activity = true;
                     }
                     $enrollment_id = $entry['id'];
-                    UserCourseActivity::create([
+                    new UserCourseActivity([
                         'user_id' => $user->id,
                         'enrollment_id' => $enrollment_id,
-                        'has_activity' => $had_activity,
-                        'total_activity' => $total_activity,
+                        'external_has_activity' => $had_activity,
+                        'external_total_activity_time' => $total_activity,
+                        'external_total_activity_time_delta' => $total_activity,
                     ]);
                 }
             }

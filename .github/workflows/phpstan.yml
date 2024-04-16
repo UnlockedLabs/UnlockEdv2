@@ -1,0 +1,19 @@
+name: Run backend linter PhpStan
+
+on:
+  push:
+    branches: ["main", "demo"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: php-actions/composer@v6
+      - uses: php-actions/phpstan@v3
+        with:
+          configuration: phpstan.neon
+          memory_limit: 2G

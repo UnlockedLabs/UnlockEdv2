@@ -23,24 +23,26 @@ class UserActivityMapControllerTest extends TestCase
         $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id);
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'user_id',
-                    'date',
-                    'active_course_count',
-                    'total_activity_time',
-                    'total_activity_time_quartile',
+                'data' => [
+                    '*' => [
+                        'user_id',
+                        'date',
+                        'active_course_count',
+                        'total_activity_time',
+                        'total_activity_time_quartile',
+                    ],
                 ],
             ]);
 
         // Ensure quartile scores are within expected range
-        $responseData = $response->json();
+        $responseData = $response->json()['data'];
         foreach ($responseData as $data) {
             $this->assertGreaterThanOrEqual(0, $data['total_activity_time_quartile']);
             $this->assertLessThanOrEqual(4, $data['total_activity_time_quartile']);
         }
     }
 
-    public function testGetUserActivityMapStartDateOnly()
+    public function testGetUserActivityMapStartDateOnly(): void
     {
         $this->seed(TestSeeder::class);
         // Retrieve a random user_id from the user_course_activities table
@@ -55,24 +57,26 @@ class UserActivityMapControllerTest extends TestCase
             ->value('date');
 
         // Find the user using the randomly selected user_id
-        $user = User::find($randomUserId);
+        $user = User::findOrFail($randomUserId);
 
         $params = '?start_date='.$startDate;
         $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.$params);
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'user_id',
-                    'date',
-                    'active_course_count',
-                    'total_activity_time',
-                    'total_activity_time_quartile',
+                'data' => [
+                    '*' => [
+                        'user_id',
+                        'date',
+                        'active_course_count',
+                        'total_activity_time',
+                        'total_activity_time_quartile',
+                    ],
                 ],
             ]);
 
         // Ensure quartile scores are within expected range
         // and dates are all on or after startDate
-        $responseData = $response->json();
+        $responseData = $response->json()['data'];
         foreach ($responseData as $data) {
             $dateFormatted = date('Y-m-d', strtotime($data['date']));
             $this->assertGreaterThanOrEqual(date('Y-m-d', strtotime($startDate)), $dateFormatted);
@@ -102,18 +106,20 @@ class UserActivityMapControllerTest extends TestCase
         $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.$params);
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'user_id',
-                    'date',
-                    'active_course_count',
-                    'total_activity_time',
-                    'total_activity_time_quartile',
+                'data' => [
+                    '*' => [
+                        'user_id',
+                        'date',
+                        'active_course_count',
+                        'total_activity_time',
+                        'total_activity_time_quartile',
+                    ],
                 ],
             ]);
 
         // Ensure quartile scores are within expected range
         // and dates are all on or before endDate
-        $responseData = $response->json();
+        $responseData = $response->json()['data'];
         foreach ($responseData as $data) {
             $dateFormatted = date('Y-m-d', strtotime($data['date']));
             $this->assertLessThanOrEqual(date('Y-m-d', strtotime($endDate)), $dateFormatted);
@@ -122,7 +128,7 @@ class UserActivityMapControllerTest extends TestCase
         }
     }
 
-    public function testGetUserActivityMapDateRange()
+    public function testGetUserActivityMapDateRange(): void
     {
         $this->seed(TestSeeder::class);
         // Retrieve a random user_id from the user_course_activities table
@@ -150,18 +156,20 @@ class UserActivityMapControllerTest extends TestCase
         $response = $this->actingAs($user)->get('/api/v1/user-activity-map/'.$user->id.$params);
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'user_id',
-                    'date',
-                    'active_course_count',
-                    'total_activity_time',
-                    'total_activity_time_quartile',
+                'data' => [
+                    '*' => [
+                        'user_id',
+                        'date',
+                        'active_course_count',
+                        'total_activity_time',
+                        'total_activity_time_quartile',
+                    ],
                 ],
             ]);
 
         // Ensure quartile scores are within expected range
         // and dates are between startDate and endDate
-        $responseData = $response->json();
+        $responseData = $response->json()['data'];
         foreach ($responseData as $data) {
             $dateFormatted = date('Y-m-d', strtotime($data['date']));
             $this->assertGreaterThanOrEqual(date('Y-m-d', strtotime($startDate)), $dateFormatted);

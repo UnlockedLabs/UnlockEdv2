@@ -7,6 +7,14 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin \App\Models\UserCourseActivity
+ *
+ * @property string $date
+ * @property int $active_course_count
+ * @property float $total_activity_time
+ * @property string $total_activity_time_quartile
+ **/
 class UserActivityMapResource extends JsonResource
 {
     /**

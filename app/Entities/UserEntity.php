@@ -9,7 +9,7 @@ use League\OAuth2\Server\Entities\Traits\EntityTrait;
 use OpenIDConnect\Claims\Traits\WithClaims;
 use OpenIDConnect\Interfaces\IdentityEntityInterface;
 
-class IdentityEntity implements IdentityEntityInterface
+class UserEntity implements IdentityEntityInterface
 {
     use EntityTrait;
     use WithClaims;

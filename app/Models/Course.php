@@ -20,18 +20,24 @@ class Course extends Model
         'img_url',
     ];
 
-    public function hasEnrollmentForUser($user_id): bool
+    public function hasEnrollmentForUser(int $user_id): bool
     {
-        return $this->enrollments()->where('user_id', $user_id)->exists();
+        return $this->enrollments()->getQuery()->where('user_id', $user_id)->exists();
     }
 
-    public function providerPlatform()
+    /**
+     * Get the provider platform that owns the course.
+     */
+    public function providerPlatform(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(ProviderPlatform::class);
+        return $this->belongsTo('\App\Models\ProviderPlatform');
     }
 
-    public function enrollments()
+    /**
+     * Get the enrollments for the course.
+     */
+    public function enrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Enrollment::class);
+        return $this->hasMany('\App\Models\Enrollment');
     }
 }

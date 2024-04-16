@@ -20,11 +20,13 @@ class UserActivity extends Model
         'clicked_url',
     ];
 
+    protected $with = ['user'];
+
     protected $hidden = [
         'ip',
     ];
 
-    public function user()
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(User::class);
     }

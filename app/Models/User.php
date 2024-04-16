@@ -75,12 +75,12 @@ class User extends Authenticatable
 
     public function userCourseActivity()
     {
-        return $this->hasMany('App\Models\UserCourseActivity');
+        return $this->hasMany('\App\Models\UserCourseActivity');
     }
 
     public function providerUserMappings()
     {
-        return $this->hasMany('App\Models\ProviderUserMapping');
+        return $this->hasMany('\App\Models\ProviderUserMapping');
     }
 
     public function isAdmin(): bool
@@ -90,7 +90,7 @@ class User extends Authenticatable
 
     public function userActivity()
     {
-        return $this->hasMany('App\Models\UserActivity');
+        return $this->hasMany('\App\Models\UserActivity');
     }
 
     public function createTempPassword()

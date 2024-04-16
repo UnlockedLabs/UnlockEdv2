@@ -58,7 +58,6 @@ jobs:
           CANVAS_API_KEY: ${{ secrets.CANVAS_API_KEY }}
           CI: true
         run: php artisan test
-
   deploy_to_demo:
     name: Deploy to Demo Instance
     runs-on: ubuntu-latest

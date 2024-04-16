@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * Class EnrollmentCourseJoinResource
+ *
+ * @mixin \App\Models\Enrollment
+ **/
 class EnrollmentCourseJoinResource extends JsonResource
 {
     /**
@@ -14,7 +18,7 @@ class EnrollmentCourseJoinResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray($request): array
     {
         return [
             'id' => $this->id,
@@ -26,8 +30,8 @@ class EnrollmentCourseJoinResource extends JsonResource
             'user_name' => $this->user->username,
             'provider_platform_id' => $this->course->provider_platform_id,
             'external_course_id' => $this->course->external_resource_id,
-            'external_enrollment_id' => $this->external_enrollment_id,
             'external_user_id' => $this->user->externalIdFor($this->course->provider_platform_id),
+            'external_enrollment_id' => $this->external_enrollment_id,
             'provider_platform_name' => $this->course->providerPlatform->name,
             'provider_platform_url' => $this->course->providerPlatform->base_url,
             'provider_platform_icon_url' => $this->course->providerPlatform->icon_url,

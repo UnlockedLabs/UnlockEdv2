@@ -16,20 +16,20 @@ use Illuminate\Http\Response;
 
 class EnrollmentController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         $perPage = request()->query('per_page', 10);
         $sortBy = request()->query('sort', 'user_id');
         $sortOrder = request()->query('order', 'asc');
         $search = request()->query('search', '');
 
-        $query = Enrollment::query();
-
-        // Apply search
+        $query = Enrollment::query()->with(['user', 'course.providerPlatform']);
         if ($search) {
-            $query->where(function ($query) use ($search) {
-                $query->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('links', 'like', '%'.$search.'%');
+            $query->whereHas('course', function ($query) use ($search) {
+                $query->where('external_course_name', 'like', '%'.$search.'%')->orWhere('external_course_code', 'like', '%', $search.'%');
+            });
+            $query->orWhereHas('user', function ($query) use ($search) {
+                $query->where('username', 'like', '%'.$search.'%')->orWhere('user_id', 'like', '%'.$search.'%');
             });
         }
         if ($request->user()->isAdmin()) {
@@ -46,7 +46,7 @@ class EnrollmentController extends Controller
         }
     }
 
-    public function show(Request $request, string $id)
+    public function show(Request $request, string $id): \Illuminate\Http\JsonResponse
     {
         if ($request->user()->isAdmin()) {
             $enrollment = Enrollment::findOrFail($id);
@@ -65,7 +65,7 @@ class EnrollmentController extends Controller
         }
     }
 
-    public function store(StoreEnrollmentRequest $request)
+    public function store(StoreEnrollmentRequest $request): \Illuminate\Http\JsonResponse
     {
         $validated = $request->validated();
 
@@ -74,7 +74,7 @@ class EnrollmentController extends Controller
         return new EnrollmentResource($enrollment);
     }
 
-    public function update(UpdateEnrollmentRequest $request, $id)
+    public function update(UpdateEnrollmentRequest $request, $id): \Illuminate\Http\JsonResponse
     {
         $validated = $request->validated();
 
