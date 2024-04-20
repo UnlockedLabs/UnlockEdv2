@@ -10,7 +10,7 @@ use Database\Seeders\DefaultAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class UserCourseActivityJob extends TestCase
+class UserCourseActivityJobTest extends TestCase
 {
     use RefreshDatabase;
 

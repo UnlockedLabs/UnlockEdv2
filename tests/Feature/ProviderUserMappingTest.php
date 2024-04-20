@@ -3,9 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\ProviderPlatform;
-use App\Models\ProviderUserMapping;
 use App\Models\User;
-use Database\Seeders\ProviderUserMappingSeeder;
+use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,14 +12,14 @@ class ProviderUserMappingTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $seeder = ProviderUserMappingSeeder::class;
+    protected $seeder = TestSeeder::class;
 
     public $url_beg = '/api/v1/users';
 
     public $url_end = '/logins';
 
     /** @test */
-    public function it_lists_provider_user_mappings()
+    public function it_lists_provider_user_mappings(): void
     {
         $user = User::factory()->admin()->createOne();
         $this->seed($this->seeder);
@@ -44,12 +43,10 @@ class ProviderUserMappingTest extends TestCase
         ]);
     }
 
-    public function it_lists_only_users_mappings_non_admin()
+    public function it_lists_only_users_mappings_non_admin(): void
     {
         $user = User::factory()->createOne();
-        ProviderUserMapping::factory()->count(5)->create(['user_id' => $user->id]);
         $this->seed($this->seeder);
-
         $response = $this->actingAs($user)->get('/api/v1/users/logins', [
             'Accept' => 'application/json',
         ]);
@@ -75,8 +72,8 @@ class ProviderUserMappingTest extends TestCase
     /** @test */
     public function it_creates_a_provider_user_mapping_successfully()
     {
-        $this->seed($this->seeder);
-        $user = User::factory()->admin()->createOne();
+        $admin = User::factory()->admin()->createOne();
+        $user = User::factory()->createOne();
         $providerPlatform = ProviderPlatform::factory()->createOne();
         $data = [
             'user_id' => $user->id,
@@ -87,7 +84,7 @@ class ProviderUserMappingTest extends TestCase
         ];
 
         // Make a POST request to the create method
-        $response = $this->actingAs($user)->post('/api/v1/users/'.$user->id.'/logins', $data);
+        $response = $this->actingAs($admin)->post('/api/v1/users/'.$user->id.'/logins', $data);
 
         // Assertions
         $response->assertStatus(201);
@@ -106,9 +103,8 @@ class ProviderUserMappingTest extends TestCase
     public function it_shows_provider_user_mappings_for_a_user()
     {
         $this->seed($this->seeder);
-        $user = User::factory()->createOne();
-        $userId = $user->id;
-        $response = $this->actingAs($user)->get("/api/v1/users/$userId/logins");
+        $user = User::inRandomOrder()->first();
+        $response = $this->actingAs($user)->get("/api/v1/users/$user->id/logins");
 
         // Assertions
         $response->assertOk();
@@ -126,7 +122,7 @@ class ProviderUserMappingTest extends TestCase
     }
 
     /** @test */
-    public function it_doesnt_provider_user_mappings_for_a_user_non_admin()
+    public function it_doesnt_provider_user_mappings_for_a_user_non_admin(): void
     {
         $this->seed($this->seeder);
         $user = User::factory()->createOne();
@@ -138,7 +134,7 @@ class ProviderUserMappingTest extends TestCase
     }
 
     /** @test */
-    public function it_deletes_a_provider_user_mapping()
+    public function it_deletes_a_provider_user_mapping(): void
     {
         $user = User::factory()->admin()->createOne();
         $response = $this->actingAs($user)->delete($this->url_beg.'/'.$user->id.$this->url_end);
@@ -147,7 +143,7 @@ class ProviderUserMappingTest extends TestCase
     }
 
     /** @test */
-    public function it_wont_delete_a_provider_user_mapping_non_admin()
+    public function it_wont_delete_a_provider_user_mapping_non_admin(): void
     {
         $user = User::factory()->createOne();
         $response = $this->actingAs($user)->delete($this->url_beg.'/'.$user->id.$this->url_end);

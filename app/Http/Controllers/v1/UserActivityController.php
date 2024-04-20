@@ -27,8 +27,8 @@ class UserActivityController extends Controller
         // Apply search
         if ($search !== null) {
             $query->where(function ($query) use ($search) {
-                $query->where('name_first', 'like', '%'.$search.'%')
-                    ->orWhere('name_last', 'like', '%'.$search.'%')
+                $query->where('users.name_first', 'like', '%'.$search.'%')
+                    ->orWhere('users.name_last', 'like', '%'.$search.'%')
                     ->orWhere('clicked_url', 'like', '%'.$search.'%');
             });
         }

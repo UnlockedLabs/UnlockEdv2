@@ -8,7 +8,7 @@ use App\Models\UserCourseActivity;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Model>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\UserCourseActivity>
  */
 class UserCourseActivityFactory extends Factory
 {
@@ -29,6 +29,9 @@ class UserCourseActivityFactory extends Factory
         ];
     }
 
+    /**
+     * Return an instance with a specified date field.
+     */
     public function forDate($date): static
     {
         return $this->state(fn (array $attributes) => [
@@ -36,14 +39,20 @@ class UserCourseActivityFactory extends Factory
         ]);
     }
 
-    public function forUser($user_id): static
+    /**
+     * Return an instance with a specified user_id field.
+     **/
+    public function forUser(int $user_id): static
     {
         return $this->state(fn (array $attributes) => [
             'user_id' => $user_id,
         ]);
     }
 
-    public function forEnrollment($enrollment_id): static
+    /**
+     * Return an instance with a specified enrollment_id field.
+     **/
+    public function forEnrollment(int $enrollment_id): static
     {
         return $this->state(fn (array $attributes) => [
             'enrollment_id' => $enrollment_id,

@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Course;
 use App\Models\User;
+use App\Models\UserCourseActivity;
 use Database\Seeders\TestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,8 +21,7 @@ class UserCourseActivityControllerTest extends TestCase
 
         $this->seed(TestSeeder::class);
         $admin = User::factory()->admin()->createOne();
-        $user = User::inRandomOrder()->first();
-        $id = $user->id;
+        $id = UserCourseActivity::inRandomOrder()->firstOrFail()->user_id;
         $response = $this->actingAs($admin)->get("api/v1/users/$id/course-activity");
         $response->assertSuccessful();
         $response->assertJsonStructure([
@@ -45,11 +44,9 @@ class UserCourseActivityControllerTest extends TestCase
     public function test_get_all_course_activity_for_user_auth(): void
     {
         $this->refreshDatabase();
-
         $this->seed(TestSeeder::class);
-        $user = User::inRandomOrder()->first();
-        $id = $user->id;
-        $response = $this->actingAs($user)->get("api/v1/users/$id/course-activity");
+        $user = UserCourseActivity::inRandomOrder()->firstOrFail()->user;
+        $response = $this->actingAs($user)->get("api/v1/users/$user->id/course-activity");
         $response->assertSuccessful();
         $response->assertJsonStructure([
             'data' => [
@@ -71,10 +68,10 @@ class UserCourseActivityControllerTest extends TestCase
     public function test_get_all_course_activity_for_user_and_course(): void
     {
         $this->seed(TestSeeder::class);
-        $user = User::inRandomOrder()->first();
-        $id = $user->id;
-        $courseId = Course::inRandomOrder()->first()->id;
-        $response = $this->actingAs($user)->get("api/v1/users/$id/course-activity/$courseId");
+        $activity = UserCourseActivity::inRandomOrder()->firstOrFail();
+        $user = $activity->user;
+        $course_id = $activity->enrollment->course->id;
+        $response = $this->actingAs($user)->get("api/v1/users/$user->id/course-activity/$course_id");
         $response->assertSuccessful();
         $response->assertJsonStructure([
             'data' => [

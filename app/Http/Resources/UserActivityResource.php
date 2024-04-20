@@ -7,6 +7,12 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * Class UserActivityResource
+ *
+ * @mixin \App\Models\UserActivity
+ * @mixin \App\Models\User
+ **/
 class UserActivityResource extends JsonResource
 {
     /**

@@ -7,7 +7,9 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Courses>
+ * @mixin Factory<\App\Models\Course>
+ *
+ * @extends Factory<\App\Models\Course>
  */
 class CourseFactory extends Factory
 {
@@ -28,6 +30,9 @@ class CourseFactory extends Factory
         ];
     }
 
+    /**
+     * Indicate that the course is for a specific provider platform.
+     */
     public function forProviderPlatform(int $id): static
     {
         return $this->state(fn (array $attributes) => [

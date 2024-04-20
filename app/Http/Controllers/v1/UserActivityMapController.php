@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class UserActivityMapController extends Controller
 {
-    public function show($id, UserActivityMapRequest $request)
+    public function show(int $id, UserActivityMapRequest $request): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         $valid = $request->validated();
         $startDate = $valid['start_date'] ?? null;
@@ -41,7 +41,7 @@ class UserActivityMapController extends Controller
             ->get();
 
         if ($aggregatedData->isEmpty()) {
-            return response()->json([]); // Return an empty array
+            return response()->json([]);
         }
 
         // Calculate quartiles for total_activity_time
@@ -50,19 +50,21 @@ class UserActivityMapController extends Controller
 
         // Assign quartile scores for each day
         foreach ($aggregatedData as $key => $data) {
-            $totalActivityTime = $data->total_activity_time;
-            $aggregatedData[$key]->total_activity_time_quartile = $this->getQuartileScore($totalActivityTime, $totalActivityTimeQuartiles);
+            $totalActivityTime = $data['total_activity_time'];
+            $aggregatedData[$key]['total_activity_time_quartile'] = $this->getQuartileScore($totalActivityTime, $totalActivityTimeQuartiles);
         }
 
-        return response()->json(UserActivityMapResource::collection($aggregatedData));
+        return UserActivityMapResource::collection($aggregatedData);
     }
 
     /**
      * Calculate quartiles for a given dataset.
      * This function handles zero values differently than a standard quartile function.
      * It excludes zero values and splits only non-zero values into approximately equally sized buckets.
+     *
+     * @return array<string, int>
      */
-    private function calculateQuartiles($data)
+    private function calculateQuartiles(array $data): array
     {
         // Remove zeros from the data
         $data = array_filter($data, function ($value) {
@@ -83,7 +85,12 @@ class UserActivityMapController extends Controller
         return compact('q1', 'q2', 'q3');
     }
 
-    private function getQuartileScore($value, $quartiles)
+    /**
+     * Assign quartile score to a given value.
+     *
+     * @param  array<string, int>  $quartiles
+     */
+    private function getQuartileScore(int $value, array $quartiles): int
     {
         return match (true) {
             ($value == 0) => 0,

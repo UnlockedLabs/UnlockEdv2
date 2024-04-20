@@ -7,14 +7,18 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Enrollment;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @mixin Factory<\App\Models\Enrollment>
+ *
+ * @extends Factory<\App\Models\Enrollment>
+ **/
 class EnrollmentFactory extends Factory
 {
     protected $model = Enrollment::class;
 
-    public function definition()
+    public function definition(): array
     {
         $startAt = $this->faker->dateTimeThisYear();
         $endAt = $this->faker->optional(0.5) // 50% chance of being null

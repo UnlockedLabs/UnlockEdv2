@@ -164,7 +164,7 @@ class UserActivityTest extends TestCase
         ]);
     }
 
-    public function testAdminCanSearchUserActivitiesByName()
+    public function testAdminCanSearchUserActivitiesByName(): void
     {
         $admin = User::factory()->admin()->createOne();
         $user = User::factory()->createOne();

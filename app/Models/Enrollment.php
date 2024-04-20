@@ -21,37 +21,55 @@ class Enrollment extends Model
         'external_link_url',
     ];
 
+    protected $with = ['course'];
+
     protected $casts = [
         'external_start_at' => 'datetime',
         'external_end_at' => 'datetime',
     ];
 
-    public function userCourseActivity()
+    /**
+     * Get the user course activities for the enrollment.
+     */
+    public function userCourseActivity(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany('App\Models\UserCourseActivity');
+        return $this->hasMany('\App\Models\UserCourseActivity');
     }
 
-    public function allEnrollmentsForProviderUser(int $user_id, int $provider_id)
+    /**
+     * Get all enrollments for a provider user.
+     */
+    public static function forProviderUser(int $provider_id, int $user_id): array
     {
-        return $this->where('user_id', $user_id)
+        return self::with('course')
+            ->where('user_id', $user_id)
             ->whereHas('course', function ($query) use ($provider_id) {
                 $query->where('provider_platform_id', $provider_id);
             })
-            ->get();
+            ->get()->toArray();
     }
 
-    public function isForProvider(int $provider_id)
+    /**
+     * Check if the enrollment is for the provider.
+     */
+    public function isForProvider(int $provider_id): bool
     {
-        return $this->course->provider_platform_id == $provider_id;
+        return $this->course()->getForeignKeyName() == $provider_id;
     }
 
-    public function course()
+    /**
+     * Get the course that owns the enrollment.
+     */
+    public function course(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo('\App\Models\Course');
     }
 
-    public function user()
+    /**
+     * Get the user that owns the enrollment.
+     */
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo('\App\Models\User');
     }
 }

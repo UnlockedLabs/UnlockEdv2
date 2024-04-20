@@ -77,7 +77,7 @@ class MockCanvasServices
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listUserCourseProgress(string $userId, string $courseId)
+    public function listUserCourseProgress(string $userId, string $course_id)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -87,7 +87,7 @@ class MockCanvasServices
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listEnrollmentsByCourse(string $courseId)
+    public function listEnrollmentsByCourse(string $course_id)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
@@ -97,42 +97,42 @@ class MockCanvasServices
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function enrollUser(int $userId, int $courseId)
+    public function enrollUser(int $userId, int $course_id)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listAssignmentsForUser(string $courseId, string $userId = 'self')
+    public function listAssignmentsForUser(string $course_id, string $userId = 'self')
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listAssignmentsByCourse(string $courseId)
+    public function listAssignmentsByCourse(string $course_id)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listAssignmentGroupsByCourse(string $assignmentGroupId, string $courseId)
+    public function listAssignmentGroupsByCourse(string $assignmentGroupId, string $course_id)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function getAssignment(string $courseId, string $assignmentId)
+    public function getAssignment(string $course_id, string $assignmentId)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listSubmissionsForUser(string $courseId, string $assignmentId, string $userId)
+    public function listSubmissionsForUser(string $course_id, string $assignmentId, string $userId)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function listSubmissionSummary(string $courseId, string $assignmentId)
+    public function listSubmissionSummary(string $course_id, string $assignmentId)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }
 
-    public function getUserCourseProgress(string $userId, string $courseId)
+    public function getUserCourseProgress(string $userId, string $course_id)
     {
         return $this->__call(__FUNCTION__, func_get_args());
     }

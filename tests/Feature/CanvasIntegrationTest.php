@@ -9,7 +9,7 @@ use Database\Seeders\DefaultAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class CanvasIntegrationTests extends TestCase
+class CanvasIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
