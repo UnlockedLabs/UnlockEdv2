@@ -4,20 +4,36 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Config;
+
 /**
  * Class KolibriServices
- */
+ *
+ * @property string service_url
+ *
+ * @extends ProviderServices
+ **/
 class KolibriServices extends ProviderServices
 {
-    public function __construct(int $provider_id, int $account_id, string $base_url, string $access_key)
+    private string $service_url;
+
+    public function __construct(int $provider_id, string $account_id, string $access_key, string $base_url)
     {
-        parent::__construct($provider_id, $account_id, $base_url, $access_key);
+        $this->service_url = Config::get('app.kolibri.service_url');
+
+        parent::__construct($provider_id, $account_id, $access_key, $base_url);
+    }
+
+    public function getUsers(): mixed
+    {
+        $url = $this->service_url."/api/import-users?facility_id=$this->account_id";
+
+        return $this->GET($url);
     }
 
     /**
      * @info request specific content
-     *
-     * example localhost:8000/api/content/<channel_id>/contentnode/<content_id>
+     * localhost:8000/api/content/<channel_id>/contentnode/<content_id>
      */
     public function requestSpecificContent(int $channel_id, int $content_id): mixed
     {

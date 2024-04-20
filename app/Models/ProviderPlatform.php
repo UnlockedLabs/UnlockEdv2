@@ -36,12 +36,12 @@ class ProviderPlatform extends Model
         'state' => ProviderPlatformState::class,
     ];
 
-    public function encryptAccessKey(string $value)
+    public function encryptAccessKey(string $value): void
     {
         $this->attributes['access_key'] = Crypt::encryptString($value);
     }
 
-    public function decryptAccessKey()
+    public function decryptAccessKey(): string
     {
         return Crypt::decryptString($this->attributes['access_key']);
     }
@@ -54,12 +54,17 @@ class ProviderPlatform extends Model
         };
     }
 
-    public function hasUserMapping($user)
+    /**
+     * @info Check if the platform has a user mapping
+     *
+     * @param  User  $user
+     **/
+    public function hasUserMapping($user): bool
     {
         return $this->providerUserMappings()->where('user_id', $user->id)->exists();
     }
 
-    public function providerUserMappings()
+    public function providerUserMappings(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany('\App\Models\ProviderUserMapping');
     }

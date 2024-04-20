@@ -112,6 +112,13 @@ return [
     'faker_locale' => 'en_US',
 
     /*
+    * External provider services configuration
+    **/
+    'kolibri' => [
+        'service_url' => env('KOLIBRI_SERVICE_URL'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
@@ -120,7 +127,7 @@ return [
     | to a random, 32 character string, otherwise these encrypted strings
     | will not be safe. Please do this before deploying an application!
     |
-    */
+     */
 
     'key' => env('APP_KEY'),
 
@@ -168,7 +175,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        OpenIdConnect\Laravel\PassportServiceProvider::class,
+        OpenIDConnect\Laravel\PassportServiceProvider::class,
     ])->toArray(),
 
     /*

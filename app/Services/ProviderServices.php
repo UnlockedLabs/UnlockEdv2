@@ -21,7 +21,7 @@ class ProviderServices
      */
     protected int $provider_id;
 
-    protected int $account_id;
+    protected string|int $account_id;
 
     protected string $access_key;
 
@@ -29,19 +29,15 @@ class ProviderServices
 
     protected Client $client;
 
-    protected function __construct(int $provider_id, int $account_id, string $api_key, string $url)
+    protected function __construct(int $provider_id, $account_id, string $api_key, string $url)
     {
         $parsed_url = parse_url($url);
         if (! isset($parsed_url['scheme'])) {
             $url = 'https://'.$url;
         }
 
-        if (! isset($parsed_url['path']) || $parsed_url['path'] !== CANVAS_API) {
-            $url = self::fmtUrl($url).CANVAS_API;
-        }
-
-        if ($account_id === 0 || $account_id === null) {
-            $account_id = 1;
+        if ($account_id === '0' || $account_id === null) {
+            $account_id = '1';
         }
 
         $this->provider_id = $provider_id;
@@ -55,7 +51,7 @@ class ProviderServices
         $this->client = new Client();
     }
 
-    public function getAccountId(): int
+    public function getAccountId(): string
     {
         return $this->account_id;
     }
@@ -85,7 +81,6 @@ class ProviderServices
             $response = $this->client->request(
                 'GET',
                 $url,
-                ['headers' => ['Authorization' => "Bearer $this->access_key"]]
             );
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
@@ -94,13 +89,18 @@ class ProviderServices
         return self::handleResponse($response);
     }
 
+    /**
+     * @info POST request
+     *
+     * @throws \Exception
+     **/
     protected function POST(string $url, array $body): mixed
     {
         try {
             $response = $this->client->request(
                 'POST',
                 $url,
-                ['headers' => ['Authorization' => "Bearer $this->access_key"], 'form_params' => $body]
+                ['form_params' => $body]
             );
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
@@ -109,13 +109,16 @@ class ProviderServices
         return self::handleResponse($response);
     }
 
+    /**
+     * @info PUT request
+     */
     protected function PUT(string $url, array $body): mixed
     {
         try {
             $response = $this->client->request(
                 'PUT',
                 $url,
-                ['headers' => ['Authorization' => "Bearer $this->access_key"], 'form_params' => $body]
+                ['form_params' => $body]
             );
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
@@ -127,7 +130,7 @@ class ProviderServices
     protected function DELETE(string $url): mixed
     {
         try {
-            $response = $this->client->request('DELETE', $url, ['headers' => ['Authorization' => "Bearer $this->access_key"]]);
+            $response = $this->client->request('DELETE', $url);
         } catch (RequestException $e) {
             throw new \Exception('API_ERROR '.$e->getMessage());
         }
@@ -138,11 +141,10 @@ class ProviderServices
     /**
      * Adds a trailing slash if none exists.
      *
+     * @param  string  $id  Account or user ID
      * @return string Formatted account or user ID
-     *
-     * @throws \InvalidArgumentException If the account ID is invalid
-     */
-    protected static function fmtUrl($id): string
+     **/
+    protected static function fmtUrl(string $id): string
     {
         if (! is_string($id)) {
             $id = strval($id);

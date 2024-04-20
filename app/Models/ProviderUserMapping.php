@@ -25,12 +25,12 @@ class ProviderUserMapping extends Model
         'authentication_provider_status' => AuthProviderStatus::class,
     ];
 
-    public function user()
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo('App\Models\User');
     }
 
-    public function providerPlatform()
+    public function providerPlatform(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo('App\Models\ProviderPlatform');
     }

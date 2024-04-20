@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Course;
-use App\Models\Enrollment;
 use App\Models\ProviderPlatform;
 use App\Models\User;
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\App;
 
 /**
@@ -36,7 +36,19 @@ class CanvasServices extends ProviderServices
 {
     public function __construct(int $provider_id, string $account_id, string $api_key, string $url)
     {
+        $parsed_url = parse_url($url);
+
+        if (! isset($parsed_url['scheme'])) {
+            $parsed_url = parse_url($url);
+            $url = 'https://'.$url;
+        }
+
+        if (! isset($parsed_url['path']) || $parsed_url['path'] !== CANVAS_API) {
+            $url = self::fmtUrl($url).CANVAS_API;
+        }
+
         parent::__construct($provider_id, (int) $account_id, $api_key, $url);
+        $this->client = new Client(['headers' => ['Authorization' => 'Bearer '.$api_key]]);
     }
 
     public static function byProviderId(int $providerId): self
@@ -376,96 +388,6 @@ class CanvasServices extends ProviderServices
     }
 
     /**
-     *  Enroll a user in a Section
-     *
-     * @param  $type  = 'StudentEnrollment'
-     * @return mixed decoded JSON
-     *
-     * @throws \Exception
-     **/
-    public function enrollUserInSection(string $section_id, int $user_id, string $type = 'StudentEnrollment'): mixed
-    {
-        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
-        $enrollment = [
-            'enrollment' => [
-                'user_id' => $prov_user_id,
-                'type' => $type,
-            ],
-        ];
-        $base_url = $this->base_url.SECTIONS.self::fmtUrl($section_id).ENROLLMENTS;
-
-        return $this->POST($base_url, $enrollment);
-    }
-
-    /**
-     *  Delete a course Enrollment
-     *
-     * @param  $user_id
-     */
-    public function deleteEnrollment(int $enrollment_id, int $course_id): mixed
-    {
-        $our_id = Course::findOrFail($course_id);
-        $prov_course_id = $our_id->external_resource_id;
-        $our_id = Enrollment::findOrFail($enrollment_id);
-        $prov_enrollment_id = $our_id->external_enrollment_id;
-        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.$prov_enrollment_id;
-
-        return $this->DELETE($base_url);
-    }
-
-    /**
-     * Accept a course invitation
-     */
-    public function acceptCourseInvitation(int $course_id, int $user_id): mixed
-    {
-        $our_id = Course::findOrFail($course_id);
-        $prov_course_id = $our_id->external_resource_id;
-        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
-        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'accept';
-
-        return $this->POST($base_url, []);
-    }
-
-    /**
-     * Reject a course invitation
-     */
-    public function rejectCourseInvitation(int $course_id, int $user_id): mixed
-    {
-        $our_id = Course::findOrFail($course_id);
-        $prov_course_id = $our_id->external_resource_id;
-        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
-        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'reject';
-
-        return $this->POST($base_url, []);
-    }
-
-    /**
-     * Reactivate a course enrollment
-     **/
-    public function reactivateCourseEnrollment(int $course_id, int $user_id): mixed
-    {
-        $our_id = Course::findOrFail($course_id);
-        $prov_course_id = $our_id->external_resource_id;
-        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
-        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'reactivate';
-
-        return $this->PUT($base_url, []);
-    }
-
-    /**
-     * Add last attended date of course
-     *
-     * @return mixed decoded JSON
-     **/
-    public function addLastAttendedDate(int $course_id, int $user_id): mixed
-    {
-        $prov_user_id = User::findOrFail($user_id)->externalIdFor($this->provider_id);
-        $base_url = $this->base_url.COURSES.self::fmtUrl($course_id).ENROLLMENTS.self::fmtUrl($prov_user_id).'last_attended';
-
-        return $this->PUT($base_url, []);
-    }
-
-    /**
      * List Assignments for User
      **/
     public function listAssignmentsForUser(int $course_id, int $user_id): mixed
@@ -505,16 +427,6 @@ class CanvasServices extends ProviderServices
     }
 
     /**
-     * Delete Assignment
-     **/
-    public function deleteAssignment(int $course_id, int $assignment_id): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($course_id).ASSIGNMENTS.$assignment_id;
-
-        return $this->DELETE($base_url);
-    }
-
-    /**
      * Get a single Assignment
      * **/
     public function getAssignment(int $course_id, int $assignment_id): mixed
@@ -524,61 +436,6 @@ class CanvasServices extends ProviderServices
         $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.$assignment_id;
 
         return $this->DELETE($base_url);
-    }
-
-    /*
-        * Create an assignment for a given Course ID
-        * There are so many possible parameters, but the only one required
-        * is "name" so we will just pass in the array which can have any
-        * or all of them
-        * @param $assignment_info
-        * @param $course_id
-        * @return mixed
-        **/
-    public function createAssignmentForCourse(array $assignment_info, int $course_id): mixed
-    {
-        $our_id = Course::findOrFail($course_id);
-        $prov_course_id = $our_id->external_resource_id;
-        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS;
-
-        return $this->POST($base_url, $assignment_info);
-    }
-
-    /*
-        * Edit an assignment for a given Course ID
-        *
-        * There are so many possible parameters, but the only one required
-        * is "name" so we will just pass in the array which can have any
-        * or all of them
-        * @param $assignment_info
-        * @param $course_id
-        * @param $assignment_id
-        * @return mixed
-        **/
-    public function editAssignmentForCourse(array $assignment_info, int $course_id, int $assignment_id): mixed
-    {
-        $our_id = Course::findOrFail($course_id);
-        $prov_course_id = $our_id->external_resource_id;
-        $base_url = $this->base_url.COURSES.self::fmtUrl($prov_course_id).ASSIGNMENTS.self::fmtUrl($assignment_id);
-
-        return $this->PUT($base_url, $assignment_info);
-    }
-
-    /*
-        * Edit an assignment for a given Course ID
-        * There are so many possible parameters, but the only one required
-        * is "name" so we will just pass in the array which can have any
-        * or all of them
-        * @param  $assignment_info (could also be a file? TODO: look into submissions)
-        * @param $course_id
-        * @param $assignment_id
-        * @return mixed
-        **/
-    public function submitAssignment(int $course_id, int $assignment_id, array $assignment_info): mixed
-    {
-        $base_url = $this->base_url.COURSES.self::fmtUrl($course_id).ASSIGNMENTS.self::fmtUrl($assignment_id).SUBMISSIONS;
-
-        return $this->POST($base_url, $assignment_info);
     }
 
     /*
