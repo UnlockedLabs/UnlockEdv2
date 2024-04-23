@@ -31,15 +31,15 @@ Route::get('/dashboard', function () {
 
 Route::get('/users', function () {
     return Inertia::render('Users');
-})->middleware(['auth', 'password_reset'])->name('users');
+})->middleware(['auth', 'password_reset', 'check_user_role'])->name('users');
 
 Route::get('/left-menu-management', function () {
     return Inertia::render('LeftMenuManagement');
-})->middleware(['auth', 'password_reset'])->name('left-menu-management');
+})->middleware(['auth', 'password_reset', 'check_user_role'])->name('left-menu-management');
 
 Route::get('/provider-platform-management', function () {
     return Inertia::render('ProviderPlatformManagement');
-})->middleware(['auth', 'password_reset'])->name('provider-platform-management');
+})->middleware(['auth', 'password_reset', 'check_user_role'])->name('provider-platform-management');
 
 Route::get('/user-activity', function () {
     return Inertia::render('UserActivity');
