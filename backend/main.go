@@ -21,7 +21,7 @@ func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	fmt.Fprint(w, "Welcome to the Go HTTP Server!")
+	fmt.Fprint(w, "Under construction ;)")
 }
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 	}
 	log.Println("Connected to the database")
 
-	logfile, err := os.OpenFile("server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Error opening log file: %v", err)
 	}
