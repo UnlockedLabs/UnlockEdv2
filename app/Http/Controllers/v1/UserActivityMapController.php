@@ -41,7 +41,7 @@ class UserActivityMapController extends Controller
             ->get();
 
         if ($aggregatedData->isEmpty()) {
-            return response()->json([]);
+            return UserActivityMapResource::collection([]);
         }
 
         // Calculate quartiles for total_activity_time

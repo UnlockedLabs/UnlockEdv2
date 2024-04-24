@@ -103,9 +103,6 @@ export default function UserActivityMap({ user }: { user: User }) {
                             enumType={yearOptions}
                         />
                     </form>
-                    {isLoading && (
-                        <div className="w-96 text-center">Loading...</div>
-                    )}
                     <div className={"block font-bold text-center text"}>
                         {/* Could put something here, like "Keep up the good work!" */}
                     </div>
@@ -115,14 +112,30 @@ export default function UserActivityMap({ user }: { user: User }) {
                         <div>More</div>
                     </div>
                 </div>
-                <div className="mt-8 inline-block">
-                    <ActivityMapTable
-                        data={data}
-                        end={yearEnd}
-                        error={error}
-                        isLoading={isLoading}
-                        range={dropdownValDesc}
-                    />
+                <div className="w-[372px] h-[99px] md:w-[530px] md:h-[124px] lg:w-[764px] lg:h-[152px] xl:w-[1017px] xl:h-[184px]">
+                    {error ? (
+                        <div className="flex h-full justify-center content-center">
+                            <div className="font-bold my-auto">
+                                Error loading activity. Please try again later.
+                            </div>
+                        </div>
+                    ) : isLoading ? (
+                        <div className="flex h-full justify-center content-center">
+                            <span className="my-auto loading loading-spinner loading-lg"></span>
+                        </div>
+                    ) : (
+                        data && (
+                            <div className="mt-8">
+                                <ActivityMapTable
+                                    data={data.data}
+                                    end={yearEnd}
+                                    error={error}
+                                    isLoading={isLoading}
+                                    range={dropdownValDesc}
+                                />
+                            </div>
+                        )
+                    )}
                 </div>
             </div>
         </div>
@@ -174,16 +187,12 @@ function ActivityMapTable({
     isLoading,
     range,
 }: {
-    data?: ActivityMapData[];
+    data: ActivityMapData[];
     end: Date;
     error: any;
     isLoading: boolean;
     range: string;
 }) {
-    if (!data) {
-        return <div />;
-    }
-
     /* array that holds cells for the table */
     let tableData: JSX.Element[] = [];
     let tableMonths: string[] = [];
