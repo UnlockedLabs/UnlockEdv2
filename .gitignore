@@ -22,3 +22,4 @@ yarn-error.log
 /.husky/staged-files
 kolibri.md
 .phpactor.json
+/kolibri-middleware
