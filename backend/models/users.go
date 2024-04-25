@@ -9,7 +9,7 @@ import (
 
 type ResponseResource[T any] struct {
 	Message string `json:"message"`
-	Data    T      `json:"data"`
+	Data    []T    `json:"data"`
 }
 
 type User struct {
