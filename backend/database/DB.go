@@ -1,44 +1,105 @@
 package database
 
 import (
-	"database/sql"
+	"backend/models"
 	"fmt"
 	"log"
 	"os"
 
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type DB struct {
-	Db *sql.DB
+	Conn *gorm.DB
 }
 
 func InitDB(isTesting bool) *DB {
+	var db *gorm.DB
+	var err error
+
 	if isTesting {
-		database, err := sql.Open("sqlite3", "file::memory:?cache=shared")
+		db, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Failed to connect to SQLite database:", err)
 		}
-		defer database.Close()
-		log.Printf("Connected to the database %v", database.Stats())
-		return &DB{Db: database}
-
+		log.Println("Connected to the SQLite database in memory")
 	} else {
-		database, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s "+
-			"password=%s dbname=%s sslmode=disable",
-			os.Getenv("DB_HOST"),
-			os.Getenv("DB_PORT"),
-			os.Getenv("DB_USER"),
-			os.Getenv("DB_PASSWORD"),
-			os.Getenv("DB_NAME"),
-		))
+		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+		db, err = gorm.Open(postgres.New(postgres.Config{
+			DSN: dsn,
+		}), &gorm.Config{})
 		if err != nil {
-			log.Fatalf("Error opening database: %v", err)
+			log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 		}
-		defer database.Close()
-		log.Printf("Connected to the database %v", database.Stats())
+		log.Println("Connected to the PostgreSQL database")
+	}
+	return &DB{Conn: db}
+}
 
-		return &DB{Db: database}
+func (db *DB) Migrate() {
+	log.Println("Creating or replacing PostgreSQL function...")
+	db.Conn.Exec(`
+    CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = now();
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    `)
+	log.Println("Migrating User table...")
+	if err := db.Conn.AutoMigrate(&models.User{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	log.Println("Migrating ProviderPlatform table...")
+	if err := db.Conn.AutoMigrate(&models.ProviderPlatform{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+}
+
+func (db *DB) MigrateFresh() {
+	if err := db.Conn.Migrator().DropTable(&models.User{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	if err := db.Conn.Migrator().DropTable(&models.ProviderPlatform{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	db.Migrate()
+	db.Conn.Exec("INSERT INTO users (username, name_first, name_last, email, password, password_reset, role) VALUES ('SuperAdmin', 'Super', 'Admin', 'ChangeMe!', 'admin@unlocked.v2', 'true', 'admin')")
+	tables := []string{"users", "provider_platforms"}
+	ApplyUpdateTriggers(db.Conn, tables)
+
+	log.Println("Database successfully migrated from fresh state.")
+}
+
+func ApplyUpdateTriggers(db *gorm.DB, tables []string) {
+	db.Exec(`
+        CREATE OR REPLACE FUNCTION universal_update_timestamp()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.updated_at = now();
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+    `)
+
+	for _, table := range tables {
+		db.Exec(fmt.Sprintf(`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_trigger WHERE tgname = 'update_%[1]s_modtime'
+                ) THEN
+                    CREATE TRIGGER update_%[1]s_modtime
+                    BEFORE UPDATE ON %[1]s
+                    FOR EACH ROW
+                    EXECUTE PROCEDURE universal_update_timestamp();
+                END IF;
+            END
+            $$;
+        `, table))
 	}
 }

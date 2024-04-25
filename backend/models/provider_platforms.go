@@ -11,16 +11,20 @@ import (
 )
 
 type ProviderPlatform struct {
-	ID                     string `json:"id"`
-	Type                   string `json:"type"`
-	Name                   string `json:"name"`
-	Description            string `json:"description"`
-	IconUrl                string `json:"icon_url"`
-	AccountId              string `json:"account_id"`
-	AccessKey              string `json:"access_key"`
-	BaseUrl                string `json:"base_url"`
-	State                  string `json:"state"`
-	ExternalAuthProviderId string `json:"external_auth_provider_id"`
+	ID                     string `gorm:"primaryKey;size:36" json:"id"`
+	Type                   string `gorm:"size:100" json:"type"`
+	Name                   string `gorm:"size:255" json:"name"`
+	Description            string `gorm:"size:1024" json:"description"`
+	IconUrl                string `gorm:"size:255" json:"icon_url"`
+	AccountId              string `gorm:"size:36" json:"account_id"`
+	AccessKey              string `gorm:"size:255" json:"access_key"`
+	BaseUrl                string `gorm:"size:255" json:"base_url"`
+	State                  string `gorm:"size:100" json:"state"`
+	ExternalAuthProviderId string `gorm:"size:36" json:"external_auth_provider_id"`
+}
+
+func (ProviderPlatform) TableName() string {
+	return "provider_platforms"
 }
 
 func (provider *ProviderPlatform) EncryptAccessKey() (string, error) {

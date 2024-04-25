@@ -23,17 +23,43 @@ func main() {
 	defer logfile.Close()
 	logger := log.New(logfile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 	env := os.Getenv("APP_ENV")
-	var testing bool = (env == "testing")
+	testing := (env == "testing")
 
 	db := database.InitDB(testing)
+	cmd := ParseArgs()
+	if cmd.RunMigrations {
+		db.Migrate()
+	} else if cmd.MigrateFresh {
+		db.MigrateFresh()
+	}
 
 	newServer := server.NewServer(db, logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/users", newServer.IndexUsers)
-
-	log.Println("Starting server on :8080")
+	mux.HandleFunc("POST /api/login", newServer.HandleLogin)
+	mux.HandleFunc("POST /api/logout", newServer.HandleLogout)
+	mux.HandleFunc("GET /api/users", newServer.IndexUsers)
+	mux.HandleFunc("POST /api/users", newServer.CreateNewUser)
+	mux.HandleFunc("GET /api/users/{id}", newServer.GetUserByID)
+	newServer.Logger.Println("Starting server on :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
+}
+
+type Command struct {
+	RunMigrations bool
+	MigrateFresh  bool
+}
+
+func ParseArgs() *Command {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--migrate":
+			return &Command{RunMigrations: true}
+		case "--migrate-fresh":
+			return &Command{MigrateFresh: true}
+		}
+	}
+	return &Command{}
 }

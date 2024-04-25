@@ -1,69 +1,75 @@
 package database
 
 import (
-	models "backend/models"
+	"backend/models"
 	"errors"
-
-	// "database/sql"
-	// "fmt"
 	"log"
 )
 
-func (db *DB) GetCurrentUsers() ([]models.User, error) {
-	rows, err := db.Db.Query("SELECT (id, email, username, name_first, name_last, role) FROM users WHERE is_deleted = false ORDER BY id")
-	if err != nil {
-		log.Fatal(err)
+func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, error) {
+	var users []models.User
+	var count int64
+
+	log.Printf("Page: %d, Items per Page: %d\n", page, itemsPerPage)
+
+	offset := (page - 1) * itemsPerPage
+	log.Printf("Calculated Offset: %d\n", offset)
+
+	if err := db.Conn.Model(&models.User{}).Where("is_deleted = ?", false).Count(&count).Error; err != nil {
+		log.Printf("Error counting users: %v", err)
+		return 0, nil, err
 	}
-	defer rows.Close()
-	users := []models.User{}
-	for rows.Next() {
-		user := models.User{}
-		if err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.NameFirst, &user.NameLast); err != nil {
-			log.Fatal(err)
-		}
-		users = append(users, user)
+
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
+		Where("is_deleted = ?", false).
+		Offset(offset).
+		Limit(itemsPerPage).
+		Find(&users).Error; err != nil {
+		log.Printf("Error fetching users: %v", err)
+		return 0, nil, err
 	}
-	return users, nil
+
+	return count, users, nil
 }
 
 func (db *DB) GetUserByID(id int) (models.User, error) {
-	user := models.User{}
-	err := db.Db.QueryRow("SELECT (id, email, username, name_first, name_last, role) FROM users WHERE id = $1", id).Scan(&user.ID, &user.Username, &user.Email, &user.NameFirst, &user.NameLast)
-	if err != nil {
-		log.Fatal(err)
+	var user models.User
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
+		Where("id = ? AND is_deleted = ?", id, false).
+		First(&user).Error; err != nil {
+		return models.User{}, err
 	}
 	return user, nil
 }
 
-func (db *DB) CreateUser(user models.User) (models.User, error) {
+func (db *DB) CreateUser(user models.User) error {
 	user.CreateTempPassword()
 	err := user.HashPassword()
 	if err != nil {
-		return user, err
+		return err
 	}
-	error := db.Db.QueryRow("INSERT INTO users (email, username, name_first, name_last, role, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING (id, email, username, name_first, name_last, role)", user.Email, user.Username, user.NameFirst, user.NameLast, user.Role, user.Password).Scan(&user.ID, &user.Username, &user.Email, &user.NameFirst, &user.NameLast)
+	error := db.Conn.Create(&user).Error
 	if error != nil {
-		log.Fatal(error)
+		return error
 	}
-	return user, nil
+	return nil
 }
 
 func (db *DB) UpdateUser(user models.User) (models.User, error) {
-	_, err := db.Db.Exec("UPDATE users SET email = $1, username = $2, name_first = $3, name_last = $4, role = $5 WHERE id = $6", user.Email, user.Username, user.NameFirst, user.NameLast, user.Role, user.ID)
+	err := db.Conn.Save(&user).Error
 	if err != nil {
-		log.Fatal(err)
+		return models.User{}, err
 	}
 	return user, nil
 }
 
-func (db *DB) AuthorizeUser(username string, password string) (models.User, error) {
-	user := models.User{}
-	err := db.Db.QueryRow("SELECT (id, email, username, name_first, name_last, role, password) FROM users WHERE username = $1", username).Scan(&user.ID, &user.Username, &user.Email, &user.NameFirst, &user.NameLast, &user.Role, &user.Password)
-	if err != nil {
-		log.Fatal(err)
+func (db *DB) AuthorizeUser(username, password string) (models.User, error) {
+	var user models.User
+	if err := db.Conn.Where("username = ? AND is_deleted = ?", username, false).First(&user).Error; err != nil {
+		return models.User{}, err
 	}
-	if user.CheckPasswordHash(password) {
-		return user, nil
+	if success := user.CheckPasswordHash(password); !success {
+		return models.User{}, errors.New("invalid password")
 	}
-	return models.User{}, errors.New("invalid password")
+	return user, nil
 }

@@ -3,26 +3,27 @@ package models
 import (
 	"encoding/base64"
 	"math/rand"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-type ResponseResource[T any] struct {
-	Message string `json:"message"`
-	Data    []T    `json:"data"`
+type User struct {
+	ID            int       `gorm:"primaryKey" json:"id"`
+	Username      string    `gorm:"size:255;not null;unique" json:"username"`
+	NameFirst     string    `gorm:"size:255;not null" json:"name_first"`
+	Email         string    `gorm:"size:255;not null;unique" json:"email"`
+	Password      string    `gorm:"size:255;not null" json:"-"`
+	PasswordReset bool      `gorm:"default:false" json:"password_reset"`
+	NameLast      string    `gorm:"size:255;not null" json:"name_last"`
+	Role          string    `gorm:"size:255" json:"role"`
+	CreatedAt     time.Time `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
+	UpdatedAt     time.Time `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
+	IsDeleted     bool      `gorm:"default:false" json:"is_deleted"`
 }
 
-type User struct {
-	ID        int    `json:"id"`
-	Username  string `json:"username"`
-	NameFirst string `json:"name_first"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	NameLast  string `json:"name_last"`
-	Role      string `json:"role"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	IsDeleted bool   `json:"is_deleted"`
+func (User) TableName() string {
+	return "users"
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
