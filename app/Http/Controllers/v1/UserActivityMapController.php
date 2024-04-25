@@ -90,8 +90,12 @@ class UserActivityMapController extends Controller
      *
      * @param  array<string, int>  $quartiles
      */
-    private function getQuartileScore(int $value, array $quartiles): int
+    private function getQuartileScore(string|int $value, array $quartiles): int
     {
+        if (is_string($value)) {
+            $value = (int) $value;
+        }
+
         return match (true) {
             ($value == 0) => 0,
             ($value <= $quartiles['q1']) => 1,
