@@ -1,0 +1,36 @@
+#!/bin/bash
+
+help="Usage: ./build [up] [--migrate] [--migrate-fresh]"
+
+if [[ "$1" == "-h" ]]; then
+	echo "$help"
+	exit 0
+fi
+
+echo "Building backend..."
+rm -f backend
+go build .
+
+if [[ "$1" == "up" ]]; then
+	if [[ -z "$(docker ps -q)" ]]; then
+		docker-compose up -d
+	fi
+	if [[ "$2" == "--migrate" ]]; then
+		sleep 3
+		./backend --migrate
+	elif [[ "$2" == "--migrate-fresh" ]]; then
+		sleep 3
+		./backend --migrate-fresh
+	fi
+	exit 0
+fi
+
+if [[ "$1" == "--migrate" ]]; then
+	./backend --migrate
+	exit 0
+fi
+
+if [[ "$1" == "--migrate-fresh" ]]; then
+	./backend --migrate-fresh
+	exit 0
+fi

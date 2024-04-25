@@ -1,8 +1,8 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
+	"backend/database"
+	server "backend/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -11,41 +11,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Server struct {
-	db     *sql.DB
-	logger *log.Logger
-}
-
-func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-	fmt.Fprint(w, "Under construction ;)")
-}
-
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-
-	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-	))
-	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("Error connecting to the database: %v", err)
-	}
-	log.Println("Connected to the database")
 
 	logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -53,18 +22,44 @@ func main() {
 	}
 	defer logfile.Close()
 	logger := log.New(logfile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	env := os.Getenv("APP_ENV")
+	testing := (env == "testing")
 
-	server := &Server{
-		db:     db,
-		logger: logger,
+	db := database.InitDB(testing)
+	cmd := ParseArgs()
+	if cmd.RunMigrations {
+		db.Migrate()
+	} else if cmd.MigrateFresh {
+		db.MigrateFresh()
 	}
 
-	/** Routes **/
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", server.homeHandler)
+	newServer := server.NewServer(db, logger)
 
-	log.Println("Starting server on :8080")
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /api/login", newServer.HandleLogin)
+	mux.HandleFunc("POST /api/logout", newServer.HandleLogout)
+	mux.HandleFunc("GET /api/users", newServer.IndexUsers)
+	mux.HandleFunc("POST /api/users", newServer.CreateNewUser)
+	mux.HandleFunc("GET /api/users/{id}", newServer.GetUserByID)
+	newServer.Logger.Println("Starting server on :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
+}
+
+type Command struct {
+	RunMigrations bool
+	MigrateFresh  bool
+}
+
+func ParseArgs() *Command {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--migrate":
+			return &Command{RunMigrations: true}
+		case "--migrate-fresh":
+			return &Command{MigrateFresh: true}
+		}
+	}
+	return &Command{}
 }
