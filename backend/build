@@ -34,3 +34,5 @@ if [[ "$1" == "--migrate-fresh" ]]; then
 	./backend --migrate-fresh
 	exit 0
 fi
+
+./backend

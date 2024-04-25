@@ -22,10 +22,11 @@ func main() {
 	}
 	defer logfile.Close()
 	logger := log.New(logfile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
 	env := os.Getenv("APP_ENV")
 	testing := (env == "testing")
-
 	db := database.InitDB(testing)
+
 	cmd := ParseArgs()
 	if cmd.RunMigrations {
 		db.Migrate()
@@ -33,14 +34,10 @@ func main() {
 		db.MigrateFresh()
 	}
 
-	newServer := server.NewServer(db, logger)
-
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/login", newServer.HandleLogin)
-	mux.HandleFunc("POST /api/logout", newServer.HandleLogout)
-	mux.HandleFunc("GET /api/users", newServer.IndexUsers)
-	mux.HandleFunc("POST /api/users", newServer.CreateNewUser)
-	mux.HandleFunc("GET /api/users/{id}", newServer.GetUserByID)
+	newServer := server.NewServer(db, logger, mux)
+	newServer.RegisterRoutes()
+
 	newServer.Logger.Println("Starting server on :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatalf("Error starting server: %v", err)

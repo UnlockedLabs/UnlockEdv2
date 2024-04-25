@@ -2,6 +2,7 @@ package handlers
 
 import (
 	db "backend/database"
+	"encoding/json"
 	"log"
 	"math"
 	"net/http"
@@ -11,17 +12,37 @@ import (
 type Server struct {
 	Db     *db.DB
 	Logger *log.Logger
+	Mux    *http.ServeMux
 }
 
-func NewServer(db *db.DB, logger *log.Logger) *Server {
+func NewServer(db *db.DB, logger *log.Logger, mux *http.ServeMux) *Server {
 	s := &Server{
 		Db:     db,
 		Logger: logger,
+		Mux:    mux,
 	}
 	return s
 }
 
-func (s *Server) GetPaginationInfo(r *http.Request) (int, int) {
+/**
+* Register all API routes here
+**/
+func (srv *Server) RegisterRoutes() {
+	srv.Mux.HandleFunc("POST /api/login", srv.HandleLogin)
+	srv.Mux.Handle("POST /api/logout", srv.AuthMiddleware(http.HandlerFunc(srv.HandleLogout)))
+	srv.Mux.Handle("GET /api/users", srv.AuthMiddleware(http.HandlerFunc(srv.IndexUsers)))
+	srv.Mux.Handle("GET /api/users/{id}", srv.AuthMiddleware(http.HandlerFunc(srv.GetUserByID)))
+	srv.Mux.Handle("POST /api/users", srv.AuthMiddleware(http.HandlerFunc(srv.CreateUser)))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.AuthMiddleware(http.HandlerFunc(srv.UpdateUser)))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.AuthMiddleware(http.HandlerFunc(srv.DeleteUser)))
+	srv.Mux.Handle("GET /api/provider-platforms", srv.AuthMiddleware(http.HandlerFunc(srv.IndexProviders)))
+	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.AuthMiddleware(http.HandlerFunc(srv.ShowProvider)))
+	srv.Mux.Handle("POST /api/provider-platforms", srv.AuthMiddleware(http.HandlerFunc(srv.CreateProvider)))
+	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.AuthMiddleware(http.HandlerFunc(srv.UpdateProvider)))
+	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.AuthMiddleware(http.HandlerFunc(srv.DeleteProvider)))
+}
+
+func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 	page := r.URL.Query().Get("page")
 	perPage := r.URL.Query().Get("per_page")
 	if page == "" {
@@ -41,7 +62,13 @@ func (s *Server) GetPaginationInfo(r *http.Request) (int, int) {
 	return intPage, intPerPage
 }
 
-func (s *Server) CalculateLast(total int64, perPage int) int {
+func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(data)
+}
+
+func (srv *Server) CalculateLast(total int64, perPage int) int {
 	if perPage == 0 {
 		return 0
 	}
