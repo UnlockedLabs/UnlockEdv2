@@ -18,7 +18,11 @@ func main() {
 
 	logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("Error opening log file: %v", err)
+		file, err := os.Create("logs/server.log")
+		if err != nil {
+			log.Fatalf("Error creating log file: %v", err)
+		}
+		logfile = file
 	}
 	defer logfile.Close()
 	logger := log.New(logfile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
