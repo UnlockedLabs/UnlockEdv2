@@ -1,13 +1,17 @@
 package handlers
 
 import (
-	"backend/models"
 	"encoding/json"
 	"net/http"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 )
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 type Claims struct {
 	Username string `json:"username"`
@@ -16,13 +20,14 @@ type Claims struct {
 }
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	s.Logger.Println("Handling login request")
+	var form LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&form)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if user, err := s.Db.AuthorizeUser(user.Username, user.Password); err == nil {
+	if user, err := s.Db.AuthorizeUser(form.Username, form.Password); err == nil {
 		claims := Claims{
 			Username: user.Username,
 			Role:     user.Role,
@@ -44,7 +49,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			Secure:   false, // FIXME: prod
 			Path:     "/",
 		})
-		_, err = w.Write([]byte(signedToken))
+		_, err = w.Write([]byte("Logged in successfully!"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

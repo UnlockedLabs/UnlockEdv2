@@ -68,6 +68,7 @@ func (db *DB) AuthorizeUser(username, password string) (models.User, error) {
 	if err := db.Conn.Where("username = ? AND is_deleted = ?", username, false).First(&user).Error; err != nil {
 		return models.User{}, err
 	}
+	log.Printf("AuthorizeUser Password: %s", password)
 	if success := user.CheckPasswordHash(password); !success {
 		return models.User{}, errors.New("invalid password")
 	}

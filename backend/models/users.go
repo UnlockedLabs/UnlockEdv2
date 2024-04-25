@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/base64"
+	"log"
 	"math/rand"
 	"time"
 
@@ -37,11 +38,14 @@ func (user *User) CreateTempPassword() {
 }
 
 func (user *User) HashPassword() error {
+	log.Printf("Hashing password for user %s", user.Username)
+	log.Printf("Password: %s", user.Password)
 	bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	user.Password = string(bytes)
+	log.Printf("Password hashed for user %s", user.Password)
 	return nil
 }
 
@@ -52,6 +56,8 @@ func (user *User) HashPassword() error {
 * @return bool
 **/
 func (user *User) CheckPasswordHash(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	return err == nil
+	log.Printf("Checking password for user %s", user.Username)
+	log.Printf("Hashed Password: %s", user.Password)
+	log.Printf("Password: %s", password)
+	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil
 }
