@@ -45,7 +45,10 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 				Secure:   false, // FIXME:prod
 				Path:     "/",
 			})
-			w.Write([]byte(signedToken))
+			_, err = w.Write([]byte(signedToken))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		} else {
 			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		}
