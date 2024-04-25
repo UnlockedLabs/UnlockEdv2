@@ -68,7 +68,24 @@ func (db *DB) MigrateFresh() {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
 	db.Migrate()
-	db.Conn.Exec("INSERT INTO users (username, name_first, name_last, email, password, password_reset, role) VALUES ('SuperAdmin', 'Super', 'Admin', 'ChangeMe!', 'admin@unlocked.v2', 'true', 'admin')")
+	user := models.User{
+		Username:      "SuperAdmin",
+		NameFirst:     "Super",
+		NameLast:      "Admin",
+		Email:         "admin@unlocked.v2",
+		PasswordReset: true,
+		Role:          "admin",
+		Password:      "ChangeMe!",
+	}
+	log.Printf("Creating user: %v", user)
+	err := user.HashPassword()
+	if err != nil {
+		log.Fatalf("Failed to hash password: %v", err)
+	}
+	log.Printf("Hashed password %s", user.Password)
+	if err := db.Conn.Create(&user).Error; err != nil {
+		log.Fatalf("Failed to create user: %v", err)
+	}
 	tables := []string{"users", "provider_platforms"}
 	ApplyUpdateTriggers(db.Conn, tables)
 
