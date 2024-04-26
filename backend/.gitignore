@@ -2,4 +2,5 @@ server.log
 .env
 .vscode
 backend
-cookies
+jar
+/provider-middleware/providers.db

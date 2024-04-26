@@ -58,6 +58,12 @@ func (db *DB) Migrate() {
 	if err := db.Conn.AutoMigrate(&models.ProviderPlatform{}); err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
 	}
+	if err := db.Conn.AutoMigrate(&models.UserActivity{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	tables := []string{"users", "provider_platforms", "user_activity"}
+	ApplyUpdateTriggers(db.Conn, tables)
+	log.Println("Database successfully migrated.")
 }
 
 func (db *DB) MigrateFresh() {
@@ -65,6 +71,9 @@ func (db *DB) MigrateFresh() {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
 	if err := db.Conn.Migrator().DropTable(&models.ProviderPlatform{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	if err := db.Conn.Migrator().DropTable(&models.UserActivity{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
 	db.Migrate()
@@ -86,9 +95,6 @@ func (db *DB) MigrateFresh() {
 	if err := db.Conn.Create(&user).Error; err != nil {
 		log.Fatalf("Failed to create user: %v", err)
 	}
-	tables := []string{"users", "provider_platforms"}
-	ApplyUpdateTriggers(db.Conn, tables)
-
 	log.Println("Database successfully migrated from fresh state.")
 }
 

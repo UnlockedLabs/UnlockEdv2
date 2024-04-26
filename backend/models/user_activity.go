@@ -1,7 +1,7 @@
 package models
 
 type UserActivity struct {
-	UserID      string `json:"user_id"`
+	UserID      int    `json:"user_id"`
 	BrowserName string `json:"browser_name"`
 	Platform    string `json:"platform"`
 	Device      string `json:"device"`
