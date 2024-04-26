@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 	"log"
 	"net/http"
 	"strconv"

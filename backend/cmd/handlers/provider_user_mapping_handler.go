@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 	"encoding/json"
 	"net/http"
 	"strconv"

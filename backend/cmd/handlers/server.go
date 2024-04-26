@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	db "backend/database"
+	db "backend/cmd/database"
 	"encoding/json"
 	"log"
 	"math"
@@ -60,9 +60,7 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 }
 
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
-	srv.Logger.Printf("Response written: %v", w.Header().Get("Content-Type"))
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(data)
 }
 

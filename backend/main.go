@@ -1,8 +1,8 @@
 package main
 
 import (
-	"backend/database"
-	server "backend/handlers"
+	"backend/cmd/database"
+	server "backend/cmd/handlers"
 	"log"
 	"net/http"
 	"os"

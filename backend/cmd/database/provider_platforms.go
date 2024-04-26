@@ -1,7 +1,7 @@
 package database
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 	"fmt"
 	"log"
 )
