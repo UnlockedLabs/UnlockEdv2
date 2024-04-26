@@ -41,17 +41,17 @@ func (db *DB) GetUserByID(id int) (models.User, error) {
 	return user, nil
 }
 
-func (db *DB) CreateUser(user models.User) error {
-	user.CreateTempPassword()
+func (db *DB) CreateUser(user models.User) (string, error) {
+	psw := user.CreateTempPassword()
 	err := user.HashPassword()
 	if err != nil {
-		return err
+		return "", err
 	}
 	error := db.Conn.Create(&user).Error
 	if error != nil {
-		return error
+		return "", error
 	}
-	return nil
+	return psw, nil
 }
 
 func (db *DB) DeleteUser(id int) error {

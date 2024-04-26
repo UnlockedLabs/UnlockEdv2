@@ -31,12 +31,13 @@ func (User) TableName() string {
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func (user *User) CreateTempPassword() {
+func (user *User) CreateTempPassword() string {
 	b := make([]byte, 8)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	user.Password = base64.URLEncoding.EncodeToString(b)
+	return string(b)
 }
 
 func (user *User) HashPassword() error {
