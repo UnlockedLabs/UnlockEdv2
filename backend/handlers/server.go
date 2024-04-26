@@ -32,20 +32,11 @@ func (srv *Server) ApplyMiddleware(h http.Handler) http.Handler {
 * Register all API routes here
 **/
 func (srv *Server) RegisterRoutes() {
-	srv.Mux.HandleFunc("POST /api/login", srv.HandleLogin)
-	srv.Mux.Handle("POST /api/logout", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleLogout)))
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.ApplyMiddleware(http.HandlerFunc(srv.GetUserActivityByID)))
-	srv.Mux.Handle("GET /api/users/activity", srv.ApplyMiddleware(http.HandlerFunc(srv.GetAllUserActivities)))
-	srv.Mux.Handle("GET /api/users", srv.ApplyMiddleware(http.HandlerFunc(srv.IndexUsers)))
-	srv.Mux.Handle("GET /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.GetUserByID)))
-	srv.Mux.Handle("POST /api/users", srv.ApplyMiddleware(http.HandlerFunc(srv.CreateUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.UpdateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.DeleteUser)))
-	srv.Mux.Handle("GET /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.IndexProviders)))
-	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.ShowProvider)))
-	srv.Mux.Handle("POST /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.CreateProvider)))
-	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.UpdateProvider)))
-	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.DeleteProvider)))
+	srv.RegisterAuthRoutes()
+	srv.RegisterUserRoutes()
+	srv.RegisterProviderPlatformRoutes()
+	srv.RegisterUserActivityRoutes()
+	srv.RegisterProviderMappingRoutes()
 }
 
 func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
@@ -69,12 +60,14 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 }
 
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
+	srv.Logger.Printf("Response written: %v", data)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(data)
 }
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
+	srv.Logger.Printf("Error: %v", message)
 	w.WriteHeader(status)
 	http.Error(w, message, status)
 }

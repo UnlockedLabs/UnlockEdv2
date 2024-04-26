@@ -39,6 +39,9 @@ func InitDB(isTesting bool) *DB {
 	return &DB{Conn: db}
 }
 
+/**
+* Register Migrations here
+**/
 func (db *DB) Migrate() {
 	log.Println("Creating or replacing PostgreSQL function...")
 	db.Conn.Exec(`
@@ -61,7 +64,10 @@ func (db *DB) Migrate() {
 	if err := db.Conn.AutoMigrate(&models.UserActivity{}); err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
 	}
-	tables := []string{"users", "provider_platforms", "user_activity"}
+	if err := db.Conn.AutoMigrate(&models.ProviderUserMapping{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	tables := []string{"users", "provider_platforms", "user_activities", "provider_user_mappings"}
 	ApplyUpdateTriggers(db.Conn, tables)
 	log.Println("Database successfully migrated.")
 }
@@ -74,6 +80,9 @@ func (db *DB) MigrateFresh() {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
 	if err := db.Conn.Migrator().DropTable(&models.UserActivity{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	if err := db.Conn.Migrator().DropTable(&models.ProviderUserMapping{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
 	db.Migrate()

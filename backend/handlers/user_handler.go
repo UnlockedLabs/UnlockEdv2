@@ -7,6 +7,14 @@ import (
 	"strconv"
 )
 
+func (srv *Server) RegisterUserRoutes() {
+	srv.Mux.Handle("GET /api/users", srv.ApplyMiddleware(http.HandlerFunc(srv.IndexUsers)))
+	srv.Mux.Handle("GET /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.GetUserByID)))
+	srv.Mux.Handle("POST /api/users", srv.ApplyMiddleware(http.HandlerFunc(srv.CreateUser)))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.DeleteUser)))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.UpdateUser)))
+}
+
 /**
 * GET: /api/v1/users
 **/
@@ -94,16 +102,8 @@ func (srv *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		srv.Logger.Printf("DELETE User handler Error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-	user, err := srv.Db.GetUserByID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	user.IsDeleted = true
-	_, err = srv.Db.UpdateUser(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err = srv.Db.DeleteUser(id); err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

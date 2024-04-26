@@ -15,13 +15,12 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 	offset := (page - 1) * itemsPerPage
 	log.Printf("Calculated Offset: %d\n", offset)
 
-	if err := db.Conn.Model(&models.User{}).Where("is_deleted = ?", false).Count(&count).Error; err != nil {
+	if err := db.Conn.Model(&models.User{}).Count(&count).Error; err != nil {
 		log.Printf("Error counting users: %v", err)
 		return 0, nil, err
 	}
 
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
-		Where("is_deleted = ?", false).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
@@ -35,7 +34,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 func (db *DB) GetUserByID(id int) (models.User, error) {
 	var user models.User
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
-		Where("id = ? AND is_deleted = ?", id, false).
+		Where("id = ?", id, false).
 		First(&user).Error; err != nil {
 		return models.User{}, err
 	}
@@ -55,6 +54,17 @@ func (db *DB) CreateUser(user models.User) error {
 	return nil
 }
 
+func (db *DB) DeleteUser(id int) error {
+	result := db.Conn.Model(&models.User{}).Where("id = ?", id).Delete(&models.User{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("user not found")
+	}
+	return nil
+}
+
 func (db *DB) UpdateUser(user models.User) (models.User, error) {
 	err := db.Conn.Save(&user).Error
 	if err != nil {
@@ -65,7 +75,7 @@ func (db *DB) UpdateUser(user models.User) (models.User, error) {
 
 func (db *DB) AuthorizeUser(username, password string) (models.User, error) {
 	var user models.User
-	if err := db.Conn.Where("username = ? AND is_deleted = ?", username, false).First(&user).Error; err != nil {
+	if err := db.Conn.Where("username = ?", username, false).First(&user).Error; err != nil {
 		return models.User{}, err
 	}
 	log.Printf("AuthorizeUser Password: %s", password)

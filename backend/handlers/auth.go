@@ -27,6 +27,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+func (srv *Server) RegisterAuthRoutes() {
+	srv.Mux.Handle("/login", http.HandlerFunc(srv.HandleLogin))
+	srv.Mux.Handle("/logout", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleLogout)))
+}
+
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
