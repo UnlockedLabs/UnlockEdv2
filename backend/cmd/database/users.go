@@ -34,7 +34,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 func (db *DB) GetUserByID(id int) (models.User, error) {
 	var user models.User
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
-		Where("id = ?", id, false).
+		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		return models.User{}, err
 	}
@@ -43,6 +43,7 @@ func (db *DB) GetUserByID(id int) (models.User, error) {
 
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	psw := user.CreateTempPassword()
+	user.Password = psw
 	err := user.HashPassword()
 	if err != nil {
 		return nil, err
@@ -58,6 +59,7 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	if err := db.Conn.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
 		return nil, err
 	}
+	log.Printf("Temp Password: %s", psw)
 	newUser.Password = psw
 	return &newUser, nil
 }
@@ -71,6 +73,14 @@ func (db *DB) DeleteUser(id int) error {
 		return errors.New("user not found")
 	}
 	return nil
+}
+
+func (db *DB) GetUserByUsername(username string) (*models.User, error) {
+	var user models.User
+	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (db *DB) UpdateUser(user models.User) (models.User, error) {

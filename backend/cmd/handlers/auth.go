@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -57,6 +58,31 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			log.Println("Invalid claims")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		}
+	})
+}
+
+func (srv *Server) UserIsAdmin(r *http.Request) bool {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	return claims.Role == "admin"
+}
+
+func (srv *Server) UserIsOwner(r *http.Request) bool {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return false
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	return claims.UserID == id
+}
+
+func (srv *Server) AdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.Role != "admin" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

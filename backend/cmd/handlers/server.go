@@ -2,10 +2,12 @@ package handlers
 
 import (
 	db "backend/cmd/database"
+	"context"
 	"encoding/json"
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -15,17 +17,68 @@ type Server struct {
 	Mux    *http.ServeMux
 }
 
-func NewServer(db *db.DB, logger *log.Logger, mux *http.ServeMux) *Server {
-	s := &Server{
-		Db:     db,
-		Logger: logger,
-		Mux:    mux,
+func NewServer(isTesting bool) *Server {
+	logfile := os.Stdout
+	if isTesting {
+		return &Server{Db: db.InitDB(true), Logger: log.New(logfile, "Server: ", log.LstdFlags), Mux: http.NewServeMux()}
+	} else {
+		if os.Getenv("APP_ENV") == "prod" {
+			logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			if err != nil {
+				file, err := os.Create("logs/server.log")
+				if err != nil {
+					log.Fatalf("Error creating log file: %v", err)
+				}
+				logfile = file
+			}
+			defer logfile.Close()
+		}
+		return &Server{Db: db.InitDB(false), Logger: log.New(logfile, "LOG_: ", log.Ldate|log.Ltime|log.Lshortfile), Mux: http.NewServeMux()}
 	}
-	return s
+}
+
+func (srv *Server) LogInfo(message string) {
+	srv.Logger.Printf("INFO: %v", message)
+}
+
+func (srv *Server) LogError(message string) {
+	srv.Logger.Printf("ERROR: %v", message)
+}
+
+func (srv *Server) LogDebug(message string) {
+	srv.Logger.Printf("DEBUG: %v", message)
 }
 
 func (srv *Server) ApplyMiddleware(h http.Handler) http.Handler {
 	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
+}
+
+func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
+	return srv.ApplyMiddleware(srv.AdminMiddleware(h))
+}
+
+func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testClaims := &Claims{
+			UserID:   1,
+			Username: "SuperAdmin",
+			Role:     "admin",
+		}
+		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (srv *Server) TestAsUser(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testClaims := &Claims{
+			UserID:   2,
+			Username: "testuser",
+			Role:     "student",
+		}
+		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 /**

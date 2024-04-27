@@ -2,6 +2,7 @@ package database
 
 import (
 	"backend/cmd/models"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -36,15 +37,21 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database")
 	}
-	return &DB{Conn: db}
+	database := &DB{Conn: db}
+	if isTesting {
+		database.MigrateFresh(isTesting)
+		database.SeedTestData()
+	}
+	return database
 }
 
 /**
 * Register Migrations here
 **/
-func (db *DB) Migrate() {
-	log.Println("Creating or replacing PostgreSQL function...")
-	db.Conn.Exec(`
+func (db *DB) Migrate(isTesting bool) {
+	if !isTesting {
+		log.Println("Creating or replacing PostgreSQL function...")
+		db.Conn.Exec(`
     CREATE OR REPLACE FUNCTION update_updated_at_column()
     RETURNS TRIGGER AS $$
     BEGIN
@@ -53,6 +60,7 @@ func (db *DB) Migrate() {
     END;
     $$ LANGUAGE plpgsql;
     `)
+	}
 	log.Println("Migrating User table...")
 	if err := db.Conn.AutoMigrate(&models.User{}); err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
@@ -68,11 +76,14 @@ func (db *DB) Migrate() {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
 	}
 	tables := []string{"users", "provider_platforms", "user_activities", "provider_user_mappings"}
-	ApplyUpdateTriggers(db.Conn, tables)
+	if !isTesting {
+		log.Println("Applying update triggers...")
+		ApplyUpdateTriggers(db.Conn, tables)
+	}
 	log.Println("Database successfully migrated.")
 }
 
-func (db *DB) MigrateFresh() {
+func (db *DB) MigrateFresh(isTesting bool) {
 	if err := db.Conn.Migrator().DropTable(&models.User{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
@@ -85,7 +96,7 @@ func (db *DB) MigrateFresh() {
 	if err := db.Conn.Migrator().DropTable(&models.ProviderUserMapping{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
-	db.Migrate()
+	db.Migrate(isTesting)
 	user := models.User{
 		Username:      "SuperAdmin",
 		NameFirst:     "Super",
@@ -133,5 +144,34 @@ func ApplyUpdateTriggers(db *gorm.DB, tables []string) {
             END
             $$;
         `, table))
+	}
+}
+
+func (db *DB) SeedTestData() {
+	users, err := os.ReadFile("test_data/users.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var user []models.User
+	if err := json.Unmarshal(users, &user); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for _, u := range user {
+		if err := db.Conn.Create(&u).Error; err != nil {
+			log.Fatalf("Failed to create user: %v", err)
+		}
+	}
+	platforms, err := os.ReadFile("test_data/provider_platforms.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var platform []models.ProviderPlatform
+	if err := json.Unmarshal(platforms, &platform); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for _, p := range platform {
+		if err := db.Conn.Create(&p).Error; err != nil {
+			log.Fatalf("Failed to create platform: %v", err)
+		}
 	}
 }

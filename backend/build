@@ -22,6 +22,7 @@ if [[ "$1" == "up" ]]; then
 		sleep 3
 		./backend --migrate-fresh
 	fi
+	./backend
 	exit 0
 fi
 
@@ -34,5 +35,5 @@ if [[ "$1" == "--migrate-fresh" ]]; then
 	./backend --migrate-fresh
 	exit 0
 fi
-
 ./backend
+exit 0
