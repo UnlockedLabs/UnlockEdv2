@@ -3,7 +3,6 @@ package handlers
 import (
 	"backend/cmd"
 	"backend/cmd/models"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -23,8 +22,6 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
-	log.Printf("LOGGING PROVIDER: %v \n", provider)
-	log.Println("Getting provider service")
 	service, err := cmd.GetProviderService(&provider)
 	if err != nil {
 		srv.Logger.Printf("Error getting provider service GetProviderService(): %v", err)
@@ -42,6 +39,10 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		created, err := srv.Db.CreateUser(&user)
+		if err != nil {
+			srv.Logger.Printf("Error creating user: %v", err)
+			continue
+		}
 		mapping := models.ProviderUserMapping{
 			UserID:             created.ID,
 			ProviderPlatformID: provider.ID,
