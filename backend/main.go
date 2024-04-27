@@ -40,7 +40,6 @@ func main() {
 	} else if cmd.MigrateFresh {
 		db.MigrateFresh()
 	}
-
 	mux := http.NewServeMux()
 	newServer := server.NewServer(db, logger, mux)
 	newServer.RegisterRoutes()
