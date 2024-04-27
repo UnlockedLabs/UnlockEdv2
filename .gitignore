@@ -3,3 +3,4 @@
 .idea
 /backend/logs/server.log
 .github/workflows/test.yml
+.husky/staged-files

@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+/**
+ * This ProviderService will interact with our middleware
+ * and be completely agnostic to the provider platform we are dealing with.
+ **/
 type ProviderService struct {
 	Client    *http.Client                `json:"-"`
 	AccountID string                      `json:"account_id"`
@@ -28,7 +32,6 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 	if prov.Type == models.Kolibri {
 		username, password = strings.Split(prov.AccessKey, ":")[0], strings.Split(prov.AccessKey, ":")[1]
 	}
-	log.Printf("base url: %s", prov.BaseUrl)
 	newService := ProviderService{
 		Client:    &http.Client{},
 		Url:       prov.BaseUrl,
@@ -43,7 +46,6 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("token: %s", os.Getenv("PROVIDER_SERVICE_KEY"))
 	request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
 	request.Header.Set("Content-Type", "application/json")
 	response, err := newService.Client.Do(request)
@@ -112,21 +114,3 @@ func (serv *ProviderService) GetUsers() ([]models.User, error) {
 	}
 	return users, nil
 }
-
-/**
-func (serv *ProviderService) GetContent() ([]models.User, error) {
-	url := "/api/content"
-	req, err := http.NewRequest("GET", serv.Url, nil)
-	if err != nil {
-		return make([]models.Content, 0), err
-	}
-	serv.AppendInfo(url, req)
-	resp, err := serv.Client.Do(req)
-	defer resp.Body.Close()
-	var content []models.Content
-	err = json.NewDecoder(resp.Body).Decode(&content)
-	if err != nil {
-		return make([]models.Content, 0), err
-	}
-	return content, nil
-} **/

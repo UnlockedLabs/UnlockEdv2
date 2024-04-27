@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+git diff --cached --name-only --diff-filter=ACMRTUXB >.husky/staged-files
+cd frontend
+npx lint-staged
+npx oxlint --fix
+cd ../backend
+golangci-lint run
+go mod tidy -v
+go fmt
+git add $(cat .husky/staged-files)
