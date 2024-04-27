@@ -10,6 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type UserRole string
+
+const (
+	Admin   UserRole = "admin"
+	Student UserRole = "student"
+)
+
 type User struct {
 	ID             int                   `gorm:"primaryKey" json:"id"`
 	Username       string                `gorm:"size:255;not null;unique" json:"username"`
@@ -18,7 +25,7 @@ type User struct {
 	Password       string                `gorm:"size:255;not null" json:"-"`
 	PasswordReset  bool                  `gorm:"default:false" json:"password_reset"`
 	NameLast       string                `gorm:"size:255;not null" json:"name_last"`
-	Role           string                `gorm:"size:255" json:"role"`
+	Role           UserRole              `gorm:"size:255;default student" json:"role"`
 	CreatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
 	UpdatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
 	DeletedAt      gorm.DeletedAt        `gorm:"index" json:"-"`

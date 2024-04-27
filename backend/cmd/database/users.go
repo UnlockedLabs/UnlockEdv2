@@ -41,17 +41,25 @@ func (db *DB) GetUserByID(id int) (models.User, error) {
 	return user, nil
 }
 
-func (db *DB) CreateUser(user models.User) (string, error) {
+func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	psw := user.CreateTempPassword()
 	err := user.HashPassword()
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	if user.Email == "" {
+		user.Email = user.Username + "@unlocked.v2"
 	}
 	error := db.Conn.Create(&user).Error
 	if error != nil {
-		return "", error
+		return nil, error
 	}
-	return psw, nil
+	newUser := models.User{}
+	if err := db.Conn.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
+		return nil, err
+	}
+	newUser.Password = psw
+	return &newUser, nil
 }
 
 func (db *DB) DeleteUser(id int) error {
@@ -75,7 +83,7 @@ func (db *DB) UpdateUser(user models.User) (models.User, error) {
 
 func (db *DB) AuthorizeUser(username, password string) (models.User, error) {
 	var user models.User
-	if err := db.Conn.Where("username = ?", username, false).First(&user).Error; err != nil {
+	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
 		return models.User{}, err
 	}
 	log.Printf("AuthorizeUser Password: %s", password)

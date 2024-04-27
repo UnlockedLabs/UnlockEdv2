@@ -77,12 +77,14 @@ func (ku KolibriUser) IntoImportUser() (UnlockEdImportUser, error) {
 	if len(strings.Split(ku.Fullname, " ")) > 2 {
 		last = strings.Join(strings.Split(ku.Fullname, " ")[1:], " ")
 	}
+	email := ku.Username + "@unlocked.v2"
 	if first == "" && last == "" && ku.Username == "" {
 		return UnlockEdImportUser{}, errors.New("invalid user")
 	}
 	return UnlockEdImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
+		Email:            email,
 		NameLast:         last,
 		ExternalUserID:   ku.Id,
 		ExternalUsername: ku.Username,
@@ -134,6 +136,7 @@ type UnlockEdImportUser struct {
 	Username         string `json:"username"`
 	NameFirst        string `json:"name_first"`
 	NameLast         string `json:"name_last"`
+	Email            string `json:"email"`
 	ExternalUserID   string `json:"external_user_id"`
 	ExternalUsername string `json:"external_username"`
 }

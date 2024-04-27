@@ -37,6 +37,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.RegisterProviderPlatformRoutes()
 	srv.RegisterUserActivityRoutes()
 	srv.RegisterProviderMappingRoutes()
+	srv.RegisterActionsRoutes()
 }
 
 func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
@@ -66,7 +67,6 @@ func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interfa
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
 	srv.Logger.Printf("Error: %v", message)
-	w.WriteHeader(status)
 	http.Error(w, message, status)
 }
 

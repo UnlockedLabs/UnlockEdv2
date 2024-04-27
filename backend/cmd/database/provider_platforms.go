@@ -25,10 +25,22 @@ func (db *DB) GetProviderPlatformByID(id int) (models.ProviderPlatform, error) {
 	if err := db.Conn.First(&platform, fmt.Sprintf("%d", id)).Error; err != nil {
 		return models.ProviderPlatform{}, err
 	}
+	key, err := platform.DecryptAccessKey()
+	if err != nil {
+		return models.ProviderPlatform{}, err
+	}
+	platform.AccessKey = key
 	return platform, nil
 }
 
 func (db *DB) CreateProviderPlatform(platform models.ProviderPlatform) error {
+	key, err := platform.EncryptAccessKey()
+	if err != nil {
+		log.Printf("Error encrypting access key: %v", err)
+		return err
+	}
+	platform.AccessKey = key
+	log.Printf("Creating provider platform: %v", platform)
 	if err := db.Conn.Create(&platform).Error; err != nil {
 		return err
 	}

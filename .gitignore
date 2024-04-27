@@ -2,3 +2,4 @@
 .vscode
 .idea
 /backend/logs/server.log
+.github/workflows/test.yml

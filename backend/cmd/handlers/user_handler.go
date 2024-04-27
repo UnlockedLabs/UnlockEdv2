@@ -85,12 +85,12 @@ func (srv *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	temp, err := srv.Db.CreateUser(user)
+	newUser, err := srv.Db.CreateUser(&user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, map[string]string{"password": temp}); err != nil {
+	if err := srv.WriteResponse(w, http.StatusCreated, map[string]string{"password": newUser.Password}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

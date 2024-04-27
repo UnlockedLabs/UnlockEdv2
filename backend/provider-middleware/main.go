@@ -57,11 +57,12 @@ func main() {
 		}
 	}
 	defer db.Close()
-	token := os.Getenv("KOLIBRI_MIDDLEWARE_AUTH_TOKEN")
+	token := os.Getenv("PROVIDER_SERVICE_KEY")
+	log.Println("Token: ", token)
 	handler := NewServiceHandler(token, db)
+	log.Println("Server started on :8081")
 	err = http.ListenAndServe(":8081", handler)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-	log.Println("Server started on :8081")
 }

@@ -28,8 +28,8 @@ type Claims struct {
 }
 
 func (srv *Server) RegisterAuthRoutes() {
-	srv.Mux.Handle("/login", http.HandlerFunc(srv.HandleLogin))
-	srv.Mux.Handle("/logout", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleLogout)))
+	srv.Mux.Handle("/api/login", http.HandlerFunc(srv.HandleLogin))
+	srv.Mux.Handle("/api/logout", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleLogout)))
 }
 
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
@@ -72,7 +72,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		claims := Claims{
 			UserID:   user.ID,
 			Username: user.Username,
-			Role:     user.Role,
+			Role:     string(user.Role),
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer: "admin",
 			},

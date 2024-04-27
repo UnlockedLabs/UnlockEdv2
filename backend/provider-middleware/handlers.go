@@ -45,6 +45,7 @@ func (sh *ServiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		sh.handleCourses(w, r, service)
 	default:
 		http.NotFound(w, r)
+		return
 	}
 }
 
@@ -163,7 +164,7 @@ func (sh *ServiceHandler) handleCourses(w http.ResponseWriter, r *http.Request, 
 * to the UnlockEd platform with the proper fields for ProviderUserMapping
 * and User objects
 **/
-func (kh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request, service *ProviderService) {
+func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request, service *ProviderService) {
 	users, err := service.GetUsers()
 	if err != nil {
 		log.Printf("Failed to retrieve users: %v", err)
