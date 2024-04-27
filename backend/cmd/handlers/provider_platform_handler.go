@@ -1,11 +1,19 @@
 package handlers
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 	"encoding/json"
 	"net/http"
 	"strconv"
 )
+
+func (srv *Server) RegisterProviderPlatformRoutes() {
+	srv.Mux.Handle("GET /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.IndexProviders)))
+	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.ShowProvider)))
+	srv.Mux.Handle("POST /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.CreateProvider)))
+	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.UpdateProvider)))
+	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.DeleteProvider)))
+}
 
 func (srv *Server) IndexProviders(w http.ResponseWriter, r *http.Request) {
 	srv.Logger.Println("Handling provider index request")

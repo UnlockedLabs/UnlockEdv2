@@ -1,7 +1,7 @@
 package database
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 	"fmt"
 	"log"
 )
@@ -12,8 +12,7 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	if err := db.Conn.Model(&models.ProviderPlatform{}).Count(&total).Error; err != nil {
 		return 0, nil, err
 	}
-	if err := db.Conn.Offset((page-1)*perPage).
-		Where("is_deleted = ?", false).
+	if err := db.Conn.Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&platforms).Error; err != nil {
 		return 0, nil, err

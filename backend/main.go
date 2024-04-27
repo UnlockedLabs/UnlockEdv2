@@ -1,8 +1,8 @@
 package main
 
 import (
-	"backend/database"
-	server "backend/handlers"
+	"backend/cmd/database"
+	server "backend/cmd/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -15,16 +15,19 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
+	logfile := os.Stdout
 
-	logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		file, err := os.Create("logs/server.log")
+	if os.Getenv("APP_ENV") == "prod" {
+		logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
-			log.Fatalf("Error creating log file: %v", err)
+			file, err := os.Create("logs/server.log")
+			if err != nil {
+				log.Fatalf("Error creating log file: %v", err)
+			}
+			logfile = file
 		}
-		logfile = file
+		defer logfile.Close()
 	}
-	defer logfile.Close()
 	logger := log.New(logfile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	env := os.Getenv("APP_ENV")

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 )
 
 func (db *DB) GetAllUserActivity(page, perPage int) (int64, []models.UserActivity, error) {

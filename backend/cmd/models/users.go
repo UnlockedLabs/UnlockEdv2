@@ -7,20 +7,22 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type User struct {
-	ID            int       `gorm:"primaryKey" json:"id"`
-	Username      string    `gorm:"size:255;not null;unique" json:"username"`
-	NameFirst     string    `gorm:"size:255;not null" json:"name_first"`
-	Email         string    `gorm:"size:255;not null;unique" json:"email"`
-	Password      string    `gorm:"size:255;not null" json:"-"`
-	PasswordReset bool      `gorm:"default:false" json:"password_reset"`
-	NameLast      string    `gorm:"size:255;not null" json:"name_last"`
-	Role          string    `gorm:"size:255" json:"role"`
-	CreatedAt     time.Time `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
-	UpdatedAt     time.Time `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
-	IsDeleted     bool      `gorm:"default:false" json:"is_deleted"`
+	ID             int                   `gorm:"primaryKey" json:"id"`
+	Username       string                `gorm:"size:255;not null;unique" json:"username"`
+	NameFirst      string                `gorm:"size:255;not null" json:"name_first"`
+	Email          string                `gorm:"size:255;not null;unique" json:"email"`
+	Password       string                `gorm:"size:255;not null" json:"-"`
+	PasswordReset  bool                  `gorm:"default:false" json:"password_reset"`
+	NameLast       string                `gorm:"size:255;not null" json:"name_last"`
+	Role           string                `gorm:"size:255" json:"role"`
+	CreatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
+	UpdatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
+	DeletedAt      gorm.DeletedAt        `gorm:"index" json:"-"`
+	ProviderLogins []ProviderUserMapping `gorm:"foreignKey:UserID" json:"-"`
 }
 
 func (User) TableName() string {
@@ -29,12 +31,13 @@ func (User) TableName() string {
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func (user *User) CreateTempPassword() {
+func (user *User) CreateTempPassword() string {
 	b := make([]byte, 8)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	user.Password = base64.URLEncoding.EncodeToString(b)
+	return string(b)
 }
 
 func (user *User) HashPassword() error {

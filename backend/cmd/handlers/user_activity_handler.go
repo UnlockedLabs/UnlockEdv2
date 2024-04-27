@@ -1,12 +1,17 @@
 package handlers
 
 import (
-	"backend/models"
+	"backend/cmd/models"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 )
+
+func (srv *Server) RegisterUserActivityRoutes() {
+	srv.Mux.Handle("GET /api/users/activity", srv.ApplyMiddleware(http.HandlerFunc(srv.GetAllUserActivities)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.ApplyMiddleware(http.HandlerFunc(srv.GetUserActivityByID)))
+}
 
 func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
