@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -15,13 +17,30 @@ import (
  * and be completely agnostic to the provider platform we are dealing with.
  **/
 type ProviderService struct {
-	Client    *http.Client                `json:"-"`
-	AccountID string                      `json:"account_id"`
-	Url       string                      `json:"url"`
-	ApiKey    string                      `json:"api_key"`
-	Username  string                      `json:"username"`
-	Password  string                      `json:"password"`
-	Type      models.ProviderPlatformType `json:"type"`
+	ProviderPlatformID int          `json:"id"`
+	Type               string       `json:"type"`
+	AccountID          string       `json:"account_id"`
+	Url                string       `json:"url"`
+	ApiKey             string       `json:"api_key"`
+	Username           string       `json:"username"`
+	Password           string       `json:"password"`
+	Client             *http.Client `json:"-"`
+}
+
+type Content struct {
+	ProivderPlatformID int
+	ProgramID          string
+	ExternalContentID  string
+	Name               string
+	Description        string
+	CourseCode         string
+	ImgURL             string
+	IsGraded           bool
+	IsOpenEnrollment   bool
+	IsFormalEnrollment bool
+	IsOpenContent      bool
+	HasAssessments     bool
+	Subject            string
 }
 
 func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error) {
@@ -33,30 +52,41 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		username, password = strings.Split(prov.AccessKey, ":")[0], strings.Split(prov.AccessKey, ":")[1]
 	}
 	newService := ProviderService{
-		Client:    &http.Client{},
-		Url:       prov.BaseUrl,
-		AccountID: prov.AccountID,
-		ApiKey:    prov.AccessKey,
-		Username:  username,
-		Password:  password,
-		Type:      prov.Type,
+		ProviderPlatformID: prov.ID,
+		Client:             &http.Client{},
+		Url:                prov.BaseUrl,
+		AccountID:          prov.AccountID,
+		ApiKey:             prov.AccessKey,
+		Username:           username,
+		Password:           password,
+		Type:               string(prov.Type),
 	}
-	// first make sure this provider has been initiated
-	request, err := http.NewRequest("GET", serviceUrl+"?facility_id="+prov.AccountID, nil)
+	log.Println("ProviderServiceURL: ", serviceUrl)
+	url, err := url.Parse(serviceUrl + "/api/users")
 	if err != nil {
+		log.Println("Error parsing URL: ", err)
 		return nil, err
 	}
+	params := url.Query()
+	params.Set("id", strconv.Itoa(prov.ID))
+	url.RawQuery = params.Encode()
+	request, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		log.Println("Error creating request: ", err)
+		return nil, err
+	}
+	log.Println("URL: ", url)
 	request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
 	request.Header.Set("Content-Type", "application/json")
 	response, err := newService.Client.Do(request)
-
 	if err != nil || response.StatusCode != http.StatusOK {
 		// we need to create the provider in the middleware
-		jsonBody, jsonErr := json.Marshal(prov)
+		jsonBody, jsonErr := json.Marshal(newService)
 		if jsonErr != nil {
 			log.Printf("Error marshalling provider %s", jsonErr)
 			return nil, err
 		}
+		log.Printf("err: %v", err)
 		log.Printf("url: %s", serviceUrl)
 		newService.Url = serviceUrl
 		request, err = http.NewRequest("POST", serviceUrl+"/api/add-provider", bytes.NewBuffer(jsonBody))
@@ -87,13 +117,14 @@ func (serv *ProviderService) Request(url string) *http.Request {
 	if serv.Url == "" {
 		serv.Url = os.Getenv("PROVIDER_SERVICE_URL")
 	}
-	finalUrl := serv.Url + url + "?facility_id=" + serv.AccountID
+	finalUrl := serv.Url + url + "?id=" + strconv.Itoa(serv.ProviderPlatformID)
 	log.Printf("url: %s \n", finalUrl)
 	request, err := http.NewRequest("GET", finalUrl, nil)
 	if err != nil {
 		log.Printf("error getting users: %v", err.Error())
 	}
 	request.Header.Set("Authorization", serviceKey)
+	log.Printf("request: %v", request)
 	return request
 }
 
@@ -113,4 +144,22 @@ func (serv *ProviderService) GetUsers() ([]models.User, error) {
 		return make([]models.User, 0), err
 	}
 	return users, nil
+}
+
+func (serv *ProviderService) GetContent() ([]models.Content, error) {
+	req := serv.Request("/api/content")
+	resp, err := serv.Client.Do(req)
+	if err != nil {
+		log.Printf("error getting content Client.Do(req): %v", err.Error())
+		return make([]models.Content, 0), err
+	}
+	defer resp.Body.Close()
+	var content []models.Content
+	log.Printf("response: %v", resp.Body)
+	err = json.NewDecoder(resp.Body).Decode(&content)
+	if err != nil {
+		log.Printf("error decoding content: %v", err.Error())
+		return make([]models.Content, 0), err
+	}
+	return content, nil
 }

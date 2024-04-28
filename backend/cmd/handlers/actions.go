@@ -19,10 +19,11 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(id)
 	if err != nil {
+		srv.LogError("Error getting provider platform by ID:" + err.Error())
 		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
-	service, err := cmd.GetProviderService(&provider)
+	service, err := cmd.GetProviderService(provider)
 	if err != nil {
 		srv.LogError("Error getting provider service GetProviderService():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -54,4 +55,45 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (srv *Server) ImportContent(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	provider, err := srv.Db.GetProviderPlatformByID(id)
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
+		return
+	}
+	service, err := cmd.GetProviderService(provider)
+	if err != nil {
+		srv.LogError("Error getting provider service GetProviderService():" + err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	content, err := service.GetContent()
+	if err != nil {
+		srv.LogError("Error getting provider service GetContent():" + err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	for _, item := range content {
+		if item.Name == "" && item.Description == "" {
+			continue
+		}
+		_, err := srv.Db.CreateContent(&item)
+		if err != nil {
+			srv.LogError("Error creating content:" + err.Error())
+			continue
+		}
+		return
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, "Successfully imported courses"); err != nil {
+		srv.LogError("Error writing response:" + err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }

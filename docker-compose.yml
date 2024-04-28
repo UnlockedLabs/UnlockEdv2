@@ -18,6 +18,17 @@ services:
       - ".env"
     command: ./backend
 
+  provider-service:
+    build:
+      context: ./backend/provider-middleware
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - app
+    env_file: ".env"
+    command: ./provider-service
+
   postgres:
     image: postgres:13
     environment:

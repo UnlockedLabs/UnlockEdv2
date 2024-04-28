@@ -1,10 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -16,47 +22,40 @@ type KolibriResponse[T any] struct {
 }
 
 type ProviderPlatform struct {
-	FacilityID string `json:"facility_id"`
-	Url        string `json:"url"`
-	ApiKey     string `json:"api_key"`
-	Username   string `json:"username"`
-	Password   string `json:"password"`
+	ID        int    `json:"id"`
+	Type      string `json:"type"`
+	AccountID string `json:"account_id"`
+	Url       string `json:"url"`
+	ApiKey    string `json:"api_key"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
 }
 
-func NewProviderFromForm(request *http.Request) (ProviderPlatform, error) {
-	err := request.ParseForm()
+func (prov *ProviderPlatform) SaveProvider(db *sql.DB) (int, error) {
+	log.Printf("Saving provider: %v", prov)
+	stmt, err := db.Prepare("INSERT INTO providers (id, type, account_id, url, api_key, username, password) VALUES ($1, $2, $3, $4, $5, $6, $7)")
 	if err != nil {
-		return ProviderPlatform{}, err
+		log.Println("Failed to prepare statement")
+		return 0, err
 	}
-	return ProviderPlatform{
-		FacilityID: request.PostForm.Get("facility_id"),
-		Url:        request.PostForm.Get("url"),
-		ApiKey:     request.PostForm.Get("api_key"),
-		Username:   request.PostForm.Get("username"),
-		Password:   request.PostForm.Get("password"),
-	}, nil
-}
-
-func (prov *ProviderPlatform) SaveProvider(db *sql.DB) error {
-	stmt, err := db.Prepare("INSERT INTO providers (facility_id, url, api_key, username, password) VALUES ($1, $2, $3, $4, $5)")
+	_, err = stmt.Exec(prov.ID, prov.Type, prov.AccountID, prov.Url, prov.ApiKey, prov.Username, prov.Password)
 	if err != nil {
-		return err
-	}
-	_, err = stmt.Exec(prov.FacilityID, prov.Url, prov.ApiKey, prov.Username, prov.Password)
-	if err != nil {
-		return err
+		log.Println("Failed to execute statement")
+		return 0, err
 	}
 	log.Println("Provider created successfully")
-	return nil
+	return prov.ID, nil
 }
 
-func (srv *ServiceHandler) LookupProvider(facilityId string) (ProviderPlatform, error) {
+func (srv *ServiceHandler) LookupProvider(id int) (*ProviderPlatform, error) {
 	var provider ProviderPlatform
-	err := srv.db.QueryRow("SELECT * FROM providers WHERE facility_id = $1", facilityId).Scan(&provider.FacilityID, &provider.Url, &provider.ApiKey, &provider.Username, &provider.Password)
+	log.Println("Looking up provider #", id)
+	err := srv.db.QueryRow("SELECT * FROM providers WHERE id = $1", id).Scan(&provider.ID, &provider.Type, &provider.AccountID, &provider.Url, &provider.ApiKey, &provider.Username, &provider.Password)
 	if err != nil {
-		return ProviderPlatform{}, err
+		log.Println("Failed to find provider")
+		return nil, err
 	}
-	return provider, nil
+	return &provider, nil
 }
 
 type KolibriUser struct {
@@ -71,7 +70,7 @@ type KolibriUser struct {
 	IsSuperuser bool   `json:"is_superuser"`
 }
 
-func (ku KolibriUser) IntoImportUser() (UnlockEdImportUser, error) {
+func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
 	first := strings.Split(ku.Fullname, " ")[0]
 	last := strings.Split(ku.Fullname, " ")[1]
 	if len(strings.Split(ku.Fullname, " ")) > 2 {
@@ -79,9 +78,9 @@ func (ku KolibriUser) IntoImportUser() (UnlockEdImportUser, error) {
 	}
 	email := ku.Username + "@unlocked.v2"
 	if first == "" && last == "" && ku.Username == "" {
-		return UnlockEdImportUser{}, errors.New("invalid user")
+		return nil, errors.New("invalid user")
 	}
-	return UnlockEdImportUser{
+	return &UnlockEdImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		Email:            email,
@@ -112,19 +111,71 @@ type KolibriContent struct {
 	LastPublished      string      `json:"last_published"`
 }
 
-/**
-* @param id - KOLIBRI_FACILITY_ID
-* @return UnlockEdCourse
-**/
-func (kc KolibriContent) IntoCourse(id string) UnlockEdCourse {
-	return UnlockEdCourse{
-		ExternalResourceID: kc.ID,
-		ExternalCourseCode: kc.Root,
-		Description:        kc.Description,
-		ProviderPlatformID: id,
-		ExternalCourseName: kc.Name,
-		ImgURL:             kc.Thumbnail,
+func (kc *KolibriContent) IntoCourse() *UnlockEdImportContent {
+	return &UnlockEdImportContent{
+		ExternalContentID: kc.ID,
+		CourseCode:        kc.Root,
+		Name:              kc.Name,
+		Description:       kc.Description,
+		ImgURL:            kc.Thumbnail,
+		IsOpenContent:     kc.Public,
+		Subject:           kc.Root,
+		IsOpenEnrollment:  kc.Available,
 	}
+}
+
+func (kc *KolibriContent) DecodeImg() []byte {
+	if strings.Contains(kc.Thumbnail, "data:image/png;base64") {
+		img := strings.Split(kc.Thumbnail, ",")[1]
+		imgDec, _ := base64.StdEncoding.DecodeString(img)
+		return imgDec
+	}
+	return nil
+}
+
+func (kc *KolibriContent) UploadImage() (string, error) {
+	imgData := kc.DecodeImg()
+	if imgData == nil {
+		return "", errors.New("no image data available or decoding failed")
+	}
+	filename := "image_" + kc.ID + ".png"
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		return "", err
+	}
+	if _, err = part.Write(imgData); err != nil {
+		return "", err
+	}
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+	request, err := http.NewRequest("POST", os.Getenv("APP_URL")+"/upload", body)
+	if err != nil {
+		return "", err
+	}
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("server returned non-OK status: %s", response.Status)
+	}
+	var result map[string]string
+	err = json.NewDecoder(response.Body).Decode(&result)
+	if err != nil {
+		return "", err
+	}
+	url, ok := result["url"]
+	if !ok {
+		return "", errors.New("response does not contain URL")
+	}
+	return url, nil
 }
 
 type Role struct {
@@ -140,14 +191,19 @@ type UnlockEdImportUser struct {
 	ExternalUserID   string `json:"external_user_id"`
 	ExternalUsername string `json:"external_username"`
 }
-
-type UnlockEdCourse struct {
-	ExternalResourceID string `json:"external_resource_id"`
-	ExternalCourseCode string `json:"external_course_code"`
+type UnlockEdImportContent struct {
+	ProviderPlatformID int    `json:"provider_platform_id"`
+	ExternalContentID  string `json:"external_content_id"`
+	ProgramID          string `json:"program_id"`
+	Name               string `json:"name"`
 	Description        string `json:"description"`
-	ProviderPlatformID string `json:"provider_platform_id"`
-	ExternalCourseName string `json:"external_course_name"`
+	CourseCode         string `json:"course_code"`
 	ImgURL             string `json:"img_url"`
+	IsGraded           bool   `json:"is_graded"`
+	IsOpenEnrollment   bool   `json:"is_open_enrollment"`
+	IsOpenContent      bool   `json:"is_open_content"`
+	HasAssessments     bool   `json:"has_assessments"`
+	Subject            string `json:"subject"`
 }
 
 type UnlockEdEnrollment struct {

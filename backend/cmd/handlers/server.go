@@ -17,6 +17,19 @@ type Server struct {
 	Mux    *http.ServeMux
 }
 
+/**
+* Register all API routes here
+**/
+func (srv *Server) RegisterRoutes() {
+	srv.RegisterAuthRoutes()
+	srv.RegisterUserRoutes()
+	srv.RegisterProviderPlatformRoutes()
+	srv.RegisterUserActivityRoutes()
+	srv.RegisterProviderMappingRoutes()
+	srv.RegisterActionsRoutes()
+	srv.RegisterImageRoutes()
+}
+
 func NewServer(isTesting bool) *Server {
 	logfile := os.Stdout
 	if isTesting {
@@ -79,18 +92,6 @@ func (srv *Server) TestAsUser(h http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-/**
-* Register all API routes here
-**/
-func (srv *Server) RegisterRoutes() {
-	srv.RegisterAuthRoutes()
-	srv.RegisterUserRoutes()
-	srv.RegisterProviderPlatformRoutes()
-	srv.RegisterUserActivityRoutes()
-	srv.RegisterProviderMappingRoutes()
-	srv.RegisterActionsRoutes()
 }
 
 func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {

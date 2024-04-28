@@ -20,17 +20,17 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	return total, platforms, nil
 }
 
-func (db *DB) GetProviderPlatformByID(id int) (models.ProviderPlatform, error) {
+func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
 	if err := db.Conn.First(&platform, fmt.Sprintf("%d", id)).Error; err != nil {
-		return models.ProviderPlatform{}, err
+		return nil, err
 	}
 	key, err := platform.DecryptAccessKey()
 	if err != nil {
-		return models.ProviderPlatform{}, err
+		return nil, err
 	}
 	platform.AccessKey = key
-	return platform, nil
+	return &platform, nil
 }
 
 func (db *DB) CreateProviderPlatform(platform models.ProviderPlatform) error {

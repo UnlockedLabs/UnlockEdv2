@@ -8,7 +8,7 @@ As you have both now heard the initial pitch, I will try to explain more specifi
 
 Clearly this alone doesn't make it impossible, but as the number of concurrent providers increases, it adds significant complexity to the integration process. For instance,  we use a cron job to fetch data throughout the day, and we shard the users and make calls to fetch data every users % 24 hrs. We will be faced with the challenge of having to keep track and maintain many, many sessions (possibly _far_ more than we will even expect) as individual user and admin actions while using the platform will each trigger these calls while these jobs are going on.
 
-`If managing N concurrent sessions is complicated in PHP, why couldn't multple ProviderServices instances just use the same cached session token?`
+`If managing N concurrent sessions is complicated in PHP, why couldn't multple KolibriServices instances just use the same cached session token?`
 
 It's likely that for some time, they could. The problem is when another instance of the class updates the token in the cache, because it made the `PUT/POST` request that triggers the token update, this would invalidate the token for all other instances relying on it for their sessions. The fix for this would be for every instance to retrieve their XCRFToken headers before each call...  `But which class instance is now responsible for the timed, periodic heartbeat session refresh PUT requests?`
 
@@ -24,9 +24,9 @@ The `Canvas` integration requires us to maintain an `oauth` token, and although 
 
 `How does Go fix this?`
 
-Go's concurrency primitives would allow us to maintain one session per provider, no matter how many calls/instances of the `ProviderServices` class exist in the product, and they would never need to worry about what type of provider they are dealing with.
+Go's concurrency primitives would allow us to maintain one session per provider, no matter how many calls/instances of the `KolibriServices` class exist in the product, and they would never need to worry about what type of provider they are dealing with.
 
-When a new provider is created in the product, the first time the ProviderServices class is instantiated, it will call the service with the ProviderID, and the middleware will see it's new, trigger a callback to the product that will automatically POST the necessary details to the middleware, and the middleware will initiate an authorized session with the provider.
+When a new provider is created in the product, the first time the KolibriServices class is instantiated, it will call the service with the ProviderID, and the middleware will see it's new, trigger a callback to the product that will automatically POST the necessary details to the middleware, and the middleware will initiate an authorized session with the provider.
 
 No matter how many instances of the class call the middleware, there will only ever be one session, with one Goroutine (green-thread) responsible for maintaining it, updating the token on a timer, etc. This solves any eventual issue where we have to deal with the possibility of having hundreds of sessions, and imo reduces the complexity of that solution.
 
@@ -51,7 +51,7 @@ The same logic applies, the one instance of the middleware would (is) capable of
 
 4. Introducing another database (Sqlite) in the service:
 
-  - This is not a database that would ever have migrations, or complex tables, etc. This would only be used to store the relevant information about each provider, which is automatically sent to the middleware upon first instantiation of a ProviderServices class from a newly created provider. A call is made, the provider_ID is on the query string, if no provider exists, in the middleware the constructor of the provider services class will automatically POST the necessary details to the middleware, so no thought or concern needs to be put into normalizing data between the sqlite cache and the platform.
+  - This is not a database that would ever have migrations, or complex tables, etc. This would only be used to store the relevant information about each provider, which is automatically sent to the middleware upon first instantiation of a KolibriServices class from a newly created provider. A call is made, the provider_ID is on the query string, if no provider exists, in the middleware the constructor of the provider services class will automatically POST the necessary details to the middleware, so no thought or concern needs to be put into normalizing data between the sqlite cache and the platform.
   This prevents the need for the product to be aware of the provider's schema, and allows the middleware to handle the data normalization.
 
 ### Another benefit to Middleware layer: **Compute:** 
@@ -68,9 +68,9 @@ This session mgmt issue is just the first of what I expect will be other challen
 
 ### Alternatives:
 
-The idea of a 'Plugin' system is seemingly the most intuitive, approachable method of dealing with integrations. This would involve the same logic and compute that I am describing in the middleware, only the PHP classes that implement the Provider interface, that would be doing the same computation, would be loaded by the product, and the methods that currently exist on the ProviderServices class, would be called and expected to return the same data, without it worrying about how it was retrieved.
+The idea of a 'Plugin' system is seemingly the most intuitive, approachable method of dealing with integrations. This would involve the same logic and compute that I am describing in the middleware, only the PHP classes that implement the Provider interface, that would be doing the same computation, would be loaded by the product, and the methods that currently exist on the KolibriServices class, would be called and expected to return the same data, without it worrying about how it was retrieved.
 
-Now we can see that this is essentially the same idea/concept, as ProviderServices class would be called by the product to populate certain tables and make the information available to the client. The difference being that the inevitable complexity of dealing with multiple authentication sessions, providers, and the compute required to interact with them, would be abstracted away from the product, and instead be the responsibility of the middleware.
+Now we can see that this is essentially the same idea/concept, as KolibriServices class would be called by the product to populate certain tables and make the information available to the client. The difference being that the inevitable complexity of dealing with multiple authentication sessions, providers, and the compute required to interact with them, would be abstracted away from the product, and instead be the responsibility of the middleware.
 
 I think `Laravel` is a great framework for our current use-case, but building a system where we are loading and unloading PHP code at runtime (although that is the only time, so I guess it's all runtime lol), and having that code perform computationally-expensive, or long-lived tasks to integrate with the necessary providers feels like tasks better suited to an external service. From my understanding and inquiries, services like this are rather common, although maybe for larger companies.
 
