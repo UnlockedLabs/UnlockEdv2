@@ -1,23 +1,23 @@
 services:
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - DB_HOST=postgres
-  #     - DB_PORT=5432
-  #     - DB_USER=unlocked
-  #     - DB_PASSWORD=dev
-  #     - DB_NAME=unlocked
-  #     - MIGRATE_FRESH=${MIGRATE_FRESH:-false}
-  #   depends_on:
-  #     - postgres
-  #   env_file:
-  #     - ".env"
-  #   command: ./backend
-  #
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=unlocked
+      - DB_PASSWORD=dev
+      - DB_NAME=unlocked
+      - MIGRATE_FRESH=${MIGRATE_FRESH:-false}
+    depends_on:
+      - postgres
+    env_file:
+      - ".env"
+    command: ./backend
+
   postgres:
     image: postgres:13
     environment:

@@ -82,7 +82,7 @@ func (srv *Server) AdminMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(r.Context()))
 	})
 }
 
@@ -114,7 +114,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			Value:    signedToken,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   false,
 			Path:     "/",
 		})
 		_, err = w.Write([]byte("Logged in successfully!"))
@@ -132,7 +132,7 @@ func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		Path:     "/",
 	})
 	w.WriteHeader(http.StatusOK)

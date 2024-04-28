@@ -8,8 +8,6 @@ if [[ "$1" == "-h" ]]; then
 fi
 
 echo "Building backend..."
-rm -f backend
-go build .
 
 if [[ "$1" == "up" ]]; then
 	if [[ -z "$(docker ps -q)" ]]; then
@@ -17,23 +15,23 @@ if [[ "$1" == "up" ]]; then
 	fi
 	if [[ "$2" == "--migrate" ]]; then
 		sleep 3
-		./backend --migrate
+		go run backend/main.go --migrate
 	elif [[ "$2" == "--migrate-fresh" ]]; then
 		sleep 3
-		./backend --migrate-fresh
+		go run backend/main.go --migrate-fresh
 	fi
-	./backend
+	go run backend/main.go
 	exit 0
 fi
 
 if [[ "$1" == "--migrate" ]]; then
-	./backend --migrate
+	go run backend/main.go --migrate
 	exit 0
 fi
 
 if [[ "$1" == "--migrate-fresh" ]]; then
-	./backend --migrate-fresh
+	go run backend/main.go --migrate-fresh
 	exit 0
 fi
-./backend
+go run backend/main.go --migrate
 exit 0

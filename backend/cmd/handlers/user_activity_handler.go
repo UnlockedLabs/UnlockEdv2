@@ -63,7 +63,7 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 			srv.Logger.Printf("Error creating user activity: %v\n", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(r.Context()))
 	})
 }
 
