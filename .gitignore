@@ -4,3 +4,4 @@
 /backend/logs/server.log
 .github/workflows/test.yml
 /frontend/.husky/staged-files
+jar

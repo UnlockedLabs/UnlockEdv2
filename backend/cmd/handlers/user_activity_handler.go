@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"backend/cmd/models"
+	"Go-Prototype/backend/cmd/models"
 	"log"
 	"net/http"
 	"strconv"

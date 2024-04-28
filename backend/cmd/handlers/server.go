@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	db "backend/cmd/database"
+	db "Go-Prototype/backend/cmd/database"
 	"context"
 	"encoding/json"
 	"log"

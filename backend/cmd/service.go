@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"backend/cmd/models"
+	"Go-Prototype/backend/cmd/models"
 	"bytes"
 	"encoding/json"
 	"log"

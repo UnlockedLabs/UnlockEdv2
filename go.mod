@@ -1,4 +1,4 @@
-module backend
+module Go-Prototype
 
 go 1.22.2
 

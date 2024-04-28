@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"backend/cmd/handlers"
-	"backend/cmd/models"
+	"Go-Prototype/backend/cmd/handlers"
+	"Go-Prototype/backend/cmd/models"
 	"bytes"
 	"encoding/json"
 	"net/http"

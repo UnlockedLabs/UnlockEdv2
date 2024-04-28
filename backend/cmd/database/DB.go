@@ -1,7 +1,7 @@
 package database
 
 import (
-	"backend/cmd/models"
+	"Go-Prototype/backend/cmd/models"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -42,6 +42,7 @@ func InitDB(isTesting bool) *DB {
 		database.MigrateFresh(isTesting)
 		database.SeedTestData()
 	}
+	database.Migrate(isTesting)
 	return database
 }
 

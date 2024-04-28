@@ -1,7 +1,7 @@
 package main
 
 import (
-	server "backend/cmd/handlers"
+	server "Go-Prototype/backend/cmd/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Print("no .env file found, using default env variables")
 	}
 	env := os.Getenv("APP_ENV")
 	testing := (env == "testing")
@@ -20,7 +20,7 @@ func main() {
 	cmd := ParseArgs()
 	if cmd.RunMigrations {
 		newServer.Db.Migrate(testing)
-	} else if cmd.MigrateFresh {
+	} else if cmd.MigrateFresh || os.Getenv("MIGRATE_FRESH") == "true" {
 		newServer.Db.MigrateFresh(testing)
 	}
 	newServer.RegisterRoutes()
