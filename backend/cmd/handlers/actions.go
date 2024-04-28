@@ -24,13 +24,13 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	service, err := cmd.GetProviderService(&provider)
 	if err != nil {
-		srv.Logger.Printf("Error getting provider service GetProviderService(): %v", err)
+		srv.LogError("Error getting provider service GetProviderService():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	users, err := service.GetUsers()
 	if err != nil {
-		srv.Logger.Printf("Error getting provider service GetUsers(): %v", err)
+		srv.LogError("Error getting provider service GetUsers():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -40,7 +40,7 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		created, err := srv.Db.CreateUser(&user)
 		if err != nil {
-			srv.Logger.Printf("Error creating user: %v", err)
+			srv.LogError("Error creating user:" + err.Error())
 			continue
 		}
 		mapping := models.ProviderUserMapping{

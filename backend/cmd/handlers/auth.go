@@ -87,7 +87,7 @@ func (srv *Server) AdminMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	s.Logger.Println("Handling login request")
+	s.LogInfo("Handling login request")
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
 	if err != nil {

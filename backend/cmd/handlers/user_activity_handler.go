@@ -60,7 +60,7 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 			ClickedUrl:  clickedUrl,
 		}
 		if err := srv.Db.CreateActivityForUser(&activity); err != nil {
-			srv.Logger.Printf("Error creating user activity: %v\n", err)
+			srv.LogError("Error creating user activity: " + err.Error())
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		}
 		next.ServeHTTP(w, r.WithContext(r.Context()))
