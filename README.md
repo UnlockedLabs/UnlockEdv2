@@ -56,12 +56,11 @@ If you would like to contribute, please have a look at our [contribution guideli
 -   Node.js > 18.0
 -   Postgres 16.0
 
-The commands below assume you have a shell alias setup in your .bashrc or .zshrc file for the sail command: `alias sail='[ -f sail ] && sh sail || sh vendor/bin/sail`. If you haven't configured that, you can substitute any call to `sail` with `./vendor/bin/sail`.
-
 -   Clone the repository
--   Change directory to the `backend` directory
 -   Copy ‘.env.example’ to ‘.env’
--   Run `./build up --migrate-fresh`
+-   Run `MIGRATE_FRESH=true docker-compose up --build`
+(This command only needs to be ran the first time, subsequently you may omit the 
+`MIGRATE_FRESH=true` flag)
 -   Change directory to the frontend directory
 -   Run `npm install`
 -   Run `npm run dev`
