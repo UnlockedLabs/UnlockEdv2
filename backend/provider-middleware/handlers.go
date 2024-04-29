@@ -32,19 +32,18 @@ func (sh *ServiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	// check if we have a service running for the facility ID
-	// if not, we initialize a new service and store the reference
 	switch r.URL.Path {
 	case "/":
-		w.WriteHeader(http.StatusOK)
 		if _, err = w.Write([]byte("Provider middleware initiated")); err != nil {
 			http.Error(w, "Failed to write response", http.StatusInternalServerError)
 			return
 		}
 	case "/api/users":
 		sh.handleUsers(w, r, service)
+		return
 	case "/api/content":
 		sh.handleContent(w, r, service)
+		return
 	default:
 		http.NotFound(w, r)
 		return
@@ -84,33 +83,42 @@ func (sh *ServiceHandler) InitService(id int) (ProviderServiceInterface, error) 
 		log.Printf("Error: %v", err)
 		return nil, fmt.Errorf("failed to find provider: %v", err)
 	}
-	service := NewKolibriService(provider)
-	if err := service.InitiateSession(); err != nil {
-		log.Printf("Failed to initiate session: %v", err)
-		return nil, fmt.Errorf("failed to initiate session: %v", err)
-	}
-	ticker := time.NewTicker(2 * time.Minute)
-	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-done:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				err := service.RefreshSession()
-				if err != nil {
-					log.Printf("Failed to refresh session: %v", err)
-				} else {
-					log.Println("Session refreshed successfully.")
+	if provider.Type == "kolibri" {
+		service := NewKolibriService(provider)
+		if err := service.InitiateSession(); err != nil {
+			log.Printf("Failed to initiate session: %v", err)
+			return nil, fmt.Errorf("failed to initiate session: %v", err)
+		}
+		ticker := time.NewTicker(2 * time.Minute)
+		done := make(chan bool)
+		go func() {
+			for {
+				select {
+				case <-done:
+					ticker.Stop()
+					return
+				case <-ticker.C:
+					err := service.RefreshSession()
+					if err != nil {
+						log.Printf("Failed to refresh session: %v", err)
+					} else {
+						log.Println("Session refreshed successfully.")
+					}
 				}
 			}
-		}
-	}()
-	sh.mutex.Lock()
-	sh.services = append(sh.services, service)
-	sh.mutex.Unlock()
-	return service, nil
+		}()
+		sh.mutex.Lock()
+		sh.services = append(sh.services, service)
+		sh.mutex.Unlock()
+		return service, nil
+	} else {
+		log.Printf("NewCanvasService")
+		canvas := NewCanvasService(provider)
+		sh.mutex.Lock()
+		sh.services = append(sh.services, canvas)
+		sh.mutex.Unlock()
+		return canvas, nil
+	}
 }
 
 func (sh *ServiceHandler) FindService(id int) (ProviderServiceInterface, error) {
@@ -173,14 +181,14 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request, se
 		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
 		return
 	}
-	responseData, err := json.Marshal(users)
+	responseData, err := json.Marshal(&users)
 	if err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	if _, err = w.Write(responseData); err != nil {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
 	}
 }

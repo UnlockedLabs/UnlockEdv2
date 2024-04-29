@@ -61,7 +61,15 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		Password:           password,
 		Type:               string(prov.Type),
 	}
-	log.Println("ProviderServiceURL: ", serviceUrl)
+	test := "/"
+	request := newService.Request(test)
+	resp, err := newService.Client.Do(request)
+	if err != nil {
+		log.Println("Error sending init service request: ", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Println("Error getting service: ", resp.Status)
+	}
 	url, err := url.Parse(serviceUrl + "/api/users")
 	if err != nil {
 		log.Println("Error parsing URL: ", err)
@@ -70,16 +78,16 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 	params := url.Query()
 	params.Set("id", strconv.Itoa(prov.ID))
 	url.RawQuery = params.Encode()
-	request, err := http.NewRequest("GET", url.String(), nil)
-	if err != nil {
+	request, reqErr := http.NewRequest("GET", url.String(), nil)
+	if reqErr != nil {
 		log.Println("Error creating request: ", err)
 		return nil, err
 	}
 	log.Println("URL: ", url)
 	request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
-	request.Header.Set("Content-Type", "application/json")
 	response, err := newService.Client.Do(request)
-	if err != nil || response.StatusCode != http.StatusOK {
+	log.Println("Response: ", response)
+	if err != nil {
 		// we need to create the provider in the middleware
 		jsonBody, jsonErr := json.Marshal(newService)
 		if jsonErr != nil {
@@ -87,7 +95,6 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 			return nil, err
 		}
 		log.Printf("err: %v", err)
-		log.Printf("url: %s", serviceUrl)
 		newService.Url = serviceUrl
 		request, err = http.NewRequest("POST", serviceUrl+"/api/add-provider", bytes.NewBuffer(jsonBody))
 		if err != nil {
@@ -101,7 +108,7 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 			log.Printf("error creating provider service: %v", err.Error())
 			return nil, err
 		}
-		if response.StatusCode != http.StatusOK {
+		if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
 			log.Printf("error creating provider service: %v", response.Status)
 			return nil, err
 		}
