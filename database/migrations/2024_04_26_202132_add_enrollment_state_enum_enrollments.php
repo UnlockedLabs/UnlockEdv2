@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->enum('enrollment_state', EnrollmentState::toArray());
+            $table->enum('enrollment_state', EnrollmentState::toArray())->nullable();
         });
     }
 
