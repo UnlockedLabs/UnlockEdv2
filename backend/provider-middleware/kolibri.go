@@ -260,7 +260,7 @@ func (ks *KolibriService) GetUsers() ([]UnlockEdImportUser, error) {
 * @info - GET /api/content/channel?available=true
 * @return - List of maps, each containing the details of a Content object
 **/
-func (ks *KolibriService) GetContent() ([]UnlockEdImportProgram, error) {
+func (ks *KolibriService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	url := ks.BaseURL + "/api/content/channel/?available=true"
 	response, err := ks.SendGETRequest(url)
 	if err != nil {
@@ -278,7 +278,8 @@ func (ks *KolibriService) GetContent() ([]UnlockEdImportProgram, error) {
 			log.Printf("Failed to upload thumbnail for content: %s. %v", course.ID, err)
 		}
 		ulCourse := course.IntoCourse()
-		ulCourse.ImgURL = url
+		ulCourse.ThumbnailURL = url
+		ulCourse.ProviderPlatformID = ks.ProviderPlatformID
 		importCourses = append(importCourses, *ulCourse)
 	}
 	return importCourses, nil
