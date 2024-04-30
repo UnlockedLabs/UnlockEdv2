@@ -1,7 +1,7 @@
 package database
 
 import (
-	"backend/cmd/models"
+	"Go-Prototype/backend/cmd/models"
 	"errors"
 )
 

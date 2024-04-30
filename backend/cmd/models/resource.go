@@ -1,5 +1,7 @@
 package models
 
+import "reflect"
+
 type PaginatedResource[T any] struct {
 	Data []T            `json:"data"`
 	Meta PaginationMeta `json:"meta"`
@@ -26,5 +28,19 @@ func NewPaginationInfo(currentPage, perPage int, total int64) PaginationMeta {
 		LastPage:    lastPage,
 		PerPage:     perPage,
 		Total:       total,
+	}
+}
+
+func UpdateStruct(dst, src interface{}) {
+	srcVal := reflect.ValueOf(src).Elem()
+	dstVal := reflect.ValueOf(dst).Elem()
+
+	for i := 0; i < srcVal.NumField(); i++ {
+		srcField := srcVal.Field(i)
+		dstField := dstVal.Field(i)
+
+		if !reflect.DeepEqual(srcField.Interface(), reflect.Zero(srcField.Type()).Interface()) {
+			dstField.Set(srcField)
+		}
 	}
 }

@@ -1,10 +1,12 @@
 package database
 
 import (
-	"backend/cmd/models"
+	"Go-Prototype/backend/cmd/models"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -36,15 +38,22 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database")
 	}
-	return &DB{Conn: db}
+	database := &DB{Conn: db}
+	if isTesting {
+		database.MigrateFresh(isTesting)
+		database.SeedTestData()
+	}
+	database.Migrate(isTesting)
+	return database
 }
 
 /**
 * Register Migrations here
 **/
-func (db *DB) Migrate() {
-	log.Println("Creating or replacing PostgreSQL function...")
-	db.Conn.Exec(`
+func (db *DB) Migrate(isTesting bool) {
+	if !isTesting {
+		log.Println("Creating or replacing PostgreSQL function...")
+		db.Conn.Exec(`
     CREATE OR REPLACE FUNCTION update_updated_at_column()
     RETURNS TRIGGER AS $$
     BEGIN
@@ -53,6 +62,7 @@ func (db *DB) Migrate() {
     END;
     $$ LANGUAGE plpgsql;
     `)
+	}
 	log.Println("Migrating User table...")
 	if err := db.Conn.AutoMigrate(&models.User{}); err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
@@ -67,12 +77,24 @@ func (db *DB) Migrate() {
 	if err := db.Conn.AutoMigrate(&models.ProviderUserMapping{}); err != nil {
 		log.Fatalf("Failed to auto-migrate database: %v", err)
 	}
-	tables := []string{"users", "provider_platforms", "user_activities", "provider_user_mappings"}
-	ApplyUpdateTriggers(db.Conn, tables)
+	if err := db.Conn.AutoMigrate(&models.LeftMenuLink{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	if err := db.Conn.AutoMigrate(&models.Program{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	if err := db.Conn.AutoMigrate(&models.Milestone{}); err != nil {
+		log.Fatalf("Failed to auto-migrate database: %v", err)
+	}
+	tables := []string{"users", "provider_platforms", "user_activities", "provider_user_mappings", "programs", "milestones"}
+	if !isTesting {
+		log.Println("Applying update triggers...")
+		ApplyUpdateTriggers(db.Conn, tables)
+	}
 	log.Println("Database successfully migrated.")
 }
 
-func (db *DB) MigrateFresh() {
+func (db *DB) MigrateFresh(isTesting bool) {
 	if err := db.Conn.Migrator().DropTable(&models.User{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
@@ -85,7 +107,23 @@ func (db *DB) MigrateFresh() {
 	if err := db.Conn.Migrator().DropTable(&models.ProviderUserMapping{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}
-	db.Migrate()
+	if err := db.Conn.Migrator().DropTable(&models.LeftMenuLink{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	if err := db.Conn.Migrator().DropTable(&models.Program{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	if err := db.Conn.Migrator().DropTable(&models.Milestone{}); err != nil {
+		log.Fatalf("failed to drop tables: %v", err)
+	}
+	// Delete the sqlite cache database in the middleware service file, to normalize ID's
+	db.MigrateProviderMiddlewareFresh(isTesting)
+	db.Migrate(isTesting)
+	db.SeedDefaultData()
+	log.Println("Database successfully migrated from fresh state.")
+}
+
+func (db *DB) SeedDefaultData() {
 	user := models.User{
 		Username:      "SuperAdmin",
 		NameFirst:     "Super",
@@ -100,11 +138,16 @@ func (db *DB) MigrateFresh() {
 	if err != nil {
 		log.Fatalf("Failed to hash password: %v", err)
 	}
-	log.Printf("Hashed password %s", user.Password)
 	if err := db.Conn.Create(&user).Error; err != nil {
 		log.Fatalf("Failed to create user: %v", err)
 	}
-	log.Println("Database successfully migrated from fresh state.")
+	links := []models.LeftMenuLink{}
+	if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
+		log.Fatalf("Failed to unmarshal default left menu links: %v", err)
+	}
+	if err := db.Conn.Create(&links).Error; err != nil {
+		log.Fatalf("Failed to create left menu links: %v", err)
+	}
 }
 
 func ApplyUpdateTriggers(db *gorm.DB, tables []string) {
@@ -133,5 +176,58 @@ func ApplyUpdateTriggers(db *gorm.DB, tables []string) {
             END
             $$;
         `, table))
+	}
+}
+
+const defaultLeftMenuLinks = `[{"id":1,"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
+
+func (db *DB) SeedTestData() {
+	platforms, err := os.ReadFile("test_data/provider_platforms.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var platform []models.ProviderPlatform
+	if err := json.Unmarshal(platforms, &platform); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for _, p := range platform {
+		if err := db.Conn.Create(&p).Error; err != nil {
+			log.Fatalf("Failed to create platform: %v", err)
+		}
+	}
+	users, err := os.ReadFile("test_data/users.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var user []models.User
+	if err := json.Unmarshal(users, &user); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for idx, u := range user {
+		if err := db.Conn.Create(&u).Error; err != nil {
+			log.Fatalf("Failed to create user: %v", err)
+		}
+		for i := 0; i < len(platform); i++ {
+			mapping := models.ProviderUserMapping{
+				UserID:             u.ID,
+				ProviderPlatformID: platform[i].ID,
+				ExternalUsername:   u.Username,
+				ExternalUserID:     strconv.Itoa(idx),
+			}
+			if err = db.CreateProviderUserMapping(&mapping); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (db *DB) MigrateProviderMiddlewareFresh(isTesting bool) {
+	if !isTesting {
+		if err := os.Remove("backend/provider-middleware/providers.db"); err != nil {
+			log.Printf("Failed to remove sqlite cache database: %v", err)
+		}
+		if _, err := os.Create("backend/provider-middleware/providers.db"); err != nil {
+			log.Printf("Failed to create sqlite cache database: %v", err)
+		}
 	}
 }

@@ -13,20 +13,20 @@ import (
 )
 
 type ProviderServiceInterface interface {
+	GetID() int
 	GetUsers() ([]UnlockEdImportUser, error)
-	// TODO: GetContent()
+	GetContent() ([]UnlockEdImportContent, error)
 	// TODO: GetMilestones()
 	// TODO: GetOutcomes()
-	// ??
 }
 
 /**
 * Handler struct that will be passed to our HTTP server handlers
 * to handle the different routes.
-* It will have a refernce to the ProviderService struct
+* It will have a refernce to the KolibriService struct
 **/
 type ServiceHandler struct {
-	services []*ProviderService
+	services []ProviderServiceInterface
 	token    string
 	db       *sql.DB
 	mutex    sync.Mutex
@@ -36,13 +36,13 @@ func NewServiceHandler(token string, db *sql.DB) *ServiceHandler {
 	return &ServiceHandler{
 		token:    token,
 		db:       db,
-		services: make([]*ProviderService, 0),
+		services: make([]ProviderServiceInterface, 0),
 	}
 }
 
 func main() {
 	if err := godotenv.Load("../.env"); err != nil {
-		log.Fatalf("Failed to load .env file: %v", err)
+		log.Println("Failed to load .env file, using default env variables")
 	}
 	db, err := sql.Open("sqlite3", "providers.db")
 	if err != nil {
@@ -56,12 +56,22 @@ func main() {
 			log.Fatalf("Failed to open database after creation: %v", err)
 		}
 	}
+	file, err := os.ReadFile("init.sql")
+	if err != nil {
+		log.Fatalf("Failed to open init.sql file: %v", err)
+	}
+	res, err := db.Exec(string(file))
+	if err != nil {
+		log.Fatalf("Failed to execute init.sql file: %v", err)
+	}
+	log.Println(res)
 	defer db.Close()
-	token := os.Getenv("KOLIBRI_MIDDLEWARE_AUTH_TOKEN")
+	token := os.Getenv("PROVIDER_SERVICE_KEY")
+	log.Println("Token: ", token)
 	handler := NewServiceHandler(token, db)
+	log.Println("Server started on :8081")
 	err = http.ListenAndServe(":8081", handler)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-	log.Println("Server started on :8081")
 }

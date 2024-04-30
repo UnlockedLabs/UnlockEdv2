@@ -1,0 +1,22 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
+echo "frontend .........."
+cd frontend
+echo "running eslint 󰎙 ....."
+npm run lint
+echo "running prettier 󰎙 ..."
+npx lint-staged
+echo "backend ..............."
+cd ../backend
+echo "running golangci-lint  ......"
+golangci-lint run -v
+go mod tidy -v
+echo "running go fmt  ...."
+go fmt
+echo "Running Go tests  .."
+cd tests
+go test -v
+cd ../../
+git add $(cat frontend/.husky/staged-files)
+echo "All checks passed! 🎉"

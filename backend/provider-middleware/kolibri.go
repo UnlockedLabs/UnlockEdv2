@@ -15,23 +15,24 @@ import (
 * Our service struct which will have the methods to interact with
 * the Kolibri API and the neccessary fields, headers, cookies to make requests
 ***/
-type ProviderService struct {
-	BaseURL       string
-	HttpClient    *http.Client
-	BaseHeaders   map[string]string
-	username      string
-	password      string
-	FacilityID    string
-	CSRFToken     string
-	CancelRefresh chan bool
+type KolibriService struct {
+	ProviderPlatformID int
+	BaseURL            string
+	HttpClient         *http.Client
+	BaseHeaders        map[string]string
+	username           string
+	password           string
+	AccountID          string
+	CSRFToken          string
+	CancelRefresh      chan bool
 }
 
 /**
-* Initializes a new ProviderService struct with the base URL of the Kolibri server
+* Initializes a new KolibriService struct with the base URL of the Kolibri server
 * Pulls the login info from ENV variables. In production, these should be set
 * in /etc/environment
 **/
-func NewProviderService(provider *ProviderPlatform) *ProviderService {
+func NewKolibriService(provider *ProviderPlatform) *KolibriService {
 	jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	client := &http.Client{
 		Jar: jar,
@@ -46,13 +47,14 @@ func NewProviderService(provider *ProviderPlatform) *ProviderService {
 		"Pragma":          "no-cache",
 		"Accept-Language": "en-US,en;q=0.5",
 	}
-	return &ProviderService{
-		BaseURL:     provider.Url,
-		HttpClient:  client,
-		username:    provider.Username,
-		password:    provider.Password,
-		FacilityID:  provider.FacilityID,
-		BaseHeaders: headers,
+	return &KolibriService{
+		ProviderPlatformID: provider.ID,
+		BaseURL:            provider.Url,
+		HttpClient:         client,
+		username:           provider.Username,
+		password:           provider.Password,
+		AccountID:          provider.AccountID,
+		BaseHeaders:        headers,
 	}
 }
 
@@ -61,7 +63,7 @@ func NewProviderService(provider *ProviderPlatform) *ProviderService {
 * This allows us to make further requests to the server
 * and get the necessary cookies and tokens
 **/
-func (ks *ProviderService) InitiateSession() error {
+func (ks *KolibriService) InitiateSession() error {
 	initialBody := map[string]interface{}{
 		"active": false,
 		"browser": map[string]string{
@@ -105,7 +107,7 @@ func (ks *ProviderService) InitiateSession() error {
 		},
 		"username": ks.username,
 		"password": ks.password,
-		"facility": ks.FacilityID,
+		"facility": ks.AccountID,
 	}
 	loginBodyBytes, _ := json.Marshal(loginBody)
 	loginRequest, err := http.NewRequest("POST", ks.BaseURL+"/api/auth/session/", bytes.NewReader(loginBodyBytes))
@@ -131,7 +133,11 @@ func (ks *ProviderService) InitiateSession() error {
 	return nil
 }
 
-func (kh *ProviderService) SendGETRequest(url string) (*http.Response, error) {
+func (ks *KolibriService) GetID() int {
+	return ks.ProviderPlatformID
+}
+
+func (kh *KolibriService) SendGETRequest(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -148,7 +154,7 @@ func (kh *ProviderService) SendGETRequest(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (ks *ProviderService) SendPOSTRequest(url string, body []byte) (*http.Response, error) {
+func (ks *KolibriService) SendPOSTRequest(url string, body []byte) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -164,7 +170,7 @@ func (ks *ProviderService) SendPOSTRequest(url string, body []byte) (*http.Respo
 	return resp, nil
 }
 
-func (ks *ProviderService) SendPUTRequest(url string, body []byte) (*http.Response, error) {
+func (ks *KolibriService) SendPUTRequest(url string, body []byte) (*http.Response, error) {
 	req, err := http.NewRequest("PUT", url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -180,7 +186,7 @@ func (ks *ProviderService) SendPUTRequest(url string, body []byte) (*http.Respon
 	return resp, nil
 }
 
-func (ks *ProviderService) RefreshSession() error {
+func (ks *KolibriService) RefreshSession() error {
 	body := map[string]interface{}{
 		"active": false,
 		"browser": map[string]string{
@@ -226,8 +232,8 @@ func (ks *ProviderService) RefreshSession() error {
 * @info - GET /api/auth/facilityuser?member_of=<facilityID>
 * @return - List of KolibriUser objects, representing all users in the facility
 **/
-func (ks *ProviderService) GetUsers() ([]UnlockEdImportUser, error) {
-	url := ks.BaseURL + "/api/auth/facilityuser?member_of=" + ks.FacilityID
+func (ks *KolibriService) GetUsers() ([]UnlockEdImportUser, error) {
+	url := ks.BaseURL + "/api/auth/facilityuser?member_of=" + ks.AccountID
 	response, err := ks.SendGETRequest(url)
 	if err != nil {
 		return nil, err
@@ -243,7 +249,7 @@ func (ks *ProviderService) GetUsers() ([]UnlockEdImportUser, error) {
 		if err != nil {
 			continue
 		}
-		importUsers = append(importUsers, ulUser)
+		importUsers = append(importUsers, *ulUser)
 	}
 	return importUsers, nil
 }
@@ -254,7 +260,7 @@ func (ks *ProviderService) GetUsers() ([]UnlockEdImportUser, error) {
 * @info - GET /api/content/channel?available=true
 * @return - List of maps, each containing the details of a Content object
 **/
-func (ks *ProviderService) GetContent() ([]KolibriContent, error) {
+func (ks *KolibriService) GetContent() ([]UnlockEdImportContent, error) {
 	url := ks.BaseURL + "/api/content/channel/?available=true"
 	response, err := ks.SendGETRequest(url)
 	if err != nil {
@@ -265,5 +271,15 @@ func (ks *ProviderService) GetContent() ([]KolibriContent, error) {
 	if err != nil {
 		return nil, err
 	}
-	return kolibriResponse, nil
+	importCourses := make([]UnlockEdImportContent, 0)
+	for _, course := range kolibriResponse {
+		url, err := course.UploadImage()
+		if err != nil {
+			log.Printf("Failed to upload thumbnail for content: %s. %v", course.ID, err)
+		}
+		ulCourse := course.IntoCourse()
+		ulCourse.ImgURL = url
+		importCourses = append(importCourses, *ulCourse)
+	}
+	return importCourses, nil
 }

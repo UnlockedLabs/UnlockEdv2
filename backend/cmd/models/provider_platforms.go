@@ -35,7 +35,7 @@ type ProviderPlatform struct {
 	Name                   string                `gorm:"size:255" json:"name"`
 	Description            string                `gorm:"size:1024" json:"description"`
 	IconUrl                string                `gorm:"size:255" json:"icon_url"`
-	AccountId              string                `gorm:"size:64" json:"account_id"`
+	AccountID              string                `gorm:"size:64" json:"account_id"`
 	AccessKey              string                `gorm:"size:255" json:"access_key"`
 	BaseUrl                string                `gorm:"size:255" json:"base_url"`
 	State                  ProviderPlatformState `gorm:"size:100" json:"state"`
@@ -43,6 +43,7 @@ type ProviderPlatform struct {
 	CreatedAt              time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
 	UpdatedAt              time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
 	DeletedAt              gorm.DeletedAt        `gorm:"index" json:"-"`
+	ProviderUserMappings   []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID" json:"_"`
 }
 
 func (ProviderPlatform) TableName() string {

@@ -1,15 +1,12 @@
 name: golangci-lint
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
 
 permissions:
   contents: read
-  # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  # pull-requests: read
 
 jobs:
   golangci:
@@ -25,17 +22,5 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: v1.54
-
           working-directory: backend
-
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          # only-new-issues: true
-
-          # skip-cache: true
-
-          # skip-pkg-cache: true
-
-          # skip-build-cache: true
-
-          # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
-          # install-mode: "goinstall"
+          install-mode: "binary"

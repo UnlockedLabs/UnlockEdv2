@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	db "backend/cmd/database"
+	db "Go-Prototype/backend/cmd/database"
+	"context"
 	"encoding/json"
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -13,19 +15,6 @@ type Server struct {
 	Db     *db.DB
 	Logger *log.Logger
 	Mux    *http.ServeMux
-}
-
-func NewServer(db *db.DB, logger *log.Logger, mux *http.ServeMux) *Server {
-	s := &Server{
-		Db:     db,
-		Logger: logger,
-		Mux:    mux,
-	}
-	return s
-}
-
-func (srv *Server) ApplyMiddleware(h http.Handler) http.Handler {
-	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
 }
 
 /**
@@ -37,6 +26,75 @@ func (srv *Server) RegisterRoutes() {
 	srv.RegisterProviderPlatformRoutes()
 	srv.RegisterUserActivityRoutes()
 	srv.RegisterProviderMappingRoutes()
+	srv.RegisterActionsRoutes()
+	srv.RegisterLeftMenuRoutes()
+	srv.RegisterImageRoutes()
+	srv.RegisterProgramsRoutes()
+	srv.RegisterMilestonesRoutes()
+}
+
+func NewServer(isTesting bool) *Server {
+	logfile := os.Stdout
+	if isTesting {
+		return &Server{Db: db.InitDB(true), Logger: log.New(logfile, "Server: ", log.LstdFlags), Mux: http.NewServeMux()}
+	} else {
+		if os.Getenv("APP_ENV") == "prod" {
+			logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			if err != nil {
+				file, err := os.Create("logs/server.log")
+				if err != nil {
+					log.Fatalf("Error creating log file: %v", err)
+				}
+				logfile = file
+			}
+			defer logfile.Close()
+		}
+		return &Server{Db: db.InitDB(false), Logger: log.New(logfile, "LOG_: ", log.Ldate|log.Ltime|log.Lshortfile), Mux: http.NewServeMux()}
+	}
+}
+
+func (srv *Server) LogInfo(message string) {
+	srv.Logger.Printf("INFO: %v", message)
+}
+
+func (srv *Server) LogError(message string) {
+	srv.Logger.Printf("ERROR: %v", message)
+}
+
+func (srv *Server) LogDebug(message string) {
+	srv.Logger.Printf("DEBUG: %v", message)
+}
+
+func (srv *Server) ApplyMiddleware(h http.Handler) http.Handler {
+	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
+}
+
+func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
+	return srv.ApplyMiddleware(srv.AdminMiddleware(h))
+}
+
+func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testClaims := &Claims{
+			UserID:        1,
+			PasswordReset: false,
+			Role:          "admin",
+		}
+		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (srv *Server) TestAsUser(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testClaims := &Claims{
+			UserID:        2,
+			Role:          "student",
+			PasswordReset: false,
+		}
+		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
@@ -61,12 +119,17 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if resp, ok := data.(string); ok {
+		_, err := w.Write([]byte(resp))
+		return err
+	}
+
 	return json.NewEncoder(w).Encode(data)
 }
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
 	srv.Logger.Printf("Error: %v", message)
-	w.WriteHeader(status)
 	http.Error(w, message, status)
 }
 
