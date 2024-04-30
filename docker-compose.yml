@@ -12,11 +12,18 @@ services:
       - DB_PASSWORD=dev
       - DB_NAME=unlocked
       - MIGRATE_FRESH=${MIGRATE_FRESH}
+      - PROVIDER_SERVICE_URL=http://provider-service:8081
     depends_on:
       - postgres
     env_file:
       - ".env"
-    command: sleep 3 && ./backend
+    command: >
+      sh -c '
+      while ! nc -z provider-service 8081; do
+        echo "Waiting for provider-service to be ready...";
+        sleep 3;
+      done;
+      ./backend'
   provider-service:
     build:
       context: ./backend/provider-middleware

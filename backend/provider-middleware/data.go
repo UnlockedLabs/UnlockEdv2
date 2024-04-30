@@ -111,8 +111,8 @@ type KolibriContent struct {
 	LastPublished      string      `json:"last_published"`
 }
 
-func (kc *KolibriContent) IntoCourse() *UnlockEdImportContent {
-	return &UnlockEdImportContent{
+func (kc *KolibriContent) IntoCourse() *UnlockEdImportProgram {
+	return &UnlockEdImportProgram{
 		ExternalContentID: kc.ID,
 		CourseCode:        kc.Root,
 		Name:              kc.Name,
@@ -191,7 +191,7 @@ type UnlockEdImportUser struct {
 	ExternalUserID   string `json:"external_user_id"`
 	ExternalUsername string `json:"external_username"`
 }
-type UnlockEdImportContent struct {
+type UnlockEdImportProgram struct {
 	ProviderPlatformID int    `json:"provider_platform_id"`
 	ExternalContentID  string `json:"external_content_id"`
 	ProgramID          string `json:"program_id"`
