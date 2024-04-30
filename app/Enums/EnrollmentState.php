@@ -8,7 +8,6 @@ enum EnrollmentState: string
 {
     case ACTIVE = 'active';
     case INACTIVE = 'inactive';
-    // case INVITED = 'invited';
     case COMPLETED = 'completed';
     case DELETED = 'deleted';
 
