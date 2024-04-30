@@ -19,8 +19,7 @@ services:
       - ".env"
     command: >
       sh -c '
-      while ! nc -z provider-service 8081; do
-        echo "Waiting for provider-service to be ready...";
+      while ! nc -z  postgres 5432; do
         sleep 3;
       done;
       ./backend'
