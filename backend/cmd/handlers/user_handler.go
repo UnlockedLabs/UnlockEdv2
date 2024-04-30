@@ -98,6 +98,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 	newUser, err := srv.Db.CreateUser(&user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -143,6 +144,7 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	user := models.User{}
 	err = json.NewDecoder(r.Body).Decode(&user)
+	defer r.Body.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

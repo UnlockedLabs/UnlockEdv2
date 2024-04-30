@@ -97,12 +97,11 @@ func (srv *Server) AdminMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	s.LogInfo("Handling login request")
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
+	defer r.Body.Close()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		s.LogError("Parsing form failed, using urlform" + err.Error())
 	}
 	if user, err := s.Db.AuthorizeUser(form.Username, form.Password); err == nil {
 		claims := Claims{
@@ -124,7 +123,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			Value:    signedToken,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
-			Secure:   false,
+			Secure:   true,
 			Path:     "/",
 		})
 		if user.PasswordReset {
@@ -145,7 +144,7 @@ func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Expires:  time.Now().Add(-1 * time.Hour),
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		Path:     "/",
 	})
 	w.WriteHeader(http.StatusOK)
@@ -169,6 +168,7 @@ func (srv *Server) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 		password = form.Password
 		confirm = form.Confirm
 	}
+	defer r.Body.Close()
 	if password != confirm || !ValidatePassword(password) {
 		http.ServeFile(w, r.WithContext(r.Context()), "frontend/public/error.html")
 		srv.LogError("Password validation failed")
@@ -179,6 +179,21 @@ func (srv *Server) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 		srv.LogError("Error Resetting users password: " + err.Error())
 		return
 	}
+	claims.PasswordReset = false
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte(os.Getenv("APP_KEY")))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    signedToken,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
+	})
 	if err = srv.WriteResponse(w, http.StatusOK, "Password reset successfully"); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		srv.LogError("Error writing response: " + err.Error())

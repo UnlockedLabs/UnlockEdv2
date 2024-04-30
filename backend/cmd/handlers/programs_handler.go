@@ -63,6 +63,7 @@ func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
+	defer r.Body.Close()
 	if err != nil {
 		srv.LogError("CreateProgram Error:" + err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
@@ -80,6 +81,7 @@ func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
+	defer r.Body.Close()
 	if err != nil {
 		srv.LogError("UpdateProgram Error:" + err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())

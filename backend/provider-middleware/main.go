@@ -27,6 +27,7 @@ type ProviderServiceInterface interface {
 **/
 type ServiceHandler struct {
 	services []ProviderServiceInterface
+	Mux      *http.ServeMux
 	token    string
 	db       *sql.DB
 	mutex    sync.Mutex
@@ -37,6 +38,7 @@ func NewServiceHandler(token string, db *sql.DB) *ServiceHandler {
 		token:    token,
 		db:       db,
 		services: make([]ProviderServiceInterface, 0),
+		Mux:      http.NewServeMux(),
 	}
 }
 
@@ -73,7 +75,9 @@ func main() {
 	log.Println("Token: ", token)
 	handler := NewServiceHandler(token, db)
 	log.Println("Server started on :8081")
-	err = http.ListenAndServe(":8081", handler)
+	handler.RegisterRoutes()
+	log.Println("Routes registered")
+	err = http.ListenAndServe(":8081", handler.Mux)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

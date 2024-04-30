@@ -5,3 +5,4 @@
 .github/workflows/test.yml
 /frontend/.husky/staged-files
 jar
+/frontend/public/thumbnails/*

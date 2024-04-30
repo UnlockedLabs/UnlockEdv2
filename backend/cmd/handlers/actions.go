@@ -9,6 +9,7 @@ import (
 
 func (srv *Server) RegisterActionsRoutes() {
 	srv.Mux.Handle("POST /actions/provider-platforms/{id}/import-users", srv.ApplyMiddleware(http.HandlerFunc(srv.ImportUsers)))
+	srv.Mux.Handle("POST /actions/provider-platforms/{id}/import-programs", srv.ApplyMiddleware(http.HandlerFunc(srv.ImportPrograms)))
 }
 
 func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
@@ -70,13 +71,13 @@ func (srv *Server) ImportPrograms(w http.ResponseWriter, r *http.Request) {
 	}
 	service, err := cmd.GetProviderService(provider)
 	if err != nil {
-		srv.LogError("Error getting provider service GetProviderService():" + err.Error())
+		srv.LogError("Error getting provider service GetProviderService:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	content, err := service.GetPrograms()
 	if err != nil {
-		srv.LogError("Error getting provider service GetContent():" + err.Error())
+		srv.LogError("Error getting provider service GetPrograms:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
