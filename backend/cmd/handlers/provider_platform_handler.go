@@ -63,6 +63,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 		srv.LogError("Error decoding request body: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+	defer r.Body.Close()
 	newProv, err := srv.Db.CreateProviderPlatform(platform)
 	if err != nil {
 		srv.LogError("Error creating provider platform: " + err.Error())
@@ -86,6 +87,7 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 		srv.LogError("Error decoding request body: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+	defer r.Body.Close()
 	updated, err := srv.Db.UpdateProviderPlatform(platform, id)
 	if err != nil {
 		srv.LogError("Error updating provider platform: " + err.Error())

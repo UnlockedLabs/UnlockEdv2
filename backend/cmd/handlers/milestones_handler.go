@@ -48,6 +48,7 @@ func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	defer r.Body.Close()
 	if _, err := srv.Db.CreateMilestone(miles); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -82,6 +83,7 @@ func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	defer r.Body.Close()
 	msId := 0
 	if id != 0 {
 		msId = id

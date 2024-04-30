@@ -32,6 +32,7 @@ func (srv *Server) GetMappingsForUser(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) CreateProviderUserMapping(w http.ResponseWriter, r *http.Request) {
 	var mapping models.ProviderUserMapping
 	err := json.NewDecoder(r.Body).Decode(&mapping)
+	defer r.Body.Close()
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return

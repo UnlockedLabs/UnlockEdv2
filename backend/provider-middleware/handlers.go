@@ -60,6 +60,7 @@ func (sh *ServiceHandler) handleAddProvider(w http.ResponseWriter, r *http.Reque
 	providerPlatform := ProviderPlatform{}
 	log.Println("Adding provider")
 	err := json.NewDecoder(r.Body).Decode(&providerPlatform)
+	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to decode request body: %v", err)
 		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
