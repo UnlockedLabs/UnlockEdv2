@@ -59,5 +59,6 @@ func (srv *Server) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func (srv *Server) HostPhotos(w http.ResponseWriter, r *http.Request) {
 	img := r.PathValue("id")
-	http.ServeFile(w, r, "public/thumbnails/"+img)
+	path := filepath.Join("frontend", "public", "thumbnails", img)
+	http.ServeFile(w, r, path)
 }
