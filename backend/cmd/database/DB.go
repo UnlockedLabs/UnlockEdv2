@@ -95,6 +95,7 @@ func (db *DB) Migrate(isTesting bool) {
 }
 
 func (db *DB) MigrateFresh(isTesting bool) {
+	log.Println("Dropping all tables...")
 	if err := db.Conn.Migrator().DropTable(&models.User{}); err != nil {
 		log.Fatalf("failed to drop tables: %v", err)
 	}

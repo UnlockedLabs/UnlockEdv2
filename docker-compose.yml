@@ -1,5 +1,5 @@
 services:
-  app:
+  server:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,13 +11,12 @@ services:
       - DB_USER=unlocked
       - DB_PASSWORD=dev
       - DB_NAME=unlocked
-      - MIGRATE_FRESH=${MIGRATE_FRESH:-false}
+      - MIGRATE_FRESH=${MIGRATE_FRESH}
     depends_on:
       - postgres
     env_file:
       - ".env"
-    command: ./backend
-
+    command: sleep 3 && ./backend
   provider-service:
     build:
       context: ./backend/provider-middleware
@@ -25,7 +24,7 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - app
+      - server
     env_file: ".env"
     command: ./provider-service
 
@@ -39,6 +38,5 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
 volumes:
   postgres_data:
