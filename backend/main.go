@@ -16,11 +16,12 @@ func main() {
 	}
 	env := os.Getenv("APP_ENV")
 	testing := (env == "testing")
-	newServer := server.NewServer(testing)
 	cmd := ParseArgs()
+	newServer := server.NewServer(testing)
 	if cmd.RunMigrations {
 		newServer.Db.Migrate(testing)
 	} else if cmd.MigrateFresh || os.Getenv("MIGRATE_FRESH") == "true" {
+		log.Println("Migrating fresh")
 		newServer.Db.MigrateFresh(testing)
 	}
 	newServer.RegisterRoutes()
