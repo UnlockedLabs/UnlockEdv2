@@ -255,8 +255,6 @@ func (ks *KolibriService) GetUsers() ([]UnlockEdImportUser, error) {
 }
 
 /**
-* Since Kolibri does't have the same concept of a "Course" and "Enrollment"
-* we will use the "Content" as a substitute for a Course
 * @info - GET /api/content/channel?available=true
 * @return - List of maps, each containing the details of a Content object
 **/
@@ -271,14 +269,9 @@ func (ks *KolibriService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	if err != nil {
 		return nil, err
 	}
-	importCourses := make([]UnlockEdImportProgram, 0)
+	var importCourses []UnlockEdImportProgram
 	for _, course := range kolibriResponse {
-		url, err := course.UploadImage()
-		if err != nil {
-			log.Printf("Failed to upload thumbnail for content: %s. %v", course.ID, err)
-		}
 		ulCourse := course.IntoCourse()
-		ulCourse.ThumbnailURL = url
 		ulCourse.ProviderPlatformID = ks.ProviderPlatformID
 		importCourses = append(importCourses, *ulCourse)
 	}

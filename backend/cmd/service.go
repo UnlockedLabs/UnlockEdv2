@@ -57,7 +57,7 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		// we need to create the provider in the middleware
 		// marshal the provider struct into json, and send it to the service
 		log.Println("Creating provider service !!!")
-		jsonBody, jsonErr := json.Marshal(newService)
+		jsonBody, jsonErr := json.Marshal(&newService)
 		if jsonErr != nil {
 			log.Printf("Error marshalling provider %s", jsonErr)
 			return nil, err
@@ -88,13 +88,14 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 }
 
 func (serv *ProviderService) Request(url string) *http.Request {
+	log.Println("Init request for provider service")
 	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
 	servUrl := os.Getenv("PROVIDER_SERVICE_URL")
 	finalUrl := servUrl + url + "?id=" + strconv.Itoa(serv.ProviderPlatformID)
 	log.Printf("url: %s \n", finalUrl)
 	request, err := http.NewRequest("GET", finalUrl, nil)
 	if err != nil {
-		log.Printf("error getting users: %v", err.Error())
+		log.Printf("error creating request %v", err.Error())
 	}
 	request.Header.Set("Authorization", serviceKey)
 	log.Printf("request: %v", request)

@@ -1,38 +1,38 @@
 services:
-  server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=unlocked
-      - DB_PASSWORD=dev
-      - DB_NAME=unlocked
-      - MIGRATE_FRESH=${MIGRATE_FRESH}
-      - PROVIDER_SERVICE_URL=http://provider-service:8081
-    depends_on:
-      - postgres
-    env_file:
-      - ".env"
-    command: >
-      sh -c '
-      while ! nc -z  postgres 5432; do
-        sleep 3;
-      done;
-      ./backend'
-  provider-service:
-    build:
-      context: ./backend/provider-middleware
-      dockerfile: Dockerfile
-    ports:
-      - "8081:8081"
-    depends_on:
-      - server
-    env_file: ".env"
-    command: ./provider-service
+  # server:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=unlocked
+  #     - DB_PASSWORD=dev
+  #     - DB_NAME=unlocked
+  #     - MIGRATE_FRESH=${MIGRATE_FRESH}
+  #     - PROVIDER_SERVICE_URL=http://provider-service:8081
+  #   depends_on:
+  #     - postgres
+  #   env_file:
+  #     - ".env"
+  #   command: >
+  #     sh -c '
+  #     while ! nc -z  postgres 5432; do
+  #       sleep 3;
+  #     done;
+  #     ./backend'
+  # provider-service:
+  #   build:
+  #     context: ./backend/provider-middleware
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8081:8081"
+  #   depends_on:
+  #     - server
+  #   env_file: ".env"
+  #   command: ./provider-service
 
   postgres:
     image: postgres:13

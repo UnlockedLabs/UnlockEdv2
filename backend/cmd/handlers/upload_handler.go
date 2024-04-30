@@ -1,44 +1,63 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 func (srv *Server) RegisterImageRoutes() {
 	srv.Mux.HandleFunc("POST /upload", srv.UploadHandler)
-	srv.Mux.HandleFunc("GET /photos/{img}", srv.HostPhotos)
+	srv.Mux.HandleFunc("GET /photos/{id}", srv.HostPhotos)
 }
 
 func (srv *Server) UploadHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(10 << 5); err != nil {
+	srv.LogInfo("Uploading file")
+	if err := r.ParseMultipartForm(10 << 10); err != nil {
+		srv.LogError("Error parsing form: " + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	data, _, err := r.FormFile("file")
+	file, header, err := r.FormFile("file")
 	if err != nil {
+		srv.LogError("Error getting file: " + err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get file")
+		return
+	}
+	defer file.Close()
+
+	path := filepath.Join("frontend", "public", "thumbnails", header.Filename)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		srv.LogError("Error opening file: " + err.Error())
+		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	if _, err = io.Copy(f, file); err != nil {
+		srv.LogError("Error saving file: " + err.Error())
+		http.Error(w, "Failed to save file", http.StatusInternalServerError)
+		return
+	}
+	url := os.Getenv("APP_URL") + "/photos/" + header.Filename
+	response := map[string]string{"url": url}
+	err = json.NewEncoder(w).Encode(&response)
+	if err != nil {
+		srv.LogError("Error encoding response: " + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	defer data.Close()
-	buffer := make([]byte, 10<<5)
-	if _, err = data.Read(buffer); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	filename := r.FormValue("filename")
-	if err = os.WriteFile("public/thumbnails/"+filename, buffer, 0666); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	url := os.Getenv("APP_URL") + "/photos/" + filename
-	if err := srv.WriteResponse(w, http.StatusOK, "{\"url\":\""+url+"\"}"); err != nil {
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		srv.LogError("Error writing response: " + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 }
 
 func (srv *Server) HostPhotos(w http.ResponseWriter, r *http.Request) {
-	img := r.PathValue("img")
+	img := r.PathValue("id")
 	http.ServeFile(w, r, "public/thumbnails/"+img)
 }

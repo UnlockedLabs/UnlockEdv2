@@ -31,20 +31,20 @@ type ProviderPlatform struct {
 	Password  string `json:"password"`
 }
 
-func (prov *ProviderPlatform) SaveProvider(db *sql.DB) (int, error) {
+func (prov *ProviderPlatform) SaveProvider(db *sql.DB) error {
 	log.Printf("Saving provider: %v", prov)
 	stmt, err := db.Prepare("INSERT INTO providers (id, type, account_id, url, api_key, username, password) VALUES ($1, $2, $3, $4, $5, $6, $7)")
 	if err != nil {
 		log.Println("Failed to prepare statement")
-		return 0, err
+		return err
 	}
 	_, err = stmt.Exec(prov.ID, prov.Type, prov.AccountID, prov.Url, prov.ApiKey, prov.Username, prov.Password)
 	if err != nil {
 		log.Println("Failed to execute statement")
-		return 0, err
+		return err
 	}
 	log.Println("Provider created successfully")
-	return prov.ID, nil
+	return nil
 }
 
 func (srv *ServiceHandler) LookupProvider(id int) (*ProviderPlatform, error) {
@@ -112,11 +112,16 @@ type KolibriContent struct {
 }
 
 func (kc *KolibriContent) IntoCourse() *UnlockEdImportProgram {
+	url, err := kc.UploadImage()
+	if err != nil {
+		log.Printf("Failed to upload image %v", err)
+		url = ""
+	}
 	return &UnlockEdImportProgram{
 		ExternalID:   kc.ID,
 		Name:         kc.Name,
 		Description:  kc.Description,
-		ThumbnailURL: kc.Thumbnail,
+		ThumbnailURL: url,
 		IsPublic:     kc.Public,
 	}
 }
@@ -131,11 +136,12 @@ func (kc *KolibriContent) DecodeImg() []byte {
 }
 
 func (kc *KolibriContent) UploadImage() (string, error) {
+	log.Println("Uploading image")
 	imgData := kc.DecodeImg()
 	if imgData == nil {
 		return "", errors.New("no image data available or decoding failed")
 	}
-	filename := "image_" + kc.ID + ".png"
+	filename := "image_" + kc.Root + "/" + kc.ID + ".png"
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("file", filename)
@@ -154,6 +160,7 @@ func (kc *KolibriContent) UploadImage() (string, error) {
 		return "", err
 	}
 	request.Header.Set("Content-Type", writer.FormDataContentType())
+	request.Header.Set("Content-Length", fmt.Sprintf("%d", len(body.Bytes())))
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
