@@ -4,9 +4,9 @@ import (
 	"Go-Prototype/backend/cmd/models"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -27,29 +27,17 @@ type ProviderService struct {
 	Client             *http.Client `json:"-"`
 }
 
-type Content struct {
-	ProivderPlatformID int
-	ProgramID          string
-	ExternalContentID  string
-	Name               string
-	Description        string
-	CourseCode         string
-	ImgURL             string
-	IsGraded           bool
-	IsOpenEnrollment   bool
-	IsFormalEnrollment bool
-	IsOpenContent      bool
-	HasAssessments     bool
-	Subject            string
-}
-
 func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error) {
 	serviceUrl := os.Getenv("PROVIDER_SERVICE_URL")
 	// If the provider is Kolibri, we need to split the key into username and password
 	// In the future, we will need to have similar fields for Oauth2 retrieval from canvas
 	username, password := "", ""
 	if prov.Type == models.Kolibri {
-		username, password = strings.Split(prov.AccessKey, ":")[0], strings.Split(prov.AccessKey, ":")[1]
+		if strings.Contains(prov.AccessKey, ":") {
+			username, password = strings.Split(prov.AccessKey, ":")[0], strings.Split(prov.AccessKey, ":")[1]
+		} else {
+			return nil, errors.New("invalid access key for Kolibri. must be in the format username:password")
+		}
 	}
 	newService := ProviderService{
 		ProviderPlatformID: prov.ID,
@@ -61,34 +49,14 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		Password:           password,
 		Type:               string(prov.Type),
 	}
+	// send initial test request with the provider ID, to see if the service exists
 	test := "/"
 	request := newService.Request(test)
 	resp, err := newService.Client.Do(request)
-	if err != nil {
-		log.Println("Error sending init service request: ", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Println("Error getting service: ", resp.Status)
-	}
-	url, err := url.Parse(serviceUrl + "/api/users")
-	if err != nil {
-		log.Println("Error parsing URL: ", err)
-		return nil, err
-	}
-	params := url.Query()
-	params.Set("id", strconv.Itoa(prov.ID))
-	url.RawQuery = params.Encode()
-	request, reqErr := http.NewRequest("GET", url.String(), nil)
-	if reqErr != nil {
-		log.Println("Error creating request: ", err)
-		return nil, err
-	}
-	log.Println("URL: ", url)
-	request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
-	response, err := newService.Client.Do(request)
-	log.Println("Response: ", response)
-	if err != nil {
+	if err != nil || resp.StatusCode != http.StatusOK {
 		// we need to create the provider in the middleware
+		// marshal the provider struct into json, and send it to the service
+		log.Println("Creating provider service !!!")
 		jsonBody, jsonErr := json.Marshal(newService)
 		if jsonErr != nil {
 			log.Printf("Error marshalling provider %s", jsonErr)
@@ -103,7 +71,7 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		}
 		request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
 		request.Header.Set("Content-Type", "application/json")
-		response, err = newService.Client.Do(request)
+		response, err := newService.Client.Do(request)
 		if err != nil {
 			log.Printf("error creating provider service: %v", err.Error())
 			return nil, err
@@ -121,10 +89,8 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 
 func (serv *ProviderService) Request(url string) *http.Request {
 	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
-	if serv.Url == "" {
-		serv.Url = os.Getenv("PROVIDER_SERVICE_URL")
-	}
-	finalUrl := serv.Url + url + "?id=" + strconv.Itoa(serv.ProviderPlatformID)
+	servUrl := os.Getenv("PROVIDER_SERVICE_URL")
+	finalUrl := servUrl + url + "?id=" + strconv.Itoa(serv.ProviderPlatformID)
 	log.Printf("url: %s \n", finalUrl)
 	request, err := http.NewRequest("GET", finalUrl, nil)
 	if err != nil {
@@ -153,20 +119,20 @@ func (serv *ProviderService) GetUsers() ([]models.User, error) {
 	return users, nil
 }
 
-func (serv *ProviderService) GetContent() ([]models.Content, error) {
-	req := serv.Request("/api/content")
+func (serv *ProviderService) GetPrograms() ([]models.Program, error) {
+	req := serv.Request("/api/programs")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
 		log.Printf("error getting content Client.Do(req): %v", err.Error())
-		return make([]models.Content, 0), err
+		return make([]models.Program, 0), err
 	}
 	defer resp.Body.Close()
-	var content []models.Content
+	var content []models.Program
 	log.Printf("response: %v", resp.Body)
 	err = json.NewDecoder(resp.Body).Decode(&content)
 	if err != nil {
 		log.Printf("error decoding content: %v", err.Error())
-		return make([]models.Content, 0), err
+		return make([]models.Program, 0), err
 	}
 	return content, nil
 }

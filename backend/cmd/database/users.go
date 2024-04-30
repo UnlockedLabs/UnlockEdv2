@@ -10,17 +10,13 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 	var users []models.User
 	var count int64
 
-	log.Printf("Page: %d, Items per Page: %d\n", page, itemsPerPage)
-
 	offset := (page - 1) * itemsPerPage
-	log.Printf("Calculated Offset: %d\n", offset)
-
 	if err := db.Conn.Model(&models.User{}).Count(&count).Error; err != nil {
 		log.Printf("Error counting users: %v", err)
 		return 0, nil, err
 	}
 
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset").
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
@@ -33,7 +29,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 
 func (db *DB) GetUserByID(id int) (models.User, error) {
 	var user models.User
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at").
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset").
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		return models.User{}, err
@@ -44,10 +40,12 @@ func (db *DB) GetUserByID(id int) (models.User, error) {
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	psw := user.CreateTempPassword()
 	user.Password = psw
+	log.Printf("Password: %s", user.Password)
 	err := user.HashPassword()
 	if err != nil {
 		return nil, err
 	}
+	user.PasswordReset = true
 	if user.Email == "" {
 		user.Email = user.Username + "@unlocked.v2"
 	}
@@ -55,13 +53,12 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	if error != nil {
 		return nil, error
 	}
-	newUser := models.User{}
+	newUser := &models.User{}
 	if err := db.Conn.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
 		return nil, err
 	}
-	log.Printf("Temp Password: %s", psw)
 	newUser.Password = psw
-	return &newUser, nil
+	return newUser, nil
 }
 
 func (db *DB) DeleteUser(id int) error {
@@ -91,14 +88,31 @@ func (db *DB) UpdateUser(user models.User) (models.User, error) {
 	return user, nil
 }
 
-func (db *DB) AuthorizeUser(username, password string) (models.User, error) {
+func (db *DB) AuthorizeUser(username, password string) (*models.User, error) {
 	var user models.User
 	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
-		return models.User{}, err
+		return nil, err
 	}
 	log.Printf("AuthorizeUser Password: %s", password)
 	if success := user.CheckPasswordHash(password); !success {
-		return models.User{}, errors.New("invalid password")
+		log.Printf("Password authentication failed for: %s", password)
+		return nil, errors.New("invalid password")
 	}
-	return user, nil
+	return &user, nil
+}
+
+func (db *DB) ResetUserPassword(id int, password string) error {
+	user, err := db.GetUserByID(id)
+	if err != nil {
+		return err
+	}
+	user.Password = password
+	if err := user.HashPassword(); err != nil {
+		return err
+	}
+	user.PasswordReset = false
+	if err := db.Conn.Save(&user).Error; err != nil {
+		return err
+	}
+	return nil
 }

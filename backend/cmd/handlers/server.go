@@ -27,7 +27,10 @@ func (srv *Server) RegisterRoutes() {
 	srv.RegisterUserActivityRoutes()
 	srv.RegisterProviderMappingRoutes()
 	srv.RegisterActionsRoutes()
+	srv.RegisterLeftMenuRoutes()
 	srv.RegisterImageRoutes()
+	srv.RegisterProgramsRoutes()
+	srv.RegisterMilestonesRoutes()
 }
 
 func NewServer(isTesting bool) *Server {
@@ -73,9 +76,9 @@ func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
 func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testClaims := &Claims{
-			UserID:   1,
-			Username: "SuperAdmin",
-			Role:     "admin",
+			UserID:        1,
+			PasswordReset: false,
+			Role:          "admin",
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		h.ServeHTTP(w, r.WithContext(ctx))
@@ -85,9 +88,9 @@ func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 func (srv *Server) TestAsUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testClaims := &Claims{
-			UserID:   2,
-			Username: "testuser",
-			Role:     "student",
+			UserID:        2,
+			Role:          "student",
+			PasswordReset: false,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		h.ServeHTTP(w, r.WithContext(ctx))
@@ -116,6 +119,12 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if resp, ok := data.(string); ok {
+		_, err := w.Write([]byte(resp))
+		return err
+	}
+
 	return json.NewEncoder(w).Encode(data)
 }
 

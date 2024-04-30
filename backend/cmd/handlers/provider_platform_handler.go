@@ -8,14 +8,14 @@ import (
 )
 
 func (srv *Server) RegisterProviderPlatformRoutes() {
-	srv.Mux.Handle("GET /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.IndexProviders)))
-	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.ShowProvider)))
-	srv.Mux.Handle("POST /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.CreateProvider)))
-	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.UpdateProvider)))
-	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.DeleteProvider)))
+	srv.Mux.Handle("GET /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleIndexProviders)))
+	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleShowProvider)))
+	srv.Mux.Handle("POST /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleCreateProvider)))
+	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleUpdateProvider)))
+	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleDeleteProvider)))
 }
 
-func (srv *Server) IndexProviders(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) {
 	srv.LogInfo("Handling provider index request")
 	page, perPage := srv.GetPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
@@ -34,7 +34,7 @@ func (srv *Server) IndexProviders(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) ShowProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("GET Provider handler Error: " + err.Error())
@@ -46,28 +46,35 @@ func (srv *Server) ShowProvider(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, platform); err != nil {
+
+	response := models.Resource[models.ProviderPlatform]{
+		Data: make([]models.ProviderPlatform, 0),
+	}
+	response.Data = append(response.Data, *platform)
+	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (srv *Server) CreateProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) {
 	var platform models.ProviderPlatform
 	err := json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
 		srv.LogError("Error decoding request body: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-	if err = srv.Db.CreateProviderPlatform(platform); err != nil {
+	newProv, err := srv.Db.CreateProviderPlatform(platform)
+	if err != nil {
 		srv.LogError("Error creating provider platform: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, platform); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = srv.WriteResponse(w, http.StatusOK, newProv); err != nil {
+		srv.LogError("Error writing response: " + err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }
 
-func (srv *Server) UpdateProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("PATCH Provider handler Error:" + err.Error())
@@ -79,16 +86,21 @@ func (srv *Server) UpdateProvider(w http.ResponseWriter, r *http.Request) {
 		srv.LogError("Error decoding request body: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-	if err = srv.Db.UpdateProviderPlatform(platform, id); err != nil {
+	updated, err := srv.Db.UpdateProviderPlatform(platform, id)
+	if err != nil {
 		srv.LogError("Error updating provider platform: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, platform); err != nil {
+	response := models.Resource[models.ProviderPlatform]{
+		Data: make([]models.ProviderPlatform, 0),
+	}
+	response.Data = append(response.Data, *updated)
+	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func (srv *Server) DeleteProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("DELETE Provider handler Error: " + err.Error())

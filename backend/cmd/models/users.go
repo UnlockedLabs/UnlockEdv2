@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/base64"
 	"log"
 	"math/rand"
 	"time"
@@ -23,7 +22,7 @@ type User struct {
 	NameFirst      string                `gorm:"size:255;not null" json:"name_first"`
 	Email          string                `gorm:"size:255;not null;unique" json:"email"`
 	Password       string                `gorm:"size:255;not null" json:"-"`
-	PasswordReset  bool                  `gorm:"default:false" json:"password_reset"`
+	PasswordReset  bool                  `gorm:"default:true" json:"password_reset"`
 	NameLast       string                `gorm:"size:255;not null" json:"name_last"`
 	Role           UserRole              `gorm:"size:255;default student" json:"role"`
 	CreatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
@@ -43,7 +42,6 @@ func (user *User) CreateTempPassword() string {
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
-	user.Password = base64.URLEncoding.EncodeToString(b)
 	return string(b)
 }
 

@@ -57,7 +57,7 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (srv *Server) ImportContent(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) ImportPrograms(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
@@ -74,7 +74,7 @@ func (srv *Server) ImportContent(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	content, err := service.GetContent()
+	content, err := service.GetPrograms()
 	if err != nil {
 		srv.LogError("Error getting provider service GetContent():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -84,7 +84,7 @@ func (srv *Server) ImportContent(w http.ResponseWriter, r *http.Request) {
 		if item.Name == "" && item.Description == "" {
 			continue
 		}
-		_, err := srv.Db.CreateContent(&item)
+		_, err := srv.Db.CreateProgram(&item)
 		if err != nil {
 			srv.LogError("Error creating content:" + err.Error())
 			continue

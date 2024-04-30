@@ -82,6 +82,11 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type NewUserResponse struct {
+	TempPassword string      `json:"temp_password"`
+	User         models.User `json:"user"`
+}
+
 /**
 * POST: /api/users
 **/
@@ -98,8 +103,17 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, newUser); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	srv.LogInfo("New user created, temp password: " + user.Password)
+	if newUser == nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating user")
+	} else {
+		response := NewUserResponse{
+			User:         *newUser,
+			TempPassword: newUser.Password,
+		}
+		if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
@@ -133,8 +147,14 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	user.ID = id
-	updatedUser, err := srv.Db.UpdateUser(user)
+	toUpdate, err := srv.Db.GetUserByID(id)
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
+		srv.LogError("Error getting user by ID:" + err.Error())
+	}
+	models.UpdateStruct(&toUpdate, &user)
+
+	updatedUser, err := srv.Db.UpdateUser(toUpdate)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
