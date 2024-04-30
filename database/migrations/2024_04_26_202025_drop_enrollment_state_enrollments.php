@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->enum('enrollment_state', EnrollmentState::toArray());
+            $table->enum('enrollment_state', EnrollmentState::toArray())->nullable();
         });
     }
 };
