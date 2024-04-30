@@ -111,16 +111,13 @@ type KolibriContent struct {
 	LastPublished      string      `json:"last_published"`
 }
 
-func (kc *KolibriContent) IntoCourse() *UnlockEdImportContent {
-	return &UnlockEdImportContent{
-		ExternalContentID: kc.ID,
-		CourseCode:        kc.Root,
-		Name:              kc.Name,
-		Description:       kc.Description,
-		ImgURL:            kc.Thumbnail,
-		IsOpenContent:     kc.Public,
-		Subject:           kc.Root,
-		IsOpenEnrollment:  kc.Available,
+func (kc *KolibriContent) IntoCourse() *UnlockEdImportProgram {
+	return &UnlockEdImportProgram{
+		ExternalID:   kc.ID,
+		Name:         kc.Name,
+		Description:  kc.Description,
+		ThumbnailURL: kc.Thumbnail,
+		IsPublic:     kc.Public,
 	}
 }
 
@@ -191,19 +188,13 @@ type UnlockEdImportUser struct {
 	ExternalUserID   string `json:"external_user_id"`
 	ExternalUsername string `json:"external_username"`
 }
-type UnlockEdImportContent struct {
+type UnlockEdImportProgram struct {
 	ProviderPlatformID int    `json:"provider_platform_id"`
-	ExternalContentID  string `json:"external_content_id"`
-	ProgramID          string `json:"program_id"`
 	Name               string `json:"name"`
 	Description        string `json:"description"`
-	CourseCode         string `json:"course_code"`
-	ImgURL             string `json:"img_url"`
-	IsGraded           bool   `json:"is_graded"`
-	IsOpenEnrollment   bool   `json:"is_open_enrollment"`
-	IsOpenContent      bool   `json:"is_open_content"`
-	HasAssessments     bool   `json:"has_assessments"`
-	Subject            string `json:"subject"`
+	ExternalID         string `json:"external_id"`
+	ThumbnailURL       string `json:"thumbnail_url"`
+	IsPublic           bool   `json:"is_public"`
 }
 
 type UnlockEdEnrollment struct {

@@ -41,8 +41,8 @@ func (sh *ServiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/api/users":
 		sh.handleUsers(w, r, service)
 		return
-	case "/api/content":
-		sh.handleContent(w, r, service)
+	case "/api/programs":
+		sh.handlePrograms(w, r, service)
 		return
 	default:
 		http.NotFound(w, r)
@@ -149,8 +149,8 @@ func (sh *ServiceHandler) handleAuthMiddleware(w http.ResponseWriter, r *http.Re
 * This handler will be responsible for importing courses from Providers
 * to the UnlockEd platform, mapping their Content objects to our Course object
  */
-func (sh *ServiceHandler) handleContent(w http.ResponseWriter, r *http.Request, service ProviderServiceInterface) {
-	courses, err := service.GetContent()
+func (sh *ServiceHandler) handlePrograms(w http.ResponseWriter, r *http.Request, service ProviderServiceInterface) {
+	courses, err := service.GetPrograms()
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Failed to retrieve courses", http.StatusBadRequest)

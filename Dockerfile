@@ -6,6 +6,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o backend Go-Protot
 
 FROM alpine:latest
 WORKDIR /
+RUN apk add --no-cache netcat-openbsd
 COPY --from=builder /app/backend .
 RUN mkdir frontend
 RUN mkdir frontend/public

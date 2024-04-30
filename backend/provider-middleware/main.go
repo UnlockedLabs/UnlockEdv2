@@ -15,7 +15,7 @@ import (
 type ProviderServiceInterface interface {
 	GetID() int
 	GetUsers() ([]UnlockEdImportUser, error)
-	GetContent() ([]UnlockEdImportContent, error)
+	GetPrograms() ([]UnlockEdImportProgram, error)
 	// TODO: GetMilestones()
 	// TODO: GetOutcomes()
 }

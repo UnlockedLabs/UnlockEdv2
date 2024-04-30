@@ -59,7 +59,7 @@ If you would like to contribute, please have a look at our [contribution guideli
 -   Clone the repository
 -   Copy ‘.env.example’ to ‘.env’
 -   Run `MIGRATE_FRESH=true docker-compose up --build`
-(This command only needs to be ran the first time, subsequently you may omit the 
+(This command only needs to be ran the first time, subsequently you may omit the
 `MIGRATE_FRESH=true` flag)
 -   Change directory to the frontend directory
 -   Run `npm install`

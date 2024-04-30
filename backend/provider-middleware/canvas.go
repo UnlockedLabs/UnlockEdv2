@@ -93,7 +93,7 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 	return unlockedUsers, nil
 }
 
-func (srv *CanvasService) GetContent() ([]UnlockEdImportContent, error) {
+func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	url := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/courses?include[]=course_image&include[]=public_description"
 	resp, err := srv.SendRequest(url)
 	if err != nil {
@@ -106,19 +106,15 @@ func (srv *CanvasService) GetContent() ([]UnlockEdImportContent, error) {
 	if err != nil {
 		return nil, err
 	}
-	unlockedCourses := make([]UnlockEdImportContent, 0)
+	unlockedCourses := make([]UnlockEdImportProgram, 0)
 	for _, course := range courses {
-		unlockedCourse := UnlockEdImportContent{
+		unlockedCourse := UnlockEdImportProgram{
 			ProviderPlatformID: srv.ProviderPlatformID,
 			Name:               course["name"].(string),
-			ExternalContentID:  course["id"].(string),
+			ExternalID:         course["id"].(string),
 			Description:        course["description"].(string),
-			CourseCode:         course["course_code"].(string),
-			IsOpenEnrollment:   course["is_public"].(bool),
-			IsOpenContent:      false,
-			HasAssessments:     true,
-			Subject:            course["course_code"].(string),
-			ImgURL:             course["image_download_url"].(string),
+			IsPublic:           course["is_public"].(bool),
+			ThumbnailURL:       course["image_download_url"].(string),
 		}
 		unlockedCourses = append(unlockedCourses, unlockedCourse)
 	}
