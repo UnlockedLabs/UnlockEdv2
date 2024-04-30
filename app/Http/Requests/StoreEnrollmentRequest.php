@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\EnrollmentState;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreEnrollmentRequest extends FormRequest
 {
@@ -26,7 +28,7 @@ class StoreEnrollmentRequest extends FormRequest
         return [
             'user_id' => 'required|exists:users,id',
             'course_id' => 'required|exists:courses,id',
-            'enrollment_state' => 'nullable|in:active,inactive,completed,deleted',
+            'enrollment_state' => [Rule::enum(EnrollmentState::class)],
             'external_enrollment_id' => 'required|max:255',
             'external_start_at' => 'required|date',
             'external_end_at' => 'nullable|date|after_or_equal:provider_start_at',
