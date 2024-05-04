@@ -1,17 +1,31 @@
 import { useState, useEffect } from "react";
 import Brand from "../Components/Brand";
-import { useAuth } from "../AuthContext";
+import axios from "axios";
 
 export default function Welcome() {
   const [imgSrc, setImgSrc] = useState("unlockedv1Sm.webp");
-  const auth = useAuth();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const checkLoggedIn = async () => {
+    try {
+      const response = await axios.get("/api/auth");
+      if (response.data["data"] === null) {
+        console.log(response.data["data"]);
+        return
+      }
+      setIsLoggedIn(true);
+      return
+    } catch (error) {
+      return;
+    }
+  }
   useEffect(() => {
     const img = new Image();
     img.src = "unlockedv1.png";
     img.onload = () => {
       setImgSrc("unlockedv1.png");
     };
+    checkLoggedIn();
   }, []);
 
   return (
@@ -23,7 +37,7 @@ export default function Welcome() {
           </div>
           <div className="flex-none">
             <ul className="menu menu-horizontal px-1 text-primary">
-              {!auth ? (
+              {!isLoggedIn ? (
                 <>
                   <li>
                     <a href="login">Log in</a>

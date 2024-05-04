@@ -46,7 +46,7 @@ export default function Users() {
   const [pageQuery, setPageQuery] = useState(1);
   const [sortQuery, setSortQuery] = useState("asc");
   const { data, mutate, error, isLoading } = useSWR(
-    `/api/v1/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
+    `/api/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
   );
   const userData = data as PaginatedData<User>;
   const showToast = (message: string, state: ToastState) => {
@@ -73,7 +73,7 @@ export default function Users() {
   }
 
   const deleteUser = async () => {
-    const response = await axios("/api/v1/users/" + targetUser?.id, {
+    const response = await axios("/api/users/" + targetUser?.id, {
       method: "delete",
       headers: { ContentType: "application/json" },
     });
@@ -135,7 +135,7 @@ export default function Users() {
 
   return (
     <AuthenticatedLayout title="Users">
-      <PageNav user={auth!} path={["Settings", "Users"]} />
+      <PageNav user={auth.user!} path={["Settings", "Users"]} />
       <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
         <div className="flex justify-between">
           <input

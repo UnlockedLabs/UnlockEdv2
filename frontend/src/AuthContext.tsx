@@ -1,44 +1,63 @@
 import '@/bootstrap';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useEffect, useState, Dispatch, SetStateAction } from 'react';
+import { User } from './types';
+import axios from 'axios';
 
-const AuthContext = createContext(null);
-
-interface AuthProviderProps {
-  children: ReactNode;
+interface AuthContextType {
+  user: User | null;
+  setUser: Dispatch<SetStateAction<User | null>>;
 }
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
 
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data } = await window.axios.get(`/api/auth`);
-        setUser(data.data[0]);
+        const response = await axios.get(`/api/auth`);
+        setUser(response.data);
       } catch (error) {
-        navigate("/login");
         console.log('Authentication check failed', error);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
     fetchUser();
   }, []);
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  if (!user) {
+    window.location.href = '/login';
+    return null;
+  } else if (user.password_reset === true && window.location.pathname !== '/reset-password') {
+    window.location.href = '/reset-password';
+    return null;
+  }
   return (
-    <AuthContext.Provider value={user}>
+    <AuthContext.Provider value={{ user, setUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
 export const handleLogout = async () => {
   try {
-    await window.axios.post('/api/logout');
+    await axios.post('/api/logout');
     window.location.href = '/login';
   } catch (error) {
     console.log('Logout failed', error);
   }
-}
-
-export const useAuth = () => useContext(AuthContext);
+};

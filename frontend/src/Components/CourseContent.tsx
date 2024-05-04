@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { AuthProvider } from "../AuthContext";
 
 export default function CourseContent() {
   const {
@@ -22,33 +23,35 @@ export default function CourseContent() {
       url = "https://" + url;
     }
     return (
+      <AuthProvider>
       // temp solution for height, make sure they are all the same height without fixing it
-      <div className="h-[400px]">
-        <a href={url} target="_blank" rel="noopener noreferrer">
-          <div className="card card-compact bg-base-100 shadow-xl h-full">
-            <figure className="h-[60%] p-2">
-              <img
-                src={coverImage}
-                alt=""
-                className="object-contain"
-              />
-            </figure>
-            <div className="card-body">
-              <h2 className="text-slate-600">
-                {course.course_code}
-              </h2>
-              <h1 className="card-title">{course.course_name}</h1>
-              <p>
-                {truncateDescription(
-                  course.course_description
-                    ? course.course_description
-                    : "",
-                )}
-              </p>
+        <div className="h-[400px]">
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <div className="card card-compact bg-base-100 shadow-xl h-full">
+              <figure className="h-[60%] p-2">
+                <img
+                  src={coverImage}
+                  alt=""
+                  className="object-contain"
+                />
+              </figure>
+              <div className="card-body">
+                <h2 className="text-slate-600">
+                  {course.course_code}
+                </h2>
+                <h1 className="card-title">{course.course_name}</h1>
+                <p>
+                  {truncateDescription(
+                    course.course_description
+                      ? course.course_description
+                      : "",
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
-        </a>
-      </div>
+          </a>
+        </div>
+      </AuthProvider>
     );
   }
 

@@ -37,22 +37,26 @@ function CategoryItem({ name, links, rank }: Category) {
 
 export default function LeftMenu() {
   const { data, error, isLoading } = useSWR("/api/left-menu");
-
   const categoryItems = useMemo(() => {
     if (error) return <div>failed to load</div>;
     if (isLoading) return <div>loading...</div>;
-    return data.data.map((category: Category) => {
-      return (
-        <CategoryItem
-          key={category.id}
-          id={category.id}
-          name={category.name}
-          links={category.links}
-          rank={category.rank}
-        />
-      );
-    });
-  }, [data]);
+
+    if (data) {
+      return data.data.map((category: Category) => {
+        return (
+          <CategoryItem
+            key={category.id}
+            id={category.id}
+            name={category.name}
+            links={category.links}
+            rank={category.rank}
+          />
+        );
+      });
+    } else {
+      return null;
+    }
+  }, [data, isLoading, error]);
 
   return (
     <ul className="menu bg-base-100 w-72">

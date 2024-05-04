@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -61,8 +62,8 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
-			if claims.PasswordReset && r.URL.Path != "/api/reset-password" {
-				http.Redirect(w, r.WithContext(ctx), os.Getenv("FRONTEND_URL")+"/reset-password", http.StatusTemporaryRedirect)
+			if claims.PasswordReset && !isAuthRoute(r) {
+				http.Redirect(w, r.WithContext(ctx), os.Getenv("FRONTEND_URL")+"/reset-password", http.StatusOK)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -71,6 +72,11 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		}
 	})
+}
+
+func isAuthRoute(r *http.Request) bool {
+	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth"}
+	return slices.Contains(paths, r.URL.Path)
 }
 
 func (srv *Server) UserIsAdmin(r *http.Request) bool {

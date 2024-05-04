@@ -80,8 +80,9 @@ func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
 
 func CorsMiddleware(h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", os.Getenv("FRONTEND_URL"))
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -137,8 +138,6 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	w.WriteHeader(status)
 	if resp, ok := data.(string); ok {
 		_, err := w.Write([]byte(resp))

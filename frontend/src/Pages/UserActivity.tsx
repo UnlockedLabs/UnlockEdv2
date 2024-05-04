@@ -18,14 +18,14 @@ export default function UserActivity() {
   const [sortQuery, setSortQuery] = useState("desc");
 
   const { data, error, isLoading } = useSWR(
-    `/api/v1/user-activities?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
+    `/api/users/activity?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
   );
 
   const userActivityData = data as PaginatedData<Activity>;
 
   return (
     <AuthenticatedLayout title="User Activity">
-      <PageNav user={auth!} path={["Settings", "User Activity"]} />
+      <PageNav user={auth.user!} path={["Settings", "User Activity"]} />
       <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
         <div className="flex justify-between">
           <input
@@ -62,7 +62,7 @@ export default function UserActivity() {
             {!isLoading &&
               !error &&
               userActivityData.data.map(
-                (activityInstance: any) => {
+                (activityInstance) => {
                   const dateTime = new Date(
                     activityInstance.created_at,
                   );

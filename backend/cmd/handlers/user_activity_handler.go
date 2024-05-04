@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Go-Prototype/backend/cmd/database"
 	"Go-Prototype/backend/cmd/models"
 	"log"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 )
 
 func (srv *Server) registerUserActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/activity", srv.applyMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
+	srv.Mux.Handle("GET /api/users/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
 	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.handleGetUserActivityByID)))
 }
 
@@ -71,12 +72,12 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 	page, perPage := srv.GetPaginationInfo(r)
 	total, activites, err := srv.Db.GetAllUserActivity(page, perPage)
 	if err != nil {
-		srv.Logger.Debug("Error fetching user activities: %v\n", err)
+		srv.Logger.Debug("Error fetching user activities: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	pagination := models.NewPaginationInfo(page, perPage, total)
-	response := models.PaginatedResource[models.UserActivity]{
+	response := models.PaginatedResource[database.UserAcitivityJoin]{
 		Meta: pagination,
 		Data: activites,
 	}
@@ -86,6 +87,10 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 }
 
 func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Request) {
+	if srv.UserIsAdmin(r) || srv.UserIsOwner(r) {
+		srv.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid ID")
