@@ -59,15 +59,15 @@ func NewServer(isTesting bool) *Server {
 }
 
 func (srv *Server) LogInfo(message string) {
-	srv.Logger.Info("%v", message)
+	srv.Logger.Info("INFO: ", "%v", message)
 }
 
 func (srv *Server) LogError(message string) {
-	srv.Logger.Error("%v", message)
+	srv.Logger.Error("ERROR: ", "%v", message)
 }
 
 func (srv *Server) LogDebug(message string) {
-	srv.Logger.Debug("%v", message)
+	srv.Logger.Debug("DEBUG: ", "%v", message)
 }
 
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {

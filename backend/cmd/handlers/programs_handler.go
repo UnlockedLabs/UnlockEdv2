@@ -30,7 +30,6 @@ func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: page,
 		Total:       total,
 	}
-	srv.Logger.Debug("IndexPrograms: %v", programs)
 	response := models.PaginatedResource[models.Program]{
 		Meta: paginationData,
 		Data: programs,

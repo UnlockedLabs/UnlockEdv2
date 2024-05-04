@@ -73,13 +73,13 @@ func TestHandleShowUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		user, err := server.Db.GetUserByID(1)
-		if err != nil {
+		user := server.Db.GetUserByID(1)
+		if user == nil {
 			t.Fatal(err)
 		}
 		received := rr.Body.String()
 		resource := models.Resource[models.User]{}
-		resource.Data = append(resource.Data, user)
+		resource.Data = append(resource.Data, *user)
 		userStr, err := json.Marshal(resource)
 		if err != nil {
 			t.Errorf("failed to marshal user")
@@ -114,7 +114,7 @@ func TestCreateUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusCreated)
 		}
-		user, err := server.Db.GetUserByUsername("test")
+		user := server.Db.GetUserByUsername("test")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -166,7 +166,7 @@ func TestUpdateUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		user, err := server.Db.GetUserByID(1)
+		user := server.Db.GetUserByID(1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -175,7 +175,7 @@ func TestUpdateUser(t *testing.T) {
 			t.Errorf("failed to hash password")
 		}
 		resource := models.Resource[models.User]{}
-		resource.Data = append(resource.Data, user)
+		resource.Data = append(resource.Data, *user)
 		userStr, err := json.Marshal(&resource)
 		if err != nil {
 			t.Errorf("failed to marshal user")

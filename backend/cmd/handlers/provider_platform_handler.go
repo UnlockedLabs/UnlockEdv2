@@ -8,14 +8,14 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() {
-	srv.Mux.Handle("GET /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.handleIndexProviders)))
-	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleShowProvider)))
-	srv.Mux.Handle("POST /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateProvider)))
-	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleUpdateProvider)))
-	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleDeleteProvider)))
+	srv.Mux.Handle("GET /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.HandleIndexProviders)))
+	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowProvider)))
+	srv.Mux.Handle("POST /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.HandleCreateProvider)))
+	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleUpdateProvider)))
+	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleDeleteProvider)))
 }
 
-func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) {
 	srv.LogInfo("Handling provider index request")
 	page, perPage := srv.GetPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
@@ -34,7 +34,7 @@ func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) handleShowProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("GET Provider handler Error: " + err.Error())
@@ -56,7 +56,7 @@ func (srv *Server) handleShowProvider(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) {
 	var platform models.ProviderPlatform
 	err := json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
@@ -75,7 +75,7 @@ func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("PATCH Provider handler Error:" + err.Error())
@@ -102,7 +102,7 @@ func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) handleDeleteProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("DELETE Provider handler Error: " + err.Error())

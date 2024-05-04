@@ -57,7 +57,7 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 	if err := db.Conn.First(&existingPlatform, id).Error; err != nil {
 		return nil, err
 	}
-	models.UpdateStruct(&existingPlatform, &platform)
+	models.UpdateStruct(&existingPlatform, platform)
 	if platform.AccessKey != "" {
 		key, err := platform.EncryptAccessKey()
 		if err != nil {

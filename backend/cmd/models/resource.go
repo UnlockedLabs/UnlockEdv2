@@ -35,6 +35,14 @@ func UpdateStruct(dst, src interface{}) {
 	srcVal := reflect.ValueOf(src).Elem()
 	dstVal := reflect.ValueOf(dst).Elem()
 
+	if srcVal.Kind() == reflect.Ptr {
+		srcVal = srcVal.Elem()
+	}
+
+	if dstVal.Kind() == reflect.Ptr {
+		dstVal = dstVal.Elem()
+	}
+
 	for i := 0; i < srcVal.NumField(); i++ {
 		srcField := srcVal.Field(i)
 		dstField := dstVal.Field(i)
