@@ -4,6 +4,7 @@ import (
 	"Go-Prototype/backend/cmd/models"
 	"errors"
 	"log"
+	"log/slog"
 )
 
 func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, error) {
@@ -27,14 +28,14 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 	return count, users, nil
 }
 
-func (db *DB) GetUserByID(id int) (models.User, error) {
+func (db *DB) GetUserByID(id uint) *models.User {
 	var user models.User
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset").
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
-		return models.User{}, err
+		return nil
 	}
-	return user, nil
+	return &user
 }
 
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
@@ -72,18 +73,21 @@ func (db *DB) DeleteUser(id int) error {
 	return nil
 }
 
-func (db *DB) GetUserByUsername(username string) (*models.User, error) {
+func (db *DB) GetUserByUsername(username string) *models.User {
 	var user models.User
 	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
-		return nil, err
+		return nil
 	}
-	return &user, nil
+	return &user
 }
 
-func (db *DB) UpdateUser(user models.User) (models.User, error) {
+func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
+	if user.ID == 0 {
+		return nil, errors.New("invalid user ID")
+	}
 	err := db.Conn.Save(&user).Error
 	if err != nil {
-		return models.User{}, err
+		return nil, err
 	}
 	return user, nil
 }
@@ -93,7 +97,7 @@ func (db *DB) AuthorizeUser(username, password string) (*models.User, error) {
 	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
-	log.Printf("AuthorizeUser Password: %s", password)
+	slog.Debug("Checking AuthorizeUser Password: %s  _  %s", password, user.Password)
 	if success := user.CheckPasswordHash(password); !success {
 		log.Printf("Password authentication failed for: %s", password)
 		return nil, errors.New("invalid password")
@@ -101,10 +105,10 @@ func (db *DB) AuthorizeUser(username, password string) (*models.User, error) {
 	return &user, nil
 }
 
-func (db *DB) ResetUserPassword(id int, password string) error {
-	user, err := db.GetUserByID(id)
-	if err != nil {
-		return err
+func (db *DB) ResetUserPassword(id uint, password string) error {
+	user := db.GetUserByID(id)
+	if user == nil {
+		return errors.New("user not found")
 	}
 	user.Password = password
 	if err := user.HashPassword(); err != nil {

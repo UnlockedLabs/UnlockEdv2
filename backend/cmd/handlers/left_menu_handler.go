@@ -6,15 +6,15 @@ import (
 	"net/http"
 )
 
-func (srv *Server) RegisterLeftMenuRoutes() {
-	srv.Mux.Handle("GET /api/left-menu", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleGetLeftMenu)))
-	srv.Mux.Handle("PUT /api/left-menu", srv.ApplyMiddleware(http.HandlerFunc(srv.HandlePostLeftMenuLinks)))
+func (srv *Server) registerLeftMenuRoutes() {
+	srv.Mux.Handle("GET /api/left-menu", srv.applyMiddleware(http.HandlerFunc(srv.handleGetLeftMenu)))
+	srv.Mux.Handle("PUT /api/left-menu", srv.applyMiddleware(http.HandlerFunc(srv.handlePostLeftMenuLinks)))
 }
 
-func (srv *Server) HandleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 	links, err := srv.Db.GetLeftMenuLinks()
 	if err != nil {
-		srv.Logger.Printf("GetLeftMenu Database Error: %v", err)
+		srv.Logger.Debug("GetLeftMenu Database Error: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -28,7 +28,7 @@ func (srv *Server) HandleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) HandlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request) {
 	var links []models.LeftMenuLink
 	err := json.NewDecoder(r.Body).Decode(&links)
 	if err != nil {

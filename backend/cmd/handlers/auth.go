@@ -28,16 +28,17 @@ type ResetPasswordRequest struct {
 }
 
 type Claims struct {
-	UserID        int    `json:"user_id"`
+	UserID        uint   `json:"user_id"`
 	PasswordReset bool   `json:"password_reset"`
 	Role          string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func (srv *Server) RegisterAuthRoutes() {
-	srv.Mux.Handle("/api/login", http.HandlerFunc(srv.HandleLogin))
-	srv.Mux.Handle("/api/logout", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleLogout)))
-	srv.Mux.Handle("/api/reset-password", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleResetPassword)))
+func (srv *Server) registerAuthRoutes() {
+	srv.Mux.Handle("POST /api/login", http.HandlerFunc(srv.handleLogin))
+	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(http.HandlerFunc(srv.handleLogout)))
+	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(http.HandlerFunc(srv.handleResetPassword)))
+	srv.Mux.Handle("GET /api/auth", srv.applyMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
 }
 
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
@@ -61,7 +62,8 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 			if claims.PasswordReset && r.URL.Path != "/api/reset-password" {
-				http.ServeFile(w, r.WithContext(ctx), "frontend/public/password_reset.html")
+				http.Redirect(w, r.WithContext(ctx), os.Getenv("FRONTEND_URL")+"/reset-password", http.StatusTemporaryRedirect)
+				return
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
@@ -82,10 +84,10 @@ func (srv *Server) UserIsOwner(r *http.Request) bool {
 		return false
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.UserID == id
+	return claims.UserID == uint(id)
 }
 
-func (srv *Server) AdminMiddleware(next http.Handler) http.Handler {
+func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := r.Context().Value(ClaimsKey).(*Claims)
 		if claims.Role != "admin" {
@@ -96,7 +98,7 @@ func (srv *Server) AdminMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
 	defer r.Body.Close()
@@ -126,10 +128,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,
 			Path:     "/",
 		})
-		if user.PasswordReset {
-			http.ServeFile(w, r.WithContext(r.Context()), "frontend/public/password_reset.html")
-		}
-		_, err = w.Write([]byte("Logged in successfully!"))
+		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -138,7 +137,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",
@@ -150,7 +149,22 @@ func (s *Server) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (srv *Server) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
+	srv.LogInfo("Checking auth handler")
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	user := srv.Db.GetUserByID(claims.UserID)
+	if user == nil {
+		srv.LogError("Error getting user by ID")
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		srv.LogError("Error writing response: " + err.Error())
+	}
+}
+
+func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	srv.LogInfo("Handling password reset request")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	password, confirm := "", ""
@@ -169,7 +183,7 @@ func (srv *Server) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 		confirm = form.Confirm
 	}
 	defer r.Body.Close()
-	if password != confirm || !ValidatePassword(password) {
+	if password != confirm || !validatePassword(password) {
 		http.ServeFile(w, r.WithContext(r.Context()), "frontend/public/error.html")
 		srv.LogError("Password validation failed")
 		return
@@ -201,7 +215,7 @@ func (srv *Server) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ValidatePassword(pass string) bool {
+func validatePassword(pass string) bool {
 	if len(pass) < 8 || !strings.ContainsAny(pass, "12345678910") {
 		return false
 	}

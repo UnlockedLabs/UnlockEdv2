@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"log/slog"
 	"math"
 	"net/http"
 	"os"
@@ -13,7 +14,7 @@ import (
 
 type Server struct {
 	Db     *db.DB
-	Logger *log.Logger
+	Logger *slog.Logger
 	Mux    *http.ServeMux
 }
 
@@ -21,22 +22,22 @@ type Server struct {
 * Register all API routes here
 **/
 func (srv *Server) RegisterRoutes() {
-	srv.RegisterAuthRoutes()
-	srv.RegisterUserRoutes()
-	srv.RegisterProviderPlatformRoutes()
-	srv.RegisterUserActivityRoutes()
-	srv.RegisterProviderMappingRoutes()
-	srv.RegisterActionsRoutes()
-	srv.RegisterLeftMenuRoutes()
-	srv.RegisterImageRoutes()
-	srv.RegisterProgramsRoutes()
-	srv.RegisterMilestonesRoutes()
+	srv.registerAuthRoutes()
+	srv.registerUserRoutes()
+	srv.registerProviderPlatformRoutes()
+	srv.registerUserActivityRoutes()
+	srv.registerProviderMappingRoutes()
+	srv.registerActionsRoutes()
+	srv.registerLeftMenuRoutes()
+	srv.registerImageRoutes()
+	srv.registerProgramsRoutes()
+	srv.registerMilestonesRoutes()
 }
 
 func NewServer(isTesting bool) *Server {
 	logfile := os.Stdout
 	if isTesting {
-		return &Server{Db: db.InitDB(true), Logger: log.New(logfile, "Server: ", log.LstdFlags), Mux: http.NewServeMux()}
+		return &Server{Db: db.InitDB(true), Logger: slog.Default(), Mux: http.NewServeMux()}
 	} else {
 		if os.Getenv("APP_ENV") == "prod" {
 			logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -49,28 +50,45 @@ func NewServer(isTesting bool) *Server {
 			}
 			defer logfile.Close()
 		}
-		return &Server{Db: db.InitDB(false), Logger: log.New(logfile, "LOG_: ", log.Ldate|log.Ltime|log.Lshortfile), Mux: http.NewServeMux()}
+		db := db.InitDB(false)
+		mux := http.NewServeMux()
+		server := Server{Db: db, Logger: slog.New(slog.NewTextHandler(logfile, nil)), Mux: mux}
+		server.RegisterRoutes()
+		return &server
 	}
 }
 
 func (srv *Server) LogInfo(message string) {
-	srv.Logger.Printf("INFO: %v", message)
+	srv.Logger.Info("%v", message)
 }
 
 func (srv *Server) LogError(message string) {
-	srv.Logger.Printf("ERROR: %v", message)
+	srv.Logger.Error("%v", message)
 }
 
 func (srv *Server) LogDebug(message string) {
-	srv.Logger.Printf("DEBUG: %v", message)
+	srv.Logger.Debug("%v", message)
 }
 
-func (srv *Server) ApplyMiddleware(h http.Handler) http.Handler {
+func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
 	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
 }
 
-func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
-	return srv.ApplyMiddleware(srv.AdminMiddleware(h))
+func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
+	return srv.applyMiddleware(srv.adminMiddleware(h))
+}
+
+func CorsMiddleware(h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		h.ServeHTTP(w, r)
+	}
 }
 
 func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
@@ -119,17 +137,18 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	w.WriteHeader(status)
 	if resp, ok := data.(string); ok {
 		_, err := w.Write([]byte(resp))
 		return err
 	}
-
 	return json.NewEncoder(w).Encode(data)
 }
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
-	srv.Logger.Printf("Error: %v", message)
+	srv.LogError(message)
 	http.Error(w, message, status)
 }
 

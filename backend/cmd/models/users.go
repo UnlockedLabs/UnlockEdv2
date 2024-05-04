@@ -3,7 +3,6 @@ package models
 import (
 	"log"
 	"math/rand"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -17,17 +16,16 @@ const (
 )
 
 type User struct {
-	ID             int                   `gorm:"primaryKey" json:"id"`
-	Username       string                `gorm:"size:255;not null;unique" json:"username"`
-	NameFirst      string                `gorm:"size:255;not null" json:"name_first"`
-	Email          string                `gorm:"size:255;not null;unique" json:"email"`
-	Password       string                `gorm:"size:255;not null" json:"-"`
-	PasswordReset  bool                  `gorm:"default:true" json:"password_reset"`
-	NameLast       string                `gorm:"size:255;not null" json:"name_last"`
-	Role           UserRole              `gorm:"size:255;default student" json:"role"`
-	CreatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
-	UpdatedAt      time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
-	DeletedAt      gorm.DeletedAt        `gorm:"index" json:"-"`
+	gorm.Model
+	Username      string   `gorm:"size:255;not null;unique" json:"username"`
+	NameFirst     string   `gorm:"size:255;not null" json:"name_first"`
+	Email         string   `gorm:"size:255;not null;unique" json:"email"`
+	Password      string   `gorm:"size:255;not null" json:"-"`
+	PasswordReset bool     `gorm:"default:true" json:"password_reset"`
+	NameLast      string   `gorm:"size:255;not null" json:"name_last"`
+	Role          UserRole `gorm:"size:255;default student" json:"role"`
+
+	/* foreign key */
 	ProviderLogins []ProviderUserMapping `gorm:"foreignKey:UserID" json:"-"`
 }
 
@@ -65,7 +63,5 @@ func (user *User) HashPassword() error {
 **/
 func (user *User) CheckPasswordHash(password string) bool {
 	log.Printf("Checking password for user %s", user.Username)
-	log.Printf("Hashed Password: %s", user.Password)
-	log.Printf("Password: %s", password)
 	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil
 }

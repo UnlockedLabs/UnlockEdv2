@@ -7,15 +7,15 @@ import (
 	"strconv"
 )
 
-func (srv *Server) RegisterProviderPlatformRoutes() {
-	srv.Mux.Handle("GET /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleIndexProviders)))
-	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleShowProvider)))
-	srv.Mux.Handle("POST /api/provider-platforms", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleCreateProvider)))
-	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleUpdateProvider)))
-	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleDeleteProvider)))
+func (srv *Server) registerProviderPlatformRoutes() {
+	srv.Mux.Handle("GET /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.handleIndexProviders)))
+	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleShowProvider)))
+	srv.Mux.Handle("POST /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateProvider)))
+	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleUpdateProvider)))
+	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleDeleteProvider)))
 }
 
-func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request) {
 	srv.LogInfo("Handling provider index request")
 	page, perPage := srv.GetPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
@@ -34,7 +34,7 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleShowProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("GET Provider handler Error: " + err.Error())
@@ -56,7 +56,7 @@ func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request) {
 	var platform models.ProviderPlatform
 	err := json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
@@ -64,7 +64,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	defer r.Body.Close()
-	newProv, err := srv.Db.CreateProviderPlatform(platform)
+	newProv, err := srv.Db.CreateProviderPlatform(&platform)
 	if err != nil {
 		srv.LogError("Error creating provider platform: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -75,7 +75,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("PATCH Provider handler Error:" + err.Error())
@@ -88,7 +88,7 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	defer r.Body.Close()
-	updated, err := srv.Db.UpdateProviderPlatform(platform, id)
+	updated, err := srv.Db.UpdateProviderPlatform(&platform, uint(id))
 	if err != nil {
 		srv.LogError("Error updating provider platform: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -102,7 +102,7 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("DELETE Provider handler Error: " + err.Error())

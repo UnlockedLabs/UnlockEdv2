@@ -7,18 +7,18 @@ import (
 	"strconv"
 )
 
-func (srv *Server) RegisterUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleIndexUsers)))
-	srv.Mux.Handle("GET /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleShowUser)))
-	srv.Mux.Handle("POST /api/users", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleCreateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleDeleteUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleUpdateUser)))
+func (srv *Server) registerUserRoutes() {
+	srv.Mux.Handle("GET /api/users", srv.applyMiddleware(http.HandlerFunc(srv.handleIndexUsers)))
+	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleShowUser)))
+	srv.Mux.Handle("POST /api/users", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateUser)))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleDeleteUser)))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleUpdateUser)))
 }
 
 /**
 * GET: /api/users
 **/
-func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	if !srv.UserIsAdmin(r) {
 		srv.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -26,7 +26,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage)
 	if err != nil {
-		srv.Logger.Printf("IndexUsers Database Error: %v", err)
+		srv.Logger.Error("IndexUsers Database Error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -37,12 +37,12 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: page,
 		Total:       total,
 	}
-	srv.Logger.Printf("IndexUsers: %v", users)
+	srv.Logger.Info("IndexUsers: %v", users)
 	response := models.PaginatedResource[models.User]{
 		Data: users,
 		Meta: paginationData,
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -51,10 +51,10 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 /**
 * GET: /api/users/{id}
 **/
-func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Printf("GET User handler Error: %v", err)
+		srv.Logger.Error("GET User handler Error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	if !srv.UserIsAdmin(r) && !srv.UserIsOwner(r) {
@@ -62,13 +62,13 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := models.Resource[models.User]{}
-	user, err := srv.Db.GetUserByID(id)
-	if err != nil {
-		srv.Logger.Printf("Error: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	user := srv.Db.GetUserByID(uint(id))
+	if user == nil {
+		srv.Logger.Info("Error: %v", err)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	response.Data = append(response.Data, user)
+	response.Data = append(response.Data, *user)
 	bytes, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,11 +90,11 @@ type NewUserResponse struct {
 /**
 * POST: /api/users
 **/
-func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	user := models.User{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		srv.Logger.Printf("POST User handler Error: %v", err)
+		srv.Logger.Info("POST User handler Error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -121,10 +121,10 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 /**
 * DELETE: /api/users/{id}
  */
-func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Printf("DELETE User handler Error: %v", err)
+		srv.Logger.Error("DELETE User handler Error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	if err = srv.Db.DeleteUser(id); err != nil {
@@ -136,10 +136,10 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 /**
 * PATCH: /api/users/{id}
 **/
-func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Printf("UPDATE User handler Error: %v", err)
+		srv.Logger.Error("UPDATE User handler Error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	user := models.User{}
@@ -149,8 +149,8 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	toUpdate, err := srv.Db.GetUserByID(id)
-	if err != nil {
+	toUpdate := srv.Db.GetUserByID(uint(id))
+	if toUpdate == nil {
 		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
 		srv.LogError("Error getting user by ID:" + err.Error())
 	}
@@ -162,7 +162,7 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := models.Resource[models.User]{}
-	response.Data = append(response.Data, updatedUser)
+	response.Data = append(response.Data, *updatedUser)
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

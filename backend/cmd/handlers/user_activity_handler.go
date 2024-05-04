@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-func (srv *Server) RegisterUserActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/activity", srv.ApplyMiddleware(http.HandlerFunc(srv.GetAllUserActivities)))
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.ApplyMiddleware(http.HandlerFunc(srv.GetUserActivityByID)))
+func (srv *Server) registerUserActivityRoutes() {
+	srv.Mux.Handle("GET /api/users/activity", srv.applyMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.handleGetUserActivityByID)))
 }
 
 func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
@@ -67,11 +67,11 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (srv *Server) GetAllUserActivities(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, activites, err := srv.Db.GetAllUserActivity(page, perPage)
 	if err != nil {
-		srv.Logger.Printf("Error fetching user activities: %v\n", err)
+		srv.Logger.Debug("Error fetching user activities: %v\n", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -85,7 +85,7 @@ func (srv *Server) GetAllUserActivities(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (srv *Server) GetUserActivityByID(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid ID")
@@ -94,7 +94,7 @@ func (srv *Server) GetUserActivityByID(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, activity, err := srv.Db.GetActivityForUser(id, page, perPage)
 	if err != nil {
-		srv.Logger.Printf("Error fetching user activity: %v\n", err)
+		srv.Logger.Debug("Error fetching user activity: %v\n", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -104,7 +104,7 @@ func (srv *Server) GetUserActivityByID(w http.ResponseWriter, r *http.Request) {
 		Data: activity,
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.Logger.Printf("Error writing response: %v\n", err)
+		srv.Logger.Debug("Error writing response: %v\n", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }

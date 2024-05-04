@@ -16,9 +16,11 @@ if [[ "$1" == "up" ]]; then
 	if [[ "$2" == "--migrate" ]]; then
 		sleep 3
 		go run backend/main.go --migrate
+		go run backend/provider-services/main.go
 	elif [[ "$2" == "--migrate-fresh" ]]; then
 		sleep 3
 		go run backend/main.go --migrate-fresh
+		go run backend/provider-services/main.go
 	fi
 	go run backend/main.go
 	exit 0
@@ -26,12 +28,15 @@ fi
 
 if [[ "$1" == "--migrate" ]]; then
 	go run backend/main.go --migrate
+	go run backend/provider-services/main.go
 	exit 0
 fi
 
 if [[ "$1" == "--migrate-fresh" ]]; then
 	go run backend/main.go --migrate-fresh
+	go run backend/provider-services/main.go
 	exit 0
 fi
 go run backend/main.go --migrate
+go run backend/provider-services/main.go
 exit 0

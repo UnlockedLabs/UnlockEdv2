@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 )
 
@@ -15,13 +13,10 @@ const (
 )
 
 type Milestone struct {
-	ID          int            `gorm:"primaryKey" json:"id"`
-	ProgramID   int            `gorm:"not null" json:"program_id"`
-	Type        MilestoneType  `gorm:"size:255;not null" json:"type"`
-	IsCompleted bool           `gorm:"default:false" json:"is_completed"`
-	CreatedAt   time.Time      `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
-	UpdatedAt   time.Time      `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	gorm.Model
+	ProgramID   uint          `gorm:"not null" json:"program_id"`
+	Type        MilestoneType `gorm:"size:255;not null" json:"type"`
+	IsCompleted bool          `gorm:"default:false" json:"is_completed"`
 
 	Program Program `gorm:"foreignKey:ProgramID" json:"_"`
 }

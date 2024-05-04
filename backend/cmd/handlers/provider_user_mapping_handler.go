@@ -7,13 +7,13 @@ import (
 	"strconv"
 )
 
-func (srv *Server) RegisterProviderMappingRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/logins", srv.ApplyMiddleware(http.HandlerFunc(srv.GetMappingsForUser)))
-	srv.Mux.Handle("POST /api/users/{id}/logins", srv.ApplyMiddleware(http.HandlerFunc(srv.CreateProviderUserMapping)))
-	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.ApplyMiddleware(http.HandlerFunc(srv.DeleteProviderUserMapping)))
+func (srv *Server) registerProviderMappingRoutes() {
+	srv.Mux.Handle("GET /api/users/{id}/logins", srv.applyMiddleware(http.HandlerFunc(srv.handleGetMappingsForUser)))
+	srv.Mux.Handle("POST /api/users/{id}/logins", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateProviderUserMapping)))
+	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.applyMiddleware(http.HandlerFunc(srv.handleDeleteProviderUserMapping)))
 }
 
-func (srv *Server) GetMappingsForUser(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user id")
@@ -29,7 +29,7 @@ func (srv *Server) GetMappingsForUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) CreateProviderUserMapping(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *http.Request) {
 	var mapping models.ProviderUserMapping
 	err := json.NewDecoder(r.Body).Decode(&mapping)
 	defer r.Body.Close()
@@ -48,7 +48,7 @@ func (srv *Server) CreateProviderUserMapping(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (srv *Server) DeleteProviderUserMapping(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(r.PathValue("userId"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid mapping id")

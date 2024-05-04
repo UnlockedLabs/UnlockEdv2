@@ -19,14 +19,13 @@ func main() {
 	cmd := ParseArgs()
 	newServer := server.NewServer(testing)
 	if cmd.RunMigrations {
-		newServer.Db.Migrate(testing)
+		newServer.Db.Migrate()
 	} else if cmd.MigrateFresh || os.Getenv("MIGRATE_FRESH") == "true" {
 		log.Println("Migrating fresh")
 		newServer.Db.MigrateFresh(testing)
 	}
-	newServer.RegisterRoutes()
 	newServer.LogInfo("Starting server on :8080")
-	if err := http.ListenAndServe(":8080", newServer.Mux); err != nil {
+	if err := http.ListenAndServe(":8080", server.CorsMiddleware(newServer.Mux)); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }

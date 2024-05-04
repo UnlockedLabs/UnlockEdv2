@@ -1,0 +1,22 @@
+serve:
+  cookies:
+    same_site_mode: Lax
+
+urls:
+  self:
+    issuer: http://127.0.0.1:4444
+  consent: http://127.0.0.1:3000/api/consent
+  login: http://127.0.0.1:3000/api/login
+  logout: http://127.0.0.1:3000/api/logout
+
+secrets:
+  system:
+    - ${APP_KEY}
+
+oidc:
+  subject_identifiers:
+    supported_types:
+      - pairwise
+      - public
+    pairwise:
+      salt: 2839o82hy2839OO#@#$@OFw@ksj8*^@*^$LSwsifw2692o

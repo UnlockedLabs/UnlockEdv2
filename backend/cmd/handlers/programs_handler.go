@@ -7,19 +7,19 @@ import (
 	"strconv"
 )
 
-func (srv *Server) RegisterProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleIndexPrograms)))
-	srv.Mux.Handle("GET /api/programs/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleShowProgram)))
-	srv.Mux.Handle("POST /api/programs", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleCreateProgram)))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleDeleteProgram)))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.ApplyMiddleware(http.HandlerFunc(srv.HandleUpdateProgram)))
+func (srv *Server) registerProgramsRoutes() {
+	srv.Mux.Handle("GET /api/programs", srv.applyMiddleware(http.HandlerFunc(srv.handleIndexPrograms)))
+	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleShowProgram)))
+	srv.Mux.Handle("POST /api/programs", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateProgram)))
+	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleDeleteProgram)))
+	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleUpdateProgram)))
 }
 
-func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, programs, err := srv.Db.GetProgram(page, perPage)
 	if err != nil {
-		srv.Logger.Printf("IndexPrograms Database Error: %v", err)
+		srv.Logger.Debug("IndexPrograms Database Error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -30,7 +30,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: page,
 		Total:       total,
 	}
-	srv.Logger.Printf("IndexPrograms: %v", programs)
+	srv.Logger.Debug("IndexPrograms: %v", programs)
 	response := models.PaginatedResource[models.Program]{
 		Meta: paginationData,
 		Data: programs,
@@ -42,15 +42,15 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Printf("GET Program handler Error: %v", err)
+		srv.Logger.Debug("GET Program handler Error: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
-		srv.Logger.Printf("GET Program handler Error: %v", err)
+		srv.Logger.Debug("GET Program handler Error: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, program); err != nil {
@@ -60,7 +60,7 @@ func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request) {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
@@ -78,7 +78,7 @@ func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
@@ -89,7 +89,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Printf("GET Program handler Error: %v", err)
+		srv.Logger.Debug("GET Program handler Error: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	toUpdate, err := srv.Db.GetProgramByID(id)
@@ -110,7 +110,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.LogError("DELETE Program handler Error: " + err.Error())

@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 )
 
-func (srv *Server) RegisterImageRoutes() {
-	srv.Mux.HandleFunc("POST /upload", srv.UploadHandler)
-	srv.Mux.HandleFunc("GET /photos/{id}", srv.HostPhotos)
+func (srv *Server) registerImageRoutes() {
+	srv.Mux.HandleFunc("POST /upload", srv.handleUploadHandler)
+	srv.Mux.HandleFunc("GET /photos/{id}", srv.handleHostPhotos)
 }
 
-func (srv *Server) UploadHandler(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request) {
 	srv.LogInfo("Uploading file")
 	if err := r.ParseMultipartForm(10 << 10); err != nil {
 		srv.LogError("Error parsing form: " + err.Error())
@@ -57,7 +57,7 @@ func (srv *Server) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (srv *Server) HostPhotos(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request) {
 	img := r.PathValue("id")
 	path := filepath.Join("frontend", "public", "thumbnails", img)
 	http.ServeFile(w, r, path)

@@ -7,12 +7,12 @@ import (
 	"strconv"
 )
 
-func (srv *Server) RegisterActionsRoutes() {
-	srv.Mux.Handle("POST /actions/provider-platforms/{id}/import-users", srv.ApplyMiddleware(http.HandlerFunc(srv.ImportUsers)))
-	srv.Mux.Handle("POST /actions/provider-platforms/{id}/import-programs", srv.ApplyMiddleware(http.HandlerFunc(srv.ImportPrograms)))
+func (srv *Server) registerActionsRoutes() {
+	srv.Mux.Handle("POST /actions/provider-platforms/{id}/import-users", srv.applyMiddleware(http.HandlerFunc(srv.handleImportUsers)))
+	srv.Mux.Handle("POST /actions/provider-platforms/{id}/import-programs", srv.applyMiddleware(http.HandlerFunc(srv.handleImportPrograms)))
 }
 
-func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
@@ -58,7 +58,7 @@ func (srv *Server) ImportUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (srv *Server) ImportPrograms(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleImportPrograms(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())

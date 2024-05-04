@@ -17,7 +17,7 @@ import (
  * and be completely agnostic to the provider platform we are dealing with.
  **/
 type ProviderService struct {
-	ProviderPlatformID int          `json:"id"`
+	ProviderPlatformID uint         `json:"id"`
 	Type               string       `json:"type"`
 	AccountID          string       `json:"account_id"`
 	Url                string       `json:"url"`
@@ -91,7 +91,7 @@ func (serv *ProviderService) Request(url string) *http.Request {
 	log.Println("Init request for provider service")
 	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
 	servUrl := os.Getenv("PROVIDER_SERVICE_URL")
-	finalUrl := servUrl + url + "?id=" + strconv.Itoa(serv.ProviderPlatformID)
+	finalUrl := servUrl + url + "?id=" + strconv.Itoa(int(serv.ProviderPlatformID))
 	log.Printf("url: %s \n", finalUrl)
 	request, err := http.NewRequest("GET", finalUrl, nil)
 	if err != nil {

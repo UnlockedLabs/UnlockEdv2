@@ -33,7 +33,7 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 	return &platform, nil
 }
 
-func (db *DB) CreateProviderPlatform(platform models.ProviderPlatform) (*models.ProviderPlatform, error) {
+func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models.ProviderPlatform, error) {
 	key, err := platform.EncryptAccessKey()
 	if err != nil {
 		log.Printf("Error encrypting access key: %v", err)
@@ -51,7 +51,7 @@ func (db *DB) CreateProviderPlatform(platform models.ProviderPlatform) (*models.
 	return &newProv, nil
 }
 
-func (db *DB) UpdateProviderPlatform(platform models.ProviderPlatform, id int) (*models.ProviderPlatform, error) {
+func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint) (*models.ProviderPlatform, error) {
 	log.Printf("Updating provider platform with ID: %d", id)
 	var existingPlatform models.ProviderPlatform
 	if err := db.Conn.First(&existingPlatform, id).Error; err != nil {

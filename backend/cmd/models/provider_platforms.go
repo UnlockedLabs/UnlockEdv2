@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"io"
 	"os"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -30,7 +29,7 @@ const (
 )
 
 type ProviderPlatform struct {
-	ID                     int                   `gorm:"primaryKey" json:"id"`
+	gorm.Model
 	Type                   ProviderPlatformType  `gorm:"size:100" json:"type"`
 	Name                   string                `gorm:"size:255" json:"name"`
 	Description            string                `gorm:"size:1024" json:"description"`
@@ -39,11 +38,9 @@ type ProviderPlatform struct {
 	AccessKey              string                `gorm:"size:255" json:"access_key"`
 	BaseUrl                string                `gorm:"size:255" json:"base_url"`
 	State                  ProviderPlatformState `gorm:"size:100" json:"state"`
-	ExternalAuthProviderId string                `gorm:"size:64" json:"external_auth_provider_id"`
-	CreatedAt              time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
-	UpdatedAt              time.Time             `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
-	DeletedAt              gorm.DeletedAt        `gorm:"index" json:"-"`
-	ProviderUserMappings   []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID" json:"_"`
+	ExternalAuthProviderId string                `gorm:"size:128" json:"external_auth_provider_id"`
+
+	ProviderUserMappings []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID" json:"-"`
 }
 
 func (ProviderPlatform) TableName() string {
