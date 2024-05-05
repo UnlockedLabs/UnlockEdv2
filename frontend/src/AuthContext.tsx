@@ -40,8 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   if (loading) {
     return <div>Loading...</div>;
   }
-  if (!user && window.location.pathname !== "/login") {
-    window.location.href = "/";
+  if (!user) {
     return null;
   } else if (
     user.password_reset === true &&

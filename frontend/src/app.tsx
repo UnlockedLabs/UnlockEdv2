@@ -9,19 +9,33 @@ import LeftMenuManagement from "@/Pages/LeftMenuManagement";
 import UserActivity from "@/Pages/UserActivity";
 import ResetPassword from "@/Pages/Auth/ResetPassword";
 import ProviderPlatformManagement from "./Pages/ProviderPlatformManagement";
+import { AuthProvider } from "./AuthContext";
+
+function WithAuth({ children }) {
+  return <AuthProvider>{children}</AuthProvider>;
+}
 
 export default function App() {
   const router = createBrowserRouter([
     { path: "/", element: <Welcome /> },
     { path: "/login", element: <Login /> },
-    { path: "/dashboard", element: <Dashboard /> },
-    { path: "/users", element: <Users /> },
-    { path: "/left-menu-management", element: <LeftMenuManagement /> },
-    { path: "/user-activity", element: <UserActivity /> },
-    { path: "/reset-password", element: <ResetPassword /> },
+    { path: "/dashboard", element: WithAuth({ children: <Dashboard /> }) },
+    { path: "/users", element: WithAuth({ children: <Users /> }) },
+    {
+      path: "/left-menu-management",
+      element: WithAuth({ children: <LeftMenuManagement /> }),
+    },
+    {
+      path: "/user-activity",
+      element: WithAuth({ children: <UserActivity /> }),
+    },
+    {
+      path: "/reset-password",
+      element: WithAuth({ children: <ResetPassword /> }),
+    },
     {
       path: "/provider-platform-management",
-      element: <ProviderPlatformManagement />,
+      element: WithAuth({ children: <ProviderPlatformManagement /> }),
     },
   ]);
 
