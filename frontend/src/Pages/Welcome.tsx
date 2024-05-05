@@ -9,13 +9,14 @@ export default function Welcome() {
   const checkLoggedIn = async () => {
     try {
       const response = await axios.get("/api/auth");
-      if (response.data["data"] === null) {
-        console.log(response.data["data"]);
+      if (response.status === 200) {
+        console.log(response.data);
+        setIsLoggedIn(true);
         return;
       }
-      setIsLoggedIn(true);
       return;
     } catch (error) {
+      console.log("not logged in");
       return;
     }
   };
