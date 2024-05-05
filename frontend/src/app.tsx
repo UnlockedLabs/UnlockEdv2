@@ -10,7 +10,6 @@ import UserActivity from "@/Pages/UserActivity";
 import ResetPassword from "@/Pages/Auth/ResetPassword";
 import ProviderPlatformManagement from "./Pages/ProviderPlatformManagement";
 
-
 export default function App() {
   const router = createBrowserRouter([
     { path: "/", element: <Welcome /> },
@@ -20,14 +19,15 @@ export default function App() {
     { path: "/left-menu-management", element: <LeftMenuManagement /> },
     { path: "/user-activity", element: <UserActivity /> },
     { path: "/reset-password", element: <ResetPassword /> },
-    { path: "/provider-platform-management", element: <ProviderPlatformManagement /> },
+    {
+      path: "/provider-platform-management",
+      element: <ProviderPlatformManagement />,
+    },
   ]);
 
   if (import.meta.hot) {
     import.meta.hot.dispose(() => router.dispose());
   }
 
-  return (
-    <RouterProvider router={router} fallbackElement={<p>Loading...</p>} />
-  );
+  return <RouterProvider router={router} fallbackElement={<p>Loading...</p>} />;
 }

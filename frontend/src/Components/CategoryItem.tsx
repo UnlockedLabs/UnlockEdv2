@@ -66,10 +66,7 @@ export default function CategoryItem({
                   updateLink(category, index, newLinkPair)
                 }
               />
-              <div
-                className="tooltip my-auto"
-                data-tip="Delete Link"
-              >
+              <div className="tooltip my-auto" data-tip="Delete Link">
                 <TrashIcon
                   className="w-4 cursor-pointer"
                   onClick={() => {
@@ -78,26 +75,16 @@ export default function CategoryItem({
                   }}
                 />
               </div>
-              <div
-                className="tooltip my-auto"
-                data-tip="Move Link Up"
-              >
+              <div className="tooltip my-auto" data-tip="Move Link Up">
                 <ChevronUpIcon
                   className="w-5 cursor-pointer"
-                  onClick={() =>
-                    moveLink(category, index, "up")
-                  }
+                  onClick={() => moveLink(category, index, "up")}
                 />
               </div>
-              <div
-                className="tooltip my-auto"
-                data-tip="Move Link Down"
-              >
+              <div className="tooltip my-auto" data-tip="Move Link Down">
                 <ChevronDownIcon
                   className="w-5 cursor-pointer"
-                  onClick={() =>
-                    moveLink(category, index, "down")
-                  }
+                  onClick={() => moveLink(category, index, "down")}
                 />
               </div>
             </div>
@@ -118,9 +105,7 @@ export default function CategoryItem({
           <DeleteForm
             item="Link"
             onCancel={() => setActiveLinkToDelete(null)}
-            onSuccess={() =>
-              deleteLink(category, activeLinkToDelete)
-            }
+            onSuccess={() => deleteLink(category, activeLinkToDelete)}
           />
         }
         ref={deleteLinkModal}
@@ -131,8 +116,7 @@ export default function CategoryItem({
         form={
           <AddLinkForm
             onSuccess={(title: string, url: string) => {
-              addLink(category, title, url),
-                addLinkModal.current?.close();
+              addLink(category, title, url), addLinkModal.current?.close();
             }}
           />
         }

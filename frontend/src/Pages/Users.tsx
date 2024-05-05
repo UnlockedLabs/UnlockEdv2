@@ -38,7 +38,7 @@ export default function Users() {
   const [toast, setToast] = useState({
     state: ToastState.null,
     message: "",
-    reset: () => { },
+    reset: () => {},
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -185,20 +185,14 @@ export default function Users() {
               !error &&
               userData.data.map((user: any) => {
                 return (
-                  <tr
-                    key={user.id}
-                    className="border-gray-600"
-                  >
+                  <tr key={user.id} className="border-gray-600">
                     <td>
                       {user.name_first} {user.name_last}
                     </td>
                     <td>{user.username}</td>
                     <td>{user.role}</td>
                     <td>
-                      <div
-                        className="tooltip"
-                        data-tip="User Activity"
-                      >
+                      <div className="tooltip" data-tip="User Activity">
                         <a className="flex justify-start cursor-pointer">
                           <span>Today</span>
                           <ArrowUpRightIcon className="w-4 text-accent" />
@@ -207,10 +201,7 @@ export default function Users() {
                     </td>
                     <td>
                       <div className="flex space-x-2 text-accent cursor-pointer">
-                        <div
-                          className="tooltip"
-                          data-tip="Edit User"
-                        >
+                        <div className="tooltip" data-tip="Edit User">
                           <PencilIcon
                             className="h-4"
                             onClick={() => {
@@ -219,10 +210,7 @@ export default function Users() {
                             }}
                           />
                         </div>
-                        <div
-                          className="tooltip"
-                          data-tip="Reset Password"
-                        >
+                        <div className="tooltip" data-tip="Reset Password">
                           <ArrowPathRoundedSquareIcon
                             className="h-4"
                             onClick={() => {
@@ -231,10 +219,7 @@ export default function Users() {
                             }}
                           />
                         </div>
-                        <div
-                          className="tooltip"
-                          data-tip="Delete User"
-                        >
+                        <div className="tooltip" data-tip="Delete User">
                           <TrashIcon
                             className="h-4"
                             onClick={() => {
@@ -254,9 +239,7 @@ export default function Users() {
           <Pagination meta={userData.meta} setPage={setPageQuery} />
         )}
         {error && (
-          <span className="text-center text-error">
-            Failed to load users.
-          </span>
+          <span className="text-center text-error">Failed to load users.</span>
         )}
         {!isLoading && !error && data.data.length == 0 && (
           <span className="text-center text-warning">No results</span>
@@ -275,10 +258,7 @@ export default function Users() {
         item="User"
         form={
           targetUser ? (
-            <EditUserForm
-              onSuccess={hanldleEditUser}
-              user={targetUser}
-            />
+            <EditUserForm onSuccess={hanldleEditUser} user={targetUser} />
           ) : (
             <div>No user defined!</div>
           )

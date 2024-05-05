@@ -1,8 +1,5 @@
 import Brand from "./Brand";
-import {
-  HomeIcon,
-  ArchiveBoxIcon,
-} from "@heroicons/react/24/solid";
+import { HomeIcon, ArchiveBoxIcon } from "@heroicons/react/24/solid";
 import useSWR from "swr";
 import { Category } from "../common";
 import { useMemo } from "react";
@@ -12,11 +9,7 @@ function CategoryItem({ name, links, rank }: Category) {
     const key = Object.keys(linkPair)[0];
     return (
       <li key={key.concat(rank.toString())}>
-        <a
-          href={linkPair[key]}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={linkPair[key]} target="_blank" rel="noopener noreferrer">
           {key}
         </a>
       </li>

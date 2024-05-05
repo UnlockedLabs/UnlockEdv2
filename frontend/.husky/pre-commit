@@ -1,11 +1,11 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
-echo "frontend .........."
+echo "checking frontend .........."
 cd frontend
 echo "running prettier 󰎙 ..."
-npx lint-staged
-echo "backend ..............."
+npx prettier -w .
+echo "checking backend ..............."
 cd ../backend
 echo "running golangci-lint  ......"
 golangci-lint run -v

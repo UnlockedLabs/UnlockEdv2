@@ -1,7 +1,5 @@
 export default {
-  content: [
-    "./src/**/*.tsx"
-  ],
+  content: ["./src/**/*.tsx"],
 
   daisyui: {
     themes: [

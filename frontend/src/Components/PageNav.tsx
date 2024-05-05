@@ -21,10 +21,7 @@ export default function PageNav({
   const detailsRef = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const closeDropdown = ({ target }: MouseEvent) => {
-      if (
-        detailsRef.current &&
-        !detailsRef.current?.contains(target as Node)
-      ) {
+      if (detailsRef.current && !detailsRef.current?.contains(target as Node)) {
         detailsRef.current.removeAttribute("open");
       }
     };
@@ -92,9 +89,7 @@ export default function PageNav({
                 </li>
 
                 {user.role == UserRole.Student ? (
-                  <li>
-                    {/* Student specific options go here */}
-                  </li>
+                  <li>{/* Student specific options go here */}</li>
                 ) : (
                   <>
                     <li>
@@ -127,9 +122,7 @@ export default function PageNav({
                 <div className="divider mt-0 mb-0"></div>
 
                 <li>
-                  <button
-                    onClick={() => handleLogout()}
-                  >
+                  <button onClick={() => handleLogout()}>
                     <ArrowRightOnRectangleIcon className="h-4" />
                     Logout
                   </button>

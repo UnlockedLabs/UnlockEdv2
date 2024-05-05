@@ -1,76 +1,76 @@
 import {
-    ChevronDoubleLeftIcon,
-    ChevronDoubleRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/solid";
 
 interface PaginationMeta {
-    current_page: number;
-    total: number;
-    from: number;
-    to: number;
-    last_page: number;
-    per_page: number;
+  current_page: number;
+  total: number;
+  from: number;
+  to: number;
+  last_page: number;
+  per_page: number;
 }
 
 export interface PaginatedData<T> {
-    data: Array<T>;
-    meta: PaginationMeta;
+  data: Array<T>;
+  meta: PaginationMeta;
 }
 
 export default function Pagination({
-    meta,
-    setPage,
+  meta,
+  setPage,
 }: {
-    meta: PaginationMeta;
-    setPage: (page: number) => void;
+  meta: PaginationMeta;
+  setPage: (page: number) => void;
 }) {
-    const page = meta.current_page - 1;
+  const page = meta.current_page - 1;
 
-    return (
-        <div className="join place-content-center">
-            <div
-                className={`${page > 0 ? "tooltip tooltip-left" : ""}`}
-                data-tip="First Page"
+  return (
+    <div className="join place-content-center">
+      <div
+        className={`${page > 0 ? "tooltip tooltip-left" : ""}`}
+        data-tip="First Page"
+      >
+        <button
+          disabled={page == 0}
+          className="join-item btn btn-sm"
+          onClick={() => setPage(1)}
+        >
+          <ChevronDoubleLeftIcon className="h-4" />
+        </button>
+      </div>
+
+      {[page - 2, page - 1, page, page + 1, page + 2]
+        .filter((i) => i >= 0 && i < meta.last_page)
+        .map((i) => {
+          return (
+            <button
+              className={`join-item btn btn-sm ${
+                i == meta.current_page - 1 ? "btn-active" : ""
+              }`}
+              onClick={() => setPage(i + 1)}
+              key={i}
             >
-                <button
-                    disabled={page == 0}
-                    className="join-item btn btn-sm"
-                    onClick={() => setPage(1)}
-                >
-                    <ChevronDoubleLeftIcon className="h-4" />
-                </button>
-            </div>
+              {i + 1}
+            </button>
+          );
+        })}
 
-            {[page - 2, page - 1, page, page + 1, page + 2]
-                .filter((i) => i >= 0 && i < meta.last_page)
-                .map((i) => {
-                    return (
-                        <button
-                            className={`join-item btn btn-sm ${
-                                i == meta.current_page - 1 ? "btn-active" : ""
-                            }`}
-                            onClick={() => setPage(i + 1)}
-                            key={i}
-                        >
-                            {i + 1}
-                        </button>
-                    );
-                })}
-
-            <div
-                className={`${
-                    page != meta.last_page - 1 ? "tooltip tooltip-right" : ""
-                }`}
-                data-tip="Last Page"
-            >
-                <button
-                    className="join-item btn btn-sm"
-                    onClick={() => setPage(meta.last_page)}
-                    disabled={page == meta.last_page - 1}
-                >
-                    <ChevronDoubleRightIcon className="h-4" />
-                </button>
-            </div>
-        </div>
-    );
+      <div
+        className={`${
+          page != meta.last_page - 1 ? "tooltip tooltip-right" : ""
+        }`}
+        data-tip="Last Page"
+      >
+        <button
+          className="join-item btn btn-sm"
+          onClick={() => setPage(meta.last_page)}
+          disabled={page == meta.last_page - 1}
+        >
+          <ChevronDoubleRightIcon className="h-4" />
+        </button>
+      </div>
+    </div>
+  );
 }

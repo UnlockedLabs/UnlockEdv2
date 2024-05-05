@@ -61,65 +61,46 @@ export default function UserActivity() {
           <tbody>
             {!isLoading &&
               !error &&
-              userActivityData.data.map(
-                (activityInstance) => {
-                  const dateTime = new Date(
-                    activityInstance.created_at,
-                  );
-                  return (
-                    <tr
-                      // come up with a better key that is unique
-                      key={activityInstance.id}
-                      className="border-gray-600"
-                    >
-                      <td>
-                        {activityInstance.user_name_first +
-                          " " +
-                          activityInstance.user_name_last}
-                      </td>
-                      <td>
-                        {activityInstance.browser_name}
-                      </td>
-                      <td>
-                        <a
-                          className="flex justify-start cursor-pointer"
-                          href={
-                            activityInstance.clicked_url
-                          }
-                        >
-                          <span>
-                            {
-                              activityInstance.clicked_url
-                            }
-                          </span>
-                        </a>
-                      </td>
-                      <td>
-                        {dateTime.toLocaleString(
-                          "en-US",
-                        )}
-                        {/* <div
+              userActivityData.data.map((activityInstance) => {
+                const dateTime = new Date(activityInstance.created_at);
+                return (
+                  <tr
+                    // come up with a better key that is unique
+                    key={activityInstance.id}
+                    className="border-gray-600"
+                  >
+                    <td>
+                      {activityInstance.user_name_first +
+                        " " +
+                        activityInstance.user_name_last}
+                    </td>
+                    <td>{activityInstance.browser_name}</td>
+                    <td>
+                      <a
+                        className="flex justify-start cursor-pointer"
+                        href={activityInstance.clicked_url}
+                      >
+                        <span>{activityInstance.clicked_url}</span>
+                      </a>
+                    </td>
+                    <td>
+                      {dateTime.toLocaleString("en-US")}
+                      {/* <div
                                                 className="tooltip"
                                                 data-tip="User Activity"
                                             >
                                             </div> */}
-                      </td>
-                    </tr>
-                  );
-                },
-              )}
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
         {!isLoading && !error && data.data.length != 0 && (
-          <Pagination
-            meta={userActivityData.meta}
-            setPage={setPageQuery}
-          />
+          <Pagination meta={userActivityData.meta} setPage={setPageQuery} />
         )}
         {error && (
-          <span className="text-center text-error">
-            Failed to load users.
-          </span>
+          <span className="text-center text-error">Failed to load users.</span>
         )}
         {!isLoading && !error && data.data.length == 0 && (
           <span className="text-center text-warning">No results</span>
