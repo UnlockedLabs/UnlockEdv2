@@ -46,7 +46,7 @@ export default function Users() {
   const [pageQuery, setPageQuery] = useState(1);
   const [sortQuery, setSortQuery] = useState("asc");
   const { data, mutate, error, isLoading } = useSWR(
-    `/api/users?search=${searchQuery}&page=${pageQuery}&order=${sortQuery}`,
+    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`,
   );
   const userData = data as PaginatedData<User>;
   const showToast = (message: string, state: ToastState) => {
@@ -73,10 +73,7 @@ export default function Users() {
   }
 
   const deleteUser = async () => {
-    const response = await axios("/api/users/" + targetUser?.id, {
-      method: "delete",
-      headers: { ContentType: "application/json" },
-    });
+    const response = await axios.delete("/api/users/" + targetUser?.id);
     const toastType =
       response.status == 204 ? ToastState.success : ToastState.error;
     const message =

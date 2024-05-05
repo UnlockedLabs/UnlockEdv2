@@ -31,6 +31,7 @@ var TableList = []interface{}{
 	&models.LeftMenuLink{},
 	&models.Program{},
 	&models.Milestone{},
+	&models.Outcome{},
 }
 
 func InitDB(isTesting bool) *DB {

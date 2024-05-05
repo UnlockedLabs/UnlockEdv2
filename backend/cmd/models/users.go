@@ -34,7 +34,8 @@ type User struct {
 	Role          UserRole `gorm:"size:255;default student" json:"role"`
 
 	/* foreign key */
-	ProviderLogins []ProviderUserMapping `gorm:"foreignKey:UserID" json:"-"`
+	ProviderLogins []ProviderUserMapping `json:"-"`
+	Activities     []UserActivity        `json:"-"`
 }
 
 func (User) TableName() string {
@@ -66,8 +67,6 @@ func (user *User) HashPassword() error {
 /**
 * This function is called on a user object when it's fresh out of the database, so
 * the password is already hashed and checked against the input string
-* @param password string
-* @return bool
 **/
 func (user *User) CheckPasswordHash(password string) bool {
 	log.Printf("Checking password for user %s", user.Username)

@@ -99,7 +99,7 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 }
 
 func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Request) {
-	if srv.UserIsAdmin(r) || srv.UserIsOwner(r) {
+	if !srv.UserIsAdmin(r) && !srv.UserIsOwner(r) {
 		srv.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}

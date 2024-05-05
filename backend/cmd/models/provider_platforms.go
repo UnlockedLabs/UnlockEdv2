@@ -38,7 +38,8 @@ type ProviderPlatform struct {
 	State                  ProviderPlatformState `gorm:"size:100" json:"state"`
 	ExternalAuthProviderId string                `gorm:"size:128" json:"external_auth_provider_id"`
 
-	ProviderUserMappings []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID" json:"-"`
+	Programs             []Program             `json:"-"`
+	ProviderUserMappings []ProviderUserMapping `json:"-"`
 }
 
 func (ProviderPlatform) TableName() string {

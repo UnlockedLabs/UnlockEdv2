@@ -5,6 +5,7 @@ import (
 )
 
 type UserAcitivityJoin struct {
+	ID            int    `json:"id"`
 	UserNameFirst string `json:"user_name_first"`
 	UserNameLast  string `json:"user_name_last"`
 	BrowserName   string `json:"browser_name"`

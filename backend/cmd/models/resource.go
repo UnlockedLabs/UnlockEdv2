@@ -3,12 +3,14 @@ package models
 import "reflect"
 
 type PaginatedResource[T any] struct {
-	Data []T            `json:"data"`
-	Meta PaginationMeta `json:"meta"`
+	Message string         `json:"message"`
+	Data    []T            `json:"data"`
+	Meta    PaginationMeta `json:"meta"`
 }
 
 type Resource[T any] struct {
-	Data []T `json:"data"`
+	Message string `json:"message"`
+	Data    []T    `json:"data"`
 }
 
 type PaginationMeta struct {

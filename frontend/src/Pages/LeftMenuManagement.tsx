@@ -72,7 +72,7 @@ export default function LeftMenuManagement() {
               onDragStart={() => (draggedItem.current = index)}
               onDragEnd={(e) => {
                 e.preventDefault();
-                if (dragOverItem == null) setDraggedOverItem(-1);
+                if (dragOverItem[0] == null) setDraggedOverItem(-1);
                 else handleSort();
               }}
             >
@@ -225,6 +225,7 @@ export default function LeftMenuManagement() {
     e.preventDefault();
     const newCategoryList = categoryList.map((c, i) => {
       c.rank = i + 1;
+      c.id = i;
       return c;
     });
     try {

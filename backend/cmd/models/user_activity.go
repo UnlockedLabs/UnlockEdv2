@@ -9,7 +9,7 @@ type UserActivity struct {
 	Ip          string `gorm:"size 255;default:unknown" json:"ip"`
 	ClickedUrl  string `gorm:"size 255;default:unknown" json:"clicked_url"`
 
-	User User `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
+	User User `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 }
 
 func (ua UserActivity) TableName() string {
