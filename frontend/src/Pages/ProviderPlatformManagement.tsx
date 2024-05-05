@@ -35,16 +35,13 @@ export default function ProviderPlatformManagement() {
     isLoading,
   } = useSWR(`/api/provider-platforms`);
 
-  providers?.data.sort(function(
+  providers?.data.sort(function (
     providerA: ProviderPlatform,
     providerB: ProviderPlatform,
   ) {
     if (providerA.state === "enabled" && providerB.state !== "enabled") {
       return -1; // providerA comes before providerB
-    } else if (
-      providerA.state !== "enabled" &&
-      providerB.state === "enabled"
-    ) {
+    } else if (providerA.state !== "enabled" && providerB.state === "enabled") {
       return 1; // providerB comes before providerA
     } else if (
       providerA.state === "archived" &&
@@ -86,10 +83,7 @@ export default function ProviderPlatformManagement() {
   }
 
   return (
-    <AuthenticatedLayout
-      user={auth.user}
-      title="Provider Platform Management"
-    >
+    <AuthenticatedLayout user={auth.user} title="Provider Platform Management">
       <PageNav
         user={auth.user}
         path={["Settings", "Provider Platform Management"]}
@@ -147,7 +141,7 @@ export default function ProviderPlatformManagement() {
               provider={editProvider}
             />
           ) : (
-            <></>
+            <div></div>
           )
         }
         ref={editProviderModal}
@@ -157,9 +151,7 @@ export default function ProviderPlatformManagement() {
         <Toast
           state={toast.state}
           message={toast.message}
-          reset={() =>
-            setToast({ state: ToastState.null, message: "" })
-          }
+          reset={() => setToast({ state: ToastState.null, message: "" })}
         />
       )}
     </AuthenticatedLayout>
