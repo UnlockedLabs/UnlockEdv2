@@ -15,16 +15,15 @@ export default function ResetPasswordForm({
 }: ResetPasswordFormProps) {
   const getTempPassword = async () => {
     try {
-      const response = await axios("/student-password", {
-        method: "post",
-        headers: { ContentType: "application/json" },
-        data: { user_id: user?.id },
+      const response = await axios.post("/api/users/student-password", {
+        user_id: user?.id,
       });
-      if (response.status !== 201) {
+      if (response.status !== 200) {
         onCancel("Failed to reset password", true);
         return;
       }
-      onSuccess(response.data.data["password"]);
+      console.log(response.data["temp_password"]);
+      onSuccess(response.data["temp_password"]);
       return;
     } catch (error: any) {
       onCancel(error.response.data.message, true);
@@ -36,8 +35,7 @@ export default function ResetPasswordForm({
       <CloseX close={() => onCancel("", false)} />
       {user?.role == UserRole.Admin ? (
         <p className="font-bold text-error py-4 pb-8">
-          You may only reset the password for non-administrator
-          accounts.
+          You may only reset the password for non-administrator accounts.
         </p>
       ) : (
         <div>
@@ -47,10 +45,7 @@ export default function ResetPasswordForm({
           </p>
           <p className="py-4"></p>
           <div className="flex flex-row justify-between">
-            <button
-              className="btn"
-              onClick={() => onCancel("", false)}
-            >
+            <button className="btn" onClick={() => onCancel("", false)}>
               Cancel
             </button>
             <button

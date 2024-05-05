@@ -39,7 +39,8 @@ func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/login", http.HandlerFunc(srv.handleLogin))
 	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(http.HandlerFunc(srv.handleLogout)))
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(http.HandlerFunc(srv.handleResetPassword)))
-	srv.Mux.Handle("GET /api/auth", srv.applyMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
+	/* only use auth middleware, user activity bloats the database + results */
+	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
 }
 
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
@@ -171,7 +172,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
-	srv.LogInfo("Handling password reset request")
+	srv.LogInfo("Handling password reset request", r.URL.Path)
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	password, confirm := "", ""
 	err := r.ParseForm()

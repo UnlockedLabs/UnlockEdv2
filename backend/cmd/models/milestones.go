@@ -1,9 +1,5 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type MilestoneType string
 
 const (
@@ -13,7 +9,7 @@ const (
 )
 
 type Milestone struct {
-	gorm.Model
+	DatabaseFields
 	ProgramID   uint          `gorm:"not null" json:"program_id"`
 	Type        MilestoneType `gorm:"size:255;not null" json:"type"`
 	IsCompleted bool          `gorm:"default:false" json:"is_completed"`

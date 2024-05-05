@@ -1,9 +1,7 @@
 package models
 
-import "gorm.io/gorm"
-
 type UserActivity struct {
-	gorm.Model
+	DatabaseFields
 	UserID      uint   `gorm:"not null" json:"user_id"`
 	BrowserName string `gorm:"size 255;default:unknown" json:"browser_name"`
 	Platform    string `gorm:"size 255;default:unknown" json:"platform"`

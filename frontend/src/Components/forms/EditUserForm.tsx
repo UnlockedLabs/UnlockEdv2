@@ -55,7 +55,7 @@ export default function EditUserForm({
     try {
       setErrorMessage("");
       const cleanData = diffFormData(data, user);
-      await axios.patch(`/api/v1/users/${user.id}`, cleanData);
+      await axios.patch(`/api/users/${user.id}`, cleanData);
 
       onSuccess();
     } catch (error: any) {

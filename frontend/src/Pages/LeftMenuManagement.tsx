@@ -21,12 +21,10 @@ interface ToastProps {
 
 export default function LeftMenuManagement() {
   const auth = useAuth();
-  const { data, error, mutate, isLoading } = useSWR("/api/v1/categories");
+  const { data, error, mutate, isLoading } = useSWR("/api/left-menu");
 
   const [categoryList, setCategoryList] = useState(Array<Category>);
-  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(
-    null,
-  );
+  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
   const addCategoryModal = useRef<null | HTMLDialogElement>(null);
   const deleteCategoryModal = useRef<null | HTMLDialogElement>(null);
 
@@ -61,11 +59,7 @@ export default function LeftMenuManagement() {
             }
           >
             <div
-              className={
-                dragOverItem[0] == index
-                  ? "pt-36 flex"
-                  : "pt-6 flex"
-              }
+              className={dragOverItem[0] == index ? "pt-36 flex" : "pt-6 flex"}
               onDragOver={(e) => {
                 e.preventDefault(), setDraggedOverItem(index);
               }}
@@ -78,8 +72,7 @@ export default function LeftMenuManagement() {
               onDragStart={() => (draggedItem.current = index)}
               onDragEnd={(e) => {
                 e.preventDefault();
-                if (dragOverItem == null)
-                  setDraggedOverItem(-1);
+                if (dragOverItem == null) setDraggedOverItem(-1);
                 else handleSort();
               }}
             >
@@ -107,8 +100,7 @@ export default function LeftMenuManagement() {
             <div
               className="h-screen"
               onDragOver={(e) => {
-                e.preventDefault(),
-                  setDraggedOverItem(index + 1);
+                e.preventDefault(), setDraggedOverItem(index + 1);
               }}
               onDragLeave={(e) => {
                 e.preventDefault(), setDraggedOverItem(null);
@@ -136,9 +128,7 @@ export default function LeftMenuManagement() {
 
   function deleteCategory(id: number | null) {
     if (categoryToDelete == null) return;
-    const newCategories = categoryList.filter(
-      (category) => category.id !== id,
-    );
+    const newCategories = categoryList.filter((category) => category.id !== id);
     setCategoryList(newCategories);
   }
 
@@ -193,11 +183,7 @@ export default function LeftMenuManagement() {
     setCategoryList(newCategoryList);
   }
 
-  function updateLink(
-    category: Category,
-    linkIndex: number,
-    newLinkPair: any,
-  ) {
+  function updateLink(category: Category, linkIndex: number, newLinkPair: any) {
     categoryList.map((c, _) => {
       if (c == category) {
         category.links[linkIndex] = newLinkPair;
@@ -242,13 +228,9 @@ export default function LeftMenuManagement() {
       return c;
     });
     try {
-      let response = await axios("/api/v1/categories", {
-        method: "PUT",
-        headers: { ContentType: "application/json" },
-        data: newCategoryList,
-      });
+      let response = await axios.put("/api/left-menu", newCategoryList);
       // check response is okay, and give notification
-      if (response.status !== 200) {
+      if (response.status !== 201) {
         // show error
         setToast({
           state: ToastState.error,
@@ -281,10 +263,7 @@ export default function LeftMenuManagement() {
 
   return (
     <AuthenticatedLayout title="Categories">
-      <PageNav
-        user={auth!}
-        path={["Settings", "Left Menu Management"]}
-      />
+      <PageNav user={auth.user} path={["Settings", "Left Menu Management"]} />
       <div className="p-4">
         <div className="flex justify-between">
           <button
@@ -310,9 +289,7 @@ export default function LeftMenuManagement() {
         type="Add"
         item="Category"
         form={
-          <AddCategoryForm
-            onSuccess={(title: string) => addCategory(title)}
-          />
+          <AddCategoryForm onSuccess={(title: string) => addCategory(title)} />
         }
         ref={addCategoryModal}
       />
@@ -336,9 +313,7 @@ export default function LeftMenuManagement() {
         <Toast
           state={toast.state}
           message={toast.message}
-          reset={() =>
-            setToast({ state: ToastState.null, message: "" })
-          }
+          reset={() => setToast({ state: ToastState.null, message: "" })}
         />
       )}
     </AuthenticatedLayout>

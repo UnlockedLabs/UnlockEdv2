@@ -1,7 +1,14 @@
-import '@/bootstrap';
-import React, { createContext, useContext, useEffect, useState, Dispatch, SetStateAction } from 'react';
-import { User } from './types';
-import axios from 'axios';
+import "@/bootstrap";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  Dispatch,
+  SetStateAction,
+} from "react";
+import { User } from "./types";
+import axios from "axios";
 
 interface AuthContextType {
   user: User | null;
@@ -10,7 +17,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -19,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const response = await axios.get(`/api/auth`);
         setUser(response.data);
       } catch (error) {
-        console.log('Authentication check failed', error);
+        console.log("Authentication check failed", error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -31,11 +40,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   if (loading) {
     return <div>Loading...</div>;
   }
-  if (!user) {
-    window.location.href = '/login';
+  if (!user && window.location.pathname !== "/login") {
+    window.location.href = "/";
     return null;
-  } else if (user.password_reset === true && window.location.pathname !== '/reset-password') {
-    window.location.href = '/reset-password';
+  } else if (
+    user.password_reset === true &&
+    window.location.pathname !== "/reset-password"
+  ) {
+    window.location.href = "/reset-password";
     return null;
   }
   return (
@@ -55,9 +67,9 @@ export const useAuth = () => {
 
 export const handleLogout = async () => {
   try {
-    await axios.post('/api/logout');
-    window.location.href = '/login';
+    await axios.post("/api/logout");
+    window.location.href = "/login";
   } catch (error) {
-    console.log('Logout failed', error);
+    console.log("Logout failed", error);
   }
 };

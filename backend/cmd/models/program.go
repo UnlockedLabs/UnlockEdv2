@@ -1,11 +1,7 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Program struct {
-	gorm.Model
+	DatabaseFields
 	ProviderPlatformID uint   `gorm:"not null" json:"provider_platform_id"`
 	Name               string `gorm:"size:60" json:"name"`
 	Description        string `gorm:"size:510" json:"description"`

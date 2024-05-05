@@ -8,8 +8,6 @@ import (
 	"encoding/base64"
 	"io"
 	"os"
-
-	"gorm.io/gorm"
 )
 
 type ProviderPlatformType string
@@ -29,7 +27,7 @@ const (
 )
 
 type ProviderPlatform struct {
-	gorm.Model
+	DatabaseFields
 	Type                   ProviderPlatformType  `gorm:"size:100" json:"type"`
 	Name                   string                `gorm:"size:255" json:"name"`
 	Description            string                `gorm:"size:1024" json:"description"`

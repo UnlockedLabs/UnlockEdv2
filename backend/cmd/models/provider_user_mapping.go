@@ -1,9 +1,5 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type AuthProviderStatus string
 
 const (
@@ -13,7 +9,7 @@ const (
 )
 
 type ProviderUserMapping struct {
-	gorm.Model
+	DatabaseFields
 	UserID                       uint               `gorm:"not null" json:"user_id"`
 	ProviderPlatformID           uint               `gorm:"not null" json:"provider_platform_id"`
 	ExternalUserID               string             `gorm:"size:255;not null" json:"external_user_id"`

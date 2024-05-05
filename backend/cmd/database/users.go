@@ -38,6 +38,23 @@ func (db *DB) GetUserByID(id uint) *models.User {
 	return &user
 }
 
+func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
+	user := db.GetUserByID(id)
+	if user == nil || user.Role == "admin" {
+		return "", errors.New("user not found, or user is admin and cannot have password reset")
+	}
+	psw := user.CreateTempPassword()
+	user.Password = psw
+	if err := user.HashPassword(); err != nil {
+		return "", err
+	}
+	user.PasswordReset = true
+	if err := db.Conn.Save(&user).Error; err != nil {
+		return "", err
+	}
+	return psw, nil
+}
+
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	psw := user.CreateTempPassword()
 	user.Password = psw

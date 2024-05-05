@@ -70,16 +70,28 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 
 func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
-	total, activites, err := srv.Db.GetAllUserActivity(page, perPage)
-	if err != nil {
-		srv.Logger.Debug("Error fetching user activities: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+	search := r.URL.Query().Get("search")
+	total := int64(0)
+	var activities []database.UserAcitivityJoin
+	err := error(nil)
+	if search != "" {
+		total, activities, err = srv.Db.SearchUserActivity(search, page, perPage)
+		if err != nil {
+			srv.Logger.Debug("Error fetching user activities: %v", err)
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		}
+	} else {
+		total, activities, err = srv.Db.GetAllUserActivity(page, perPage)
+		if err != nil {
+			srv.Logger.Debug("Error fetching user activities: %v", err)
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 	pagination := models.NewPaginationInfo(page, perPage, total)
 	response := models.PaginatedResource[database.UserAcitivityJoin]{
 		Meta: pagination,
-		Data: activites,
+		Data: activities,
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, string(err.Error()))

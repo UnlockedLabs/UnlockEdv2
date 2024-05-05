@@ -14,6 +14,7 @@ func (srv *Server) registerUserRoutes() {
 	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateUser)))
 	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteUser)))
 	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateUser)))
+	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleResetStudentPassword)))
 }
 
 /**
@@ -161,5 +162,37 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	response.Data = append(response.Data, *updatedUser)
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+type TempPasswordRequest struct {
+	UserID uint `json:"user_id"`
+}
+
+func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Request) {
+	temp := TempPasswordRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
+		srv.LogError("Parsing form failed, using JSON", err.Error())
+		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	defer r.Body.Close()
+	response := make(map[string]string)
+	newPass, err := srv.Db.AssignTempPasswordToUser(uint(temp.UserID))
+	if err != nil {
+		response["message"] = err.Error()
+		err = srv.WriteResponse(w, http.StatusInternalServerError, response)
+		if err != nil {
+			srv.LogError("Error writing response: ", err.Error())
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	response["temp_password"] = newPass
+	response["message"] = "Temporary password assigned"
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		srv.LogError("Error writing response: ", err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 }

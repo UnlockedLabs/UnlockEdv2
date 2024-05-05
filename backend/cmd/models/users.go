@@ -3,6 +3,7 @@ package models
 import (
 	"log"
 	"math/rand"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -15,8 +16,15 @@ const (
 	Student UserRole = "student"
 )
 
+type DatabaseFields struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
 type User struct {
-	gorm.Model
+	DatabaseFields
 	Username      string   `gorm:"size:255;not null;unique" json:"username"`
 	NameFirst     string   `gorm:"size:255;not null" json:"name_first"`
 	Email         string   `gorm:"size:255;not null;unique" json:"email"`

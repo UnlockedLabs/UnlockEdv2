@@ -58,16 +58,16 @@ func NewServer(isTesting bool) *Server {
 	}
 }
 
-func (srv *Server) LogInfo(message string) {
-	srv.Logger.Info("INFO: ", "%v", message)
+func (srv *Server) LogInfo(message ...interface{}) {
+	srv.Logger.Info("ENV: "+os.Getenv("APP_ENV"), message...)
 }
 
-func (srv *Server) LogError(message string) {
-	srv.Logger.Error("ERROR: ", "%v", message)
+func (srv *Server) LogError(message ...interface{}) {
+	srv.Logger.Error("ENV: "+os.Getenv("APP_ENV"), message...)
 }
 
-func (srv *Server) LogDebug(message string) {
-	srv.Logger.Debug("DEBUG: ", "%v", message)
+func (srv *Server) LogDebug(message ...interface{}) {
+	srv.Logger.Debug("ENV: "+os.Getenv("APP_ENV"), message...)
 }
 
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
@@ -78,7 +78,7 @@ func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
 	return srv.applyMiddleware(srv.adminMiddleware(h))
 }
 
-func CorsMiddleware(h http.Handler) http.HandlerFunc {
+func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", os.Getenv("FRONTEND_URL"))
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -88,7 +88,7 @@ func CorsMiddleware(h http.Handler) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		h.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(r.Context()))
 	}
 }
 
