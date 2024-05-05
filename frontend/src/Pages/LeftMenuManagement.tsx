@@ -133,7 +133,7 @@ export default function LeftMenuManagement() {
   }
 
   function addLink(category: Category, newTitle: string, newURL: string) {
-    let newLink: CategoryLink = {};
+    const newLink: CategoryLink = {};
     newLink[newTitle] = newURL;
     const newCategoryList = categoryList.map((c, _) => {
       if (c == category) {
@@ -195,13 +195,13 @@ export default function LeftMenuManagement() {
   function handleSort() {
     if (draggedItem.current == null || dragOverItem == null) return;
 
-    let insertAtIndex = dragOverItem;
+    const insertAtIndex = dragOverItem;
     // if dragged item is higher in the list, then should subtract a number from where it needs to be placed
     if (draggedItem.current < dragOverItem[0]!)
       insertAtIndex[0] = insertAtIndex[0]! - 1;
 
     //duplicate items
-    let newCategoryList = [...categoryList];
+    const newCategoryList = [...categoryList];
 
     //remove and save the dragged item content
     const draggedItemContent = newCategoryList.splice(
@@ -228,7 +228,7 @@ export default function LeftMenuManagement() {
       return c;
     });
     try {
-      let response = await axios.put("/api/left-menu", newCategoryList);
+      const response = await axios.put("/api/left-menu", newCategoryList);
       // check response is okay, and give notification
       if (response.status !== 201) {
         // show error

@@ -94,7 +94,7 @@ export default function EditProviderForm({
     const cleanData = diffFormData(data, provider);
     try {
       setErrorMessage("");
-      let response = await axios.patch(
+      const response = await axios.patch(
         `/api/provider-platforms/${provider?.id}`,
         cleanData,
       );

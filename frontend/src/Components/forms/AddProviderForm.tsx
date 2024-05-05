@@ -39,7 +39,7 @@ export default function AddProviderForm({
   const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
     try {
       setErrorMessage("");
-      let response = await axios.post("/api/provider-platforms", data);
+      const response = await axios.post("/api/provider-platforms", data);
       if (response.status !== 201) {
         onSuccess(ToastState.error, "Failed to add provider platform");
       }

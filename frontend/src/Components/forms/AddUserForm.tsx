@@ -33,7 +33,7 @@ export default function AddUserForm({
     try {
       setErrorMessage("");
 
-      let response = await axios.post("/api/users", data);
+      const response = await axios.post("/api/users", data);
 
       if (response.status !== 201) {
         onSuccess("", "Failed to create user", ToastState.error);

@@ -3,8 +3,6 @@
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
 echo "frontend .........."
 cd frontend
-echo "running eslint 󰎙 ....."
-#npm run lint
 echo "running prettier 󰎙 ..."
 npx lint-staged
 echo "backend ..............."

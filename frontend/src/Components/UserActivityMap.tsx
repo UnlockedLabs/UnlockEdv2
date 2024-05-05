@@ -60,12 +60,12 @@ export default function UserActivityMap({ user }: { user: User }) {
   );
 
   const generateYearOptions = () => {
-    let years: ValidYears = { "Past year": "Past year" };
+    const years: ValidYears = { "Past year": "Past year" };
     const currentYear = new Date().getUTCFullYear();
     let i = currentYear - userCreatedAt.getUTCFullYear();
     for (i; i >= 0; i--) {
       /* added " " to change listed order without impacting appearance */
-      let str = " " + String(userCreatedAt.getUTCFullYear() + i);
+      const str = " " + String(userCreatedAt.getUTCFullYear() + i);
       years[str] = str;
     }
     return years;
@@ -85,12 +85,12 @@ export default function UserActivityMap({ user }: { user: User }) {
   };
 
   /* generate nodes for the legend */
-  let legendNodes: JSX.Element[] = [];
+  const legendNodes: JSX.Element[] = [];
   for (let i = 0; i < 5; i++) {
     legendNodes.push(<Node quartile={i} key={i} />);
   }
 
-  let yearOptions = generateYearOptions();
+  const yearOptions = generateYearOptions();
 
   return (
     <div className="w-[25.375rem] md:w-[35.25rem] lg:w-[49.875rem] xl:w-[65.063rem]">
@@ -194,18 +194,18 @@ function ActivityMapTable({
   range: string;
 }) {
   /* array that holds cells for the table */
-  let tableData: JSX.Element[] = [];
-  let tableMonths: string[] = [];
+  const tableData: JSX.Element[] = [];
+  const tableMonths: string[] = [];
   let i;
-  let len = data.length;
+  const len = data.length;
   const now = new Date();
   let aggregateActivityTime = 0;
   let oldMonth, newMonth;
 
   const convertSeconds = (secs: number) => {
-    let hours = Math.floor(secs / 3600);
-    let minutes = Math.floor((secs % 3600) / 60);
-    let seconds = Math.floor(secs % 60);
+    const hours = Math.floor(secs / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    const seconds = Math.floor(secs % 60);
     if (hours) {
       return `${hours}h ${minutes}m ${seconds}s`;
     } else if (minutes) {
@@ -248,7 +248,7 @@ function ActivityMapTable({
     tableMonths.push(months[date.getUTCMonth()]);
   };
 
-  let dateCount = subtractYear(end);
+  const dateCount = subtractYear(end);
   data.sort((a, b) => {
     if (a.date < b.date) {
       return -1;
