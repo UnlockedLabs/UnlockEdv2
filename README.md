@@ -1,5 +1,7 @@
 ## Plan to rewrite it in Go:
 
+TODO: Login form + reset password will throw. error with throw
+
 3. Auth OIDC: Canvas auth | Kolibri OIDC login TODO
 
 4. New structure around Programs | Milestones | Outcomes | Content | User Mappings

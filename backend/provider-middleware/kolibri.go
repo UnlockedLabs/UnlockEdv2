@@ -271,7 +271,7 @@ func (ks *KolibriService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	}
 	var importCourses []UnlockEdImportProgram
 	for _, course := range kolibriResponse {
-		ulCourse := course.IntoCourse()
+		ulCourse := course.IntoCourse(ks.BaseURL)
 		ulCourse.ProviderPlatformID = ks.ProviderPlatformID
 		importCourses = append(importCourses, *ulCourse)
 	}

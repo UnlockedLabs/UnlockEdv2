@@ -32,6 +32,7 @@ var TableList = []interface{}{
 	&models.Program{},
 	&models.Milestone{},
 	&models.Outcome{},
+	&models.Activity{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -121,7 +122,7 @@ func (db *DB) SeedDefaultData() {
 	}
 }
 
-const defaultLeftMenuLinks = `[{"id":1,"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
+const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
 
 func (db *DB) SeedTestData() {
 	platforms, err := os.ReadFile("test_data/provider_platforms.json")

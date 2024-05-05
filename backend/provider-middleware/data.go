@@ -111,7 +111,7 @@ type KolibriContent struct {
 	LastPublished      string      `json:"last_published"`
 }
 
-func (kc *KolibriContent) IntoCourse() *UnlockEdImportProgram {
+func (kc *KolibriContent) IntoCourse(provUrl string) *UnlockEdImportProgram {
 	url, err := kc.UploadImage()
 	if err != nil {
 		log.Printf("Failed to upload image %v", err)
@@ -123,6 +123,7 @@ func (kc *KolibriContent) IntoCourse() *UnlockEdImportProgram {
 		Description:  kc.Description,
 		ThumbnailURL: url,
 		IsPublic:     kc.Public,
+		ExternalURL:  provUrl + "/channels/" + kc.Root,
 	}
 }
 
@@ -202,6 +203,7 @@ type UnlockEdImportProgram struct {
 	ExternalID         string `json:"external_id"`
 	ThumbnailURL       string `json:"thumbnail_url"`
 	IsPublic           bool   `json:"is_public"`
+	ExternalURL        string `json:"external_url"`
 }
 
 type UnlockEdEnrollment struct {

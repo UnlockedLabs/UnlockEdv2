@@ -15,6 +15,7 @@ const (
 type Milestone struct {
 	DatabaseFields               // ID, CreatedAt, UpdatedAt, DeletedAt
 	ProgramID      uint          `gorm:"not null" json:"program_id"`
+	ExternalID     string        `gorm:"size:255;not null" json:"external_id"`
 	Type           MilestoneType `gorm:"size:255;not null" json:"type"`
 	IsCompleted    bool          `gorm:"default:false" json:"is_completed"`
 

@@ -10,8 +10,8 @@ import (
 )
 
 func (srv *Server) registerUserActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.handleGetUserActivityByID)))
+	srv.Mux.Handle("GET /api/users/activity-log", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
+	srv.Mux.Handle("GET /api/users/{id}/activity-log", srv.applyMiddleware(http.HandlerFunc(srv.handleGetUserActivityByID)))
 }
 
 func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
@@ -21,7 +21,6 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 			userAgent = "Unknown; Unknown"
 		}
 		log.Printf("User-Agent: %s\n", userAgent)
-		// Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0
 		os := "Unknown"
 		arch := "Unknown"
 

@@ -8,6 +8,7 @@ type Program struct {
 	ExternalID         string `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
 	ThumbnailURL       string `gorm:"size:255" json:"thumbnail_url"`
 	IsPublic           bool   `gorm:"default:false" json:"is_public"`
+	ExternalURL        string `gorm:"size:255" json:"external_url"`
 
 	ProviderPlatform ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
 	Milestones       []Milestone      `json:"-"`
