@@ -2,27 +2,7 @@
 
 TODO: Login form + reset password will throw. error with throw
 
-3. Auth OIDC: Canvas auth | Kolibri OIDC login TODO
-
-4. New structure around Programs | Milestones | Outcomes | Content | User Mappings
-
-5. Provider platforms /api/v1/provider-platforms **COMPLETED: Backend**
-
-6. Category /api/v1/categories | Left-Menu mgmt
-
-7. ProviderUserMapping | api/v1/users + api/v1/users/{id}/logins **COMPLETED: Backend**
-
-8. UserActivity | api/v1/users/{id}/activity   **COMPLETED: Backend**
-
-9. UserActivityMap | api/v1/users/{id}/activity-map
-
-
-
-**User Roles** | middleware/route protection
-
-
-## UI integration:
-
+Auth OIDC: Canvas auth | Kolibri OIDC login TODO
 
 # UnlockEdv2
 

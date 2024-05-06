@@ -3,9 +3,6 @@ package models
 type MilestoneType string
 
 const (
-	Interaction          MilestoneType = "interaction"   // watching video, clicking link, etc
-	Completion           MilestoneType = "completion"    // completing submodule, video, etc
-	Participation        MilestoneType = "participation" // formal enrollment
 	QuizSubmission       MilestoneType = "quiz_submission"
 	GradeReceived        MilestoneType = "grade_received"
 	AssignmentSubmission MilestoneType = "assignment_submission"
@@ -24,10 +21,4 @@ type Milestone struct {
 
 func (Milestone) TableName() string {
 	return "milestones"
-}
-
-func (ms *Milestone) UpdateUserEngagement() {
-	if ms.Type == Interaction {
-		ms.Type = Completion
-	}
 }

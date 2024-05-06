@@ -83,48 +83,11 @@ These colors are used throughout the project, so please try to use them where po
 Checkout the [daisyUI documentation](https://daisyui.com/docs) for more information.
 
 ### Backend
-
 ============
 
 #### Style and Naming-Conventions:
 
-Currently (3/2024) we are working to enforce a consistent style and naming convention for the back-end code.
-
-Variables are to be lower-snake case, functions are to be camelCase, and classes are to be UpperCamelCase.
-We also are ultimately going to be enforcing `declare(strict_types=1);` at the top of each PHP file.
-
-```php
-<?php
-declare(strict_types=1);
-
-class ExampleClass
-{
-public string $example_property;
-
-private function exampleFunction(array $example_array): int
-{
-    $example_var = $example_array['foo'];
-    return $example_var + 42;
-```
-
-The back-end is built with the Laravel framework. Please follow these guidelines when making changes to the back-end:
-
--   Use Laravel's built-in validation and request classes. If your request doesn't require form validation, you can use either the `AdminRequest` or `UserAuthRequest`
-    or basic `Request` class to determine the authorization depending on the resource the handler provides.
-
--   New handlers must always return a class that inherits from `Resource`. These can be generated with `php artisan make:resource ResourceName`
-
--   Use Laravel's built-in Eloquent ORM wherever possible for database interactions.
-
--   We use `Pest` testing framework, built on top of `php-unit` for running tests. However they can still be generated with `php artisan make:test TestName`.
-
--   Each API endpoint should have a corresponding test in the `tests/Feature` directory. You may use `php artisan app:make-controller-test ControllerName` to generate
-    a template test class for the controller.
-
--   Each Model needs to have a properly defined Factory and Seeder class. You can generate these with `php artisan make:factory FactoryName` and `php artisan make:seeder SeederName`.
-    Should there be any foreign key constraints, instead of instantiating new models to fulfill them, please instead use random numbers, and provide methods to insert the necessary
-    FK's upon instantiation of the Factory. This means you must use `MyModel::factory()->forOtherModel($constraint->id)->makeOne()` instead of `MyModel::factory()->createOne()` when
-    populating test data. Examples of this can be found in the `database/factories/EnrollmentFactory.php` file.
+Because the backend is in Go, these decisions are made for us, and we follow the standard conventions of the language provided by `gofmt`, and we use `gopls` LSP for code completion and linting.
 
 ## Code Review Process
 
