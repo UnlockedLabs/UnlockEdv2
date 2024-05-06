@@ -34,12 +34,19 @@ type User struct {
 	Role          UserRole `gorm:"size:255;default student" json:"role"`
 
 	/* foreign key */
-	ProviderLogins []ProviderUserMapping `json:"-"`
-	Activities     []UserActivity        `json:"-"`
+	Mappings    []ProviderUserMapping `json:"-"`
+	ActivityLog []UserActivity        `json:"-"`
 }
 
 func (User) TableName() string {
 	return "users"
+}
+
+func (usr *User) BeforeCreate(tx *gorm.DB) error {
+	if usr.Email == "" {
+		usr.Email = usr.NameLast + "." + usr.NameFirst + "@unlocked.v2"
+	}
+	return nil
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

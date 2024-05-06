@@ -6,8 +6,8 @@ type Outcome struct {
 	ProgramID uint        `gorm:"not null" json:"program_id"`
 	UserID    uint        `gorm:"not null" json:"user_id"`
 
-	Program Program `gorm:"foreignKey:ProgramID" json:"-"`
-	User    User    `gorm:"foreignKey:UserID" json:"-"`
+	Program *Program `gorm:"foreignKey:ProgramID" json:"-"`
+	User    *User    `gorm:"foreignKey:UserID" json:"-"`
 }
 
 type OutcomeType string

@@ -16,7 +16,7 @@ type Milestone struct {
 	Type           MilestoneType `gorm:"size:255;not null" json:"type"`
 	IsCompleted    bool          `gorm:"default:false" json:"is_completed"`
 
-	Program Program `gorm:"foreignKey:ProgramID" json:"-"`
+	Program *Program `gorm:"foreignKey:ProgramID" json:"-"`
 }
 
 func (Milestone) TableName() string {

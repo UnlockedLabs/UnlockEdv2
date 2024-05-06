@@ -9,7 +9,7 @@ type OidcClient struct {
 	RedirectURIs       string `gorm:"size:255" json:"redirect_uris"`
 	Scopes             string `gorm:"size:255" json:"scopes"`
 
-	Provider ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
+	Provider *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
 }
 
 func (OidcClient) TableName() string {

@@ -10,9 +10,9 @@ type Program struct {
 	IsPublic           bool   `gorm:"default:false" json:"is_public"`
 	ExternalURL        string `gorm:"size:255" json:"external_url"`
 
-	ProviderPlatform ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
-	Milestones       []Milestone      `json:"-"`
-	Outcomes         []Outcome        `json:"-"`
+	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
+	Milestones       []Milestone       `json:"-"`
+	Outcomes         []Outcome         `json:"-"`
 }
 
 func (Program) TableName() string {
