@@ -1,7 +1,7 @@
 import { User, UserRole } from "../common";
 import { useEffect, useRef } from "react";
 import {
-  ArrowRightOnRectangleIcon,
+  ArrowRightEndOnRectangleIcon,
   HomeIcon,
   UsersIcon,
   ChartBarIcon,
@@ -34,7 +34,7 @@ export default function PageNav({
   }, []);
 
   return (
-    <div className="navbar">
+    <div className="navbar px-8">
       <div className="navbar-start breadcrumbs pl-0">
         <ul>
           <li>
@@ -123,7 +123,7 @@ export default function PageNav({
 
                 <li>
                   <button onClick={() => handleLogout()}>
-                    <ArrowRightOnRectangleIcon className="h-4" />
+                    <ArrowRightEndOnRectangleIcon className="h-4" />
                     Logout
                   </button>
                 </li>

@@ -1,5 +1,5 @@
 import { PropsWithChildren } from "react";
-import LeftMenu from "../Components/LeftMenu";
+import Navbar from "@/Components/Navbar";
 
 export default function AuthenticatedLayout({
   title,
@@ -9,8 +9,9 @@ export default function AuthenticatedLayout({
     <div className="font-lato">
       <div title={title} />
       <div className="flex">
-        <LeftMenu />
-        <main className="w-full min-h-screen bg-base-100 px-4">{children}</main>
+        <Navbar/>
+        <div className="w-0.5 bg-grey-1"></div>
+        <main className="w-full min-h-screen bg-background px-4">{children}</main>
       </div>
     </div>
   );

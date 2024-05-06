@@ -1,4 +1,5 @@
 import { Program, ServerResponse } from "@/common";
+import CourseCard from "./CourseCard";
 import useSWR from "swr";
 
 export default function CourseContent() {
@@ -7,37 +8,6 @@ export default function CourseContent() {
     error,
     isLoading,
   } = useSWR<ServerResponse<Program>>(`/api/programs`);
-
-  function CourseCard({ course }: { course: Program }) {
-    // Function to truncate the description to the first 100 characters
-    const truncateDescription = (description: string) => {
-      if (description.length > 100) {
-        return description.slice(0, 100) + "...";
-      } else {
-        return description;
-      }
-    };
-    const coverImage = course.thumbnail_url;
-    let url = course.thumbnail_url ?? "";
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "https://" + url;
-    }
-    return (
-      <div className="h-[400px]">
-        <a href={url} target="_blank" rel="noopener noreferrer">
-          <div className="card card-compact bg-base-100 shadow-xl h-full">
-            <figure className="h-[60%] p-2">
-              <img src={coverImage} alt="" className="object-contain" />
-            </figure>
-            <div className="card-body">
-              <h1 className="card-title">{course.name}</h1>
-              <p>{truncateDescription(course.description ?? "")}</p>
-            </div>
-          </div>
-        </a>
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 grid grid-cols-3 gap-5 w-[85%]">

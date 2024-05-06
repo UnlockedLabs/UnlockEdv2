@@ -1,253 +1,227 @@
-/* Stylesheet for locally loaded fonts */
-
-/* Lato Thin */
-
 @font-face {
-  font-family: "Lato";
-  font-style: italic;
-  font-weight: 100;
-  font-display: swap;
-  src: url(lato-thin-italic-latin.woff2) format("woff2");
-}
-
-@font-face {
-  font-family: "Lato";
+  font-family: "Lexend";
+  src: url("Lexend-ExtraBold.woff2") format("woff2");
+  font-weight: bold;
   font-style: normal;
-  font-weight: 100;
   font-display: swap;
-  src: url(lato-thin-normal-latin.woff2) format("woff2");
-}
-
-/* Lato Light */
-
-@font-face {
-  font-family: "Lato";
-  font-style: italic;
-  font-weight: 300;
-  font-display: swap;
-  src: url(lato-light-italic-latin.woff2) format("woff2");
 }
 
 @font-face {
-  font-family: "Lato";
-  font-style: normal;
-  font-weight: 300;
-  font-display: swap;
-  src: url(lato-light-normal-latin.woff2) format("woff2");
-}
-
-/* Lato Normal */
-
-@font-face {
-  font-family: "Lato";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url(lato-regular-italic-latin.woff2) format("woff2");
-}
-
-@font-face {
-  font-family: "Lato";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url(lato-regular-normal-latin.woff2) format("woff2");
-}
-
-/* Lato Bold */
-
-@font-face {
-  font-family: "Lato";
-  font-style: italic;
-  font-weight: 700;
-  font-display: swap;
-  src: url(lato-bold-italic-latin.woff2) format("woff2");
-}
-
-@font-face {
-  font-family: "Lato";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url(lato-bold-normal-latin.woff2) format("woff2");
-}
-
-/* Lato Black */
-
-@font-face {
-  font-family: "Lato";
-  font-style: italic;
+  font-family: "Lexend";
+  src: url("Lexend-Black.woff2") format("woff2");
   font-weight: 900;
-  font-display: swap;
-  src: url(lato-black-italic-latin.woff2) format("woff2");
-}
-
-@font-face {
-  font-family: "Lato";
   font-style: normal;
-  font-weight: 900;
   font-display: swap;
-  src: url(lato-black-normal-latin.woff2) format("woff2");
-}
-
-/* Poppins Thin */
-
-@font-face {
-  font-family: "Poppins";
-  font-style: italic;
-  font-weight: 100;
-  font-display: swap;
-  src: url(poppins-thin-italic-latin.woff2) format("woff2");
 }
 
 @font-face {
-  font-family: "Poppins";
+  font-family: "Lexend";
+  src: url("Lexend-Bold.woff2") format("woff2");
+  font-weight: bold;
   font-style: normal;
-  font-weight: 100;
   font-display: swap;
-  src: url(poppins-thin-normal-latin.woff2) format("woff2");
 }
 
-/* Poppins Extra Light */
+@font-face {
+  font-family: "Lexend";
+  src: url("Lexend-Thin.woff2") format("woff2");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
 
 @font-face {
-  font-family: "Poppins";
-  font-style: italic;
+  font-family: "Lexend";
+  src: url("Lexend-ExtraLight.woff2") format("woff2");
   font-weight: 200;
+  font-style: normal;
   font-display: swap;
-  src: url(poppins-extra-light-italic-latin.woff2) format("woff2");
 }
 
 @font-face {
-  font-family: "Poppins";
+  font-family: "Lexend";
+  src: url("Lexend-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lexend";
+  src: url("Lexend-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lexend";
+  src: url("Lexend-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lexend";
+  src: url("Lexend-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lexend";
+  src: url("Lexend-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Variable fonts usage:
+:root { font-family: "Inter", sans-serif; }
+@supports (font-variation-settings: normal) {
+:root { font-family: "InterVariable", sans-serif; font-optical-sizing: auto; }
+} */
+@font-face {
+  font-family: InterVariable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("InterVariable.woff2") format("woff2");
+}
+@font-face {
+  font-family: InterVariable;
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("InterVariable-Italic.woff2") format("woff2");
+}
+
+/* static fonts */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url("Inter-Thin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100;
+  font-display: swap;
+  src: url("Inter-ThinItalic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
   font-style: normal;
   font-weight: 200;
   font-display: swap;
-  src: url(poppins-extra-light-normal-latin.woff2) format("woff2");
+  src: url("Inter-ExtraLight.woff2") format("woff2");
 }
-
-/* Poppins Light */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 300;
+  font-weight: 200;
   font-display: swap;
-  src: url(poppins-light-italic-latin.woff2) format("woff2");
+  src: url("Inter-ExtraLightItalic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url(poppins-light-normal-latin.woff2) format("woff2");
+  src: url("Inter-Light.woff2") format("woff2");
 }
-
-/* Poppins Normal */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 400;
+  font-weight: 300;
   font-display: swap;
-  src: url(poppins-regular-italic-latin.woff2) format("woff2");
+  src: url("Inter-LightItalic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(poppins-regular-normal-latin.woff2) format("woff2");
+  src: url("Inter-Regular.woff2") format("woff2");
 }
-
-/* Poppins Medium */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 500;
+  font-weight: 400;
   font-display: swap;
-  src: url(poppins-medium-italic-latin.woff2) format("woff2");
+  src: url("Inter-Italic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url(poppins-medium-normal-latin.woff2) format("woff2");
+  src: url("Inter-Medium.woff2") format("woff2");
 }
-
-/* Poppins Semi Bold */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 600;
+  font-weight: 500;
   font-display: swap;
-  src: url(poppins-semi-bold-italic-latin.woff2) format("woff2");
+  src: url("Inter-MediumItalic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url(poppins-semi-bold-normal-latin.woff2) format("woff2");
+  src: url("Inter-SemiBold.woff2") format("woff2");
 }
-
-/* Poppins Bold */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 700;
+  font-weight: 600;
   font-display: swap;
-  src: url(poppins-bold-italic-latin.woff2) format("woff2");
+  src: url("Inter-SemiBoldItalic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url(poppins-bold-normal-latin.woff2) format("woff2");
+  src: url("Inter-Bold.woff2") format("woff2");
 }
-
-/* Poppins Extra Bold */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 800;
+  font-weight: 700;
   font-display: swap;
-  src: url(poppins-extra-bold-italic-latin.woff2) format("woff2");
+  src: url("Inter-BoldItalic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url(poppins-extra-bold-normal-latin.woff2) format("woff2");
+  src: url("Inter-ExtraBold.woff2") format("woff2");
 }
-
-/* Poppins Black */
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: italic;
-  font-weight: 900;
+  font-weight: 800;
   font-display: swap;
-  src: url(poppins-black-italic-latin.woff2) format("woff2");
+  src: url("Inter-ExtraBoldItalic.woff2") format("woff2");
 }
-
 @font-face {
-  font-family: "Poppins";
+  font-family: "Inter";
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url(poppins-black-normal-latin.woff2) format("woff2");
+  src: url("Inter-Black.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url("Inter-BlackItalic.woff2") format("woff2");
 }
