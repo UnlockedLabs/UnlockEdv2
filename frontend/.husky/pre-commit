@@ -5,6 +5,8 @@ echo "checking frontend .........."
 cd frontend
 echo "running prettier 󰎙 ..."
 npx prettier -w .
+echo "running oxlint 󰎙 ..."
+npx oxlint --fix .
 echo "checking backend ..............."
 cd ../backend
 echo "running golangci-lint  ......"

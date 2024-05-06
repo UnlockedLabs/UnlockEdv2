@@ -1,16 +1,22 @@
-## Plan to rewrite it in Go:
+## TODO:
 
-TODO: Login form + reset password will throw. error with throw
+Frontend:
 
-Auth OIDC: Canvas auth | Kolibri OIDC login TODO
+ - Login form + reset password will throw error when wrong password is entered
+
+Backend:
+
+ - **Auth OIDC**: Canvas auth | Kolibri
+ - Fetching `activities` from providers in the middleware, to be used by the `UserActivityMap`("gh contribution chart")
+
 
 # UnlockEdv2
 
 ## Requirements
 
-Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Ubuntu.
+Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Linux.
 
--   Docker Compose
+-   Docker && Docker Compose
 -   Go 1.22
 -   Node.js > 18.0
 -   Yarn
@@ -31,14 +37,14 @@ If you would like to contribute, please have a look at our [contribution guideli
 -   Postgres 16.0
 
 -   Clone the repository
--   Copy ‘.env.example’ to ‘.env’
+-   `cp .env.example .env && cp frontend/.env.example frontend/.env`
 -   Run `MIGRATE_FRESH=true docker-compose up --build`
 (This command only needs to be ran the first time, subsequently you may omit the
 `MIGRATE_FRESH=true` flag)
 -   Change directory to the frontend directory
--   Run `npm install`
--   Run `npm run dev`
--   Open `http://localhost` in your browser
+-   Run `yarn install`
+-   Run `yarn run dev`
+-   Open `http://localhost:5173` in your browser
 -   Login with `SuperAdmin` and password: `ChangeMe!`
 -   You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
 

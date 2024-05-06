@@ -34,6 +34,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerMilestonesRoutes()
 	srv.registerOutcomesRoutes()
 	srv.registerActivityRoutes()
+	srv.registerOidcRoutes()
 }
 
 func NewServer(isTesting bool) *Server {

@@ -19,6 +19,7 @@ export interface PaginatedResponse<T> {
   data: Array<T>;
   meta: PaginationMeta;
 }
+
 export interface PaginationMeta {
   total: number;
   current_page: number;

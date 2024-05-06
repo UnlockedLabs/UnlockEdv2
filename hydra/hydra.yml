@@ -11,7 +11,7 @@ urls:
 
 secrets:
   system:
-    - ${APP_KEY}
+    - base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
 
 oidc:
   subject_identifiers:

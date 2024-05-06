@@ -1,38 +1,38 @@
 services:
-  # server:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - DB_HOST=postgres
-  #     - DB_PORT=5432
-  #     - DB_USER=unlocked
-  #     - DB_PASSWORD=dev
-  #     - DB_NAME=unlocked
-  #     - MIGRATE_FRESH=${MIGRATE_FRESH}
-  #     - PROVIDER_SERVICE_URL=http://provider-service:8081
-  #   depends_on:
-  #     - postgres
-  #   env_file:
-  #     - ".env"
-  #   command: >
-  #     sh -c '
-  #     while ! nc -z  postgres 5432; do
-  #       sleep 3;
-  #     done;
-  #     ./backend'
-  # provider-service:
-  #   build:
-  #     context: ./backend/provider-middleware
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8081:8081"
-  #   depends_on:
-  #     - server
-  #   env_file: ".env"
-  #   command: ./provider-service
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=unlocked
+      - DB_PASSWORD=dev
+      - DB_NAME=unlocked
+      - MIGRATE_FRESH=${MIGRATE_FRESH}
+      - PROVIDER_SERVICE_URL=http://provider-service:8081
+    depends_on:
+      - postgres
+    env_file:
+      - ".env"
+    command: >
+      sh -c '
+      while ! nc -z  postgres 5432; do
+        sleep 3;
+      done;
+      ./backend'
+  provider-service:
+    build:
+      context: ./backend/provider-middleware
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - server
+    env_file: ".env"
+    command: ./provider-service
 
   postgres:
     image: postgres:13
@@ -44,5 +44,58 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+#
+#   hydra:
+#     image: oryd/hydra:v2.2.0
+#     ports:
+#       - "4444:4444" # Public port
+#       - "4445:4445" # Admin port
+#       - "5555:5555" # Port for hydra token user
+#     command: serve -c /etc/config/hydra/hydra.yml all --dev
+#     volumes:
+#       - type: volume
+#         source: hydra-sqlite
+#         target: /var/lib/sqlite
+#         read_only: false
+#       - type: bind
+#         source: ./hydra
+#         target: /etc/config/hydra
+#     environment:
+#       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+#     restart: unless-stopped
+#     depends_on:
+#       - hydra-migrate
+#     networks:
+#       - intranet
+#   hydra-migrate:
+#     image: oryd/hydra:v2.2.0
+#     environment:
+#       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+#     command: migrate -c /etc/config/hydra/hydra.yml sql -e --yes
+#     volumes:
+#       - type: volume
+#         source: hydra-sqlite
+#         target: /var/lib/sqlite
+#         read_only: false
+#       - type: bind
+#         source: ./hydra
+#         target: /etc/config/hydra
+#     restart: on-failure
+#     networks:
+#       - intranet
+#   consent:
+#     environment:
+#       - HYDRA_ADMIN_URL=http://hydra:4445
+#     image: oryd/hydra-login-consent-node:v2.2.0
+#     ports:
+#       - "3000:3000"
+#     restart: unless-stopped
+#     networks:
+#       - intranet
+#
+# networks:
+#   intranet:
+#
 volumes:
   postgres_data:
+  #hydra-sqlite:
