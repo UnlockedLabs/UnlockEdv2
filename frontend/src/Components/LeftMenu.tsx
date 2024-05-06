@@ -1,7 +1,7 @@
 import Brand from "./Brand";
 import { HomeIcon, ArchiveBoxIcon } from "@heroicons/react/24/solid";
 import useSWR from "swr";
-import { Category } from "../common";
+import { Category, ServerResponse } from "../common";
 import { useMemo } from "react";
 
 function CategoryItem({ name, links, rank }: Category) {
@@ -29,17 +29,18 @@ function CategoryItem({ name, links, rank }: Category) {
 }
 
 export default function LeftMenu() {
-  const { data, error, isLoading } = useSWR("/api/left-menu");
+  const { data, error, isLoading } =
+    useSWR<ServerResponse<Category>>("/api/left-menu");
   const categoryItems = useMemo(() => {
     if (error) return <div>failed to load</div>;
     if (isLoading) return <div>loading...</div>;
 
     if (data) {
-      return data.data.map((category: Category) => {
+      return data.data.map((category: Category, i) => {
         return (
           <CategoryItem
-            key={category.id}
-            id={category.id}
+            key={category.name.concat(category.rank.toString())}
+            id={i}
             name={category.name}
             links={category.links}
             rank={category.rank}

@@ -26,6 +26,7 @@ func (db *DB) GetAllUserActivity(page, perPage int) (int64, []UserAcitivityJoin,
 		Table("user_activities").
 		Select("user_activities.id, user_activities.user_id, user_activities.browser_name, user_activities.clicked_url, user_activities.created_at, user_activities.device, user_activities.platform, user_activities.updated_at, users.name_first as user_name_first, users.name_last as user_name_last").
 		Joins("JOIN users ON user_activities.user_id = users.id").
+		Order("user_activities.created_at DESC").
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&userActivities).
@@ -46,6 +47,7 @@ func (db *DB) SearchUserActivity(search string, page, perPage int) (int64, []Use
 		Select("user_activities.id, user_activities.user_id, user_activities.browser_name, user_activities.clicked_url, user_activities.created_at, user_activities.device, user_activities.platform, user_activities.updated_at, users.name_first as user_name_first, users.name_last as user_name_last").
 		Joins("JOIN users ON user_activities.user_id = users.id").
 		Where("clicked_url LIKE ?", "%"+search+"%").Or("user_name_last LIKE ?", "%"+search+"%").Or("user_name_first LIKE ?", "%"+search+"%").
+		Order("user_activities.created_at DESC").
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&userActivities).

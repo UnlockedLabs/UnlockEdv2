@@ -1,9 +1,14 @@
+import { Program, ServerResponse } from "@/common";
 import useSWR from "swr";
 
 export default function CourseContent() {
-  const { data: enrollments, error, isLoading } = useSWR(`/api/programs`);
+  const {
+    data: enrollments,
+    error,
+    isLoading,
+  } = useSWR<ServerResponse<Program>>(`/api/programs`);
 
-  function CourseCard({ course }: { course: any }) {
+  function CourseCard({ course }: { course: Program }) {
     // Function to truncate the description to the first 100 characters
     const truncateDescription = (description: string) => {
       if (description.length > 100) {
@@ -25,13 +30,8 @@ export default function CourseContent() {
               <img src={coverImage} alt="" className="object-contain" />
             </figure>
             <div className="card-body">
-              <h2 className="text-slate-600">{course.course_code}</h2>
-              <h1 className="card-title">{course.course_name}</h1>
-              <p>
-                {truncateDescription(
-                  course.course_description ? course.course_description : "",
-                )}
-              </p>
+              <h1 className="card-title">{course.name}</h1>
+              <p>{truncateDescription(course.description ?? "")}</p>
             </div>
           </div>
         </a>

@@ -48,7 +48,7 @@ export default function LeftMenuManagement() {
     if (isLoading) return <div>loading...</div>;
     return categoryList.map((category, index) => {
       return (
-        <div key={category.name.concat(category.id.toString())}>
+        <div key={category.name.concat(index.toString())}>
           <div
             className={
               draggedItem.current == index

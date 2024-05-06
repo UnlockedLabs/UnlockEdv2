@@ -13,6 +13,25 @@ export interface User {
   [key: string]: any;
 }
 
+export interface PaginatedResponse<T> {
+  next: string;
+  message: string;
+  data: Array<T>;
+  meta: PaginationMeta;
+}
+export interface PaginationMeta {
+  total: number;
+  current_page: number;
+  last_page: number;
+  per_page: number;
+}
+
+export interface ServerResponse<T> {
+  [key: string]: any;
+  message: string;
+  data: Array<T>;
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -34,6 +53,28 @@ export interface Activity {
   updated_at: Date;
   user_name_first: string;
   user_name_last: string;
+}
+export interface Program {
+  id: number;
+  provider_platform_id: number;
+  name: string;
+  description: string;
+  external_id: string;
+  thumbnail_url: string;
+  is_public: boolean;
+  external_url: string;
+  created_at: Date;
+  updated_at: Date;
+}
+export interface Milestone {
+  id: number;
+  program_id: number;
+  type: string;
+  external_url: string;
+  description: string;
+  external_id: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface ProviderPlatform {
