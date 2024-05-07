@@ -198,7 +198,7 @@ function ActivityMapTable({
   const tableMonths: string[] = [];
   let i;
   const len = data.length;
-  const now = new Date();
+  //  const now = new Date();
   let aggregateActivityTime = 0;
   let oldMonth, newMonth;
 
@@ -219,14 +219,15 @@ function ActivityMapTable({
     const parsedTime = convertSeconds(time);
     if (error) {
       return "Error fetching activity data";
-    } else if (isLoading) {
+    }
+    if (isLoading) {
       return "Loading...";
     } else if (time == 0) {
       return "No activity ";
     } else if (time == 1) {
       return "You have completed one hour of activity";
     } else {
-      return "You have completed " + String(time) + " hours of activity";
+      return "You have completed " + String(parsedTime) + " hours of activity";
     }
   };
 
@@ -366,7 +367,7 @@ function ActivityMapTable({
               <div className={nodeSizes}></div>
             </td>
           </tr>
-          {tableData.map((node, index) => {
+          {tableData.map((_, index) => {
             if (index % 7 == 0) {
               return (
                 <tr className="inline-block" key={index}>

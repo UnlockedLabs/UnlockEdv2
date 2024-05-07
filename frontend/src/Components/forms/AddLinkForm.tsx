@@ -13,7 +13,7 @@ export default function AddLinkForm({
 }: {
   onSuccess: (title: string, url: string) => void;
 }) {
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, _] = useState("");
 
   const {
     register,

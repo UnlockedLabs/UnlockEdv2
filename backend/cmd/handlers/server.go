@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Server struct {
@@ -59,20 +60,28 @@ func NewServer(isTesting bool) *Server {
 		server := Server{Db: db, Logger: slog.New(slog.NewTextHandler(logfile, nil)), Mux: mux}
 		server.RegisterRoutes()
 		if prod {
-			server.InitProductionServer()
+			log.Println("PROD environment: Serving frontend")
+			server.Mux.HandleFunc("GET /", server.ServeFrontend)
 		}
 		return &server
 	}
 }
 
-func (srv *Server) InitProductionServer() {
-	srv.ServeFrontend()
-	srv.RegisterRoutes()
+func (srv *Server) ServeFrontend(w http.ResponseWriter, r *http.Request) {
+	var p string
+	if strings.Contains(r.URL.Path, ".") {
+		p = FrontendPath + r.URL.Path
+	} else {
+		p = IndexPage
+	}
+	srv.LogInfo("Serving frontend file", p)
+	http.ServeFile(w, r, p)
 }
 
-func (srv *Server) ServeFrontend() {
-	srv.Mux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
-}
+const (
+	FrontendPath = "frontend/dist/"
+	IndexPage    = "frontend/dist/index.html"
+)
 
 func (srv *Server) LogInfo(message ...interface{}) {
 	srv.Logger.Info("ENV: "+os.Getenv("APP_ENV"), message...)
@@ -96,7 +105,7 @@ func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", os.Getenv("FRONTEND_URL"))
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")

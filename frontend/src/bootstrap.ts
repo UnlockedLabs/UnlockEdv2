@@ -1,4 +1,7 @@
 import axios from "axios";
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = `${import.meta.env.VITE_BACKEND_URL}`;
+axios.defaults.proxy = {
+  host: "localhost",
+  port: 8080,
+};
 window.axios = axios;

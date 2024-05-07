@@ -3,6 +3,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import InputError from "../../Components/inputs/InputError";
 import PrimaryButton from "../../Components/PrimaryButton";
 import { TextInput } from "../../Components/inputs/TextInput";
+import axios from "axios";
 type Inputs = {
   password: string;
   confirmation: string;
@@ -22,11 +23,19 @@ export default function ChangePasswordForm() {
     try {
       setErrorMessage("");
       setProcessing(true);
-      await window.axios.post("/api/reset-password", data);
-      window.location.replace("dashboard");
+      const response = await axios.post("/api/reset-password", data);
+      if (response.status === 200) {
+        window.location.replace("dashboard");
+      } else {
+        setErrorMessage(`Your passwords did not pass validation, 
+        please check that they match and are > 8 characters with at least 1 letter.`);
+      }
     } catch (error: any) {
       setProcessing(false);
-      setErrorMessage(error.response.data.message);
+      setErrorMessage(
+        error.response.data.message ||
+          "Your passwords didn't pass validation, please try again.",
+      );
       reset();
     }
   };

@@ -4,12 +4,15 @@ COPY go.mod go.sum ./
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o backend Go-Prototype/backend
 
+FROM node:21-alpine3.19 as frontend
+WORKDIR /app/
+COPY frontend/. ./
+RUN npm install yarn
+RUN yarn install
+RUN yarn run build
+
 FROM alpine:latest
-WORKDIR /
-RUN apk add --no-cache netcat-openbsd
-COPY --from=builder /app/backend .
-RUN mkdir frontend
-RUN mkdir frontend/public
-COPY ./frontend/public/* /frontend/public/
+COPY --from=builder /app/backend ./
+COPY --from=frontend /app/dist ./frontend/dist
 EXPOSE 8080
 ENTRYPOINT ["./backend"]

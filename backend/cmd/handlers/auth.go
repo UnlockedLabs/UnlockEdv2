@@ -63,7 +63,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 			if claims.PasswordReset && !isAuthRoute(r) {
-				http.Redirect(w, r.WithContext(ctx), os.Getenv("FRONTEND_URL")+"/reset-password", http.StatusOK)
+				http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -190,7 +190,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	if password != confirm || !validatePassword(password) {
-		http.ServeFile(w, r.WithContext(r.Context()), "frontend/public/error.html")
+		http.Redirect(w, r, "/reset-password", http.StatusSeeOther)
 		srv.LogError("Password validation failed")
 		return
 	}

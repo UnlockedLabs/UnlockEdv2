@@ -11,7 +11,7 @@ export default function AddCategoryForm({
 }: {
   onSuccess: (title: string) => void;
 }) {
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, _] = useState("");
 
   const {
     register,
