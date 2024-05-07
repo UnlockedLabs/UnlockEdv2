@@ -29,13 +29,23 @@ type RegisterClientRequest struct {
 }
 
 func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
-	var client models.OidcClient
-	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
+	request := RegisterClientRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		srv.LogError(r, err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := srv.Db.RegisterClient(&client); err != nil {
+	provider, err := srv.Db.GetProviderPlatformByID(int(request.ProviderPlatformID))
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		srv.LogError(r, err)
+	}
+	client, err := models.OidcClientFromProvider(provider)
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		srv.LogError(r, err)
+	}
+	if err := srv.Db.RegisterClient(client); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

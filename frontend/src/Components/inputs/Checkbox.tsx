@@ -12,6 +12,7 @@ export default function Checkbox({
   return (
     <div className="form-control">
       <label className="label cursor-pointer gap-2">
+        {`${label}`}
         <input
           type="checkbox"
           className="checkbox"

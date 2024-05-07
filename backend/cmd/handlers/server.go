@@ -42,7 +42,8 @@ func NewServer(isTesting bool) *Server {
 	if isTesting {
 		return &Server{Db: db.InitDB(true), Logger: slog.Default(), Mux: http.NewServeMux()}
 	} else {
-		if os.Getenv("APP_ENV") == "prod" {
+		prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
+		if prod {
 			logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 			if err != nil {
 				file, err := os.Create("logs/server.log")
@@ -57,8 +58,20 @@ func NewServer(isTesting bool) *Server {
 		mux := http.NewServeMux()
 		server := Server{Db: db, Logger: slog.New(slog.NewTextHandler(logfile, nil)), Mux: mux}
 		server.RegisterRoutes()
+		if prod {
+			server.InitProductionServer()
+		}
 		return &server
 	}
+}
+
+func (srv *Server) InitProductionServer() {
+	srv.ServeFrontend()
+	srv.RegisterRoutes()
+}
+
+func (srv *Server) ServeFrontend() {
+	srv.Mux.Handle("/", http.FileServer(http.Dir("./frontend/dist")))
 }
 
 func (srv *Server) LogInfo(message ...interface{}) {

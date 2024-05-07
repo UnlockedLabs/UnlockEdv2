@@ -30,7 +30,8 @@ services:
       - server
     env_file: ".env"
     command: ./provider-service
-
+    networks:
+      - intranet
   postgres:
     image: postgres:16
     environment:
@@ -65,6 +66,7 @@ services:
     environment:
       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
     restart: unless-stopped
+    env_file: .env
     depends_on:
       - hydra-migrate
     networks:
@@ -83,15 +85,6 @@ services:
         source: ./hydra
         target: /etc/config/hydra
     restart: on-failure
-    networks:
-      - intranet
-  consent:
-    environment:
-      - HYDRA_ADMIN_URL=http://hydra:4445
-    image: oryd/hydra-login-consent-node:v2.2.0
-    ports:
-      - "3000:3000"
-    restart: unless-stopped
     networks:
       - intranet
 

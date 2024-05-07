@@ -17,7 +17,7 @@ interface ToastProps {
 }
 
 export default function ProviderPlatformManagement() {
-  const auth = useAuth();
+  const { user } = useAuth();
   const addProviderModal = useRef<null | HTMLDialogElement>(null);
   const editProviderModal = useRef<null | HTMLDialogElement>(null);
   const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
@@ -83,9 +83,9 @@ export default function ProviderPlatformManagement() {
   }
 
   return (
-    <AuthenticatedLayout user={auth.user} title="Provider Platform Management">
+    <AuthenticatedLayout title="Provider Platform Management">
       <PageNav
-        user={auth.user}
+        user={user}
         path={["Settings", "Provider Platform Management"]}
       />
       <div className="flex flex-col gap-4 p-4">

@@ -11,7 +11,7 @@ urls:
 
 secrets:
   system:
-    - NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzY
+    - Vg2CngwLX2MxZvZaKJnuyVp66cPiiV5b
 
 oidc:
   subject_identifiers:

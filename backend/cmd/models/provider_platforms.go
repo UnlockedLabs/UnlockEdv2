@@ -37,6 +37,7 @@ type ProviderPlatform struct {
 	BaseUrl                string                `gorm:"size:255" json:"base_url"`
 	State                  ProviderPlatformState `gorm:"size:100" json:"state"`
 	ExternalAuthProviderId string                `gorm:"size:128" json:"external_auth_provider_id"`
+	ClientID               string                `gorm:"size:255" json:"client_id"`
 
 	Programs             []Program             `json:"-"`
 	ProviderUserMappings []ProviderUserMapping `json:"-"`
@@ -83,4 +84,16 @@ func (provider *ProviderPlatform) EncryptAccessKey() (string, error) {
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(provider.AccessKey))
 	encoded := base64.StdEncoding.EncodeToString(ciphertext)
 	return encoded, nil
+}
+
+func (provider *ProviderPlatform) GetDefaultRedirectURI() string {
+	switch provider.Type {
+	case CanvasOSS:
+		return provider.BaseUrl + "/login/oauth2/callback"
+	case CanvasCloud:
+		return provider.BaseUrl + "/login/oauth2/callback"
+	case Kolibri:
+		return provider.BaseUrl + "/oauth2/authorize"
+	}
+	return ""
 }
