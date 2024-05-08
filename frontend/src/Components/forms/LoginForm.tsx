@@ -9,6 +9,7 @@ type Inputs = {
   username: string;
   password: string;
   remember: boolean;
+  login_challenge?: string;
 };
 
 export default function LoginForm() {
@@ -23,6 +24,11 @@ export default function LoginForm() {
 
   const submit: SubmitHandler<Inputs> = async (data) => {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const login_challenge = urlParams.get("login_challenge");
+      if (login_challenge) {
+        data["login_challenge"] = login_challenge;
+      }
       setErrorMessage("");
       setProcessing(true);
       const response = await axios.post("/api/login", data);

@@ -71,8 +71,7 @@ func (srv *Server) ServeFrontend(w http.ResponseWriter, r *http.Request) {
 	} else {
 		p = IndexPage
 	}
-	srv.LogInfo("Serving frontend file", p)
-	http.ServeFile(w, r, p)
+	http.ServeFile(w, r.WithContext(r.Context()), p)
 }
 
 const (
