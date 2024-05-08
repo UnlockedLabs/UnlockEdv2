@@ -101,8 +101,9 @@ func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
 }
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
+	prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
 	frontendUrl := os.Getenv("FRONTEND_URL")
-	if frontendUrl == "" {
+	if prod {
 		frontendUrl = os.Getenv("APP_URL")
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
