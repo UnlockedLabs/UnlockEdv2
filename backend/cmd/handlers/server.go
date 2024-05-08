@@ -101,8 +101,12 @@ func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
 }
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
+	frontendUrl := os.Getenv("FRONTEND_URL")
+	if frontendUrl == "" {
+		frontendUrl = os.Getenv("APP_URL")
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", frontendUrl)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
