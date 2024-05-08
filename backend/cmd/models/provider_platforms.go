@@ -37,7 +37,7 @@ type ProviderPlatform struct {
 	BaseUrl                string                `gorm:"size:255" json:"base_url"`
 	State                  ProviderPlatformState `gorm:"size:100" json:"state"`
 	ExternalAuthProviderId string                `gorm:"size:128" json:"external_auth_provider_id"`
-	ClientID               string                `gorm:"size:255" json:"client_id"`
+	OidcID                 uint                  `json:"oidc_id"`
 
 	Programs             []Program             `json:"-"`
 	ProviderUserMappings []ProviderUserMapping `json:"-"`

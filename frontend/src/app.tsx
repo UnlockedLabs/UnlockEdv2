@@ -10,6 +10,7 @@ import UserActivity from "@/Pages/UserActivity";
 import ResetPassword from "@/Pages/Auth/ResetPassword";
 import ProviderPlatformManagement from "./Pages/ProviderPlatformManagement";
 import { AuthProvider } from "./AuthContext";
+import Consent from "./Pages/Auth/Consent";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -32,6 +33,10 @@ export default function App() {
     {
       path: "/reset-password",
       element: WithAuth({ children: <ResetPassword /> }),
+    },
+    {
+      path: "/consent",
+      element: WithAuth({ children: <Consent /> }),
     },
     {
       path: "/provider-platform-management",

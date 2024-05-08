@@ -45,16 +45,13 @@ func NewServer(isTesting bool) *Server {
 	} else {
 		prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
 		if prod {
-			logfile, err := os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			file, err := os.Create("logs/server.log")
 			if err != nil {
-				file, err := os.Create("logs/server.log")
-				if err != nil {
-					log.Fatalf("Error creating log file: %v", err)
-				}
-				logfile = file
+				log.Fatalf("Error creating log file: %v", err)
 			}
-			defer logfile.Close()
+			logfile = file
 		}
+		defer logfile.Close()
 		db := db.InitDB(false)
 		mux := http.NewServeMux()
 		server := Server{Db: db, Logger: slog.New(slog.NewTextHandler(logfile, nil)), Mux: mux}

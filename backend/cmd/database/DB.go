@@ -33,6 +33,7 @@ var TableList = []interface{}{
 	&models.Milestone{},
 	&models.Outcome{},
 	&models.Activity{},
+	&models.OidcClient{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -62,8 +63,9 @@ func InitDB(isTesting bool) *DB {
 	if isTesting {
 		database.MigrateFresh(isTesting)
 		database.SeedTestData()
+	} else {
+		database.Migrate()
 	}
-	database.Migrate()
 	return database
 }
 

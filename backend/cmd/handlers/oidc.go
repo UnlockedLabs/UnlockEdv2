@@ -39,11 +39,18 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		srv.LogError(r, err)
+		return
+	}
+	if provider.OidcID != 0 {
+		srv.ErrorResponse(w, http.StatusBadRequest, "Client already registered")
+		srv.LogError(r, err)
+		return
 	}
 	client, err := models.OidcClientFromProvider(provider)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		srv.LogError(r, err)
+		return
 	}
 	if err := srv.Db.RegisterClient(client); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())

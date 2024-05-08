@@ -20,6 +20,8 @@ services:
       - ".env"
     command: >
       ./backend
+    networks:
+      - intranet
   provider-service:
     build:
       context: ./backend/provider-middleware
@@ -45,9 +47,10 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
-      timeout: 5s
+      timeout: 3s
       retries: 5
-
+    networks:
+      - intranet
   hydra:
     image: oryd/hydra:v2.2.0
     ports:

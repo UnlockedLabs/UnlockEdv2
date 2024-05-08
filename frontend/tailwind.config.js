@@ -77,7 +77,7 @@ export default {
         "teal-4": "var(--teal-4)",
         "teal-5": "var(--teal-5)",
         "base-teal": "var(--base-teal)",
-        "background": "var(--background)",
+        background: "var(--background)",
         "inner-background": "var(--inner-background)",
         "dark-yellow": "var(--dark-yellow)",
         "primary-yellow": "var(--primary-yellow)",
@@ -88,7 +88,7 @@ export default {
         "grey-4": "var(--grey-4)",
         "body-text": "var(--body-text)",
         "header-text": "var(--header-text)",
-      }
+      },
     },
   },
 

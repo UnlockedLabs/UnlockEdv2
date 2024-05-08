@@ -3,40 +3,40 @@
 @tailwind utilities;
 
 @layer base {
-    h1 {
-        @apply text-2xl text-header-text font-lexend font-semibold;
-    }
-    h2 {
-        @apply text-base text-header-text font-lexend font-semibold;
-    }
-    h3 {
-        @apply text-base text-header-text font-lexend font-semibold;
-    }
-    p {
-        @apply text-body-text font-inter font-medium;
-    }
-    body {
-        @apply text-body-text font-inter font-medium;
-    }
+  h1 {
+    @apply text-2xl text-header-text font-lexend font-semibold;
+  }
+  h2 {
+    @apply text-base text-header-text font-lexend font-semibold;
+  }
+  h3 {
+    @apply text-base text-header-text font-lexend font-semibold;
+  }
+  p {
+    @apply text-body-text font-inter font-medium;
+  }
+  body {
+    @apply text-body-text font-inter font-medium;
+  }
 }
 
 @layer components {
-    .body {
-        @apply text-sm;
-    }
-    .body-small {
-        @apply text-xs;
-    }
-    .card {
-        @apply shadow-md rounded-lg border border-black border-opacity-[10%];
-    }
+  .body {
+    @apply text-sm;
+  }
+  .body-small {
+    @apply text-xs;
+  }
+  .card {
+    @apply shadow-md rounded-lg border border-black border-opacity-[10%];
+  }
 }
 
 @layer utilities {
-    .font-lexend {
-        font-family: "Lexend", sans-serif;
-    }
-    .font-inter {
-        font-family: "Inter", sans-serif;
-    }
+  .font-lexend {
+    font-family: "Lexend", sans-serif;
+  }
+  .font-inter {
+    font-family: "Inter", sans-serif;
+  }
 }

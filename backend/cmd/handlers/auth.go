@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log"
@@ -117,7 +118,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			PasswordReset: user.PasswordReset,
 			Role:          string(user.Role),
 			RegisteredClaims: jwt.RegisteredClaims{
-				Issuer: "admin",
+				Issuer:  "admin",
+				Subject: user.Username,
 			},
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -134,6 +136,50 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,
 			Path:     "/",
 		})
+		challenge := r.URL.Query().Get("login_challenge")
+		if challenge != "" {
+			s.LogInfo("login challenge initiated", challenge)
+			client := &http.Client{}
+			body := map[string]interface{}{}
+			body["subject"] = claims.Subject
+			body["remember"] = true
+			body["remember_for"] = 3600
+			challenge := "?login_challenge=" + challenge
+			jsonBody, err := json.Marshal(body)
+			if err != nil {
+				s.LogError("Error marshalling body")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/login/accept"+challenge, bytes.NewReader(jsonBody))
+			if err != nil {
+				s.LogError("Error creating request")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			resp, err := client.Do(req)
+			if err != nil {
+				s.LogError("Error sending request to hydra")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				s.LogError("Error accepting login request")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			var loginResponse map[string]interface{}
+			err = json.NewDecoder(resp.Body).Decode(&loginResponse)
+			if err != nil {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				s.LogError("Error decoding response")
+				return
+			}
+			redirectURI := loginResponse["redirect_to"].(string)
+			http.Redirect(w, r, redirectURI, http.StatusSeeOther)
+			return
+		}
 		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

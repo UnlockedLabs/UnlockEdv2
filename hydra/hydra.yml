@@ -5,9 +5,9 @@ serve:
 urls:
   self:
     issuer: http://127.0.0.1:4444
-  consent: http://127.0.0.1:3000/api/consent
-  login: http://127.0.0.1:3000/api/login
-  logout: http://127.0.0.1:3000/api/logout
+  consent: http://127.0.0.1:8080/consent
+  login: http://127.0.0.1:8080/login
+  logout: http://127.0.0.1:8080/logout
 
 secrets:
   system:

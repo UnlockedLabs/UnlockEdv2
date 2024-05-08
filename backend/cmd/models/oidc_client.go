@@ -3,9 +3,9 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
-	"strings"
 )
 
 type OidcClient struct {
@@ -30,15 +30,17 @@ func OidcClientFromProvider(prov *ProviderPlatform) (*OidcClient, error) {
 	redirectURI := prov.GetDefaultRedirectURI()
 	client := http.Client{}
 	headers := map[string]string{}
-	headers["Accept"] = "application/json"
-	headers["Content-Type"] = "application/json"
-
+	headers["Authorization"] = "Bearer " + os.Getenv("HYDRA_ADMIN_TOKEN")
+	headers["Origin"] = os.Getenv("APP_URL")
 	body := map[string]interface{}{}
 	body["client_name"] = prov.Name
 	body["redirect_uris"] = []string{redirectURI}
 	body["scopes"] = DefaultScopes
 	body["acces_token_strategy"] = "opaque"
-	body["allowed_cors_origins"] = []string{"*"}
+	body["metadata"] = map[string]interface{}{
+		"Origin": os.Getenv("APP_URL"),
+	}
+	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL")}
 	body["grant_types"] = []string{"authorization_code"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
 	body["authorization_code_grant_id_token_lifespan"] = "3h"
@@ -50,30 +52,111 @@ func OidcClientFromProvider(prov *ProviderPlatform) (*OidcClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("POST", os.Getenv("OIDC_SERVER_URL")+"/admin/clients", bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("POST", os.Getenv("HYDRA_ADMIN_URL")+"/admin/clients", bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, err
 	}
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
+	req.Header.Add("Authorization", headers["Authorization"])
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error creating client: %s", resp.Status)
+	}
 	var clientData map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&clientData)
 	if err != nil {
 		return nil, err
+	}
+	if clientData == nil {
+		return nil, fmt.Errorf("error creating client: %s", resp.Status)
+	}
+	redirects := clientData["redirect_uris"].([]interface{})
+	if len(redirects) == 0 {
+		return nil, fmt.Errorf("error creating client: no redirect URIs")
+	}
+	receivedURI := redirects[0].(string)
+	if receivedURI != redirectURI {
+		return nil, fmt.Errorf("error creating client: redirect URI mismatch")
 	}
 	oidcClient := &OidcClient{
 		ProviderPlatformID: prov.ID,
 		ClientID:           clientData["client_id"].(string),
 		ClientName:         clientData["client_name"].(string),
 		ClientSecret:       clientData["client_secret"].(string),
-		RedirectURIs:       strings.Join(clientData["redirect_uris"].([]string), ","),
-		Scopes:             strings.Join(clientData["scope"].([]string), " "),
+		RedirectURIs:       receivedURI,
+		Scopes:             clientData["scope"].(string),
 	}
 	return oidcClient, nil
 }
+
+/*
+* {
+  "access_token_strategy": "string",
+  "allowed_cors_origins": [
+    "string"
+  ],
+  "audience": [
+    "string"
+  ],
+  "authorization_code_grant_access_token_lifespan": "string",
+  "authorization_code_grant_id_token_lifespan": "string",
+  "authorization_code_grant_refresh_token_lifespan": "string",
+  "backchannel_logout_session_required": true,
+  "backchannel_logout_uri": "string",
+  "client_credentials_grant_access_token_lifespan": "string",
+  "client_id": "string",
+  "client_name": "string",
+  "client_secret": "string",
+  "client_secret_expires_at": 0,
+  "client_uri": "string",
+  "contacts": [
+    "string"
+  ],
+  "created_at": "2019-08-24T14:15:22Z",
+  "frontchannel_logout_session_required": true,
+  "frontchannel_logout_uri": "string",
+  "grant_types": [
+    "string"
+  ],
+  "implicit_grant_access_token_lifespan": "string",
+  "implicit_grant_id_token_lifespan": "string",
+  "jwks": null,
+  "jwks_uri": "string",
+  "jwt_bearer_grant_access_token_lifespan": "string",
+  "logo_uri": "string",
+  "metadata": {},
+  "owner": "string",
+  "policy_uri": "string",
+  "post_logout_redirect_uris": [
+    "string"
+  ],
+  "redirect_uris": [
+    "string"
+  ],
+  "refresh_token_grant_access_token_lifespan": "string",
+  "refresh_token_grant_id_token_lifespan": "string",
+  "refresh_token_grant_refresh_token_lifespan": "string",
+  "registration_access_token": "string",
+  "registration_client_uri": "string",
+  "request_object_signing_alg": "string",
+  "request_uris": [
+    "string"
+  ],
+  "response_types": [
+    "string"
+  ],
+  "scope": "scope1 scope-2 scope.3 scope:4",
+  "sector_identifier_uri": "string",
+  "skip_consent": true,
+  "skip_logout_consent": true,
+  "subject_type": "string",
+  "token_endpoint_auth_method": "client_secret_basic",
+  "token_endpoint_auth_signing_alg": "string",
+  "tos_uri": "string",
+  "updated_at": "2019-08-24T14:15:22Z",
+  "userinfo_signed_response_alg": "string"
+}
+*/
