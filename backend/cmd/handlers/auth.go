@@ -183,9 +183,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	} else {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
 	}
 }
 

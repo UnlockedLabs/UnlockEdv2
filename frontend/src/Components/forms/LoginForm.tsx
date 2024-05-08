@@ -4,6 +4,7 @@ import Checkbox from "../../Components/inputs/Checkbox";
 import InputError from "../../Components/inputs/InputError";
 import PrimaryButton from "../../Components/PrimaryButton";
 import { TextInput } from "../../Components/inputs/TextInput";
+import axios from "axios";
 type Inputs = {
   username: string;
   password: string;
@@ -24,7 +25,7 @@ export default function LoginForm() {
     try {
       setErrorMessage("");
       setProcessing(true);
-      const response = await window.axios.post("/api/login", data);
+      const response = await axios.post("/api/login", data);
       const user = response.data;
       if (user.reset_password) {
         window.location.replace("reset-password");
