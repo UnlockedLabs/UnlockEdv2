@@ -125,7 +125,12 @@ func TestCreateProvider(t *testing.T) {
 			_ = server.Db.Conn.Where("name = ?", name).Find(&dest)
 		}
 		received := rr.Body.String()
-		provStr, err := json.Marshal(&dest)
+		resource := models.Resource[models.ProviderPlatform]{
+			Data:    make([]models.ProviderPlatform, 0),
+			Message: "Provider platform created successfully",
+		}
+		resource.Data = append(resource.Data, dest)
+		provStr, err := json.Marshal(&resource)
 		if err != nil {
 			t.Errorf("failed to marshal user")
 		}

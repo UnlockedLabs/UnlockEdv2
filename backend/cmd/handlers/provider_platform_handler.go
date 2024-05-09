@@ -69,7 +69,12 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 		srv.LogError("Error creating provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, newProv); err != nil {
+	response := models.Resource[models.ProviderPlatform]{
+		Data:    make([]models.ProviderPlatform, 0),
+		Message: "Provider platform created successfully",
+	}
+	response.Data = append(response.Data, *newProv)
+	if err = srv.WriteResponse(w, http.StatusOK, &response); err != nil {
 		srv.LogError("Error writing response: ", err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}

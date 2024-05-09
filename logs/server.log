@@ -84,3 +84,28 @@
 {"time":"2024-05-09T10:04:25.5756416-04:00","level":"INFO","msg":"Migrating *models.Activity table..."}
 {"time":"2024-05-09T10:04:25.591096945-04:00","level":"INFO","msg":"Migrating *models.OidcClient table..."}
 {"time":"2024-05-09T10:04:25.598826877-04:00","level":"INFO","msg":"ENV: prod","Starting server on :":"8080"}
+{"time":"2024-05-09T11:07:14.412441897-04:00","level":"INFO","msg":"Connected to the PostgreSQL database"}
+{"time":"2024-05-09T11:07:14.412474722-04:00","level":"INFO","msg":"Migrating *models.User table..."}
+{"time":"2024-05-09T11:07:14.445904884-04:00","level":"INFO","msg":"Migrating *models.ProviderPlatform table..."}
+{"time":"2024-05-09T11:07:14.467442936-04:00","level":"INFO","msg":"Migrating *models.UserActivity table..."}
+{"time":"2024-05-09T11:07:14.494828035-04:00","level":"INFO","msg":"Migrating *models.ProviderUserMapping table..."}
+{"time":"2024-05-09T11:07:14.530785377-04:00","level":"INFO","msg":"Migrating *models.LeftMenuLink table..."}
+{"time":"2024-05-09T11:07:14.533129205-04:00","level":"INFO","msg":"Migrating *models.Program table..."}
+{"time":"2024-05-09T11:07:14.542532944-04:00","level":"INFO","msg":"Migrating *models.Milestone table..."}
+{"time":"2024-05-09T11:07:14.557777941-04:00","level":"INFO","msg":"Migrating *models.Outcome table..."}
+{"time":"2024-05-09T11:07:14.577594047-04:00","level":"INFO","msg":"Migrating *models.Activity table..."}
+{"time":"2024-05-09T11:07:14.595131834-04:00","level":"INFO","msg":"Migrating *models.OidcClient table..."}
+{"time":"2024-05-09T11:07:14.6055728-04:00","level":"INFO","msg":"Migrating *models.User table..."}
+{"time":"2024-05-09T11:07:14.610047263-04:00","level":"INFO","msg":"Migrating *models.ProviderPlatform table..."}
+{"time":"2024-05-09T11:07:14.614694469-04:00","level":"INFO","msg":"Migrating *models.UserActivity table..."}
+{"time":"2024-05-09T11:07:14.622013712-04:00","level":"INFO","msg":"Migrating *models.ProviderUserMapping table..."}
+{"time":"2024-05-09T11:07:14.634593713-04:00","level":"INFO","msg":"Migrating *models.LeftMenuLink table..."}
+{"time":"2024-05-09T11:07:14.638479221-04:00","level":"INFO","msg":"Migrating *models.Program table..."}
+{"time":"2024-05-09T11:07:14.650196299-04:00","level":"INFO","msg":"Migrating *models.Milestone table..."}
+{"time":"2024-05-09T11:07:14.665330557-04:00","level":"INFO","msg":"Migrating *models.Outcome table..."}
+{"time":"2024-05-09T11:07:14.703649969-04:00","level":"INFO","msg":"Migrating *models.Activity table..."}
+{"time":"2024-05-09T11:07:14.732126485-04:00","level":"INFO","msg":"Migrating *models.OidcClient table..."}
+{"time":"2024-05-09T11:07:14.746010257-04:00","level":"INFO","msg":"ENV: prod","Starting server on :":"8080"}
+{"time":"2024-05-09T11:07:21.943764642-04:00","level":"INFO","msg":"ENV: prod","!BADKEY":"Checking auth handler"}
+{"time":"2024-05-09T11:07:23.959190672-04:00","level":"INFO","msg":"ENV: prod","!BADKEY":"Checking auth handler"}
+{"time":"2024-05-09T11:07:28.02824544-04:00","level":"INFO","msg":"ENV: prod","!BADKEY":"Checking auth handler"}

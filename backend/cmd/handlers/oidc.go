@@ -26,6 +26,7 @@ func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
 type RegisterClientRequest struct {
 	RedirectURI        string `json:"redirect_uri"`
 	ProviderPlatformID uint   `json:"provider_platform_id"`
+	AutoRegister       bool   `json:"auto_register"`
 }
 
 func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
@@ -41,12 +42,12 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		srv.LogError(r, err)
 		return
 	}
-	if provider.OidcID != 0 {
+	if provider.OidcID != 0 || provider.ExternalAuthProviderId != "" {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Client already registered")
 		srv.LogError(r, err)
 		return
 	}
-	client, err := models.OidcClientFromProvider(provider)
+	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		srv.LogError(r, err)
@@ -56,7 +57,21 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, client); err != nil {
+	provider.OidcID = client.ID
+	provider.ExternalAuthProviderId = externalId
+	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		srv.LogError(r, err)
+	}
+	response := models.Resource[models.OidcClient]{
+		Data: []models.OidcClient{*client},
+	}
+	if request.AutoRegister {
+		response.Message = "Client successfully created and registered with the provider"
+	} else {
+		response.Message = "Client successfully created"
+	}
+	if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
 		srv.LogError(r, err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}

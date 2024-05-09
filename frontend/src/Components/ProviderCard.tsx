@@ -5,9 +5,11 @@ import { PencilSquareIcon } from "@heroicons/react/24/solid";
 export default function ProviderCard({
   provider,
   openEditProvider,
+  oidcClient,
 }: {
   provider: ProviderPlatform;
   openEditProvider: Function;
+  oidcClient: Function;
 }) {
   let cardImg = provider.icon_url;
   if (cardImg == null) {
@@ -49,6 +51,18 @@ export default function ProviderCard({
             <span className="font-bold">Type: </span>
             {provider.type}
           </p>
+          <p>
+            <span className="font-bold">External login registered: </span>
+            {provider.oidc_id !== 0 ? "Yes" : "No"}
+          </p>
+          {provider.oidc_id === 0 && (
+            <button
+              className="btn btn-primary btn-xs"
+              onClick={() => oidcClient(provider)}
+            >
+              Register OIDC Client
+            </button>
+          )}
         </div>
       </div>
     </div>

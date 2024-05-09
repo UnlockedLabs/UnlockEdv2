@@ -18,7 +18,6 @@ export default function Checkbox({
           className="checkbox"
           {...register(interfaceRef)}
         />
-        <span className="label-text">Remember me</span>
       </label>
     </div>
   );

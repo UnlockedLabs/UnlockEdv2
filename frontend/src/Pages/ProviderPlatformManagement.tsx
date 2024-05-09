@@ -4,12 +4,14 @@ import AddProviderForm from "@/Components/forms/AddProviderForm";
 import EditProviderForm from "@/Components/forms/EditProviderForm";
 import Modal from "@/Components/Modal";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { ProviderPlatform } from "@/common";
+import { OidcClient, ProviderPlatform, ServerResponse } from "@/common";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { useRef, useState } from "react";
 import useSWR from "swr";
 import Toast, { ToastState } from "@/Components/Toast";
 import { useAuth } from "../AuthContext";
+import RegisterOidcClientForm from "@/Components/forms/RegisterOidcClientForm";
+import NewOidcClientNotification from "@/Components/NewOidcClientNotification";
 
 interface ToastProps {
   state: ToastState;
@@ -23,6 +25,9 @@ export default function ProviderPlatformManagement() {
   const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
     null,
   );
+  const openOidcClientModal = useRef<null | HTMLDialogElement>(null);
+  const openOidcRegistrationModal = useRef<null | HTMLDialogElement>(null);
+  const [oidcClient, setOidcClient] = useState<OidcClient | null>(null);
   const [toast, setToast] = useState<ToastProps>({
     state: ToastState.null,
     message: "",
@@ -82,6 +87,40 @@ export default function ProviderPlatformManagement() {
     resetModal();
   }
 
+  const registerOidcClient = (prov: ProviderPlatform) => {
+    openOidcClientModal.current?.showModal();
+    setEditProvider(prov);
+  };
+
+  const onRegisterOidcClientClose = (
+    response: ServerResponse<OidcClient>,
+    state: ToastState,
+  ) => {
+    openOidcClientModal.current?.close();
+    setEditProvider(null);
+    if (response == null && state == ToastState.success) {
+      setToast({
+        state: state,
+        message: "OIDC client registered successfully.",
+      });
+    } else if (response == null && state == ToastState.error) {
+      setToast({
+        state: state,
+        message: "Failed to register OIDC client.",
+      });
+    } else {
+      setOidcClient(response.data[0] as OidcClient);
+      openOidcRegistrationModal.current?.showModal();
+    }
+    mutate();
+    state &&
+      response &&
+      setToast({
+        state: state,
+        message: response.message,
+      });
+  };
+
   return (
     <AuthenticatedLayout title="Provider Platform Management">
       <PageNav
@@ -108,6 +147,7 @@ export default function ProviderPlatformManagement() {
                   provider={provider}
                   openEditProvider={openEditProvider}
                   key={provider.id}
+                  oidcClient={() => registerOidcClient(provider)}
                 />
               );
             })
@@ -145,6 +185,37 @@ export default function ProviderPlatformManagement() {
           )
         }
         ref={editProviderModal}
+      />
+      <Modal
+        type="Register"
+        item="Provider"
+        form={
+          editProvider ? (
+            <RegisterOidcClientForm
+              provider={editProvider}
+              onSuccess={onRegisterOidcClientClose}
+              onClose={() => openOidcClientModal.current?.close()}
+            />
+          ) : (
+            <div></div>
+          )
+        }
+        ref={openOidcClientModal}
+      />
+      <Modal
+        type="Register"
+        item="OIDC Client"
+        form={
+          oidcClient ? (
+            <NewOidcClientNotification
+              client={oidcClient}
+              onClose={() => openOidcRegistrationModal.current?.close()}
+            />
+          ) : (
+            <div></div>
+          )
+        }
+        ref={openOidcRegistrationModal}
       />
       {/* Toasts */}
       {toast.state !== ToastState.null && (

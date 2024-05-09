@@ -44,6 +44,13 @@ export interface CategoryLink {
   [linkName: string]: string;
 }
 
+export interface OidcClient {
+  client_id: string;
+  client_secret: string;
+  scopes: string;
+  redirect_uris: string;
+}
+
 export interface Activity {
   browser_name: string;
   clicked_url: string;
@@ -88,7 +95,7 @@ export interface ProviderPlatform {
   name: string;
   state: ProviderPlatformState;
   type: ProviderPlatformType;
-  oidc_id: string;
+  oidc_id: number;
   [key: string | ProviderPlatformState | ProviderPlatformType]: any;
 }
 
