@@ -11,6 +11,8 @@ import ResetPassword from "@/Pages/Auth/ResetPassword";
 import ProviderPlatformManagement from "./Pages/ProviderPlatformManagement";
 import { AuthProvider } from "./AuthContext";
 import Consent from "./Pages/Auth/Consent";
+import MyCourses from "./Pages/MyCourses";
+import MyProgress from "./Pages/MyProgress";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -41,6 +43,14 @@ export default function App() {
     {
       path: "/provider-platform-management",
       element: WithAuth({ children: <ProviderPlatformManagement /> }),
+    },
+    {
+      path: "/my-courses",
+      element: WithAuth({ children: <MyCourses /> }),
+    },
+    {
+      path: "/my-progress",
+      element: WithAuth({ children: <MyProgress /> }),
     },
   ]);
 

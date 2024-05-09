@@ -26,11 +26,11 @@ const subtractYear = (date: Date) => {
 
 /* predefining tailwind strings lets us assign them dynamically later */
 const quartileColors: string[] = [
-  "bg-quartile-0",
-  "bg-quartile-1",
-  "bg-quartile-2",
-  "bg-quartile-3",
-  "bg-quartile-4",
+  "bg-inner-background",
+  "bg-teal-1",
+  "bg-teal-2",
+  "bg-teal-3",
+  "bg-teal-4",
 ];
 
 /* node sizes for the activity map */
@@ -94,7 +94,7 @@ export default function UserActivityMap({ user }: { user: User }) {
 
   return (
     <div className="w-[25.375rem] md:w-[35.25rem] lg:w-[49.875rem] xl:w-[65.063rem]">
-      <div className="inline-block border shadow-xl rounded-xl p-4">
+      <div className="inline-block border shadow-xl rounded-xl p-4 card">
         <div className="flex justify-between">
           <form className="">
             <DropdownControl
