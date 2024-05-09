@@ -72,6 +72,12 @@ func main() {
 		log.Fatalf("Failed to create table: %v", err)
 	}
 	defer db.Close()
+	var file *os.File
+	file, err = os.OpenFile("logs/middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %v", err)
+	}
+	log.SetOutput(file)
 	token := os.Getenv("PROVIDER_SERVICE_KEY")
 	log.Println("Token: ", token)
 	handler := NewServiceHandler(token, db)

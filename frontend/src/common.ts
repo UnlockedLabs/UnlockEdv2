@@ -88,6 +88,7 @@ export interface ProviderPlatform {
   name: string;
   state: ProviderPlatformState;
   type: ProviderPlatformType;
+  oidc_id: string;
   [key: string | ProviderPlatformState | ProviderPlatformType]: any;
 }
 

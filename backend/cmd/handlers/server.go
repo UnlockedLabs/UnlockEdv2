@@ -4,7 +4,6 @@ import (
 	db "Go-Prototype/backend/cmd/database"
 	"context"
 	"encoding/json"
-	"log"
 	"log/slog"
 	"math"
 	"net/http"
@@ -14,9 +13,8 @@ import (
 )
 
 type Server struct {
-	Db     *db.DB
-	Logger *slog.Logger
-	Mux    *http.ServeMux
+	Db  *db.DB
+	Mux *http.ServeMux
 }
 
 /**
@@ -39,25 +37,15 @@ func (srv *Server) RegisterRoutes() {
 }
 
 func NewServer(isTesting bool) *Server {
-	logfile := os.Stdout
 	if isTesting {
-		return &Server{Db: db.InitDB(true), Logger: slog.Default(), Mux: http.NewServeMux()}
+		return &Server{Db: db.InitDB(true), Mux: http.NewServeMux()}
 	} else {
 		prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
-		if prod {
-			file, err := os.Create("logs/server.log")
-			if err != nil {
-				log.Fatalf("Error creating log file: %v", err)
-			}
-			logfile = file
-		}
-		defer logfile.Close()
 		db := db.InitDB(false)
 		mux := http.NewServeMux()
-		server := Server{Db: db, Logger: slog.New(slog.NewTextHandler(logfile, nil)), Mux: mux}
+		server := Server{Db: db, Mux: mux}
 		server.RegisterRoutes()
 		if prod {
-			log.Println("PROD environment: Serving frontend")
 			server.Mux.HandleFunc("GET /", server.ServeFrontend)
 		}
 		return &server
@@ -80,15 +68,15 @@ const (
 )
 
 func (srv *Server) LogInfo(message ...interface{}) {
-	srv.Logger.Info("ENV: "+os.Getenv("APP_ENV"), message...)
+	slog.Info("ENV: "+os.Getenv("APP_ENV"), message...)
 }
 
 func (srv *Server) LogError(message ...interface{}) {
-	srv.Logger.Error("ENV: "+os.Getenv("APP_ENV"), message...)
+	slog.Error("ENV: "+os.Getenv("APP_ENV"), message...)
 }
 
 func (srv *Server) LogDebug(message ...interface{}) {
-	srv.Logger.Debug("ENV: "+os.Getenv("APP_ENV"), message...)
+	slog.Debug("ENV: "+os.Getenv("APP_ENV"), message...)
 }
 
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
@@ -100,13 +88,12 @@ func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
 }
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
-	prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
-	frontendUrl := os.Getenv("FRONTEND_URL")
-	if prod {
-		frontendUrl = os.Getenv("APP_URL")
-	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", frontendUrl)
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			origin = "*"
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")

@@ -14,5 +14,6 @@ RUN yarn run build
 FROM alpine:latest
 COPY --from=builder /app/backend ./
 COPY --from=frontend /app/dist ./frontend/dist
+RUN mkdir logs && touch logs/server.log
 EXPOSE 8080
 ENTRYPOINT ["./backend"]

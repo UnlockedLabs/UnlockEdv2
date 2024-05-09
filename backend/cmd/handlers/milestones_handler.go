@@ -3,6 +3,7 @@ package handlers
 import (
 	"Go-Prototype/backend/cmd/models"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -20,7 +21,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 	page, perPage := srv.GetPaginationInfo(r)
 	total, milestones, err := srv.Db.GetMilestones(page, perPage, search, orderBy)
 	if err != nil {
-		srv.Logger.Debug("IndexMilestones Database Error: %v", err)
+		slog.Debug("IndexMilestones Database Error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -1,18 +1,57 @@
 serve:
+  admin:
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:8080
+        - http://localhost:5173
+        - http://localhost
+        - https://staging.canavs.unlockedlabs.xyz
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - X-Requested-With
+      exposed_headers:
+        - Content-Type
+
+  public:
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:8080
+        - http://localhost:5173
+        - http://localhost
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+      exposed_headers:
+        - Content-Type
   cookies:
-    same_site_mode: Lax
+    same_site_mode: None
+log:
+  leak_sensitive_values: true
 
 urls:
   self:
-    issuer: http://127.0.0.1:4444
-  consent: http://127.0.0.1:8080/consent
-  login: http://127.0.0.1:8080/login
-  logout: http://127.0.0.1:8080/logout
+    issuer: http://localhost:4444
+  consent: http://localhost:8080/consent
+  login: http://localhost:8080/login
+  logout: http://localhost:8080/logout
 
+dev: true
 secrets:
   system:
     - Vg2CngwLX2MxZvZaKJnuyVp66cPiiV5b
-
 oidc:
   subject_identifiers:
     supported_types:

@@ -20,8 +20,9 @@ type contextKey string
 const ClaimsKey contextKey = "claims"
 
 type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	LoginChallenge string `json:"login_challenge"`
 }
 
 type ResetPasswordRequest struct {
@@ -136,49 +137,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,
 			Path:     "/",
 		})
-		challenge := r.URL.Query().Get("login_challenge")
-		if challenge != "" {
-			s.LogInfo("login challenge initiated", challenge)
-			client := &http.Client{}
-			body := map[string]interface{}{}
-			body["subject"] = claims.Subject
-			body["remember"] = true
-			body["remember_for"] = 3600
-			challenge := "?login_challenge=" + challenge
-			jsonBody, err := json.Marshal(body)
-			if err != nil {
-				s.LogError("Error marshalling body")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/login/accept"+challenge, bytes.NewReader(jsonBody))
-			if err != nil {
-				s.LogError("Error creating request")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			resp, err := client.Do(req)
-			if err != nil {
-				s.LogError("Error sending request to hydra")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				s.LogError("Error accepting login request")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			var loginResponse map[string]interface{}
-			err = json.NewDecoder(resp.Body).Decode(&loginResponse)
-			if err != nil {
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				s.LogError("Error decoding response")
-				return
-			}
-			redirectURI := loginResponse["redirect_to"].(string)
-			http.Redirect(w, r, redirectURI, http.StatusSeeOther)
-			return
+		if form.LoginChallenge != "" {
+			s.handleOidcLogin(w, r, claims, form.LoginChallenge)
 		}
 		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
@@ -189,6 +149,49 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
+}
+
+func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims Claims, challenge string) {
+	s.LogInfo("login challenge initiated", challenge)
+	client := &http.Client{}
+	body := map[string]interface{}{}
+	body["subject"] = claims.Subject
+	body["remember"] = true
+	body["remember_for"] = 3600
+	loginChallenge := "?login_challenge=" + challenge
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		s.LogError("Error marshalling body")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/login/accept"+loginChallenge, bytes.NewReader(jsonBody))
+	if err != nil {
+		s.LogError("Error creating request")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		s.LogError("Error sending request to hydra")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		s.LogError("Error accepting login request")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	var loginResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&loginResponse)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		s.LogError("Error decoding response")
+		return
+	}
+	redirectURI := loginResponse["redirect_to"].(string)
+	http.Redirect(w, r.WithContext(r.Context()), redirectURI, http.StatusSeeOther)
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"Go-Prototype/backend/cmd/models"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -19,7 +20,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, programs, err := srv.Db.GetProgram(page, perPage)
 	if err != nil {
-		srv.Logger.Debug("IndexPrograms Database Error: %v", err)
+		slog.Debug("IndexPrograms Database Error: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -44,12 +45,12 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Debug("GET Program handler Error: %v", err)
+		slog.Debug("GET Program handler Error: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
-		srv.Logger.Debug("GET Program handler Error: %v", err)
+		slog.Debug("GET Program handler Error: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, program); err != nil {
@@ -88,7 +89,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.Logger.Debug("GET Program handler Error: %v", err)
+		slog.Debug("GET Program handler Error: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	toUpdate, err := srv.Db.GetProgramByID(id)

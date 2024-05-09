@@ -4,6 +4,7 @@ import (
 	"Go-Prototype/backend/cmd/database"
 	"Go-Prototype/backend/cmd/models"
 	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,13 +77,13 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 	if search != "" {
 		total, activities, err = srv.Db.SearchUserActivity(search, page, perPage)
 		if err != nil {
-			srv.Logger.Debug("Error fetching user activities: %v", err)
+			slog.Debug("Error fetching user activities: %v", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		}
 	} else {
 		total, activities, err = srv.Db.GetAllUserActivity(page, perPage)
 		if err != nil {
-			srv.Logger.Debug("Error fetching user activities: %v", err)
+			slog.Debug("Error fetching user activities: %v", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -110,7 +111,7 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 	page, perPage := srv.GetPaginationInfo(r)
 	total, activity, err := srv.Db.GetActivityForUser(id, page, perPage)
 	if err != nil {
-		srv.Logger.Debug("Error fetching user activity: %v\n", err)
+		slog.Debug("Error fetching user activity: %v\n", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -120,7 +121,7 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 		Data: activity,
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.Logger.Debug("Error writing response: %v\n", err)
+		slog.Debug("Error writing response: %v\n", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }

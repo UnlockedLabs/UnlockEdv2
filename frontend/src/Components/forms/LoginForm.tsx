@@ -29,6 +29,7 @@ export default function LoginForm() {
       if (login_challenge) {
         data["login_challenge"] = login_challenge;
       }
+      console.log(data);
       setErrorMessage("");
       setProcessing(true);
       const response = await axios.post("/api/login", data);

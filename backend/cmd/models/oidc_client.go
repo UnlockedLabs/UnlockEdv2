@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -40,7 +42,7 @@ func OidcClientFromProvider(prov *ProviderPlatform) (*OidcClient, error) {
 	body["metadata"] = map[string]interface{}{
 		"Origin": os.Getenv("APP_URL"),
 	}
-	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL")}
+	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL"), os.Getenv("APP_URL"), os.Getenv("FRONTEND_URL"), os.Getenv("HYDRA_PUBLIC_URL")}
 	body["grant_types"] = []string{"authorization_code"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
 	body["authorization_code_grant_id_token_lifespan"] = "3h"
@@ -88,6 +90,42 @@ func OidcClientFromProvider(prov *ProviderPlatform) (*OidcClient, error) {
 		ClientSecret:       clientData["client_secret"].(string),
 		RedirectURIs:       receivedURI,
 		Scopes:             clientData["scope"].(string),
+	}
+	if prov.Type == CanvasCloud || prov.Type == CanvasOSS {
+		// register the login client with canvas
+		baseURL := prov.BaseUrl + "/api/v1/accounts/" + prov.AccountID + "/authentication_providers"
+		// we need to add the client_id, client_secret, and redirect_uri to the request form encoded
+		form := url.Values{}
+		form.Add("auth_type", "openid_connect")
+		form.Add("client_id", oidcClient.ClientID)
+		form.Add("client_secret", oidcClient.ClientSecret)
+		form.Add("authorize_url", os.Getenv("HYDRA_PUBLIC_URL")+"/oauth2/auth")
+		form.Add("token_url", os.Getenv("HYDRA_PUBLIC_URL")+"/oauth2/auth")
+		form.Add("userinfo_endpoint", os.Getenv("HYDRA_PUBLIC_URL")+"/userinfo")
+		request, err := http.NewRequest("POST", baseURL, bytes.NewBufferString(form.Encode()))
+		if err != nil {
+			log.Println("Error creating request object: ", err)
+			return oidcClient, err
+		}
+		log.Printf("Authorization: Bearer %s", prov.AccessKey)
+		headers := make(map[string]string)
+		headers["Content-Type"] = "application/x-www-form-urlencoded"
+		headers["Authorization"] = "Bearer " + prov.AccessKey
+		headers["Accept"] = "application/json"
+		for k, v := range headers {
+			request.Header.Add(k, v)
+		}
+		log.Printf("Request: %v", request)
+		response, err := client.Do(request)
+		if err != nil {
+			log.Println("Error sending request: ", err)
+			return oidcClient, err
+		}
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusOK {
+			log.Println("Error creating authentication provider: ", response.Status)
+			return oidcClient, fmt.Errorf("error creating authentication provider: %v", response)
+		}
 	}
 	return oidcClient, nil
 }
