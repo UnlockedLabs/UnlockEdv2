@@ -14,7 +14,12 @@ export default function CourseContent() {
     <div className="p-4 grid grid-cols-3 gap-5 w-[85%]">
       {!isLoading && !error ? (
         enrollments.data.map((course: any) => (
-          <CourseCard course={course} key={course.id} status={CourseStatus.Current} favorited={false} />
+          <CourseCard
+            course={course}
+            key={course.id}
+            status={CourseStatus.Current}
+            favorited={false}
+          />
         ))
       ) : (
         <div></div>
