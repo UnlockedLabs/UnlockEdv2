@@ -12,6 +12,9 @@ type Activity struct {
 	ProgramID uint         `gorm:"not null" json:"program_id"`
 	UserID    uint         `gorm:"not null" json:"user_id"`
 	Type      ActivityType `gorm:"size:255;not null" json:"type"`
+	TotalTime uint         `json:"total_time"`
+	TimeDelta uint         `json:"time_delta"`
+
 	// is this a url perhaps?
 	ExternalID string `gorm:"size:255;not null" json:"external_content_id"`
 

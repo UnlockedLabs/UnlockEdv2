@@ -51,10 +51,8 @@ If you would like to contribute, please have a look at our [contribution guideli
 ## Style/Linting
 
 -   Naming and style convention is outlined in our CONTRIBUTING.md file.
--   TS: Run `npx prettier -w frontend` from the root directory before committing, or adjust your editor to run it on save.
--   Go: Run `gofmt -w .` before committing, or more likely adjust your editor to run it on save.
 
-#### These commands _will_ run automatically in a git hook before each commit, so you technically don't have to worry about it but if you run them beforehand, you will most likely not need to re-stage and amend your commit with the fixes will make. IF for some reason you need to skip the hooks, you can run `git commit --no-verify`but do not do this unless you know what you are doing and you understand the CI/CD will fail if you do.
+#### Proper linting/formatting _will_ run automatically in a git hook before each commit. If you want to run them beforehand, you can `cd` into frontend and run `npx prettier -w .` or `cd backend` and `gofmt -w .` IF for some reason you need to skip the pre-commit hooks, you can run `git commit --no-verify`but _do not_ do this unless you know what you are doing and you understand the CI/CD will fail if you submit a PR.
 
 # FAQ:
 

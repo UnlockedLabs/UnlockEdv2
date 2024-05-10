@@ -54,6 +54,7 @@ export default function NotificationsSideBar() {
               <NotificationCard
                 cardInfo={cardInfo}
                 type={NotificationType.Announcement}
+                key={cardInfo.title}
               />
             );
           })}
@@ -67,6 +68,7 @@ export default function NotificationsSideBar() {
               <NotificationCard
                 cardInfo={cardInfo}
                 type={NotificationType.ToDo}
+                key={cardInfo.title}
               />
             );
           })}

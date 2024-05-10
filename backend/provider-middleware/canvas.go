@@ -120,3 +120,57 @@ func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	}
 	return unlockedCourses, nil
 }
+
+func (srv *CanvasService) GetMilestones() ([]UnlockEdImportMilestone, error) {
+	queryString := `query={
+                allCourses {
+                  name
+                  enrollmentsConnection {
+                    edges {
+                      node {
+                        totalActivityTime
+                        user {
+                          name
+                          _id
+                          updatedAt
+                        }
+                        lastActivityAt
+                      }
+                    }
+                  }
+                }
+              }`
+	url := srv.BaseURL + "/api/graphql?" + queryString
+	resp, err := srv.SendRequest(url)
+	if err != nil {
+		log.Printf("Failed to send request: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body := map[string]interface{}{}
+	err = json.NewDecoder(resp.Body).Decode(&body)
+	if err != nil {
+		return nil, err
+	}
+	unlockedMilestones := make([]UnlockEdImportMilestone, 0)
+	data := body["data"].(map[string]interface{})
+	courseData := data["allCourses"].([]map[interface{}]interface{})
+	for _, course := range courseData {
+		enrollmentsConnection := course["enrollmentsConnection"].(map[string]interface{})
+		edges := enrollmentsConnection["edges"].([]map[interface{}]interface{})
+		for _, edge := range edges {
+			node := edge["node"].(map[string]interface{})
+			user := node["user"].(map[string]interface{})
+			userID := user["_id"].(string)
+			totalActivityTime := node["totalActivityTime"].(int)
+			lastActivityAt := node["lastActivityAt"].(string)
+			state := node["state"].(string)
+			concluded := node["concluded"].(bool)
+
+			unlockedMilestone := UnlockEdImportMilestone{
+				ExternalID: course["_id"].(string),
+			}
+			unlockedMilestones = append(unlockedMilestones, unlockedMilestone)
+		}
+	}
+}

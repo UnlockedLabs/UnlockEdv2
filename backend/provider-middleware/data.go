@@ -206,12 +206,8 @@ type UnlockEdImportProgram struct {
 	ExternalURL        string `json:"external_url"`
 }
 
-type UnlockEdEnrollment struct {
-	UserID               string `json:"user_id"`
-	CourseID             string `json:"course_id"`
-	ExternalEnrollmentID string `json:"external_enrollment_id"`
-	EnrollmentState      string `json:"enrollment_state"`
-	ExternalStartAt      string `json:"external_start_at"`
-	ExternalEndAt        string `json:"external_end_at"`
-	ExternalLinkURL      string `json:"external_link_url"`
+type UnlockEdImportMilestone struct {
+	ExternalID  string `json:"external_id"`
+	Type        string `json:"type"`
+	IsCompleted bool   `json:"is_completed"`
 }
