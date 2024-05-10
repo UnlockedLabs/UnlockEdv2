@@ -70,6 +70,7 @@ export const recentCourses = [
     total_time: 8897,
     percent_completed: 12,
     status: CourseStatus.Completed,
+    grade: "B+",
     favorited: true,
   },
   {

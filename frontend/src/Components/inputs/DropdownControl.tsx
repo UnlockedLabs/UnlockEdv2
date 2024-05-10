@@ -1,5 +1,5 @@
 interface DropdownControlProps {
-  label: string;
+  label?: string;
   callback: Function;
   enumType: Record<string, string>;
 }
@@ -12,9 +12,11 @@ export function DropdownControl({
 }: DropdownControlProps) {
   return (
     <label className="form-control w-full">
-      <div className="label">
-        <span className="label-text">{label}</span>
-      </div>
+      {label && (
+        <div className="label">
+          <span className="label-text">{label}</span>
+        </div>
+      )}
       <select
         className="select select-bordered"
         onChange={(e) => callback(e.target.value)}

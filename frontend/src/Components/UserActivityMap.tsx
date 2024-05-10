@@ -35,7 +35,7 @@ const quartileColors: string[] = [
 
 /* node sizes for the activity map */
 const nodeSizes: string =
-  "w-1.5 h-1.5 rounded-sm text-xs md:w-2 md:h-2 lg:w-3 lg:h-3 xl:w-4 xl:h-4 xl:text-sm xl:rounded-md";
+  "w-1.5 h-1.5 rounded-sm text-xs md:w-2 md:h-2 lg:w-3 lg:h-3 xl:w-3.5 xl:h-3.5 xl:rounded-md";
 
 /* gaps between cells in activity map */
 const gapSizes: string = "p-0 ml-px mt-px md:m-0 md:p-px";
@@ -50,7 +50,11 @@ export default function UserActivityMap({ user }: { user: User }) {
   const [dropdownValDesc, setDropdownValDesc] = useState("the past year");
 
   const startDate = new Date(subtractYear(yearEnd));
-  const { data, error, isLoading } = useSWR(
+  const {
+    data: data,
+    error: error,
+    isLoading: isLoading,
+  } = useSWR(
     "/api/user-activity-map/" +
       user.id +
       "?start_date=" +
@@ -58,6 +62,8 @@ export default function UserActivityMap({ user }: { user: User }) {
       "&end_date=" +
       yearEnd.toISOString().split("T")[0],
   );
+
+  const tempdata = [];
 
   const generateYearOptions = () => {
     const years: ValidYears = { "Past year": "Past year" };
@@ -93,27 +99,28 @@ export default function UserActivityMap({ user }: { user: User }) {
   const yearOptions = generateYearOptions();
 
   return (
-    <div className="w-[25.375rem] md:w-[35.25rem] lg:w-[49.875rem] xl:w-[65.063rem]">
-      <div className="inline-block border shadow-xl rounded-xl p-4 card">
-        <div className="flex justify-between">
-          <form className="">
-            <DropdownControl
-              label=""
-              callback={dropdownChange}
-              enumType={yearOptions}
-            />
-          </form>
-          <div className={"block font-bold text-center text"}>
-            {/* Could put something here, like "Keep up the good work!" */}
-          </div>
-          <div className={"text-xs md:text-sm my-auto gap-x-1 flex"}>
-            <div>Less</div>
-            {legendNodes.map((node) => node)}
-            <div>More</div>
-          </div>
+    // <div className="w-[25.375rem] md:w-[35.25rem] lg:w-[49.875rem] xl:w-[65.063rem]">
+    <div className="h-full p-4 max-w-[922px]">
+      <div className="flex justify-between items-center h-1/4 w-full">
+        <form className="">
+          <DropdownControl
+            label=""
+            callback={dropdownChange}
+            enumType={yearOptions}
+          />
+        </form>
+        <div className={"block font-bold text-center text"}>
+          {/* Could put something here, like "Keep up the good work!" */}
         </div>
-        <div className="w-[372px] h-[99px] md:w-[530px] md:h-[124px] lg:w-[764px] lg:h-[152px] xl:w-[1017px] xl:h-[184px]">
-          {error ? (
+        <div className={"text-xs md:text-sm my-auto gap-x-1 flex"}>
+          <div>Less</div>
+          {legendNodes.map((node) => node)}
+          <div>More</div>
+        </div>
+      </div>
+      {/* <div className="w-[372px] h-[99px] md:w-[530px] md:h-[124px] lg:w-[764px] lg:h-[152px] xl:w-[1017px] xl:h-[184px]"> */}
+      <div className="w-full h-3/4 max-h-[184px]">
+        {/* {error ? (
             <div className="flex h-full justify-center content-center">
               <div className="font-bold my-auto">
                 Error loading activity. Please try again later.
@@ -124,19 +131,18 @@ export default function UserActivityMap({ user }: { user: User }) {
               <span className="my-auto loading loading-spinner loading-lg"></span>
             </div>
           ) : (
-            data && (
-              <div className="mt-8">
-                <ActivityMapTable
-                  data={data.data}
-                  end={yearEnd}
-                  error={error}
-                  isLoading={isLoading}
-                  range={dropdownValDesc}
-                />
-              </div>
-            )
-          )}
+            data && ( */}
+        <div className="mt-2">
+          <ActivityMapTable
+            data={tempdata}
+            end={yearEnd}
+            error={error}
+            isLoading={isLoading}
+            range={dropdownValDesc}
+          />
         </div>
+        {/* )
+          )} */}
       </div>
     </div>
   );
