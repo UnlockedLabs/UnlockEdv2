@@ -3,8 +3,6 @@ package handlers
 import (
 	"Go-Prototype/src/database"
 	"Go-Prototype/src/models"
-	"log"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,7 +19,6 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 		if userAgent == "" {
 			userAgent = "Unknown; Unknown"
 		}
-		log.Printf("User-Agent: %s\n", userAgent)
 		os := "Unknown"
 		arch := "Unknown"
 
@@ -77,13 +74,14 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 	if search != "" {
 		total, activities, err = srv.Db.SearchUserActivity(search, page, perPage)
 		if err != nil {
-			slog.Debug("Error fetching user activities: %v", err)
+			srv.LogDebug("Error fetching user activities: ", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 	} else {
 		total, activities, err = srv.Db.GetAllUserActivity(page, perPage)
 		if err != nil {
-			slog.Debug("Error fetching user activities: %v", err)
+			srv.LogDebug("Error fetching user activities: ", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -111,7 +109,7 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 	page, perPage := srv.GetPaginationInfo(r)
 	total, activity, err := srv.Db.GetActivityForUser(id, page, perPage)
 	if err != nil {
-		slog.Debug("Error fetching user activity: %v\n", err)
+		srv.LogDebug("Error fetching user activity: ", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -121,7 +119,7 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 		Data: activity,
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		slog.Debug("Error writing response: %v\n", err)
+		srv.LogDebug("Error writing response: ", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }

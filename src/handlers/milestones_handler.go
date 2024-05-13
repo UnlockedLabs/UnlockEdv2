@@ -20,7 +20,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 	page, perPage := srv.GetPaginationInfo(r)
 	total, milestones, err := srv.Db.GetMilestones(page, perPage, search, orderBy)
 	if err != nil {
-		srv.LogDebug("IndexMilestones Database Error: %v", err)
+		srv.LogDebug("IndexMilestones Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

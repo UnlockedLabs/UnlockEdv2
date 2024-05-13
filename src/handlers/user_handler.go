@@ -151,7 +151,7 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	toUpdate := srv.Db.GetUserByID(uint(id))
 	if toUpdate == nil {
-		srv.LogError("TEST FAILED heRE!! Error getting user by ID:" + fmt.Sprintf("%d", id))
+		srv.LogError("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		srv.ErrorResponse(w, http.StatusNotFound, "user not found")
 		return
 	}

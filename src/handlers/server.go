@@ -4,7 +4,6 @@ import (
 	db "Go-Prototype/src/database"
 	"context"
 	"encoding/json"
-	"log/slog"
 	"math"
 	"net/http"
 	"os"
@@ -78,7 +77,7 @@ func (srv *Server) LogError(message ...interface{}) {
 }
 
 func (srv *Server) LogDebug(message ...interface{}) {
-	slog.Debug("DEBUG: ", message...)
+	log.Debug(message...)
 }
 
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {

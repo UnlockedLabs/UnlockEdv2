@@ -3,8 +3,8 @@ package database
 import (
 	"Go-Prototype/src/models"
 	"errors"
-	"log"
-	"log/slog"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, error) {
@@ -114,7 +114,7 @@ func (db *DB) AuthorizeUser(username, password string) (*models.User, error) {
 	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
-	slog.Debug("Checking AuthorizeUser Password: %s  _  %s", password, user.Password)
+	log.Debug("Checking AuthorizeUser Password: ", password, user.Password)
 	if success := user.CheckPasswordHash(password); !success {
 		log.Printf("Password authentication failed for: %s", password)
 		return nil, errors.New("invalid password")

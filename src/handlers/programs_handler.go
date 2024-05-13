@@ -19,7 +19,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, programs, err := srv.Db.GetProgram(page, perPage)
 	if err != nil {
-		srv.LogDebug("IndexPrograms Database Error: %v", err)
+		srv.LogDebug("IndexPrograms Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -44,13 +44,13 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogDebug("GET Program handler Error: %v", err)
+		srv.LogDebug("GET Program handler Error: ", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
-		srv.LogDebug("GET Program handler Error: %v", err)
+		srv.LogDebug("GET Program handler Error: ", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -90,7 +90,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogDebug("GET Program handler Error: %v", err)
+		srv.LogDebug("GET Program handler Error: ", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 	toUpdate, err := srv.Db.GetProgramByID(id)
