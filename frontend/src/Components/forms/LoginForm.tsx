@@ -41,7 +41,7 @@ export default function LoginForm() {
       window.location.replace("dashboard");
     } catch (error: any) {
       setProcessing(false);
-      setErrorMessage(error.response);
+      setErrorMessage(error.response.data);
     }
   };
 
