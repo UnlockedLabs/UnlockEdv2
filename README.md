@@ -38,15 +38,24 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 -   Clone the repository
 -   `cp .env.example .env && cp frontend/.env.example frontend/.env`
--   Run `MIGRATE_FRESH=true docker-compose up --build`
-(This command only needs to be ran the first time, subsequently you may omit the
-`MIGRATE_FRESH=true` flag)
+-   Run `./build up --migrate-fresh`
+-   You can omit the `--migrate-fresh` in further runs.
+
+-   If you are working on the backend, you may wish to comment out the `server` service (1st) in the `docker-compose.yml` file,
+and run `./build up`, then you can simply run `./build` to start the backend server, and when making changes you will not have
+to wait for docker to rebuild the frontend, the middleware, and start the other 4 containers each time you wish to test out
+a change.
+
+**If you need hot reloading for the client:**
 -   Change directory to the frontend directory
 -   Run `yarn install`
 -   Run `yarn run dev`
 -   Open `http://localhost:5173` in your browser
 -   Login with `SuperAdmin` and password: `ChangeMe!`
 -   You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
+
+
+**If you will not be working on the frontend/do not need hot reloading** you can set `APP_ENV=prod` in the `.env` file, and you will not need to run the frontend server, simply go to `localhost:8080` in your browser and the Go server will serve the frontend as well (builds in docker).
 
 ## Style/Linting
 

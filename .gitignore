@@ -7,3 +7,4 @@
 jar
 /frontend/public/build
 /frontend/public/thumbnails/*
+/migrations/migrations
