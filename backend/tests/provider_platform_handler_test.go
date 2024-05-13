@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"Go-Prototype/backend/cmd/models"
+	"Go-Prototype/src/models"
 	"bytes"
 	"encoding/json"
 	"net/http"

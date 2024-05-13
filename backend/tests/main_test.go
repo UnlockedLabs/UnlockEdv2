@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"Go-Prototype/backend/cmd/handlers"
+	"Go-Prototype/src/handlers"
 	"os"
 	"testing"
 )

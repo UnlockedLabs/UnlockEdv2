@@ -1,7 +1,7 @@
 package main
 
 import (
-	server "Go-Prototype/backend/cmd/handlers"
+	server "Go-Prototype/src/handlers"
 	"fmt"
 	"log"
 	"log/slog"
@@ -35,34 +35,11 @@ func main() {
 	}
 	defer file.Close()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(file, nil)))
-	cmd := ParseArgs()
 	newServer := server.NewServer(testing)
-	if cmd.RunMigrations {
-		newServer.Db.Migrate()
-	} else if cmd.MigrateFresh || os.Getenv("MIGRATE_FRESH") == "true" {
-		log.Println("Migrating fresh")
-		newServer.Db.MigrateFresh(testing)
-	}
+	newServer.Db.Migrate()
 	newServer.LogInfo("Starting server on :", port)
 	fmt.Println("Starting server on :", port)
 	if err := http.ListenAndServe(":8080", server.CorsMiddleware(newServer.Mux)); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
-}
-
-type Command struct {
-	RunMigrations bool
-	MigrateFresh  bool
-}
-
-func ParseArgs() *Command {
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "--migrate":
-			return &Command{RunMigrations: true}
-		case "--migrate-fresh":
-			return &Command{MigrateFresh: true}
-		}
-	}
-	return &Command{}
 }

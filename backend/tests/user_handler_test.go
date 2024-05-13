@@ -1,10 +1,11 @@
 package tests
 
 import (
-	"Go-Prototype/backend/cmd/handlers"
-	"Go-Prototype/backend/cmd/models"
+	"Go-Prototype/src/handlers"
+	"Go-Prototype/src/models"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -144,6 +145,20 @@ func TestCreateUser(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	t.Run("TestUpdateUser", func(t *testing.T) {
+		// create user to update
+		newUser := models.User{
+			NameFirst: "testUser",
+			NameLast:  "testUser",
+			Username:  "testUser",
+			Email:     "testUser",
+			Role:      "admin",
+		}
+		created, err := server.Db.CreateUser(&newUser)
+		if err != nil {
+			t.Errorf("failed to create user")
+		}
+		id := created.ID
+		fmt.Printf("CREATED ID: %d", id)
 		form := make(map[string]string)
 		form["username"] = "testUpdate"
 		form["name_first"] = "testUpdate"
@@ -158,7 +173,7 @@ func TestUpdateUser(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		req.SetPathValue("id", "1")
+		req.SetPathValue("id", fmt.Sprintf("%d", id))
 		rr := httptest.NewRecorder()
 		handler := server.TestAsAdmin(http.HandlerFunc(server.HandleUpdateUser))
 		handler.ServeHTTP(rr, req)
@@ -166,7 +181,7 @@ func TestUpdateUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		user := server.Db.GetUserByID(1)
+		user := server.Db.GetUserByUsername("testUpdate")
 		if err != nil {
 			t.Fatal(err)
 		}
