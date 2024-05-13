@@ -10,6 +10,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -68,15 +70,15 @@ const (
 )
 
 func (srv *Server) LogInfo(message ...interface{}) {
-	slog.Info("ENV: "+os.Getenv("APP_ENV"), message...)
+	log.Info(message...)
 }
 
 func (srv *Server) LogError(message ...interface{}) {
-	slog.Error("ENV: "+os.Getenv("APP_ENV"), message...)
+	log.Error(message...)
 }
 
 func (srv *Server) LogDebug(message ...interface{}) {
-	slog.Debug("ENV: "+os.Getenv("APP_ENV"), message...)
+	slog.Debug("DEBUG: ", message...)
 }
 
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {

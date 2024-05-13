@@ -3,10 +3,10 @@ package main
 import (
 	server "Go-Prototype/src/handlers"
 	"fmt"
-	"log"
-	"log/slog"
 	"net/http"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -14,7 +14,7 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		slog.Info("no .env file found, using default env variables")
+		log.Info("no .env file found, using default env variables")
 	}
 	var file *os.File
 	var err error
@@ -30,11 +30,13 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to open log file: %v", err)
 		}
+		log.SetFormatter(&log.JSONFormatter{})
 	} else {
 		file = os.Stdout
+		log.SetFormatter(&log.TextFormatter{ForceColors: true})
 	}
 	defer file.Close()
-	slog.SetDefault(slog.New(slog.NewJSONHandler(file, nil)))
+	log.SetOutput(file)
 	newServer := server.NewServer(testing)
 	newServer.Db.Migrate()
 	newServer.LogInfo("Starting server on :", port)

@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type OidcClient struct {
@@ -96,7 +96,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	if autoRegister && (prov.Type == CanvasCloud || prov.Type == CanvasOSS) {
 		externalId, err = autoRegisterCanvas(prov, oidcClient)
 		if err != nil {
-			slog.Error("Error auto registering provider as client: ", err)
+			log.Error("Error auto registering provider as client: ", err)
 		}
 	}
 	return oidcClient, externalId, nil
@@ -142,15 +142,15 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 		var authProvider map[string]interface{}
 		err = json.NewDecoder(response.Body).Decode(&authProvider)
 		if err != nil {
-			slog.Error("Error decoding response body: ", err)
+			log.Error("Error decoding response body: ", err)
 			return "", err
 		}
 		if authProvider == nil {
-			slog.Error("Error creating authentication provider: ", response.Status, response.Body)
+			log.Error("Error creating authentication provider: ", response.Status, response.Body)
 			return "", err
 		}
 		if authProvider["id"] == nil {
-			slog.Error("Error creating authentication provider: no ID in response")
+			log.Error("Error creating authentication provider: no ID in response")
 			return "", err
 		}
 		if id, ok := authProvider["id"].(int); ok {

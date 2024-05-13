@@ -3,7 +3,6 @@ package handlers
 import (
 	"Go-Prototype/src/models"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 )
 
@@ -16,7 +15,7 @@ func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 	srv.LogInfo("GET: /api/left-menu")
 	links, err := srv.Db.GetLeftMenuLinks()
 	if err != nil {
-		slog.Debug("GetLeftMenu Database Error: %v", err)
+		srv.LogDebug("GetLeftMenu Database Error: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

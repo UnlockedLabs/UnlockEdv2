@@ -4,7 +4,6 @@ import (
 	"Go-Prototype/src/models"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 )
@@ -25,7 +24,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage)
 	if err != nil {
-		slog.Error("IndexUsers Database Error: %v", err)
+		srv.LogError("IndexUsers Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -52,7 +51,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		slog.Error("GET User nandler Error: %v", err)
+		srv.LogError("GET User nandler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -63,8 +62,8 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 	response := models.Resource[models.User]{}
 	user := srv.Db.GetUserByID(uint(id))
 	if user == nil {
-		slog.Info("Error: %v", err)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		srv.LogInfo("Error: ", err)
+		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 	response.Data = append(response.Data, *user)
@@ -93,7 +92,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	user := models.User{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		slog.Info("POST User handler Error: %v", err)
+		srv.LogInfo("POST User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -123,7 +122,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		slog.Error("DELETE User handler Error: %v", err)
+		srv.LogError("DELETE User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -139,7 +138,7 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		slog.Error("UPDATE User handler Error: %v", err)
+		srv.LogError("UPDATE User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
