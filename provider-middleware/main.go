@@ -34,7 +34,7 @@ type ServiceHandler struct {
 	mutex    sync.Mutex
 }
 
-func NewServiceHandler(token string, db *sql.DB) *ServiceHandler {
+func newServiceHandler(token string, db *sql.DB) *ServiceHandler {
 	return &ServiceHandler{
 		token:    token,
 		db:       db,
@@ -80,9 +80,9 @@ func main() {
 	log.SetOutput(file)
 	token := os.Getenv("PROVIDER_SERVICE_KEY")
 	log.Println("Token: ", token)
-	handler := NewServiceHandler(token, db)
+	handler := newServiceHandler(token, db)
 	log.Println("Server started on :8081")
-	handler.RegisterRoutes()
+	handler.registerRoutes()
 	log.Println("Routes registered")
 	err = http.ListenAndServe(":8081", handler.Mux)
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 * This handler will be responsible for adding a new provider to the database
 * so that we can initiate a new Kolibri service for that provider
 **/
-func (sh *ServiceHandler) HandleAddProvider(w http.ResponseWriter, r *http.Request) {
+func (sh *ServiceHandler) handleAddProvider(w http.ResponseWriter, r *http.Request) {
 	// deserialize from request body
 	providerPlatform := ProviderPlatform{}
 	log.Println("Adding provider")
@@ -37,7 +37,7 @@ func (sh *ServiceHandler) HandleAddProvider(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (sh *ServiceHandler) InitService(id int) error {
+func (sh *ServiceHandler) initService(id int) error {
 	provider, err := sh.LookupProvider(id)
 	log.Println("InitService called")
 	if err != nil {
@@ -73,7 +73,7 @@ func (sh *ServiceHandler) InitService(id int) error {
 		sh.mutex.Unlock()
 		return nil
 	} else {
-		canvas := NewCanvasService(provider)
+		canvas := newCanvasService(provider)
 		sh.mutex.Lock()
 		sh.services = append(sh.services, canvas)
 		sh.mutex.Unlock()
@@ -81,7 +81,7 @@ func (sh *ServiceHandler) InitService(id int) error {
 	}
 }
 
-func (sh *ServiceHandler) FindService(id int) int {
+func (sh *ServiceHandler) findService(id int) int {
 	for idx, service := range sh.services {
 		if service.GetID() == id {
 			return idx
@@ -100,7 +100,7 @@ func (sh *ServiceHandler) getService(r *http.Request) ProviderServiceInterface {
 * This handler will be responsible for importing courses from Providers
 * to the UnlockEd platform, mapping their Content objects to our Course object
  */
-func (sh *ServiceHandler) HandlePrograms(w http.ResponseWriter, r *http.Request) {
+func (sh *ServiceHandler) handlePrograms(w http.ResponseWriter, r *http.Request) {
 	service := sh.getService(r)
 	courses, err := service.GetPrograms()
 	if err != nil {
@@ -126,7 +126,7 @@ func (sh *ServiceHandler) HandlePrograms(w http.ResponseWriter, r *http.Request)
 * to the UnlockEd platform with the proper fields for ProviderUserMapping
 * and User objects
 **/
-func (sh *ServiceHandler) HandleUsers(w http.ResponseWriter, r *http.Request) {
+func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	service := sh.getService(r)
 	users, err := service.GetUsers()
 	if err != nil {

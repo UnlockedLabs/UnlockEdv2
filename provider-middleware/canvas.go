@@ -21,7 +21,7 @@ type CanvasService struct {
 	RedirectURI        string
 }
 
-func NewCanvasService(provider *ProviderPlatform) *CanvasService {
+func newCanvasService(provider *ProviderPlatform) *CanvasService {
 	headers := make(map[string]string)
 	headers["Authorization"] = "Bearer " + provider.ApiKey
 	headers["Accept"] = "application/json"
