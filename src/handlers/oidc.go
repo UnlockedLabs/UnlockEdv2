@@ -4,6 +4,8 @@ import (
 	"Go-Prototype/src/models"
 	"encoding/json"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerOidcRoutes() {
@@ -18,7 +20,7 @@ func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, clients); err != nil {
-		srv.LogError(r, err)
+		log.Error(r, err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }
@@ -32,25 +34,25 @@ type RegisterClientRequest struct {
 func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
 	request := RegisterClientRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		srv.LogError(r, err)
+		log.Error(r, err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(request.ProviderPlatformID))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		srv.LogError(r, err)
+		log.Error(r, err)
 		return
 	}
 	if provider.OidcID != 0 || provider.ExternalAuthProviderId != "" {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Client already registered")
-		srv.LogError(r, err)
+		log.Error(r, err)
 		return
 	}
 	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		srv.LogError(r, err)
+		log.Error(r, err)
 		return
 	}
 	if err := srv.Db.RegisterClient(client); err != nil {
@@ -61,7 +63,7 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 	provider.ExternalAuthProviderId = externalId
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		srv.LogError(r, err)
+		log.Error(r, err)
 	}
 	response := models.Resource[models.OidcClient]{
 		Data: []models.OidcClient{*client},
@@ -72,7 +74,7 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		response.Message = "Client successfully created"
 	}
 	if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
-		srv.LogError(r, err)
+		log.Error(r, err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }

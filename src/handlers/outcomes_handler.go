@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerOutcomesRoutes() {
@@ -18,12 +20,12 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("handler: getOutcomes: ", err.Error())
+		log.Error("handler: getOutcomes: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage)
 	if err != nil {
-		srv.LogError("handler: getOutcomes: ", err.Error())
+		log.Error("handler: getOutcomes: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -31,7 +33,7 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 	response.Meta = models.NewPaginationInfo(page, perPage, total)
 	response.Data = outcome
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.LogError("handler: getOutcomes: ", err.Error())
+		log.Error("handler: getOutcomes: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -39,14 +41,14 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("handler: createOutcome: ", err.Error())
+		log.Error("handler: createOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	outcome := &models.Outcome{}
 	err = json.NewDecoder(r.Body).Decode(&outcome)
 	if err != nil {
-		srv.LogError("handler: createOutcome: ", err.Error())
+		log.Error("handler: createOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -54,7 +56,7 @@ func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request) {
 		outcome.UserID = uint(id)
 	}
 	if outcome, err = srv.Db.CreateOutcome(outcome); err != nil {
-		srv.LogError("handler: createOutcome: ", err.Error())
+		log.Error("handler: createOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -64,13 +66,13 @@ func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
-		srv.LogError("handler: updateOutcome: ", err.Error())
+		log.Error("handler: updateOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	uid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("handler: updateOutcome: ", err.Error())
+		log.Error("handler: updateOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -92,7 +94,7 @@ func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request) {
 	response := models.Resource[models.Outcome]{}
 	response.Data = append(response.Data, *updatedOutcome)
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.LogError("handler: updateOutcome: ", err.Error())
+		log.Error("handler: updateOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -100,11 +102,11 @@ func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleDeleteOutcome(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
-		srv.LogError("handler: deleteOutcome: ", err.Error())
+		log.Error("handler: deleteOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	if err = srv.Db.DeleteOutcome(uint(id)); err != nil {
-		srv.LogError("handler: deleteOutcome: ", err.Error())
+		log.Error("handler: deleteOutcome: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusNoContent)

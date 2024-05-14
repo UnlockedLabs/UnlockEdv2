@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"slices"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	log "github.com/sirupsen/logrus"
 )
 
 type contextKey string
@@ -49,7 +49,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			s.LogError("No token found " + err.Error())
+			log.Error("No token found " + err.Error())
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -111,7 +111,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&form)
 	defer r.Body.Close()
 	if err != nil {
-		s.LogError("Parsing form failed, using urlform" + err.Error())
+		log.Error("Parsing form failed, using urlform" + err.Error())
 	}
 	if user, err := s.Db.AuthorizeUser(form.Username, form.Password); err == nil {
 		claims := Claims{
@@ -152,7 +152,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims Claims, challenge string) {
-	s.LogInfo("login challenge initiated", challenge)
+	log.Info("login challenge initiated", challenge)
 	client := &http.Client{}
 	body := map[string]interface{}{}
 	body["subject"] = claims.Subject
@@ -161,25 +161,25 @@ func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims 
 	loginChallenge := "?login_challenge=" + challenge
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		s.LogError("Error marshalling body")
+		log.Error("Error marshalling body")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/login/accept"+loginChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
-		s.LogError("Error creating request")
+		log.Error("Error creating request")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		s.LogError("Error sending request to hydra")
+		log.Error("Error sending request to hydra")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		s.LogError("Error accepting login request")
+		log.Error("Error accepting login request")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -187,7 +187,7 @@ func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims 
 	err = json.NewDecoder(resp.Body).Decode(&loginResponse)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		s.LogError("Error decoding response")
+		log.Error("Error decoding response")
 		return
 	}
 	redirectURI := loginResponse["redirect_to"].(string)
@@ -207,34 +207,34 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
-	srv.LogInfo("Checking auth handler")
+	log.Info("Checking auth handler")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	user := srv.Db.GetUserByID(claims.UserID)
 	if user == nil {
-		srv.LogError("Error getting user by ID")
+		log.Error("Error getting user by ID")
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		srv.LogError("Error writing response: " + err.Error())
+		log.Error("Error writing response: " + err.Error())
 	}
 }
 
 func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
-	srv.LogInfo("Handling password reset request", r.URL.Path)
+	log.Info("Handling password reset request", r.URL.Path)
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	password, confirm := "", ""
 	err := r.ParseForm()
 	if err != nil {
-		srv.LogError("Parsing form failed")
+		log.Error("Parsing form failed")
 	}
 	password = r.PostFormValue("password")
 	confirm = r.PostFormValue("confirm")
 	if password == "" || confirm == "" {
 		form := ResetPasswordRequest{}
 		if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-			srv.LogError("Parsing form failed, using JSON" + err.Error())
+			log.Error("Parsing form failed, using JSON" + err.Error())
 		}
 		password = form.Password
 		confirm = form.Confirm
@@ -242,12 +242,12 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if password != confirm || !validatePassword(password) {
 		http.Redirect(w, r, "/reset-password", http.StatusSeeOther)
-		srv.LogError("Password validation failed")
+		log.Error("Password validation failed")
 		return
 	}
 	if err := srv.Db.ResetUserPassword(claims.UserID, password); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		srv.LogError("Error Resetting users password: " + err.Error())
+		log.Error("Error Resetting users password: " + err.Error())
 		return
 	}
 	claims.PasswordReset = false
@@ -267,7 +267,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	})
 	if err = srv.WriteResponse(w, http.StatusOK, "Password reset successfully"); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		srv.LogError("Error writing response: " + err.Error())
+		log.Error("Error writing response: " + err.Error())
 		return
 	}
 }

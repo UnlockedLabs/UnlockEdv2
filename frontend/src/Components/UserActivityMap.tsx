@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DropdownControl } from "./inputs";
+import { DropdownControl } from "./inputs/DropdownControl";
 import useSWR from "swr";
 import { User } from "@/common";
 
@@ -50,11 +50,7 @@ export default function UserActivityMap({ user }: { user: User }) {
   const [dropdownValDesc, setDropdownValDesc] = useState("the past year");
 
   const startDate = new Date(subtractYear(yearEnd));
-  const {
-    data: data,
-    error: error,
-    isLoading: isLoading,
-  } = useSWR(
+  const { error: error, isLoading: isLoading } = useSWR(
     "/api/user-activity-map/" +
       user.id +
       "?start_date=" +

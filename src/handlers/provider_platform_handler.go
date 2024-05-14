@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerProviderPlatformRoutes() {
@@ -16,7 +18,7 @@ func (srv *Server) registerProviderPlatformRoutes() {
 }
 
 func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) {
-	srv.LogInfo("Handling provider index request")
+	log.Info("Handling provider index request")
 	page, perPage := srv.GetPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
 	if err != nil {
@@ -28,7 +30,7 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) 
 		Data: platforms,
 		Meta: paginationData,
 	}
-	srv.LogInfo("Found "+strconv.Itoa(int(total)), " provider platforms")
+	log.Info("Found "+strconv.Itoa(int(total)), " provider platforms")
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -37,12 +39,12 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) 
 func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("GET Provider handler Error: ", err.Error())
+		log.Error("GET Provider handler Error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	platform, err := srv.Db.GetProviderPlatformByID(id)
 	if err != nil {
-		srv.LogError("Error: ", err.Error())
+		log.Error("Error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -60,13 +62,13 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 	var platform models.ProviderPlatform
 	err := json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
-		srv.LogError("Error decoding request body: ", err.Error())
+		log.Error("Error decoding request body: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	defer r.Body.Close()
 	newProv, err := srv.Db.CreateProviderPlatform(&platform)
 	if err != nil {
-		srv.LogError("Error creating provider platform: ", err.Error())
+		log.Error("Error creating provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	response := models.Resource[models.ProviderPlatform]{
@@ -75,7 +77,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 	}
 	response.Data = append(response.Data, *newProv)
 	if err = srv.WriteResponse(w, http.StatusOK, &response); err != nil {
-		srv.LogError("Error writing response: ", err.Error())
+		log.Error("Error writing response: ", err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }
@@ -83,19 +85,19 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("PATCH Provider handler Error:", err.Error())
+		log.Error("PATCH Provider handler Error:", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	var platform models.ProviderPlatform
 	err = json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
-		srv.LogError("Error decoding request body: ", err.Error())
+		log.Error("Error decoding request body: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	defer r.Body.Close()
 	updated, err := srv.Db.UpdateProviderPlatform(&platform, uint(id))
 	if err != nil {
-		srv.LogError("Error updating provider platform: ", err.Error())
+		log.Error("Error updating provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	response := models.Resource[models.ProviderPlatform]{
@@ -110,11 +112,11 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("DELETE Provider handler Error: ", err.Error())
+		log.Error("DELETE Provider handler Error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 	if err = srv.Db.DeleteProviderPlatform(id); err != nil {
-		srv.LogError("Error deleting provider platform: ", err.Error())
+		log.Error("Error deleting provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusNoContent)

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerUserRoutes() {
@@ -24,7 +26,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage)
 	if err != nil {
-		srv.LogError("IndexUsers Database Error: ", err)
+		log.Error("IndexUsers Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -51,7 +53,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("GET User nandler Error: ", err)
+		log.Error("GET User nandler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -62,7 +64,7 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 	response := models.Resource[models.User]{}
 	user := srv.Db.GetUserByID(uint(id))
 	if user == nil {
-		srv.LogInfo("Error: ", err)
+		log.Info("Error: ", err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -92,7 +94,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	user := models.User{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		srv.LogInfo("POST User handler Error: ", err)
+		log.Info("POST User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -102,7 +104,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	srv.LogInfo("New user created, temp password: " + user.Password)
+	log.Info("New user created, temp password: " + user.Password)
 	if newUser == nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating user")
 	} else {
@@ -122,7 +124,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("DELETE User handler Error: ", err)
+		log.Error("DELETE User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -138,7 +140,7 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogError("UPDATE User handler Error: ", err)
+		log.Error("UPDATE User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -151,7 +153,7 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	toUpdate := srv.Db.GetUserByID(uint(id))
 	if toUpdate == nil {
-		srv.LogError("Error getting user by ID:" + fmt.Sprintf("%d", id))
+		log.Error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		srv.ErrorResponse(w, http.StatusNotFound, "user not found")
 		return
 	}
@@ -176,7 +178,7 @@ type TempPasswordRequest struct {
 func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Request) {
 	temp := TempPasswordRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
-		srv.LogError("Parsing form failed, using JSON", err.Error())
+		log.Error("Parsing form failed, using JSON", err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -187,7 +189,7 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		response["message"] = err.Error()
 		err = srv.WriteResponse(w, http.StatusInternalServerError, response)
 		if err != nil {
-			srv.LogError("Error writing response: ", err.Error())
+			log.Error("Error writing response: ", err.Error())
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		}
 		return
@@ -195,7 +197,7 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.LogError("Error writing response: ", err.Error())
+		log.Error("Error writing response: ", err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

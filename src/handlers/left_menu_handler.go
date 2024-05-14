@@ -4,6 +4,8 @@ import (
 	"Go-Prototype/src/models"
 	"encoding/json"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerLeftMenuRoutes() {
@@ -12,10 +14,10 @@ func (srv *Server) registerLeftMenuRoutes() {
 }
 
 func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
-	srv.LogInfo("GET: /api/left-menu")
+	log.Info("GET: /api/left-menu")
 	links, err := srv.Db.GetLeftMenuLinks()
 	if err != nil {
-		srv.LogDebug("GetLeftMenu Database Error: ", err)
+		log.Debug("GetLeftMenu Database Error: ", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -23,7 +25,7 @@ func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 		Data: links,
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.LogError("Error writing response: " + err.Error())
+		log.Error("Error writing response: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -33,17 +35,17 @@ func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Reques
 	var links []models.LeftMenuLink
 	err := json.NewDecoder(r.Body).Decode(&links)
 	if err != nil {
-		srv.LogError("PostLeftMenuLinks Error:" + err.Error())
+		log.Error("PostLeftMenuLinks Error:" + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err = srv.Db.DeleteAllLinks(); err != nil {
-		srv.LogError("PostLeftMenuLinks Error:" + err.Error())
+		log.Error("PostLeftMenuLinks Error:" + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = srv.Db.CreateFreshLeftMenuLinks(links); err != nil {
-		srv.LogError("PostLeftMenuLinks Error:" + err.Error())
+		log.Error("PostLeftMenuLinks Error:" + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

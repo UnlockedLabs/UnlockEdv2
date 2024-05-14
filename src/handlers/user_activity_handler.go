@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerUserActivityRoutes() {
@@ -58,7 +60,7 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 			ClickedUrl:  clickedUrl,
 		}
 		if err := srv.Db.CreateActivityForUser(&activity); err != nil {
-			srv.LogError("Error creating user activity: " + err.Error())
+			log.Error("Error creating user activity: " + err.Error())
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		}
 		next.ServeHTTP(w, r.WithContext(r.Context()))
@@ -74,14 +76,14 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 	if search != "" {
 		total, activities, err = srv.Db.SearchUserActivity(search, page, perPage)
 		if err != nil {
-			srv.LogDebug("Error fetching user activities: ", err)
+			log.Debug("Error fetching user activities: ", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 	} else {
 		total, activities, err = srv.Db.GetAllUserActivity(page, perPage)
 		if err != nil {
-			srv.LogDebug("Error fetching user activities: ", err)
+			log.Debug("Error fetching user activities: ", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -109,7 +111,7 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 	page, perPage := srv.GetPaginationInfo(r)
 	total, activity, err := srv.Db.GetActivityForUser(id, page, perPage)
 	if err != nil {
-		srv.LogDebug("Error fetching user activity: ", err)
+		log.Debug("Error fetching user activity: ", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -119,7 +121,7 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 		Data: activity,
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.LogDebug("Error writing response: ", err)
+		log.Debug("Error writing response: ", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
 }

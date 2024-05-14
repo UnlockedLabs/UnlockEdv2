@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerMilestonesRoutes() {
@@ -20,7 +22,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 	page, perPage := srv.GetPaginationInfo(r)
 	total, milestones, err := srv.Db.GetMilestones(page, perPage, search, orderBy)
 	if err != nil {
-		srv.LogDebug("IndexMilestones Database Error: ", err)
+		log.Debug("IndexMilestones Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -36,7 +38,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 		Data: milestones,
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.LogError("Error writing response: " + err.Error())
+		log.Error("Error writing response: " + err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 	}
 }
@@ -53,7 +55,7 @@ func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusCreated, miles); err != nil {
-		srv.LogError("Error writing response: " + err.Error())
+		log.Error("Error writing response: " + err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -75,7 +77,7 @@ func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request)
 func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.LogInfo("No ID provided in URL, checking request body json")
+		log.Info("No ID provided in URL, checking request body json")
 	}
 	miles := &models.Milestone{}
 	if err := json.NewDecoder(r.Body).Decode(miles); err != nil {
@@ -102,7 +104,7 @@ func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, toUpdate); err != nil {
-		srv.LogError("Error writing response: " + err.Error())
+		log.Error("Error writing response: " + err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}

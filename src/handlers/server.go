@@ -68,18 +68,6 @@ const (
 	IndexPage    = "frontend/dist/index.html"
 )
 
-func (srv *Server) LogInfo(message ...interface{}) {
-	log.Info(message...)
-}
-
-func (srv *Server) LogError(message ...interface{}) {
-	log.Error(message...)
-}
-
-func (srv *Server) LogDebug(message ...interface{}) {
-	log.Debug(message...)
-}
-
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
 	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
 }
@@ -161,7 +149,7 @@ func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interfa
 }
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
-	srv.LogError(message)
+	log.Error(message)
 	http.Error(w, message, status)
 }
 

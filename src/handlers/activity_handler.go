@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerActivityRoutes() {
@@ -30,7 +32,7 @@ func (srv *Server) GetActivityByUserID(w http.ResponseWriter, r *http.Request) {
 		"activities": activities,
 	}); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		srv.LogError("Failed to write response", err)
+		log.Error("Failed to write response", err)
 	}
 }
 
@@ -51,7 +53,7 @@ func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Reque
 		"activities": activities,
 	}); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		srv.LogError("Failed to write response", err)
+		log.Error("Failed to write response", err)
 	}
 }
 
@@ -67,6 +69,6 @@ func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) 
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, activity); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		srv.LogError("Failed to write response", err)
+		log.Error("Failed to write response", err)
 	}
 }

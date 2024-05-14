@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"Go-Prototype/src"
+	cmd "Go-Prototype/src"
 	"Go-Prototype/src/models"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerActionsRoutes() {
@@ -20,19 +22,19 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(id)
 	if err != nil {
-		srv.LogError("Error getting provider platform by ID:" + err.Error())
+		log.Error("Error getting provider platform by ID:" + err.Error())
 		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
 	service, err := cmd.GetProviderService(provider)
 	if err != nil {
-		srv.LogError("Error getting provider service GetProviderService():" + err.Error())
+		log.Error("Error getting provider service GetProviderService():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	users, err := service.GetUsers()
 	if err != nil {
-		srv.LogError("Error getting provider service GetUsers():" + err.Error())
+		log.Error("Error getting provider service GetUsers():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -42,7 +44,7 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		created, err := srv.Db.CreateUser(&user)
 		if err != nil {
-			srv.LogError("Error creating user:" + err.Error())
+			log.Error("Error creating user:" + err.Error())
 			continue
 		}
 		mapping := models.ProviderUserMapping{
@@ -71,13 +73,13 @@ func (srv *Server) handleImportPrograms(w http.ResponseWriter, r *http.Request) 
 	}
 	service, err := cmd.GetProviderService(provider)
 	if err != nil {
-		srv.LogError("Error getting provider service GetProviderService:" + err.Error())
+		log.Error("Error getting provider service GetProviderService:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	content, err := service.GetPrograms()
 	if err != nil {
-		srv.LogError("Error getting provider service GetPrograms:" + err.Error())
+		log.Error("Error getting provider service GetPrograms:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -87,13 +89,13 @@ func (srv *Server) handleImportPrograms(w http.ResponseWriter, r *http.Request) 
 		}
 		_, err := srv.Db.CreateProgram(&item)
 		if err != nil {
-			srv.LogError("Error creating content:" + err.Error())
+			log.Error("Error creating content:" + err.Error())
 			continue
 		}
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, "Successfully imported courses"); err != nil {
-		srv.LogError("Error writing response:" + err.Error())
+		log.Error("Error writing response:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
