@@ -197,17 +197,20 @@ type UnlockEdImportUser struct {
 	ExternalUsername string `json:"external_username"`
 }
 type UnlockEdImportProgram struct {
-	ProviderPlatformID int    `json:"provider_platform_id"`
-	Name               string `json:"name"`
-	Description        string `json:"description"`
-	ExternalID         string `json:"external_id"`
-	ThumbnailURL       string `json:"thumbnail_url"`
-	IsPublic           bool   `json:"is_public"`
-	ExternalURL        string `json:"external_url"`
+	ProviderPlatformID      int    `json:"provider_platform_id"`
+	Name                    string `json:"name"`
+	Description             string `json:"description"`
+	ExternalID              string `json:"external_id"`
+	ThumbnailURL            string `json:"thumbnail_url"`
+	IsPublic                bool   `json:"is_public"`
+	ExternalURL             string `json:"external_url"`
+	TotalProgressMilestones int    `json:"total_progress_milestones"`
 }
 
 type UnlockEdImportMilestone struct {
-	ExternalID  string `json:"external_id"`
-	Type        string `json:"type"`
-	IsCompleted bool   `json:"is_completed"`
+	UserID            int    `json:"user_id"`
+	ExternalProgramID string `json:"external_program_id"`
+	ExternalID        string `json:"external_id"`
+	Type              string `json:"type"`
+	IsCompleted       bool   `json:"is_completed"`
 }

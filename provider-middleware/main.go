@@ -16,7 +16,7 @@ type ProviderServiceInterface interface {
 	GetID() int
 	GetUsers() ([]UnlockEdImportUser, error)
 	GetPrograms() ([]UnlockEdImportProgram, error)
-	// TODO: GetMilestones()
+	GetMilestonesForProgramUser(courseId, userId int) ([]UnlockEdImportMilestone, error)
 	// TODO: GetActivity()
 	// TODO: GetOutcomes()
 }

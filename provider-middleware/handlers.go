@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /**
@@ -72,7 +73,6 @@ func (sh *ServiceHandler) InitService(id int) error {
 		sh.mutex.Unlock()
 		return nil
 	} else {
-		log.Printf("NewCanvasService")
 		canvas := NewCanvasService(provider)
 		sh.mutex.Lock()
 		sh.services = append(sh.services, canvas)
@@ -90,14 +90,18 @@ func (sh *ServiceHandler) FindService(id int) int {
 	return -1
 }
 
+func (sh *ServiceHandler) getService(r *http.Request) ProviderServiceInterface {
+	idx := r.Context().Value(IDX).(int)
+	return sh.services[idx]
+}
+
 /**
 * GET: /api/courses
 * This handler will be responsible for importing courses from Providers
 * to the UnlockEd platform, mapping their Content objects to our Course object
  */
 func (sh *ServiceHandler) HandlePrograms(w http.ResponseWriter, r *http.Request) {
-	idx := r.Context().Value(IDX).(int)
-	service := sh.services[idx]
+	service := sh.getService(r)
 	courses, err := service.GetPrograms()
 	if err != nil {
 		log.Println(err)
@@ -123,8 +127,7 @@ func (sh *ServiceHandler) HandlePrograms(w http.ResponseWriter, r *http.Request)
 * and User objects
 **/
 func (sh *ServiceHandler) HandleUsers(w http.ResponseWriter, r *http.Request) {
-	id := r.Context().Value(IDX).(int)
-	service := sh.services[id]
+	service := sh.getService(r)
 	users, err := service.GetUsers()
 	if err != nil {
 		log.Printf("Failed to retrieve users: %v", err)
@@ -139,6 +142,46 @@ func (sh *ServiceHandler) HandleUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if _, err = w.Write(responseData); err != nil {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
+}
+
+/**
+* POST: /api/milestones
+* body: {"user_id": x,"program_id": y}
+ */
+func (sh *ServiceHandler) handleMilestonesForProgramUser(w http.ResponseWriter, r *http.Request) {
+	service := sh.getService(r)
+	defer r.Body.Close()
+	var data map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
+		return
+	}
+	user_id, ok := data["user_id"].(int)
+	if !ok {
+		http.Error(w, "Invalid user_id", http.StatusBadRequest)
+		return
+	}
+	program_id, ok := data["program_id"].(int)
+	if !ok {
+		http.Error(w, "Invalid program_id", http.StatusBadRequest)
+		return
+	}
+	milestones, err := service.GetMilestonesForProgramUser(user_id, program_id)
+	if err != nil {
+		log.Errorf("Failed to retrieve milestones: %v", err)
+	}
+	responseData, err := json.Marshal(&milestones)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		log.Errorf("Failed to encode response: %v", err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err = w.Write(responseData); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
+		log.Errorf("Failed to write response: %v", err)
 		return
 	}
 }

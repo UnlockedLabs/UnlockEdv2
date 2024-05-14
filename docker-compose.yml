@@ -23,7 +23,7 @@ services:
       - intranet
   provider-service:
     build:
-      context: ./backend/provider-middleware
+      context: ./provider-middleware
       dockerfile: Dockerfile
     ports:
       - "8081:8081"

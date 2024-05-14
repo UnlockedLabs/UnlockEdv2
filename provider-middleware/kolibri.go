@@ -277,3 +277,7 @@ func (ks *KolibriService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	}
 	return importCourses, nil
 }
+
+func (ks *KolibriService) GetMilestonesForProgramUser(courseId, userId int) ([]UnlockEdImportMilestone, error) {
+	return nil, nil
+}
