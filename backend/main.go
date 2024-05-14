@@ -38,7 +38,6 @@ func main() {
 	defer file.Close()
 	log.SetOutput(file)
 	newServer := server.NewServer(testing)
-	newServer.Db.Migrate()
 	newServer.LogInfo("Starting server on :", port)
 	fmt.Println("Starting server on :", port)
 	if err := http.ListenAndServe(":8080", server.CorsMiddleware(newServer.Mux)); err != nil {

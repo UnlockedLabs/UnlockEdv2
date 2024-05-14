@@ -60,7 +60,7 @@ func InitDB(isTesting bool) *DB {
 	once.Do(func() {
 		database = &DB{Conn: db}
 	})
-	database.Migrate()
+	Migrate(db)
 	if isTesting {
 		SeedDefaultData(db)
 		database.SeedTestData()
@@ -100,10 +100,10 @@ const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unloc
 /**
 * Register Migrations here
 **/
-func (db *DB) Migrate() {
+func Migrate(db *gorm.DB) {
 	for _, table := range TableList {
 		log.Printf("Migrating %T table...", table)
-		if err := db.Conn.AutoMigrate(table); err != nil {
+		if err := db.AutoMigrate(table); err != nil {
 			log.Fatal("Failed to migrate table: ", err)
 		}
 	}

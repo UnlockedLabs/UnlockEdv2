@@ -2,7 +2,6 @@ package main
 
 import (
 	"Go-Prototype/src/database"
-	"Go-Prototype/src/models"
 	"fmt"
 	"log"
 	"os"
@@ -29,34 +28,21 @@ func main() {
 	os.Exit(0)
 }
 
-var TableList = []interface{}{
-	&models.User{},
-	&models.ProviderPlatform{},
-	&models.UserActivity{},
-	&models.ProviderUserMapping{},
-	&models.LeftMenuLink{},
-	&models.Program{},
-	&models.Milestone{},
-	&models.Outcome{},
-	&models.Activity{},
-	&models.OidcClient{},
-}
-
 func MigrateFresh(db *gorm.DB) {
 	log.Println("Dropping all tables...")
-	for _, table := range TableList {
+	for _, table := range database.TableList {
 		if err := db.Migrator().DropTable(table); err != nil {
 			log.Fatalf("Failed to drop table: %v", err)
 		}
 	}
 	MigrateProviderMiddlewareFresh()
-	Migrate(db)
+	database.Migrate(db)
 	database.SeedDefaultData(db)
 	log.Println("Database successfully migrated from fresh state.")
 }
 
 func Migrate(db *gorm.DB) {
-	for _, table := range TableList {
+	for _, table := range database.TableList {
 		log.Printf("Migrating %T table...", table)
 		if err := db.AutoMigrate(table); err != nil {
 			log.Fatal("Failed to migrate table: ", err)
