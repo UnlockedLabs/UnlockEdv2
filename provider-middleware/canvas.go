@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Go-Prototype/src/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -53,7 +54,7 @@ func (srv *CanvasService) GetID() int {
 	return srv.ProviderPlatformID
 }
 
-func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
+func (srv *CanvasService) GetUsers() ([]models.UnlockEdImportUser, error) {
 	url := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users"
 	resp, err := srv.SendRequest(url)
 	if err != nil {
@@ -67,7 +68,7 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 		return nil, err
 	}
 	log.Printf("Request sent to canvas Users: %v", users)
-	unlockedUsers := make([]UnlockEdImportUser, 0)
+	unlockedUsers := make([]models.UnlockEdImportUser, 0)
 	for _, user := range users {
 		log.Printf("User: %v", user)
 		name := strings.Split(user["name"].(string), " ")
@@ -80,7 +81,7 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 			nameLast = name[1]
 		}
 		userId, _ := user["id"].(int)
-		unlockedUser := UnlockEdImportUser{
+		unlockedUser := models.UnlockEdImportUser{
 			ExternalUserID:   strconv.Itoa(userId),
 			ExternalUsername: user["login_id"].(string),
 			NameFirst:        nameFirst,
@@ -224,7 +225,7 @@ func (srv *CanvasService) getUserSubmissionsForAssignment(courseId, assignmentId
 * get submissions for the user for each quiz
 *  /api/v1/courses/:course_id/quizzes/:quiz_id/submissions/:user_id
 * */
-func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]UnlockEdImportMilestone, error) {
+func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]models.UnlockEdImportMilestone, error) {
 	assignments, err := srv.getAssignmentsForCourse(courseId)
 	if err != nil {
 		return nil, err
@@ -232,7 +233,7 @@ func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]U
 	if len(assignments) == 0 {
 		return nil, fmt.Errorf("user is likely not enrolled or there are no assignments")
 	}
-	milestones := make([]UnlockEdImportMilestone, 0)
+	milestones := make([]models.UnlockEdImportMilestone, 0)
 	for _, assignment := range assignments {
 		if hasSubmissions, ok := assignment["has_submitted_submissions"].(bool); !ok || !hasSubmissions {
 			// if there are no submissions, dont bother fetching them for the user
@@ -244,7 +245,7 @@ func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]U
 			log.Printf("Failed to get submission for assignment: %v", err)
 			return nil, err
 		}
-		milestone := UnlockEdImportMilestone{
+		milestone := models.UnlockEdImportMilestone{
 			ExternalID:        submission["id"].(string),
 			UserID:            userId,
 			ExternalProgramID: fmt.Sprintf("%d", courseId),
@@ -275,7 +276,7 @@ func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]U
 			if state == "complete" {
 				milestoneType = "quiz_completion"
 			}
-			milestone := UnlockEdImportMilestone{
+			milestone := models.UnlockEdImportMilestone{
 				ExternalID:        submission["id"].(string),
 				UserID:            userId,
 				ExternalProgramID: fmt.Sprintf("%d", courseId),

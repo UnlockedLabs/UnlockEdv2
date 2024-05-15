@@ -1,8 +1,0 @@
-{"level":"info","msg":"Starting server on :8080","time":"2024-05-13T18:14:57-04:00"}
-{"level":"fatal","msg":"Error starting server: listen tcp :8080: bind: address already in use","time":"2024-05-13T18:14:57-04:00"}
-{"level":"info","msg":"Starting server on :8080","time":"2024-05-13T18:15:03-04:00"}
-{"level":"info","msg":"Checking auth handler","time":"2024-05-13T18:15:12-04:00"}
-{"level":"info","msg":"Checking auth handler","time":"2024-05-13T18:15:13-04:00"}
-{"level":"info","msg":"Checking auth handler","time":"2024-05-13T18:15:18-04:00"}
-{"level":"info","msg":"Checking auth handler","time":"2024-05-13T18:15:18-04:00"}
-{"level":"info","msg":"New user created, temp password: $2a$10$ltE0J5YE29lLUHxuZ63fROzvBEKPnUdFvC5DcHjBl4zV7Qcm2dONC","time":"2024-05-13T18:15:40-04:00"}

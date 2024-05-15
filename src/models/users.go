@@ -38,6 +38,15 @@ type User struct {
 	ActivityLog []UserActivity        `json:"-"`
 }
 
+type UnlockEdImportUser struct {
+	Username         string `json:"username"`
+	NameFirst        string `json:"name_first"`
+	NameLast         string `json:"name_last"`
+	Email            string `json:"email"`
+	ExternalUserID   string `json:"external_user_id"`
+	ExternalUsername string `json:"external_username"`
+}
+
 func (User) TableName() string {
 	return "users"
 }

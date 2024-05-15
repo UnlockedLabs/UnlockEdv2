@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Go-Prototype/src/models"
 	"bytes"
 	"database/sql"
 	"encoding/base64"
@@ -70,7 +71,7 @@ type KolibriUser struct {
 	IsSuperuser bool   `json:"is_superuser"`
 }
 
-func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
+func (ku *KolibriUser) IntoImportUser() (*models.UnlockEdImportUser, error) {
 	first := strings.Split(ku.Fullname, " ")[0]
 	last := strings.Split(ku.Fullname, " ")[1]
 	if len(strings.Split(ku.Fullname, " ")) > 2 {
@@ -80,7 +81,7 @@ func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
 	if first == "" && last == "" && ku.Username == "" {
 		return nil, errors.New("invalid user")
 	}
-	return &UnlockEdImportUser{
+	return &models.UnlockEdImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		Email:            email,
@@ -188,14 +189,7 @@ type Role struct {
 	Kind       string `json:"kind"`
 	Id         string `json:"id"`
 }
-type UnlockEdImportUser struct {
-	Username         string `json:"username"`
-	NameFirst        string `json:"name_first"`
-	NameLast         string `json:"name_last"`
-	Email            string `json:"email"`
-	ExternalUserID   string `json:"external_user_id"`
-	ExternalUsername string `json:"external_username"`
-}
+
 type UnlockEdImportProgram struct {
 	ProviderPlatformID      int    `json:"provider_platform_id"`
 	Name                    string `json:"name"`
@@ -205,12 +199,4 @@ type UnlockEdImportProgram struct {
 	IsPublic                bool   `json:"is_public"`
 	ExternalURL             string `json:"external_url"`
 	TotalProgressMilestones int    `json:"total_progress_milestones"`
-}
-
-type UnlockEdImportMilestone struct {
-	UserID            int    `json:"user_id"`
-	ExternalProgramID string `json:"external_program_id"`
-	ExternalID        string `json:"external_id"`
-	Type              string `json:"type"`
-	IsCompleted       bool   `json:"is_completed"`
 }

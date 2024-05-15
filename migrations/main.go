@@ -2,6 +2,7 @@ package main
 
 import (
 	"Go-Prototype/src/database"
+	"Go-Prototype/src/models"
 	"fmt"
 	"log"
 	"os"
@@ -38,6 +39,11 @@ func MigrateFresh(db *gorm.DB) {
 	MigrateProviderMiddlewareFresh()
 	database.Migrate(db)
 	database.SeedDefaultData(db)
+	for _, job := range models.AllJobs {
+		if err := db.Create(&job).Error; err != nil {
+			log.Fatalf("Failed to seed job: %v", err)
+		}
+	}
 	log.Println("Database successfully migrated from fresh state.")
 }
 

@@ -9,12 +9,20 @@ func (db *DB) CreateProviderUserMapping(providerUserMapping *models.ProviderUser
 	return db.Conn.Create(providerUserMapping).Error
 }
 
-func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string) (*models.ProviderUserMapping, error) {
+func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string, providerId uint) (*models.ProviderUserMapping, error) {
 	var providerUserMapping models.ProviderUserMapping
-	if err := db.Conn.Where("external_user_id = ?", externalUserID).First(&providerUserMapping).Error; err != nil {
+	if err := db.Conn.Where("external_user_id = ? AND provider_platform_id = ?", externalUserID, providerId).First(&providerUserMapping).Error; err != nil {
 		return nil, err
 	}
 	return &providerUserMapping, nil
+}
+
+func (db *DB) GetUserMappingsForProvider(providerId uint) ([]models.ProviderUserMapping, error) {
+	var users []models.ProviderUserMapping
+	if err := db.Conn.Find(&users).Where("provider_platform_id = ?", providerId).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUserMapping, error) {

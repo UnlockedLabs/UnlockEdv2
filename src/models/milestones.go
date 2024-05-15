@@ -20,6 +20,14 @@ type Milestone struct {
 	Program *Program `gorm:"foreignKey:ProgramID" json:"-"`
 }
 
+type UnlockEdImportMilestone struct {
+	UserID            int    `json:"user_id"`
+	ExternalProgramID string `json:"external_program_id"`
+	ExternalID        string `json:"external_id"`
+	Type              string `json:"type"`
+	IsCompleted       bool   `json:"is_completed"`
+}
+
 func (Milestone) TableName() string {
 	return "milestones"
 }

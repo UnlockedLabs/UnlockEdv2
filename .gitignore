@@ -1,10 +1,10 @@
 *.env
 .vscode
 .idea
-/backend/logs/server.log
 .github/workflows/test.yml
 /frontend/.husky/staged-files
 jar
+/logs/*.log
 /frontend/public/build
 /frontend/public/thumbnails/*
 /migrations/migrations

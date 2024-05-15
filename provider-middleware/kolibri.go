@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Go-Prototype/src/models"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -232,7 +233,7 @@ func (ks *KolibriService) RefreshSession() error {
 * @info - GET /api/auth/facilityuser?member_of=<facilityID>
 * @return - List of KolibriUser objects, representing all users in the facility
 **/
-func (ks *KolibriService) GetUsers() ([]UnlockEdImportUser, error) {
+func (ks *KolibriService) GetUsers() ([]models.UnlockEdImportUser, error) {
 	url := ks.BaseURL + "/api/auth/facilityuser?member_of=" + ks.AccountID
 	response, err := ks.SendGETRequest(url)
 	if err != nil {
@@ -243,7 +244,7 @@ func (ks *KolibriService) GetUsers() ([]UnlockEdImportUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	importUsers := make([]UnlockEdImportUser, len(users))
+	importUsers := make([]models.UnlockEdImportUser, len(users))
 	for _, user := range users {
 		ulUser, err := user.IntoImportUser()
 		if err != nil {
@@ -278,6 +279,6 @@ func (ks *KolibriService) GetPrograms() ([]UnlockEdImportProgram, error) {
 	return importCourses, nil
 }
 
-func (ks *KolibriService) GetMilestonesForProgramUser(courseId, userId int) ([]UnlockEdImportMilestone, error) {
+func (ks *KolibriService) GetMilestonesForProgramUser(courseId, userId int) ([]models.UnlockEdImportMilestone, error) {
 	return nil, nil
 }

@@ -20,6 +20,14 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	return total, platforms, nil
 }
 
+func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
+	var platforms []models.ProviderPlatform
+	if err := db.Conn.Where("state = ?", "active").Find(&platforms).Error; err != nil {
+		return nil, err
+	}
+	return platforms, nil
+}
+
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
 	if err := db.Conn.Where("id = ?", fmt.Sprintf("%d", id)).First(&platform).Error; err != nil {

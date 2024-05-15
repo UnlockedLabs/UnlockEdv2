@@ -42,7 +42,13 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request) {
 		if user.Username == "" && user.Email == "" && user.NameLast == "" {
 			continue
 		}
-		created, err := srv.Db.CreateUser(&user)
+		newUser := models.User{
+			Username:  user.Username,
+			Email:     user.Email,
+			NameFirst: user.NameFirst,
+			NameLast:  user.NameLast,
+		}
+		created, err := srv.Db.CreateUser(&newUser)
 		if err != nil {
 			log.Error("Error creating user:" + err.Error())
 			continue
@@ -51,6 +57,8 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request) {
 			UserID:             created.ID,
 			ProviderPlatformID: provider.ID,
 			ExternalUsername:   user.Username,
+			ExternalUserID:     user.ExternalUserID,
+			ExternalLoginID:    user.ExternalUsername,
 		}
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
