@@ -14,6 +14,8 @@ const (
 
 var AllJobs = []JobType{ImportUsers, ImportPrograms, ImportMilestones}
 
+var AllStoredJobs = []StoredJob{{JobType: ImportUsers}, {JobType: ImportPrograms}, {JobType: ImportMilestones}}
+
 type Status string
 
 const (
