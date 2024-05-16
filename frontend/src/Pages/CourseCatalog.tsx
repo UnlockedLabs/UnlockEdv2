@@ -44,17 +44,11 @@ export default function CourseCatalog(){
                     })}
                 </div>
                 ) : (
-                <>
-                    <div className="flex flex-row mt-8 px-6">
-                        <label className="body-small w-1/2">Course Name</label>
-                        <label className="body-small w-1/2">Description</label>
-                    </div>
-                    <div className="grid gap-4 mt-2">
-                        {recentCourses.map((course)=>{
-                            return <CatalogCourseCardList course={course} />
-                        })}
-                    </div>
-                </>
+                <div className="grid gap-4 mt-2">
+                    {recentCourses.map((course)=>{
+                        return <CatalogCourseCardList course={course} />
+                    })}
+                </div>
                 )}
             </div>
         </AuthenticatedLayout>

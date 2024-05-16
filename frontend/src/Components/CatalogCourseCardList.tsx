@@ -13,7 +13,7 @@ export default function CatalogCourseCardList({course}: {course:any}) {
 
     return (
       <div className="card bg-inner-background body-small p-6 flex flex-row items-center">
-        <div className="flex flex-col justify-between w-1/2">
+        <div className="flex flex-col justify-between gap-3">
             <div className="flex flex-row gap-3 items-center ">
                 <div onClick={() => setSavedCourse(!savedCourse)}>
                     { savedCourse ? <BookmarkIcon className="h-5 text-primary-yellow"/> : <BookmarkIconOutline className="h-5 text-header-text"/>}
@@ -23,16 +23,14 @@ export default function CatalogCourseCardList({course}: {course:any}) {
                 <a href={course.provider_platform_url} className="body">
                     {course.provider_platform_name}
                 </a>
-            </div>
-            <div className="flex flex-row py-1 gap-2">
                 {course.tags.map((tag) => {
                     if (tag == PillTagType.Open) return <OpenEnrollmentPill />
                     if (tag == PillTagType.Permission) return <PermissionOnlyPill />
                     if (tag == PillTagType.SelfPaced) return <SelfPacedPill />
                 })}
             </div>
+            <p className="body-small h-[2rem] line-clamp-2 overflow-hidden">{description}</p>
         </div>
-        <p className="body-small w-1/2 h-[3rem] line-clamp-3 overflow-hidden">{description}</p>
       </div>
     );
   }
