@@ -31,6 +31,7 @@ export default {
           "--grey-4": "#737373",
           "--body-text": "#222222",
           "--header-text": "#121212",
+          "--fallback-b1": "#F9FBFB",
         },
         dark: {
           primary: "#14b8a6",
@@ -60,6 +61,7 @@ export default {
           "--grey-4": "#ECECEC",
           "--body-text": "#EEEEEE",
           "--header-text": "#CCCCCC",
+          "--fallback-b1": "#0F2926"
         },
       },
     ],
