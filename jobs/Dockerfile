@@ -6,4 +6,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o cron ./jobs/.
 
 FROM alpine:latest
 COPY --from=builder ./app/cron .
+RUN mkdir logs && touch logs/jobs.log
 ENTRYPOINT ["/cron"]

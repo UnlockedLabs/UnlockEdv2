@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Go-Prototype/src/models"
 	"database/sql"
 	"log"
 	"net/http"
@@ -14,9 +15,9 @@ import (
 
 type ProviderServiceInterface interface {
 	GetID() int
-	GetUsers() ([]UnlockEdImportUser, error)
+	GetUsers() ([]models.UnlockEdImportUser, error)
 	GetPrograms() ([]UnlockEdImportProgram, error)
-	GetMilestonesForProgramUser(courseId, userId int) ([]UnlockEdImportMilestone, error)
+	GetMilestonesForProgramUser(courseId, userId int) ([]models.UnlockEdImportMilestone, error)
 	// TODO: GetActivity()
 	// TODO: GetOutcomes()
 }
@@ -47,14 +48,14 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to load .env file, using default env variables")
 	}
-	db, err := sql.Open("sqlite", "providers.db")
+	db, err := sql.Open("sqlite", "provider-middleware/providers.db")
 	if err != nil {
-		create, err := os.Create("providers.db")
+		create, err := os.Create("provider-middleware/providers.db")
 		if err != nil {
 			log.Fatalf("Failed to create database file: %v", err)
 		}
 		create.Close()
-		db, err = sql.Open("sqlite", "providers.db")
+		db, err = sql.Open("sqlite", "provider-middleware/providers.db")
 		if err != nil {
 			log.Fatalf("Failed to open database after creation: %v", err)
 		}
@@ -74,9 +75,9 @@ func main() {
 	defer db.Close()
 	file := os.Stdout
 	if os.Getenv("APP_ENV") == "prod" {
-		file, err = os.OpenFile("logs/middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			file, err = os.Create("logs/middleware.log")
+			file, err = os.Create("logs/provider-middleware.log")
 			if err != nil {
 				log.Fatalf("Failed to create log file: %v", err)
 			}

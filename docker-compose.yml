@@ -24,13 +24,17 @@ services:
   provider-service:
     build:
       context: ./
-      dockerfile: Dockerfile
+      dockerfile: provider-middleware/Dockerfile
     ports:
       - "8081:8081"
     env_file: ".env"
     command: ./provider-service
     networks:
       - intranet
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:16
     environment:
@@ -44,7 +48,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
     networks:
       - intranet
@@ -89,14 +93,19 @@ services:
       - intranet
 
   cronjobs:
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=unlocked
+      - DB_PASSWORD=dev
+      - DB_NAME=unlocked
     build:
       context: .
       dockerfile: ./jobs/Dockerfile
     env_file: .env
-    command: ./cron
-    depends_on:
-      postgres:
-        condition: service_healthy
+    command: >
+      ./cron
+    depends_on: [server]
     networks:
       - intranet
 

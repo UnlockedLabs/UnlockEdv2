@@ -38,6 +38,8 @@ type ScheduledJob struct {
 	Status      Status    `gorm:"not null" json:"status"`
 	LastRunTime time.Time `gorm:"not null" json:"last_run_time"`
 	Error       string    `json:"error"`
+
+	Job *StoredJob `gorm:"foreignKey:JobID;references:ID"`
 }
 
 func (ScheduledJob) TableName() string {

@@ -7,17 +7,13 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-var (
-	database *DB
-	once     sync.Once
-)
+var database *DB
 
 type DB struct {
 	Conn *gorm.DB
@@ -34,6 +30,8 @@ var TableList = []interface{}{
 	&models.Outcome{},
 	&models.Activity{},
 	&models.OidcClient{},
+	&models.StoredJob{},
+	&models.ScheduledJob{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -57,9 +55,7 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database")
 	}
-	once.Do(func() {
-		database = &DB{Conn: db}
-	})
+	database = &DB{Conn: db}
 	Migrate(db)
 	if isTesting {
 		SeedDefaultData(db)

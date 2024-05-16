@@ -33,16 +33,17 @@ func MigrateFresh(db *gorm.DB) {
 	log.Println("Dropping all tables...")
 	for _, table := range database.TableList {
 		if err := db.Migrator().DropTable(table); err != nil {
-			log.Fatalf("Failed to drop table: %v", err)
+			log.Printf("Failed to drop table: %v", err)
 		}
 	}
 	MigrateProviderMiddlewareFresh()
 	database.Migrate(db)
 	database.SeedDefaultData(db)
 	for _, job := range models.AllJobs {
-		if err := db.Create(&job).Error; err != nil {
+		if err := db.Model(&job).Error; err != nil {
 			log.Fatalf("Failed to seed job: %v", err)
 		}
+		log.Println("Seeded job: ", job)
 	}
 	log.Println("Database successfully migrated from fresh state.")
 }

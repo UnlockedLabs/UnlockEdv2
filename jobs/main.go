@@ -3,7 +3,6 @@ package main
 import (
 	"Go-Prototype/src/database"
 	"Go-Prototype/src/models"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const logPath = "./logs/jobs.log"
+const logPath = "logs/jobs.log"
 
 var Jobs = map[models.JobType]func() error{
 	models.ImportUsers:      importUsers,
@@ -48,9 +47,9 @@ func afterSuccess(db *gorm.DB, id uint) {
 }
 
 func initLogging() {
-	var file *os.File
+	file := os.Stdout
 	var err error
-	prod := os.Getenv("APP_ENV") == "prod"
+	prod := os.Getenv("APP_ENV") == "production"
 	if prod {
 		file, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
@@ -93,15 +92,17 @@ func main() {
 	}
 	initLogging()
 	db := database.InitDB(false)
-	db.Conn.AutoMigrate(&models.StoredJob{})
-
-	s, _ := gocron.NewScheduler()
+	s, err := gocron.NewScheduler()
+	if err != nil {
+		log.Fatalf("Failed to create scheduler: %v", err)
+	}
 	defer func() { _ = s.Shutdown() }()
+	log.Println("Scheduler created successfully")
 
 	job, err := s.NewJob(
 		gocron.DailyJob(
 			1,
-			nil,
+			gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0)),
 		),
 		gocron.NewTask(
 			func(db *gorm.DB) { runJobs(db) },
@@ -111,17 +112,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create job: %v", err)
 	}
-
+	job.RunNow()
+	log.Println("Job scheduled successfully")
 	log.Printf("Job ID: %d", job.ID())
-
 	s.Start()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	// keep running until we receive a signal to stop
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGABRT)
+	<-stop // block until we receive a signal
+	log.Info("Shutting down scheduler")
 
 	if err := s.Shutdown(); err != nil {
-		fmt.Println("Failed to shutdown scheduler properly:", err)
-		os.Exit(1)
+		log.Fatalf("Failed to shutdown scheduler: %v", err)
 	}
 }
