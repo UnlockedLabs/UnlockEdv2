@@ -96,7 +96,7 @@ export default function UserActivityMap({ user }: { user: User }) {
 
   return (
     // <div className="w-[25.375rem] md:w-[35.25rem] lg:w-[49.875rem] xl:w-[65.063rem]">
-    <div className="h-full p-4 max-w-[922px]">
+    <div className="card bg-base-teal h-full p-4 max-w-[922px]">
       <div className="flex justify-between items-center h-1/4 w-full">
         <form className="">
           <DropdownControl

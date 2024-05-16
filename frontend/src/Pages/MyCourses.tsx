@@ -2,15 +2,10 @@ import { useAuth } from "@/AuthContext";
 import PageNav from "@/Components/PageNav";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { recentCourses } from "./Dashboard";
-import CourseCard from "@/Components/CourseCard";
-import CourseCardList from "@/Components/CourseCardList";
-import { ListBulletIcon, Squares2X2Icon } from "@heroicons/react/24/solid";
+import EnrolledCourseCard from "@/Components/EnrolledCourseCard";
+import EnrolledCourseCardList from "@/Components/EnrolledCourseCardList";
 import { useState } from "react";
-
-export enum ViewType {
-  Grid = "Grid",
-  List = "List",
-}
+import ToggleView, { ViewType } from "@/Components/ToggleView";
 
 // TO DO: make sure this lives in the right place
 export enum CourseStatus {
@@ -65,31 +60,14 @@ export default function MyCourses() {
               // }}
             />
           </div>
-          <div className="flex flex-row items-center gap-2 body-small">
-            <label>View</label>
-            <div className="bg-teal-1 join p-1">
-              {/* TO DO: come back and render on active or not */}
-              <button
-                className={`flex gap-2 px-3 py-1 items-center rounded-lg ${activeView == ViewType.Grid && "bg-background"}`}
-                onClick={() => setActiveView(ViewType.Grid)}
-              >
-                <Squares2X2Icon className="h-4"></Squares2X2Icon> Grid
-              </button>
-              <button
-                className={`flex gap-2 px-3 py-1 items-center rounded-lg ${activeView == ViewType.List && "bg-background"}`}
-                onClick={() => setActiveView(ViewType.List)}
-              >
-                <ListBulletIcon className="h-4"></ListBulletIcon> List
-              </button>
-            </div>
-          </div>
+          <ToggleView activeView={activeView} setActiveView={setActiveView}/>
         </div>
         {/* render on gallery or list view */}
         {activeView == ViewType.Grid ? (
           <div className="grid grid-cols-4 gap-6 mt-8">
             {recentCourses.map((course: any, index: number) => {
               return (
-                <CourseCard
+                <EnrolledCourseCard
                   course={course}
                   status={course.status}
                   favorited={course?.favorited}
@@ -102,7 +80,7 @@ export default function MyCourses() {
           <div className="grid gap-4 mt-8">
             {recentCourses.map((course: any, index: number) => {
               return (
-                <CourseCardList
+                <EnrolledCourseCardList
                   course={course}
                   status={course.status}
                   favorited={course?.favorited}

@@ -4,11 +4,11 @@ import {
   StarIcon,
 } from "@heroicons/react/24/solid";
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
-import { CourseCard } from "./CourseCard";
+import { CourseCard } from "./EnrolledCourseCard";
 import ProgressBar from "./ProgressBar";
 import { CourseStatus } from "@/Pages/MyCourses";
 
-export default function CourseCardList({
+export default function EnrolledCourseCardList({
   course,
   status,
   recent,

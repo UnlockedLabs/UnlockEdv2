@@ -5,16 +5,8 @@ import UserActivityMap from "@/Components/UserActivityMap";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { recentCourses } from "./Dashboard";
 import { CourseStatus } from "./MyCourses";
-
-export function CourseStatusPill({ status }: { status: CourseStatus }) {
-  return (
-    <p
-      className={`px-2 py-1 rounded-2xl ${status == CourseStatus.Completed ? "bg-[#006059] text-white" : "bg-[#B0DFDA] text-[#006059]"}`}
-    >
-      {status == CourseStatus.Completed ? "completed" : "in progress"}
-    </p>
-  );
-}
+import CompletePill from "@/Components/pill-labels/CompletePill";
+import InProgressPill from "@/Components/pill-labels/InProgressPill";
 
 export default function MyProgress() {
   const auth = useAuth();
@@ -22,19 +14,19 @@ export default function MyProgress() {
   return (
     <AuthenticatedLayout title="My Progress">
       <PageNav user={auth.user} path={["My Progress"]} />
-      <div className="px-8 py-4">
+      <div className="px-8 py-4 overflow-hidden">
         <h1>My Progress</h1>
         <div className="mt-7 flex flex-row gap-12">
           <div className="flex flex-col gap-5 w-full">
             <StatsCard title="TOTAL TIME" number={"11,321"} label="hrs" />
             <StatsCard title="COMPLETED" number={"37"} label="courses" />
           </div>
-          <div className="w-full card">
+          <div className="w-full">
             <UserActivityMap user={auth.user} />
           </div>
         </div>
         <div className="flex flex-row gap-12 mt-12">
-          <div className="card h-[531px] w-[60%] p-4 overflow-y-auto">
+          <div className="card bg-base-teal h-[531px] w-[60%] p-4 overflow-y-auto">
             <div className="flex flex-row">
               <h2>All Courses</h2>
               {/* dropdown will go here */}
@@ -59,7 +51,10 @@ export default function MyProgress() {
                         {course.course_name} • {course.provider_platform_name}
                       </td>
                       <td className="w-1/5 flex">
-                        <CourseStatusPill status={course.status} />
+                        {course.status==CourseStatus.Completed?
+                        <CompletePill /> :
+                        <InProgressPill />
+                        }
                       </td>
                       <td className="w-1/5">{course?.grade || "-"}</td>
                       <td className="w-1/5">
@@ -71,7 +66,7 @@ export default function MyProgress() {
               </tbody>
             </table>
           </div>
-          <div className="card h-[531px] w-[40%] p-4 overflow-y-auto">
+          <div className="card bg-base-teal h-[531px] w-[40%] p-4 overflow-y-auto">
             <div className="flex flex-row">
               <h2>Certificates Earned</h2>
               {/* dropdown will go here */}

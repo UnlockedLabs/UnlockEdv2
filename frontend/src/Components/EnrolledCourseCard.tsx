@@ -17,7 +17,7 @@ export interface CourseCard {
   favorited: boolean | undefined; // TO DO: should this be an optional field also?
 }
 
-export default function CourseCard({
+export default function EnrolledCourseCard({
   course,
   status,
   recent,
@@ -30,7 +30,7 @@ export default function CourseCard({
   }
   return (
     <div
-      className={`card card-compact bg-inner-background overflow-hidden relative`}
+      className={`card card-compact ${recent? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
     >
       <div className="absolute top-2 right-2">
         {!recent &&

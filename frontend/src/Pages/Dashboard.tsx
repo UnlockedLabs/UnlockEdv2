@@ -1,10 +1,11 @@
 import PageNav from "@/Components/PageNav";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import CourseCard from "@/Components/CourseCard";
+import CourseCard from "@/Components/EnrolledCourseCard";
 import CurrentlyEnrolledClass from "@/Components/CurrentlyEnrolledClass";
 import NotificationsSideBar from "@/Components/NotificationsSideBar";
 import { useAuth } from "@/AuthContext";
 import { CourseStatus } from "./MyCourses";
+import { PillTagType } from "@/Components/CatalogCourseCard";
 
 //TO DO: make a type for courses when the new structure is finalized
 
@@ -41,6 +42,7 @@ export const recentCourses = [
     percent_completed: 59,
     status: CourseStatus.Pending,
     favorited: true,
+    tags: [PillTagType.Open]
   },
   {
     course_id: 2,
@@ -72,6 +74,7 @@ export const recentCourses = [
     status: CourseStatus.Completed,
     grade: "B+",
     favorited: true,
+    tags: [PillTagType.Permission]
   },
   {
     course_id: 3,
@@ -100,6 +103,8 @@ export const recentCourses = [
     total_time: 23731,
     percent_completed: 87,
     status: CourseStatus.Current,
+    tags: [PillTagType.SelfPaced, PillTagType.Open]
+
   },
 ];
 

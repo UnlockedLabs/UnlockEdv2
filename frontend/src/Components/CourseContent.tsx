@@ -1,5 +1,5 @@
 import { Program, ServerResponse } from "@/common";
-import CourseCard from "./CourseCard";
+import CourseCard from "./EnrolledCourseCard";
 import useSWR from "swr";
 import { CourseStatus } from "@/Pages/MyCourses";
 

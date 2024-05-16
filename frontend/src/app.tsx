@@ -13,6 +13,7 @@ import { AuthProvider } from "./AuthContext";
 import Consent from "./Pages/Auth/Consent";
 import MyCourses from "./Pages/MyCourses";
 import MyProgress from "./Pages/MyProgress";
+import CourseCatalog from "./Pages/CourseCatalog";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -51,6 +52,10 @@ export default function App() {
     {
       path: "/my-progress",
       element: WithAuth({ children: <MyProgress /> }),
+    },
+    {
+      path: "/course-catalog",
+      element: WithAuth({ children: <CourseCatalog /> }),
     },
   ]);
 

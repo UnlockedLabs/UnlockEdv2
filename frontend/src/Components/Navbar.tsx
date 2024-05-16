@@ -72,7 +72,7 @@ export default function Navbar() {
               </a>
             </li>
             <li className="">
-              <a href="/dashboard">
+              <a href="/course-catalog">
                 <BuildingStorefrontIcon className="w-4" /> Course Catalog
               </a>
             </li>
