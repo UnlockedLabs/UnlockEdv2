@@ -44,7 +44,7 @@ export default function CourseCatalog(){
                     })}
                 </div>
                 ) : (
-                <div className="grid gap-4 mt-2">
+                <div className="grid gap-4 mt-8">
                     {recentCourses.map((course)=>{
                         return <CatalogCourseCardList course={course} />
                     })}

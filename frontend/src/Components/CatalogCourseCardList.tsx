@@ -12,7 +12,7 @@ export default function CatalogCourseCardList({course}: {course:any}) {
     const description = course.course_description + course.course_description + course.course_description + course.course_description + course.course_description
 
     return (
-      <div className="card bg-inner-background body-small p-6 flex flex-row items-center">
+      <div className="card bg-base-teal body-small p-6 flex flex-row items-center">
         <div className="flex flex-col justify-between gap-3">
             <div className="flex flex-row gap-3 items-center ">
                 <div onClick={() => setSavedCourse(!savedCourse)}>
