@@ -61,7 +61,7 @@ export default {
           "--grey-4": "#ECECEC",
           "--body-text": "#EEEEEE",
           "--header-text": "#CCCCCC",
-          "--fallback-b1": "#0F2926"
+          "--fallback-b1": "#0F2926",
         },
       },
     ],

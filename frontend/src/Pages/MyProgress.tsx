@@ -51,10 +51,11 @@ export default function MyProgress() {
                         {course.course_name} • {course.provider_platform_name}
                       </td>
                       <td className="w-1/5 flex">
-                        {course.status == CourseStatus.Completed ?
-                          <CompletePill /> :
+                        {course.status == CourseStatus.Completed ? (
+                          <CompletePill />
+                        ) : (
                           <InProgressPill />
-                        }
+                        )}
                       </td>
                       <td className="w-1/5">{course?.grade || "-"}</td>
                       <td className="w-1/5">
@@ -86,4 +87,3 @@ export default function MyProgress() {
     </AuthenticatedLayout>
   );
 }
-

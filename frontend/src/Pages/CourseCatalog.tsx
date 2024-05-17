@@ -28,29 +28,28 @@ export default function CourseCatalog() {
             type="text"
             placeholder="Search..."
             className="input input-bordered w-full max-w-xs input-sm"
-          // value={searchTerm}
-          // onChange={(e) => {
-          // setSearchTerm(e.target.value);
-          // setPageQuery(1);
-          // }}
+            // value={searchTerm}
+            // onChange={(e) => {
+            // setSearchTerm(e.target.value);
+            // setPageQuery(1);
+            // }}
           />
-
         </div>
         {/* render on gallery or list view */}
         {activeView == ViewType.Grid ? (
           <div className="grid grid-cols-4 gap-6 mt-8">
             {recentCourses.map((course) => {
-              return <CatalogCourseCard course={course} />
+              return <CatalogCourseCard course={course} />;
             })}
           </div>
         ) : (
           <div className="grid gap-4 mt-8">
             {recentCourses.map((course) => {
-              return <CatalogCourseCardList course={course} />
+              return <CatalogCourseCardList course={course} />;
             })}
           </div>
         )}
       </div>
     </AuthenticatedLayout>
-  )
+  );
 }

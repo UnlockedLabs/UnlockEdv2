@@ -5,8 +5,13 @@ export enum ViewType {
   List = "List",
 }
 
-export default function ToggleView({ activeView, setActiveView }: { activeView: ViewType, setActiveView: Function }) {
-
+export default function ToggleView({
+  activeView,
+  setActiveView,
+}: {
+  activeView: ViewType;
+  setActiveView: Function;
+}) {
   return (
     <div className="flex flex-row items-center gap-2 body-small">
       <label>View</label>
@@ -26,5 +31,5 @@ export default function ToggleView({ activeView, setActiveView }: { activeView: 
         </button>
       </div>
     </div>
-  )
+  );
 }

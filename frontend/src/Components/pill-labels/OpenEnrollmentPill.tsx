@@ -5,5 +5,5 @@ export default function OpenEnrollmentPill() {
         Open Enrollment
       </p>
     </div>
-  )
+  );
 }

@@ -5,5 +5,5 @@ export default function PermissionOnlyPill() {
         Permission Only
       </p>
     </div>
-  )
+  );
 }
