@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -81,9 +80,9 @@ func (srv *CanvasService) GetUsers() ([]models.UnlockEdImportUser, error) {
 			nameFirst = name[0]
 			nameLast = name[1]
 		}
-		userId, _ := user["id"].(int)
+		userId, _ := user["id"].(float64)
 		unlockedUser := models.UnlockEdImportUser{
-			ExternalUserID:   strconv.Itoa(userId),
+			ExternalUserID:   fmt.Sprintf("%d", int(userId)),
 			ExternalUsername: user["login_id"].(string),
 			NameFirst:        nameFirst,
 			NameLast:         nameLast,
@@ -120,12 +119,14 @@ func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 		if err != nil {
 			log.Printf("Failed to get assignments for course: %v", err)
 		} else {
+			log.Printf("total assignments: %d", len(assignments))
 			totalMilestones += len(assignments)
 		}
 		quizzes, err := srv.getQuizzesForCourse(id)
 		if err != nil {
 			log.Printf("Failed to get quizzes for course: %v", err)
 		} else {
+			log.Printf("total quizzes: %d", len(quizzes))
 			totalMilestones += len(quizzes)
 		}
 		thumbnailURL := ""
@@ -183,6 +184,7 @@ func (srv *CanvasService) getAssignmentsForCourse(courseId int) ([]interface{}, 
 	assignments := []interface{}{}
 	err = json.NewDecoder(resp.Body).Decode(&assignments)
 	if err != nil {
+		log.Printf("failed to decode response from assignments %v", err)
 		return nil, err
 	}
 	log.Printf("Assignments: %v", assignments)
@@ -197,31 +199,32 @@ func (srv *CanvasService) getUserSubmissionForQuiz(courseId, quizId, userId int)
 		return nil, err
 	}
 	defer resp.Body.Close()
-	submission := make(map[string]interface{})
-	err = json.NewDecoder(resp.Body).Decode(&submission)
+	submissions := make(map[string]interface{})
+	err = json.NewDecoder(resp.Body).Decode(&submissions)
 	if err != nil {
 		return nil, err
 	}
-	if submission == nil || submission["id"] == nil {
+	if submissions == nil {
 		return nil, fmt.Errorf("submission not found")
 	}
-	return submission, nil
+	return submissions, nil
 }
 
-func (srv *CanvasService) getUserSubmissionsForAssignment(courseId, assignmentId, userId int) (map[string]interface{}, error) {
-	url := srv.BaseURL + "/api/v1/courses/" + fmt.Sprintf("%d", courseId) + "/assignments/" + fmt.Sprintf("%d", assignmentId) + "/submissions/" + fmt.Sprintf("%d", userId)
+func (srv *CanvasService) getUserSubmissionsForCourse(userId, courseId int) ([]map[string]interface{}, error) {
+	url := srv.BaseURL + "/api/v1/courses/" + fmt.Sprintf("%d", courseId) + "/students/submissions?student_ids[]=" + fmt.Sprintf("%d", userId)
+	log.Printf("url: %v", url)
 	resp, err := srv.SendRequest(url)
 	if err != nil {
 		log.Printf("Failed to send request: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
-	submission := make(map[string]interface{})
+	submission := make([]map[string]interface{}, 0)
 	err = json.NewDecoder(resp.Body).Decode(&submission)
 	if err != nil {
 		return nil, err
 	}
-	if submission == nil || submission["id"] == nil {
+	if submission == nil {
 		return nil, fmt.Errorf("submission not found")
 	}
 	return submission, nil
@@ -240,35 +243,19 @@ func (srv *CanvasService) getUserSubmissionsForAssignment(courseId, assignmentId
 * get submissions for the user for each quiz
 *  /api/v1/courses/:course_id/quizzes/:quiz_id/submissions/:user_id
 * */
-func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]models.UnlockEdImportMilestone, error) {
-	assignments, err := srv.getAssignmentsForCourse(courseId)
+func (srv *CanvasService) GetMilestonesForProgramUser(userId, courseId int) ([]models.UnlockEdImportMilestone, error) {
+	submissions, err := srv.getUserSubmissionsForCourse(userId, courseId)
 	if err != nil {
+		log.Printf("Failed to get submission for assignment: %v", err)
 		return nil, err
 	}
-	if len(assignments) == 0 {
-		return nil, fmt.Errorf("user is likely not enrolled or there are no assignments")
-	}
 	milestones := make([]models.UnlockEdImportMilestone, 0)
-	for _, assignment := range assignments {
-		assignment, ok := assignment.(map[string]interface{})
-		if !ok {
-			log.Println("Failed to convert assignment to map")
-		}
-		if hasSubmissions, ok := assignment["has_submitted_submissions"].(bool); !ok || !hasSubmissions {
-			// if there are no submissions, dont bother fetching them for the user
-			continue
-		}
-		assignmentId := assignment["id"].(int)
-		submission, err := srv.getUserSubmissionsForAssignment(courseId, assignmentId, userId)
-		if err != nil {
-			log.Printf("Failed to get submission for assignment: %v", err)
-			return nil, err
-		}
+	for _, submission := range submissions {
 		milestone := models.UnlockEdImportMilestone{
-			ExternalID:        submission["id"].(string),
-			UserID:            userId,
+			ExternalID:        fmt.Sprintf("%d", int(submission["id"].(float64))),
 			ExternalProgramID: fmt.Sprintf("%d", courseId),
 			Type:              "assignment_submission",
+			IsCompleted:       submission["workflow_state"] == "complete" || submission["workflow_state"] == "graded",
 		}
 		milestones = append(milestones, milestone)
 	}
@@ -279,10 +266,7 @@ func (srv *CanvasService) GetMilestonesForProgramUser(courseId, userId int) ([]m
 	}
 	for _, quiz := range quizzes {
 		// go through each quiz and see if we have a submission from the user
-		quizId, ok := quiz["id"].(int)
-		if !ok {
-			continue
-		}
+		quizId := int(quiz["id"].(float64))
 		if submission, err := srv.getUserSubmissionForQuiz(courseId, quizId, userId); err == nil {
 			state, ok := submission["workflow_state"].(string)
 			if !ok || state == "untaken" {

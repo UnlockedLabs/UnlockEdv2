@@ -136,15 +136,25 @@ func (srv *Server) HandleImportMilestones(w http.ResponseWriter, r *http.Request
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	log.Printf("Importing milestones")
 	for _, program := range programs {
+		log.Printf("Program ID: %d", program.ID)
 		for _, userMapping := range userMappings {
+			log.Printf("User ID: %d", userMapping.UserID)
 			milestones, err := service.GetMilestonesForProgramUser(program.ExternalID, userMapping.ExternalUserID)
 			if err != nil {
 				log.Errorf("Error getting provider service milestones: %v", err)
 				continue
 			}
 			for _, milestone := range milestones {
-				_, err := srv.Db.CreateMilestone(&milestone)
+				ms := models.Milestone{
+					ExternalID:  milestone.ExternalID,
+					Type:        models.MilestoneType(milestone.Type),
+					IsCompleted: milestone.IsCompleted,
+					UserID:      userMapping.UserID,
+					ProgramID:   program.ID,
+				}
+				_, err := srv.Db.CreateMilestone(&ms)
 				if err != nil {
 					log.Errorf("Error creating milestone: %v", err)
 					continue

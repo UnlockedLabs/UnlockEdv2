@@ -170,21 +170,21 @@ func (serv *ProviderService) GetPrograms() ([]models.Program, error) {
 	return content, nil
 }
 
-func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID string) ([]models.Milestone, error) {
+func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID string) ([]models.UnlockEdImportMilestone, error) {
 	body := map[string]interface{}{"user_id": userID, "program_id": programID}
 	req := serv.PostRequest("/api/milestones", body)
 	resp, err := serv.Client.Do(req)
 	if err != nil {
 		log.Printf("error getting milestones Client.Do(req): %v", err.Error())
-		return make([]models.Milestone, 0), err
+		return nil, err
 	}
 	defer resp.Body.Close()
-	var milestones []models.Milestone
+	var milestones []models.UnlockEdImportMilestone
 	log.Printf("response: %v", resp.Body)
 	err = json.NewDecoder(resp.Body).Decode(&milestones)
 	if err != nil {
 		log.Printf("error decoding milestones: %v", err.Error())
-		return make([]models.Milestone, 0), err
+		return nil, err
 	}
 	return milestones, nil
 }

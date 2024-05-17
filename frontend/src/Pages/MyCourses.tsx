@@ -53,14 +53,14 @@ export default function MyCourses() {
               type="text"
               placeholder="Search..."
               className="input input-bordered w-full max-w-xs input-sm"
-              // value={searchTerm}
-              // onChange={(e) => {
-              // setSearchTerm(e.target.value);
-              // setPageQuery(1);
-              // }}
+            // value={searchTerm}
+            // onChange={(e) => {
+            // setSearchTerm(e.target.value);
+            // setPageQuery(1);
+            // }}
             />
           </div>
-          <ToggleView activeView={activeView} setActiveView={setActiveView}/>
+          <ToggleView activeView={activeView} setActiveView={setActiveView} />
         </div>
         {/* render on gallery or list view */}
         {activeView == ViewType.Grid ? (

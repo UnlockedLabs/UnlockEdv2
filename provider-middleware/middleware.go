@@ -9,16 +9,6 @@ import (
 	"time"
 )
 
-func (sh *ServiceHandler) registerRoutes() {
-	sh.Mux.Handle("/", sh.applyMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})))
-	sh.Mux.Handle("POST /api/add-provider", sh.authMiddleware(http.HandlerFunc(sh.handleAddProvider)))
-	sh.Mux.Handle("GET /api/users", sh.applyMiddleware(http.HandlerFunc(sh.handleUsers)))
-	sh.Mux.Handle("GET /api/programs", sh.applyMiddleware(http.HandlerFunc(sh.handlePrograms)))
-	sh.Mux.Handle("POST /api/milestones", sh.applyMiddleware(http.HandlerFunc(sh.handleMilestonesForProgramUser)))
-}
-
 type ServiceIDX string
 
 const IDX ServiceIDX = "idx"

@@ -30,7 +30,7 @@ export default function EnrolledCourseCard({
   }
   return (
     <div
-      className={`card card-compact ${recent? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
+      className={`card card-compact ${recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
     >
       <div className="absolute top-2 right-2">
         {!recent &&

@@ -27,11 +27,11 @@ type RecentActivity struct {
 }
 
 type CurrentEnrollment struct {
-	AltNAme              string            `json:"alt_name"`
-	Name                 string            `json:"name"`
-	ProviderPlatformName string            `json:"provider_platform_name"`
-	ExternalURL          string            `json:"external_url"`
-	TotalActivityTime    [7]RecentActivity `json:"total_activity_time"`
+	AltName              string           `json:"alt_name"`
+	Name                 string           `json:"name"`
+	ProviderPlatformName string           `json:"provider_platform_name"`
+	ExternalURL          string           `json:"external_url"`
+	TotalActivityTime    []RecentActivity `json:"total_activity_time"`
 }
 
 type RecentProgram struct {
