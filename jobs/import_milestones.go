@@ -1,7 +1,6 @@
 package main
 
 import (
-	"Go-Prototype/src/handlers"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +10,6 @@ import (
 
 // hit action to import milestones from provider middleware
 func importMilestones() error {
-	server := handlers.NewServer(false)
 	providers, err := server.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		log.Errorf("Error getting all active provider platforms: %v", err)

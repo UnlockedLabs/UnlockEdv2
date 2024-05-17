@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Go-Prototype/src/database"
+	"Go-Prototype/src/handlers"
 	"Go-Prototype/src/models"
 	"os"
 	"os/signal"
@@ -16,6 +16,8 @@ import (
 
 const logPath = "logs/jobs.log"
 
+var server *handlers.Server
+
 var Jobs = map[models.JobType]func() error{
 	models.ImportUsers:      importUsers,
 	models.ImportPrograms:   importPrograms,
@@ -23,17 +25,25 @@ var Jobs = map[models.JobType]func() error{
 }
 
 func Run(db *gorm.DB, job *models.StoredJob) {
-	if err := Jobs[job.JobType](); err != nil {
+	jobFunc, exists := Jobs[job.JobType]
+	if !exists || jobFunc == nil {
+		log.Printf("No valid job function available for job type %v", job.JobType)
+		return
+	}
+	err := jobFunc()
+	if err != nil {
+		log.Printf("Error running job: %v", err)
 		afterError(db, job.ID, err)
 		return
 	} else {
+		log.Println("Job ran successfully")
 		afterSuccess(db, job.ID)
 		return
 	}
 }
 
 func afterError(db *gorm.DB, id uint, err error) {
-	txErr := db.Model(&models.ScheduledJob{}).Where("id = ?", id).Update("status", models.Failed).Update("error", err.Error()).Error
+	txErr := db.Model(&models.ScheduledJob{}).Where("id = ?", id).Update("status", models.Failed).Update("error", err.Error())
 	if txErr != nil {
 		log.Errorf("Failed to update job status to failed: %v", err)
 	}
@@ -78,8 +88,18 @@ func runJobs(db *gorm.DB) {
 		return
 	}
 	for _, job := range jobs {
-		if updateErr := db.Model(&models.StoredJob{}).Where("id = ?", job.ID).Update("status", models.Running).Error; updateErr != nil {
-			log.Errorf("Failed to update job status to running: %v", updateErr)
+		// if the scheduled_job doesn't exist (first run), create it
+		jobExists := models.ScheduledJob{}
+		if db.Where("job_id = ?", job.ID).First(&jobExists).Error != nil {
+			log.Infof("Failed to create scheduled job: %d", job.ID)
+			if createErr := db.Create(&models.ScheduledJob{JobID: job.ID, Status: models.Running, LastRunTime: time.Now()}).Error; createErr != nil {
+				log.Errorf("Failed to create scheduled job: %v", createErr)
+			}
+			log.Println("Scheduled job created in database successfully")
+		} else {
+			if updateErr := db.Model(&models.ScheduledJob{}).Where("id = ?", job.ID).Update("status", models.Running).Error; updateErr != nil {
+				log.Errorf("Failed to update job status to running: %v", updateErr)
+			}
 		}
 		Run(db, &job)
 	}
@@ -91,36 +111,41 @@ func main() {
 		log.Print("Error loading .env file, using default env vars")
 	}
 	initLogging()
-	db := database.InitDB(false)
-	s, err := gocron.NewScheduler()
+	server = handlers.NewServer(false)
+	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
 	}
-	defer s.Shutdown()
+	defer scheduler.Shutdown()
 	log.Println("Scheduler created successfully")
 
-	job, err := s.NewJob(
+	job, err := scheduler.NewJob(
 		gocron.DailyJob(
 			1,
 			gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0)),
 		),
 		gocron.NewTask(
 			func(db *gorm.DB) { runJobs(db) },
-			db.Conn,
+			server.Db.Conn,
 		),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create job: %v", err)
 	}
 	log.Println("Job scheduled successfully")
+	scheduler.Start()
+
+	err = job.RunNow()
+	if err != nil {
+		log.Fatalf("Failed to run job now: %v", err)
+	}
 	log.Printf("Job ID: %d", job.ID())
-	s.Start()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGABRT)
 	<-stop
 
 	log.Println("Shutting down scheduler...")
-	if err := s.Shutdown(); err != nil {
+	if err := scheduler.Shutdown(); err != nil {
 		log.Fatalf("Failed to shutdown scheduler: %v", err)
 	}
 }

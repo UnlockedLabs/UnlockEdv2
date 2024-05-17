@@ -1,7 +1,6 @@
 package main
 
 import (
-	"Go-Prototype/src/handlers"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,13 +9,13 @@ import (
 )
 
 func importUsers() error {
-	server := handlers.NewServer(false)
 	providers, err := server.Db.GetAllActiveProviderPlatforms()
 	if err != nil {
 		log.Errorf("Error getting all active provider platforms: %v", err)
 		return err
 	}
 	for _, provider := range providers {
+		log.Println("Importing users from provider: ", provider.ID)
 		request, err := http.NewRequest("POST", fmt.Sprintf("/actions/provider-platforms/%d/import-users", provider.ID), nil)
 		if err != nil {
 			log.Errorf("Error creating request: %v", err)

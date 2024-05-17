@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	db "Go-Prototype/src/database"
+	database "Go-Prototype/src/database"
 	"context"
 	"encoding/json"
 	"math"
@@ -14,7 +14,7 @@ import (
 )
 
 type Server struct {
-	Db  *db.DB
+	Db  *database.DB
 	Mux *http.ServeMux
 }
 
@@ -37,12 +37,16 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOidcRoutes()
 }
 
+func ServerWithDBHandle(db *database.DB) *Server {
+	return &Server{Db: db, Mux: http.NewServeMux()}
+}
+
 func NewServer(isTesting bool) *Server {
 	if isTesting {
-		return &Server{Db: db.InitDB(true), Mux: http.NewServeMux()}
+		return &Server{Db: database.InitDB(true), Mux: http.NewServeMux()}
 	} else {
 		prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
-		db := db.InitDB(false)
+		db := database.InitDB(false)
 		mux := http.NewServeMux()
 		server := Server{Db: db, Mux: mux}
 		server.RegisterRoutes()

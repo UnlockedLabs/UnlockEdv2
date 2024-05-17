@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"Go-Prototype/src"
-	cmd "Go-Prototype/src"
 	"Go-Prototype/src/models"
 	"net/http"
 	"strconv"
@@ -28,7 +27,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
-	service, err := cmd.GetProviderService(provider)
+	service, err := src.GetProviderService(provider)
 	if err != nil {
 		log.Error("Error getting provider service GetProviderService():" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -81,7 +80,7 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
-	service, err := cmd.GetProviderService(provider)
+	service, err := src.GetProviderService(provider)
 	if err != nil {
 		log.Error("Error getting provider service GetProviderService:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -94,15 +93,11 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	for _, item := range content {
-		if item.Name == "" && item.Description == "" {
-			continue
-		}
 		_, err := srv.Db.CreateProgram(&item)
 		if err != nil {
 			log.Error("Error creating content:" + err.Error())
 			continue
 		}
-		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, "Successfully imported courses"); err != nil {
 		log.Error("Error writing response:" + err.Error())

@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 /**
@@ -49,13 +50,15 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 	}
 	newService := ProviderService{
 		ProviderPlatformID: prov.ID,
-		Client:             &http.Client{},
-		Url:                prov.BaseUrl,
-		AccountID:          prov.AccountID,
-		ApiKey:             prov.AccessKey,
-		Username:           username,
-		Password:           password,
-		Type:               string(prov.Type),
+		Client: &http.Client{
+			Timeout: time.Second * 10,
+		},
+		Url:       prov.BaseUrl,
+		AccountID: prov.AccountID,
+		ApiKey:    prov.AccessKey,
+		Username:  username,
+		Password:  password,
+		Type:      string(prov.Type),
 	}
 	// send initial test request with the provider ID, to see if the service exists
 	test := "/"

@@ -21,6 +21,7 @@ services:
       ./backend
     networks:
       - intranet
+
   provider-service:
     build:
       context: ./

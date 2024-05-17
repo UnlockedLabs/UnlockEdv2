@@ -39,8 +39,8 @@ type ProviderPlatform struct {
 	ExternalAuthProviderId string                `gorm:"size:128" json:"external_auth_provider_id"`
 	OidcID                 uint                  `json:"oidc_id"`
 
-	Programs             []Program             `json:"-"`
-	ProviderUserMappings []ProviderUserMapping `json:"-"`
+	Programs             []Program             `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
+	ProviderUserMappings []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 }
 
 func (ProviderPlatform) TableName() string {
