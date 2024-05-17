@@ -42,12 +42,7 @@ export const recentCourses = [
     percent_completed: 59,
     status: CourseStatus.Pending,
     favorited: true,
-<<<<<<< HEAD
-    tags: [PillTagType.Open]
-||||||| parent of 590a897 (feat: user dashboard endpoint)
-=======
     tags: [PillTagType.Open],
->>>>>>> 590a897 (feat: user dashboard endpoint)
   },
   {
     course_id: 2,
@@ -79,12 +74,7 @@ export const recentCourses = [
     status: CourseStatus.Completed,
     grade: "B+",
     favorited: true,
-<<<<<<< HEAD
-    tags: [PillTagType.Permission]
-||||||| parent of 590a897 (feat: user dashboard endpoint)
-=======
     tags: [PillTagType.Permission],
->>>>>>> 590a897 (feat: user dashboard endpoint)
   },
   {
     course_id: 3,
@@ -113,13 +103,7 @@ export const recentCourses = [
     total_time: 23731,
     percent_completed: 87,
     status: CourseStatus.Current,
-<<<<<<< HEAD
-    tags: [PillTagType.SelfPaced, PillTagType.Open]
-
-||||||| parent of 590a897 (feat: user dashboard endpoint)
-=======
     tags: [PillTagType.SelfPaced, PillTagType.Open],
->>>>>>> 590a897 (feat: user dashboard endpoint)
   },
 ];
 

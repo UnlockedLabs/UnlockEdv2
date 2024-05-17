@@ -193,6 +193,7 @@ type Role struct {
 type UnlockEdImportProgram struct {
 	ProviderPlatformID      int    `json:"provider_platform_id"`
 	Name                    string `json:"name"`
+	AltName                 string `json:"alt_name"`
 	Description             string `json:"description"`
 	ExternalID              string `json:"external_id"`
 	ThumbnailURL            string `json:"thumbnail_url"`

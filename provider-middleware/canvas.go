@@ -142,6 +142,7 @@ func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 		unlockedCourse := UnlockEdImportProgram{
 			ProviderPlatformID:      srv.ProviderPlatformID,
 			Name:                    course["name"].(string),
+			AltName:                 course["course_code"].(string),
 			ExternalID:              fmt.Sprintf("%d", id),
 			ExternalURL:             srv.BaseURL + "/courses/" + fmt.Sprintf("%d", id),
 			Description:             description,
