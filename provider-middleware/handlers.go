@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -35,64 +33,6 @@ func (sh *ServiceHandler) handleAddProvider(w http.ResponseWriter, r *http.Reque
 	if _, err = w.Write([]byte("Provider created successfully")); err != nil {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 	}
-}
-
-func (sh *ServiceHandler) initService(id int) error {
-	provider, err := sh.LookupProvider(id)
-	log.Println("InitService called")
-	if err != nil {
-		log.Printf("Error: %v", err)
-		return fmt.Errorf("failed to find provider: %v", err)
-	}
-	if provider.Type == "kolibri" {
-		service := NewKolibriService(provider)
-		if err := service.InitiateSession(); err != nil {
-			log.Printf("Failed to initiate session: %v", err)
-			return fmt.Errorf("failed to initiate session: %v", err)
-		}
-		ticker := time.NewTicker(5 * time.Minute)
-		done := make(chan bool)
-		go func() {
-			for {
-				select {
-				case <-done:
-					ticker.Stop()
-					return
-				case <-ticker.C:
-					err := service.RefreshSession()
-					if err != nil {
-						log.Printf("Failed to refresh session: %v", err)
-					} else {
-						log.Println("Session refreshed successfully.")
-					}
-				}
-			}
-		}()
-		sh.mutex.Lock()
-		sh.services = append(sh.services, service)
-		sh.mutex.Unlock()
-		return nil
-	} else {
-		canvas := newCanvasService(provider)
-		sh.mutex.Lock()
-		sh.services = append(sh.services, canvas)
-		sh.mutex.Unlock()
-		return nil
-	}
-}
-
-func (sh *ServiceHandler) findService(id int) int {
-	for idx, service := range sh.services {
-		if service.GetID() == id {
-			return idx
-		}
-	}
-	return -1
-}
-
-func (sh *ServiceHandler) getService(r *http.Request) ProviderServiceInterface {
-	idx := r.Context().Value(IDX).(int)
-	return sh.services[idx]
 }
 
 /**

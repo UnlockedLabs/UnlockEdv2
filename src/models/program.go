@@ -12,9 +12,9 @@ type Program struct {
 	AltName                 string `gorm:"size:255" json:"alt_name"`
 	TotalProgressMilestones uint   `json:"total_progress_milestones"`
 
-	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
-	Milestones       []Milestone       `json:"-"`
-	Outcomes         []Outcome         `json:"-"`
+	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
+	Milestones       []Milestone       `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
+	Outcomes         []Outcome         `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
 }
 
 func (Program) TableName() string {
@@ -46,6 +46,17 @@ type RecentProgram struct {
 type UserDashboardJoin struct {
 	Enrollments    []CurrentEnrollment `json:"enrollments"`
 	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
+}
+
+type UnlockEdImportProgram struct {
+	ProviderPlatformID      int    `json:"provider_platform_id"`
+	Name                    string `json:"name"`
+	Description             string `json:"description"`
+	ExternalID              string `json:"external_id"`
+	ThumbnailURL            string `json:"thumbnail_url"`
+	IsPublic                bool   `json:"is_public"`
+	ExternalURL             string `json:"external_url"`
+	TotalProgressMilestones int    `json:"total_progress_milestones"`
 }
 
 /*

@@ -18,7 +18,7 @@ type ProviderUserMapping struct {
 	ExternalLoginID              string             `gorm:"size:255" json:"external_login_id"`
 	/*    Relations    */
 	User             *User             `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
-	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
+	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 }
 
 func (ProviderUserMapping) TableName() string {
