@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -15,7 +15,8 @@ func (sh *ServiceHandler) registerRoutes() {
 	sh.Mux.Handle("POST /api/add-provider", sh.authMiddleware(http.HandlerFunc(sh.handleAddProvider)))
 	sh.Mux.Handle("GET /api/users", sh.applyMiddleware(http.HandlerFunc(sh.handleUsers)))
 	sh.Mux.Handle("GET /api/programs", sh.applyMiddleware(http.HandlerFunc(sh.handlePrograms)))
-	sh.Mux.Handle("POST /api/milestones", sh.applyMiddleware(http.HandlerFunc(sh.handleMilestonesForProgramUser)))
+	sh.Mux.Handle("GET /api/users/{id}/programs/{program_id}/milestones", sh.applyMiddleware(http.HandlerFunc(sh.handleMilestonesForProgramUser)))
+	sh.Mux.Handle("GET /api/programs/{id}/activity", sh.applyMiddleware(http.HandlerFunc(sh.handleAcitivityForProgram)))
 }
 
 /**
@@ -103,36 +104,8 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
  */
 func (sh *ServiceHandler) handleMilestonesForProgramUser(w http.ResponseWriter, r *http.Request) {
 	service := sh.getService(r)
-	defer r.Body.Close()
-	var data map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
-		return
-	}
-	user_id, ok := data["user_id"].(string)
-	if !ok {
-		log.Println("Invalid user_id")
-		http.Error(w, "Invalid user_id", http.StatusBadRequest)
-		return
-	}
-	userId, err := strconv.Atoi(user_id)
-	if err != nil {
-		log.Println("Failed to convert user_id or program_id to integer")
-		http.Error(w, "Failed to convert user_id or program_id to integer", http.StatusBadRequest)
-		return
-	}
-	program_id, ok := data["program_id"].(string)
-	if !ok {
-		log.Println("Invalid program_id")
-		http.Error(w, "Invalid program_id", http.StatusBadRequest)
-		return
-	}
-	programId, err := strconv.Atoi(program_id)
-	if err != nil {
-		log.Println("Failed to convert user_id or program_id to integer")
-		http.Error(w, "Failed to convert user_id or program_id to integer", http.StatusBadRequest)
-		return
-	}
+	userId := r.PathValue("id")
+	programId := r.PathValue("program_id")
 	log.Println("initiating GetMilestonesForProgramUser milestones")
 	milestones, err := service.GetMilestonesForProgramUser(userId, programId)
 	if err != nil {
@@ -149,6 +122,27 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(w http.ResponseWriter, 
 	if _, err = w.Write(responseData); err != nil {
 		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		log.Errorf("Failed to write response: %v", err)
+		return
+	}
+}
+
+func (srv *ServiceHandler) handleAcitivityForProgram(w http.ResponseWriter, r *http.Request) {
+	service := srv.getService(r)
+	programId := r.PathValue("id")
+	activity, err := service.GetActivityForProgram(programId)
+	if err != nil {
+		log.Errorf("failed to get program activity: %v", err)
+		http.Error(w, fmt.Sprintf("failed to get program activity: %v", err), http.StatusInternalServerError)
+		return
+	}
+	jsonResp, err := json.Marshal(&activity)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err = w.Write(jsonResp); err != nil {
+		http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
 }

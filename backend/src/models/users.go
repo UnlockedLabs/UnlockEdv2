@@ -38,7 +38,7 @@ type User struct {
 	ActivityLog []UserActivity        `json:"-"`
 }
 
-type UnlockEdImportUser struct {
+type ImportUser struct {
 	Username         string `json:"username"`
 	NameFirst        string `json:"name_first"`
 	NameLast         string `json:"name_last"`

@@ -104,6 +104,6 @@ func (sh *ServiceHandler) authMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(r.Context()))
 	})
 }

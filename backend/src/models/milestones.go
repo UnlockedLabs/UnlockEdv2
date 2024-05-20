@@ -22,7 +22,7 @@ type Milestone struct {
 	Program *Program `gorm:"foreignKey:ProgramID" json:"-"`
 }
 
-type UnlockEdImportMilestone struct {
+type ImportMilestone struct {
 	UserID            int    `json:"user_id"`
 	ExternalProgramID string `json:"external_program_id"`
 	ExternalID        string `json:"external_id"`

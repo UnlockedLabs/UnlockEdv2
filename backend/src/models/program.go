@@ -48,7 +48,7 @@ type UserDashboardJoin struct {
 	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
 }
 
-type UnlockEdImportProgram struct {
+type ImportProgram struct {
 	ProviderPlatformID      int    `json:"provider_platform_id"`
 	Name                    string `json:"name"`
 	Description             string `json:"description"`

@@ -1,28 +1,23 @@
 #!/bin/bash
 
-help="Usage: ./build [up] [--migrate-fresh]"
+help="Usage: ./build up | migrate-fresh | server"
 
 if [[ "$1" == "-h" ]]; then
 	echo "$help"
 	exit 0
 fi
 
-echo "Building backend..."
-
 if [[ "$1" == "up" ]]; then
-	if [[ -z "$(docker ps -q)" ]]; then
-		docker-compose up -d
-	fi
-	if [[ "$2" == "--migrate-fresh" ]]; then
-		sleep 3
-		go run migrations/main.go
-	fi
-	go run backend/main.go
-	exit 0
+	docker-compose up -d --build
+	echo "Building backend..."
 fi
 
-if [[ "$1" == "--migrate-fresh" ]]; then
-	go run migrations/main.go
+if [[ "$1" == "migrate-fresh" ]]; then
+	go run backend/migrations/main.go
 fi
-go run backend/main.go
+
+if [[ "$1" == "server" ]]; then
+	go run backend/main.go
+fi
+
 exit 0

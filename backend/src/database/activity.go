@@ -9,7 +9,9 @@ import (
 )
 
 func (db *DB) CreateActivity(activity *models.Activity) error {
-	return db.Conn.Create(activity).Error
+	// This function is calling a stored procedure in the database to calculate the delta (src/activity_proc.sql)
+	return db.Conn.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
+		activity.UserID, activity.ProgramID, activity.Type, activity.TotalTime, activity.ExternalID).Error
 }
 
 func (db *DB) GetActivityByUserID(page, perPage, userID int) (int64, []models.Activity, error) {
@@ -29,25 +31,6 @@ func (db *DB) GetActivityByProgramID(page, perPage, programID int) (int64, []mod
 func (db *DB) DeleteActivity(activityID int) error {
 	return db.Conn.Delete(&models.Activity{}, activityID).Error
 }
-
-/*
-type RecentProgram struct {
-	Name                 string `json:"program_name"`
-	Progress             string `json:"course_progress"`
-	AltName              string `json:"alt_name"`
-	ThumbnailURL         string `json:"thumbnail_url"`
-	ProviderPlatformName string `json:"provider_platform_name"`
-	ExternalURL          string `json:"external_url"`
-}
-*
-type CurrentEnrollment struct {
-	AltName              string            `json:"alt_name"`
-	Name                 string            `json:"name"`
-	ProviderPlatformName string            `json:"provider_platform_name"`
-	ExternalURL          string            `json:"external_url"`
-	TotalActivityTime    [7]RecentActivity `json:"total_activity_time"`
-}
-*/
 
 func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error) {
 	var recentPrograms [3]models.RecentProgram

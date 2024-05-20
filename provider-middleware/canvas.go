@@ -1,11 +1,12 @@
 package main
 
 import (
-	"Go-Prototype/src/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -28,7 +29,7 @@ func newCanvasService(provider *ProviderPlatform) *CanvasService {
 	return &CanvasService{
 		ProviderPlatformID: provider.ID,
 		Client:             &http.Client{},
-		BaseURL:            provider.Url,
+		BaseURL:            provider.BaseUrl,
 		Token:              provider.ApiKey,
 		AccountID:          provider.AccountID,
 		BaseHeaders:        &headers,
@@ -54,8 +55,9 @@ func (srv *CanvasService) GetID() int {
 	return srv.ProviderPlatformID
 }
 
-func (srv *CanvasService) GetUsers() ([]models.UnlockEdImportUser, error) {
+func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 	url := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users"
+	log.Printf("url: %v", url)
 	resp, err := srv.SendRequest(url)
 	if err != nil {
 		log.Printf("Failed to send request: %v", err)
@@ -68,9 +70,8 @@ func (srv *CanvasService) GetUsers() ([]models.UnlockEdImportUser, error) {
 		return nil, err
 	}
 	log.Printf("Request sent to canvas Users: %v", users)
-	unlockedUsers := make([]models.UnlockEdImportUser, 0)
+	unlockedUsers := make([]UnlockEdImportUser, 0)
 	for _, user := range users {
-		log.Printf("User: %v", user)
 		name := strings.Split(user["name"].(string), " ")
 		nameFirst, nameLast := "", ""
 		if len(name) < 2 {
@@ -81,7 +82,7 @@ func (srv *CanvasService) GetUsers() ([]models.UnlockEdImportUser, error) {
 			nameLast = name[1]
 		}
 		userId, _ := user["id"].(float64)
-		unlockedUser := models.UnlockEdImportUser{
+		unlockedUser := UnlockEdImportUser{
 			ExternalUserID:   fmt.Sprintf("%d", int(userId)),
 			ExternalUsername: user["login_id"].(string),
 			NameFirst:        nameFirst,
@@ -110,7 +111,6 @@ func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 		log.Printf("Failed to decode response: %v", err)
 		return nil, err
 	}
-	log.Printf("Courses: %v", courses)
 	unlockedCourses := make([]UnlockEdImportProgram, 0)
 	for _, course := range courses {
 		id := int(course["id"].(float64))
@@ -152,7 +152,6 @@ func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 		}
 		unlockedCourses = append(unlockedCourses, unlockedCourse)
 	}
-	log.Printf("returning %d Unlocked programs", len(unlockedCourses))
 	log.Printf("returning Unlocked programs")
 	return unlockedCourses, nil
 }
@@ -188,7 +187,6 @@ func (srv *CanvasService) getAssignmentsForCourse(courseId int) ([]interface{}, 
 		log.Printf("failed to decode response from assignments %v", err)
 		return nil, err
 	}
-	log.Printf("Assignments: %v", assignments)
 	return assignments, nil
 }
 
@@ -244,23 +242,31 @@ func (srv *CanvasService) getUserSubmissionsForCourse(userId, courseId int) ([]m
 * get submissions for the user for each quiz
 *  /api/v1/courses/:course_id/quizzes/:quiz_id/submissions/:user_id
 * */
-func (srv *CanvasService) GetMilestonesForProgramUser(userId, courseId int) ([]models.UnlockEdImportMilestone, error) {
-	submissions, err := srv.getUserSubmissionsForCourse(userId, courseId)
+func (srv *CanvasService) GetMilestonesForProgramUser(userId, courseId string) ([]UnlockEdImportMilestone, error) {
+	userID, err := strconv.Atoi(userId)
+	if err != nil {
+		return nil, err
+	}
+	courseID, err := strconv.Atoi(courseId)
+	if err != nil {
+		return nil, err
+	}
+	submissions, err := srv.getUserSubmissionsForCourse(userID, courseID)
 	if err != nil {
 		log.Printf("Failed to get submission for assignment: %v", err)
 		return nil, err
 	}
-	milestones := make([]models.UnlockEdImportMilestone, 0)
+	milestones := make([]UnlockEdImportMilestone, 0)
 	for _, submission := range submissions {
-		milestone := models.UnlockEdImportMilestone{
+		milestone := UnlockEdImportMilestone{
 			ExternalID:        fmt.Sprintf("%d", int(submission["id"].(float64))),
-			ExternalProgramID: fmt.Sprintf("%d", courseId),
+			ExternalProgramID: courseId,
 			Type:              "assignment_submission",
 			IsCompleted:       submission["workflow_state"] == "complete" || submission["workflow_state"] == "graded",
 		}
 		milestones = append(milestones, milestone)
 	}
-	quizzes, err := srv.getQuizzesForCourse(courseId)
+	quizzes, err := srv.getQuizzesForCourse(courseID)
 	if err != nil {
 		// just return what we have
 		return milestones, nil
@@ -268,7 +274,7 @@ func (srv *CanvasService) GetMilestonesForProgramUser(userId, courseId int) ([]m
 	for _, quiz := range quizzes {
 		// go through each quiz and see if we have a submission from the user
 		quizId := int(quiz["id"].(float64))
-		if submission, err := srv.getUserSubmissionForQuiz(courseId, quizId, userId); err == nil {
+		if submission, err := srv.getUserSubmissionForQuiz(courseID, quizId, userID); err == nil {
 			state, ok := submission["workflow_state"].(string)
 			if !ok || state == "untaken" {
 				continue
@@ -280,14 +286,52 @@ func (srv *CanvasService) GetMilestonesForProgramUser(userId, courseId int) ([]m
 			if state == "complete" {
 				milestoneType = "quiz_completion"
 			}
-			milestone := models.UnlockEdImportMilestone{
+			milestone := UnlockEdImportMilestone{
 				ExternalID:        submission["id"].(string),
-				UserID:            userId,
-				ExternalProgramID: fmt.Sprintf("%d", courseId),
+				UserID:            userID,
+				ExternalProgramID: courseId,
 				Type:              milestoneType,
 			}
 			milestones = append(milestones, milestone)
 		}
 	}
 	return milestones, nil
+}
+
+func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string]interface{}, error) {
+	url := srv.BaseURL + "/api/v1/courses/" + courseId + "/enrollments?state[]=active&state[]=invited&type[]=StudentEnrollment"
+	resp, err := srv.SendRequest(url)
+	if err != nil {
+		log.Printf("Failed to send request: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	enrollments := make([]map[string]interface{}, 0)
+	err = json.NewDecoder(resp.Body).Decode(&enrollments)
+	if err != nil {
+		return nil, err
+	}
+	return enrollments, nil
+}
+
+func (srv *CanvasService) GetActivityForProgram(courseId string) ([]UnlockEdImportActivity, error) {
+	enrollments, err := srv.getEnrollmentsForCourse(courseId)
+	if err != nil {
+		log.Printf("Failed to get enrollments for course: %v", err)
+		return nil, err
+	}
+	activities := make([]UnlockEdImportActivity, 0)
+	for _, enrollment := range enrollments {
+		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(float64)))
+		activity := UnlockEdImportActivity{
+			ExternalProgramID: courseId,
+			ExternalUserID:    userId,
+			Type:              "interaction",
+			TotalTime:         int(enrollment["total_activity_time"].(float64)),
+			Date:              time.Now().Format("2006-01-02"),
+			ExternalContentID: fmt.Sprintf("%d", int(enrollment["id"].(float64))),
+		}
+		activities = append(activities, activity)
+	}
+	return activities, nil
 }

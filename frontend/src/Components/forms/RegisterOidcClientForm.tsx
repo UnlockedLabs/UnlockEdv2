@@ -56,7 +56,7 @@ export default function RegisterOidcClientForm({
     <>
       <CloseX close={() => onClose()} />
       <form onSubmit={handleSubmit(onSubmit)}>
-        {hasAuto && (
+        {!hasAuto && (
           <div className="label-text text-warning font-semibold">
             If you do not choose to auto register, you must manually setup
             authentication for UnlockEd the provider platform's settings.

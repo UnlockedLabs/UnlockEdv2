@@ -1,8 +1,8 @@
 FROM golang:1.22.3-alpine as builder
 WORKDIR /app/
-COPY go.mod go.sum ./
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o backend Go-Prototype/backend
+COPY ./backend/go.mod ./backend/go.sum ./
+COPY ./backend/. .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o backend .
 
 FROM node:21-alpine3.19 as frontend
 WORKDIR /app/

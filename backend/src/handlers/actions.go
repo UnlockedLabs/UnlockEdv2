@@ -13,24 +13,13 @@ func (srv *Server) registerActionsRoutes() {
 	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportUsers)))
 	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-programs", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportPrograms)))
 	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-milestones", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportMilestones)))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportActivity)))
 }
 
 func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	service, err := srv.getService(r)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	provider, err := srv.Db.GetProviderPlatformByID(id)
-	if err != nil {
-		log.Error("Error getting provider platform by ID:" + err.Error())
-		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
-		return
-	}
-	service, err := src.GetProviderService(provider)
-	if err != nil {
-		log.Error("Error getting provider service GetProviderService():" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	users, err := service.GetUsers()
@@ -56,7 +45,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		mapping := models.ProviderUserMapping{
 			UserID:             created.ID,
-			ProviderPlatformID: provider.ID,
+			ProviderPlatformID: service.ProviderPlatformID,
 			ExternalUsername:   user.Username,
 			ExternalUserID:     user.ExternalUserID,
 			ExternalLoginID:    user.ExternalUsername,
@@ -70,20 +59,10 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	service, err := srv.getService(r)
 	if err != nil {
+		log.Errorf("Error getting provider service: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	provider, err := srv.Db.GetProviderPlatformByID(id)
-	if err != nil {
-		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
-		return
-	}
-	service, err := src.GetProviderService(provider)
-	if err != nil {
-		log.Error("Error getting provider service GetProviderService:" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	content, err := service.GetPrograms()
@@ -93,7 +72,17 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	for _, item := range content {
-		_, err := srv.Db.CreateProgram(&item)
+		prog := models.Program{
+			ProviderPlatformID:      uint(service.ProviderPlatformID),
+			Name:                    item.Name,
+			Description:             item.Description,
+			ExternalID:              item.ExternalID,
+			ThumbnailURL:            item.ThumbnailURL,
+			IsPublic:                item.IsPublic,
+			ExternalURL:             item.ExternalURL,
+			TotalProgressMilestones: uint(item.TotalProgressMilestones),
+		}
+		_, err := srv.Db.CreateProgram(&prog)
 		if err != nil {
 			log.Error("Error creating content:" + err.Error())
 			continue
@@ -107,32 +96,15 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 }
 
 func (srv *Server) HandleImportMilestones(w http.ResponseWriter, r *http.Request) {
-	providerId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	provider, err := srv.Db.GetProviderPlatformByID(providerId)
-	if err != nil {
-		log.Errorf("Error getting provider platform by ID: %v", err)
-		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
-		return
-	}
-	service, err := src.GetProviderService(provider)
+	service, err := srv.getService(r)
 	if err != nil {
 		log.Errorf("Error getting provider service: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	userMappings, err := srv.Db.GetUserMappingsForProvider(provider.ID)
+	programs, userMappings, err := srv.getProgramsAndMappingsForProvider(service.ProviderPlatformID)
 	if err != nil {
-		log.Errorf("Error getting user mappings for provider: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	programs, err := srv.Db.GetProgramByProviderPlatformID(int(provider.ID))
-	if err != nil {
-		log.Errorf("Error getting programs for provider: %v", err)
+		log.Errorf("Error getting programs and user mappings for provider: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -159,6 +131,72 @@ func (srv *Server) HandleImportMilestones(w http.ResponseWriter, r *http.Request
 					log.Errorf("Error creating milestone: %v", err)
 					continue
 				}
+			}
+		}
+	}
+}
+
+func (srv *Server) getProgramsAndMappingsForProvider(providerID uint) ([]models.Program, []models.ProviderUserMapping, error) {
+	userMappings, err := srv.Db.GetUserMappingsForProvider(providerID)
+	if err != nil {
+		log.Errorf("Error getting user mappings for provider: %v", err)
+		return nil, nil, err
+	}
+	programs, err := srv.Db.GetProgramByProviderPlatformID(int(providerID))
+	if err != nil {
+		log.Errorf("Error getting programs for provider: %v", err)
+		return nil, nil, err
+	}
+	return programs, userMappings, nil
+}
+
+func (srv *Server) getService(r *http.Request) (*src.ProviderService, error) {
+	providerId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return nil, err
+	}
+	provider, err := srv.Db.GetProviderPlatformByID(providerId)
+	if err != nil {
+		return nil, err
+	}
+	return src.GetProviderService(provider)
+}
+
+func (srv *Server) HandleImportActivity(w http.ResponseWriter, r *http.Request) {
+	service, err := srv.getService(r)
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+	}
+	programs, userMappings, err := srv.getProgramsAndMappingsForProvider(service.ProviderPlatformID)
+	if err != nil {
+		log.Errorf("Error getting programs and user mappings for provider: %v", err)
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	userMap := make(map[string]uint)
+	for _, user := range userMappings {
+		userMap[user.ExternalUserID] = user.UserID
+		log.Printf("User ID: %d", user.UserID)
+	}
+
+	for _, program := range programs {
+		log.Printf("Program ID: %d", program.ID)
+		activity, err := service.GetActivityForProgram(program.ExternalID)
+		if err != nil {
+			log.Errorf("Error getting provider service activity: %v", err)
+			continue
+		}
+		for _, act := range activity {
+			activity := models.Activity{
+				UserID:    userMap[act.ExternalUserID],
+				Type:      models.ActivityType(act.Type),
+				ProgramID: program.ID,
+				TotalTime: uint(act.TotalTime),
+			}
+			err := srv.Db.CreateActivity(&activity)
+			if err != nil {
+				log.Errorf("Error creating activity: %v", err)
+				continue
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"Go-Prototype/src/models"
 	"database/sql"
 	"log"
 	"net/http"
@@ -15,10 +14,10 @@ import (
 
 type ProviderServiceInterface interface {
 	GetID() int
-	GetUsers() ([]models.UnlockEdImportUser, error)
+	GetUsers() ([]UnlockEdImportUser, error)
 	GetPrograms() ([]UnlockEdImportProgram, error)
-	GetMilestonesForProgramUser(courseId, userId int) ([]models.UnlockEdImportMilestone, error)
-	// TODO: GetActivity()
+	GetMilestonesForProgramUser(courseId, userId string) ([]UnlockEdImportMilestone, error)
+	GetActivityForProgram(courseId string) ([]UnlockEdImportActivity, error)
 	// TODO: GetOutcomes()
 }
 
@@ -50,12 +49,7 @@ func main() {
 	}
 	db, err := sql.Open("sqlite", "provider-middleware/providers.db")
 	if err != nil {
-		create, err := os.Create("provider-middleware/providers.db")
-		if err != nil {
-			log.Fatalf("Failed to create database file: %v", err)
-		}
-		create.Close()
-		db, err = sql.Open("sqlite", "provider-middleware/providers.db")
+		db, err = sql.Open("sqlite", "providers.db")
 		if err != nil {
 			log.Fatalf("Failed to open database after creation: %v", err)
 		}

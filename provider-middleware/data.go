@@ -1,7 +1,6 @@
 package main
 
 import (
-	"Go-Prototype/src/models"
 	"bytes"
 	"database/sql"
 	"encoding/base64"
@@ -26,7 +25,7 @@ type ProviderPlatform struct {
 	ID        int    `json:"id"`
 	Type      string `json:"type"`
 	AccountID string `json:"account_id"`
-	Url       string `json:"url"`
+	BaseUrl   string `json:"base_url"`
 	ApiKey    string `json:"api_key"`
 	Username  string `json:"username"`
 	Password  string `json:"password"`
@@ -39,7 +38,7 @@ func (prov *ProviderPlatform) SaveProvider(db *sql.DB) error {
 		log.Println("Failed to prepare statement")
 		return err
 	}
-	_, err = stmt.Exec(prov.ID, prov.Type, prov.AccountID, prov.Url, prov.ApiKey, prov.Username, prov.Password)
+	_, err = stmt.Exec(prov.ID, prov.Type, prov.AccountID, prov.BaseUrl, prov.ApiKey, prov.Username, prov.Password)
 	if err != nil {
 		log.Println("Failed to execute statement")
 		return err
@@ -50,8 +49,7 @@ func (prov *ProviderPlatform) SaveProvider(db *sql.DB) error {
 
 func (srv *ServiceHandler) LookupProvider(id int) (*ProviderPlatform, error) {
 	var provider ProviderPlatform
-	log.Println("Looking up provider #", id)
-	err := srv.db.QueryRow("SELECT * FROM providers WHERE id = $1", id).Scan(&provider.ID, &provider.Type, &provider.AccountID, &provider.Url, &provider.ApiKey, &provider.Username, &provider.Password)
+	err := srv.db.QueryRow("SELECT * FROM providers WHERE id = $1", id).Scan(&provider.ID, &provider.Type, &provider.AccountID, &provider.BaseUrl, &provider.ApiKey, &provider.Username, &provider.Password)
 	if err != nil {
 		log.Println("Failed to find provider")
 		return nil, err
@@ -71,7 +69,7 @@ type KolibriUser struct {
 	IsSuperuser bool   `json:"is_superuser"`
 }
 
-func (ku *KolibriUser) IntoImportUser() (*models.UnlockEdImportUser, error) {
+func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
 	first := strings.Split(ku.Fullname, " ")[0]
 	last := strings.Split(ku.Fullname, " ")[1]
 	if len(strings.Split(ku.Fullname, " ")) > 2 {
@@ -81,7 +79,7 @@ func (ku *KolibriUser) IntoImportUser() (*models.UnlockEdImportUser, error) {
 	if first == "" && last == "" && ku.Username == "" {
 		return nil, errors.New("invalid user")
 	}
-	return &models.UnlockEdImportUser{
+	return &UnlockEdImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		Email:            email,
@@ -200,4 +198,30 @@ type UnlockEdImportProgram struct {
 	IsPublic                bool   `json:"is_public"`
 	ExternalURL             string `json:"external_url"`
 	TotalProgressMilestones int    `json:"total_progress_milestones"`
+}
+
+type UnlockEdImportMilestone struct {
+	UserID            int    `json:"user_id"`
+	ExternalProgramID string `json:"external_program_id"`
+	ExternalID        string `json:"external_id"`
+	Type              string `json:"type"`
+	IsCompleted       bool   `json:"is_completed"`
+}
+
+type UnlockEdImportUser struct {
+	Username         string `json:"username"`
+	NameFirst        string `json:"name_first"`
+	NameLast         string `json:"name_last"`
+	Email            string `json:"email"`
+	ExternalUserID   string `json:"external_user_id"`
+	ExternalUsername string `json:"external_username"`
+}
+
+type UnlockEdImportActivity struct {
+	ExternalUserID    string `json:"external_user_id"`
+	ExternalProgramID string `json:"external_program_id"`
+	Type              string `json:"type"`
+	TotalTime         int    `json:"total_time"`
+	Date              string `json:"date"`
+	ExternalContentID string `json:"external_content_id"`
 }

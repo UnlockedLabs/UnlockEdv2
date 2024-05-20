@@ -37,9 +37,9 @@ If you would like to contribute, please have a look at our [contribution guideli
 -   Postgres 16.0
 
 -   Clone the repository
--   `cp .env.example .env && cp frontend/.env.example frontend/.env`
--   Run `./build up --migrate-fresh`
--   You can omit the `--migrate-fresh` in further runs.
+-   `cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env`
+-   Run `./build up`
+-   To migrate the database to a fresh state, run `./build migrate-fresh` (you can do this while docker is running with all the services)
 
 -   If you are working on the backend, you may wish to comment out the `server` service (1st) in the `docker-compose.yml` file,
 and run `./build up`, then you can simply run `./build` to start the backend server, and when making changes you will not have

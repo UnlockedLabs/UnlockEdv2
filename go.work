@@ -1,8 +1,7 @@
 go 1.22.3
 
 use (
-	.
-	./jobs
-	./migrations
+	./backend
+	./backend/migrations
 	./provider-middleware
 )

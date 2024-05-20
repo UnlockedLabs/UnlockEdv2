@@ -1,8 +1,8 @@
 services:
   server:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: ./backend/Dockerfile
     ports:
       - "8080:8080"
     environment:
@@ -16,7 +16,7 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - ".env"
+      - "./backend/.env"
     command: >
       ./backend
     networks:
@@ -24,11 +24,11 @@ services:
 
   provider-service:
     build:
-      context: ./
-      dockerfile: provider-middleware/Dockerfile
+      context: provider-middleware
+      dockerfile: Dockerfile
     ports:
       - "8081:8081"
-    env_file: ".env"
+    env_file: "./backend/.env"
     command: ./provider-service
     networks:
       - intranet
@@ -53,6 +53,7 @@ services:
       retries: 5
     networks:
       - intranet
+
   hydra:
     image: oryd/hydra:v2.2.0
     ports:
@@ -71,7 +72,7 @@ services:
     environment:
       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
     restart: unless-stopped
-    env_file: .env
+    env_file: ./backend/.env
     depends_on:
       - hydra-migrate
     networks:
@@ -90,23 +91,6 @@ services:
         source: ./hydra
         target: /etc/config/hydra
     restart: on-failure
-    networks:
-      - intranet
-
-  cronjobs:
-    environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=unlocked
-      - DB_PASSWORD=dev
-      - DB_NAME=unlocked
-    build:
-      context: .
-      dockerfile: ./jobs/Dockerfile
-    env_file: .env
-    command: >
-      ./cron
-    depends_on: [server]
     networks:
       - intranet
 

@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("./backend/.env"); err != nil {
 		log.Fatalf("Failed to load .env file: %v", err)
 	}
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
@@ -36,6 +36,14 @@ func MigrateFresh(db *gorm.DB) {
 			log.Printf("Failed to drop table: %v", err)
 		}
 	}
+	storedProc, err := os.ReadFile("./backend/src/activities_proc.sql")
+	if err != nil {
+		log.Fatalf("Failed to read stored procedure file: %v", err)
+	}
+	if err := db.Exec(string(storedProc)).Error; err != nil {
+		log.Fatalf("Failed to create stored procedure: %v", err)
+	}
+	log.Println("Stored procedure created successfully.")
 	MigrateProviderMiddlewareFresh()
 	database.Migrate(db)
 	database.SeedDefaultData(db)

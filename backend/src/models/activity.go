@@ -25,3 +25,11 @@ type Activity struct {
 func (Activity) TableName() string {
 	return "activities"
 }
+
+type ImportActivity struct {
+	ExternalUserID    string `json:"external_user_id"`
+	ExternalProgramID string `json:"external_program_id"`
+	Type              string `json:"type"`
+	TotalTime         int    `json:"total_time"`
+	Date              string `json:"date"`
+}

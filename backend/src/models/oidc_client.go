@@ -44,7 +44,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	body["metadata"] = map[string]interface{}{
 		"Origin": os.Getenv("APP_URL"),
 	}
-	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL"), os.Getenv("APP_URL"), os.Getenv("FRONTEND_URL"), os.Getenv("HYDRA_PUBLIC_URL")}
+	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL"), os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL")}
 	body["grant_types"] = []string{"authorization_code"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
 	body["authorization_code_grant_id_token_lifespan"] = "3h"
