@@ -22,6 +22,6 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.58
-          args: --timeout 5m
+          args: backend/. --timeout 5m
           install-mode: "binary"
           skip-cache: true
