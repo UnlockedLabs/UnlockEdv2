@@ -38,12 +38,12 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 	//
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
-	err := db.Conn.Table("programs").
-		Select(`programs.name as program_name,
-        programs.alt_name,
-        programs.thumbnail_url,
-        provider_platforms.name as provider_platform_name,
-        COUNT(sub_milestones.id) * 100.0 / programs.total_progress_milestones as progress`).
+	err := db.Conn.Table("programs as p").
+		Select(`p.name as program_name,
+        p.alt_name,
+        p.thumbnail_url,
+        pp.name as provider_platform_name,
+        COUNT(sub_milestones.id) * 100.0 / p.total_progress_milestones as course_progress`).
 		Joins(fmt.Sprintf(`
         JOIN (
             SELECT id, program_id FROM (
@@ -51,9 +51,9 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
                 FROM milestones
                 WHERE user_id = %d AND type IN ('assignment_submission', 'quiz_submission') AND is_completed = true
             ) tmp WHERE rn <= 3
-        ) sub_milestones ON sub_milestones.program_id = programs.id`, userID)).
-		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
-		Group("programs.id, programs.name, programs.alt_name, programs.thumbnail_url, provider_platforms.name").
+        ) sub_milestones ON sub_milestones.program_id = p.id`, userID)).
+		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+		Group("p.id, program_name, p.alt_name, p.thumbnail_url, provider_platform_name").
 		Find(&recentPrograms).Error
 	if err != nil {
 		log.Errorf("Error getting recent programs: %v", err)
@@ -72,18 +72,18 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 		TimeDelta            uint
 	}
 
-	err = db.Conn.Table("programs").
-		Select(`programs.id as program_id,
-				programs.alt_name,
-				programs.name,
-				provider_platforms.name as provider_platform_name,
-				programs.external_url,
-				DATE(activities.created_at) as date,
-				activities.time_delta`).
-		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
-		Joins("JOIN activities ON activities.program_id = programs.id").
-		Where("activities.user_id = ? AND activities.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
-		Group("programs.id, activities.time_delta, DATE(activities.created_at), provider_platforms.name").
+	err = db.Conn.Table("programs as p").
+		Select(`p.id as program_id,
+				p.alt_name,
+				p.name,
+				pp.name as provider_platform_name,
+				p.external_url,
+				DATE(a.created_at) as date,
+				a.time_delta`).
+		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+		Joins("JOIN activities a ON a.program_id = p.id").
+		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
+		Group("p.id, a.time_delta, DATE(a.created_at), pp.name").
 		Find(&results).Error
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
@@ -121,13 +121,12 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 			ProviderPlatformName string
 			ExternalURL          string
 		}
-		err = db.Conn.Table("programs").Select(`programs.id as program_id, programs.alt_name, programs.name, provider_platforms.name as provider_platform_name, programs.external_url`).
-			Joins(`JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id`).
+		err = db.Conn.Table("programs as p").Select(`p.id as program_id, p.alt_name, p.name, pp.name as provider_platform_name, p.external_url`).
+			Joins(`JOIN provider_platforms pp ON p.provider_platform_id = pp.id`).
 			Joins(`LEFT JOIN milestones on milestones.program_id = programs.id`).Where(`milestones.user_id`, userID).Find(&newEnrollments).Error
 		if err != nil {
 			log.Fatalf("Query failed: %v", err)
 		}
-		log.Printf("newEnrollments: %v", newEnrollments)
 		for idx, enrollment := range newEnrollments {
 			if idx == 7 {
 				break

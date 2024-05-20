@@ -35,12 +35,12 @@ type CurrentEnrollment struct {
 }
 
 type RecentProgram struct {
-	Name                 string `json:"program_name"`
-	Progress             string `json:"course_progress"`
+	ProgramName          string `json:"program_name"`
+	CourseProgress       string `json:"course_progress"`
 	AltName              string `json:"alt_name"`
-	ThumbnailURL         string `json:"thumbnail_url"`
+	ThumbnailUrl         string `json:"thumbnail_url"`
 	ProviderPlatformName string `json:"provider_platform_name"`
-	ExternalURL          string `json:"external_url"`
+	ExternalUrl          string `json:"external_url"`
 }
 
 type UserDashboardJoin struct {
