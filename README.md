@@ -1,15 +1,3 @@
-## TODO:
-
-Frontend:
-
- - Login form + reset password will throw error when wrong password is entered
-
-Backend:
-
- - **Auth OIDC**: Canvas auth | Kolibri
- - Fetching `activities` from providers in the middleware, to be used by the `UserActivityMap`("gh contribution chart")
-
-
 # UnlockEdv2
 
 ## Requirements
@@ -17,7 +5,7 @@ Backend:
 Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Linux.
 
 -   Docker && Docker Compose
--   Go 1.22
+-   Go 1.23
 -   Node.js > 18.0
 -   Yarn
 
@@ -27,7 +15,7 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 ### Dependencies (Local)
 
--   Go 1.22
+-   Go 1.23
 -   Node.js > 18.0
 -   Docker && Docker-Compose
 
@@ -40,22 +28,22 @@ If you would like to contribute, please have a look at our [contribution guideli
 -   `cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env`
 -   Run `./build up`
 -   To migrate the database to a fresh state, run `./build migrate-fresh` (you can do this while docker is running with all the services)
+-   If you do not need hot reloading for the client, you can set `APP_ENV=produdction` in the `.env` files, and you will not need to run the frontend server (`yarn run dev`),
+    simply go to `localhost:8080` in your browser and the Go server will serve the frontend as well (it builds the js in docker).
 
 -   If you are working on the backend, you may wish to comment out the `server` service (1st) in the `docker-compose.yml` file,
 and run `./build up`, then you can simply run `./build` to start the backend server, and when making changes you will not have
 to wait for docker to rebuild the frontend, the middleware, and start the other 4 containers each time you wish to test out
-a change.
+a change. If you are developing the middleware, simply comment it out and run it separately with `go run provider-middleware/.`
 
 **If you need hot reloading for the client:**
 -   Change directory to the frontend directory
 -   Run `yarn install`
 -   Run `yarn run dev`
 -   Open `http://localhost:5173` in your browser
+
 -   Login with `SuperAdmin` and password: `ChangeMe!`
 -   You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
-
-
-**If you will not be working on the frontend/do not need hot reloading** you can set `APP_ENV=prod` in the `.env` file, and you will not need to run the frontend server, simply go to `localhost:8080` in your browser and the Go server will serve the frontend as well (builds in docker).
 
 ## Style/Linting
 

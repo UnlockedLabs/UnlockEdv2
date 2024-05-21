@@ -45,7 +45,7 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the SQLite database in memory")
 	} else {
-		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
 			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 		db, err = gorm.Open(postgres.New(postgres.Config{
 			DSN: dsn,

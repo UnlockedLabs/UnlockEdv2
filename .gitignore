@@ -9,3 +9,5 @@ jar
 /frontend/public/thumbnails/*
 /migrations/migrations
 /provider-middleware/providers.db
+/backend/server
+/provider-middleware/middleware
