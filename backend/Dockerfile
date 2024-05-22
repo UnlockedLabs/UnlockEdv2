@@ -6,5 +6,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o backend .
 
 FROM scratch
 COPY --from=builder /app/backend ./
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 EXPOSE 8080
 ENTRYPOINT ["./backend"]

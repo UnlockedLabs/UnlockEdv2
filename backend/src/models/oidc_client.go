@@ -57,7 +57,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
 	body["authorization_code_grant_id_token_lifespan"] = "3h"
 	body["authorization_code_grant_refresh_token_lifespan"] = "3h"
-	body["skip_consent"] = false
+	body["skip_consent"] = true
 	body["skip_logout_consent"] = true
 	body["token_endpoint_auth_method"] = "client_secret_basic"
 	jsonBody, err := json.Marshal(body)
@@ -140,6 +140,7 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 	response, err := client.Do(request)
 	if err != nil {
 		log.Println("Error sending request: ", err)
+		return "", err
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusOK {
