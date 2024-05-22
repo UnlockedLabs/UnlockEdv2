@@ -4,6 +4,7 @@ import (
 	"Go-Prototype/src/models"
 	"encoding/json"
 	"net/http"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -19,7 +20,11 @@ func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, clients); err != nil {
+	response := models.Resource[models.OidcClient]{
+		Data:    clients,
+		Message: "Successfully fetched all registered clients",
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		log.Error(r, err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
@@ -65,9 +70,14 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		log.Error(r, err)
 	}
-	response := models.Resource[models.OidcClient]{
-		Data: []models.OidcClient{*client},
+	response := models.Resource[models.ClientResponse]{}
+	resp := models.ClientResponse{
+		ClientID:      client.ClientID,
+		ClientSecret:  client.ClientSecret,
+		AuthEndpoint:  os.Getenv("HYDRA_PUBLIC_URL") + "/oauth2/auth",
+		TokenEndpoint: os.Getenv("HYDRA_PUBLIC_URL") + "/oauth2/token",
 	}
+	response.Data = append(response.Data, resp)
 	if request.AutoRegister {
 		response.Message = "Client successfully created and registered with the provider"
 	} else {

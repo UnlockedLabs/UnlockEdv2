@@ -23,6 +23,14 @@ type OidcClient struct {
 	Provider *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
 }
 
+type ClientResponse struct {
+	ClientID      string `json:"client_id"`
+	ClientSecret  string `json:"client_secret"`
+	Scopes        string `json:"scopes"`
+	AuthEndpoint  string `json:"auth_url"`
+	TokenEndpoint string `json:"token_url"`
+}
+
 const DefaultScopes = "openid profile email"
 
 func (OidcClient) TableName() string {
@@ -105,57 +113,54 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string, error) {
 	client := http.Client{}
 	externalId := ""
-	/**** This is for canvas, kolibri will need another implementation *****/
-	if prov.Type == CanvasCloud || prov.Type == CanvasOSS {
-		// register the login client with canvas
-		baseURL := prov.BaseUrl + "/api/v1/accounts/" + prov.AccountID + "/authentication_providers"
-		// we need to add the client_id, client_secret, and redirect_uri to the request form encoded
-		form := url.Values{}
-		form.Add("auth_type", "openid_connect")
-		form.Add("client_id", oidcClient.ClientID)
-		form.Add("client_secret", oidcClient.ClientSecret)
-		form.Add("authorize_url", os.Getenv("HYDRA_PUBLIC_URL")+"/oauth2/auth")
-		form.Add("token_url", os.Getenv("HYDRA_PUBLIC_URL")+"/oauth2/auth")
-		form.Add("userinfo_endpoint", os.Getenv("HYDRA_PUBLIC_URL")+"/userinfo")
-		request, err := http.NewRequest("POST", baseURL, bytes.NewBufferString(form.Encode()))
-		if err != nil {
-			log.Println("Error creating request object: ", err)
-			return "", err
-		}
-		log.Printf("Authorization: Bearer %s", prov.AccessKey)
-		headers := make(map[string]string)
-		headers["Content-Type"] = "application/x-www-form-urlencoded"
-		headers["Authorization"] = "Bearer " + prov.AccessKey
-		headers["Accept"] = "application/json"
-		for k, v := range headers {
-			request.Header.Add(k, v)
-		}
-		log.Printf("Request: %v", request)
-		response, err := client.Do(request)
-		if err != nil {
-			log.Println("Error sending request: ", err)
-		}
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusOK {
-			log.Println("Error creating authentication provider: ", response.Status)
-		}
-		var authProvider map[string]interface{}
-		err = json.NewDecoder(response.Body).Decode(&authProvider)
-		if err != nil {
-			log.Error("Error decoding response body: ", err)
-			return "", err
-		}
-		if authProvider == nil {
-			log.Error("Error creating authentication provider: ", response.Status, response.Body)
-			return "", err
-		}
-		if authProvider["id"] == nil {
-			log.Error("Error creating authentication provider: no ID in response")
-			return "", err
-		}
-		if id, ok := authProvider["id"].(int); ok {
-			externalId = fmt.Sprintf("%d", id)
-		}
+	// register the login client with canvas
+	baseURL := prov.BaseUrl + "/api/v1/accounts/" + prov.AccountID + "/authentication_providers"
+	// we need to add the client_id, client_secret, and redirect_uri to the request form encoded
+	form := url.Values{}
+	form.Add("auth_type", "openid_connect")
+	form.Add("client_id", oidcClient.ClientID)
+	form.Add("client_secret", oidcClient.ClientSecret)
+	form.Add("authorize_url", os.Getenv("HYDRA_PUBLIC_URL")+"/oauth2/auth")
+	form.Add("token_url", os.Getenv("HYDRA_PUBLIC_URL")+"/oauth2/token")
+	form.Add("userinfo_endpoint", os.Getenv("HYDRA_PUBLIC_URL")+"/userinfo")
+	request, err := http.NewRequest("POST", baseURL, bytes.NewBufferString(form.Encode()))
+	if err != nil {
+		log.Println("Error creating request object: ", err)
+		return "", err
+	}
+	log.Printf("Authorization: Bearer %s", prov.AccessKey)
+	headers := make(map[string]string)
+	headers["Content-Type"] = "application/x-www-form-urlencoded"
+	headers["Authorization"] = "Bearer " + prov.AccessKey
+	headers["Accept"] = "application/json"
+	for k, v := range headers {
+		request.Header.Add(k, v)
+	}
+	log.Printf("Request: %v", request)
+	response, err := client.Do(request)
+	if err != nil {
+		log.Println("Error sending request: ", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusOK {
+		log.Println("Error creating authentication provider: ", response.Status)
+	}
+	var authProvider map[string]interface{}
+	err = json.NewDecoder(response.Body).Decode(&authProvider)
+	if err != nil {
+		log.Error("Error decoding response body: ", err)
+		return "", err
+	}
+	if authProvider == nil {
+		log.Error("Error creating authentication provider: ", response.Status, response.Body)
+		return "", err
+	}
+	if authProvider["id"] == nil {
+		log.Error("Error creating authentication provider: no ID in response")
+		return "", err
+	}
+	if id, ok := authProvider["id"].(int); ok {
+		externalId = fmt.Sprintf("%d", id)
 	}
 	return externalId, nil
 }

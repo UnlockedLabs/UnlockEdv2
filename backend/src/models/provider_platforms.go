@@ -93,7 +93,7 @@ func (provider *ProviderPlatform) GetDefaultRedirectURI() string {
 	case CanvasCloud:
 		return provider.BaseUrl + "/login/oauth2/callback"
 	case Kolibri:
-		return provider.BaseUrl + "/oauth2/authorize"
+		return provider.BaseUrl + "/oidccallback"
 	}
 	return ""
 }
