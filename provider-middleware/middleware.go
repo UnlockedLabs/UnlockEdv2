@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type ServiceIDX string
@@ -24,41 +23,25 @@ func (sh *ServiceHandler) initService(id int) error {
 		log.Printf("Error: %v", err)
 		return fmt.Errorf("failed to find provider: %v", err)
 	}
-	if provider.Type == "kolibri" {
-		service := NewKolibriService(provider)
-		if err := service.InitiateSession(); err != nil {
+	switch provider.Type {
+	case "kolibri":
+		kolibriService := NewKolibriService(provider)
+		if err := kolibriService.InitiateSession(); err != nil {
 			log.Printf("Failed to initiate session: %v", err)
 			return fmt.Errorf("failed to initiate session: %v", err)
 		}
-		ticker := time.NewTicker(5 * time.Minute)
-		done := make(chan bool)
-		go func() {
-			for {
-				select {
-				case <-done:
-					ticker.Stop()
-					return
-				case <-ticker.C:
-					err := service.RefreshSession()
-					if err != nil {
-						log.Printf("Failed to refresh session: %v", err)
-					} else {
-						log.Println("Session refreshed successfully.")
-					}
-				}
-			}
-		}()
 		sh.mutex.Lock()
-		sh.services = append(sh.services, service)
+		sh.services = append(sh.services, kolibriService)
 		sh.mutex.Unlock()
 		return nil
-	} else {
-		canvas := newCanvasService(provider)
+	case "canvas_oss", "canvas_cloud":
+		canvasService := newCanvasService(provider)
 		sh.mutex.Lock()
-		sh.services = append(sh.services, canvas)
+		sh.services = append(sh.services, canvasService)
 		sh.mutex.Unlock()
 		return nil
 	}
+	return nil
 }
 
 func (sh *ServiceHandler) findService(id int) int {

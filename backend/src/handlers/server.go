@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -45,14 +44,13 @@ func NewServer(isTesting bool) *Server {
 	if isTesting {
 		return &Server{Db: database.InitDB(true), Mux: http.NewServeMux()}
 	} else {
-		prod := os.Getenv("APP_ENV") == "prod" || os.Getenv("APP_ENV") == "production"
 		db := database.InitDB(false)
 		mux := http.NewServeMux()
 		server := Server{Db: db, Mux: mux}
 		server.RegisterRoutes()
-		if prod {
-			server.Mux.HandleFunc("GET /", server.ServeFrontend)
-		}
+		// if prod {
+		// 	server.Mux.HandleFunc("GET /", server.ServeFrontend)
+		// }
 		return &server
 	}
 }
