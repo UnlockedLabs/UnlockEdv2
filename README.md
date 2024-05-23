@@ -26,24 +26,29 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 -   Clone the repository
 -   `cp backend/.env.example backend/.env && cp frontend/.env.example frontend/.env`
--   Run `./build up`
--   To migrate the database to a fresh state, run `./build migrate-fresh` (you can do this while docker is running with all the services)
--   If you do not need hot reloading for the client, you can set `APP_ENV=produdction` in the `.env` files, and you will not need to run the frontend server (`yarn run dev`),
-    simply go to `localhost:8080` in your browser and the Go server will serve the frontend as well (it builds the js in docker).
 
--   If you are working on the backend, you may wish to comment out the `server` service (1st) in the `docker-compose.yml` file,
-and run `./build up`, then you can simply run `./build` to start the backend server, and when making changes you will not have
-to wait for docker to rebuild the frontend, the middleware, and start the other 4 containers each time you wish to test out
-a change. If you are developing the middleware, simply comment it out and run it separately with `go run provider-middleware/.`
+**For frontend development:**
+-  Run `./build dev -f`
 
-**If you need hot reloading for the client:**
--   Change directory to the frontend directory
--   Run `yarn install`
--   Run `yarn run dev`
--   Open `http://localhost:5173` in your browser
+This will build everything but the client, which you can then run separately with `yarn run dev` in the frontend directory.
 
--   Login with `SuperAdmin` and password: `ChangeMe!`
--   You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
+**For backend development:**
+
+-   Run `./build dev`
+
+This will build only the Auth and run Postgres. You are responsible for building and running the server and middleware.
+
+**For Production:**
+
+- Run `./build prod` to build the entire project in docker. You can then go to `localhost` in your browser.
+
+
+Login with `SuperAdmin` and password: `ChangeMe!`
+
+You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
+
+### To migrate the database to a fresh state, run `./build migrate-fresh` (you can do this while docker is running with all the services)
+
 
 ## Style/Linting
 

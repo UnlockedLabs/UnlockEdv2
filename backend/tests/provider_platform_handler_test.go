@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
 	"net/http"

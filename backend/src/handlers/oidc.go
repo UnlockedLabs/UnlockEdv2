@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
 	"os"

@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"Go-Prototype/src/handlers"
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src/handlers"
+	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
 	"fmt"

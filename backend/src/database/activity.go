@@ -1,7 +1,7 @@
 package database
 
 import (
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src/models"
 	"fmt"
 	"time"
 

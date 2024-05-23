@@ -1,7 +1,7 @@
 package main
 
 import (
-	server "Go-Prototype/src/handlers"
+	server "UnlockEdv2/src/handlers"
 	"fmt"
 	"net/http"
 	"os"
