@@ -47,12 +47,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to load .env file, using default env variables")
 	}
-	db, err := sql.Open("sqlite", "provider-middleware/providers.db")
+	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
-		db, err = sql.Open("sqlite", "providers.db")
-		if err != nil {
-			log.Fatalf("Failed to open database after creation: %v", err)
-		}
+		log.Fatalf("Failed to open database: %v", err)
 	}
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS providers (
     id INTEGER PRIMARY KEY,
