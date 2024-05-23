@@ -1,23 +1,22 @@
 #!/bin/bash
 
-help="Usage: ./build up | migrate-fresh | server"
+help="Usage: ./build prod | dev [-f] | migrate-fresh"
 
-if [[ "$1" == "-h" ]]; then
-	echo "$help"
+if [[ "$1" == "prod" ]]; then
+	docker compose -f docker-compose.yml -f config/docker-compose.prod.yml up --build
 	exit 0
 fi
 
-if [[ "$1" == "up" ]]; then
-	docker-compose up -d --build
-	echo "Building backend..."
+if [[ "$1" == "dev" ]]; then
+	if [[ "$2" == "-f" ]]; then
+		docker compose -f docker-compose.yml -f config/docker-compose.fe-dev.yml up --build
+	else
+		docker compose up
+	fi
 fi
 
 if [[ "$1" == "migrate-fresh" ]]; then
 	go run backend/migrations/main.go
-fi
-
-if [[ "$1" == "server" ]]; then
-	go run backend/main.go
 fi
 
 exit 0

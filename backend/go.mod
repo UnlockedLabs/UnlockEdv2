@@ -1,4 +1,4 @@
-module Go-Prototype
+module UnlockEdv2
 
 go 1.22.2
 

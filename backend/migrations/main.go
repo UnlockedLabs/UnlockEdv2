@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Go-Prototype/src/database"
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src/database"
+	"UnlockEdv2/src/models"
 	"fmt"
 	"log"
 	"os"

@@ -1,0 +1,60 @@
+services:
+  # Main backend server
+  server:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    environment:
+      - APP_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=unlocked
+      - DB_PASSWORD=dev
+      - DB_NAME=unlocked
+      - PROVIDER_SERVICE_URL=http://provider-service:8081
+      - HYDRA_ADMIN_URL=http://hydra:4445
+      - HYDRA_PUBLIC_URL=http://hydra:4444
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - "./backend/.env"
+    command: >
+      ./backend
+    volumes:
+      - ./logs:/logs/
+    networks:
+      - intranet
+
+  # Provider middleware
+  provider-service:
+    build:
+      context: ./provider-middleware
+      dockerfile: Dockerfile
+    env_file: "./backend/.env"
+    command: ./provider-service
+    networks:
+      - intranet
+    volumes:
+      - ./logs:/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Frontend served in nginx container
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    environment:
+      - APP_ENV=production
+    env_file: frontend/.env
+    networks:
+      - intranet
+
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./logs:/var/log/nginx/
+    depends_on: [server]

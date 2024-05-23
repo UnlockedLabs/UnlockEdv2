@@ -1,6 +1,6 @@
 package database
 
-import "Go-Prototype/src/models"
+import "UnlockEdv2/src/models"
 
 func (db *DB) GetClientForProvider(provID uint) (*models.OidcClient, error) {
 	client := models.OidcClient{}

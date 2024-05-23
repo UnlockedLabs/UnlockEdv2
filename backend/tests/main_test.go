@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"Go-Prototype/src/handlers"
+	"UnlockEdv2/src/handlers"
 	"os"
 	"testing"
 )

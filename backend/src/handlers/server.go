@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	database "Go-Prototype/src/database"
+	database "UnlockEdv2/src/database"
 	"context"
 	"encoding/json"
 	"math"

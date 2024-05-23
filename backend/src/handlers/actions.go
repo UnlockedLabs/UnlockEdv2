@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"Go-Prototype/src"
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src"
+	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
 

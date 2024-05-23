@@ -1,7 +1,7 @@
 package database
 
 import (
-	"Go-Prototype/src/models"
+	"UnlockEdv2/src/models"
 )
 
 func (db *DB) GetOutcomesForUser(id uint, page, perPage int) (int64, []models.Outcome, error) {
