@@ -44,7 +44,6 @@ func MigrateFresh(db *gorm.DB) {
 		log.Fatalf("Failed to create stored procedure: %v", err)
 	}
 	log.Println("Stored procedure created successfully.")
-	MigrateProviderMiddlewareFresh()
 	database.Migrate(db)
 	database.SeedDefaultData(db)
 	for _, job := range models.AllStoredJobs {
@@ -66,12 +65,3 @@ func Migrate(db *gorm.DB) {
 }
 
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
-
-func MigrateProviderMiddlewareFresh() {
-	if err := os.Remove("provider-middleware/providers.db"); err != nil {
-		log.Printf("Failed to remove sqlite cache database: %v", err)
-	}
-	if _, err := os.Create("provider-middleware/providers.db"); err != nil {
-		log.Printf("Failed to create sqlite cache database: %v", err)
-	}
-}
