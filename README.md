@@ -49,6 +49,7 @@ You will be prompted immediately to set a new password, and then you will be red
 
 ### To migrate the database to a fresh state, run `./build migrate-fresh` (you can do this while docker is running with all the services)
 
+### To seed the database with some basic test data, run `./build seed`
 
 ## Style/Linting
 
