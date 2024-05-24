@@ -14,6 +14,7 @@ services:
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
       - HYDRA_PUBLIC_URL=http://hydra:4444
+      - HYDRA_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidiI6Mn0
     depends_on:
       postgres:
         condition: service_healthy

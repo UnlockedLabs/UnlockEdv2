@@ -48,7 +48,8 @@ export interface OidcClient {
   client_id: string;
   client_secret: string;
   scopes: string;
-  redirect_uris: string;
+  auth_url: string;
+  token_url: string;
 }
 
 export interface Activity {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"fmt"
 	"log"
 	"os"
@@ -46,12 +45,6 @@ func MigrateFresh(db *gorm.DB) {
 	log.Println("Stored procedure created successfully.")
 	database.Migrate(db)
 	database.SeedDefaultData(db)
-	for _, job := range models.AllStoredJobs {
-		if err := db.Create(&job).Error; err != nil {
-			log.Fatalf("Failed to seed job: %v", err)
-		}
-		log.Println("Seeded job: ", job)
-	}
 	log.Println("Database successfully migrated from fresh state.")
 }
 

@@ -4,17 +4,13 @@ export default function ConsentForm() {
   const accept = async () => {
     try {
       const consent = window.location.search.split("?consent_challenge=")[1];
-      const url = import.meta.env.VITE_HYDRA_URL;
-      console.log(url);
-      const response = await axios(
-        `${url}/admin/oauth2/auth/requests/consent/accept?consent_challenge=${consent}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const response = await axios(`/api/consent/accept`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        data: { consent_challenge: consent },
+      });
       const redirect = response.data.redirect_to;
       window.location.assign(redirect);
     } catch (error: any) {

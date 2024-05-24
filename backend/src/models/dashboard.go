@@ -20,3 +20,13 @@ func (link *LeftMenuLink) BeforeCreate(tx *gorm.DB) error {
 func (LeftMenuLink) TableName() string {
 	return "left_menu_links"
 }
+
+type UserFavorite struct {
+	DatabaseFields
+	UserID    uint `json:"user_id"`
+	ProgramID uint `json:"program_id"`
+}
+
+func (UserFavorite) TableName() string {
+	return "favorites"
+}

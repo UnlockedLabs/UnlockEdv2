@@ -28,8 +28,11 @@ export default function NewOidcClientNotification({
         <p className="font-semibold">Client Secret:</p>
         <div className="text-info">{client.client_secret}</div>
         <br />
-        <p className="font-semibold">Redirect URL:</p>
-        <div className="text-info">{client.redirect_uris}</div>
+        <p className="font-semibold">Authorization Endpoint:</p>
+        <div className="text-info">{client.auth_url}</div>
+        <br />
+        <p className="font-semibold">Token Endpoint:</p>
+        <div className="text-info">{client.token_url}</div>
         <br />
         <p className="font-semibold">Scopes:</p>
         <div className="text-info">{client.scopes}</div>

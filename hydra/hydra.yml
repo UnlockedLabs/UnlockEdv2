@@ -44,9 +44,9 @@ log:
 urls:
   self:
     issuer: http://localhost:4444
-  consent: http://localhost:8080/consent
-  login: http://localhost:8080/login
-  logout: http://localhost:8080/logout
+  consent: http://localhost/consent
+  login: http://localhost/login
+  logout: http://localhost/logout
 
 dev: true
 secrets:

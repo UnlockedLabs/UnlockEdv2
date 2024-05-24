@@ -7,7 +7,6 @@ import (
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -34,6 +33,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOutcomesRoutes()
 	srv.registerActivityRoutes()
 	srv.registerOidcRoutes()
+	srv.registerDashboardRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -48,21 +48,8 @@ func NewServer(isTesting bool) *Server {
 		mux := http.NewServeMux()
 		server := Server{Db: db, Mux: mux}
 		server.RegisterRoutes()
-		// if prod {
-		// 	server.Mux.HandleFunc("GET /", server.ServeFrontend)
-		// }
 		return &server
 	}
-}
-
-func (srv *Server) ServeFrontend(w http.ResponseWriter, r *http.Request) {
-	var p string
-	if strings.Contains(r.URL.Path, ".") {
-		p = FrontendPath + r.URL.Path
-	} else {
-		p = IndexPage
-	}
-	http.ServeFile(w, r.WithContext(r.Context()), p)
 }
 
 const (
@@ -106,6 +93,11 @@ func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (srv *Server) GetUserID(r *http.Request) uint {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	return claims.UserID
 }
 
 func (srv *Server) TestAsUser(h http.Handler) http.Handler {

@@ -3,5 +3,6 @@ go 1.22.3
 use (
 	./backend
 	./backend/migrations
+	./backend/seeder
 	./provider-middleware
 )

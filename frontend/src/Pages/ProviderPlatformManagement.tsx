@@ -109,6 +109,7 @@ export default function ProviderPlatformManagement() {
         message: "Failed to register OIDC client.",
       });
     } else {
+      console.log(response.data[0]);
       setOidcClient(response.data[0] as OidcClient);
       openOidcRegistrationModal.current?.showModal();
     }

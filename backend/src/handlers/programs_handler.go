@@ -15,8 +15,18 @@ func (srv *Server) registerProgramsRoutes() {
 	srv.Mux.Handle("POST /api/programs", srv.applyMiddleware(http.HandlerFunc(srv.HandleCreateProgram)))
 	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleDeleteProgram)))
 	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleUpdateProgram)))
+	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.HandleFavoriteProgram)))
 }
 
+/*
+* @Query Params:
+* ?page=: page
+* ?perPage=: perPage
+* ?sort=: sort
+* ?filter=: filter
+* ?search=: search
+* ?searchFields=: searchFields
+ */
 func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, programs, err := srv.Db.GetProgram(page, perPage)
@@ -127,4 +137,37 @@ func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Info("Program deleted")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		log.Error("Favorite Program handler Error: " + err.Error())
+		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	user_id := srv.GetUserID(r)
+	if rows := srv.Db.Conn.Delete(&models.UserFavorite{}, "program_id = ? AND user_id = ?", id, user_id).RowsAffected; rows < 1 {
+		log.Info("favoriting program")
+		favorite := models.UserFavorite{
+			ProgramID: uint(id),
+			UserID:    user_id,
+		}
+		if err := srv.Db.Conn.Create(&favorite).Error; err != nil {
+			log.Error("Error creating favorite:" + err.Error())
+			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err := srv.WriteResponse(w, http.StatusCreated, "program favorited"); err != nil {
+			log.Errorf("Error writing response: %s", err.Error())
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	} else {
+		if err := srv.WriteResponse(w, http.StatusNoContent, "program unfavorited"); err != nil {
+			log.Errorf("Error writing response: %s", err.Error())
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
 }

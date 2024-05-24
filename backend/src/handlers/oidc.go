@@ -76,6 +76,7 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		ClientSecret:  client.ClientSecret,
 		AuthEndpoint:  os.Getenv("HYDRA_PUBLIC_URL") + "/oauth2/auth",
 		TokenEndpoint: os.Getenv("HYDRA_PUBLIC_URL") + "/oauth2/token",
+		Scopes:        client.Scopes,
 	}
 	response.Data = append(response.Data, resp)
 	if request.AutoRegister {

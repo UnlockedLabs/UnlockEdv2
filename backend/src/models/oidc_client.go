@@ -42,7 +42,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	redirectURI := prov.GetDefaultRedirectURI()
 	client := http.Client{}
 	headers := map[string]string{}
-	headers["Authorization"] = "Bearer " + os.Getenv("HYDRA_ADMIN_TOKEN")
+	headers["Authorization"] = "Bearer " + os.Getenv("HYDRA_TOKEN")
 	headers["Origin"] = os.Getenv("APP_URL")
 	body := map[string]interface{}{}
 	body["client_name"] = prov.Name

@@ -15,14 +15,18 @@ func (srv *Server) registerActivityRoutes() {
 	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
 }
 
+/****
+ * @Query Params:
+ * ?program=: id
+ * ?year=: year (default last year)
+ ****/
 func (srv *Server) GetActivityByUserID(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
-	page, perPage := srv.GetPaginationInfo(r)
-	count, activities, err := srv.Db.GetActivityByUserID(page, perPage, userID)
+	count, activities, err := srv.Db.GetActivityByUserID(1, 365, userID)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
