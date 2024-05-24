@@ -31,7 +31,7 @@ type User struct {
 	Password      string   `gorm:"size:255;not null" json:"-"`
 	PasswordReset bool     `gorm:"default:true" json:"password_reset"`
 	NameLast      string   `gorm:"size:255;not null" json:"name_last"`
-	Role          UserRole `gorm:"size:255;default student" json:"role"`
+	Role          UserRole `gorm:"size:255;default:student" json:"role"`
 
 	/* foreign key */
 	Mappings    []ProviderUserMapping `json:"-"`

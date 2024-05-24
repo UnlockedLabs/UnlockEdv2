@@ -16,4 +16,5 @@ const (
 	Certificate       OutcomeType = "certificate"
 	ProgramCompletion OutcomeType = "grade"
 	PathwayCompletion OutcomeType = "pathway_completion"
+	CollegeCredit     OutcomeType = "college_credit"
 )

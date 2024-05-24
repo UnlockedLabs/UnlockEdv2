@@ -78,8 +78,9 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 			Description:             item.Description,
 			ExternalID:              item.ExternalID,
 			ThumbnailURL:            item.ThumbnailURL,
-			IsPublic:                item.IsPublic,
 			ExternalURL:             item.ExternalURL,
+			Type:                    models.ProgramType(item.Type),
+			OutcomeTypes:            models.OutcomeTypes(item.OutcomeTypes),
 			TotalProgressMilestones: uint(item.TotalProgressMilestones),
 		}
 		_, err := srv.Db.CreateProgram(&prog)

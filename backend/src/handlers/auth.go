@@ -41,6 +41,7 @@ func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/login", http.HandlerFunc(srv.handleLogin))
 	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(http.HandlerFunc(srv.handleLogout)))
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(http.HandlerFunc(srv.handleResetPassword)))
+	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(http.HandlerFunc(srv.handleConsent)))
 	/* only use auth middleware, user activity bloats the database + results */
 	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
 }
@@ -77,7 +78,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func isAuthRoute(r *http.Request) bool {
-	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth"}
+	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth", "/api/consent/accept"}
 	return slices.Contains(paths, r.URL.Path)
 }
 
@@ -149,6 +150,69 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
+}
+
+func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
+	log.Info("Consent handler")
+	reqBody := map[string]interface{}{}
+	err := json.NewDecoder(r.Body).Decode(&reqBody)
+	if err != nil {
+		log.Error("Error decoding request body")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	consentChallenge, ok := reqBody["consent_challenge"].(string)
+	if !ok {
+		log.Error("Error getting consent challenge")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Consent challege not found")
+		return
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	client := &http.Client{}
+	body := map[string]interface{}{}
+	body["grant_scope"] = []string{"openid", "offline", "profile", "email"}
+	body["grant_access_token_audience"] = []string{"admin"}
+	body["session"] = map[string]interface{}{
+		"id_token": map[string]interface{}{
+			"email": map[string]interface{}{
+				"email": claims.Subject,
+			},
+		},
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		log.Error("Error marshalling body")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/consent/accept?consent_challenge="+consentChallenge, bytes.NewReader(jsonBody))
+	if err != nil {
+		log.Error("Error creating request")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("HYDRA_TOKEN"))
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error("Error sending request to hydra")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Error("Error accepting consent request")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	var consentResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&consentResponse)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Error("Error decoding response")
+		return
+	}
+	redirectURI := consentResponse["redirect_to"].(string)
+	http.Redirect(w, r.WithContext(r.Context()), redirectURI, http.StatusSeeOther)
 }
 
 func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims Claims, challenge string) {

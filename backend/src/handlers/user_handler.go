@@ -13,7 +13,6 @@ import (
 func (srv *Server) registerUserRoutes() {
 	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleIndexUsers)))
 	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowUser)))
-	srv.Mux.Handle("GET /api/users/{id}/dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserDashboard)))
 	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateUser)))
 	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteUser)))
 	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateUser)))
@@ -199,28 +198,6 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	response["message"] = "Temporary password assigned"
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		log.Error("Error writing response: ", err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-}
-
-func (srv *Server) HandleUserDashboard(w http.ResponseWriter, r *http.Request) {
-	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		log.Errorf("Error parsing user ID: %v", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	userDashboard, err := srv.Db.GetUserDashboardInfo(userId)
-	if err != nil {
-		log.Errorf("Error getting user dashboard info: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	response := models.Resource[models.UserDashboardJoin]{Message: "successfully retrieved users dashboard info"}
-	response.Data = append(response.Data, userDashboard)
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Errorf("user dashboard endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

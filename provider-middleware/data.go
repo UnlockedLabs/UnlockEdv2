@@ -117,12 +117,14 @@ func (kc *KolibriContent) IntoCourse(provUrl string) *UnlockEdImportProgram {
 		url = ""
 	}
 	return &UnlockEdImportProgram{
-		ExternalID:   kc.ID,
-		Name:         kc.Name,
-		Description:  kc.Description,
-		ThumbnailURL: url,
-		IsPublic:     kc.Public,
-		ExternalURL:  provUrl + "/channels/" + kc.Root,
+		ExternalID:              kc.ID,
+		Name:                    kc.Name,
+		Description:             kc.Description,
+		ThumbnailURL:            url,
+		Type:                    "open_content",
+		OutcomeTypes:            []string{"completion"},
+		TotalProgressMilestones: kc.TotalResourceCount,
+		ExternalURL:             provUrl + "/channels/" + kc.Root,
 	}
 }
 
@@ -189,15 +191,16 @@ type Role struct {
 }
 
 type UnlockEdImportProgram struct {
-	ProviderPlatformID      int    `json:"provider_platform_id"`
-	Name                    string `json:"name"`
-	AltName                 string `json:"alt_name"`
-	Description             string `json:"description"`
-	ExternalID              string `json:"external_id"`
-	ThumbnailURL            string `json:"thumbnail_url"`
-	IsPublic                bool   `json:"is_public"`
-	ExternalURL             string `json:"external_url"`
-	TotalProgressMilestones int    `json:"total_progress_milestones"`
+	ProviderPlatformID      int      `json:"provider_platform_id"`
+	Name                    string   `json:"name"`
+	AltName                 string   `json:"alt_name"`
+	Description             string   `json:"description"`
+	ExternalID              string   `json:"external_id"`
+	ThumbnailURL            string   `json:"thumbnail_url"`
+	Type                    string   `json:"type"`
+	ExternalURL             string   `json:"external_url"`
+	OutcomeTypes            []string `json:"outcome_types"`
+	TotalProgressMilestones int      `json:"total_progress_milestones"`
 }
 
 type UnlockEdImportMilestone struct {

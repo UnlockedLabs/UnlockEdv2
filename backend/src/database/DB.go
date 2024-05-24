@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strconv"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -30,8 +32,7 @@ var TableList = []interface{}{
 	&models.Outcome{},
 	&models.Activity{},
 	&models.OidcClient{},
-	&models.StoredJob{},
-	&models.ScheduledJob{},
+	&models.UserFavorite{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -57,37 +58,39 @@ func InitDB(isTesting bool) *DB {
 	}
 	database = &DB{Conn: db}
 	Migrate(db)
+	SeedDefaultData(db)
 	if isTesting {
-		SeedDefaultData(db)
 		database.SeedTestData()
 	}
 	return database
 }
 
 func SeedDefaultData(db *gorm.DB) {
-	user := models.User{
-		Username:      "SuperAdmin",
-		NameFirst:     "Super",
-		NameLast:      "Admin",
-		Email:         "admin@unlocked.v2",
-		PasswordReset: true,
-		Role:          "admin",
-		Password:      "ChangeMe!",
-	}
-	log.Printf("Creating user: %v", user)
-	err := user.HashPassword()
-	if err != nil {
-		log.Fatalf("Failed to hash password: %v", err)
-	}
-	if err := db.Create(&user).Error; err != nil {
-		log.Fatalf("Failed to create user: %v", err)
-	}
-	links := []models.LeftMenuLink{}
-	if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
-		log.Fatalf("Failed to unmarshal default left menu links: %v", err)
-	}
-	if err := db.Create(&links).Error; err != nil {
-		log.Fatalf("Failed to create left menu links: %v", err)
+	if db.Exec("SELECT id FROM users WHERE username = 'SuperAdmin'").RowsAffected == 0 {
+		user := models.User{
+			Username:      "SuperAdmin",
+			NameFirst:     "Super",
+			NameLast:      "Admin",
+			Email:         "admin@unlocked.v2",
+			PasswordReset: true,
+			Role:          "admin",
+			Password:      "ChangeMe!",
+		}
+		log.Printf("Creating user: %v", user)
+		err := user.HashPassword()
+		if err != nil {
+			log.Fatalf("Failed to hash password: %v", err)
+		}
+		if err := db.Create(&user).Error; err != nil {
+			log.Fatalf("Failed to create user: %v", err)
+		}
+		links := []models.LeftMenuLink{}
+		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
+			log.Fatalf("Failed to unmarshal default left menu links: %v", err)
+		}
+		if err := db.Create(&links).Error; err != nil {
+			log.Fatalf("Failed to create left menu links: %v", err)
+		}
 	}
 }
 
@@ -141,6 +144,67 @@ func (db *DB) SeedTestData() {
 			}
 			if err = db.CreateProviderUserMapping(&mapping); err != nil {
 				return
+			}
+		}
+	}
+	var programs []models.Program
+	progs, err := os.ReadFile("test_data/programs.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	if err := json.Unmarshal(progs, &programs); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for _, p := range programs {
+		if err := db.Conn.Create(&p).Error; err != nil {
+			log.Fatalf("Failed to create program: %v", err)
+		}
+	}
+	var milestones []models.Milestone
+	mstones, err := os.ReadFile("test_data/milestones.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	if err := json.Unmarshal(mstones, &milestones); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for _, m := range milestones {
+		if err := db.Conn.Create(&m).Error; err != nil {
+			log.Fatalf("Failed to create milestone: %v", err)
+		}
+	}
+	outcomes := []string{"completion", "grade", "certificate", "pathway_completion"}
+	for _, user := range user {
+		for _, prog := range programs {
+			for i := 0; i < 365; i++ {
+				if rand.Intn(100)%2 == 0 {
+					continue
+				}
+				startTime := 0
+				randTime := rand.Intn(1000)
+				// we want activity for the last year
+				yearAgo := time.Now().AddDate(-1, 0, 0)
+				time := yearAgo.AddDate(0, 0, i)
+				activity := models.Activity{
+					UserID:     user.ID,
+					ProgramID:  prog.ID,
+					Type:       "interaction",
+					TotalTime:  uint(startTime + randTime),
+					TimeDelta:  uint(randTime),
+					ExternalID: strconv.Itoa(rand.Intn(1000)),
+					CreatedAt:  time,
+				}
+				startTime += randTime
+				if err := db.Conn.Create(&activity).Error; err != nil {
+					log.Fatalf("Failed to create activity: %v", err)
+				}
+			}
+			outcome := models.Outcome{
+				ProgramID: prog.ID,
+				Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+			}
+			if err := db.Conn.Create(&outcome).Error; err != nil {
+				log.Fatalf("Failed to create outcome: %v", err)
 			}
 		}
 	}
