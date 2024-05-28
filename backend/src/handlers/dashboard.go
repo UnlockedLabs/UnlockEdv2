@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
-	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
 
@@ -27,9 +25,7 @@ func (srv *Server) HandleUserDashboard(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response := models.Resource[models.UserDashboardJoin]{Message: "successfully retrieved users dashboard info"}
-	response.Data = append(response.Data, userDashboard)
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+	if err := srv.WriteResponse(w, http.StatusOK, userDashboard); err != nil {
 		log.Errorf("user dashboard endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -57,8 +53,7 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response := models.Resource[database.UserCatalogueJoin]{Message: "successfully retrieved users catalogue info", Data: userCatalogue}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+	if err := srv.WriteResponse(w, http.StatusOK, userCatalogue); err != nil {
 		log.Errorf("user catalogue endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
