@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
@@ -33,7 +34,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 		CurrentPage: page,
 		Total:       total,
 	}
-	response := models.PaginatedResource[models.Milestone]{
+	response := models.PaginatedResource[database.MilestoneResponse]{
 		Meta: paginationData,
 		Data: milestones,
 	}

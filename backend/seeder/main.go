@@ -45,15 +45,15 @@ func seedTestData(db *gorm.DB) {
 			log.Printf("Failed to create platform: %v", err)
 		}
 	}
-	users, err := os.ReadFile("backend/tests/test_data/users.json")
+	userFile, err := os.ReadFile("backend/tests/test_data/users.json")
 	if err != nil {
 		log.Printf("Failed to read test data: %v", err)
 	}
-	var user []models.User
-	if err := json.Unmarshal(users, &user); err != nil {
+	var users []models.User
+	if err := json.Unmarshal(userFile, &users); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	for idx, u := range user {
+	for idx, u := range users {
 		log.Printf("Creating user %s", u.Username)
 		if err := db.Create(&u).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)
@@ -67,7 +67,6 @@ func seedTestData(db *gorm.DB) {
 			}
 			if err = db.Create(&mapping).Error; err != nil {
 				log.Printf("Failed to create provider user mapping: %v", err)
-				return
 			}
 		}
 	}
@@ -92,20 +91,15 @@ func seedTestData(db *gorm.DB) {
 	if err := json.Unmarshal(mstones, &milestones); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	for _, m := range milestones {
-		if err := db.Create(&m).Error; err != nil {
-			log.Printf("Failed to create milestone: %v", err)
-		}
-	}
 	outcomes := []string{"completion", "grade", "certificate", "pathway_completion"}
-	for _, user := range user {
+	for _, user := range users {
 		for _, prog := range programs {
+			startTime := 0
 			for i := 0; i < 365; i++ {
-				if rand.Intn(100)%2 == 0 {
+				if i%5 == 0 {
 					continue
 				}
-				startTime := 0
-				randTime := rand.Intn(1000)
+				randTime := rand.Intn(10)
 				// we want activity for the last year
 				yearAgo := time.Now().AddDate(-1, 0, 0)
 				time := yearAgo.AddDate(0, 0, i)
@@ -118,6 +112,7 @@ func seedTestData(db *gorm.DB) {
 					ExternalID: strconv.Itoa(rand.Intn(1000)),
 					CreatedAt:  time,
 				}
+				log.Printf("Creating activity for user %s on %v", user.Username, time)
 				startTime += randTime
 				if err := db.Create(&activity).Error; err != nil {
 					log.Printf("Failed to create activity: %v", err)
@@ -131,6 +126,19 @@ func seedTestData(db *gorm.DB) {
 			if err := db.Create(&outcome).Error; err != nil {
 				log.Printf("Failed to create outcome: %v", err)
 			}
+		}
+		for _, m := range milestones {
+			newMilestone := models.Milestone{
+				ProgramID:   m.ProgramID,
+				IsCompleted: m.IsCompleted,
+				Type:        m.Type,
+				UserID:      user.ID,
+				ExternalID:  strconv.Itoa(rand.Intn(1000)) + m.ExternalID,
+			}
+			if err := db.Create(&newMilestone).Error; err != nil {
+				log.Printf("Failed to create milestone: %v", err)
+			}
+			log.Printf("Creating milestone for user %s", user.Username)
 		}
 	}
 }

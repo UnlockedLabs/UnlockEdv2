@@ -12,10 +12,17 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) GetProgram(page, perPage int) (int64, []models.Program, error) {
+func (db *DB) GetProgram(page, perPage int, search string) (int64, []models.Program, error) {
 	content := []models.Program{}
 	total := int64(0)
-	_ = db.Conn.Model(&models.Program{}).Count(&total)
+	if search != "" {
+		// search by program name, alt name or provider platform name (provider_platforms.id = programs.provider_platform_id)
+		search = "%" + search + "%"
+		_ = db.Conn.Model(&models.Program{}).Where("programs.name ILIKE ?", search).Or("programs.alt_name ILIKE ?", search).
+			Or("provider_platforms.name ILIKE ?", search).Joins("LEFT JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").Count(&total)
+	} else {
+		_ = db.Conn.Model(&models.Program{}).Count(&total)
+	}
 	if err := db.Conn.Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
 		return 0, nil, err
 	}
