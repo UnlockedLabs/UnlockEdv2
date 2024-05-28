@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -38,22 +37,21 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 	//
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
+	// where the user has an entry in the activity table
 	err := db.Conn.Table("programs p").
 		Select(`p.name as program_name,
         p.alt_name,
         p.thumbnail_url,
         pp.name as provider_platform_name,
         COUNT(sub_milestones.id) * 100.0 / p.total_progress_milestones as course_progress`).
-		Joins(fmt.Sprintf(`
-        JOIN (
-            SELECT id, program_id FROM (
-                SELECT id, program_id, ROW_NUMBER() OVER (PARTITION BY program_id ORDER BY created_at DESC) as rn
-                FROM milestones
-                WHERE user_id = %d AND type IN ('assignment_submission', 'quiz_submission') AND is_completed = true
-            ) tmp WHERE rn <= 3
-        ) sub_milestones ON sub_milestones.program_id = p.id`, userID)).
-		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Group("p.id, program_name, p.alt_name, p.thumbnail_url, provider_platform_name").
+		Joins(`LEFT JOIN (
+    SELECT id, program_id FROM milestones
+    WHERE user_id = ? AND type IN ('assignment_submission', 'quiz_submission') AND is_completed = true
+    ORDER BY created_at DESC
+    LIMIT 3 ) sub_milestones ON sub_milestones.program_id = p.id`, userID).
+		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+		Where("p.id IN (SELECT program_id FROM activities WHERE user_id = ?)", userID).
+		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name").
 		Find(&recentPrograms).Error
 	if err != nil {
 		log.Errorf("Error getting recent programs: %v", err)
