@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/lib/pq"
+	"github.com/jackc/pgx"
 )
 
 func (db *DB) GetLeftMenuLinks() ([]models.LeftMenuLink, error) {
@@ -53,7 +53,7 @@ func (db *DB) GetUserCatalogue(userId int, tags []string) ([]UserCatalogueJoin, 
 
 	if len(tags) > 0 {
 		queryBuilder.WriteString(` WHERE (p.program_type IN ? OR ? = ANY (p.outcome_types))`)
-		tagArgs := pq.Array(tags)
+		tagArgs := pgx.QueryArgs{tags}
 		err := db.Conn.Raw(queryBuilder.String(), tagArgs).Scan(&catalogue).Error
 		if err != nil {
 			return nil, err

@@ -38,7 +38,7 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 	//
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
-	err := db.Conn.Table("programs as p").
+	err := db.Conn.Table("programs p").
 		Select(`p.name as program_name,
         p.alt_name,
         p.thumbnail_url,
@@ -72,7 +72,7 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 		TimeDelta            uint
 	}
 
-	err = db.Conn.Table("programs as p").
+	err = db.Conn.Table("programs p").
 		Select(`p.id as program_id,
 				p.alt_name,
 				p.name,
@@ -121,9 +121,9 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 			ProviderPlatformName string
 			ExternalURL          string
 		}
-		err = db.Conn.Table("programs as p").Select(`p.id as program_id, p.alt_name, p.name, pp.name as provider_platform_name, p.external_url`).
+		err = db.Conn.Table("programs p").Select(`p.id as program_id, p.alt_name, p.name, pp.name as provider_platform_name, p.external_url`).
 			Joins(`JOIN provider_platforms pp ON p.provider_platform_id = pp.id`).
-			Joins(`LEFT JOIN milestones on milestones.program_id = programs.id`).Where(`milestones.user_id`, userID).Find(&newEnrollments).Error
+			Joins(`LEFT JOIN milestones m on m.program_id = p.id`).Where(`m.user_id`, userID).Find(&newEnrollments).Error
 		if err != nil {
 			log.Fatalf("Query failed: %v", err)
 		}
