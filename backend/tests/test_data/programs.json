@@ -9,10 +9,7 @@
     "external_id": "98",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/98",
     "alt_name": "",
     "total_progress_milestones": 12
@@ -27,10 +24,7 @@
     "external_id": "101",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/101",
     "alt_name": "",
     "total_progress_milestones": 10
@@ -45,10 +39,7 @@
     "external_id": "103",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/103",
     "alt_name": "",
     "total_progress_milestones": 10
@@ -63,10 +54,7 @@
     "external_id": "258",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/258",
     "alt_name": "",
     "total_progress_milestones": 10
@@ -81,10 +69,7 @@
     "external_id": "176",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/176",
     "alt_name": "",
     "total_progress_milestones": 12
@@ -99,10 +84,7 @@
     "external_id": "754",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/754",
     "alt_name": "",
     "total_progress_milestones": 8
@@ -117,10 +99,7 @@
     "external_id": "886",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/886",
     "alt_name": "",
     "total_progress_milestones": 8
@@ -135,10 +114,7 @@
     "external_id": "894",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/894",
     "alt_name": "",
     "total_progress_milestones": 14
@@ -153,10 +129,7 @@
     "external_id": "489",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/489",
     "alt_name": "",
     "total_progress_milestones": 11
@@ -171,10 +144,7 @@
     "external_id": "602",
     "thumbnail_url": "",
     "type": "open_enrollment",
-    "outcome_types": [
-      "grade",
-      "college_credit"
-    ],
+    "outcome_types": "grade,college_credit",
     "external_url": "https://staging.canvas.unlockedlabs.xyz/courses/602",
     "alt_name": "",
     "total_progress_milestones": 10

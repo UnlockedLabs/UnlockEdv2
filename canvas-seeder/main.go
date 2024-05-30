@@ -16,16 +16,20 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const post = "POST"
-const put = "PUT"
+const (
+	post = "POST"
+	put  = "PUT"
+)
 
-const defaultAssignments = 10
-const defaultCourses = 3
-const defaultUsers = 10
+const (
+	defaultAssignments = 10
+	defaultCourses     = 3
+	defaultUsers       = 10
+)
 
 func createCourse(apiToken string,
-	canvasURL string) ([]map[string]interface{}, error) {
-
+	canvasURL string,
+) ([]map[string]interface{}, error) {
 	coursesUrl := fmt.Sprintf("%s/api/v1/accounts/self/courses", canvasURL)
 	payload := url.Values{}
 	payload.Set("course[name]", gofakeit.Sentence(5))
@@ -54,7 +58,8 @@ func createCourseAssignments(apiToken string,
 	canvasURL string,
 	users []map[string]interface{},
 	courseId string,
-	targetAssignments int) error {
+	targetAssignments int,
+) error {
 	assignmentsUrl := fmt.Sprintf("%s/api/v1/courses/%v/assignments", canvasURL, courseId)
 
 	submission_limit := make(map[int]int)
@@ -113,8 +118,8 @@ func createCourseAssignmentSubmission(apiToken string,
 	canvasURL string,
 	courseId string,
 	assignmentId string,
-	userId string) error {
-
+	userId string,
+) error {
 	submissionsUrl := fmt.Sprintf("%s/api/v1/courses/%v/assignments/%v/submissions", canvasURL, courseId, assignmentId)
 	payload := url.Values{}
 	payload.Set("submission[submission_type]", "online_text_entry")
@@ -141,8 +146,8 @@ func createCourseAssignmentSubmissionGrade(apiToken string,
 	canvasURL string,
 	courseId string,
 	assignmentId string,
-	userId string) error {
-
+	userId string,
+) error {
 	submissionsUrl := fmt.Sprintf("%s/api/v1/courses/%v/assignments/%v/submissions/%v", canvasURL, courseId, assignmentId, userId)
 	grade := gofakeit.Number(60, 100)
 	body := fmt.Sprintf("{\"submission\": {\"posted_grade\":\"%v\"}}", grade)
@@ -161,7 +166,8 @@ func createCourseAssignmentSubmissionGrade(apiToken string,
 }
 
 func createUser(apiToken string,
-	canvasURL string) ([]map[string]interface{}, error) {
+	canvasURL string,
+) ([]map[string]interface{}, error) {
 	usersUrl := fmt.Sprintf("%s/api/v1/accounts/self/users", canvasURL)
 
 	payload := url.Values{}
@@ -189,8 +195,8 @@ func createUser(apiToken string,
 func enrollAllUsers(apiToken string,
 	canvasURL string,
 	users []map[string]interface{},
-	courseId interface{}) error {
-
+	courseId interface{},
+) error {
 	enrollmentsUrl := fmt.Sprintf("%s/api/v1/courses/%v/enrollments", canvasURL, courseId)
 
 	for i, user := range users {
@@ -263,7 +269,8 @@ func requestUrlTokenPayload(method string,
 	url string,
 	apiToken string,
 	body string,
-	headers map[string]string) (*http.Response, error) {
+	headers map[string]string,
+) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %s", err)
@@ -283,7 +290,8 @@ func requestUrlTokenPayload(method string,
 }
 
 func retrieveCourses(apiToken string,
-	canvasURL string) ([]map[string]interface{}, error) {
+	canvasURL string,
+) ([]map[string]interface{}, error) {
 	endPoint := "/api/v1/accounts/self/courses"
 	url := canvasURL + endPoint
 
@@ -309,7 +317,8 @@ func retrieveCourses(apiToken string,
 }
 
 func retrieveUsers(apiToken string,
-	canvasURL string) ([]map[string]interface{}, error) {
+	canvasURL string,
+) ([]map[string]interface{}, error) {
 	endPoint := "/api/v1/accounts/self/users"
 	url := canvasURL + endPoint
 
@@ -351,6 +360,10 @@ func main() {
 	targetUsers := defaultUsers
 
 	if apiToken == "" || canvasURL == "" {
+		log.Printf("API_TOKEN: %s\n", apiToken)
+		log.Printf("CANVAS_URL: %s\n", canvasURL)
+		log.Printf("TARGET_ASSIGNMENTS: %s\n", targetAssignmentsStr)
+		log.Printf("TARGET_COURSES: %s\n", targetCoursesStr)
 		log.Fatal("API_TOKEN or CANVAS_URL not set in environment variables")
 	}
 
@@ -386,6 +399,7 @@ func main() {
 		if err != nil {
 			log.Fatal("error creating user:", err)
 		}
+		log.Printf("Created user %v\n", i)
 	}
 
 	users, err = retrieveUsers(apiToken, canvasURL)

@@ -23,7 +23,6 @@ func (srv *Server) registerProgramsRoutes() {
 * ?page=: page
 * ?perPage=: perPage
 * ?sort=: sort
-* ?filter=: filter
 * ?search=: search
 * ?searchFields=: searchFields
  */
