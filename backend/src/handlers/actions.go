@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -72,6 +73,7 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	for _, item := range content {
+		outcomeTypes := strings.Join(item.OutcomeTypes, ",")
 		prog := models.Program{
 			ProviderPlatformID:      uint(service.ProviderPlatformID),
 			Name:                    item.Name,
@@ -80,7 +82,7 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 			ThumbnailURL:            item.ThumbnailURL,
 			ExternalURL:             item.ExternalURL,
 			Type:                    models.ProgramType(item.Type),
-			OutcomeTypes:            models.OutcomeTypes(item.OutcomeTypes),
+			OutcomeTypes:            outcomeTypes,
 			TotalProgressMilestones: uint(item.TotalProgressMilestones),
 		}
 		_, err := srv.Db.CreateProgram(&prog)

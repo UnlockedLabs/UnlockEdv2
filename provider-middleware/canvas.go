@@ -140,8 +140,11 @@ func (srv *CanvasService) GetPrograms() ([]UnlockEdImportProgram, error) {
 			description = course["course_code"].(string)
 		}
 		progType := "fixed_enrollment"
-		if course["is_public"].(bool) {
+		is_pub := course["is_public"].(bool)
+		if is_pub {
 			progType = "open_enrollment"
+		} else {
+			progType = "fixed_enrollment"
 		}
 		unlockedCourse := UnlockEdImportProgram{
 			ProviderPlatformID:      srv.ProviderPlatformID,

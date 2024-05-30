@@ -4,5 +4,6 @@ use (
 	./backend
 	./backend/migrations
 	./backend/seeder
+	./canvas-seeder
 	./provider-middleware
 )

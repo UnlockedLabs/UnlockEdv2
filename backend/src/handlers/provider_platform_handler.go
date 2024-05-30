@@ -64,12 +64,14 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Error("Error decoding request body: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	defer r.Body.Close()
 	newProv, err := srv.Db.CreateProviderPlatform(&platform)
 	if err != nil {
 		log.Error("Error creating provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	response := models.Resource[models.ProviderPlatform]{
 		Data:    make([]models.ProviderPlatform, 0),
@@ -87,18 +89,21 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Error("PATCH Provider handler Error:", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	var platform models.ProviderPlatform
 	err = json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
 		log.Error("Error decoding request body: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	defer r.Body.Close()
 	updated, err := srv.Db.UpdateProviderPlatform(&platform, uint(id))
 	if err != nil {
 		log.Error("Error updating provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	response := models.Resource[models.ProviderPlatform]{
 		Data: make([]models.ProviderPlatform, 0),
@@ -114,10 +119,12 @@ func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Error("DELETE Provider handler Error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	if err = srv.Db.DeleteProviderPlatform(id); err != nil {
 		log.Error("Error deleting provider platform: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

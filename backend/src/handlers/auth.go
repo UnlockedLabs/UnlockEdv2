@@ -139,7 +139,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Path:     "/",
 		})
 		if form.LoginChallenge != "" {
-			s.handleOidcLogin(w, r, claims, form.LoginChallenge)
+			s.handleOidcLogin(w, r.WithContext(r.Context()), claims, form.LoginChallenge)
 		}
 		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
@@ -151,6 +151,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+const (
+	ConsentEndpoint = "/admin/oauth2/auth/requests/consent/accept?consent_challenge="
+	LoginEndpoint   = "/admin/oauth2/auth/requests/login/accept"
+)
 
 func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 	log.Info("Consent handler")
@@ -185,7 +190,7 @@ func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/consent/accept?consent_challenge="+consentChallenge, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+ConsentEndpoint+consentChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
 		log.Error("Error creating request")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -229,7 +234,7 @@ func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims 
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+"/admin/oauth2/auth/requests/login/accept"+loginChallenge, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("PUT", os.Getenv("HYDRA_ADMIN_URL")+LoginEndpoint+loginChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
 		log.Error("Error creating request")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -255,6 +260,7 @@ func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims 
 		return
 	}
 	redirectURI := loginResponse["redirect_to"].(string)
+	log.Info("redirecting to", redirectURI)
 	http.Redirect(w, r.WithContext(r.Context()), redirectURI, http.StatusSeeOther)
 }
 
@@ -304,9 +310,12 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		confirm = form.Confirm
 	}
 	defer r.Body.Close()
-	if password != confirm || !validatePassword(password) {
-		http.Redirect(w, r, "/reset-password", http.StatusSeeOther)
-		log.Error("Password validation failed")
+	if password != confirm {
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+	if !validatePassword(password) {
+		http.Error(w, "Password must be at least 8 characters long and contain a number", http.StatusBadRequest)
 		return
 	}
 	if err := srv.Db.ResetUserPassword(claims.UserID, password); err != nil {
