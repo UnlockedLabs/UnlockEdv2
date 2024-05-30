@@ -164,10 +164,13 @@ func createUser(apiToken string,
 	canvasURL string) ([]map[string]interface{}, error) {
 	usersUrl := fmt.Sprintf("%s/api/v1/accounts/self/users", canvasURL)
 
+	email := gofakeit.Email()
+	password := gofakeit.Password(true, true, true, false, false, 12)
+
 	payload := url.Values{}
 	payload.Set("user[name]", gofakeit.Name())
-	payload.Set("pseudonym[unique_id]", gofakeit.Email())
-	payload.Set("pseudonym[password]", gofakeit.Password(true, true, true, false, false, 12))
+	payload.Set("pseudonym[unique_id]", email)
+	payload.Set("pseudonym[password]", password)
 	payload.Set("pseudonym[send_confirmation]", "false")
 	payload.Set("user[skip_registration]", "true")
 	payload.Set("communication_channel[skip_confirmation]", "true")
@@ -179,6 +182,18 @@ func createUser(apiToken string,
 	defer resp.Body.Close()
 
 	userData, err := jsonRespToMapSlice(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	// Append email and password to a text file
+	file, err := os.OpenFile("credentials.tab", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(fmt.Sprintf("%s\t%s\n", email, password))
 	if err != nil {
 		return nil, err
 	}
