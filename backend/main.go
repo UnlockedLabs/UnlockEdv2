@@ -13,6 +13,8 @@ import (
 )
 
 func main() {
+	file := os.Stdout
+	defer file.Close()
 	if err := godotenv.Load(); err != nil {
 		log.Info("no .env file found, using default env variables")
 	}
@@ -22,7 +24,7 @@ func main() {
 		port = "8080"
 	}
 	testing := (env == "testing")
-	initLogging(env)
+	initLogging(env, file)
 	newServer := server.NewServer(testing)
 	log.Info("Starting server on :", port)
 	fmt.Println("Starting server on :", port)
@@ -31,33 +33,34 @@ func main() {
 	}
 }
 
-func initLogging(env string) {
-	var file *os.File
+func initLogging(env string, file *os.File) {
 	var err error
 	prod := (env == "prod" || env == "production")
-	logLevel := os.Getenv("LOG_LEVEL")
 	if prod {
 		file, err = os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatalf("Failed to open log file: %v", err)
 		}
-		if logLevel == "" {
-			logLevel = "info"
-		}
 		log.SetFormatter(&log.JSONFormatter{})
 	} else {
-		if logLevel == "" {
-			logLevel = "debug"
-		}
-		file = os.Stdout
 		log.SetFormatter(&log.TextFormatter{ForceColors: true})
 	}
-	defer file.Close()
-	level, err := log.ParseLevel(logLevel)
-	if err != nil {
-		log.Errorf("Error parsing log level: %v", err)
-		level = log.InfoLevel
-	}
+	level := parseLogLevel()
 	log.SetLevel(level)
 	log.SetOutput(file)
+}
+
+func parseLogLevel() log.Level {
+	level := os.Getenv("LOG_LEVEL")
+	switch level {
+	case "":
+		return log.InfoLevel
+	default:
+		level, err := log.ParseLevel(level)
+		if err != nil {
+			log.Errorf("Error parsing log level: %v", err)
+			level = log.InfoLevel
+		}
+		return level
+	}
 }

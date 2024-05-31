@@ -217,17 +217,26 @@ func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	redirectURI := consentResponse["redirect_to"].(string)
-	http.Redirect(w, r.WithContext(r.Context()), redirectURI, http.StatusSeeOther)
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4444")
+	http.Redirect(w, r, redirectURI, http.StatusFound)
 }
 
 func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims Claims, challenge string) {
 	log.Info("login challenge initiated", challenge)
 	client := &http.Client{}
 	body := map[string]interface{}{}
-	body["subject"] = claims.Subject
+	sub, err := claims.GetSubject()
+	if err != nil {
+		// by this point, the user cannot be nil
+		log.Debugf("Error getting subject from claims, using username %v", err)
+		user := s.Db.GetUserByID(claims.UserID)
+		sub = user.Username
+	}
+	body["subject"] = sub
 	body["remember"] = true
 	body["remember_for"] = 3600
 	loginChallenge := "?login_challenge=" + challenge
+	log.Debug("sending login request to hydr: ", body)
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		log.Error("Error marshalling body")

@@ -23,7 +23,7 @@ services:
     command: >
       ./backend
     volumes:
-      - ./logs:/logs/
+      - logs:/logs/
     networks:
       - intranet
 
@@ -37,7 +37,7 @@ services:
     networks:
       - intranet
     volumes:
-      - ./logs:/logs
+      - logs:/logs
     depends_on:
       postgres:
         condition: service_healthy

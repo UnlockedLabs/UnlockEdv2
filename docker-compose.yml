@@ -9,7 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./logs:/var/log/postgresql
+      - logs:/var/log/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
@@ -17,6 +17,18 @@ services:
       retries: 5
     networks:
       - intranet
+
+  keto:
+    image: oryd/keto:v0.12.0-alpha.0
+    ports:
+      - "4466:4466"
+      - "4467:4467"
+    command: serve -c /home/ory/keto.yml
+    restart: on-failure
+    volumes:
+      - type: bind
+        source: config/keto.yml
+        target: /home/ory/keto.yml
 
   hydra:
     image: oryd/hydra:v2.2.0
@@ -34,6 +46,10 @@ services:
         source: ./hydra
         target: /etc/config/hydra
     environment:
+      - SERVE_PUBLIC_CORS_ENABLED=true
+      - SERVE_PUBLIC_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
+      - SERVE_ADMIN_CORS_ENABLED=true
+      - SERVE_ADMIN_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
       - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
     restart: unless-stopped
     env_file: ./backend/.env
@@ -62,4 +78,11 @@ networks:
 
 volumes:
   postgres_data:
+  logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs
+
   hydra-sqlite:

@@ -39,14 +39,14 @@ type RegisterClientRequest struct {
 func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
 	request := RegisterClientRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		log.Error(r, err)
+		log.Error("error decoding body: register oidc client", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(request.ProviderPlatformID))
 	if err != nil {
+		log.Error("no provider platform found with that ID", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error(r, err)
 		return
 	}
 	if provider.OidcID != 0 || provider.ExternalAuthProviderId != "" {
