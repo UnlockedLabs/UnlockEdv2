@@ -35,7 +35,7 @@ if (result.error) {
 }
 
 async function postDiscussion(username, password, courseId, index) {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
   console.log('postDiscussion Course Id:', courseId); 
   try {
@@ -54,7 +54,6 @@ async function postDiscussion(username, password, courseId, index) {
     // Wait for the first button to become visible and click
     await page.waitForSelector('.Button');
     await page.click('.Button');
-    console.log('Hit the button')
     // Wait for navigation to complete
     await page.waitForNavigation();
 
@@ -77,9 +76,7 @@ async function postDiscussion(username, password, courseId, index) {
     // Click the "Save" button
     await page.waitForSelector('button.btn.btn-primary.submit_button');
     await page.click('button.btn.btn-primary.submit_button');
-
-    // Add a 5-second delay
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('Hit Save button')
 
   } catch (error) {
     console.error(`Failed to post discussion for user ${username}:`, error);
@@ -94,7 +91,6 @@ function randomChoice(array) {
   return array[randomIndex];
 }
 
-let randomCourseId;
 let courseIds = [];
 
 retrieveCourses(process.env.API_TOKEN, process.env.CANVAS_URL)
