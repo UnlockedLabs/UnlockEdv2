@@ -28,7 +28,7 @@ export default function EnrolledCourseCard({
   // }
   return (
     <div
-      className={`card card-compact ${status == CourseStatus.Recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
+      className={`card card-compact ${status == CourseStatus.Recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative min-w-[228px]`}
     >
       <div className="absolute top-2 right-2">
         {status !== CourseStatus.Recent &&
