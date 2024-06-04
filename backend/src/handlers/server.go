@@ -34,6 +34,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerActivityRoutes()
 	srv.registerOidcRoutes()
 	srv.registerDashboardRoutes()
+	srv.registerOidcFlowRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {

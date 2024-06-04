@@ -37,6 +37,7 @@ type MilestoneResponse struct {
 	ExternalID           string `json:"external_id"`
 	ID                   int    `json:"id"`
 	ProgramID            int    `json:"program_id"`
+	IsFavorited          bool   `json:"is_favorited"`
 }
 
 func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, []MilestoneResponse, error) {
@@ -44,11 +45,11 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 		content []MilestoneResponse
 		total   int64
 	)
-
-	query := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
+	query := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username, f.user_id IS NOT NULL as is_favorited").
 		Joins("JOIN programs ON milestones.program_id = programs.id").
 		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
-		Joins("JOIN users ON milestones.user_id = users.id")
+		Joins("JOIN users ON milestones.user_id = users.id").
+		Joins("LEFT JOIN favorites f ON f.program_id = programs.id AND f.user_id = milestones.user_id")
 
 	if search != "" {
 		search = "%" + search + "%"
@@ -70,12 +71,23 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 	return total, content, nil
 }
 
-func (db *DB) GetMilestonesByProviderPlatformID(id int) ([]models.Milestone, error) {
-	content := []models.Milestone{}
-	if err := db.Conn.Where("provider_platform_id = ?", id).Find(&content).Error; err != nil {
-		return nil, err
+func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []MilestoneResponse, error) {
+	content := []MilestoneResponse{}
+	total := int64(0)
+	err := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
+		Joins("JOIN programs ON milestones.program_id = programs.id").
+		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
+		Joins("JOIN users ON milestones.user_id = users.id").
+		Where("user_id = ?", id).
+		Count(&total).
+		Limit(perPage).
+		Offset((page - 1) * perPage).
+		Find(&content).
+		Error
+	if err != nil {
+		return 0, nil, err
 	}
-	return content, nil
+	return total, content, nil
 }
 
 func (db *DB) CreateMilestone(content *models.Milestone) (*models.Milestone, error) {

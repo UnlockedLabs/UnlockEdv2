@@ -29,7 +29,6 @@ export default function LoginForm() {
       if (login_challenge) {
         data["login_challenge"] = login_challenge;
       }
-      console.log(data);
       setErrorMessage("");
       setProcessing(true);
       const response = await axios.post("/api/login", data);
@@ -37,8 +36,10 @@ export default function LoginForm() {
       if (user.reset_password) {
         window.location.replace("reset-password");
         return;
+      } else if (response.status === 200) {
+        window.location.replace("/dashboard");
+        return;
       }
-      window.location.replace("dashboard");
     } catch (error: any) {
       setProcessing(false);
       setErrorMessage(error.response.data);

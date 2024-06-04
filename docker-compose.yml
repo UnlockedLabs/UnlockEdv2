@@ -27,8 +27,69 @@ services:
     restart: on-failure
     volumes:
       - type: bind
-        source: config/keto.yml
+        source: ./config/keto.yml
         target: /home/ory/keto.yml
+
+  kratos-migrate:
+    image: oryd/kratos:v1.1.0
+    environment:
+      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true&mode=rwc
+    volumes:
+      - type: volume
+        source: kratos-sqlite
+        target: /var/lib/sqlite
+        read_only: false
+      - type: bind
+        source: ./config/kratos
+        target: /etc/config/kratos
+    command: -c /etc/config/kratos/kratos.yml migrate sql -e --yes
+    restart: on-failure
+    networks:
+      - intranet
+  kratos-selfservice-ui-node:
+    image: oryd/kratos-selfservice-ui-node:v1.1.0
+    environment:
+      - KRATOS_PUBLIC_URL=http://kratos:4433/
+      - KRATOS_BROWSER_URL=http://127.0.0.1:4433/
+      - CSRF_COOKIE_NAME=ory_csrf_ui
+      - CSRF_COOKIE_SECRET=changeme
+      - PORT=4455
+      - SECURITY_MODE=
+    ports:
+      - "4455:4455"
+    networks:
+      - intranet
+    restart: on-failure
+
+  kratos:
+    depends_on:
+      - kratos-migrate
+    image: oryd/kratos:v1.1.0
+    ports:
+      - "4433:4433" # public
+      - "4434:4434" # admin
+    restart: unless-stopped
+    environment:
+      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      - LOG_LEVEL=trace
+    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    volumes:
+      - type: volume
+        source: kratos-sqlite
+        target: /var/lib/sqlite
+        read_only: false
+      - type: bind
+        source: ./config/kratos
+        target: /etc/config/kratos
+    networks:
+      - intranet
+  mailslurper:
+    image: oryd/mailslurper:latest-smtps
+    ports:
+      - "4436:4436"
+      - "4437:4437"
+    networks:
+      - intranet
 
   hydra:
     image: oryd/hydra:v2.2.0
@@ -46,6 +107,8 @@ services:
         source: ./hydra
         target: /etc/config/hydra
     environment:
+      - LOG_LEVEL=debug
+      - OAUTH2_EXPOSE_INTERNAL_ERRORS=1
       - SERVE_PUBLIC_CORS_ENABLED=true
       - SERVE_PUBLIC_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
       - SERVE_ADMIN_CORS_ENABLED=true
@@ -85,4 +148,5 @@ volumes:
       o: bind
       device: ./logs
 
+  kratos-sqlite:
   hydra-sqlite:

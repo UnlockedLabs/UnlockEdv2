@@ -57,7 +57,7 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !srv.UserIsAdmin(r) && !srv.UserIsOwner(r) {
+	if !srv.canViewUserData(r) {
 		srv.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}

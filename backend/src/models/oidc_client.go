@@ -31,7 +31,7 @@ type ClientResponse struct {
 	TokenEndpoint string `json:"token_url"`
 }
 
-const DefaultScopes = "openid profile email"
+const DefaultScopes = "openid offline_access profile email"
 
 func (OidcClient) TableName() string {
 	return "oidc_clients"
