@@ -42,4 +42,14 @@
   .font-inter {
     font-family: "Inter", sans-serif;
   }
+  /* for Chrome, Safari and Opera */
+  .scrollbar::-webkit-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--grey-2) transparent;
+  }
+  /* for IE, Edge and Firefox */
+  .scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--grey-2) transparent;
+  }
 }

@@ -6,6 +6,8 @@ import NotificationsSideBar from "@/Components/NotificationsSideBar";
 import { useAuth } from "@/AuthContext";
 import { CourseStatus } from "./MyCourses";
 import { PillTagType } from "@/Components/CatalogCourseCard";
+import useSWR from "swr";
+import { ServerResponse } from "@/common";
 
 //TO DO: make a type for courses when the new structure is finalized
 
@@ -15,14 +17,14 @@ export const recentCourses = [
   {
     course_id: 1,
     course_code: "CS101",
-    course_name: "Introduction to Computer Science",
+    program_name : "Introduction to Computer Science",
     course_description:
       "An introductory course covering fundamental concepts in computer science.",
     enrollment_state: "active",
     external_course_id: "12345",
     external_enrollment_id: "67890",
-    external_link_url: "http://example.com/cs101",
-    img_url:
+    external_url: "http://example.com/cs101",
+    thumbnail_url:
       "https://upload.wikimedia.org/wikipedia/commons/e/e1/Computer_science_and_engineering.jpg",
     provider_platform_id: 1,
     provider_platform_name: "Kolibri",
@@ -38,8 +40,8 @@ export const recentCourses = [
     updated_at: "2024-04-24T18:53:58.000000Z",
 
     // below are the added fields of information needed
-    total_time: 86768,
-    percent_completed: 59,
+    total_activity_time: 86768,
+    course_progress: 59,
     status: CourseStatus.Pending,
     favorited: true,
     tags: [PillTagType.Open],
@@ -47,14 +49,14 @@ export const recentCourses = [
   {
     course_id: 2,
     course_code: "ENG201",
-    course_name: "Advanced English Composition",
+    program_name : "Advanced English Composition",
     course_description:
       "A course focusing on advanced writing techniques and literary analysis.",
     enrollment_state: "active",
     external_course_id: "54321",
     external_enrollment_id: "09876",
-    external_link_url: "http://example.com/eng201",
-    img_url:
+    external_url: "http://example.com/eng201",
+    thumbnail_url:
       "https://news.northeastern.edu/wp-content/uploads/2016/10/writing_1400.jpg",
     provider_platform_id: 2,
     provider_platform_name: "Coursera",
@@ -69,8 +71,8 @@ export const recentCourses = [
     created_at: "2024-04-24T18:53:58.000000Z",
     updated_at: "2024-04-24T18:53:58.000000Z",
 
-    total_time: 8897,
-    percent_completed: 12,
+    total_activity_time: 8897,
+    course_progress: 12,
     status: CourseStatus.Completed,
     grade: "B+",
     favorited: true,
@@ -79,14 +81,14 @@ export const recentCourses = [
   {
     course_id: 3,
     course_code: "MATH301",
-    course_name: "Linear Algebra",
+    program_name : "Linear Algebra",
     course_description:
       "A course covering the theory and applications of linear algebra.",
     enrollment_state: "active",
     external_course_id: "98765",
     external_enrollment_id: "54321",
-    external_link_url: "http://example.com/math301",
-    img_url:
+    external_url: "http://example.com/math301",
+    thumbnail_url:
       "https://i0.wp.com/calmatters.org/wp-content/uploads/2021/08/math-curriculum.jpg?fit=2000%2C1500&ssl=1",
     provider_platform_id: 3,
     provider_platform_name: "WashU Canvas",
@@ -100,42 +102,17 @@ export const recentCourses = [
     user_name: "John Doe",
     created_at: "2024-04-24T18:53:58.000000Z",
     updated_at: "2024-04-24T18:53:58.000000Z",
-    total_time: 23731,
-    percent_completed: 87,
+    total_activity_time: 23731,
+    course_progress: 87,
     status: CourseStatus.Current,
     tags: [PillTagType.SelfPaced, PillTagType.Open],
   },
 ];
 
 export default function Dashboard() {
-  const numLessons = 5;
-
-  const currDate = new Date();
-  const pastWeek = new Date();
-  pastWeek.setDate(currDate.getDate() - 7);
-
   const { user } = useAuth();
-
-  // const {
-  //     data: weekActivityData,
-  //     error: weekActivityError,
-  //     isLoading: weekActivityLoading,
-  // } = useSWR(
-  //     "/api/v1/user-activity-map/" +
-  //         auth.user.id +
-  //         "?start_date=" +
-  //         pastWeek.toISOString().split("T")[0] +
-  //         "&end_date=" +
-  //         currDate.toISOString().split("T")[0],
-  // );
-
-  // const {
-  //     data: enrollments,
-  //     error: enrollmentsError,
-  //     isLoading: enrollmentsLoading,
-  // } = useSWR(`/api/v1/enrollments`);
-
-  // const { data:programs, error:programserror, isLoading:programsloading } = useSWR(`api/programs`)
+  const {data, error, isLoading} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/dashboard`)
+  console.log(data)
 
   return (
     <AuthenticatedLayout title="Dashboard">
@@ -143,24 +120,14 @@ export default function Dashboard() {
       <div className="flex">
         <div className="px-8 py-4">
           <h1 className="text-5xl">Hi, {user.name_first}!</h1>
-          <h2 className="mt-2">
-            You have completed{" "}
-            <span className="text-teal-3 dark:text-teal-4">
-              {numLessons} lessons{" "}
-            </span>{" "}
-            this week. Keep up the good work!
-          </h2>
-
           <h2 className="mt-7"> Pick Up Where You Left Off</h2>
           <div className="mt-3 bg-base-teal p-6 card">
             <div className="grid grid-cols-3 gap-5">
-              {recentCourses.map((course, index) => {
+              {data && data?.recent_programs.map((course, index) => {
                 return (
                   <CourseCard
                     course={course}
-                    status={CourseStatus.Current}
-                    recent={true}
-                    favorited={course.favorited}
+                    status={CourseStatus.Recent}
                     key={index}
                   />
                 );
@@ -183,20 +150,22 @@ export default function Dashboard() {
                       <th className="body text-grey-4">Hours Spent</th>
                     </tr>
                   </thead>
-                  <tbody className="flex flex-col gap-4 mt-4">
-                    {recentCourses.map((course: any, index: number) => {
+                  <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
+                    {!error && !isLoading &&
+                    (data?.enrollments?.map((course: any, index: number) => {
                       return (
                         <tr
-                          className="flex flex-row justify-between"
+                          className="flex flex-row justify-between mr-3"
                           key={index}
                         >
-                          <td className="body-small">{course.course_name}</td>
+                          <td className="body-small">{course.name}</td>
                           <td className="body-small">
-                            {Math.floor(course.total_time / 60 / 60)} hrs
+                            {Math.floor(course.total_activity_time / 60 / 60)} hrs
                           </td>
                         </tr>
                       );
-                    })}
+                    }
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -204,18 +173,18 @@ export default function Dashboard() {
           </div>
           <h2 className="mt-12">Currently Enrolled Classes</h2>
           <div className="mt-3 bg-base-teal p-6 card">
-            {/* {!enrollmentsError && !enrollmentsLoading && ( */}
+            {!error && !isLoading && (
             <div className="flex flex-col gap-3">
-              {recentCourses.map((course: any) => {
+              {data?.enrollments?.map((course: any) => {
                 return (
                   <CurrentlyEnrolledClass course={course} key={Math.random()} />
                 );
               })}
             </div>
-            {/* )} */}
+            )}
           </div>
         </div>
-        <div className="w-0.5 bg-grey-1"></div>
+        <div className="min-w-px bg-grey-1"></div>
         <NotificationsSideBar />
       </div>
     </AuthenticatedLayout>

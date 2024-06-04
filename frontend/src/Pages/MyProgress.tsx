@@ -48,7 +48,7 @@ export default function MyProgress() {
                       key={index}
                     >
                       <td className="w-1/2">
-                        {course.course_name} • {course.provider_platform_name}
+                        {course.program_name} • {course.provider_platform_name}
                       </td>
                       <td className="w-1/5 flex">
                         {course.status == CourseStatus.Completed ? (
@@ -59,7 +59,7 @@ export default function MyProgress() {
                       </td>
                       <td className="w-1/5">{course?.grade || "-"}</td>
                       <td className="w-1/5">
-                        {Math.floor(course.total_time / 60 / 60)} hrs
+                        {Math.floor(course.total_activity_time / 60 / 60)} hrs
                       </td>
                     </tr>
                   );

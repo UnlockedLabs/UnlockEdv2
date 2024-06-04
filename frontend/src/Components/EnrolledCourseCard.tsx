@@ -13,27 +13,25 @@ import { CourseStatus } from "@/Pages/MyCourses";
 export interface CourseCard {
   course: any; // TO DO: will change to be specific
   status: CourseStatus;
-  recent?: boolean;
-  favorited: boolean | undefined; // TO DO: should this be an optional field also?
+  favorited?: boolean;
 }
 
 export default function EnrolledCourseCard({
   course,
   status,
-  recent,
   favorited,
 }: CourseCard) {
-  const coverImage = course.img_url;
-  let url = course.external_link_url;
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    url = "https://" + url;
-  }
+  const coverImage = course.thumbnail_url
+  let url = course.external_url;
+  // if (!url.startsWith("http://") && !url.startsWith("https://")) {
+  //   url = "https://" + url;
+  // }
   return (
     <div
-      className={`card card-compact ${recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
+      className={`card card-compact ${status == CourseStatus.Recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
     >
       <div className="absolute top-2 right-2">
-        {!recent &&
+        {status !== CourseStatus.Recent &&
           (favorited ? (
             <StarIcon className="h-5 text-primary-yellow"></StarIcon>
           ) : (
@@ -42,17 +40,20 @@ export default function EnrolledCourseCard({
       </div>
       <a href={url} target="_blank" rel="noopener noreferrer">
         <figure className="h-[124px]">
-          <img
-            src={coverImage}
-            // TO DO: add in alt text here
-            alt=""
-            className="object-contain"
-          />
+          {coverImage !== "" ?
+            <img
+              src={coverImage}
+              // TO DO: add in alt text here
+              alt=""
+              className="object-contain"
+            /> :
+            <div className="bg-teal-1 h-full w-full"></div>
+          }
         </figure>
         <div className="card-body gap-0.5">
           <p className="text-xs">{course.provider_platform_name}</p>
           <h3 className="card-title text-sm h-10">
-            {course.course_code} - {course.course_name}
+            {course.alt_name && course.alt_name + " - "}{course.program_name}
           </h3>
           <div className="mt-3 justify-end">
             {status == CourseStatus.Completed ? (
@@ -64,7 +65,7 @@ export default function EnrolledCourseCard({
                 <ClockIcon className="h-4" /> Course Pending
               </div>
             ) : (
-              <ProgressBar percent={course.percent_completed} />
+              <ProgressBar percent={Math.floor(course.course_progress)} />
             )}
           </div>
         </div>

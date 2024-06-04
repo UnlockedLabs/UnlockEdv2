@@ -12,6 +12,7 @@ export enum CourseStatus {
   Current = "Current",
   Completed = "Completed",
   Pending = "Pending",
+  Recent = "Recent",
 }
 
 enum TabType {

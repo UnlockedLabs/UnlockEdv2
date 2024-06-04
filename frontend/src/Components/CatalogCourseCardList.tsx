@@ -27,7 +27,7 @@ export default function CatalogCourseCardList({ course }: { course: any }) {
               <BookmarkIconOutline className="h-5 text-header-text" />
             )}
           </div>
-          <h2>{course.course_name}</h2>
+          <h2>{course.program_name}</h2>
           <p className="body">|</p>
           <a href={course.provider_platform_url} className="body">
             {course.provider_platform_name}
