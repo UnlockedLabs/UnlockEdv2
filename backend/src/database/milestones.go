@@ -37,7 +37,6 @@ type MilestoneResponse struct {
 	ExternalID           string `json:"external_id"`
 	ID                   int    `json:"id"`
 	ProgramID            int    `json:"program_id"`
-	IsFavorited          bool   `json:"is_favorited"`
 }
 
 func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, []MilestoneResponse, error) {
@@ -45,11 +44,10 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 		content []MilestoneResponse
 		total   int64
 	)
-	query := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username, f.user_id IS NOT NULL as is_favorited").
+	query := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
 		Joins("JOIN programs ON milestones.program_id = programs.id").
 		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
-		Joins("JOIN users ON milestones.user_id = users.id").
-		Joins("LEFT JOIN favorites f ON f.program_id = programs.id AND f.user_id = milestones.user_id")
+		Joins("JOIN users ON milestones.user_id = users.id")
 
 	if search != "" {
 		search = "%" + search + "%"
