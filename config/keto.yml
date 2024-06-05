@@ -5,7 +5,7 @@ log:
 
 namespaces:
   - id: 0
-    name: videos
+    name: student
 
 serve:
   read:
@@ -15,4 +15,4 @@ serve:
     host: 0.0.0.0
     port: 4467
 
-dsn: memory
+dsn: postgres://keto:ChangeMe!@postgres:5432/keto?sslmode=prefer&max_cons=20&max_idle_cons=4

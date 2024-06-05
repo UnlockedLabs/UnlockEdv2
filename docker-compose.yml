@@ -10,6 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - logs:/var/log/postgresql
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
@@ -29,16 +30,14 @@ services:
       - type: bind
         source: ./config/keto.yml
         target: /home/ory/keto.yml
+    networks:
+      - intranet
 
   kratos-migrate:
     image: oryd/kratos:v1.1.0
     environment:
-      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true&mode=rwc
+      - DSN=postgres://kratos:ChangeMe!@postgres:5432/kratos?sslmode=disable&max_conns=20&max_idle_conns=4
     volumes:
-      - type: volume
-        source: kratos-sqlite
-        target: /var/lib/sqlite
-        read_only: false
       - type: bind
         source: ./config/kratos
         target: /etc/config/kratos
@@ -70,14 +69,10 @@ services:
       - "4434:4434" # admin
     restart: unless-stopped
     environment:
-      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      - DSN=postgres://kratos:ChangeMe!@postgres:5432/kratos?sslmode=prefer&max_conns=20&max_idle_conns=4
       - LOG_LEVEL=trace
     command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
     volumes:
-      - type: volume
-        source: kratos-sqlite
-        target: /var/lib/sqlite
-        read_only: false
       - type: bind
         source: ./config/kratos
         target: /etc/config/kratos
@@ -99,12 +94,8 @@ services:
       - "5555:5555" # Port for hydra token user
     command: serve -c /etc/config/hydra/hydra.yml all --dev
     volumes:
-      - type: volume
-        source: hydra-sqlite
-        target: /var/lib/sqlite
-        read_only: false
       - type: bind
-        source: ./hydra
+        source: ./config/hydra
         target: /etc/config/hydra
     environment:
       - LOG_LEVEL=debug
@@ -113,7 +104,7 @@ services:
       - SERVE_PUBLIC_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
       - SERVE_ADMIN_CORS_ENABLED=true
       - SERVE_ADMIN_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
-      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      - DSN=postgres://hydra:ChangeMe!@postgres:5432/hydra?sslmode=prefer&max_conns=20&max_idle_conns=4
     restart: unless-stopped
     env_file: ./backend/.env
     depends_on:
@@ -123,19 +114,16 @@ services:
   hydra-migrate:
     image: oryd/hydra:v2.2.0
     environment:
-      - DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      - DSN=postgres://hydra:ChangeMe!@postgres:5432/hydra?sslmode=prefer&max_conns=20&max_idle_conns=4
     command: migrate -c /etc/config/hydra/hydra.yml sql -e --yes
     volumes:
-      - type: volume
-        source: hydra-sqlite
-        target: /var/lib/sqlite
-        read_only: false
       - type: bind
-        source: ./hydra
+        source: ./config/hydra
         target: /etc/config/hydra
     restart: on-failure
     networks:
       - intranet
+
 networks:
   intranet:
 
@@ -147,6 +135,3 @@ volumes:
       type: none
       o: bind
       device: ./logs
-
-  kratos-sqlite:
-  hydra-sqlite:
