@@ -19,17 +19,40 @@ services:
     networks:
       - intranet
 
-  keto:
+  keto-migrate:
     image: oryd/keto:v0.12.0-alpha.0
+    links:
+      - postgres:postgres
+    volumes:
+      - type: bind
+        source: ./config
+        target: /home/ory
+    environment:
+      - LOG_LEVEL=debug
+      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer
+    command: ["migrate", "up", "-y"]
+    restart: on-failure
+    depends_on:
+      - postgres
+    networks:
+      - intranet
+
+  keto:
+    image: oryd/keto:v0.11.1-alpha.0
+    links:
+      - postgres:postgres
+    volumes:
+      - type: bind
+        source: ./config
+        target: /home/ory
     ports:
       - "4466:4466"
       - "4467:4467"
-    command: serve -c /home/ory/keto.yml
+    depends_on:
+      - keto-migrate
+    environment:
+      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=disable
     restart: on-failure
-    volumes:
-      - type: bind
-        source: ./config/keto.yml
-        target: /home/ory/keto.yml
     networks:
       - intranet
 
@@ -45,6 +68,9 @@ services:
     restart: on-failure
     networks:
       - intranet
+    depends_on:
+      - postgres
+
   kratos-selfservice-ui-node:
     image: oryd/kratos-selfservice-ui-node:v1.1.0
     environment:
@@ -78,6 +104,7 @@ services:
         target: /etc/config/kratos
     networks:
       - intranet
+
   mailslurper:
     image: oryd/mailslurper:latest-smtps
     ports:
@@ -111,6 +138,7 @@ services:
       - hydra-migrate
     networks:
       - intranet
+
   hydra-migrate:
     image: oryd/hydra:v2.2.0
     environment:
@@ -123,6 +151,8 @@ services:
     restart: on-failure
     networks:
       - intranet
+    depends_on:
+      - postgres
 
 networks:
   intranet:
