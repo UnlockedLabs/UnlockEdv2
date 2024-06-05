@@ -9,11 +9,10 @@ import CompletePill from "@/Components/pill-labels/CompletePill";
 import InProgressPill from "@/Components/pill-labels/InProgressPill";
 
 export default function MyProgress() {
-  const auth = useAuth();
-
+  const {user} = useAuth();
   return (
     <AuthenticatedLayout title="My Progress">
-      <PageNav user={auth.user} path={["My Progress"]} />
+      <PageNav user={user} path={["My Progress"]} />
       <div className="px-8 py-4 overflow-hidden">
         <h1>My Progress</h1>
         <div className="mt-7 flex flex-row gap-12">
@@ -22,7 +21,7 @@ export default function MyProgress() {
             <StatsCard title="COMPLETED" number={"37"} label="courses" />
           </div>
           <div className="w-full">
-            <UserActivityMap user={auth.user} />
+            <UserActivityMap />
           </div>
         </div>
         <div className="flex flex-row gap-12 mt-12">

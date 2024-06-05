@@ -12,20 +12,20 @@ import { useAuth } from "../AuthContext";
 export default function UserActivity() {
   const [searchTerm, setSearchTerm] = useState("");
   const searchQuery = useDebounceValue(searchTerm, 300);
-  const auth = useAuth();
+  const {user} = useAuth();
   const [pageQuery, setPageQuery] = useState(1);
 
   const [sortQuery, setSortQuery] = useState("desc");
 
   const { data, error, isLoading } = useSWR(
-    `/api/users/activity-log?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`,
+    `/api/users/${user.id}/activity`,
   );
 
   const userActivityData = data as PaginatedData<Activity>;
 
   return (
     <AuthenticatedLayout title="User Activity">
-      <PageNav user={auth.user!} path={["Settings", "User Activity"]} />
+      <PageNav user={user!} path={["Settings", "User Activity"]} />
       <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
         <div className="flex justify-between">
           <input

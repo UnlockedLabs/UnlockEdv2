@@ -42,3 +42,10 @@ type ImportActivity struct {
 	TotalTime         int    `json:"total_time"`
 	Date              string `json:"date"`
 }
+
+type DailyActivity struct {
+    Date        time.Time
+    TotalTime   uint
+	Quartile  	uint
+    Activities  []Activity
+}

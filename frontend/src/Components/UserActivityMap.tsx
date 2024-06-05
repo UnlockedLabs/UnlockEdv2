@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { DropdownControl } from "./inputs/DropdownControl";
 import useSWR from "swr";
-import { User } from "@/common";
+import { useAuth } from "@/AuthContext";
 
 type ActivityMapData = {
   user_id: number;
-  date: string;
-  active_course_count: string;
-  total_activity_time: string;
-  total_activity_time_quartile: number;
+  Date: string;
+  TotalTime: string;
+  Quartile: number;
 };
 
 /* interface for dynamically generated year options */
@@ -41,33 +40,27 @@ const nodeSizes: string =
 const gapSizes: string = "p-0 ml-px mt-px md:m-0 md:p-px";
 
 /* main component for the user activity map */
-export default function UserActivityMap({ user }: { user: User }) {
-  const userCreatedAt = user.created_at
-    ? new Date(user.created_at)
-    : new Date(2024, 0, 1);
+export default function UserActivityMap() {
+  const {user} = useAuth();
+
+  const createdAtYear = parseInt(user?.created_at.substr(0,4));
 
   const [yearEnd, setYearEnd] = useState(new Date());
   const [dropdownValDesc, setDropdownValDesc] = useState("the past year");
-
-  const startDate = new Date(subtractYear(yearEnd));
-  const { error: error, isLoading: isLoading } = useSWR(
-    "/api/user-activity-map/" +
-      user.id +
-      "?start_date=" +
-      startDate.toISOString().split("T")[0] +
-      "&end_date=" +
-      yearEnd.toISOString().split("T")[0],
+  
+  const { data, error, isLoading } = useSWR(
+    `/api/users/${user.id}/daily-activity${dropdownValDesc !== "the past year" ? ("?year="+dropdownValDesc.trim()): ""}`,
   );
 
-  const tempdata = [];
+  console.log(data)
 
   const generateYearOptions = () => {
     const years: ValidYears = { "Past year": "Past year" };
     const currentYear = new Date().getUTCFullYear();
-    let i = currentYear - userCreatedAt.getUTCFullYear();
+    let i = currentYear - createdAtYear;
     for (i; i >= 0; i--) {
       /* added " " to change listed order without impacting appearance */
-      const str = " " + String(userCreatedAt.getUTCFullYear() + i);
+      const str = " " + String(createdAtYear + i);
       years[str] = str;
     }
     return years;
@@ -116,7 +109,7 @@ export default function UserActivityMap({ user }: { user: User }) {
       </div>
       {/* <div className="w-[372px] h-[99px] md:w-[530px] md:h-[124px] lg:w-[764px] lg:h-[152px] xl:w-[1017px] xl:h-[184px]"> */}
       <div className="w-full h-3/4 max-h-[184px]">
-        {/* {error ? (
+        {error ? (
             <div className="flex h-full justify-center content-center">
               <div className="font-bold my-auto">
                 Error loading activity. Please try again later.
@@ -127,18 +120,18 @@ export default function UserActivityMap({ user }: { user: User }) {
               <span className="my-auto loading loading-spinner loading-lg"></span>
             </div>
           ) : (
-            data && ( */}
+            data && (
         <div className="mt-2">
           <ActivityMapTable
-            data={tempdata}
+            data={data.activities}
             end={yearEnd}
             error={error}
             isLoading={isLoading}
             range={dropdownValDesc}
           />
         </div>
-        {/* )
-          )} */}
+        )
+          )}
       </div>
     </div>
   );
@@ -149,12 +142,10 @@ function Node({
   quartile,
   date,
   activity_time,
-  active_course_count,
 }: {
   quartile: number;
   date?: Date;
   activity_time?: string;
-  active_course_count?: string;
 }) {
   let tooltipString = "";
   if (!date) {
@@ -168,7 +159,7 @@ function Node({
   if (!activity_time) {
     tooltipString = "No activity on " + date.toISOString().split("T")[0];
   } else {
-    tooltipString = `${activity_time} total activity in ${active_course_count} courses on ${
+    tooltipString = `${activity_time} hrs on ${
       date?.toISOString().split("T")[0]
     }`;
   }
@@ -218,7 +209,7 @@ function ActivityMapTable({
   };
 
   const getAggregateActivityTime = (time: number) => {
-    const parsedTime = convertSeconds(time);
+    // const parsedTime = convertSeconds(time);
     if (error) {
       return "Error fetching activity data";
     }
@@ -229,7 +220,7 @@ function ActivityMapTable({
     } else if (time == 1) {
       return "You have completed one hour of activity";
     } else {
-      return "You have completed " + String(parsedTime) + " hours of activity";
+      return "You have completed " + String(time) + " hours of activity";
     }
   };
 
@@ -252,15 +243,15 @@ function ActivityMapTable({
   };
 
   const dateCount = subtractYear(end);
-  data.sort((a, b) => {
-    if (a.date < b.date) {
-      return -1;
-    } else if (a.date > b.date) {
-      return 1;
-    } else {
-      return 0;
-    }
-  });
+  // data.sort((a, b) => {
+  //   if (a.created_at < b.created_at) {
+  //     return -1;
+  //   } else if (a.created_at > b.created_at) {
+  //     return 1;
+  //   } else {
+  //     return 0;
+  //   }
+  // });
 
   /* add spacers for days of week before activity range */
   for (i = 0; i < dateCount.getUTCDay(); i++) {
@@ -271,7 +262,7 @@ function ActivityMapTable({
     );
   }
 
-  i = 0;
+  i = 1;
   /* fill first months array element if range starts midweek */
   if (dateCount.getUTCDay() != 0) {
     if (dateCount.getUTCDate() < 8) {
@@ -297,19 +288,19 @@ function ActivityMapTable({
       }
       oldMonth = newMonth;
     }
+
     /* in range and activity on date */
-    if (i < len && dateCount.toISOString().split("T")[0] == data[i].date) {
+    if (i < len && dateCount.toISOString().split("T")[0] == data[i].Date.split("T")[0]) {
       tableData.push(
         <td className="block" key={dateCount.getTime()}>
           <Node
             date={new Date(dateCount)}
-            activity_time={convertSeconds(Number(data[i].total_activity_time))}
-            active_course_count={data[i].active_course_count}
-            quartile={data[i].total_activity_time_quartile}
+            activity_time={data[i].TotalTime}
+            quartile={data[i].Quartile}
           />
         </td>,
       );
-      aggregateActivityTime += Number(data[i].total_activity_time);
+      aggregateActivityTime += Number(data[i].TotalTime);
       i += 1;
     } else {
       tableData.push(

@@ -11,6 +11,7 @@ import (
 
 func (srv *Server) registerActivityRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.GetActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(http.HandlerFunc(srv.GetDailyActivityByUserID)))
 	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleGetProgramActivity)))
 	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
 }
@@ -39,6 +40,49 @@ func (srv *Server) GetActivityByUserID(w http.ResponseWriter, r *http.Request) {
 		log.Error("Failed to write response", err)
 	}
 }
+
+/****
+ * @Query Params:
+ * ?year=: year (default last year)
+ ****/
+ func (srv *Server) GetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
+	// Parse userID from path
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	// Parse query parameters
+	query := r.URL.Query()
+	yearStr := query.Get("year")
+
+	// Convert year parameter to integer
+	var year int
+	if yearStr != "" {
+		year, err = strconv.Atoi(yearStr)
+		if err != nil {
+			srv.ErrorResponse(w, http.StatusBadRequest, "Invalid year parameter")
+			return
+		}
+	}
+
+	// Retrieve daily activities for the given userID and year
+	activities, err := srv.Db.GetDailyActivityByUserID(userID, year)
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
+		return
+	}
+
+	// Write response
+	if err = srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+		"activities": activities,
+	}); err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
+		log.Error("Failed to write response", err)
+	}
+}
+
 
 func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request) {
 	programID, err := strconv.Atoi(r.PathValue("id"))
