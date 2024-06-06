@@ -112,6 +112,12 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 			User:         *newUser,
 			TempPassword: newUser.Password,
 		}
+		// if we aren't in a testing environment, register the user as an Identity with Kratos
+		if !srv.isTesting(r) {
+			if err := srv.handleCreateUserKratos(LoginRequest{Username: newUser.Username, Password: newUser.Password}); err != nil {
+				log.Printf("Error creating user in kratos: %v", err)
+			}
+		}
 		if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

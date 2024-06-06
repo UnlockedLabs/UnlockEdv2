@@ -4,12 +4,12 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -35,7 +35,7 @@ var TableList = []interface{}{
 	&models.UserFavorite{},
 }
 
-func InitDB(isTesting bool) *DB {
+func InitDB(isTesting bool) (*DB, bool) {
 	var db *gorm.DB
 	var err error
 
@@ -58,15 +58,16 @@ func InitDB(isTesting bool) *DB {
 	}
 	database = &DB{Conn: db}
 	Migrate(db)
-	SeedDefaultData(db)
+	firstRun := SeedDefaultData(db)
 	if isTesting {
 		database.SeedTestData()
 	}
-	return database
+	return database, firstRun
 }
 
-func SeedDefaultData(db *gorm.DB) {
+func SeedDefaultData(db *gorm.DB) (isFirstRun bool) {
 	if db.Exec("SELECT id FROM users WHERE username = 'SuperAdmin'").RowsAffected == 0 {
+		isFirstRun = true
 		user := models.User{
 			Username:      "SuperAdmin",
 			NameFirst:     "Super",
@@ -92,6 +93,7 @@ func SeedDefaultData(db *gorm.DB) {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
 	}
+	return
 }
 
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`

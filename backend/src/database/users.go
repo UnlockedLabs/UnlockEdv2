@@ -17,7 +17,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 		return 0, nil, err
 	}
 
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset").
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id").
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
@@ -30,7 +30,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 
 func (db *DB) GetUserByID(id uint) *models.User {
 	var user models.User
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset").
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id").
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		return nil

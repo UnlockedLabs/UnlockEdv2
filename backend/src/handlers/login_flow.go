@@ -64,7 +64,7 @@ func (s *Server) handleOidcLogin(w http.ResponseWriter, r *http.Request, claims 
 	http.Redirect(w, r.WithContext(r.Context()), redirectURI, http.StatusSeeOther)
 }
 
-/* Handle user consent to Oidc client accessing data on their behalf */
+// Handle user consent to Oidc client accessing data on their behalf
 func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 	log.Info("Client hit consent handler")
 	reqBody := map[string]interface{}{}
@@ -88,7 +88,7 @@ func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	request.Header.Set("Authorization", "Bearer "+os.Getenv("HYDRA_TOKEN"))
+	request.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Error("Error sending request to hydra")
@@ -128,7 +128,7 @@ func (srv *Server) handleConsent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("HYDRA_TOKEN"))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
 	response, err := client.Do(req)
 	if err != nil {
 		log.Error("Error sending request to hydra")

@@ -240,6 +240,13 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		Path:     "/",
 	})
+	if !srv.isTesting(r) {
+		user := srv.Db.GetUserByID(claims.UserID)
+		if user == nil {
+			log.Fatal("user not found from cookie, this should not happen, so we fail")
+		}
+		srv.handleUpdatePasswordKratos(w, user)
+	}
 	if err = srv.WriteResponse(w, http.StatusOK, "Password reset successfully"); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		log.Error("Error writing response: " + err.Error())

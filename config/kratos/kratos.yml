@@ -92,9 +92,9 @@ log:
 
 secrets:
   cookie:
-    - PLEASE-CHANGE-ME-I-AM-VERY-INSECURE
+    - uy#@8lr8jlll82ItMjUwIiwidmo8ijf2
   cipher:
-    - 32-LONG-SECRET-NOT-SECURE-AT-ALL
+    - eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
 
 ciphers:
   algorithm: xchacha20-poly1305

@@ -16,7 +16,10 @@ services:
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
       - HYDRA_PUBLIC_URL=http://hydra:4444
-      - HYDRA_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidiI6Mn0
+      - KRATOS_ADMIN_URL=http://kratos:4434
+      - KRATOS_PUBLIC_URL=http://kratos:4433
+      - KETO_ADMIN_URL=http://keto:4466
+      - ORY_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
     depends_on:
       postgres:
         condition: service_healthy
