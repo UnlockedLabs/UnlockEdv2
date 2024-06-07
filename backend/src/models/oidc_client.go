@@ -31,7 +31,7 @@ type ClientResponse struct {
 	TokenEndpoint string `json:"token_url"`
 }
 
-const DefaultScopes = "openid profile email"
+const DefaultScopes = "openid offline_access profile email"
 
 func (OidcClient) TableName() string {
 	return "oidc_clients"
@@ -42,16 +42,18 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	redirectURI := prov.GetDefaultRedirectURI()
 	client := http.Client{}
 	headers := map[string]string{}
-	headers["Authorization"] = "Bearer " + os.Getenv("HYDRA_TOKEN")
+	headers["Authorization"] = "Bearer " + os.Getenv("ORY_TOKEN")
 	headers["Origin"] = os.Getenv("APP_URL")
 	body := map[string]interface{}{}
 	body["client_name"] = prov.Name
+	body["client_uri"] = prov.BaseUrl
 	body["redirect_uris"] = []string{redirectURI}
 	body["scopes"] = DefaultScopes
 	body["acces_token_strategy"] = "opaque"
 	body["metadata"] = map[string]interface{}{
 		"Origin": os.Getenv("APP_URL"),
 	}
+	body["subject_type"] = "username"
 	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL"), os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL")}
 	body["grant_types"] = []string{"authorization_code"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
@@ -75,7 +77,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return nil, externalId, fmt.Errorf("error creating client: %s", resp.Status)
+		return nil, externalId, fmt.Errorf("error creating client in hydra oidc server: received %s", resp.Status)
 	}
 	var clientData map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&clientData)

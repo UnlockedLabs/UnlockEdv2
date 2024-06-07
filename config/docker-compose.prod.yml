@@ -11,10 +11,15 @@ services:
       - DB_USER=unlocked
       - DB_PASSWORD=dev
       - DB_NAME=unlocked
+      - LOG_LEVEL=debug
+      - APP_URL=http://localhost
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
       - HYDRA_PUBLIC_URL=http://hydra:4444
-      - HYDRA_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidiI6Mn0
+      - KRATOS_ADMIN_URL=http://kratos:4434
+      - KRATOS_PUBLIC_URL=http://kratos:4433
+      - KETO_ADMIN_URL=http://keto:4466
+      - ORY_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
     depends_on:
       postgres:
         condition: service_healthy
@@ -23,7 +28,7 @@ services:
     command: >
       ./backend
     volumes:
-      - ./logs:/logs/
+      - logs:/logs/
     networks:
       - intranet
 
@@ -37,7 +42,7 @@ services:
     networks:
       - intranet
     volumes:
-      - ./logs:/logs
+      - logs:/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,5 +61,5 @@ services:
       - intranet
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./logs:/var/log/nginx/
+      - logs:/var/log/nginx/
     depends_on: [server]

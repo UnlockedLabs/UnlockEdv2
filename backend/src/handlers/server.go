@@ -6,14 +6,17 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 
+	ory "github.com/ory/kratos-client-go"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
-	Db  *database.DB
-	Mux *http.ServeMux
+	Db        *database.DB
+	Mux       *http.ServeMux
+	OryClient *ory.APIClient
 }
 
 /**
@@ -34,6 +37,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerActivityRoutes()
 	srv.registerOidcRoutes()
 	srv.registerDashboardRoutes()
+	srv.registerOidcFlowRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -42,12 +46,25 @@ func ServerWithDBHandle(db *database.DB) *Server {
 
 func NewServer(isTesting bool) *Server {
 	if isTesting {
-		return &Server{Db: database.InitDB(true), Mux: http.NewServeMux()}
+		db, _ := database.InitDB(true)
+		return &Server{Db: db, Mux: http.NewServeMux()}
 	} else {
-		db := database.InitDB(false)
+		configuration := ory.NewConfiguration()
+		configuration.Servers = []ory.ServerConfiguration{
+			{
+				URL: os.Getenv("KRATOS_ADMIN_URL"),
+			},
+		}
+		apiClient := ory.NewAPIClient(configuration)
+		db, first := database.InitDB(false)
 		mux := http.NewServeMux()
-		server := Server{Db: db, Mux: mux}
+		server := Server{Db: db, Mux: mux, OryClient: apiClient}
 		server.RegisterRoutes()
+		if first {
+			if err := server.handleCreateUserKratos(LoginRequest{Username: "SuperAdmin", Password: "ChangeMe!"}); err != nil {
+				log.Printf("Error creating super admin in kratos: %v", err)
+			}
+		}
 		return &server
 	}
 }
@@ -83,6 +100,14 @@ func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	}
 }
 
+type TestClaims string
+
+const TestingClaimsKey = TestClaims("test_claims")
+
+func (srv *Server) isTesting(r *http.Request) bool {
+	return r.Context().Value(TestingClaimsKey) != nil
+}
+
 func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testClaims := &Claims{
@@ -91,7 +116,8 @@ func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 			Role:          "admin",
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-		h.ServeHTTP(w, r.WithContext(ctx))
+		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
+		h.ServeHTTP(w, r.WithContext(test_ctx))
 	})
 }
 
