@@ -53,9 +53,8 @@ func (srv *Server) GetActivityByUserID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse query parameters
-	query := r.URL.Query()
-	yearStr := query.Get("year")
+	// Get year from query param
+	yearStr := r.URL.Query().Get("year")
 
 	// Convert year parameter to integer
 	var year int

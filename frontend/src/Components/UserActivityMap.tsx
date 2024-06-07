@@ -5,9 +5,9 @@ import { useAuth } from "@/AuthContext";
 
 type ActivityMapData = {
   user_id: number;
-  Date: string;
-  TotalTime: string;
-  Quartile: number;
+  date: string;
+  total_time: string;
+  quartile: number;
 };
 
 /* interface for dynamically generated year options */
@@ -51,8 +51,6 @@ export default function UserActivityMap() {
   const { data, error, isLoading } = useSWR(
     `/api/users/${user.id}/daily-activity${dropdownValDesc !== "the past year" ? ("?year="+dropdownValDesc.trim()): ""}`,
   );
-
-  console.log(data)
 
   const generateYearOptions = () => {
     const years: ValidYears = { "Past year": "Past year" };
@@ -159,7 +157,7 @@ function Node({
   if (!activity_time) {
     tooltipString = "No activity on " + date.toISOString().split("T")[0];
   } else {
-    tooltipString = `${activity_time} hrs on ${
+    tooltipString = `${activity_time} on ${
       date?.toISOString().split("T")[0]
     }`;
   }
@@ -190,7 +188,7 @@ function ActivityMapTable({
   const tableData: JSX.Element[] = [];
   const tableMonths: string[] = [];
   let i;
-  const len = data.length;
+  const len = data?.length;
   //  const now = new Date();
   let aggregateActivityTime = 0;
   let oldMonth, newMonth;
@@ -209,7 +207,6 @@ function ActivityMapTable({
   };
 
   const getAggregateActivityTime = (time: number) => {
-    // const parsedTime = convertSeconds(time);
     if (error) {
       return "Error fetching activity data";
     }
@@ -290,17 +287,17 @@ function ActivityMapTable({
     }
 
     /* in range and activity on date */
-    if (i < len && dateCount.toISOString().split("T")[0] == data[i].Date.split("T")[0]) {
+    if (i < len && dateCount.toISOString().split("T")[0] == data[i].date.split("T")[0]) {
       tableData.push(
         <td className="block" key={dateCount.getTime()}>
           <Node
             date={new Date(dateCount)}
-            activity_time={data[i].TotalTime}
-            quartile={data[i].Quartile}
+            activity_time={convertSeconds(Number(data[i].total_time))}
+            quartile={data[i].quartile}
           />
         </td>,
       );
-      aggregateActivityTime += Number(data[i].TotalTime);
+      aggregateActivityTime += Number(data[i].total_time);
       i += 1;
     } else {
       tableData.push(

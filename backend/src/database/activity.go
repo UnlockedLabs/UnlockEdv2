@@ -28,16 +28,13 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]models.DailyActi
 
     // Calculate start and end dates for the past year
     if year == 0 {
-        // If year is not provided, default to last year
         startDate = time.Now().AddDate(-1, 0, 0).Truncate(24 * time.Hour)
         endDate = time.Now().Truncate(24 * time.Hour)
     } else {
-        // If year is provided, set start and end dates accordingly
         startDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
         endDate = time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC).Add(-1 * time.Second)
     }
 
-    // Retrieve activities for the specified user and within the past year
     if err := db.Conn.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
         return nil, err
     }
@@ -45,14 +42,12 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]models.DailyActi
     // Combine activities based on date
     dailyActivities := make(map[time.Time]models.DailyActivity)
     for _, activity := range activities {
-        date := activity.CreatedAt.Truncate(24 * time.Hour) // Truncate time to get date
+        date := activity.CreatedAt.Truncate(24 * time.Hour)
         if dailyActivity, ok := dailyActivities[date]; ok {
-            // If daily activity exists for date, update it
             dailyActivity.TotalTime += activity.TimeDelta
             dailyActivity.Activities = append(dailyActivity.Activities, activity)
             dailyActivities[date] = dailyActivity
         } else {
-            // If daily activity doesn't exist, create a new one
             dailyActivities[date] = models.DailyActivity{
                 Date:       date,
                 TotalTime:  activity.TimeDelta,
