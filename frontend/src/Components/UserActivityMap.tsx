@@ -2,9 +2,9 @@ import { useState } from "react";
 import { DropdownControl } from "./inputs/DropdownControl";
 import useSWR from "swr";
 import { useAuth } from "@/AuthContext";
+import { ServerResponse } from "@/common";
 
 type ActivityMapData = {
-  user_id: number;
   date: string;
   total_time: string;
   quartile: number;
@@ -48,7 +48,7 @@ export default function UserActivityMap() {
   const [yearEnd, setYearEnd] = useState(new Date());
   const [dropdownValDesc, setDropdownValDesc] = useState("the past year");
   
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading } = useSWR<ServerResponse<ActivityMapData>>(
     `/api/users/${user.id}/daily-activity${dropdownValDesc !== "the past year" ? ("?year="+dropdownValDesc.trim()): ""}`,
   );
 
@@ -240,16 +240,7 @@ function ActivityMapTable({
   };
 
   const dateCount = subtractYear(end);
-  // data.sort((a, b) => {
-  //   if (a.created_at < b.created_at) {
-  //     return -1;
-  //   } else if (a.created_at > b.created_at) {
-  //     return 1;
-  //   } else {
-  //     return 0;
-  //   }
-  // });
-
+ 
   /* add spacers for days of week before activity range */
   for (i = 0; i < dateCount.getUTCDay(); i++) {
     tableData.push(
@@ -259,7 +250,8 @@ function ActivityMapTable({
     );
   }
 
-  i = 1;
+  i = new Date().getDay() + 1
+  
   /* fill first months array element if range starts midweek */
   if (dateCount.getUTCDay() != 0) {
     if (dateCount.getUTCDate() < 8) {

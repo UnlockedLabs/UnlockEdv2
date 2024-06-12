@@ -4,14 +4,21 @@ import (
 	"UnlockEdv2/src/models"
 )
 
-func (db *DB) GetOutcomesForUser(id uint, page, perPage int) (int64, []models.Outcome, error) {
+func (db *DB) GetOutcomesForUser(id uint, page, perPage int, outcomeType models.OutcomeType) (int64, []models.Outcome, error) {
 	var outcomes []models.Outcome
 	var count int64
 	offset := (page - 1) * perPage
-	if err := db.Conn.Model(&models.Outcome{}).Where("user_id = ?", id).Count(&count).Error; err != nil {
+
+	query := db.Conn.Model(&models.Outcome{}).Where("user_id = ?", id)
+    
+    if outcomeType != "" {
+        query = query.Where("type = ?", outcomeType)
+    }
+
+	if err := query.Count(&count).Error; err != nil {
 		return 0, nil, err
 	}
-	if err := db.Conn.Where("user_id = ?", id).Offset(offset).Limit(perPage).Find(&outcomes).Error; err != nil {
+	if err := query.Offset(offset).Limit(perPage).Find(&outcomes).Error; err != nil {
 		return 0, nil, err
 	}
 	return count, outcomes, nil

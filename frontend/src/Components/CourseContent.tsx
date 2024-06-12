@@ -18,7 +18,6 @@ export default function CourseContent() {
             course={course}
             key={course.id}
             status={CourseStatus.Current}
-            favorited={false}
           />
         ))
       ) : (
