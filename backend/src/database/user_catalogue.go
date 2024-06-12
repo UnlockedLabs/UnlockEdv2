@@ -17,7 +17,6 @@ func (db *DB) GetUserCatalogue(userId int, tags []string) ([]UserCatalogueJoin, 
 		Select("p.id as program_id, p.thumbnail_url, p.name as program_name, pp.name as provider_name, p.external_url, p.type as program_type, p.outcome_types, f.user_id IS NOT NULL as is_favorited").
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
-		Where("f.deleted_at IS NULL").
 		Where("p.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 	for i, tag := range tags {
@@ -64,7 +63,6 @@ func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint,
             ORDER BY created_at DESC 
             LIMIT 1
         )`, userId).
-		Where("f.deleted_at IS NULL").
 		Where("p.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 	for i, tag := range tags {
