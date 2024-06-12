@@ -161,6 +161,9 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+	if data == nil {
+		return nil
+	}
 	if resp, ok := data.(string); ok {
 		_, err := w.Write([]byte(resp))
 		return err

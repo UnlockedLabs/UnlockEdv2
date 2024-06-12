@@ -15,7 +15,7 @@ func (srv *Server) registerProgramsRoutes() {
 	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateProgram)))
 	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteProgram)))
 	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateProgram)))
-	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleFavoriteProgram)))
+	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.HandleFavoriteProgram)))
 }
 
 /*
@@ -146,28 +146,36 @@ func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
 	user_id := srv.GetUserID(r)
-	if rows := srv.Db.Conn.Delete(&models.UserFavorite{}, "program_id = ? AND user_id = ?", id, user_id).RowsAffected; rows < 1 {
-		log.Info("favoriting program")
-		favorite := models.UserFavorite{
-			ProgramID: uint(id),
+	var favorite models.UserFavorite
+	err = srv.Db.Conn.Model(models.UserFavorite{}).Where("user_id = ? AND program_id = ?", user_id, id).First(&favorite).Error
+	if err != nil {
+		log.Info("Favorite not found, creating new favorite")
+		favorite = models.UserFavorite{
 			UserID:    user_id,
+			ProgramID: uint(id),
 		}
-		if err := srv.Db.Conn.Create(&favorite).Error; err != nil {
-			log.Error("Error creating favorite:" + err.Error())
+		if err = srv.Db.Conn.Create(&favorite).Error; err != nil {
+			log.Error("Error creating favorite: " + err.Error())
 			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		if err := srv.WriteResponse(w, http.StatusCreated, "program favorited"); err != nil {
-			log.Errorf("Error writing response: %s", err.Error())
-			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-			return
-		}
 	} else {
-		if err := srv.WriteResponse(w, http.StatusNoContent, "program unfavorited"); err != nil {
-			log.Errorf("Error writing response: %s", err.Error())
-			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		if err = srv.Db.Conn.Delete(&favorite).Error; err != nil {
+			log.Error("Error deleting favorite: " + err.Error())
+			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
+		if err := srv.WriteResponse(w, http.StatusNoContent, nil); err != nil {
+			log.Error("Error writing response: " + err.Error())
+			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, nil); err != nil {
+		log.Error("Error writing response: " + err.Error())
+		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
 	}
 }

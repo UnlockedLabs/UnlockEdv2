@@ -1,3 +1,4 @@
+version: "3.7"
 services:
   postgres:
     image: postgres:16
@@ -24,12 +25,10 @@ services:
     links:
       - postgres:postgres
     volumes:
-      - type: bind
-        source: ./config
-        target: /home/ory
+      - config:/home/ory
     environment:
       - LOG_LEVEL=debug
-      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer
+      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer&max_conns=20&max_idle_conns=4
     command: ["migrate", "up", "-y"]
     restart: on-failure
     depends_on:
@@ -52,7 +51,7 @@ services:
     depends_on:
       - keto-migrate
     environment:
-      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=disable
+      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer&max_conns=20&max_idle_conns=4
     restart: on-failure
     networks:
       - intranet
@@ -78,6 +77,7 @@ services:
     environment:
       - KRATOS_PUBLIC_URL=http://kratos:4433/
       - KRATOS_BROWSER_URL=http://127.0.0.1:4433/
+      - COOKIE_SECRET=changeme
       - CSRF_COOKIE_NAME=ory_csrf_ui
       - CSRF_COOKIE_SECRET=changeme
       - PORT=4455

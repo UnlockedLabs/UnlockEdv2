@@ -10,17 +10,12 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.GetActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetActivityByUserID)))
 	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleGetProgramActivity)))
 	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
 }
 
-/****
- * @Query Params:
- * ?program=: id
- * ?year=: year (default last year)
- ****/
-func (srv *Server) GetActivityByUserID(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")

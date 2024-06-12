@@ -16,7 +16,9 @@ func (db *DB) GetUserCatalogue(userId int, tags []string) ([]UserCatalogueJoin, 
 	tx := db.Conn.Table("programs p").
 		Select("p.id as program_id, p.thumbnail_url, p.name as program_name, pp.name as provider_name, p.external_url, p.type as program_type, p.outcome_types, f.user_id IS NOT NULL as is_favorited").
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId)
+		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
+		Where("p.deleted_at IS NULL").
+		Where("pp.deleted_at IS NULL")
 	for i, tag := range tags {
 		if i == 0 {
 			tx.Where("p.outcome_types ILIKE ?", "%"+tag+"%")
@@ -50,7 +52,9 @@ func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, error
     COUNT(milestones.id) * 100.0 / p.total_progress_milestones as course_progress`).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("LEFT JOIN milestones on milestones.program_id = p.id AND milestones.user_id = ?", userId).
-		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId)
+		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
+		Where("p.deleted_at IS NULL").
+		Where("pp.deleted_at IS NULL")
 	for i, tag := range tags {
 		var query string
 		switch tag {
