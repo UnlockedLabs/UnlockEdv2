@@ -6,7 +6,6 @@ import {
 import { StarIcon as StarIconOutline } from "@heroicons/react/24/outline";
 import ProgressBar from "./ProgressBar";
 import { CourseStatus } from "@/Pages/MyCourses";
-import { useState } from "react";
 import { ViewType } from "./ToggleView";
 import axios from "axios";
 
@@ -26,8 +25,6 @@ export default function EnrolledCourseCard({
   view,
   callMutate
 }: CourseCard) {
-  const [favorite, setFavorite] = useState<boolean>(course.is_favorited);
-
   const coverImage = course.thumbnail_url
   let url = course.external_url;
 

@@ -49,7 +49,7 @@ type UserPrograms struct {
 func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint, uint, error) {
 	programs := []UserPrograms{}
 	tx := db.Conn.Table("programs p").
-		Select(`p.thumbnail_url,
+		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
     f.user_id IS NOT NULL as is_favorited,
     CASE WHEN COUNT(o.type) > 0 THEN 100 ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones END as course_progress,
@@ -84,7 +84,7 @@ func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint,
 		}
 	}
 
-	tx.Group("p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, p.total_progress_milestones, a.total_time")
+	tx.Group("p.id, p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, p.total_progress_milestones, a.total_time")
 	err := tx.Scan(&programs).Error
 	if err != nil {
 		return nil, 0, 0, err
