@@ -29,6 +29,7 @@ export default function LoginForm() {
       const login_flow = urlParams.get("flow");
       if (!login_flow) {
         console.error("No kratos login flow found");
+        window.location.replace("/");
         return;
       }
       const flow_response = await axios.get(
