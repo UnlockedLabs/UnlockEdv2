@@ -14,19 +14,21 @@ import axios from "axios";
 
 export interface CourseCard {
   course: any; // TO DO: will change to be specific
-  status: CourseStatus;
+  recent?: boolean
   view?: ViewType;
   callMutate?: () => void;
 }
 
 export default function EnrolledCourseCard({
   course,
-  status,
+  recent,
   view,
   callMutate
 }: CourseCard) {
   const coverImage = course.thumbnail_url
   let url = course.external_url;
+  let status: CourseStatus
+  if (course.course_progress == 100) status = CourseStatus.Completed
 
   function updateFavorite(){
     axios.put(`/api/programs/${course.id}/save`)
@@ -46,7 +48,7 @@ export default function EnrolledCourseCard({
       <div className="flex flex-row gap-3 items-center"
       
       >
-        {status !== CourseStatus.Recent &&
+        {!recent &&
           (course.is_favorited ? (
             <StarIcon className="h-5 text-primary-yellow"></StarIcon>
           ) : (
@@ -79,7 +81,7 @@ export default function EnrolledCourseCard({
       <div className="absolute top-2 right-2"
       onClick={() => {updateFavorite()}}
       >
-        {status !== CourseStatus.Recent &&
+        {!recent &&
           (course.is_favorited ? (
             <StarIcon className="h-5 text-primary-yellow"></StarIcon>
           ) : (

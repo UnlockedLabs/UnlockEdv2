@@ -80,7 +80,6 @@ export default function MyCourses() {
             return (
               <EnrolledCourseCard
                 course={course}
-                status={course.status}
                 view={activeView}
                 callMutate={callMutate}
                 key={index}

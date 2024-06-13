@@ -40,7 +40,8 @@ type CurrentEnrollment struct {
 	Name                 string           `json:"name"`
 	ProviderPlatformName string           `json:"provider_platform_name"`
 	ExternalURL          string           `json:"external_url"`
-	TotalActivityTime    []RecentActivity `json:"total_activity_time"`
+	TotalActivityTime    []RecentActivity `json:"total_activity_array"`
+	TotalTime            uint             `json:"total_time"`
 }
 
 type RecentProgram struct {

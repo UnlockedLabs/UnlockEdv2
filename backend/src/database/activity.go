@@ -121,10 +121,16 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				Name:                 result.Name,
 				ProviderPlatformName: result.ProviderPlatformName,
 				ExternalURL:          result.ExternalURL,
-				TotalActivityTime:    []models.RecentActivity{},
+				TotalActivityTime:    make([]models.RecentActivity, 7),
+				TotalTime:            0,
 			}
 		}
-		date, _ := time.Parse("2006-01-02", result.Date)
+		log.Info(result.TimeDelta)
+		date, err := time.Parse("2006-01-02T15:04:05Z", result.Date)
+		if err != nil {
+			log.Errorf("Error parsing date %s: %v", result.Date, err)
+			continue
+		}
 		index := int(time.Since(date).Hours() / 24)
 		if index >= 0 && index < 7 {
 			enrollmentsMap[result.ProgramID].TotalActivityTime[index] = models.RecentActivity{
@@ -132,7 +138,9 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				Delta: result.TimeDelta,
 			}
 		}
+		enrollmentsMap[result.ProgramID].TotalTime += result.TimeDelta
 	}
+
 	var enrollments []models.CurrentEnrollment
 	for _, enrollment := range enrollmentsMap {
 		enrollments = append(enrollments, *enrollment)
@@ -179,11 +187,13 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 				pp.name as provider_platform_name,
 				p.external_url,
 				DATE(a.created_at) as date,
-				a.time_delta`).
+				SUM(a.time_delta) as time_delta`).
 		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("JOIN activities a ON a.program_id = p.id").
+		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).
 		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
-		Group("p.id, a.time_delta, DATE(a.created_at), pp.name").
+		Where("o.type IS NULL").
+		Group("p.id, DATE(a.created_at), pp.name").
 		Find(&results).Error
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)

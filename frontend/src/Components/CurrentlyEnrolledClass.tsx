@@ -1,7 +1,6 @@
 import { ArrowUpRightIcon } from "@heroicons/react/24/solid";
 
 export default function CurrentlyEnrolledClass({ course }: { course: any }) {
-  console.log(course)
   return (
     <div
       className={`card bg-inner-background flex flex-row justify-between body-small py-3 px-6`}

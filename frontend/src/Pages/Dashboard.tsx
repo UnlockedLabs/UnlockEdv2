@@ -112,7 +112,16 @@ export const recentCourses = [
 export default function Dashboard() {
   const { user } = useAuth();
   const {data, error, isLoading} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/dashboard`)
-  console.log(data)
+
+  const convertSeconds = (secs: number) => {
+    const hours = Math.floor(secs / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    if (hours) {
+      return `${hours} hrs`;
+    } else {
+      return `${minutes} min`;
+    }
+  };
 
   return (
     <AuthenticatedLayout title="Dashboard">
@@ -127,7 +136,7 @@ export default function Dashboard() {
                 return (
                   <CourseCard
                     course={course}
-                    status={CourseStatus.Recent}
+                    recent={true}
                     key={index}
                   />
                 );
@@ -160,7 +169,7 @@ export default function Dashboard() {
                         >
                           <td className="body-small">{course.name}</td>
                           <td className="body-small">
-                            {Math.floor(course.total_activity_time / 60 / 60)} hrs
+                            {convertSeconds(course.total_time)}
                           </td>
                         </tr>
                       );
