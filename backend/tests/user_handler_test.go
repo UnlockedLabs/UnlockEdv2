@@ -77,6 +77,7 @@ func TestHandleShowUser(t *testing.T) {
 		user := server.Db.GetUserByID(1)
 		if user == nil {
 			t.Fatal(err)
+			return
 		}
 		received := rr.Body.String()
 		resource := models.Resource[models.User]{}

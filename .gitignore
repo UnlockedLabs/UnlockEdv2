@@ -4,7 +4,7 @@
 .github/workflows/test.yml
 /frontend/.husky/staged-files
 jar
-/logs/*.log
+/logs/*
 /frontend/public/build
 /frontend/public/thumbnails/*
 /migrations/migrations

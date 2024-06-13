@@ -12,20 +12,33 @@ import (
 
 func (srv *Server) registerMilestonesRoutes() {
 	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(http.HandlerFunc(srv.HandleIndexMilestones)))
-	srv.Mux.Handle("POST /api/milestones", srv.applyMiddleware(http.HandlerFunc(srv.HandleCreateMilestone)))
-	srv.Mux.Handle("DELETE /api/milestones", srv.applyMiddleware(http.HandlerFunc(srv.HandleDeleteMilestone)))
-	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleUpdateMilestone)))
+	srv.Mux.Handle("POST /api/milestones", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateMilestone)))
+	srv.Mux.Handle("DELETE /api/milestones", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteMilestone)))
+	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateMilestone)))
 }
 
 func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
 	orderBy := r.URL.Query().Get("order_by")
 	page, perPage := srv.GetPaginationInfo(r)
-	total, milestones, err := srv.Db.GetMilestones(page, perPage, search, orderBy)
-	if err != nil {
-		log.Debug("IndexMilestones Database Error: ", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	var milestones []database.MilestoneResponse
+	err := error(nil)
+	total := int64(0)
+	if !srv.UserIsAdmin(r) {
+		userId := r.Context().Value(ClaimsKey).(*Claims).UserID
+		total, milestones, err = srv.Db.GetMilestonesForUser(page, perPage, userId)
+		if err != nil {
+			log.Debug("IndexMilestones Database Error: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		total, milestones, err = srv.Db.GetMilestones(page, perPage, search, orderBy)
+		if err != nil {
+			log.Debug("IndexMilestones Database Error: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	last := srv.CalculateLast(total, perPage)
 	paginationData := models.PaginationMeta{

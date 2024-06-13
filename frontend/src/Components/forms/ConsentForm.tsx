@@ -3,16 +3,16 @@ import axios from "axios";
 export default function ConsentForm() {
   const accept = async () => {
     try {
-      const consent = window.location.search.split("?consent_challenge=")[1];
-      const response = await axios(`/api/consent/accept`, {
+      const urlParams = new URLSearchParams(window.location.search);
+      const consent = urlParams.get("consent_challenge");
+      await axios(`/api/consent/accept`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         data: { consent_challenge: consent },
       });
-      const redirect = response.data.redirect_to;
-      window.location.assign(redirect);
+      return;
     } catch (error: any) {
       console.error(error.response);
     }

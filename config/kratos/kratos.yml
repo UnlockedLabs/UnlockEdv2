@@ -1,0 +1,132 @@
+version: v0.13.0
+
+dsn: postgres://kratos:ChangeMe!@postgres:5432/kratos?sslmode=prefer&max_conns=20&max_idle_conns=4
+
+serve:
+  public:
+    cors:
+      enabled: true
+      allowed_origins:
+        - "*"
+        - http://127.0.0.1
+        - http://localhost
+        - https://example.org
+        - https://*.example.org
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Cookie
+        - Content-Type
+        - Accept
+      exposed_headers:
+        - Content-Type
+        - Set-Cookie
+        - Access-Control-Allow-Origin
+    base_url: http://127.0.0.1:4433/
+  admin:
+    base_url: http://kratos:4434/
+
+oauth2_provider:
+  url: http://hydra:4445
+
+selfservice:
+  default_browser_return_url: http://127.0.0.1/dashboard
+  allowed_return_urls:
+    - http://127.0.0.1:4455
+    - /dashboard
+    - http://127.0.0.1/dashboard
+    - http://localhost:19006/Callback
+    - exp://localhost:8081/--/Callback
+
+  methods:
+    password:
+      enabled: true
+    oidc:
+      enabled: true
+    totp:
+      config:
+        issuer: Kratos
+      enabled: true
+    lookup_secret:
+      enabled: true
+    link:
+      enabled: false
+    code:
+      enabled: true
+
+  flows:
+    error:
+      ui_url: http://127.0.0.1:4455/error
+
+    settings:
+      ui_url: http://127.0.0.1:4455/settings
+      privileged_session_max_age: 15m
+      required_aal: highest_available
+
+    recovery:
+      enabled: false
+      ui_url: http://127.0.0.1:4455/recovery
+      use: code
+
+    verification:
+      enabled: false
+      ui_url: http://127.0.0.1:4455/verification
+      use: code
+      after:
+        default_browser_return_url: http://127.0.0.1:4455/welcome
+
+    logout:
+      after:
+        default_browser_return_url: http://127.0.0.1:4455/login
+
+    login:
+      ui_url: http://127.0.0.1/login
+      lifespan: 10m
+
+    registration:
+      lifespan: 10m
+      ui_url: http://127.0.0.1:4455/registration
+      after:
+        password:
+          hooks:
+            - hook: session
+            - hook: show_verification_ui
+
+log:
+  level: trace
+  format: json
+  leak_sensitive_values: true
+
+secrets:
+  cookie:
+    - uy#@8lr8jlll82ItMjUwIiwidmo8ijf2
+  cipher:
+    - eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
+
+ciphers:
+  algorithm: xchacha20-poly1305
+
+hashers:
+  algorithm: bcrypt
+  bcrypt:
+    cost: 8
+
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+courier:
+  smtp:
+    connection_uri: smtp://foo:bar@example.com
+    from_address: no-reply@ory.kratos.sh
+    local_name: localhost
+
+feature_flags:
+  use_continue_with_transitions: true
