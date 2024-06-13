@@ -12,8 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (srv *Server) handleCreateUserKratos(newUser LoginRequest) error {
-	identity := client.NewCreateIdentityBody("default", map[string]interface{}{"username": newUser.Username})
+func (srv *Server) handleCreateUserKratos(username, password string) error {
+	identity := client.NewCreateIdentityBody("default", map[string]interface{}{"username": username})
 	created, resp, err := srv.OryClient.IdentityAPI.CreateIdentity(context.Background()).CreateIdentityBody(*identity).Execute()
 	if err != nil {
 		log.Errorf("Error creating identity: %v", err)
@@ -23,13 +23,17 @@ func (srv *Server) handleCreateUserKratos(newUser LoginRequest) error {
 		log.Errorf("Error creating identity: %v", resp.StatusCode)
 		return errors.New("error creating identity")
 	}
-	user := srv.Db.GetUserByUsername(newUser.Username)
+	user := srv.Db.GetUserByUsername(username)
 	if user == nil {
 		log.Error("user not found immediately after creation, this should not happen")
 		return errors.New("user not found")
 	}
 	user.KratosID = created.GetId()
-	srv.handleUpdatePasswordKratos(user)
+	err = srv.handleUpdatePasswordKratos(user, password)
+	if err != nil {
+		log.Error("Error updating password for new kratos user")
+		return err
+	}
 	updated, err := srv.Db.UpdateUser(user)
 	if err != nil {
 		log.Error("Error updating user")
@@ -39,16 +43,12 @@ func (srv *Server) handleCreateUserKratos(newUser LoginRequest) error {
 	return nil
 }
 
-func (srv *Server) handleUpdatePasswordKratos(user *models.User) {
+func (srv *Server) handleUpdatePasswordKratos(user *models.User, password string) error {
 	if user.KratosID == "" {
-		log.Debug("User does not have a kratos ID, creating new identity")
-		err := srv.handleCreateUserKratos(LoginRequest{Username: user.Username, Password: user.Password})
-		if err != nil {
-			log.Error("Error creating user in kratos")
-			return
-		}
+		return errors.New("kratos ID is empty, please create user in kratos first")
 	}
-	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	log.Infof("updating password for user: %s and KratosID: %s", user.Username, user.KratosID)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Errorf("Error hashing password: %v", err)
 	}
@@ -66,9 +66,12 @@ func (srv *Server) handleUpdatePasswordKratos(user *models.User) {
 	updatedIdent, resp, err := srv.OryClient.IdentityAPI.UpdateIdentity(context.Background(), user.KratosID).UpdateIdentityBody(update).Execute()
 	if err != nil {
 		log.Errorf("Error updating identity with user password: %v", err)
+		return err
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("Error updating identity with user password: %v", resp.StatusCode)
+		return errors.New("error updating identity")
 	}
 	log.Infof("password updated successfully for user: %s and KratosID: %s", user.Username, updatedIdent.GetId())
+	return nil
 }

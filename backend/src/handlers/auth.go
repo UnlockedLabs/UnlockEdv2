@@ -162,10 +162,14 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	if !srv.isTesting(r) {
 		user := srv.Db.GetUserByID(claims.UserID)
 		if user == nil {
-			log.Fatal("user not found from cookie, this should not happen, so we fail")
+			log.Fatal("user from claims not found, this should never happen")
+			return
 		}
-		user.Password = password
-		srv.handleUpdatePasswordKratos(user)
+		if err := srv.handleUpdatePasswordKratos(user, password); err != nil {
+			log.Errorln("Error updating password in kratos: ", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, "Password reset successfully"); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())

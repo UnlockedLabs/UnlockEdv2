@@ -55,7 +55,7 @@ selfservice:
     lookup_secret:
       enabled: true
     link:
-      enabled: true
+      enabled: false
     code:
       enabled: true
 
@@ -69,12 +69,12 @@ selfservice:
       required_aal: highest_available
 
     recovery:
-      enabled: true
+      enabled: false
       ui_url: http://127.0.0.1:4455/recovery
       use: code
 
     verification:
-      enabled: true
+      enabled: false
       ui_url: http://127.0.0.1:4455/verification
       use: code
       after:
@@ -124,7 +124,9 @@ identity:
 
 courier:
   smtp:
-    connection_uri: smtps://test:test@mailslurper:1025/?skip_ssl_verify=true
+    connection_uri: smtp://foo:bar@example.com
+    from_address: no-reply@ory.kratos.sh
+    local_name: localhost
 
 feature_flags:
   use_continue_with_transitions: true
