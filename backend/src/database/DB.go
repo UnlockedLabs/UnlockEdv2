@@ -35,7 +35,7 @@ var TableList = []interface{}{
 	&models.UserFavorite{},
 }
 
-func InitDB(isTesting bool) (*DB, bool) {
+func InitDB(isTesting bool) *DB {
 	var db *gorm.DB
 	var err error
 
@@ -58,16 +58,15 @@ func InitDB(isTesting bool) (*DB, bool) {
 	}
 	database = &DB{Conn: db}
 	Migrate(db)
-	firstRun := SeedDefaultData(db)
+	SeedDefaultData(db)
 	if isTesting {
 		database.SeedTestData()
 	}
-	return database, firstRun
+	return database
 }
 
-func SeedDefaultData(db *gorm.DB) (isFirstRun bool) {
+func SeedDefaultData(db *gorm.DB) {
 	if db.Exec("SELECT id FROM users WHERE username = 'SuperAdmin'").RowsAffected == 0 {
-		isFirstRun = true
 		user := models.User{
 			Username:      "SuperAdmin",
 			NameFirst:     "Super",
@@ -78,6 +77,7 @@ func SeedDefaultData(db *gorm.DB) (isFirstRun bool) {
 			Password:      "ChangeMe!",
 		}
 		log.Printf("Creating user: %v", user)
+		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")
 		err := user.HashPassword()
 		if err != nil {
 			log.Fatalf("Failed to hash password: %v", err)
@@ -93,7 +93,6 @@ func SeedDefaultData(db *gorm.DB) (isFirstRun bool) {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
 	}
-	return
 }
 
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`

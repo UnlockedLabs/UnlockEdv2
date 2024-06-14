@@ -23,6 +23,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      kratos-migrate:
+        condition: service_completed_successfully
     env_file:
       - "./backend/.env"
     command: >
@@ -56,6 +58,7 @@ services:
       - 80:80
     environment:
       - APP_ENV=production
+      - KRATOS_LOGIN_URL=http://localhost:4433/self-service/login
     env_file: frontend/.env
     networks:
       - intranet

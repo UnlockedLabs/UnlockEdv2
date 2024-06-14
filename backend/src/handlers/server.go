@@ -46,8 +46,8 @@ func ServerWithDBHandle(db *database.DB) *Server {
 
 func NewServer(isTesting bool) *Server {
 	if isTesting {
-		db, _ := database.InitDB(true)
-		return &Server{Db: db, Mux: http.NewServeMux()}
+		db := database.InitDB(true)
+		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil}
 	} else {
 		configuration := ory.NewConfiguration()
 		configuration.Servers = []ory.ServerConfiguration{
@@ -56,14 +56,12 @@ func NewServer(isTesting bool) *Server {
 			},
 		}
 		apiClient := ory.NewAPIClient(configuration)
-		db, first := database.InitDB(false)
+		db := database.InitDB(false)
 		mux := http.NewServeMux()
 		server := Server{Db: db, Mux: mux, OryClient: apiClient}
 		server.RegisterRoutes()
-		if first {
-			if err := server.handleCreateUserKratos(LoginRequest{Username: "SuperAdmin", Password: "ChangeMe!"}); err != nil {
-				log.Printf("Error creating super admin in kratos: %v", err)
-			}
+		if err := server.setupDefaultAdminInKratos(); err != nil {
+			log.Fatal("Error setting up default admin in Kratos")
 		}
 		return &server
 	}
@@ -98,6 +96,25 @@ func CorsMiddleware(next http.Handler) http.HandlerFunc {
 		}
 		next.ServeHTTP(w, r.WithContext(r.Context()))
 	}
+}
+
+func (srv *Server) setupDefaultAdminInKratos() error {
+	user := srv.Db.GetUserByUsername("SuperAdmin")
+	if user == nil {
+		log.Println("SuperAdmin not found in database, this shouldn't happen")
+		database.SeedDefaultData(srv.Db.Conn)
+		// rerun after seeding the default user
+		if err := srv.setupDefaultAdminInKratos(); err != nil {
+			return err
+		}
+	}
+	if user.KratosID == "" {
+		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
+			log.Println("Error creating SuperAdmin in Kratos")
+			return err
+		}
+	}
+	return nil
 }
 
 type TestClaims string
@@ -161,6 +178,9 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+	if data == nil {
+		return nil
+	}
 	if resp, ok := data.(string); ok {
 		_, err := w.Write([]byte(resp))
 		return err

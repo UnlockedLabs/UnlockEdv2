@@ -114,7 +114,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		// if we aren't in a testing environment, register the user as an Identity with Kratos
 		if !srv.isTesting(r) {
-			if err := srv.handleCreateUserKratos(LoginRequest{Username: newUser.Username, Password: newUser.Password}); err != nil {
+			if err := srv.handleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
 				log.Printf("Error creating user in kratos: %v", err)
 			}
 		}
@@ -202,9 +202,29 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	}
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: ", err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+	user := srv.Db.GetUserByID(uint(temp.UserID))
+	if user == nil {
+		log.Errorf("Exising user not found, this should never happen: %v", temp.UserID)
+		http.Error(w, "internal server error: existing user not found", http.StatusInternalServerError)
 		return
+	}
+	if user.KratosID == "" {
+		err := srv.handleCreateUserKratos(user.Username, newPass)
+		if err != nil {
+			log.Errorf("Error creating user in kratos: %v", err)
+			http.Error(w, "internal server error: error creating user in kratos", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if err := srv.handleUpdatePasswordKratos(user, newPass); err != nil {
+			log.Error("Error updating password for new kratos user")
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+			log.Error("Error writing response: ", err.Error())
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 }
