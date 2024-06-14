@@ -4,12 +4,12 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -77,6 +77,7 @@ func SeedDefaultData(db *gorm.DB) {
 			Password:      "ChangeMe!",
 		}
 		log.Printf("Creating user: %v", user)
+		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")
 		err := user.HashPassword()
 		if err != nil {
 			log.Fatalf("Failed to hash password: %v", err)

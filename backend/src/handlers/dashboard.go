@@ -10,6 +10,7 @@ import (
 func (srv *Server) registerDashboardRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserDashboard)))
 	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserCatalogue)))
+	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserPrograms)))
 }
 
 func (srv *Server) HandleUserDashboard(w http.ResponseWriter, r *http.Request) {
@@ -55,6 +56,31 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, userCatalogue); err != nil {
 		log.Errorf("user catalogue endpoint: error writing response: %v", err)
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
+	userId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		log.Errorf("Error parsing user ID: %v", err)
+		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !srv.canViewUserData(r) {
+		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's programs")
+		return
+	}
+	tags := r.URL.Query()["tags"]
+	userPrograms, err := srv.Db.GetUserPrograms(uint(userId), tags)
+	if err != nil {
+		log.Errorf("Error getting user programs: %v", err)
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, userPrograms); err != nil {
+		log.Errorf("user programs endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

@@ -6,7 +6,7 @@ serve:
         - http://localhost:8080
         - http://localhost:5173
         - http://localhost
-        - https://staging.canavs.unlockedlabs.xyz
+        - https://staging.canvas.unlockedlabs.xyz
       allowed_methods:
         - POST
         - GET
@@ -23,9 +23,8 @@ serve:
     cors:
       enabled: true
       allowed_origins:
-        - http://localhost:8080
-        - http://localhost:5173
         - http://localhost
+        - https://staging.canvas.unlockedlabs.xyz
       allowed_methods:
         - POST
         - GET
@@ -36,6 +35,7 @@ serve:
         - Authorization
       exposed_headers:
         - Content-Type
+        - Access-Control-Allowed-Origins
   cookies:
     same_site_mode: None
 log:
@@ -43,7 +43,7 @@ log:
 
 urls:
   self:
-    issuer: http://localhost:4444
+    issuer: http://localhost
   consent: http://localhost/consent
   login: http://localhost/login
   logout: http://localhost/logout
@@ -56,6 +56,5 @@ oidc:
   subject_identifiers:
     supported_types:
       - pairwise
-      - public
     pairwise:
       salt: 2839o82hy2839OO#@#$@OFw@ksj8*^@*^$LSwsifw2692o

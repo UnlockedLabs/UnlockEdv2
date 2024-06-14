@@ -6,14 +6,17 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 
+	ory "github.com/ory/kratos-client-go"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
-	Db  *database.DB
-	Mux *http.ServeMux
+	Db        *database.DB
+	Mux       *http.ServeMux
+	OryClient *ory.APIClient
 }
 
 /**
@@ -34,6 +37,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerActivityRoutes()
 	srv.registerOidcRoutes()
 	srv.registerDashboardRoutes()
+	srv.registerOidcFlowRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -42,12 +46,23 @@ func ServerWithDBHandle(db *database.DB) *Server {
 
 func NewServer(isTesting bool) *Server {
 	if isTesting {
-		return &Server{Db: database.InitDB(true), Mux: http.NewServeMux()}
+		db := database.InitDB(true)
+		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil}
 	} else {
+		configuration := ory.NewConfiguration()
+		configuration.Servers = []ory.ServerConfiguration{
+			{
+				URL: os.Getenv("KRATOS_ADMIN_URL"),
+			},
+		}
+		apiClient := ory.NewAPIClient(configuration)
 		db := database.InitDB(false)
 		mux := http.NewServeMux()
-		server := Server{Db: db, Mux: mux}
+		server := Server{Db: db, Mux: mux, OryClient: apiClient}
 		server.RegisterRoutes()
+		if err := server.setupDefaultAdminInKratos(); err != nil {
+			log.Fatal("Error setting up default admin in Kratos")
+		}
 		return &server
 	}
 }
@@ -83,6 +98,33 @@ func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	}
 }
 
+func (srv *Server) setupDefaultAdminInKratos() error {
+	user := srv.Db.GetUserByUsername("SuperAdmin")
+	if user == nil {
+		log.Println("SuperAdmin not found in database, this shouldn't happen")
+		database.SeedDefaultData(srv.Db.Conn)
+		// rerun after seeding the default user
+		if err := srv.setupDefaultAdminInKratos(); err != nil {
+			return err
+		}
+	}
+	if user.KratosID == "" {
+		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
+			log.Println("Error creating SuperAdmin in Kratos")
+			return err
+		}
+	}
+	return nil
+}
+
+type TestClaims string
+
+const TestingClaimsKey = TestClaims("test_claims")
+
+func (srv *Server) isTesting(r *http.Request) bool {
+	return r.Context().Value(TestingClaimsKey) != nil
+}
+
 func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testClaims := &Claims{
@@ -91,7 +133,8 @@ func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 			Role:          "admin",
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-		h.ServeHTTP(w, r.WithContext(ctx))
+		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
+		h.ServeHTTP(w, r.WithContext(test_ctx))
 	})
 }
 
@@ -135,6 +178,9 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+	if data == nil {
+		return nil
+	}
 	if resp, ok := data.(string); ok {
 		_, err := w.Write([]byte(resp))
 		return err

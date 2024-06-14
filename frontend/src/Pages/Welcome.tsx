@@ -39,7 +39,7 @@ export default function Welcome() {
           <ul className="menu menu-horizontal px-1 text-primary">
             {!isLoggedIn ? (
               <li>
-                <a href="login">Log in</a>
+                <a href={"/self-service/login/browser"}>Log in</a>
               </li>
             ) : (
               <li>
