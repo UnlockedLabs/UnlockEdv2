@@ -125,7 +125,6 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				TotalTime:            0,
 			}
 		}
-		log.Info(result.TimeDelta)
 		date, err := time.Parse("2006-01-02T15:04:05Z", result.Date)
 		if err != nil {
 			log.Errorf("Error parsing date %s: %v", result.Date, err)
@@ -168,7 +167,9 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
     ORDER BY created_at DESC
     LIMIT 3 ) sub_milestones ON sub_milestones.program_id = p.id`, userID).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).
 		Where("p.id IN (SELECT program_id FROM activities WHERE user_id = ?)", userID).
+		Where("o.type IS NULL").
 		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name").
 		Find(&recentPrograms).Error
 	if err != nil {

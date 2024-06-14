@@ -3,9 +3,7 @@ import PageNav from "@/Components/PageNav";
 import ToggleView, { ViewType } from "@/Components/ToggleView";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { useEffect, useState } from "react";
-import { recentCourses } from "./Dashboard";
 import CatalogCourseCard from "@/Components/CatalogCourseCard";
-import CatalogCourseCardList from "@/Components/CatalogCourseCardList";
 import { Program, ServerResponse } from "@/common";
 import useSWR from "swr";
 
