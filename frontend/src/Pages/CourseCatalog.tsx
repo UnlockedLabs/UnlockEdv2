@@ -14,7 +14,7 @@ export default function CourseCatalog() {
   const {user} = useAuth();
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
-  const {data, mutate, error, isLoading} = useSWR<ServerResponse<Program>>(`/api/users/${user.id}/catalogue`)
+  const {data, mutate} = useSWR<ServerResponse<Program>>(`/api/users/${user.id}/catalogue`)
 
   useEffect(() => {
     console.log(data);

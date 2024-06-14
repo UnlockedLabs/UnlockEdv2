@@ -4,16 +4,18 @@ import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
 import { Activity } from "../common";
 import { useState } from "react";
 import useSWR from "swr";
-import { useDebounceValue } from "usehooks-ts";
+// import { useDebounceValue } from "usehooks-ts";
 
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../AuthContext";
 
 export default function UserActivity() {
   const [searchTerm, setSearchTerm] = useState("");
-  const searchQuery = useDebounceValue(searchTerm, 300);
+  // const searchQuery = useDebounceValue(searchTerm, 300);
   const {user} = useAuth();
+  // TO DO: come back and figure out pagequery
   const [pageQuery, setPageQuery] = useState(1);
+  pageQuery
 
   const [sortQuery, setSortQuery] = useState("desc");
 

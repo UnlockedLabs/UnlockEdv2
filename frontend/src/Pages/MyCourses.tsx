@@ -29,7 +29,7 @@ export default function MyCourses() {
   const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
-  const {data, mutate, error, isLoading} = useSWR<ServerResponse<Program>>(`/api/users/${user.id}/programs${activeTab !== TabType.All ? `?tags=${activeTab}`: ""}`)
+  const {data, mutate} = useSWR<ServerResponse<Program>>(`/api/users/${user.id}/programs${activeTab !== TabType.All ? `?tags=${activeTab}`: ""}`)
 
   useEffect(() => {
     console.log(data);
@@ -46,7 +46,7 @@ export default function MyCourses() {
       <div className="px-8 py-4">
         <h1>My Courses</h1>
         <div className="flex flex-row gap-16 w-100 border-b-2 border-grey-2 py-3">
-          {Object.entries(TabType).map(([key, value]) => (
+          {Object.entries(TabType).map(([key]) => (
             <button
               className={
                 activeTab == TabType[key] ? "text-teal-4 font-bold" : ""

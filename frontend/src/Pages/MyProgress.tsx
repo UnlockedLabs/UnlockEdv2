@@ -3,7 +3,6 @@ import PageNav from "@/Components/PageNav";
 import StatsCard from "@/Components/StatsCard";
 import UserActivityMap from "@/Components/UserActivityMap";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { CourseStatus } from "./MyCourses";
 import CompletePill from "@/Components/pill-labels/CompletePill";
 import InProgressPill from "@/Components/pill-labels/InProgressPill";
 import useSWR from "swr";
@@ -11,8 +10,8 @@ import { ServerResponse } from "@/common";
 
 export default function MyProgress() {
   const {user} = useAuth();
-  const {data, isLoading, error} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/programs`)
-  const {data:certificates, isLoading:certificatesLoading, error:certificatesError} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/outcomes?type=certificate`)
+  const {data} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/programs`)
+  const {data:certificates} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/outcomes?type=certificate`)
 
   console.log(data)
 

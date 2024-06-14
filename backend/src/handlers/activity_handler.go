@@ -10,8 +10,8 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.GetActivityByUserID)))
-	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(http.HandlerFunc(srv.GetDailyActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetDailyActivityByUserID)))
 	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleGetProgramActivity)))
 	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
 }
@@ -40,7 +40,7 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
  * @Query Params:
  * ?year=: year (default last year)
  ****/
- func (srv *Server) GetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
+ func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
 	// Parse userID from path
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
