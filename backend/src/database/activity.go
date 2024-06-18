@@ -151,25 +151,5 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 		log.Fatalf("Query failed: %v", err)
 	}
 
-	weekActivityMap := make(map[time.Time]uint)
-	for _, activity := range activities {
-		dateTime, err := time.Parse("2006-01-02", activity.Date)
-		if err != nil {
-			log.Errorf("Error parsing date %s: %v\n", activity.Date, err)
-			continue
-		}
-		weekActivityMap[dateTime] = activity.Delta
-	}
-
-	weekActivity := make([]uint, 7)
-	startDate := time.Now().AddDate(0, 0, -7).Truncate(24 * time.Hour)
-	for i := 0; i < 7; i++ {
-		date := startDate.AddDate(0, 0, i)
-		if delta, ok := weekActivityMap[date]; ok {
-			weekActivity[i] = delta
-		}
-	}
-
-
 	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, WeekActivity: activities}, err
 }
