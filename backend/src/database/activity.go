@@ -50,17 +50,10 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				Name:                 result.Name,
 				ProviderPlatformName: result.ProviderPlatformName,
 				ExternalURL:          result.ExternalURL,
-				TotalActivityTime:    []models.RecentActivity{},
+				TotalTime:            0,
 			}
 		}
-		date, _ := time.Parse("2006-01-02", result.Date)
-		index := int(time.Since(date).Hours() / 24)
-		if index >= 0 && index < 7 {
-			enrollmentsMap[result.ProgramID].TotalActivityTime[index] = models.RecentActivity{
-				Date:  result.Date,
-				Delta: result.TimeDelta,
-			}
-		}
+		enrollmentsMap[result.ProgramID].TotalTime += result.TimeDelta
 	}
 	var enrollments []models.CurrentEnrollment
 	for _, enrollment := range enrollmentsMap {
@@ -142,10 +135,41 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 				Name:                 enrollment.Name,
 				ProviderPlatformName: enrollment.ProviderPlatformName,
 				ExternalURL:          enrollment.ExternalURL,
-				TotalActivityTime:    []models.RecentActivity{},
 			})
 			log.Printf("enrollments: %v", enrollments)
 		}
 	}
-	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms}, err
+	// get activity for past 7 days
+	var activities []models.RecentActivity
+
+	err = db.Conn.Table("activities a").
+		Select(`DATE(a.created_at) as date, SUM(a.time_delta) as delta`).
+		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
+		Group("date").
+		Find(&activities).Error
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
+	}
+
+	weekActivityMap := make(map[time.Time]uint)
+	for _, activity := range activities {
+		dateTime, err := time.Parse("2006-01-02", activity.Date)
+		if err != nil {
+			log.Errorf("Error parsing date %s: %v\n", activity.Date, err)
+			continue
+		}
+		weekActivityMap[dateTime] = activity.Delta
+	}
+
+	weekActivity := make([]uint, 7)
+	startDate := time.Now().AddDate(0, 0, -7).Truncate(24 * time.Hour)
+	for i := 0; i < 7; i++ {
+		date := startDate.AddDate(0, 0, i)
+		if delta, ok := weekActivityMap[date]; ok {
+			weekActivity[i] = delta
+		}
+	}
+
+
+	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, WeekActivity: activities}, err
 }

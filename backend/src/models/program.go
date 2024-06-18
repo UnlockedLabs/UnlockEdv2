@@ -40,7 +40,7 @@ type CurrentEnrollment struct {
 	Name                 string           `json:"name"`
 	ProviderPlatformName string           `json:"provider_platform_name"`
 	ExternalURL          string           `json:"external_url"`
-	TotalActivityTime    []RecentActivity `json:"total_activity_time"`
+	TotalTime            uint             `json:"total_activity_time"`
 }
 
 type RecentProgram struct {
@@ -55,6 +55,7 @@ type RecentProgram struct {
 type UserDashboardJoin struct {
 	Enrollments    []CurrentEnrollment `json:"enrollments"`
 	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
+	WeekActivity   []RecentActivity	   `json:"week_activity"`
 }
 
 type ImportProgram struct {

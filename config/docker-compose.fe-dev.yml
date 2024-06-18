@@ -13,11 +13,15 @@ services:
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
       - HYDRA_PUBLIC_URL=http://hydra:4444
+      - KRATOS_ADMIN_URL=http://kratos:4434
+      - KRATOS_PUBLIC_URL=http://kratos:4433
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      kratos-migrate:
+        condition: service_completed_successfully
     env_file:
       - "./backend/.env"
     command: >

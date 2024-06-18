@@ -114,6 +114,16 @@ export default function Dashboard() {
   const {data, error, isLoading} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/dashboard`)
   console.log(data)
 
+  const convertSeconds = (secs: number) => {
+    const hours = Math.floor(secs / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    if (hours) {
+      return `${hours} hrs`;
+    } else {
+      return `${minutes} min`;
+    }
+  };
+
   return (
     <AuthenticatedLayout title="Dashboard">
       <PageNav user={user} path={["Dashboard"]} />
@@ -160,7 +170,7 @@ export default function Dashboard() {
                         >
                           <td className="body-small">{course.name}</td>
                           <td className="body-small">
-                            {Math.floor(course.total_activity_time / 60 / 60)} hrs
+                            {convertSeconds(course.total_activity_time)}
                           </td>
                         </tr>
                       );
