@@ -3,26 +3,42 @@ import PageNav from "@/Components/PageNav";
 import StatsCard from "@/Components/StatsCard";
 import UserActivityMap from "@/Components/UserActivityMap";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { recentCourses } from "./Dashboard";
-import { CourseStatus } from "./MyCourses";
 import CompletePill from "@/Components/pill-labels/CompletePill";
 import InProgressPill from "@/Components/pill-labels/InProgressPill";
+import useSWR from "swr";
+import { ServerResponse } from "@/common";
 
 export default function MyProgress() {
-  const auth = useAuth();
+  const {user} = useAuth();
+  const {data} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/programs`)
+  const {data:certificates} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/outcomes?type=certificate`)
+
+  console.log(data)
+
+  const convertSeconds = (secs: number) => {
+    const hours = Math.floor(secs / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    if (hours) {
+      return `${hours} hrs`;
+    } else {
+      return `${minutes} min`;
+    }
+  };
 
   return (
     <AuthenticatedLayout title="My Progress">
-      <PageNav user={auth.user} path={["My Progress"]} />
+      <PageNav user={user} path={["My Progress"]} />
       <div className="px-8 py-4 overflow-hidden">
         <h1>My Progress</h1>
-        <div className="mt-7 flex flex-row gap-12">
-          <div className="flex flex-col gap-5 w-full">
-            <StatsCard title="TOTAL TIME" number={"11,321"} label="hrs" />
-            <StatsCard title="COMPLETED" number={"37"} label="courses" />
+        {data && (
+          <>
+          <div className="mt-7 flex flex-row gap-12">
+          <div className="flex flex-col justify-between w-full">
+            <StatsCard title="TOTAL TIME" number={Math.floor(data.total_time / 3600).toString()} label="hours" />
+            <StatsCard title="COMPLETED" number={data.num_completed.toString()} label="courses" />
           </div>
           <div className="w-full">
-            <UserActivityMap user={auth.user} />
+            <UserActivityMap />
           </div>
         </div>
         <div className="flex flex-row gap-12 mt-12">
@@ -41,17 +57,17 @@ export default function MyProgress() {
                 </tr>
               </thead>
               <tbody className="flex flex-col gap-4 mt-4">
-                {recentCourses.map((course: any, index: number) => {
+                {data.programs.map((course: any, index: number) => {
                   return (
                     <tr
                       className="flex flex-row justify-between body-small items-center"
                       key={index}
                     >
                       <td className="w-1/2">
-                        {course.course_name} • {course.provider_platform_name}
+                        {course.program_name}
                       </td>
                       <td className="w-1/5 flex">
-                        {course.status == CourseStatus.Completed ? (
+                        {course.course_progress == 100 ? (
                           <CompletePill />
                         ) : (
                           <InProgressPill />
@@ -59,7 +75,7 @@ export default function MyProgress() {
                       </td>
                       <td className="w-1/5">{course?.grade || "-"}</td>
                       <td className="w-1/5">
-                        {Math.floor(course.total_time / 60 / 60)} hrs
+                        {convertSeconds(course.total_time)}
                       </td>
                     </tr>
                   );
@@ -79,10 +95,29 @@ export default function MyProgress() {
                   <th className="body text-grey-4">Date Recieved</th>
                 </tr>
               </thead>
-              <tbody className="flex flex-col gap-4 mt-4"></tbody>
+              <tbody className="flex flex-col gap-4 mt-4">
+                {certificates?.data.map((certificate:any) => {
+                  return (
+                    <tr
+                      className="flex flex-row justify-between body-small items-center"
+                      key={Math.random()}
+                    >
+                      <td className="w-1/2">
+                        {certificate.program_name}
+                      </td>
+                      <td className="w-1/5 flex">
+                        {new Date(certificate.created_at.split("T")[0]).toLocaleDateString('en-US')}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
             </table>
           </div>
         </div>
+          </>
+        )}
+        
       </div>
     </AuthenticatedLayout>
   );

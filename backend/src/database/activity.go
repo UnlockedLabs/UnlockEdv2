@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"time"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -19,6 +20,76 @@ func (db *DB) GetActivityByUserID(page, perPage, userID int) (int64, []models.Ac
 	_ = db.Conn.Model(&models.Activity{}).Where("user_id = ?", userID).Count(&count)
 	return count, activities, db.Conn.Where("user_id = ?", userID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error
 }
+
+func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]models.DailyActivity, error) {
+    var activities []models.Activity
+    var startDate time.Time
+    var endDate time.Time
+
+    // Calculate start and end dates for the past year
+    if year == 0 {
+        startDate = time.Now().AddDate(-1, 0, 0).Truncate(24 * time.Hour)
+        endDate = time.Now().Truncate(24 * time.Hour)
+    } else {
+        startDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+        endDate = time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC).Add(-1 * time.Second)
+    }
+
+    if err := db.Conn.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
+        return nil, err
+    }
+
+    // Combine activities based on date
+    dailyActivities := make(map[time.Time]models.DailyActivity)
+    for _, activity := range activities {
+        date := activity.CreatedAt.Truncate(24 * time.Hour)
+        if dailyActivity, ok := dailyActivities[date]; ok {
+            dailyActivity.TotalTime += activity.TimeDelta
+            dailyActivity.Activities = append(dailyActivity.Activities, activity)
+            dailyActivities[date] = dailyActivity
+        } else {
+            dailyActivities[date] = models.DailyActivity{
+                Date:       date,
+                TotalTime:  activity.TimeDelta,
+                Activities: []models.Activity{activity},
+            }
+        }
+    }
+
+    // Convert map to slice
+    var dailyActivityList []models.DailyActivity
+    for _, dailyActivity := range dailyActivities {
+        dailyActivityList = append(dailyActivityList, dailyActivity)
+    }
+
+    // Sort daily activity list by total time
+	sort.Slice(dailyActivityList, func(i, j int) bool {
+        return dailyActivityList[i].TotalTime < dailyActivityList[j].TotalTime
+    })
+
+    // Calculate quartiles for each day's activities
+    n := len(dailyActivityList)
+    for i := range dailyActivityList {
+        switch {
+        case i < n/4:
+            dailyActivityList[i].Quartile = 1
+        case i < n/2:
+            dailyActivityList[i].Quartile = 2
+        case i < 3*n/4:
+            dailyActivityList[i].Quartile = 3
+        default:
+            dailyActivityList[i].Quartile = 4
+        }
+    }
+
+	//sort by date
+	sort.Slice(dailyActivityList, func(i, j int) bool {
+        return dailyActivityList[i].Date.Before(dailyActivityList[j].Date)
+    })
+
+    return dailyActivityList, nil
+}
+
 
 func (db *DB) GetActivityByProgramID(page, perPage, programID int) (int64, []models.Activity, error) {
 	var activities []models.Activity
@@ -50,10 +121,15 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				Name:                 result.Name,
 				ProviderPlatformName: result.ProviderPlatformName,
 				ExternalURL:          result.ExternalURL,
-				TotalActivityTime:    []models.RecentActivity{},
+				TotalActivityTime:    make([]models.RecentActivity, 7),
+				TotalTime:            0,
 			}
 		}
-		date, _ := time.Parse("2006-01-02", result.Date)
+		date, err := time.Parse("2006-01-02T15:04:05Z", result.Date)
+		if err != nil {
+			log.Errorf("Error parsing date %s: %v", result.Date, err)
+			continue
+		}
 		index := int(time.Since(date).Hours() / 24)
 		if index >= 0 && index < 7 {
 			enrollmentsMap[result.ProgramID].TotalActivityTime[index] = models.RecentActivity{
@@ -61,7 +137,9 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				Delta: result.TimeDelta,
 			}
 		}
+		enrollmentsMap[result.ProgramID].TotalTime += result.TimeDelta
 	}
+
 	var enrollments []models.CurrentEnrollment
 	for _, enrollment := range enrollmentsMap {
 		enrollments = append(enrollments, *enrollment)
@@ -89,7 +167,9 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
     ORDER BY created_at DESC
     LIMIT 3 ) sub_milestones ON sub_milestones.program_id = p.id`, userID).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).
 		Where("p.id IN (SELECT program_id FROM activities WHERE user_id = ?)", userID).
+		Where("o.type IS NULL").
 		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name").
 		Find(&recentPrograms).Error
 	if err != nil {
@@ -108,11 +188,13 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 				pp.name as provider_platform_name,
 				p.external_url,
 				DATE(a.created_at) as date,
-				a.time_delta`).
+				SUM(a.time_delta) as time_delta`).
 		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("JOIN activities a ON a.program_id = p.id").
+		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).
 		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
-		Group("p.id, a.time_delta, DATE(a.created_at), pp.name").
+		Where("o.type IS NULL").
+		Group("p.id, DATE(a.created_at), pp.name").
 		Find(&results).Error
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)

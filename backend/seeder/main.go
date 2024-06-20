@@ -91,7 +91,7 @@ func seedTestData(db *gorm.DB) {
 	if err := json.Unmarshal(mstones, &milestones); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	outcomes := []string{"completion", "grade", "certificate", "pathway_completion"}
+	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	for _, user := range users {
 		for _, prog := range programs {
 			startTime := 0
@@ -99,7 +99,7 @@ func seedTestData(db *gorm.DB) {
 				if i%5 == 0 {
 					continue
 				}
-				randTime := rand.Intn(10)
+				randTime := rand.Intn(100)
 				// we want activity for the last year
 				yearAgo := time.Now().AddDate(-1, 0, 0)
 				time := yearAgo.AddDate(0, 0, i)
@@ -118,13 +118,16 @@ func seedTestData(db *gorm.DB) {
 					log.Printf("Failed to create activity: %v", err)
 				}
 			}
-			outcome := models.Outcome{
-				UserID:    user.ID,
-				ProgramID: prog.ID,
-				Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
-			}
-			if err := db.Create(&outcome).Error; err != nil {
-				log.Printf("Failed to create outcome: %v", err)
+			if rand.Float32() < 0.4 { // 40% chance to create an outcome
+				outcome := models.Outcome{
+					UserID:    user.ID,
+					ProgramID: prog.ID,
+					ProgramName: prog.Name,
+					Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+				}
+				if err := db.Create(&outcome).Error; err != nil {
+					log.Printf("Failed to create outcome: %v", err)
+				}
 			}
 		}
 		for _, m := range milestones {

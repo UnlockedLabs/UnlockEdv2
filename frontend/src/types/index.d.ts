@@ -4,6 +4,7 @@ export enum UserRole {
 }
 
 export interface User {
+  created_at: any;
   id: number;
   name_first: string;
   name_last: string;
