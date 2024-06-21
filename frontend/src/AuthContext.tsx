@@ -67,7 +67,13 @@ export const useAuth = () => {
 export const handleLogout = async () => {
   try {
     await axios.post("/api/logout");
-    window.location.href = "/login";
+    const logout_response = await axios.get("/self-service/logout/browser");
+    if (logout_response.data.logout_url) {
+      window.location.href = logout_response.data.logout_url;
+    } else {
+      console.log("Logout failed", logout_response);
+      window.location.href = "/self-service/login/browser";
+    }
   } catch (error) {
     console.log("Logout failed", error);
   }

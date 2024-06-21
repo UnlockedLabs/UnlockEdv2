@@ -123,6 +123,16 @@ export default function Dashboard() {
     }
   };
 
+  const convertSeconds = (secs: number) => {
+    const hours = Math.floor(secs / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    if (hours) {
+      return `${hours} hrs`;
+    } else {
+      return `${minutes} min`;
+    }
+  };
+
   return (
     <AuthenticatedLayout title="Dashboard">
       <PageNav user={user} path={["Dashboard"]} />

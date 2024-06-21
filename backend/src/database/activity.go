@@ -121,20 +121,7 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 				Name:                 result.Name,
 				ProviderPlatformName: result.ProviderPlatformName,
 				ExternalURL:          result.ExternalURL,
-				TotalActivityTime:    make([]models.RecentActivity, 7),
 				TotalTime:            0,
-			}
-		}
-		date, err := time.Parse("2006-01-02T15:04:05Z", result.Date)
-		if err != nil {
-			log.Errorf("Error parsing date %s: %v", result.Date, err)
-			continue
-		}
-		index := int(time.Since(date).Hours() / 24)
-		if index >= 0 && index < 7 {
-			enrollmentsMap[result.ProgramID].TotalActivityTime[index] = models.RecentActivity{
-				Date:  result.Date,
-				Delta: result.TimeDelta,
 			}
 		}
 		enrollmentsMap[result.ProgramID].TotalTime += result.TimeDelta
@@ -224,10 +211,21 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 				Name:                 enrollment.Name,
 				ProviderPlatformName: enrollment.ProviderPlatformName,
 				ExternalURL:          enrollment.ExternalURL,
-				TotalActivityTime:    []models.RecentActivity{},
 			})
 			log.Printf("enrollments: %v", enrollments)
 		}
 	}
-	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms}, err
+	// get activity for past 7 days
+	var activities []models.RecentActivity
+
+	err = db.Conn.Table("activities a").
+		Select(`DATE(a.created_at) as date, SUM(a.time_delta) as delta`).
+		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
+		Group("date").
+		Find(&activities).Error
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
+	}
+
+	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, WeekActivity: activities}, err
 }
