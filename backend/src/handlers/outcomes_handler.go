@@ -16,6 +16,10 @@ func (srv *Server) registerOutcomesRoutes() {
 	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.HandleDeleteOutcome)))
 }
 
+/****
+ * @Query Params:
+ * ?type=: "certificate", "grade", "pathway_completion", "college_credit"
+ ****/
 func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
@@ -23,7 +27,12 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 		log.Error("handler: getOutcomes: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage)
+
+	// Get type from query param
+	typeString := r.URL.Query().Get("type")
+	outcomeType := models.OutcomeType(typeString)
+
+	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage, outcomeType)
 	if err != nil {
 		log.Error("handler: getOutcomes: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -73,13 +73,18 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tags := r.URL.Query()["tags"]
-	userPrograms, err := srv.Db.GetUserPrograms(uint(userId), tags)
+	userPrograms, numCompleted, totalTime, err := srv.Db.GetUserPrograms(uint(userId), tags)
 	if err != nil {
 		log.Errorf("Error getting user programs: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, userPrograms); err != nil {
+	response := map[string]interface{}{
+		"programs": userPrograms,
+		"num_completed": numCompleted,
+		"total_time":    totalTime,
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		log.Errorf("user programs endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
