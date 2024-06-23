@@ -30,7 +30,7 @@ func (db *DB) GetUserCatalogue(userId int, tags []string) ([]UserCatalogueJoin, 
 	}
 	err := tx.Scan(&catalogue).Error
 	if err != nil {
-		return nil, err
+		return nil, LogDbError(err, "Failed to retrieve user catalogue.")
 	}
 	return catalogue, nil
 }
@@ -43,7 +43,7 @@ type UserPrograms struct {
 	ExternalURL    string  `json:"external_url"`
 	CourseProgress float64 `json:"course_progress"`
 	IsFavorited    bool    `json:"is_favorited"`
-	TotalTime 	   uint    `json:"total_time"`
+	TotalTime      uint    `json:"total_time"`
 }
 
 func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint, uint, error) {
@@ -86,7 +86,7 @@ func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint,
 	tx.Group("p.id, p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, p.total_progress_milestones, a.total_time")
 	err := tx.Scan(&programs).Error
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, LogDbError(err, "Failed to retrieve user programs.")
 	}
 
 	var numCompleted uint

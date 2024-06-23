@@ -9,21 +9,19 @@ import (
 func (db *DB) GetLeftMenuLinks() ([]models.LeftMenuLink, error) {
 	var links []models.LeftMenuLink
 	if err := db.Conn.Find(&links).Error; err != nil {
-		return nil, err
+		return nil, LogDbError(err, "Failed to get left menu links.")
 	}
 	return links, nil
 }
 
 func (db *DB) DeleteAllLinks() error {
-	db.Conn.Exec("DELETE FROM left_menu_links")
-	return nil
+	return LogDbError(db.Conn.Exec("DELETE FROM left_menu_links").Error, "Failed to delete left menu links.")
 }
 
 func (db *DB) CreateFreshLeftMenuLinks(links []models.LeftMenuLink) error {
 	if err := db.Conn.Create(&links).Error; err != nil {
-		log.Errorf("Error creating links: %v", err)
-		return err
+		return LogDbError(err, "Failed to create left menu links.")
 	}
-	log.Infof("Left-Menu-Links created")
+	log.Debugf("Left-Menu-Links created")
 	return nil
 }

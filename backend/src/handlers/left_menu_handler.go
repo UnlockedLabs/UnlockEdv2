@@ -15,9 +15,14 @@ func (srv *Server) registerLeftMenuRoutes() {
 
 func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 	log.Info("GET: /api/left-menu")
+	logFields := log.Fields{
+		"handler": "handleGetLeftMenu",
+		"route":   "GET /api/left-menu",
+	}
 	links, err := srv.Db.GetLeftMenuLinks()
 	if err != nil {
-		log.Debug("GetLeftMenu Database Error: ", err)
+		logFields["databaseMethod"] = "GetLeftMenuLinks"
+		log.WithFields(logFields).Errorf("Error getting left menu links: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -25,27 +30,33 @@ func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 		Data: links,
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: " + err.Error())
+		log.WithFields(logFields).Errorf("Error writing response when fetching left menu: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request) {
+	logFields := log.Fields{
+		"handler": "handlePostLeftMenuLinks",
+		"route":   "PUT /api/left-menu",
+	}
 	var links []models.LeftMenuLink
 	err := json.NewDecoder(r.Body).Decode(&links)
 	if err != nil {
-		log.Error("PostLeftMenuLinks Error:" + err.Error())
+		log.WithFields(logFields).Errorf("Error decoding left menu links: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err = srv.Db.DeleteAllLinks(); err != nil {
-		log.Error("PostLeftMenuLinks Error:" + err.Error())
+		logFields["databaseMethod"] = "DeleteAllLinks"
+		log.WithFields(logFields).Errorf("Error deleting left menu links: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = srv.Db.CreateFreshLeftMenuLinks(links); err != nil {
-		log.Error("PostLeftMenuLinks Error:" + err.Error())
+		logFields["databaseMethod"] = "CreateFreshLeftMenuLinks"
+		log.WithFields(logFields).Errorf("Error refreshing left menu links: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

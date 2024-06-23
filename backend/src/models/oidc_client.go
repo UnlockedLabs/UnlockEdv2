@@ -106,7 +106,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	if autoRegister && (prov.Type == CanvasCloud || prov.Type == CanvasOSS) {
 		externalId, err = autoRegisterCanvas(prov, oidcClient)
 		if err != nil {
-			log.Error("Error auto registering provider as client: ", err)
+			log.Error("Error auto registering provider as oidc client: ", err)
 		}
 	}
 	return oidcClient, externalId, nil
@@ -141,12 +141,12 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 	log.Printf("Request: %v", request)
 	response, err := client.Do(request)
 	if err != nil {
-		log.Println("Error sending request: ", err)
+		log.Errorf("Error sending request: %v", err)
 		return "", err
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusOK {
-		log.Println("Error creating authentication provider: ", response.Status)
+		log.Warnf("Error creating authentication provider: %v", response.Status)
 	}
 	var authProvider map[string]interface{}
 	err = json.NewDecoder(response.Body).Decode(&authProvider)
