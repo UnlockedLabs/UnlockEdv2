@@ -23,7 +23,7 @@ func (db *DB) GetMilestonesByProgramID(page, perPage, id int) (int64, []models.M
 	total := int64(0)
 	_ = db.Conn.Model(&models.Milestone{}).Where("program_id = ?", id).Count(&total)
 	if err := db.Conn.Where("program_id = ?", id).Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, LogDbError(err)
 	}
 	return total, content, nil
 }
@@ -54,7 +54,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 		query = query.Where("milestones.type ILIKE ?", search).Or("users.username ILIKE ?", search).Or("programs.name ILIKE ?", search).Or("provider_platforms.name ILIKE ?", search)
 	}
 	if err := query.Count(&total).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, LogDbError(err)
 	}
 
 	if orderBy != "" && IsValidOrderBy(orderBy) {
@@ -64,7 +64,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 	query = query.Limit(perPage).Offset((page - 1) * perPage)
 
 	if err := query.Find(&content).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, LogDbError(err)
 	}
 	return total, content, nil
 }
@@ -83,36 +83,33 @@ func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []Milesto
 		Find(&content).
 		Error
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, LogDbError(err)
 	}
 	return total, content, nil
 }
 
 func (db *DB) CreateMilestone(content *models.Milestone) (*models.Milestone, error) {
 	if err := db.Conn.Create(content).Error; err != nil {
-		return nil, err
+		return nil, LogDbError(err)
 	}
 	return content, nil
 }
 
 func (db *DB) UpdateMilestone(content *models.Milestone) (*models.Milestone, error) {
 	if err := db.Conn.Save(content).Error; err != nil {
-		return nil, err
+		return nil, LogDbError(err)
 	}
 	return content, nil
 }
 
 func (db *DB) DeleteMilestone(id int) error {
-	if err := db.Conn.Where("id = ?", id).Delete(&models.Milestone{}).Error; err != nil {
-		return err
-	}
-	return nil
+	return db.Conn.Where("id = ?", id).Delete(&models.Milestone{}).Error
 }
 
 func (db *DB) GetMilestoneByID(id int) (*models.Milestone, error) {
 	content := &models.Milestone{}
 	if err := db.Conn.Where("id = ?", id).First(content).Error; err != nil {
-		return nil, err
+		return nil, LogDbError(err)
 	}
 	return content, nil
 }

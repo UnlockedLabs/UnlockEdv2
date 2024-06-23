@@ -44,7 +44,7 @@ func InitDB(isTesting bool) *DB {
 		if err != nil {
 			log.Fatal("Failed to connect to SQLite database:", err)
 		}
-		log.Println("Connected to the SQLite database in memory")
+		log.Info("Connected to the SQLite database in memory")
 	} else {
 		dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
 			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
@@ -54,7 +54,7 @@ func InitDB(isTesting bool) *DB {
 		if err != nil {
 			log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 		}
-		log.Println("Connected to the PostgreSQL database")
+		log.Info("Connected to the PostgreSQL database")
 	}
 	database = &DB{Conn: db}
 	Migrate(db)
@@ -76,14 +76,14 @@ func SeedDefaultData(db *gorm.DB) {
 			Role:          "admin",
 			Password:      "ChangeMe!",
 		}
-		log.Printf("Creating user: %v", user)
-		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")
+		log.Infof("Creating user: %v", user)
+		fmt.Println("Make sure to sync the Kratos instance if you are freshly migrating")
 		err := user.HashPassword()
 		if err != nil {
 			log.Fatalf("Failed to hash password: %v", err)
 		}
 		if err := db.Create(&user).Error; err != nil {
-			log.Fatalf("Failed to create user: %v", err)
+			log.WithField("user", user).Fatalf("Failed to create user: %v", err)
 		}
 		links := []models.LeftMenuLink{}
 		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
@@ -102,9 +102,10 @@ const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unloc
 **/
 func Migrate(db *gorm.DB) {
 	for _, table := range TableList {
-		log.Printf("Migrating %T table...", table)
+		log.Infof("Migrating %T table...", table)
 		if err := db.AutoMigrate(table); err != nil {
-			log.Fatal("Failed to migrate table: ", err)
+			tableType := fmt.Sprintf("%T", table)
+			log.WithField("table", tableType).Fatalf("Failed to migrate table: %v", err)
 		}
 	}
 }
@@ -120,7 +121,7 @@ func (db *DB) SeedTestData() {
 	}
 	for _, p := range platform {
 		if err := db.Conn.Create(&p).Error; err != nil {
-			log.Fatalf("Failed to create platform: %v", err)
+			log.WithField("platform", p).Fatalf("Failed to create platform: %v", err)
 		}
 	}
 	users, err := os.ReadFile("test_data/users.json")
@@ -132,9 +133,9 @@ func (db *DB) SeedTestData() {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 	for idx, u := range user {
-		log.Printf("Creating user %s", u.Username)
+		log.Infof("Creating user %s", u.Username)
 		if err := db.Conn.Create(&u).Error; err != nil {
-			log.Fatalf("Failed to create user: %v", err)
+			log.WithField("user", u.Username).Fatalf("Failed to create user: %v", err)
 		}
 		for i := 0; i < len(platform); i++ {
 			mapping := models.ProviderUserMapping{
@@ -158,7 +159,7 @@ func (db *DB) SeedTestData() {
 	}
 	for _, p := range programs {
 		if err := db.Conn.Create(&p).Error; err != nil {
-			log.Fatalf("Failed to create program: %v", err)
+			log.WithField("program", p.Name).Fatalf("Failed to create program: %v", err)
 		}
 	}
 	var milestones []models.Milestone
@@ -171,7 +172,7 @@ func (db *DB) SeedTestData() {
 	}
 	for _, m := range milestones {
 		if err := db.Conn.Create(&m).Error; err != nil {
-			log.Fatalf("Failed to create milestone: %v", err)
+			log.WithField("milestone", m.Type).Fatalf("Failed to create milestone: %v", err)
 		}
 	}
 	outcomes := []string{"completion", "grade", "certificate", "pathway_completion"}
@@ -197,7 +198,7 @@ func (db *DB) SeedTestData() {
 				}
 				startTime += randTime
 				if err := db.Conn.Create(&activity).Error; err != nil {
-					log.Fatalf("Failed to create activity: %v", err)
+					log.WithField("userId", user.ID).Fatalf("Failed to create activity: %v", err)
 				}
 			}
 			outcome := models.Outcome{
@@ -205,7 +206,10 @@ func (db *DB) SeedTestData() {
 				Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 			}
 			if err := db.Conn.Create(&outcome).Error; err != nil {
-				log.Fatalf("Failed to create outcome: %v", err)
+				log.WithFields(log.Fields{
+					"userId":  user.ID,
+					"outcome": outcome.Type,
+				}).Fatalf("Failed to create outcome: %v", err)
 			}
 		}
 	}

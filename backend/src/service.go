@@ -5,12 +5,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /**
@@ -67,110 +68,129 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 
 func syncProviderService(newService *ProviderService) (*ProviderService, error) {
 	// we need to create the provider in the middleware
-	log.Printf("Creating provider service")
+	log.Infof("Creating provider service")
+	logFields := log.Fields{
+		"providerId": newService.ProviderPlatformID,
+	}
 	jsonBody, jsonErr := json.Marshal(newService)
 	if jsonErr != nil {
-		log.Printf("Error marshalling body %s", jsonErr)
+		log.WithFields(logFields).Errorf("Error marshalling body %s", jsonErr)
 		return nil, jsonErr
 	}
 	request, err := http.NewRequest("POST", newService.ServiceURL+"/api/add-provider", bytes.NewBuffer(jsonBody))
 	if err != nil {
-		log.Printf("error creating request %v", err.Error())
+		log.WithFields(logFields).Errorf("Error creating request %v", err.Error())
 		return nil, err
 	}
 	request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
 	request.Header.Set("Content-Type", "application/json")
 	response, err := newService.Client.Do(request)
 	if err != nil {
-		log.Printf("error creating provider service: %v", err.Error())
+		log.WithFields(logFields).Errorf("Error sending request for provider service: %v", err.Error())
 		return nil, err
 	}
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
-		log.Printf("error creating provider service: %v", response.Status)
+		log.WithFields(logFields).Errorf("Bad response when creating provider service: %v", response.Status)
 		return nil, err
 	}
-	log.Printf("Provider service created")
+	log.Infof("Provider service created")
 	return newService, nil
 }
 
 func (serv *ProviderService) Request(url string) *http.Request {
-	log.Println("Init request for provider service")
+	log.Info("Init request for provider service")
 	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
 	finalUrl := serv.ServiceURL + url + "?id=" + strconv.Itoa(int(serv.ProviderPlatformID))
-	log.Printf("url: %s \n", finalUrl)
 	request, err := http.NewRequest("GET", finalUrl, nil)
 	if err != nil {
-		log.Printf("error creating request %v", err.Error())
+		log.WithFields(log.Fields{
+			"providerId": serv.ProviderPlatformID,
+		}).Errorf("Error creating request %v", err.Error())
 	}
 	request.Header.Set("Authorization", serviceKey)
-	log.Printf("request: %v", request)
+	log.Debugf("Request created: %v", finalUrl)
 	return request
 }
 
 func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
+	logFields := log.Fields{
+		"providerId": serv.ProviderPlatformID,
+	}
 	req := serv.Request("/api/users")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting users Client.Do(req): %v", err.Error())
+		log.WithFields(logFields).Errorf("Error requesting users: %v", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 	var users []models.ImportUser
 	err = json.NewDecoder(resp.Body).Decode(&users)
 	if err != nil {
-		log.Printf("error decoding users: %v", err.Error())
+		log.WithFields(logFields).Errorf("Error decoding JSON for users: %v", err.Error())
 		return nil, err
 	}
 	return users, nil
 }
 
 func (serv *ProviderService) GetPrograms() ([]models.ImportProgram, error) {
+	logFields := log.Fields{
+		"providerId": serv.ProviderPlatformID,
+	}
 	req := serv.Request("/api/programs")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting content Client.Do(req): %v", err.Error())
+		log.WithFields(logFields).Errorf("Error requesting programs: %v", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 	var content []models.ImportProgram
 	err = json.NewDecoder(resp.Body).Decode(&content)
 	if err != nil {
-		log.Printf("error decoding content: %v", err.Error())
+		log.WithFields(logFields).Errorf("Error decoding JSON for programs: %v", err.Error())
 		return nil, err
 	}
 	return content, nil
 }
 
 func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID string) ([]models.ImportMilestone, error) {
+	logFields := log.Fields{
+		"platformId": serv.ProviderPlatformID,
+		"programId":  programID,
+		"userId":     userID,
+	}
 	req := serv.Request("/api/users/" + userID + "/programs/" + programID + "/milestones")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting milestones Client.Do(req): %v", err.Error())
+		log.WithFields(logFields).Errorf("Error requesting milestones: %v", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 	var milestones []models.ImportMilestone
-	log.Printf("response: %v", resp.Body)
+	log.Debugf("response: %v", resp.Body)
 	err = json.NewDecoder(resp.Body).Decode(&milestones)
 	if err != nil {
-		log.Printf("error decoding milestones: %v", err.Error())
+		log.WithFields(logFields).Errorf("Error decoding JSON for milestones: %v", err.Error())
 		return nil, err
 	}
 	return milestones, nil
 }
 
 func (serv *ProviderService) GetActivityForProgram(programID string) ([]models.ImportActivity, error) {
+	logFields := log.Fields{
+		"platformId": serv.ProviderPlatformID,
+		"programId":  programID,
+	}
 	req := serv.Request("/api/programs/" + programID + "/activity")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting activity Client.Do(req): %v", err.Error())
+		log.WithFields(logFields).Errorf("Error requesting activity: %v", err.Error())
 		return nil, err
 	}
 	defer resp.Body.Close()
 	var activities []models.ImportActivity
 	err = json.NewDecoder(resp.Body).Decode(&activities)
 	if err != nil {
-		log.Printf("error decoding activities: %v", err.Error())
+		log.WithFields(logFields).Errorf("Error decoding activities: %v", err.Error())
 		return nil, err
 	}
 	return activities, nil
