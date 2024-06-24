@@ -54,7 +54,7 @@ export default function CatalogCourseCard({ course, callMutate, view }: { course
   const outcomeTypes: OutcomePillType[] = course.outcome_types.split(",").filter(type => Object.values(OutcomePillType).includes(type));
   const outcomePills = outcomeTypes.map((outcomeString:string) => {
     const outcome = outcomeString as OutcomePillType
-    return <OutcomePill outcome={outcome}/>
+    return <OutcomePill outcome={outcome} key={"outcome"+course.id}/>
   })
 
   return (
