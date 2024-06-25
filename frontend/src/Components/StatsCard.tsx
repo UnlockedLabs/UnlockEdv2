@@ -9,10 +9,10 @@ export default function StatsCard({
 }) {
   return (
     <div className="card bg-base-teal p-4 pb-5 h-[110px]">
-      <h2 className="text-teal-4">{title}</h2>
+      <h2 className="text-teal-4">{title.toUpperCase()}</h2>
       <p className="text-teal-3 text-4xl font-bold mt-4">
         {number}
-        <span className="text-teal-4 text-base font-bold ml-3">{label}</span>
+        <span className="text-teal-4 text-base font-bold ml-3">{label.toLowerCase()}</span>
       </p>
     </div>
   );
