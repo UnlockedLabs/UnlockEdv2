@@ -12,16 +12,14 @@ import { useAuth } from "../AuthContext";
 export default function UserActivity() {
   const [searchTerm, setSearchTerm] = useState("");
   // const searchQuery = useDebounceValue(searchTerm, 300);
-  const {user} = useAuth();
+  const { user } = useAuth();
   // TO DO: come back and figure out pagequery
   const [pageQuery, setPageQuery] = useState(1);
-  pageQuery
+  pageQuery;
 
   const [sortQuery, setSortQuery] = useState("desc");
 
-  const { data, error, isLoading } = useSWR(
-    `/api/users/${user.id}/activity`,
-  );
+  const { data, error, isLoading } = useSWR(`/api/users/${user.id}/activity`);
 
   const userActivityData = data as PaginatedResponse<Activity>;
 

@@ -11,9 +11,7 @@ export default function AuthenticatedLayout({
       <div className="flex">
         <Navbar />
         <div className="min-w-px bg-grey-1"></div>
-        <main className="w-full min-h-screen bg-background">
-          {children}
-        </main>
+        <main className="w-full min-h-screen bg-background">{children}</main>
       </div>
     </div>
   );

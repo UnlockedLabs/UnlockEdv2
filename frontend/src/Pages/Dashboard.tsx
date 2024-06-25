@@ -17,7 +17,7 @@ export const recentCourses = [
   {
     course_id: 1,
     course_code: "CS101",
-    program_name : "Introduction to Computer Science",
+    program_name: "Introduction to Computer Science",
     course_description:
       "An introductory course covering fundamental concepts in computer science.",
     enrollment_state: "active",
@@ -49,7 +49,7 @@ export const recentCourses = [
   {
     course_id: 2,
     course_code: "ENG201",
-    program_name : "Advanced English Composition",
+    program_name: "Advanced English Composition",
     course_description:
       "A course focusing on advanced writing techniques and literary analysis.",
     enrollment_state: "active",
@@ -81,7 +81,7 @@ export const recentCourses = [
   {
     course_id: 3,
     course_code: "MATH301",
-    program_name : "Linear Algebra",
+    program_name: "Linear Algebra",
     course_description:
       "A course covering the theory and applications of linear algebra.",
     enrollment_state: "active",
@@ -111,7 +111,9 @@ export const recentCourses = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const {data, error, isLoading} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/dashboard`)
+  const { data, error, isLoading } = useSWR<ServerResponse<any>>(
+    `/api/users/${user.id}/dashboard`,
+  );
 
   const convertSeconds = (secs: number) => {
     const hours = Math.floor(secs / 3600);
@@ -132,15 +134,12 @@ export default function Dashboard() {
           <h2 className="mt-7"> Pick Up Where You Left Off</h2>
           <div className="mt-3 bg-base-teal p-6 card">
             <div className="grid grid-cols-3 gap-5">
-              {data && data?.recent_programs.map((course, index) => {
-                return (
-                  <CourseCard
-                    course={course}
-                    recent={true}
-                    key={index}
-                  />
-                );
-              })}
+              {data &&
+                data?.recent_programs.map((course, index) => {
+                  return (
+                    <CourseCard course={course} recent={true} key={index} />
+                  );
+                })}
             </div>
           </div>
           <div className="flex flex-row gap-12 mt-12">
@@ -160,21 +159,21 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
-                    {!error && !isLoading &&
-                    (data?.enrollments?.map((course: any, index: number) => {
-                      return (
-                        <tr
-                          className="flex flex-row justify-between mr-3"
-                          key={index}
-                        >
-                          <td className="body-small">{course.name}</td>
-                          <td className="body-small">
-                            {convertSeconds(course.total_time)}
-                          </td>
-                        </tr>
-                      );
-                    }
-                    ))}
+                    {!error &&
+                      !isLoading &&
+                      data?.enrollments?.map((course: any, index: number) => {
+                        return (
+                          <tr
+                            className="flex flex-row justify-between mr-3"
+                            key={index}
+                          >
+                            <td className="body-small">{course.name}</td>
+                            <td className="body-small">
+                              {convertSeconds(course.total_time)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
@@ -183,13 +182,16 @@ export default function Dashboard() {
           <h2 className="mt-12">Currently Enrolled Classes</h2>
           <div className="mt-3 bg-base-teal p-6 card">
             {!error && !isLoading && (
-            <div className="flex flex-col gap-3">
-              {data?.enrollments?.map((course: any) => {
-                return (
-                  <CurrentlyEnrolledClass course={course} key={Math.random()} />
-                );
-              })}
-            </div>
+              <div className="flex flex-col gap-3">
+                {data?.enrollments?.map((course: any) => {
+                  return (
+                    <CurrentlyEnrolledClass
+                      course={course}
+                      key={Math.random()}
+                    />
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
