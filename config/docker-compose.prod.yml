@@ -49,20 +49,9 @@ services:
       postgres:
         condition: service_healthy
 
-  # Frontend served in nginx container
-  frontend:
+  rev_proxy:
     build:
       context: frontend
       dockerfile: Dockerfile
-    ports:
-      - 80:80
-    environment:
-      - APP_ENV=production
-      - KRATOS_LOGIN_URL=http://localhost:4433/self-service/login
-    env_file: frontend/.env
-    networks:
-      - intranet
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
-      - logs:/var/log/nginx/
-    depends_on: [server]

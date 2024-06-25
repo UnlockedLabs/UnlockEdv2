@@ -74,9 +74,10 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 	for _, user := range users {
 		name := strings.Split(user["name"].(string), " ")
 		nameFirst, nameLast := "", ""
-		if len(name) < 2 {
+		shortName := user["short_name"].(string)
+		if len(name) < 2 && !strings.Contains(shortName, "@") {
 			nameFirst = name[0]
-			nameLast = user["short_name"].(string)
+			nameLast = shortName
 		} else {
 			nameFirst = name[0]
 			nameLast = name[1]

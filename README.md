@@ -66,6 +66,9 @@ You will be prompted immediately to set a new password, and then you will be red
 > Try starting docker with `sudo dockerd`, or restarting the daemon with `sudo systemctl restart docker.service`, followed by `docker run hello-world`
 > to ensure docker is running properly before again trying the `sail up` command.
 
+### Docker says "network {UUID} not found"
+run `docker compose up {-f docker-compose.yml} {-f config/docker-compose.fe-dev.yml | -f config/docker-compose.prod.yml} --build --force-recreate` depending on what services you need
+
 # Debugging
 
 Two tools you can use to aid in debugging:

@@ -1,7 +1,7 @@
 import PageNav from "../Components/PageNav";
-import Pagination, { PaginatedData } from "../Components/Pagination";
+import Pagination from "../Components/Pagination";
 import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
-import { Activity } from "../common";
+import { Activity, PaginatedResponse } from "../common";
 import { useState } from "react";
 import useSWR from "swr";
 // import { useDebounceValue } from "usehooks-ts";
@@ -23,7 +23,7 @@ export default function UserActivity() {
     `/api/users/${user.id}/activity`,
   );
 
-  const userActivityData = data as PaginatedData<Activity>;
+  const userActivityData = data as PaginatedResponse<Activity>;
 
   return (
     <AuthenticatedLayout title="User Activity">

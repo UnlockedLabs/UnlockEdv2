@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { ProviderPlatform } from "@/common";
 import SecondaryButton from "./SecondaryButton";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
@@ -15,6 +16,7 @@ export default function ProviderCard({
   if (cardImg == null) {
     cardImg = "/" + provider.type + ".jpg";
   }
+  const navigate = useNavigate();
   return (
     <div className="">
       <div className="card card-compact bg-base-100 shadow-xl h-full">
@@ -55,6 +57,16 @@ export default function ProviderCard({
             <span className="font-bold">External login registered: </span>
             {provider.oidc_id !== 0 ? "Yes" : "No"}
           </p>
+          {provider.oidc_id !== 0 && (
+            <p>
+              <button
+                className="btn btn-primary btn-xs"
+                onClick={() => navigate(`/provider-users/${provider.id}`)}
+              >
+                Manage Provider Users
+              </button>
+            </p>
+          )}
           {provider.oidc_id === 0 && (
             <button
               className="btn btn-primary btn-xs"
