@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
@@ -24,6 +26,17 @@ func (srv *Server) registerUserRoutes() {
 **/
 func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
+	include := r.URL.Query()["include"]
+	if slices.Contains(include, "logins") {
+		srv.HandleGetUsersWithLogins(w, r)
+		return
+	}
+	if slices.Contains(include, "only_unmapped") {
+		providerId := r.URL.Query().Get("provider_id")
+		srv.HandleGetUnmappedUsers(w, r, providerId)
+		return
+	}
+
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage)
 	if err != nil {
 		log.Error("IndexUsers Database Error: ", err)
@@ -47,6 +60,57 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string) {
+	page, perPage := srv.GetPaginationInfo(r)
+	search := r.URL.Query().Get("search")
+	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, providerId, search)
+	if err != nil {
+		log.Error("Database Error getting unmapped users: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	last := srv.CalculateLast(total, perPage)
+	paginationData := models.PaginationMeta{
+		PerPage:     perPage,
+		LastPage:    int(last),
+		CurrentPage: page,
+		Total:       total,
+	}
+	log.Println("users: ", users)
+	response := models.PaginatedResource[models.User]{
+		Data:    users,
+		Meta:    paginationData,
+		Message: "unmapped users returned successfully",
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Errorln("Error writing response: ", err)
+		return
+	}
+}
+
+func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Request) {
+	page, perPage := srv.GetPaginationInfo(r)
+	total, users, err := srv.Db.GetUsersWithLogins(page, perPage)
+	if err != nil {
+		log.Error("IndexUsers Database Error: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	last := srv.CalculateLast(total, perPage)
+	paginationData := models.PaginationMeta{
+		PerPage:     perPage,
+		LastPage:    int(last),
+		CurrentPage: page,
+		Total:       total,
+	}
+	response := models.PaginatedResource[database.UserWithLogins]{Data: users, Meta: paginationData, Message: "users with mappings returned successfully"}
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 /**
 * GET: /api/users/{id}
 **/
@@ -62,8 +126,8 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := models.Resource[models.User]{}
-	user := srv.Db.GetUserByID(uint(id))
-	if user == nil {
+	user, err := srv.Db.GetUserByID(uint(id))
+	if err != nil {
 		log.Info("Error: ", err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -87,11 +151,16 @@ type NewUserResponse struct {
 	User         models.User `json:"user"`
 }
 
+type CreateUserRequest struct {
+	User      models.User `json:"user"`
+	Providers []int       `json:"provider_platforms"`
+}
+
 /**
 * POST: /api/users
 **/
 func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
-	user := models.User{}
+	user := CreateUserRequest{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Info("POST User handler Error: ", err)
@@ -99,28 +168,35 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	newUser, err := srv.Db.CreateUser(&user)
+	newUser, err := srv.Db.CreateUser(&user.User)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Info("New user created, temp password: " + user.Password)
-	if newUser == nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating user")
-	} else {
-		response := NewUserResponse{
-			User:         *newUser,
-			TempPassword: newUser.Password,
+	for _, providerID := range user.Providers {
+		provider, err := srv.Db.GetProviderPlatformByID(providerID)
+		if err != nil {
+			log.Error("Error getting provider platform by id createProviderUserAccount")
+			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
 		}
-		// if we aren't in a testing environment, register the user as an Identity with Kratos
-		if !srv.isTesting(r) {
-			if err := srv.handleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
-				log.Printf("Error creating user in kratos: %v", err)
-			}
+		if err = srv.createAndRegisterProviderUserAccount(provider, newUser); err != nil {
+			log.Error("Error creating provider user account for provider: ", provider.Name)
+			srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating user")
 		}
-		if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	response := NewUserResponse{
+		User:         *newUser,
+		TempPassword: newUser.Password,
+	}
+	// if we aren't in a testing environment, register the user as an Identity with Kratos
+	if !srv.isTesting(r) {
+		if err := srv.handleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
+			log.Printf("Error creating user in kratos: %v", err)
 		}
+	}
+	if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -157,8 +233,8 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	toUpdate := srv.Db.GetUserByID(uint(id))
-	if toUpdate == nil {
+	toUpdate, err := srv.Db.GetUserByID(uint(id))
+	if err != nil {
 		log.Error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		srv.ErrorResponse(w, http.StatusNotFound, "user not found")
 		return
@@ -202,8 +278,8 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	}
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
-	user := srv.Db.GetUserByID(uint(temp.UserID))
-	if user == nil {
+	user, err := srv.Db.GetUserByID(uint(temp.UserID))
+	if err != nil {
 		log.Errorf("Exising user not found, this should never happen: %v", temp.UserID)
 		http.Error(w, "internal server error: existing user not found", http.StatusInternalServerError)
 		return
@@ -221,10 +297,10 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-			log.Error("Error writing response: ", err.Error())
-			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		log.Error("Error writing response: ", err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 }

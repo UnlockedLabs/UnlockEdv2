@@ -104,8 +104,8 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	log.Info("Checking auth handler")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	user := srv.Db.GetUserByID(claims.UserID)
-	if user == nil {
+	user, err := srv.Db.GetUserByID(claims.UserID)
+	if err != nil {
 		log.Error("Error getting user by ID")
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -160,8 +160,8 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 	if !srv.isTesting(r) {
-		user := srv.Db.GetUserByID(claims.UserID)
-		if user == nil {
+		user, err := srv.Db.GetUserByID(claims.UserID)
+		if err != nil {
 			log.Fatal("user from claims not found, this should never happen")
 			return
 		}

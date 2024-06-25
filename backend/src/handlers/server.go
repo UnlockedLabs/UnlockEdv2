@@ -17,6 +17,7 @@ type Server struct {
 	Db        *database.DB
 	Mux       *http.ServeMux
 	OryClient *ory.APIClient
+	Client    *http.Client
 }
 
 /**
@@ -38,6 +39,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOidcRoutes()
 	srv.registerDashboardRoutes()
 	srv.registerOidcFlowRoutes()
+	srv.registerProviderUserRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -47,7 +49,7 @@ func ServerWithDBHandle(db *database.DB) *Server {
 func NewServer(isTesting bool) *Server {
 	if isTesting {
 		db := database.InitDB(true)
-		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil}
+		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil, Client: nil}
 	} else {
 		configuration := ory.NewConfiguration()
 		configuration.Servers = []ory.ServerConfiguration{
@@ -58,7 +60,7 @@ func NewServer(isTesting bool) *Server {
 		apiClient := ory.NewAPIClient(configuration)
 		db := database.InitDB(false)
 		mux := http.NewServeMux()
-		server := Server{Db: db, Mux: mux, OryClient: apiClient}
+		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}}
 		server.RegisterRoutes()
 		if err := server.setupDefaultAdminInKratos(); err != nil {
 			log.Fatal("Error setting up default admin in Kratos")

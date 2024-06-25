@@ -28,19 +28,45 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 	return count, users, nil
 }
 
-func (db *DB) GetUserByID(id uint) *models.User {
+func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id").
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
-		return nil
+		return nil, err
 	}
-	return &user
+	return &user, nil
+}
+
+type UserWithLogins struct {
+	User   models.User
+	Logins []models.ProviderUserMapping `json:"logins"`
+}
+
+func (db *DB) GetUsersWithLogins(page, per_page int) (int64, []UserWithLogins, error) {
+	var users []models.User
+	var count int64
+	if err := db.Conn.Model(&models.User{}).
+		Offset((page - 1) * per_page).Limit(per_page).Count(&count).Scan(&users).Error; err != nil {
+		return 0, nil, err
+	}
+	var userWithLogins []UserWithLogins
+	for _, user := range users {
+		var logins []models.ProviderUserMapping
+		if err := db.Conn.Model(&models.ProviderUserMapping{}).Find(&logins, "user_id = ?", user.ID).Error; err != nil {
+			return 0, nil, err
+		}
+		userWithLogins = append(userWithLogins, UserWithLogins{User: user, Logins: logins})
+	}
+	return count, userWithLogins, nil
 }
 
 func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
-	user := db.GetUserByID(id)
-	if user == nil || user.Role == "admin" {
+	user, err := db.GetUserByID(id)
+	if err != nil {
+		return "", err
+	}
+	if user.Role == "admin" {
 		return "", errors.New("user not found, or user is admin and cannot have password reset")
 	}
 	psw := user.CreateTempPassword()
@@ -67,12 +93,14 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	if user.Email == "" {
 		user.Email = user.Username + "@unlocked.v2"
 	}
+	log.Debug("Creating User: ", user)
 	error := db.Conn.Create(&user).Error
 	if error != nil {
 		return nil, error
 	}
 	newUser := &models.User{}
 	if err := db.Conn.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
+		log.Error("Error getting user we just created: ", err)
 		return nil, err
 	}
 	newUser.Password = psw
@@ -123,8 +151,8 @@ func (db *DB) AuthorizeUser(username, password string) (*models.User, error) {
 }
 
 func (db *DB) ResetUserPassword(id uint, password string) error {
-	user := db.GetUserByID(id)
-	if user == nil {
+	user, err := db.GetUserByID(id)
+	if err != nil {
 		return errors.New("user not found")
 	}
 	user.Password = password

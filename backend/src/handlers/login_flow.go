@@ -64,7 +64,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,
 			Path:     "/",
 		})
-
 		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"sort"
 	"time"
 	"sort"
 
@@ -14,11 +15,105 @@ func (db *DB) CreateActivity(activity *models.Activity) error {
 		activity.UserID, activity.ProgramID, activity.Type, activity.TotalTime, activity.ExternalID).Error
 }
 
-func (db *DB) GetActivityByUserID(page, perPage, userID int) (int64, []models.Activity, error) {
+type DailyActivity struct {
+	Date       time.Time         `json:"date"`
+	TotalTime  uint              `json:"total_time"`
+	Quartile   uint              `json:"quartile"`
+	Activities []models.Activity `json:"activities"`
+}
+
+func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error) {
+	var dailyActivities []DailyActivity
+	query := `WITH activity_data AS (
+		SELECT
+			user_id,
+			DATE_TRUNC('day', created_at) AS activity_date,
+			SUM(time_delta) AS total_time
+		FROM
+			activities
+		WHERE
+			user_id = $1 AND
+			created_at BETWEEN
+			CASE
+				WHEN $2 = 0 THEN DATE_TRUNC('day', NOW() - INTERVAL '1 year')
+				ELSE DATE_TRUNC('day', MAKE_DATE($3, 1, 1))
+			END
+			AND
+			CASE
+				WHEN $2 = 0 THEN DATE_TRUNC('day', NOW())
+				ELSE DATE_TRUNC('day', MAKE_DATE($3, 1, 1) + INTERVAL '1 year' - INTERVAL '1 second')
+			END
+		GROUP BY
+			user_id, activity_date
+	),
+	ranked_activities AS (
+		SELECT
+			activity_date,
+			total_time,
+			NTILE(4) OVER (ORDER BY total_time) AS quartile
+		FROM
+			activity_data
+	)
+	SELECT
+		activity_date AS date,
+		total_time,
+		quartile
+	FROM
+		ranked_activities
+	ORDER BY
+		activity_date;`
+	rows, err := db.Conn.Raw(query, userID, year, year).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var dailyActivity DailyActivity
+		if err := rows.Scan(&dailyActivity.Date, &dailyActivity.TotalTime, &dailyActivity.Quartile); err != nil {
+			return nil, err
+		}
+		dailyActivities = append(dailyActivities, dailyActivity)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Fetch all activities for the given user and year
 	var activities []models.Activity
-	var count int64
-	_ = db.Conn.Model(&models.Activity{}).Where("user_id = ?", userID).Count(&count)
-	return count, activities, db.Conn.Where("user_id = ?", userID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error
+	if err = db.Conn.Table("activities").Select("*").Where(`user_id = ? AND created_at BETWEEN
+			CASE
+				WHEN ? = 0 THEN DATE_TRUNC('day', NOW() - INTERVAL '1 year')
+				ELSE DATE_TRUNC('day', MAKE_DATE(?, 1, 1))
+			END
+			AND
+			CASE
+				WHEN $2 = 0 THEN DATE_TRUNC('day', NOW())
+				ELSE DATE_TRUNC('day', MAKE_DATE(?, 1, 1) + INTERVAL '1 year' - INTERVAL '1 second')
+			END
+	`, userID, year, year, year).Find(&activities).Error; err != nil {
+		return nil, err
+	}
+
+	for i := range dailyActivities {
+		date := dailyActivities[i].Date
+		dayStart := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+		dayEnd := dayStart.Add(24 * time.Hour)
+
+		for _, activity := range activities {
+			activityDate := activity.CreatedAt
+			if activityDate.After(dayStart) && activityDate.Before(dayEnd) {
+				dailyActivities[i].Activities = append(dailyActivities[i].Activities, activity)
+			}
+		}
+	}
+
+	// Sort daily activity list by date
+	sort.Slice(dailyActivities, func(i, j int) bool {
+		return dailyActivities[i].Date.Before(dailyActivities[j].Date)
+	})
+
+	return dailyActivities, nil
 }
 
 func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]models.DailyActivity, error) {

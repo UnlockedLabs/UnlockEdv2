@@ -16,6 +16,7 @@ type ProviderUserMapping struct {
 	ExternalUsername             string             `gorm:"size:255;not null" json:"external_username"`
 	AuthenticationProviderStatus AuthProviderStatus `gorm:"size:255;not null;default:none" json:"authentication_provider_status"`
 	ExternalLoginID              string             `gorm:"size:255" json:"external_login_id"`
+
 	/*    Relations    */
 	User             *User             `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
