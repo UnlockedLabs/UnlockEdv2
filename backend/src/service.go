@@ -2,15 +2,15 @@ package src
 
 import (
 	"UnlockEdv2/src/models"
-	"bytes"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /**
@@ -51,7 +51,7 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		Type:               string(prov.Type),
 		ServiceURL:         serviceUrl,
 		Client: &http.Client{
-			Timeout: time.Second * 10,
+			Timeout: time.Second * 20,
 		},
 	}
 	// send initial test request with the provider ID, to see if the service exists
@@ -60,37 +60,10 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 	resp, err := newService.Client.Do(request)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		// send the required information to the middleware to satisfy the request
-		return syncProviderService(&newService)
+		log.WithFields(log.Fields{"error": err, "status": resp.StatusCode}).Error("Error creating provider service")
+		return nil, err
 	}
 	return &newService, nil
-}
-
-func syncProviderService(newService *ProviderService) (*ProviderService, error) {
-	// we need to create the provider in the middleware
-	log.Printf("Creating provider service")
-	jsonBody, jsonErr := json.Marshal(newService)
-	if jsonErr != nil {
-		log.Printf("Error marshalling body %s", jsonErr)
-		return nil, jsonErr
-	}
-	request, err := http.NewRequest("POST", newService.ServiceURL+"/api/add-provider", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		log.Printf("error creating request %v", err.Error())
-		return nil, err
-	}
-	request.Header.Set("Authorization", os.Getenv("PROVIDER_SERVICE_KEY"))
-	request.Header.Set("Content-Type", "application/json")
-	response, err := newService.Client.Do(request)
-	if err != nil {
-		log.Printf("error creating provider service: %v", err.Error())
-		return nil, err
-	}
-	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
-		log.Printf("error creating provider service: %v", response.Status)
-		return nil, err
-	}
-	log.Printf("Provider service created")
-	return newService, nil
 }
 
 func (serv *ProviderService) Request(url string) *http.Request {
@@ -124,54 +97,48 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	return users, nil
 }
 
-func (serv *ProviderService) GetPrograms() ([]models.ImportProgram, error) {
+func (serv *ProviderService) GetPrograms() error {
 	req := serv.Request("/api/programs")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
 		log.Printf("error getting content Client.Do(req): %v", err.Error())
-		return nil, err
+		return err
 	}
-	defer resp.Body.Close()
-	var content []models.ImportProgram
-	err = json.NewDecoder(resp.Body).Decode(&content)
-	if err != nil {
-		log.Printf("error decoding content: %v", err.Error())
-		return nil, err
+	if resp.StatusCode != http.StatusOK {
+		log.WithFields(log.Fields{"handler": "GetPrograms", "status": resp.StatusCode}).Error("Failed to get programs")
+		return errors.New("Failed to get programs")
 	}
-	return content, nil
+	return nil
 }
 
-func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID string) ([]models.ImportMilestone, error) {
+func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID string) error {
 	req := serv.Request("/api/users/" + userID + "/programs/" + programID + "/milestones")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting milestones Client.Do(req): %v", err.Error())
-		return nil, err
+		log.WithFields(log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "error": err.Error()}).Error("Failed to get milestones for program user")
+		return err
 	}
-	defer resp.Body.Close()
-	var milestones []models.ImportMilestone
-	log.Printf("response: %v", resp.Body)
-	err = json.NewDecoder(resp.Body).Decode(&milestones)
-	if err != nil {
-		log.Printf("error decoding milestones: %v", err.Error())
-		return nil, err
+	if resp.StatusCode != http.StatusOK {
+		log.WithFields(log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "status": resp.StatusCode}).Error("Failed to get milestones for program user")
+		return errors.New("Failed to get milestones for program user")
 	}
-	return milestones, nil
+	return nil
 }
 
-func (serv *ProviderService) GetActivityForProgram(programID string) ([]models.ImportActivity, error) {
+func (serv *ProviderService) GetActivityForProgram(programID string) error {
 	req := serv.Request("/api/programs/" + programID + "/activity")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
 		log.Printf("error getting activity Client.Do(req): %v", err.Error())
-		return nil, err
+		return err
 	}
-	defer resp.Body.Close()
-	var activities []models.ImportActivity
-	err = json.NewDecoder(resp.Body).Decode(&activities)
 	if err != nil {
-		log.Printf("error decoding activities: %v", err.Error())
-		return nil, err
+		log.WithFields(log.Fields{"handler": "GetActivityForProgram", "error": err.Error()}).Error("Failed to get activity for program")
+		return err
 	}
-	return activities, nil
+	if resp.StatusCode != http.StatusOK {
+		log.WithFields(log.Fields{"handler": "GetActivityForProgram", "status": resp.StatusCode}).Error("Failed to get activity for program")
+		return errors.New("Failed to get milestones for program user")
+	}
+	return nil
 }

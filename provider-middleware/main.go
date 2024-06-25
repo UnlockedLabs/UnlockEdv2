@@ -1,23 +1,23 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 
+	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
-
-	_ "github.com/glebarez/sqlite"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type ProviderServiceInterface interface {
-	GetID() int
 	GetUsers() ([]UnlockEdImportUser, error)
-	GetPrograms() ([]UnlockEdImportProgram, error)
-	GetMilestonesForProgramUser(courseId, userId string) ([]UnlockEdImportMilestone, error)
-	GetActivityForProgram(courseId string) ([]UnlockEdImportActivity, error)
+	ImportPrograms(db *gorm.DB) error
+	ImportMilestonesForProgramUser(courseId, userId string, db *gorm.DB) error
+	ImportActivityForProgram(courseId string, db *gorm.DB) error
 	// TODO: GetOutcomes()
 }
 
@@ -30,11 +30,11 @@ type ServiceHandler struct {
 	services []ProviderServiceInterface
 	Mux      *http.ServeMux
 	token    string
-	db       *sql.DB
+	db       *gorm.DB
 	mutex    sync.Mutex
 }
 
-func newServiceHandler(token string, db *sql.DB) *ServiceHandler {
+func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 	return &ServiceHandler{
 		token:    token,
 		db:       db,
@@ -47,23 +47,18 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to load .env file, using default env variables")
 	}
-	db, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+	dsn := os.Getenv("APP_DSN")
+	if dsn == "" {
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
+			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 	}
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS providers (
-    id INTEGER PRIMARY KEY,
-    type TEXT NOT NULL,
-    account_id TEXT NOT NULL,
-    url TEXT NOT NULL,
-    api_key TEXT,
-    username TEXT,
-    password TEXT
-);`)
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: dsn,
+	}), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
+		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
-	defer db.Close()
+	log.Println("Connected to the PostgreSQL database")
 	file := os.Stdout
 	if os.Getenv("APP_ENV") == "prod" {
 		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

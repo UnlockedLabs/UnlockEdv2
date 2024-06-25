@@ -1,14 +1,17 @@
 package main
 
 import (
+	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
+	"gorm.io/gorm"
 )
 
 /***
@@ -16,7 +19,7 @@ import (
 * the Kolibri API and the neccessary fields, headers, cookies to make requests
 ***/
 type KolibriService struct {
-	ProviderPlatformID int
+	ProviderPlatformID uint
 	BaseURL            string
 	HttpClient         *http.Client
 	BaseHeaders        map[string]string
@@ -32,7 +35,7 @@ type KolibriService struct {
 * Pulls the login info from ENV variables. In production, these should be set
 * in /etc/environment
 **/
-func NewKolibriService(provider *ProviderPlatform) *KolibriService {
+func NewKolibriService(provider *models.ProviderPlatform) *KolibriService {
 	jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	client := &http.Client{
 		Jar: jar,
@@ -47,12 +50,13 @@ func NewKolibriService(provider *ProviderPlatform) *KolibriService {
 		"Pragma":          "no-cache",
 		"Accept-Language": "en-US,en;q=0.5",
 	}
+	username, password := strings.Split(provider.AccessKey, ":")[0], strings.Split(provider.AccessKey, ":")[1]
 	return &KolibriService{
 		ProviderPlatformID: provider.ID,
 		BaseURL:            provider.BaseUrl,
 		HttpClient:         client,
-		username:           provider.Username,
-		password:           provider.Password,
+		username:           username,
+		password:           password,
 		AccountID:          provider.AccountID,
 		BaseHeaders:        headers,
 	}
@@ -131,10 +135,6 @@ func (ks *KolibriService) InitiateSession() error {
 	}
 	log.Println(responseData)
 	return nil
-}
-
-func (ks *KolibriService) GetID() int {
-	return ks.ProviderPlatformID
 }
 
 func (kh *KolibriService) SendGETRequest(url string) (*http.Response, error) {
@@ -258,30 +258,33 @@ func (ks *KolibriService) GetUsers() ([]UnlockEdImportUser, error) {
 * @info - GET /api/content/channel?available=true
 * @return - List of maps, each containing the details of a Content object
 **/
-func (ks *KolibriService) GetPrograms() ([]UnlockEdImportProgram, error) {
+func (ks *KolibriService) ImportPrograms(db *gorm.DB) error {
 	url := ks.BaseURL + "/api/content/channel/?available=true"
 	response, err := ks.SendGETRequest(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	var kolibriResponse []KolibriContent
 	err = json.NewDecoder(response.Body).Decode(&kolibriResponse)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var importCourses []UnlockEdImportProgram
 	for _, course := range kolibriResponse {
 		ulCourse := course.IntoCourse(ks.BaseURL)
-		ulCourse.ProviderPlatformID = ks.ProviderPlatformID
-		importCourses = append(importCourses, *ulCourse)
+		ulCourse.ProviderPlatformID = uint(ks.ProviderPlatformID)
+		err := db.Create(&ulCourse).Error
+		if err != nil {
+			log.Warn("Error creating course: ", err)
+			continue
+		}
 	}
-	return importCourses, nil
+	return nil
 }
 
-func (ks *KolibriService) GetMilestonesForProgramUser(courseId, userId string) ([]UnlockEdImportMilestone, error) {
-	return nil, nil
+func (ks *KolibriService) ImportMilestonesForProgramUser(courseId, userId string, db *gorm.DB) error {
+	return nil
 }
 
-func (ks *KolibriService) GetActivityForProgram(courseId string) ([]UnlockEdImportActivity, error) {
-	return nil, nil
+func (ks *KolibriService) ImportActivityForProgram(courseId string, db *gorm.DB) error {
+	return nil
 }

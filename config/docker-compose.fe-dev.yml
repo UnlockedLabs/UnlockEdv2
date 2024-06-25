@@ -19,6 +19,7 @@ services:
       - KRATOS_PUBLIC_URL=http://kratos:4433
       - KETO_ADMIN_URL=http://keto:4466
       - ORY_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
+      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
     ports:
       - "8080:8080"
     depends_on:
@@ -46,7 +47,14 @@ services:
     build:
       context: ./provider-middleware
       dockerfile: Dockerfile
-    env_file: "./backend/.env"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=unlocked
+      - DB_PASSWORD=dev
+      - DB_NAME=unlocked
+      - PROVIDER_SERVICE_KEY=NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
+      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
     command: ./provider-service
     networks:
       - intranet

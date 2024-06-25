@@ -252,45 +252,48 @@ export default function ProviderUserManagement() {
                         data-tip="Associate user with existing account"
                       >
                         <a className="flex justify-start cursor-pointer">
-                          <span>Map User</span>
-                          <PrimaryButton
+                          <button
                             onClick={() => handleMapUser(user)}
-                            className="w-4 text-accent"
-                          />
+                            className="btn btn-xs btn-primary"
+                          >
+                            Map User
+                          </button>
                         </a>
                       </div>
                     </td>
                   </tr>
                 );
               })}
-            <Pagination
-              meta={{
-                current_page: currentPage,
-                total: providerUsers.length,
-                per_page: perPage,
-                last_page: providerUsers.length / perPage,
-              }}
-              setPage={changePage}
-            />
-            {!isLoading && providerUsers.length != 0 && (
-              <tr>
-                <td>
-                  <select
-                    className="select select-bordered select-sm"
-                    value={perPage}
-                    onChange={handleChangeUsersPerPage}
-                  >
-                    {[10, 15, 20, 30].map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+        <div className="flex flex-col justify-center">
+          <Pagination
+            meta={{
+              current_page: currentPage,
+              total: providerUsers.length,
+              per_page: perPage,
+              last_page: providerUsers.length / perPage,
+            }}
+            setPage={changePage}
+          />
+          <div className="flex-col-1">
+            Users per page:
+            <br />
+            {!isLoading && providerUsers.length != 0 && (
+              <select
+                className="select select-none selext-sm select-bordered"
+                value={perPage}
+                onChange={handleChangeUsersPerPage}
+              >
+                {[10, 15, 20, 30].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
         {error && (
           <span className="text-center text-error">Failed to load users.</span>
         )}
