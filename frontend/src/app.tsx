@@ -15,6 +15,7 @@ import MyCourses from "./Pages/MyCourses";
 import MyProgress from "./Pages/MyProgress";
 import CourseCatalog from "./Pages/CourseCatalog";
 import ProviderUserManagement from "./Pages/ProviderUserManagement";
+import MapUserPage from "./Components/forms/MapUserForm";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;

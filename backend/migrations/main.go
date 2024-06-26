@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load("./backend/.env"); err != nil {
+	if err := godotenv.Load("..env"); err != nil {
 		log.Fatalf("Failed to load .env file: %v", err)
 	}
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",

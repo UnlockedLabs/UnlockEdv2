@@ -29,6 +29,7 @@ export default function ProviderUserManagement() {
   const [sortBy, setSortBy] = useState("asc");
   const [provider, setProvider] = useState<ProviderPlatform | null>(null);
   const [providerUsers, setProviderUsers] = useState<ProviderUser[]>([]);
+  const [displayUsers, setDisplayUsers] = useState<ProviderUser[]>([]);
   const [importedUsers, setImportedUsers] = useState<ImportUserResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -53,13 +54,14 @@ export default function ProviderUserManagement() {
     );
   };
 
-  const paginatedData = () => {
+  const paginateData = () => {
     const offset = (currentPage - 1) * perPage;
-    return providerUsers.slice(offset, offset + perPage);
+    setDisplayUsers(providerUsers.slice(offset, offset + perPage));
   };
 
   const changePage = (page: number) => {
     setCurrentPage(page);
+    paginateData();
   };
 
   const showToast = (message: string, state: ToastState) => {
@@ -114,7 +116,7 @@ export default function ProviderUserManagement() {
 
   function handleChangeUsersPerPage(e: React.ChangeEvent<HTMLSelectElement>) {
     setPerPage(parseInt(e.target.value));
-    setCurrentPage(1);
+    changePage(1);
   }
 
   function handleSubmitMapUser(msg: string, toastState: ToastState) {
@@ -153,6 +155,8 @@ export default function ProviderUserManagement() {
         );
         if (userResp.status === 200) {
           setProviderUsers(userResp.data.data);
+          const offset = (currentPage - 1) * perPage;
+          setDisplayUsers(userResp.data.data.slice(offset, offset + perPage));
         }
         const res = await axios.get(`/api/provider-platforms/${providerId}`);
         if (res.status === 200) {
@@ -224,7 +228,7 @@ export default function ProviderUserManagement() {
             {!isLoading &&
               !error &&
               providerUsers.length != 0 &&
-              paginatedData().map((user: any) => {
+              displayUsers.map((user: any) => {
                 return (
                   <tr key={user.external_user_id} className="border-gray-600">
                     <td> {user.name_first + "  " + user.name_last} </td>
@@ -273,7 +277,7 @@ export default function ProviderUserManagement() {
               current_page: currentPage,
               total: providerUsers.length,
               per_page: perPage,
-              last_page: providerUsers.length / perPage,
+              last_page: Math.ceil(providerUsers.length / perPage),
             }}
             setPage={changePage}
           />
@@ -286,7 +290,7 @@ export default function ProviderUserManagement() {
                 value={perPage}
                 onChange={handleChangeUsersPerPage}
               >
-                {[10, 15, 20, 30].map((value) => (
+                {[3, 10, 15, 20, 30].map((value) => (
                   <option key={value} value={value}>
                     {value}
                   </option>

@@ -12,7 +12,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function MapUserForm({
+export default function MapUserPage({
   externalUser,
   providerId,
   onSubmit,
@@ -20,6 +20,19 @@ export default function MapUserForm({
 }: Props) {
   const [errorMessage, setErrorMessage] = useState("");
   const [usersToMap, setUsersToMap] = useState<User[]>([]);
+  const [totalUnmapped, setTotalUnmapped] = useState<User[]>([]);
+  const [displayUsers, setDisplayUsers] = useState<User[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const usersPerPage = 5;
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleUserSelection = (userId) => {
+    setSelectedUser(userId);
+  };
 
   const handleSubmit = async (userId: number) => {
     try {
@@ -43,17 +56,37 @@ export default function MapUserForm({
     }
   };
 
+  function handleGetAllUnmappedUsers() {
+    if (usersToMap.length === totalUnmapped.length) {
+      return;
+    }
+    if (displayUsers.length < totalUnmapped.length) {
+      setDisplayUsers(totalUnmapped);
+    } else {
+      setDisplayUsers(usersToMap);
+    }
+  }
+
   useEffect(() => {
     async function fetchUsers() {
       try {
+        const all = await axios.get(
+          `/api/users?include=only_unmapped&provider_id=${providerId}`,
+        );
+        if (all.status !== 200) {
+          onSubmit("failed to fetch users, please try again", ToastState.error);
+          return;
+        }
+        setTotalUnmapped(all.data.data);
         const response = await axios.get(
-          `/api/users?include=only_unmapped&provider_id=${providerId}&search=${externalUser.name_last}`,
+          `/api/users?include=only_unmapped&provider_id=${providerId}&search=${externalUser.username}&search=${externalUser.email}`,
         );
         if (response.status !== 200) {
           onSubmit("Failed to fetch users", ToastState.error);
           return;
         }
         setUsersToMap(response.data.data);
+        setDisplayUsers(response.data.data);
       } catch (error: any) {
         console.log(error);
         setErrorMessage(error);
@@ -64,6 +97,11 @@ export default function MapUserForm({
     externalUser && fetchUsers();
   }, [externalUser]);
 
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = displayUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(displayUsers.length / usersPerPage);
+
   return (
     <div>
       <CloseX close={onCancel} />
@@ -73,40 +111,64 @@ export default function MapUserForm({
           {externalUser?.username ?? errorMessage}
           <br />
         </div>
-        <div className="text-sm">Provider Email: </div>{" "}
-        <div className="text-sm text-primary"> {externalUser?.email ?? ""}</div>{" "}
-        to UnlockEd User:
+        <div className="text-sm">Provider Email:</div>
+        <div className="text-sm text-primary">{externalUser?.email ?? ""}</div>
+        <div>to UnlockEd Users:</div>
       </div>
-      <table className="table-xs">
-        <thead className="table-header-group">
-          <tr>
-            <th className="px-4 py-2">Username</th>
-            <th className="px-4 py-2">Name</th>
-            <th className="px-4 py-2">Email</th>
-            <th className="px-4 py-2">Map to student</th>
-          </tr>
-        </thead>
-        <tbody>
-          {externalUser &&
-            usersToMap.map((user) => (
-              <tr key={user.id}>
-                <td className="border px-4 py-2">{user.username}</td>
-                <td className="border px-4 py-2">
-                  {user.name_first} {user.name_last}
-                </td>
-                <td className="border px-4 py-2">{user.email}</td>
-                <td className="border px-4 py-2">
-                  <button
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => handleSubmit(user.id)}
-                  >
-                    Map
-                  </button>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+      <button
+        className="btn btn-sm btn-outline"
+        onClick={handleGetAllUnmappedUsers}
+        disabled={totalUnmapped.length === usersToMap.length}
+      >
+        {displayUsers.length !== totalUnmapped.length
+          ? "see all"
+          : "see search results"}
+      </button>
+      <div>
+        {currentUsers.map((user) => (
+          <div key={user.id} className="border px-4 py-2">
+            <input
+              type="radio"
+              id={`${user.id}`}
+              name="user"
+              className="radio radio-primary"
+              value={user.id}
+              checked={selectedUser === user.id}
+              onChange={() => handleUserSelection(user.id)}
+            />
+            <label htmlFor={`${user.id}`} className="ml-2">
+              {user.username} - {user.name_first} {user.name_last} -{" "}
+              {user.email}
+            </label>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between">
+        <button
+          className="btn btn-sm btn-circle"
+          disabled={currentPage === 1}
+          onClick={() => handlePageChange(currentPage - 1)}
+        >
+          Previous
+        </button>
+        <button
+          className="btn btn-sm btn-circle"
+          disabled={currentPage === totalPages}
+          onClick={() => handlePageChange(currentPage + 1)}
+        >
+          Next
+        </button>
+      </div>
+      <div>
+        <br />
+        <button
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => handleSubmit(selectedUser)}
+          disabled={!selectedUser}
+        >
+          Map to student
+        </button>
+      </div>
     </div>
   );
 }

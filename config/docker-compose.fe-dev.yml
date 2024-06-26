@@ -11,15 +11,18 @@ services:
       - DB_PASSWORD=dev
       - DB_NAME=unlocked
       - LOG_LEVEL=debug
-      - APP_URL=http://127.0.0.1
+      - APP_URL=http://localhost
+      - PROVIDER_SERVICE_KEY=NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
+      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
+      - JWT_SECRET=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
       - HYDRA_PUBLIC_URL=http://hydra:4444
+      - KRATOS_URL=kratos:4433
       - KRATOS_ADMIN_URL=http://kratos:4434
       - KRATOS_PUBLIC_URL=http://kratos:4433
       - KETO_ADMIN_URL=http://keto:4466
       - ORY_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
-      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
     ports:
       - "8080:8080"
     depends_on:
@@ -27,8 +30,6 @@ services:
         condition: service_healthy
       kratos-migrate:
         condition: service_completed_successfully
-    env_file:
-      - "./backend/.env"
     command: >
       ./backend
     volumes:

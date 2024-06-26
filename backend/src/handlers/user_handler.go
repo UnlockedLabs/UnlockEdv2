@@ -62,7 +62,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 
 func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string) {
 	page, perPage := srv.GetPaginationInfo(r)
-	search := r.URL.Query().Get("search")
+	search := r.URL.Query()["search"]
 	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, providerId, search)
 	if err != nil {
 		log.Error("Database Error getting unmapped users: ", err)
