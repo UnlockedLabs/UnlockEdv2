@@ -88,6 +88,26 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (srv *Server) dedupeUsers(users []models.ImportUser, id uint) []models.ImportUser {
+	toReturn := make([]models.ImportUser, 0)
+	for _, user := range users {
+		var count int64
+		err := srv.Db.Conn.Model(&models.ProviderUserMapping{}).Where("external_user_id = ? AND provider_platform_id = ?", user.ExternalUserID, id).Count(&count).Error
+		if err != nil {
+			log.Errorf("Error counting provider_user_mappings: %v", err)
+			continue
+		}
+		if count > 0 || (user.Username == "" && user.Email == "" && user.NameLast == "") {
+			log.Println("User found in provider_user_mappings, not returning user to client")
+			continue
+		} else {
+			log.Println("User not found in provider_user_mappings, returning user to client")
+			toReturn = append(toReturn, user)
+		}
+	}
+	return toReturn
+}
+
 // Here we get all the users from a Provider and send them to the client to be
 // mapped or imported into our system
 func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +119,8 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	if users, ok := cachedProviderUsers[uint(service.ProviderPlatformID)]; ok {
 		if users.LastUpdated.Add(24 * time.Hour).After(time.Now()) {
-			response := models.Resource[models.ImportUser]{Data: users.Users, Message: "Successfully fetched users from provider"}
+			toReturn := srv.dedupeUsers(users.Users, service.ProviderPlatformID)
+			response := models.Resource[models.ImportUser]{Data: toReturn, Message: "Successfully fetched users from provider"}
 			if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 				log.Error("Error writing response:" + err.Error())
 				srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -114,13 +135,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	responseUsers := make([]models.ImportUser, 0)
-	for _, user := range externalUsers {
-		if user.Username == "" && user.Email == "" && user.NameLast == "" {
-			continue
-		}
-		responseUsers = append(responseUsers, user)
-	}
+	responseUsers := srv.dedupeUsers(externalUsers, service.ProviderPlatformID)
 	cachedProviderUsers[uint(service.ProviderPlatformID)] = CachedProviderUsers{Users: responseUsers, LastUpdated: time.Now()}
 	response := models.Resource[models.ImportUser]{Data: responseUsers, Message: "Successfully fetched users from provider"}
 	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
