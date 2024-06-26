@@ -102,6 +102,7 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 
 type OrySession struct {
 	Active  bool
+	Token   string
 	Expires *time.Time
 }
 
@@ -120,7 +121,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	oryCookie, err := r.Cookie("ory_kratos_session")
 	if err == nil {
 		if orySession, ok := orySessions[user.ID]; ok {
-			if orySession.Active {
+			if orySession.Active && orySession.Expires.After(time.Now()) && strings.Compare(orySession.Token, oryCookie.String()) == 0 {
 				if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
 					srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 					log.Error("Error writing response: " + err.Error())

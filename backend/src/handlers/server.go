@@ -52,9 +52,11 @@ func NewServer(isTesting bool) *Server {
 		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil, Client: nil}
 	} else {
 		configuration := ory.NewConfiguration()
+		configuration.Scheme = "http"
+		configuration.Host = os.Getenv("KRATOS_URL")
 		configuration.Servers = []ory.ServerConfiguration{
 			{
-				URL: os.Getenv("KRATOS_ADMIN_URL"),
+				URL: os.Getenv("KRATOS_PUBLIC_URL"),
 			},
 		}
 		apiClient := ory.NewAPIClient(configuration)
