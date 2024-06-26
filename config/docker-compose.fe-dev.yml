@@ -48,6 +48,7 @@ services:
       context: ./provider-middleware
       dockerfile: Dockerfile
     environment:
+      - APP_ENV=production
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=unlocked

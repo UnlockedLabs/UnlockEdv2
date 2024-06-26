@@ -115,7 +115,10 @@ export default function AddUserForm({
         <br />
         {providers &&
           providers.map((provider: ProviderPlatform) => (
-            <div className="tooltip" data-tip="import user into platform">
+            <div
+              className="tooltip"
+              data-tip="Also create account in provider platform"
+            >
               <div className="justify-items-center">
                 Create New Account for User in:
               </div>

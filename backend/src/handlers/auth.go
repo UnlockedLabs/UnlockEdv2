@@ -47,7 +47,6 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 			if claims.PasswordReset && !isAuthRoute(r) {
@@ -101,8 +100,15 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+type OrySession struct {
+	Active  bool
+	Expires *time.Time
+}
+
+var orySessions = make(map[uint]OrySession)
+
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
-	log.Info("Checking auth handler")
+	fields := log.Fields{"user": ""}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil {
@@ -110,10 +116,46 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error("Error writing response: " + err.Error())
+	fields["user"] = user.Username
+	oryCookie, err := r.Cookie("ory_kratos_session")
+	if err == nil {
+		if orySession, ok := orySessions[user.ID]; ok {
+			if orySession.Active {
+				if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
+					srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+					log.Error("Error writing response: " + err.Error())
+					return
+				}
+				log.WithFields(fields).Info("Cached session active for user")
+				return
+			}
+		}
+		orySession, response, err := srv.OryClient.FrontendAPI.ToSession(context.Background()).Cookie(oryCookie.String()).Execute()
+		if err != nil {
+			log.WithFields(fields).Error("Error getting session from ory: ", err)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		log.WithFields(fields).Info("Got session from ory: ", orySession)
+		if response.StatusCode == 200 {
+			fields["user"] = orySession.Identity.GetCredentials()
+			log.WithFields(fields).Info("Got session from ory")
+			if *orySession.Active {
+				orySessions[user.ID] = OrySession{Active: true, Expires: orySession.ExpiresAt}
+				if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
+					srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+					log.Error("Error writing response: " + err.Error())
+					return
+				}
+				return
+			} else {
+				delete(orySessions, user.ID)
+				srv.ErrorResponse(w, http.StatusUnauthorized, "Session expired")
+				return
+			}
+		}
 	}
+	http.Error(w, "Unauthorized", http.StatusUnauthorized)
 }
 
 type ResetPasswordRequest struct {

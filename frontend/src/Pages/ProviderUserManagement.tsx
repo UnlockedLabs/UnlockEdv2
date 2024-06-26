@@ -114,6 +114,7 @@ export default function ProviderUserManagement() {
 
   function handleChangeUsersPerPage(e: React.ChangeEvent<HTMLSelectElement>) {
     setPerPage(parseInt(e.target.value));
+    setCurrentPage(1);
   }
 
   function handleSubmitMapUser(msg: string, toastState: ToastState) {

@@ -127,6 +127,8 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			return
+		} else {
+			delete(cachedProviderUsers, uint(service.ProviderPlatformID))
 		}
 	}
 	externalUsers, err := service.GetUsers()

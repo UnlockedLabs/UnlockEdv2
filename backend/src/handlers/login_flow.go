@@ -88,6 +88,8 @@ func (srv *Server) logoutCookie(w http.ResponseWriter) {
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	delete(orySessions, claims.UserID)
 	s.logoutCookie(w)
 	w.WriteHeader(http.StatusOK)
 }

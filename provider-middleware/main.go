@@ -59,8 +59,8 @@ func main() {
 		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
 	log.Println("Connected to the PostgreSQL database")
-	file := os.Stdout
-	if os.Getenv("APP_ENV") == "prod" {
+	var file *os.File
+	if os.Getenv("APP_ENV") == "production" {
 		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			file, err = os.Create("logs/provider-middleware.log")
@@ -68,6 +68,8 @@ func main() {
 				log.Fatalf("Failed to create log file: %v", err)
 			}
 		}
+	} else {
+		file = os.Stdout
 	}
 	log.SetOutput(file)
 	token := os.Getenv("PROVIDER_SERVICE_KEY")

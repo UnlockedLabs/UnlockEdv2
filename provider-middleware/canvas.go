@@ -70,17 +70,19 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 	unlockedUsers := make([]UnlockEdImportUser, 0)
 	for _, user := range users {
 		name := strings.Split(user["name"].(string), " ")
+		sortable := user["sortable_name"].(string)
+		sortableName := strings.Split(sortable, ",")
 		nameFirst, nameLast := "", ""
-		shortName := user["short_name"].(string)
-		if len(name) < 2 && !strings.Contains(shortName, "@") {
-			nameFirst = strings.Split(shortName, "@")[0]
-			nameLast = shortName
-		} else if len(name) > 2 {
+		if len(sortableName) > 1 {
+			nameFirst = sortableName[1]
+			nameLast = sortableName[0]
+		} else if nameFirst == "" && len(name) > 1 {
 			nameFirst = name[0]
 			nameLast = name[1]
 		} else {
-			nameFirst = name[0]
-			nameLast = shortName
+			shortName := user["short_name"].(string)
+			nameFirst = shortName
+			nameLast = name[0]
 		}
 		userId, _ := user["id"].(float64)
 		unlockedUser := UnlockEdImportUser{
@@ -114,19 +116,19 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 	}
 	for _, course := range courses {
 		id := int(course["id"].(float64))
-		var hasProgram models.Program
-		err = db.Table("programs").Select("external_id").Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, id).First(&hasProgram).Error
+		var count int64
+		err = db.Table("programs").Count(&count).Where("provider_platform_id = ? AND external_id = ?", fmt.Sprintf("%d", srv.ProviderPlatformID), fmt.Sprintf("%d", id)).Error
 		if err == nil {
 			// dont import same program twice
 			continue
 		}
 		totalMilestones := 0
-		assignments, err := srv.getAssignmentsForCourse(id)
+		assignments, err := srv.getCountAssignmentsForCourse(id)
 		if err != nil {
 			log.Printf("Failed to get assignments for course: %v", err)
 		} else {
-			log.Printf("total assignments: %d", len(assignments))
-			totalMilestones += len(assignments)
+			log.Printf("total assignments: %d", assignments)
+			totalMilestones += assignments
 		}
 		quizzes, err := srv.getQuizzesForCourse(fmt.Sprintf("%d", id))
 		if err != nil {
@@ -186,6 +188,42 @@ func (srv *CanvasService) getQuizzesForCourse(externalCourseId string) ([]map[st
 		return nil, err
 	}
 	return quizzes, nil
+}
+
+func getNodesLength(data map[string]interface{}) int {
+	if courseData, ok := data["data"].(map[string]interface{}); ok {
+		if course, ok := courseData["course"].(map[string]interface{}); ok {
+			if assignmentsConnection, ok := course["assignmentsConnection"].(map[string]interface{}); ok {
+				if nodes, ok := assignmentsConnection["nodes"].([]interface{}); ok {
+					return len(nodes)
+				}
+			}
+		}
+	}
+	return 0
+}
+
+func (srv *CanvasService) getCountAssignmentsForCourse(courseId int) (int, error) {
+	query := fmt.Sprintf(`query getCount { course(id: "%d") { assignmentsConnection { nodes { _id } } } }`, courseId)
+	url := srv.BaseURL + "/api/v1/graphql"
+	req, err := http.NewRequest("POST", url, strings.NewReader(query))
+	if err != nil {
+		return 0, err
+	}
+	for key, value := range *srv.BaseHeaders {
+		req.Header.Add(key, value)
+	}
+	resp, err := srv.Client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	assignments := make(map[string]interface{})
+	err = json.NewDecoder(resp.Body).Decode(&assignments)
+	if err != nil {
+		return 0, err
+	}
+	return getNodesLength(assignments), nil
 }
 
 // external ID
