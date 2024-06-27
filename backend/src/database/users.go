@@ -17,7 +17,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 		return 0, nil, err
 	}
 
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id").
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
@@ -30,7 +30,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	var user models.User
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id").
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		return nil, err
@@ -130,6 +130,7 @@ func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 	if user.ID == 0 {
 		return nil, errors.New("invalid user ID")
 	}
+	log.Printf("User ID: %d, Facility ID: %d", user.ID, user.FacilityID)
 	err := db.Conn.Save(&user).Error
 	if err != nil {
 		return nil, err
@@ -155,11 +156,18 @@ func (db *DB) ResetUserPassword(id uint, password string) error {
 	if err != nil {
 		return errors.New("user not found")
 	}
+	log.Printf("User before password reset: %+v", user)
+
 	user.Password = password
 	if err := user.HashPassword(); err != nil {
 		return err
 	}
 	user.PasswordReset = false
+
+	// Ensure facility_id is set
+	if user.FacilityID == 0 {
+		return errors.New("invalid facility ID")
+	}
 	if err := db.Conn.Save(&user).Error; err != nil {
 		return err
 	}

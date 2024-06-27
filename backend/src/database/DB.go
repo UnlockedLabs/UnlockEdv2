@@ -33,6 +33,7 @@ var TableList = []interface{}{
 	&models.Activity{},
 	&models.OidcClient{},
 	&models.UserFavorite{},
+	&models.Facility{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -74,6 +75,11 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 		log.Fatal("db transaction failed getting admin user")
 	}
 	if count == 0 {
+		var facility models.Facility
+		if err := db.Model(models.Facility{}).Find(&facility, "name = ?", "Default").Error; err != nil {
+			log.Fatalf("Failed to find facility: %v", err)
+		}
+		log.Printf("Facility ID: %d", facility.ID)
 		user := models.User{
 			Username:      "SuperAdmin",
 			NameFirst:     "Super",
@@ -82,6 +88,7 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			PasswordReset: true,
 			Role:          "admin",
 			Password:      "ChangeMe!",
+			FacilityID:    facility.ID,
 		}
 		log.Printf("Creating user: %v", user)
 		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")

@@ -33,10 +33,12 @@ type User struct {
 	NameLast      string   `gorm:"size:255;not null" json:"name_last"`
 	Role          UserRole `gorm:"size:255;default:student" json:"role"`
 	KratosID      string   `gorm:"size:255" json:"kratos_id"`
+	FacilityID    uint     `json:"facility_id"`
 
 	/* foreign key */
 	Mappings    []ProviderUserMapping `json:"-"`
 	ActivityLog []UserActivity        `json:"-"`
+	Facility    *Facility             `gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL" json:"-"`
 }
 
 type ImportUser struct {

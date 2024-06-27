@@ -36,11 +36,11 @@ type RecentActivity struct {
 }
 
 type CurrentEnrollment struct {
-	AltName              string           `json:"alt_name"`
-	Name                 string           `json:"name"`
-	ProviderPlatformName string           `json:"provider_platform_name"`
-	ExternalURL          string           `json:"external_url"`
-	TotalTime            uint             `json:"total_activity_time"`
+	AltName              string `json:"alt_name"`
+	Name                 string `json:"name"`
+	ProviderPlatformName string `json:"provider_platform_name"`
+	ExternalURL          string `json:"external_url"`
+	TotalTime            uint   `json:"total_activity_time"`
 }
 
 type RecentProgram struct {
@@ -55,7 +55,7 @@ type RecentProgram struct {
 type UserDashboardJoin struct {
 	Enrollments    []CurrentEnrollment `json:"enrollments"`
 	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
-	WeekActivity   []RecentActivity	   `json:"week_activity"`
+	WeekActivity   []RecentActivity    `json:"week_activity"`
 }
 
 type ImportProgram struct {
@@ -68,4 +68,25 @@ type ImportProgram struct {
 	OutcomeTypes            []string `json:"outcome_types"`
 	ExternalURL             string   `json:"external_url"`
 	TotalProgressMilestones int      `json:"total_progress_milestones"`
+}
+
+//ADMIN STRUCTS
+
+type AdminDashboardJoin struct {
+	MonthlyActivity     []RecentActivity    `json:"monthly_activity"`
+	WeeklyActiveUsers   uint                `json:"weekly_active_users"`
+	AvgDailyActivity    uint                `json:"avg_daily_activity"`
+	TotalWeeklyActivity uint                `json:"total_weekly_activity"`
+	ProgramMilestones   []ProgramMilestones `json:"program_milestones"`
+	TopProgramActivity  []ProgramActivity   `json:"top_program_activity"`
+}
+
+type ProgramMilestones struct {
+	AltName    string `json:"alt_name"`
+	Milestones int    `json:"milestones"`
+}
+
+type ProgramActivity struct {
+	ProgramName  string `json:"program_name"`
+	HoursEngaged int    `json:"hours_engaged"`
 }
