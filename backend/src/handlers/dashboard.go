@@ -8,25 +8,41 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserDashboard)))
+	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleStudentDashboard)))
+	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleAdminDashboard)))
 	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserCatalogue)))
 	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserPrograms)))
 }
 
-func (srv *Server) HandleUserDashboard(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Errorf("Error parsing user ID: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	userDashboard, err := srv.Db.GetUserDashboardInfo(userId)
+	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId)
 	if err != nil {
 		log.Errorf("Error getting user dashboard info: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, userDashboard); err != nil {
+	if err := srv.WriteResponse(w, http.StatusOK, studentDashboard); err != nil {
+		log.Errorf("user dashboard endpoint: error writing response: %v", err)
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	adminDashboard, err := srv.Db.GetAdminDashboardInfo(claims.FacilityID)
+	if err != nil {
+		log.Errorf("Error getting user dashboard info: %v", err)
+		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, adminDashboard); err != nil {
 		log.Errorf("user dashboard endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -80,7 +96,7 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := map[string]interface{}{
-		"programs": userPrograms,
+		"programs":      userPrograms,
 		"num_completed": numCompleted,
 		"total_time":    totalTime,
 	}

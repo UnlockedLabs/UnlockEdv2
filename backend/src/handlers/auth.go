@@ -22,6 +22,7 @@ type Claims struct {
 	UserID        uint   `json:"user_id"`
 	PasswordReset bool   `json:"password_reset"`
 	Role          string `json:"role"`
+	FacilityID    uint   `json:"facility_id"`
 	jwt.RegisteredClaims
 }
 
