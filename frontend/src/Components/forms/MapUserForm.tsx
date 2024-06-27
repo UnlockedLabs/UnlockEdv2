@@ -12,7 +12,7 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function MapUserPage({
+export default function MapUserForm({
   externalUser,
   providerId,
   onSubmit,

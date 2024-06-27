@@ -52,7 +52,7 @@ func (srv *CanvasService) SendRequest(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
+func (srv *CanvasService) GetUsers() ([]models.ImportUser, error) {
 	url := srv.BaseURL + "/api/v1/accounts/" + srv.AccountID + "/users"
 	log.Printf("url: %v", url)
 	resp, err := srv.SendRequest(url)
@@ -67,7 +67,7 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 		return nil, err
 	}
 	log.Printf("Request sent to canvas Users: %v", users)
-	unlockedUsers := make([]UnlockEdImportUser, 0)
+	unlockedUsers := make([]models.ImportUser, 0)
 	for _, user := range users {
 		name := strings.Split(user["name"].(string), " ")
 		sortable := user["sortable_name"].(string)
@@ -85,7 +85,7 @@ func (srv *CanvasService) GetUsers() ([]UnlockEdImportUser, error) {
 			nameLast = name[0]
 		}
 		userId, _ := user["id"].(float64)
-		unlockedUser := UnlockEdImportUser{
+		unlockedUser := models.ImportUser{
 			ExternalUserID:   fmt.Sprintf("%d", int(userId)),
 			ExternalUsername: user["login_id"].(string),
 			NameFirst:        nameFirst,
@@ -151,8 +151,6 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 		is_pub := course["is_public"].(bool)
 		if is_pub {
 			progType = "open_enrollment"
-		} else {
-			progType = "fixed_enrollment"
 		}
 		unlockedCourse := models.Program{
 			ProviderPlatformID:      srv.ProviderPlatformID,

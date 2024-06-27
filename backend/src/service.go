@@ -88,10 +88,14 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Errorln("request failed: with code", resp.Status)
+		return nil, errors.New("request failed")
+	}
 	var users []models.ImportUser
 	err = json.NewDecoder(resp.Body).Decode(&users)
 	if err != nil {
-		log.Printf("error decoding users: %v", err.Error())
+		log.Errorln("error decoding users: ", err.Error())
 		return nil, err
 	}
 	return users, nil
@@ -106,7 +110,7 @@ func (serv *ProviderService) GetPrograms() error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.WithFields(log.Fields{"handler": "GetPrograms", "status": resp.StatusCode}).Error("Failed to get programs")
-		return errors.New("Failed to get programs")
+		return errors.New("failed to get programs")
 	}
 	return nil
 }

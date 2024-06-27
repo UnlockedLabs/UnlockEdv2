@@ -49,7 +49,7 @@ type KolibriUser struct {
 	IsSuperuser bool   `json:"is_superuser"`
 }
 
-func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
+func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
 	first := strings.Split(ku.Fullname, " ")[0]
 	last := strings.Split(ku.Fullname, " ")[1]
 	if len(strings.Split(ku.Fullname, " ")) > 2 {
@@ -59,7 +59,7 @@ func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
 	if first == "" && last == "" && ku.Username == "" {
 		return nil, errors.New("invalid user")
 	}
-	return &UnlockEdImportUser{
+	return &models.ImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		Email:            email,
@@ -176,15 +176,6 @@ type UnlockEdImportMilestone struct {
 	ExternalID        string `json:"external_id"`
 	Type              string `json:"type"`
 	IsCompleted       bool   `json:"is_completed"`
-}
-
-type UnlockEdImportUser struct {
-	Username         string `json:"username"`
-	NameFirst        string `json:"name_first"`
-	NameLast         string `json:"name_last"`
-	Email            string `json:"email"`
-	ExternalUserID   string `json:"external_user_id"`
-	ExternalUsername string `json:"external_username"`
 }
 
 type UnlockEdImportActivity struct {

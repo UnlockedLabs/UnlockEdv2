@@ -1,11 +1,11 @@
 package main
 
 import (
+	"UnlockEdv2/src/models"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"sync"
 
 	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
@@ -14,7 +14,7 @@ import (
 )
 
 type ProviderServiceInterface interface {
-	GetUsers() ([]UnlockEdImportUser, error)
+	GetUsers() ([]models.ImportUser, error)
 	ImportPrograms(db *gorm.DB) error
 	ImportMilestonesForProgramUser(courseId, userId string, db *gorm.DB) error
 	ImportActivityForProgram(courseId string, db *gorm.DB) error
@@ -31,7 +31,6 @@ type ServiceHandler struct {
 	Mux      *http.ServeMux
 	token    string
 	db       *gorm.DB
-	mutex    sync.Mutex
 }
 
 func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
