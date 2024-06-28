@@ -33,6 +33,7 @@ var TableList = []interface{}{
 	&models.Activity{},
 	&models.OidcClient{},
 	&models.UserFavorite{},
+	&models.Facility{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -66,7 +67,20 @@ func InitDB(isTesting bool) *DB {
 }
 
 func SeedDefaultData(db *gorm.DB) {
+	log.Println("Starting to seed default data...")
 	if db.Exec("SELECT id FROM users WHERE username = 'SuperAdmin'").RowsAffected == 0 {
+		defaultFacility := models.Facility{
+			Name: "Default",
+		}
+		log.Printf("Creating facility: %v", defaultFacility)
+		if err := db.Create(&defaultFacility).Error; err != nil {
+			log.Fatalf("Failed to create user: %v", err)
+		}
+		var facility models.Facility
+		if err := db.Where("name = ?", "Default").First(&facility).Error; err != nil {
+			log.Fatalf("Failed to find facility: %v", err)
+		}
+		log.Printf("Facility ID: %d", facility.ID)
 		user := models.User{
 			Username:      "SuperAdmin",
 			NameFirst:     "Super",
@@ -75,6 +89,7 @@ func SeedDefaultData(db *gorm.DB) {
 			PasswordReset: true,
 			Role:          "admin",
 			Password:      "ChangeMe!",
+			FacilityID:    facility.ID,
 		}
 		log.Printf("Creating user: %v", user)
 		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")
