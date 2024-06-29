@@ -69,6 +69,7 @@ func MigrateFresh(db *gorm.DB) {
 	}
 	database.SeedDefaultData(db, false)
 	log.Println("Database successfully migrated from fresh state.")
+	log.Println("\033[31mIf the server is running, you MUST restart it\033[0m")
 }
 
 func syncOryKratos() error {

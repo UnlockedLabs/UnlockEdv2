@@ -129,11 +129,11 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			if err := srv.handleCreateUserKratos(created.Username, created.Password); err != nil {
 				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
 					log.Errorf("Error deleting user after failed provider user mapping import-provider-users")
-					log.Printf("Error creating user in kratos: %v", err)
-					userResponse.Error = "error creating authentication for user in kratos, please try again"
-					response.Data = append(response.Data, userResponse)
-					continue
 				}
+				log.Warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
+				userResponse.Error = "error creating authentication for user in kratos, please try again"
+				response.Data = append(response.Data, userResponse)
+				continue
 			}
 		}
 		mapping := models.ProviderUserMapping{
@@ -145,20 +145,17 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
 			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
 				log.Errorf("Error deleting user after failed provider user mapping import-provider-users")
-				// for atomicity, we should delete the user if the mapping fails
-				userResponse.Error = "user was created in database, but there was an error creating provider user mapping, please try again"
-				response.Data = append(response.Data, userResponse)
-				continue
 			}
+			userResponse.Error = "user was created in database, but there was an error creating provider user mapping, please try again"
+			response.Data = append(response.Data, userResponse)
+			continue
 		}
 		if provider.OidcID != 0 {
 			if err = srv.registerProviderLogin(provider, &newUser); err != nil {
-				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
-					log.Errorf("Error deleting user after failed provider login creation import-provider-users")
-					userResponse.Error = "user was created in database, but there was an error creating provider login, please try again"
-					response.Data = append(response.Data, userResponse)
-					continue
-				}
+				log.Error("error creating provider login, user has been deleted")
+				userResponse.Error = "user was created in database, but there was an error creating provider login, please try again"
+				response.Data = append(response.Data, userResponse)
+				continue
 			}
 		}
 		response.Data = append(response.Data, userResponse)
