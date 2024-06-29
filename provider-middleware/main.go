@@ -3,20 +3,20 @@ package main
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type ProviderServiceInterface interface {
-	GetUsers() ([]models.ImportUser, error)
+	GetUsers(db *gorm.DB) ([]models.ImportUser, error)
 	ImportPrograms(db *gorm.DB) error
-	ImportMilestonesForProgramUser(courseId, userId string, db *gorm.DB) error
+	ImportMilestonesForProgramUser(courseId, userId uint, db *gorm.DB) error
 	ImportActivityForProgram(courseId string, db *gorm.DB) error
 	// TODO: GetOutcomes()
 }
@@ -58,8 +58,24 @@ func main() {
 		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
 	log.Println("Connected to the PostgreSQL database")
+	token := os.Getenv("PROVIDER_SERVICE_KEY")
+	initLogging()
+	log.Debugf("loggin initiated with level %v", log.GetLevel())
+	handler := newServiceHandler(token, db)
+	log.Println("Server started on :8081")
+	handler.registerRoutes()
+	log.Println("Routes registered")
+	err = http.ListenAndServe(":8081", handler.Mux)
+	if err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func initLogging() {
 	var file *os.File
-	if os.Getenv("APP_ENV") == "production" {
+	var err error
+	env := os.Getenv("APP_ENV")
+	if env == "production" || env == "prod" {
 		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			file, err = os.Create("logs/provider-middleware.log")
@@ -71,14 +87,20 @@ func main() {
 		file = os.Stdout
 	}
 	log.SetOutput(file)
-	token := os.Getenv("PROVIDER_SERVICE_KEY")
-	log.Println("Token: ", token)
-	handler := newServiceHandler(token, db)
-	log.Println("Server started on :8081")
-	handler.registerRoutes()
-	log.Println("Routes registered")
-	err = http.ListenAndServe(":8081", handler.Mux)
-	if err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	log.SetFormatter(&log.JSONFormatter{})
+	if os.Getenv("LOG_LEVEL") == "" {
+		switch env {
+		case "prod":
+		case "production":
+			log.SetLevel(log.InfoLevel)
+		default:
+			log.SetLevel(log.DebugLevel)
+		}
+	} else {
+		level, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+		if err != nil {
+			log.SetLevel(log.DebugLevel)
+		}
+		log.SetLevel(level)
 	}
 }

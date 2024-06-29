@@ -12,7 +12,7 @@ import {
   UserPlusIcon,
   ChevronUpIcon,
 } from "@heroicons/react/20/solid";
-import { PaginatedResponse, User } from "../common";
+import { DEFAULT_ADMIN_ID, PaginatedResponse, User } from "../common";
 import PageNav from "../Components/PageNav";
 import AddUserForm from "../Components/forms/AddUserForm";
 import EditUserForm from "../Components/forms/EditUserForm";
@@ -73,18 +73,30 @@ export default function Users() {
   }
 
   const deleteUser = async () => {
-    const response = await axios.delete("/api/users/" + targetUser?.id);
-    const toastType =
-      response.status == 204 ? ToastState.success : ToastState.error;
-    const message =
-      response.status == 204
-        ? "User deleted successfully"
-        : response.statusText;
-    deleteUserModal.current?.close();
-    showToast(message, toastType);
-    resetModal();
-    mutate();
-    return;
+    if (targetUser?.id === DEFAULT_ADMIN_ID) {
+      showToast(
+        "This is the primary administrator and cannot be deleted",
+        ToastState.error,
+      );
+      return;
+    }
+    try {
+      const response = await axios.delete("/api/users/" + targetUser?.id);
+      const toastType =
+        response.status == 204 ? ToastState.success : ToastState.error;
+      const message =
+        response.status == 204
+          ? "User deleted successfully"
+          : response.statusText;
+      deleteUserModal.current?.close();
+      showToast(message, toastType);
+      resetModal();
+      mutate();
+      return;
+    } catch (err: any) {
+      showToast("Unable to delete user, please try again", ToastState.error);
+      return;
+    }
   };
 
   const onAddUserSuccess = (pswd = "", msg: string, type: ToastState) => {

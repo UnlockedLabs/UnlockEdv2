@@ -232,7 +232,7 @@ func (ks *KolibriService) RefreshSession() error {
 * @info - GET /api/auth/facilityuser?member_of=<facilityID>
 * @return - List of KolibriUser objects, representing all users in the facility
 **/
-func (ks *KolibriService) GetUsers() ([]models.ImportUser, error) {
+func (ks *KolibriService) GetUsers(_db *gorm.DB) ([]models.ImportUser, error) {
 	url := ks.BaseURL + "/api/auth/facilityuser?member_of=" + ks.AccountID
 	response, err := ks.SendGETRequest(url)
 	if err != nil {
@@ -245,6 +245,7 @@ func (ks *KolibriService) GetUsers() ([]models.ImportUser, error) {
 	}
 	importUsers := make([]models.ImportUser, len(users))
 	for _, user := range users {
+		// TODO: dedupe these, check for existing users
 		ulUser, err := user.IntoImportUser()
 		if err != nil {
 			continue
@@ -281,7 +282,7 @@ func (ks *KolibriService) ImportPrograms(db *gorm.DB) error {
 	return nil
 }
 
-func (ks *KolibriService) ImportMilestonesForProgramUser(courseId, userId string, db *gorm.DB) error {
+func (ks *KolibriService) ImportMilestonesForProgramUser(courseId, userId uint, db *gorm.DB) error {
 	return nil
 }
 

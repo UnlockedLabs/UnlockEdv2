@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -115,8 +116,8 @@ func (serv *ProviderService) GetPrograms() error {
 	return nil
 }
 
-func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID string) error {
-	req := serv.Request("/api/users/" + userID + "/programs/" + programID + "/milestones")
+func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID uint) error {
+	req := serv.Request("/api/users/" + fmt.Sprintf("%d", userID) + "/programs/" + fmt.Sprintf("%d", programID) + "/milestones")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
 		log.WithFields(log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "error": err.Error()}).Error("Failed to get milestones for program user")
@@ -124,7 +125,7 @@ func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID strin
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.WithFields(log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "status": resp.StatusCode}).Error("Failed to get milestones for program user")
-		return errors.New("Failed to get milestones for program user")
+		return errors.New("failed to get milestones for program user")
 	}
 	return nil
 }
@@ -142,7 +143,7 @@ func (serv *ProviderService) GetActivityForProgram(programID string) error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.WithFields(log.Fields{"handler": "GetActivityForProgram", "status": resp.StatusCode}).Error("Failed to get activity for program")
-		return errors.New("Failed to get milestones for program user")
+		return errors.New("failed to get milestones for program user")
 	}
 	return nil
 }

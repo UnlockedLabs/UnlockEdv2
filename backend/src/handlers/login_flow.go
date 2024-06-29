@@ -56,7 +56,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
-			Name:     "token",
+			Name:     "unlocked_token",
 			Value:    signedToken,
 			Expires:  time.Now().Add(24 * time.Hour),
 			SameSite: http.SameSiteDefaultMode,

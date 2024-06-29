@@ -182,7 +182,6 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		if err = srv.createAndRegisterProviderUserAccount(provider, newUser); err != nil {
 			log.Error("Error creating provider user account for provider: ", provider.Name)
-			srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating user")
 		}
 	}
 	response := NewUserResponse{
@@ -210,8 +209,14 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err = srv.Db.DeleteUser(id); err != nil {
+	user, err := srv.Db.GetUserByID(uint(id))
+	if err != nil {
+		log.WithField("user_id", id).Error("unable to find user to be deleted")
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+	}
+	if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
+		log.WithField("user_id", id).Error("error deleting user in kratos")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error deleting user in kratos")
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

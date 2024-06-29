@@ -3,6 +3,7 @@ export enum UserRole {
   Student = "student",
 }
 
+export const DEFAULT_ADMIN_ID = 1;
 export interface User {
   id: number;
   name_first: string;
@@ -127,7 +128,6 @@ export interface ProviderPlatform {
   state: ProviderPlatformState;
   type: ProviderPlatformType;
   oidc_id: number;
-  has_import: boolean;
   [key: string | ProviderPlatformState | ProviderPlatformType]: any;
 }
 

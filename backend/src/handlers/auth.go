@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"slices"
@@ -33,14 +36,14 @@ func (srv *Server) registerAuthRoutes() {
 
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("token")
+		cookie, err := r.Cookie("unlocked_token")
 		if err != nil {
 			log.Error("No token found " + err.Error())
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
+			return []byte(os.Getenv("APP_KEY")), nil
 		})
 		if err != nil {
 			log.Println("Invalid token")
@@ -101,15 +104,23 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 }
 
 type OrySession struct {
-	Active  bool
-	Token   string
-	Expires *time.Time
+	Active    bool
+	TokenHash string
+	Expires   time.Time
 }
 
+func hashCookieValue(cookieValue string) string {
+	hash := sha256.New()
+	hash.Write([]byte(cookieValue))
+	return hex.EncodeToString(hash.Sum(nil))
+}
+
+// cache ory sessions in memory to avoid unnecessary calls
 var orySessions = make(map[uint]OrySession)
 
+// Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
-	fields := log.Fields{"user": ""}
+	fields := log.Fields{"user": "", "handler": "handleCheckAuth"}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil {
@@ -120,43 +131,84 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	fields["user"] = user.Username
 	oryCookie, err := r.Cookie("ory_kratos_session")
 	if err == nil {
+		cookieHash := hashCookieValue(oryCookie.Value)
 		if orySession, ok := orySessions[user.ID]; ok {
-			if orySession.Active && orySession.Expires.After(time.Now()) && strings.Compare(orySession.Token, oryCookie.String()) == 0 {
+			// check the cached session hash + expiration
+			if orySession.Active && orySession.TokenHash == cookieHash && orySession.Expires.After(time.Now()) {
 				if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
 					srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 					log.Error("Error writing response: " + err.Error())
 					return
 				}
-				log.WithFields(fields).Info("Cached session active for user")
+				log.WithFields(fields).Info("checked cached session active for user")
 				return
 			}
+			log.WithFields(fields).Info("session was cached but invalidated")
 		}
-		orySession, response, err := srv.OryClient.FrontendAPI.ToSession(context.Background()).Cookie(oryCookie.String()).Execute()
-		if err != nil {
-			log.WithFields(fields).Error("Error getting session from ory: ", err)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		if err := srv.validateOrySession(oryCookie, user.ID); err != nil {
+			log.WithFields(fields).Errorln("invalid ory session found")
+			srv.ErrorResponse(w, http.StatusUnauthorized, "ory session was not valid, please login again")
 			return
 		}
-		log.WithFields(fields).Info("Got session from ory: ", orySession)
-		if response.StatusCode == 200 {
-			fields["user"] = orySession.Identity.GetCredentials()
-			log.WithFields(fields).Info("Got session from ory")
-			if *orySession.Active {
-				orySessions[user.ID] = OrySession{Active: true, Expires: orySession.ExpiresAt}
-				if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
-					srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-					log.Error("Error writing response: " + err.Error())
-					return
-				}
-				return
-			} else {
-				delete(orySessions, user.ID)
-				srv.ErrorResponse(w, http.StatusUnauthorized, "Session expired")
-				return
+		if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
+			log.Error("Error writing response: " + err.Error())
+			srv.ErrorResponse(w, http.StatusUnauthorized, "unauthorized, ory session not found")
+			return
+		}
+		return
+	}
+	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+}
+
+// we pull the ory session cookie, and send request to kratos to validate the user session
+func (srv *Server) validateOrySession(cookie *http.Cookie, userID uint) error {
+	fields := log.Fields{"handler": "validateOrySession", "user_id": userID}
+	request, err := http.NewRequest("GET", os.Getenv("KRATOS_PUBLIC_URL")+"/sessions/whoami", nil)
+	if err != nil {
+		log.WithFields(fields).Error("Error creating request to ory: ", err)
+		return err
+	}
+	// for some reason you have to send the entire cookie, instead of cookie.Value
+	request.Header.Add("Cookie", cookie.String())
+	response, err := srv.Client.Do(request)
+	if err != nil {
+		log.WithFields(fields).Error("Error sending equest to ory: ", err)
+		return err
+	}
+	if response.StatusCode == 200 {
+		oryResp := map[string]interface{}{}
+		if err := json.NewDecoder(response.Body).Decode(&oryResp); err != nil {
+			log.WithFields(fields).Errorln("error decoding body from ory response")
+			return err
+		}
+		defer response.Body.Close()
+		active, ok := oryResp["active"].(bool)
+		if !ok {
+			log.WithFields(fields).Errorln("error decoding active session from ory response")
+			return err
+		}
+		if active {
+			expiresAt, ok := oryResp["expires_at"].(string)
+			if !ok {
+				log.WithFields(fields).Errorln("error expires_at from ory response")
+				return err
+			}
+			expires, err := time.Parse(time.RFC3339, expiresAt)
+			if err != nil {
+				log.WithFields(fields).Errorln("error parsing expires_at time from ory response")
+				return err
+			}
+			if expires.After(time.Now()) {
+				log.WithFields(fields).Info("Got active  session from ory")
+				// hash the ory token for easy comparison/validation, so we cache
+				hashed := hashCookieValue(cookie.Value)
+				orySessions[userID] = OrySession{Active: true, TokenHash: hashed, Expires: expires}
+				return nil
 			}
 		}
 	}
-	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	delete(orySessions, userID)
+	return errors.New("invalid ory session")
 }
 
 type ResetPasswordRequest struct {
@@ -195,7 +247,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
+		Name:     "unlocked_token",
 		Value:    signedToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,

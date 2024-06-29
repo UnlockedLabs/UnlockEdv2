@@ -86,7 +86,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 		Message: "Provider platform created successfully",
 	}
 	response.Data = append(response.Data, *newProv)
-	if err = srv.WriteResponse(w, http.StatusOK, &response); err != nil {
+	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		log.Error("Error writing response: ", err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}

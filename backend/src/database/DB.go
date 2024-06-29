@@ -33,7 +33,6 @@ var TableList = []interface{}{
 	&models.Activity{},
 	&models.OidcClient{},
 	&models.UserFavorite{},
-	&models.ProviderTotalImports{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -62,15 +61,19 @@ func InitDB(isTesting bool) *DB {
 	}
 	database = &DB{Conn: db}
 	Migrate(db)
-	SeedDefaultData(db)
+	SeedDefaultData(db, isTesting)
 	if isTesting {
 		database.SeedTestData()
 	}
 	return database
 }
 
-func SeedDefaultData(db *gorm.DB) {
-	if db.Exec("SELECT id FROM users WHERE username = 'SuperAdmin'").RowsAffected == 0 {
+func SeedDefaultData(db *gorm.DB, isTesting bool) {
+	var count int64
+	if err := db.Table("users").Where("id = 1").Count(&count).Error; err != nil {
+		log.Fatal("db transaction failed getting admin user")
+	}
+	if count == 0 {
 		user := models.User{
 			Username:      "SuperAdmin",
 			NameFirst:     "Super",
@@ -89,6 +92,7 @@ func SeedDefaultData(db *gorm.DB) {
 		if err := db.Create(&user).Error; err != nil {
 			log.Fatalf("Failed to create user: %v", err)
 		}
+
 		links := []models.LeftMenuLink{}
 		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
 			log.Fatalf("Failed to unmarshal default left menu links: %v", err)
@@ -96,6 +100,33 @@ func SeedDefaultData(db *gorm.DB) {
 		if err := db.Create(&links).Error; err != nil {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
+	}
+	storedProc := `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
+    _user_id INT,
+    _program_id INT,
+    _type VARCHAR,
+    _total_time INT,
+    _external_id VARCHAR)
+    RETURNS VOID AS $$
+    DECLARE
+        prev_total_time INT;
+    BEGIN
+        SELECT total_time INTO prev_total_time FROM activities
+        WHERE user_id = _user_id AND program_id = _program_id
+        ORDER BY created_at DESC LIMIT 1;
+
+        IF prev_total_time IS NULL THEN
+            prev_total_time := 0;
+        END IF;
+    INSERT INTO activities (user_id, program_id, type, total_time, time_delta, external_id, created_at, updated_at)
+    VALUES (_user_id, _program_id, _type, _total_time, _total_time - prev_total_time, _external_id, NOW(), NOW());
+    END;
+    $$ LANGUAGE plpgsql;`
+	if !isTesting {
+		if err := db.Exec(string(storedProc)).Error; err != nil {
+			log.Fatalf("Failed to create stored procedure: %v", err)
+		}
+		log.Println("Stored procedure created successfully.")
 	}
 }
 

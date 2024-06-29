@@ -3,9 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
-	"errors"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
@@ -184,136 +182,31 @@ func (srv *Server) registerProviderLogin(provider *models.ProviderPlatform, user
 	return nil
 }
 
-func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, user *models.User) error {
-	providerMapping, err := srv.Db.GetProviderUserMapping(int(user.ID), int(provider.ID))
-	if err != nil {
-		log.Error("Error getting provider user mapping registerCanvasUserLogin")
-		return err
-	}
-	if providerMapping.ExternalLoginID != "" {
-		return errors.New("user already has login in canvas")
-	}
-	body := url.Values{}
-	body.Add("user[id]", providerMapping.ExternalUserID)
-	body.Add("login[unique_id]", user.Username)
-	body.Add("login[authentication_provider_id]", "openid_connect")
-	url := body.Encode()
-	request, err := http.NewRequest("POST", provider.BaseUrl+"/api/v1/accounts/"+provider.AccountID+"/logins?"+url, nil)
-	if err != nil {
-		log.Errorf("Error creating request object registerCanvasUserLogin")
-		return err
-	}
-	request.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := srv.Client.Do(request)
-	if err != nil {
-		log.Errorf("Error sending request to canvas registerCanvasUserLogin")
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Errorf("Error creating login in canvas registerCanvasUserLogin")
-		return errors.New("error creating login in canvas")
-	}
-	var loginResponse map[string]interface{}
-	if err = json.NewDecoder(resp.Body).Decode(&loginResponse); err != nil {
-		log.Errorf("Error decoding response registerCanvasUserLogin")
-		return err
-	}
-	if loginResponse["id"] == nil {
-		log.Errorf("Error creating login in canvas registerCanvasUserLogin")
-		return errors.New("error creating login in canvas")
-	}
-	newId, ok := loginResponse["id"].(float64)
-	if !ok {
-		log.Errorf("Error parsing id from response registerCanvasUserLogin")
-		return errors.New("error creating login in canvas")
-	}
-	providerMapping.ExternalLoginID = strconv.Itoa(int(newId))
-	providerMapping.AuthenticationProviderStatus = models.OpenIDConnect
-	if err = srv.Db.UpdateProviderUserMapping(providerMapping); err != nil {
-		log.Errorf("Error updating provider user mapping registerCanvasUserLogin")
-		return err
-	}
-	return nil
-}
-
-// create new user in canvas, return new user id
-func (srv *Server) createUserInCanvas(user *models.User, providerId uint) (int, error) {
-	provider, err := srv.Db.GetProviderPlatformByID(int(providerId))
-	if err != nil {
-		log.Errorf("Error getting provider platform by id createUserInCanvas")
-		return 0, err
-	}
-	body := url.Values{}
-	body.Add("user[sortable_name]", user.Username)
-	body.Add("user[name]", user.NameLast+", "+user.NameFirst)
-	body.Add("user[locale]", "en")
-	body.Add("user[terms_of_use]", "true")
-	body.Add("user[skip_registration]", "true")
-	body.Add("pseudonym[unique_id]", user.Username)
-	body.Add("pseudonym[sis_user_id]", strconv.Itoa(int(user.ID)))
-	body.Add("pseudonym[send_confirmation]", "false")
-	body.Add("communication_channel[skip_confirmation]", "true")
-	url := body.Encode()
-	request, err := http.NewRequest("POST", provider.BaseUrl+"/api/v1/accounts/"+provider.AccountID+"/users?"+url, nil)
-	if err != nil {
-		log.Errorf("Error creating request object createUserInCanvas")
-		return 0, err
-	}
-	log.Println("Access Key: ", provider.AccessKey)
-	request.Header.Add("Authorization", "Bearer "+provider.AccessKey)
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	log.Debug("Request: ", request.URL)
-	resp, err := srv.Client.Do(request)
-	if err != nil {
-		log.Errorf("Error sending request to canvas createUserInCanvas")
-		return 0, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Errorf("Error creating user in canvas createUserInCanvas")
-		return 0, errors.New("error creating user in canvas")
-	}
-	var userResponse map[string]interface{}
-	if err = json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
-		log.Errorf("Error decoding response createUserInCanvas")
-		return 0, err
-	}
-	if userResponse["id"] == nil {
-		log.Errorf("Error creating user in canvas createUserInCanvas")
-		return 0, err
-	}
-	newId, ok := userResponse["id"].(float64)
-	if !ok {
-		log.Errorf("Error parsing id from response createUserInCanvas")
-		return 0, err
-	}
-	return int(newId), nil
-}
-
 func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "handleCreateProviderUserAccount"}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Errorf("Error parsing provider id from path createProviderUserAccount")
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid provider platform id")
 		return
 	}
+	fields["provider_platform_id"] = id
 	user_id_int, err := strconv.Atoi(r.PathValue("user_id"))
 	if err != nil {
-		log.Errorf("Error parsing user id from path createProviderUserAccount")
+		log.WithFields(fields).Error("Error parsing user id from path")
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user id")
 		return
 	}
+	fields["user_id"] = id
 	provider, err := srv.Db.GetProviderPlatformByID(id)
 	if err != nil {
-		log.Errorf("Error getting provider platform by id createProviderUserAccount")
+		log.WithFields(fields).Error("Error getting provider platform by id createProviderUserAccount")
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	user, err := srv.Db.GetUserByID(uint(user_id_int))
 	if err != nil {
-		log.Error("Error getting user by id createProviderUserAccount")
+		log.WithFields(fields).Error("Error getting user by id")
 		srv.ErrorResponse(w, http.StatusNotFound, "User not found")
 		return
 	}
@@ -330,30 +223,9 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 
 func (srv *Server) createAndRegisterProviderUserAccount(provider *models.ProviderPlatform, user *models.User) error {
 	if provider.Type == models.CanvasCloud || provider.Type == models.CanvasOSS {
-		newId, err := srv.createUserInCanvas(user, uint(provider.ID))
-		if err != nil {
-			log.Errorf("Error creating user in canvas createProviderUserAccount")
-			return err
-		}
-		providerMapping := models.ProviderUserMapping{
-			UserID:           user.ID,
-			ProviderPlatform: provider,
-			ExternalUserID:   strconv.Itoa(newId),
-			ExternalUsername: user.Username,
-		}
-		if err = srv.Db.CreateProviderUserMapping(&providerMapping); err != nil {
-			log.Errorf("Error creating provider user mapping createProviderUserAccount")
-			return err
-		}
-		err = srv.registerCanvasUserLogin(provider, user)
-		if err != nil {
-			log.Errorf("Error registering canvas user login createProviderUserAccount")
-			return err
-		}
-
+		return srv.createAndRegisterCanvasUserAccount(provider, user)
 	} else {
 		// TODO: Kolibri account creation
 		return nil
 	}
-	return nil
 }

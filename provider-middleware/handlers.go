@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -48,7 +49,7 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 	}
-	users, err := service.GetUsers()
+	users, err := service.GetUsers(sh.db)
 	if err != nil {
 		log.Printf("Failed to retrieve users: %v", err)
 		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
@@ -75,10 +76,20 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(w http.ResponseWriter, 
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 	}
-	userId := r.PathValue("id")
-	programId := r.PathValue("program_id")
+	userId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		log.Errorln("failed to parse integer from path value handleMilestonesForProgramUser")
+		http.Error(w, "failed to parse userID from path", http.StatusBadRequest)
+		return
+	}
+	programId, err := strconv.Atoi(r.PathValue("program_id"))
+	if err != nil {
+		log.Errorln("failed to parse integer from path value handleMilestonesForProgramUser")
+		http.Error(w, "failed to parse programID from path", http.StatusBadRequest)
+		return
+	}
 	log.Println("initiating GetMilestonesForProgramUser milestones")
-	err = service.ImportMilestonesForProgramUser(userId, programId, sh.db)
+	err = service.ImportMilestonesForProgramUser(uint(userId), uint(programId), sh.db)
 	if err != nil {
 		log.Errorf("Failed to retrieve milestones: %v", err)
 		return

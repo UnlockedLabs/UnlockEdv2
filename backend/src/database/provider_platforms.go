@@ -18,23 +18,15 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
-	if err := db.Conn.Where("state = ?", "active").Find(&platforms).Error; err != nil {
+	if err := db.Conn.Model(models.ProviderPlatform{}).Find(&platforms, "state = ?", "active").Error; err != nil {
 		return nil, err
 	}
 	return platforms, nil
 }
 
-type ProviderWithTotalImports struct {
-	models.ProviderPlatform
-	HasImports bool `json:"has_imports"`
-}
-
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
-	if err := db.Conn.Table("provider_platforms").Select("provider_platforms.*, (provider_total_imports.provider_platform_id IS NOT NULL) as has_imports").
-		Joins("LEFT JOIN provider_total_imports ON provider_platforms.id = provider_total_imports.provider_platform_id").
-		Where("provider_platforms.id = ?", id).
-		First(&platform).Error; err != nil {
+	if err := db.Conn.Model(models.ProviderPlatform{}).Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	key, err := platform.DecryptAccessKey()
@@ -57,7 +49,7 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 		return nil, err
 	}
 	newProv := models.ProviderPlatform{}
-	if err := db.Conn.Where("name = ?", platform.Name).First(&newProv).Error; err != nil {
+	if err := db.Conn.Find(&newProv, "id = ?", platform.ID).Error; err != nil {
 		return nil, err
 	}
 	return &newProv, nil
@@ -93,10 +85,4 @@ func (db *DB) DeleteProviderPlatform(id int) error {
 		return err
 	}
 	return nil
-}
-
-func (db *DB) RegisterImportingAllProviderUsers(providerID uint) error {
-	var ProviderTotalImports models.ProviderTotalImports
-	ProviderTotalImports.ProviderPlatformID = providerID
-	return db.Conn.Create(&ProviderTotalImports).Error
 }

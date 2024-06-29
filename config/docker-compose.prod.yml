@@ -19,7 +19,6 @@ services:
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
       - HYDRA_PUBLIC_URL=http://hydra:4444
-      - KRATOS_URL=kratos:4433
       - KRATOS_ADMIN_URL=http://kratos:4434
       - KRATOS_PUBLIC_URL=http://kratos:4433
       - KETO_ADMIN_URL=http://keto:4466

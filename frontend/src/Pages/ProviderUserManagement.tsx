@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/20/solid";
 import { useParams } from "react-router-dom";
-import { ProviderPlatform, ProviderUser } from "../common";
+import {
+  PaginatedResponse,
+  PaginationMeta,
+  ProviderPlatform,
+  ProviderUser,
+} from "../common";
 import PageNav from "../Components/PageNav";
 import Toast, { ToastState } from "../Components/Toast";
 import Modal, { ModalType } from "../Components/Modal";
@@ -14,6 +18,7 @@ import ShowImportedUsers, {
   ImportUserResponse,
 } from "@/Components/forms/ShowImportedUsers";
 import Pagination from "@/Components/Pagination";
+import useSWR from "swr";
 
 export default function ProviderUserManagement() {
   const auth = useAuth();
@@ -26,11 +31,15 @@ export default function ProviderUserManagement() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const { providerId } = useParams();
-  const [sortBy, setSortBy] = useState("asc");
+  const [meta, setMeta] = useState<PaginationMeta>({
+    current_page: 1,
+    per_page: 10,
+    total: 0,
+    last_page: 0,
+  });
   const [provider, setProvider] = useState<ProviderPlatform | null>(null);
-  const [providerUsers, setProviderUsers] = useState<ProviderUser[]>([]);
-  const [displayUsers, setDisplayUsers] = useState<ProviderUser[]>([]);
   const [importedUsers, setImportedUsers] = useState<ImportUserResponse[]>([]);
+  const [cache, setCache] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -39,29 +48,24 @@ export default function ProviderUserManagement() {
     message: "",
     reset: () => {},
   });
-
-  const sortData = (sortBy: string) => {
-    return setProviderUsers(
-      providerUsers.sort((a, b) => {
-        if (sortBy == "asc") {
-          setSortBy("asc");
-          return a.name_first.localeCompare(b.name_first);
-        } else {
-          setSortBy("desc");
-          return b.name_first.localeCompare(a.name_first);
-        }
-      }),
-    );
-  };
-
-  const paginateData = () => {
-    const offset = (currentPage - 1) * perPage;
-    setDisplayUsers(providerUsers.slice(offset, offset + perPage));
-  };
+  const { data, mutate } = useSWR<PaginatedResponse<ProviderUser>>(
+    `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&clear_cache=${cache}`,
+  );
 
   const changePage = (page: number) => {
     setCurrentPage(page);
-    paginateData();
+  };
+
+  const handleChangeUsersPerPage = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setPerPage(parseInt(e.target.value));
+    setCurrentPage(1); // Reset to the first page when changing per page
+  };
+
+  const handleRefetch = () => {
+    setCache(true);
+    mutate();
   };
 
   const showToast = (message: string, state: ToastState) => {
@@ -81,6 +85,33 @@ export default function ProviderUserManagement() {
     setDisplayToast(true);
   };
 
+  async function handleImportAllPrograms() {
+    try {
+      let resp = await axios.post(
+        `/api/actions/provider-platforms/${providerId}/import-programs`,
+      );
+      if (resp.status != 200) {
+        showToast(
+          "error importing all or some programs, please try again later",
+          ToastState.error,
+        );
+        return;
+      } else {
+        showToast(
+          "Programs imported successfully from provider",
+          ToastState.success,
+        );
+        return;
+      }
+    } catch (err: any) {
+      showToast(
+        "error importing all or some programs, please try again later",
+        ToastState.error,
+      );
+      return;
+    }
+  }
+
   async function handleImportAllUsers() {
     let ans = prompt(
       "Are you sure you want to import all users from this provider? (yes/no)",
@@ -93,7 +124,10 @@ export default function ProviderUserManagement() {
         `/api/actions/provider-platforms/${providerId}/import-users`,
       );
       if (res.status === 200) {
-        showToast("Users imported successfully", ToastState.success);
+        showToast(
+          "Users imported successfully, please check for accounts not created",
+          ToastState.success,
+        );
         window.location.reload();
       }
     } catch (error: any) {
@@ -103,20 +137,23 @@ export default function ProviderUserManagement() {
   }
 
   async function handleImportSelectedUsers() {
-    let res = await axios.post(
-      `/api/provider-platforms/${providerId}/users/import`,
-      { users: usersToImport },
-    );
-    if (res.status === 200) {
-      showToast(res.data.message, ToastState.success);
-      setImportedUsers(res.data.data);
-      importedUsersModal.current?.showModal();
+    try {
+      let res = await axios.post(
+        `/api/provider-platforms/${providerId}/users/import`,
+        { users: usersToImport },
+      );
+      if (res.status === 200) {
+        showToast(res.data.message, ToastState.success);
+        setImportedUsers(res.data.data);
+        importedUsersModal.current?.showModal();
+        mutate();
+      }
+    } catch (err: any) {
+      showToast(
+        "error importing users, please check accounts",
+        ToastState.error,
+      );
     }
-  }
-
-  function handleChangeUsersPerPage(e: React.ChangeEvent<HTMLSelectElement>) {
-    setPerPage(parseInt(e.target.value));
-    changePage(1);
   }
 
   function handleSubmitMapUser(msg: string, toastState: ToastState) {
@@ -148,16 +185,15 @@ export default function ProviderUserManagement() {
   }
 
   useEffect(() => {
+    if (data) {
+      setMeta(data.meta);
+      setCache(false);
+    }
+  }, [data]);
+
+  useEffect(() => {
     const getData = async () => {
       try {
-        const userResp = await axios.get(
-          `/api/actions/provider-platforms/${providerId}/get-users`,
-        );
-        if (userResp.status === 200) {
-          setProviderUsers(userResp.data.data);
-          const offset = (currentPage - 1) * perPage;
-          setDisplayUsers(userResp.data.data.slice(offset, offset + perPage));
-        }
         const res = await axios.get(`/api/provider-platforms/${providerId}`);
         if (res.status === 200) {
           setProvider(res.data.data);
@@ -168,7 +204,7 @@ export default function ProviderUserManagement() {
       }
     };
     getData();
-  }, []);
+  }, [providerId]);
 
   return (
     <AuthenticatedLayout title="Users">
@@ -190,11 +226,20 @@ export default function ProviderUserManagement() {
           />
         </div>
         <div className="flex justify-between">
+          <button className="btn btn-sm btn-outline" onClick={handleRefetch}>
+            Refresh
+          </button>
           <PrimaryButton
             onClick={() => handleImportAllUsers()}
-            disabled={provider?.has_import}
+            disabled={!provider}
           >
             Import All Users
+          </PrimaryButton>
+          <PrimaryButton
+            onClick={() => handleImportAllPrograms()}
+            disabled={!provider}
+          >
+            Import Programs from Provider
           </PrimaryButton>
           <PrimaryButton
             onClick={() => handleImportSelectedUsers()}
@@ -203,35 +248,27 @@ export default function ProviderUserManagement() {
             Import Selected Users
           </PrimaryButton>
         </div>
-        <table className="table-xs">
-          <thead>
-            <tr className="border-gray-600">
-              <th className="flex">
-                <span>Name</span>
-                {sortBy == "asc" ? (
-                  <ChevronDownIcon
-                    className="h-4 text-accent cursor-pointer"
-                    onClick={() => sortData("desc")}
-                  />
-                ) : (
-                  <ChevronUpIcon
-                    className="h-4 text-accent cursor-pointer"
-                    onClick={() => sortData("asc")}
-                  />
-                )}
-              </th>
-              <th>Username</th>
-              <th>Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!isLoading &&
-              !error &&
-              providerUsers.length != 0 &&
-              displayUsers.map((user: any) => {
-                return (
-                  <tr key={user.external_user_id} className="border-gray-600">
-                    <td> {user.name_first + "  " + user.name_last} </td>
+        <div className="overflow-x-auto">
+          <table className="table table-auto table-xs w-full">
+            <thead>
+              <tr className="border-gray-600 table-row">
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Import</th>
+                <th>Associate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!isLoading &&
+                !error &&
+                data &&
+                data.data.map((user: any) => (
+                  <tr
+                    key={user.external_user_id}
+                    className="border-gray-600 table-row"
+                  >
+                    <td>{user.name_first + " " + user.name_last}</td>
                     <td>{user.username}</td>
                     <td>{user.email}</td>
                     <td>
@@ -256,41 +293,31 @@ export default function ProviderUserManagement() {
                         className="tooltip"
                         data-tip="Associate user with existing account"
                       >
-                        <a className="flex justify-start cursor-pointer">
-                          <button
-                            onClick={() => handleMapUser(user)}
-                            className="btn btn-xs btn-primary"
-                          >
-                            Map User
-                          </button>
-                        </a>
+                        <button
+                          onClick={() => handleMapUser(user)}
+                          className="btn btn-xs btn-primary"
+                        >
+                          Map User
+                        </button>
                       </div>
                     </td>
                   </tr>
-                );
-              })}
-          </tbody>
-        </table>
+                ))}
+            </tbody>
+          </table>
+        </div>
         <div className="flex flex-col justify-center">
-          <Pagination
-            meta={{
-              current_page: currentPage,
-              total: providerUsers.length,
-              per_page: perPage,
-              last_page: Math.ceil(providerUsers.length / perPage),
-            }}
-            setPage={changePage}
-          />
-          <div className="flex-col-1">
-            Users per page:
+          <Pagination meta={!isLoading && meta} setPage={changePage} />
+          <div className="flex-col-1 align-middle">
+            per page:
             <br />
-            {!isLoading && providerUsers.length != 0 && (
+            {!isLoading && data && (
               <select
-                className="select select-none selext-sm select-bordered"
+                className="select select-none select-sm select-bordered"
                 value={perPage}
                 onChange={handleChangeUsersPerPage}
               >
-                {[3, 10, 15, 20, 30].map((value) => (
+                {[10, 15, 20, 30, 50].map((value) => (
                   <option key={value} value={value}>
                     {value}
                   </option>
@@ -302,7 +329,7 @@ export default function ProviderUserManagement() {
         {error && (
           <span className="text-center text-error">Failed to load users.</span>
         )}
-        {!isLoading && !error && providerUsers.length == 0 && (
+        {!isLoading && !error && data && data.meta.total === 0 && (
           <span className="text-center text-warning">No results</span>
         )}
       </div>
@@ -334,7 +361,6 @@ export default function ProviderUserManagement() {
           }
         />
       )}
-      {/* Toasts */}
       {displayToast && <Toast {...toast} />}
     </AuthenticatedLayout>
   );
