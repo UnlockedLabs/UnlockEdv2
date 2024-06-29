@@ -24,7 +24,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, err
 	}
-
+	log.Debugf("found %d users", count)
 	return count, users, nil
 }
 

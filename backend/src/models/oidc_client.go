@@ -162,8 +162,7 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 		log.Error("Error creating authentication provider: no ID in response")
 		return "", err
 	}
-	if id, ok := authProvider["id"].(int); ok {
-		externalId = fmt.Sprintf("%d", id)
-	}
+	externalId = fmt.Sprintf("%d", int(authProvider["id"].(float64)))
+	log.Info("new external id registered from canvas: " + externalId)
 	return externalId, nil
 }

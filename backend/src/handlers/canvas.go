@@ -15,7 +15,7 @@ import (
 
 // creates a new account in canvas,
 func (srv *Server) createAndRegisterCanvasUserAccount(provider *models.ProviderPlatform, user *models.User) error {
-	fields := log.Fields{"user": user.Username, "provider": provider.Name, "provider_platform_id": provider.ID}
+	fields := log.Fields{"user_id": user.ID, "provider_platform_id": provider.ID}
 	newId, err := srv.createUserInCanvas(user, uint(provider.ID))
 	if err != nil {
 		log.WithFields(fields).Errorf("Error creating user in canvas createProviderUserAccount")
@@ -79,10 +79,14 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 	if providerMapping.ExternalLoginID != "" {
 		return errors.New("user already has login in canvas")
 	}
+	if provider.ExternalAuthProviderId == "" {
+		log.Error("this shouldn't happen, when provider oidc client is enabled we should have the foreign auth key")
+		return errors.New("provider is not registered as an auth client, please register first")
+	}
 	body := url.Values{}
 	body.Add("user[id]", providerMapping.ExternalUserID)
 	body.Add("login[unique_id]", user.Username)
-	body.Add("login[authentication_provider_id]", "openid_connect")
+	body.Add("login[authentication_provider_id]", provider.ExternalAuthProviderId)
 	url := body.Encode()
 	request, err := http.NewRequest("POST", provider.BaseUrl+"/api/v1/accounts/"+provider.AccountID+"/logins?"+url, nil)
 	if err != nil {
@@ -98,7 +102,7 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		log.Errorf("Error creating login in canvas registerCanvasUserLogin")
+		log.Errorf("Error creating login in canvas registerCanvasUserLogin with code: %s", resp.Status)
 		return errors.New("error creating login in canvas")
 	}
 	var loginResponse map[string]interface{}

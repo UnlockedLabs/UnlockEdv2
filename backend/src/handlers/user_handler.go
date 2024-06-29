@@ -36,7 +36,6 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		srv.HandleGetUnmappedUsers(w, r, providerId)
 		return
 	}
-
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage)
 	if err != nil {
 		log.Error("IndexUsers Database Error: ", err)
