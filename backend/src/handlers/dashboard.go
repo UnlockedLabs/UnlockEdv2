@@ -14,20 +14,26 @@ func (srv *Server) registerDashboardRoutes() {
 }
 
 func (srv *Server) HandleUserDashboard(w http.ResponseWriter, r *http.Request) {
+	logFields := log.Fields{
+		"handler": "HandleUserDashboard",
+		"route":   "GET /api/users/{id}/dashboard",
+	}
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Errorf("Error parsing user ID: %v", err)
+		log.WithFields(logFields).Errorf("Error parsing user ID from URL: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	logFields["userId"] = userId
 	userDashboard, err := srv.Db.GetUserDashboardInfo(userId)
 	if err != nil {
-		log.Errorf("Error getting user dashboard info: %v", err)
+		logFields["databaseMethod"] = "GetUserDashboardInfo"
+		log.WithFields(logFields).Errorf("Error getting user dashboard info: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, userDashboard); err != nil {
-		log.Errorf("user dashboard endpoint: error writing response: %v", err)
+		log.WithFields(logFields).Errorf("Error writing response when fetching user dashboard: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -41,33 +47,44 @@ func (srv *Server) HandleUserDashboard(w http.ResponseWriter, r *http.Request) {
 * provider_id: provider id to filter by
 **/
 func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request) {
+	logFields := log.Fields{
+		"handler": "HandleUserCatalogue",
+		"route":   "GET /api/users/{id}/catalogue",
+	}
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Errorf("Error parsing user ID: %v", err)
+		log.WithFields(logFields).Errorf("Error parsing user ID from URL: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	logFields["userId"] = userId
 	tags := r.URL.Query()["tags"]
 	userCatalogue, err := srv.Db.GetUserCatalogue(userId, tags)
 	if err != nil {
-		log.Errorf("Error getting user catalogue info: %v", err)
+		logFields["databaseMethod"] = "GetUserCatalogue"
+		log.WithFields(logFields).Errorf("Error getting user catalogue info: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, userCatalogue); err != nil {
-		log.Errorf("user catalogue endpoint: error writing response: %v", err)
+		log.WithFields(logFields).Errorf("Error writing response when fetching user catalogue: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
 
 func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
+	logFields := log.Fields{
+		"handler": "HandleUserPrograms",
+		"route":   "GET /api/users/{id}/programs",
+	}
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Errorf("Error parsing user ID: %v", err)
+		log.WithFields(logFields).Errorf("Error parsing user ID from URL: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	logFields["userId"] = userId
 	if !srv.canViewUserData(r) {
 		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's programs")
 		return
@@ -75,12 +92,13 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 	tags := r.URL.Query()["tags"]
 	userPrograms, numCompleted, totalTime, err := srv.Db.GetUserPrograms(uint(userId), tags)
 	if err != nil {
-		log.Errorf("Error getting user programs: %v", err)
+		logFields["databaseMethod"] = "GetUserPrograms"
+		log.WithFields(logFields).Errorf("Error getting user programs: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	response := map[string]interface{}{
-		"programs": userPrograms,
+		"programs":      userPrograms,
 		"num_completed": numCompleted,
 		"total_time":    totalTime,
 	}

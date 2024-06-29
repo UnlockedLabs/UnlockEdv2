@@ -13,30 +13,37 @@ import (
 )
 
 func (srv *Server) handleCreateUserKratos(username, password string) error {
+	logFields := log.Fields{
+		"handler":  "handleCreateUserKratos",
+		"username": username,
+	}
 	identity := client.NewCreateIdentityBody("default", map[string]interface{}{"username": username})
 	created, resp, err := srv.OryClient.IdentityAPI.CreateIdentity(context.Background()).CreateIdentityBody(*identity).Execute()
 	if err != nil {
-		log.Errorf("Error creating identity: %v", err)
+		log.WithFields(logFields).Errorf("Error creating identity: %v", err)
 		return err
 	}
 	if resp.StatusCode != http.StatusCreated {
-		log.Errorf("Error creating identity: %v", resp.StatusCode)
+		log.WithFields(logFields).Errorf("Error creating identity: %v", resp.StatusCode)
 		return errors.New("error creating identity")
 	}
 	user := srv.Db.GetUserByUsername(username)
 	if user == nil {
-		log.Error("user not found immediately after creation, this should not happen")
+		logFields["databaseMethod"] = "GetUserByUsername"
+		log.WithFields(logFields).Error("User not found immediately after creation, this should not happen")
 		return errors.New("user not found")
 	}
 	user.KratosID = created.GetId()
+	logFields["kratosId"] = user.KratosID
 	err = srv.handleUpdatePasswordKratos(user, password)
 	if err != nil {
-		log.Error("Error updating password for new kratos user")
+		log.WithFields(logFields).Errorf("Error updating password for new kratos user: %v", err)
 		return err
 	}
 	updated, err := srv.Db.UpdateUser(user)
 	if err != nil {
-		log.Error("Error updating user")
+		logFields["databaseMethod"] = "UpdateUser"
+		log.WithFields(logFields).Error("Error updating user")
 		return err
 	}
 	log.Infof("user created successfully + identity registered with kratos: %v", updated)
@@ -44,13 +51,18 @@ func (srv *Server) handleCreateUserKratos(username, password string) error {
 }
 
 func (srv *Server) handleUpdatePasswordKratos(user *models.User, password string) error {
+	logFields := log.Fields{
+		"handler":  "handleUpdatePasswordKratos",
+		"username": user.Username,
+		"kratosId": user.KratosID,
+	}
 	if user.KratosID == "" {
 		return errors.New("kratos ID is empty, please create user in kratos first")
 	}
 	log.Infof("updating password for user: %s and KratosID: %s", user.Username, user.KratosID)
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Errorf("Error hashing password: %v", err)
+		log.WithFields(logFields).Errorf("Error hashing password: %v", err)
 	}
 	hashedPw := string(hashed)
 	update := client.UpdateIdentityBody{
@@ -65,11 +77,11 @@ func (srv *Server) handleUpdatePasswordKratos(user *models.User, password string
 	}
 	updatedIdent, resp, err := srv.OryClient.IdentityAPI.UpdateIdentity(context.Background(), user.KratosID).UpdateIdentityBody(update).Execute()
 	if err != nil {
-		log.Errorf("Error updating identity with user password: %v", err)
+		log.WithFields(logFields).Errorf("Error updating identity with user password: %v", err)
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Errorf("Error updating identity with user password: %v", resp.StatusCode)
+		log.WithFields(logFields).Errorf("Error updating identity with user password: %v", resp.StatusCode)
 		return errors.New("error updating identity")
 	}
 	log.Infof("password updated successfully for user: %s and KratosID: %s", user.Username, updatedIdent.GetId())

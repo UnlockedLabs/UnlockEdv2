@@ -35,7 +35,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			log.Error("No token found " + err.Error())
+			log.Errorf("Authorization error, no token found %v", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -43,7 +43,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
 		if err != nil {
-			log.Println("Invalid token")
+			log.Infoln("Invalid token")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -56,7 +56,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			log.Println("Invalid claims")
+			log.Infoln("Invalid claims")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		}
 	})
@@ -75,6 +75,7 @@ func (srv *Server) UserIsAdmin(r *http.Request) bool {
 func (srv *Server) canViewUserData(r *http.Request) bool {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		log.Errorf("Error parsing ID from URL in canViewUserData: %v", err)
 		return false
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -84,6 +85,7 @@ func (srv *Server) canViewUserData(r *http.Request) bool {
 func (srv *Server) UserIsOwner(r *http.Request) bool {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
+		log.Errorf("Error parsing ID from URL in UserIsOwner: %v", err)
 		return false
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -104,15 +106,21 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	log.Info("Checking auth handler")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
+	logFields := log.Fields{
+		"handler": "handleCheckAuth",
+		"route":   "GET /api/auth",
+		"userId":  claims.UserID,
+	}
 	user := srv.Db.GetUserByID(claims.UserID)
 	if user == nil {
-		log.Error("Error getting user by ID")
+		logFields["databaseMethod"] = "GetUserByID"
+		log.WithFields(logFields).Error("Error getting user by ID")
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error("Error writing response: " + err.Error())
+		log.WithFields(logFields).Errorf("Error writing check authorization response: %v", err.Error())
 	}
 }
 
@@ -124,9 +132,14 @@ type ResetPasswordRequest struct {
 func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	log.Info("Handling password reset request", r.URL.Path)
 	claims := r.Context().Value(ClaimsKey).(*Claims)
+	logFields := log.Fields{
+		"handler": "handleResetPassword",
+		"route":   "POST /api/reset-password",
+		"userId":  claims.UserID,
+	}
 	form := ResetPasswordRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-		log.Error("Parsing form failed, using JSON" + err.Error())
+		log.WithFields(logFields).Errorf("Parsing form failed, using JSON: %v", err)
 	}
 	password := form.Password
 	confirm := form.Confirm
@@ -140,8 +153,9 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := srv.Db.ResetUserPassword(claims.UserID, password); err != nil {
+		logFields["databaseMethod"] = "ResetUserPassword"
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Error("Error Resetting users password: " + err.Error())
+		log.WithFields(logFields).Errorf("Error resetting password: %v", err)
 		return
 	}
 	claims.PasswordReset = false
@@ -162,18 +176,18 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	if !srv.isTesting(r) {
 		user := srv.Db.GetUserByID(claims.UserID)
 		if user == nil {
-			log.Fatal("user from claims not found, this should never happen")
+			log.Fatal("User from claims not found, this should never happen")
 			return
 		}
 		if err := srv.handleUpdatePasswordKratos(user, password); err != nil {
-			log.Errorln("Error updating password in kratos: ", err)
+			log.WithFields(logFields).Errorf("Error updating password in kratos: %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, "Password reset successfully"); err != nil {
+		log.WithFields(logFields).Errorf("Failed to write response when resetting password: %v", err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error("Error writing response: " + err.Error())
 		return
 	}
 }

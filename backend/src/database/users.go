@@ -13,16 +13,14 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, err
 
 	offset := (page - 1) * itemsPerPage
 	if err := db.Conn.Model(&models.User{}).Count(&count).Error; err != nil {
-		log.Printf("Error counting users: %v", err)
-		return 0, nil, err
+		return 0, nil, LogDbError(err, "Failed to get a count of current users.")
 	}
 
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id").
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
-		log.Printf("Error fetching users: %v", err)
-		return 0, nil, err
+		return 0, nil, LogDbError(err, "Failed to get current users.")
 	}
 
 	return count, users, nil
@@ -40,8 +38,10 @@ func (db *DB) GetUserByID(id uint) *models.User {
 
 func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
 	user := db.GetUserByID(id)
-	if user == nil || user.Role == "admin" {
-		return "", errors.New("user not found, or user is admin and cannot have password reset")
+	if user == nil {
+		return "", LogDbError(errors.New("user not found"), "Could not assign temporary password.")
+	} else if user.Role == "admin" {
+		return "", LogDbError(errors.New("cannot reset admin password"), "Could not assign temporary password.")
 	}
 	psw := user.CreateTempPassword()
 	user.Password = psw
@@ -50,7 +50,7 @@ func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
 	}
 	user.PasswordReset = true
 	if err := db.Conn.Save(&user).Error; err != nil {
-		return "", err
+		return "", LogDbError(err, "Failed to assign temporary password.")
 	}
 	return psw, nil
 }
@@ -58,7 +58,6 @@ func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	psw := user.CreateTempPassword()
 	user.Password = psw
-	log.Printf("Password: %s", user.Password)
 	err := user.HashPassword()
 	if err != nil {
 		return nil, err
@@ -69,11 +68,11 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	}
 	error := db.Conn.Create(&user).Error
 	if error != nil {
-		return nil, error
+		return nil, LogDbError(error, "Failed to create user.")
 	}
 	newUser := &models.User{}
 	if err := db.Conn.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
-		return nil, err
+		return nil, LogDbError(err, "Failed to find record for new user.")
 	}
 	newUser.Password = psw
 	return newUser, nil
@@ -82,7 +81,7 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 func (db *DB) DeleteUser(id int) error {
 	result := db.Conn.Model(&models.User{}).Where("id = ?", id).Delete(&models.User{})
 	if result.Error != nil {
-		return result.Error
+		return LogDbError(result.Error, "Failed to delete user.")
 	}
 	if result.RowsAffected == 0 {
 		return errors.New("user not found")
@@ -104,7 +103,7 @@ func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 	}
 	err := db.Conn.Save(&user).Error
 	if err != nil {
-		return nil, err
+		return nil, LogDbError(err, "Failed to update user.")
 	}
 	return user, nil
 }
@@ -112,11 +111,11 @@ func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 func (db *DB) AuthorizeUser(username, password string) (*models.User, error) {
 	var user models.User
 	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
-		return nil, err
+		return nil, LogDbError(err, "Failed to find user.")
 	}
 	log.Debug("Checking AuthorizeUser Password: ", password, user.Password)
 	if success := user.CheckPasswordHash(password); !success {
-		log.Printf("Password authentication failed for: %s", password)
+		log.WithField("username", user.Username).Infof("Password authentication failed for: %s", password)
 		return nil, errors.New("invalid password")
 	}
 	return &user, nil
@@ -133,7 +132,7 @@ func (db *DB) ResetUserPassword(id uint, password string) error {
 	}
 	user.PasswordReset = false
 	if err := db.Conn.Save(&user).Error; err != nil {
-		return err
+		return LogDbError(err, "Failed to reset user password.")
 	}
 	return nil
 }

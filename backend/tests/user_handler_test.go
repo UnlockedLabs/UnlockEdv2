@@ -23,12 +23,12 @@ func TestHandleIndexUsers(t *testing.T) {
 		handler := server.TestAsAdmin(http.HandlerFunc(server.HandleIndexUsers))
 		handler.ServeHTTP(rr, req)
 		if status := rr.Code; status != http.StatusOK {
-			t.Errorf("handler returned wrong status code: got %v want %v",
+			t.Errorf("Handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
 		total, dbUsers, err := server.Db.GetCurrentUsers(1, 10)
 		if err != nil {
-			t.Errorf("failed to get users from db")
+			t.Error("Failed to get users from db")
 		}
 		Response := models.PaginatedResource[models.User]{
 			Data: dbUsers,

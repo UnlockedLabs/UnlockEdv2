@@ -29,16 +29,21 @@ type LoginRequest struct {
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var form LoginRequest
+	logFields := log.Fields{
+		"handler": "handleLogin",
+		"route":   "POST /api/login",
+	}
 	err := json.NewDecoder(r.Body).Decode(&form)
 	defer r.Body.Close()
 	if err != nil {
-		log.Error("Parsing form failed, using urlform" + err.Error())
+		log.WithFields(logFields).Errorf("Parsing form failed, using urlform %v", err)
 	}
 	if form.Username == "" || form.Password == "" {
-		log.Errorf("Invalid form data, need username, password: %v", form)
+		log.Debugf("Invalid login form data. Need username, password: %v", form)
 		s.ErrorResponse(w, http.StatusBadRequest, "Invalid form data")
 		return
 	}
+	logFields["username"] = form.Username
 	if user, err := s.Db.AuthorizeUser(form.Username, form.Password); err == nil {
 		claims := Claims{
 			UserID:        user.ID,
@@ -67,10 +72,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 		err = s.WriteResponse(w, http.StatusOK, user)
 		if err != nil {
+			log.WithFields(logFields).Errorf("Error writing response: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
+		logFields["databaseMethod"] = "AuthorizeUser"
+		log.WithFields(logFields).Infof("Error authorizing user: %v", err)
 		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
 		return
 	}
