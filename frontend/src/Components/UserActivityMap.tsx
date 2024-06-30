@@ -41,15 +41,15 @@ const gapSizes: string = "p-0 ml-px mt-px md:m-0 md:p-px";
 
 /* main component for the user activity map */
 export default function UserActivityMap() {
-  const {user} = useAuth();
+  const { user } = useAuth();
 
-  const createdAtYear = parseInt(user?.created_at.substr(0,4));
+  const createdAtYear = parseInt(user?.created_at.substr(0, 4));
 
   const [yearEnd, setYearEnd] = useState(new Date());
   const [dropdownValDesc, setDropdownValDesc] = useState("the past year");
-  
+
   const { data, error, isLoading } = useSWR<ServerResponse<ActivityMapData>>(
-    `/api/users/${user.id}/daily-activity${dropdownValDesc !== "the past year" ? ("?year="+dropdownValDesc.trim()): ""}`,
+    `/api/users/${user.id}/daily-activity${dropdownValDesc !== "the past year" ? "?year=" + dropdownValDesc.trim() : ""}`,
   );
 
   const generateYearOptions = () => {
@@ -108,28 +108,28 @@ export default function UserActivityMap() {
       {/* <div className="w-[372px] h-[99px] md:w-[530px] md:h-[124px] lg:w-[764px] lg:h-[152px] xl:w-[1017px] xl:h-[184px]"> */}
       <div className="w-full h-3/4 max-h-[184px]">
         {error ? (
-            <div className="flex h-full justify-center content-center">
-              <div className="font-bold my-auto">
-                Error loading activity. Please try again later.
-              </div>
+          <div className="flex h-full justify-center content-center">
+            <div className="font-bold my-auto">
+              Error loading activity. Please try again later.
             </div>
-          ) : isLoading ? (
-            <div className="flex h-full justify-center content-center">
-              <span className="my-auto loading loading-spinner loading-lg"></span>
+          </div>
+        ) : isLoading ? (
+          <div className="flex h-full justify-center content-center">
+            <span className="my-auto loading loading-spinner loading-lg"></span>
+          </div>
+        ) : (
+          data && (
+            <div className="mt-2">
+              <ActivityMapTable
+                data={data.activities}
+                end={yearEnd}
+                error={error}
+                isLoading={isLoading}
+                range={dropdownValDesc}
+              />
             </div>
-          ) : (
-            data && (
-        <div className="mt-2">
-          <ActivityMapTable
-            data={data.activities}
-            end={yearEnd}
-            error={error}
-            isLoading={isLoading}
-            range={dropdownValDesc}
-          />
-        </div>
-        )
-          )}
+          )
+        )}
       </div>
     </div>
   );
@@ -157,9 +157,7 @@ function Node({
   if (!activity_time) {
     tooltipString = "No activity on " + date.toISOString().split("T")[0];
   } else {
-    tooltipString = `${activity_time} on ${
-      date?.toISOString().split("T")[0]
-    }`;
+    tooltipString = `${activity_time} on ${date?.toISOString().split("T")[0]}`;
   }
   return (
     <div
@@ -240,7 +238,7 @@ function ActivityMapTable({
   };
 
   const dateCount = subtractYear(end);
- 
+
   /* add spacers for days of week before activity range */
   for (i = 0; i < dateCount.getUTCDay(); i++) {
     tableData.push(
@@ -250,8 +248,8 @@ function ActivityMapTable({
     );
   }
 
-  i = new Date().getDay() + 1
-  
+  i = new Date().getDay() + 1;
+
   /* fill first months array element if range starts midweek */
   if (dateCount.getUTCDay() != 0) {
     if (dateCount.getUTCDate() < 8) {
@@ -279,7 +277,10 @@ function ActivityMapTable({
     }
 
     /* in range and activity on date */
-    if (i < len && dateCount.toISOString().split("T")[0] == data[i].date.split("T")[0]) {
+    if (
+      i < len &&
+      dateCount.toISOString().split("T")[0] == data[i].date.split("T")[0]
+    ) {
       tableData.push(
         <td className="block" key={dateCount.getTime()}>
           <Node

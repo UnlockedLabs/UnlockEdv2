@@ -10,6 +10,7 @@ import (
 func (srv *Server) registerProviderMappingRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/logins", srv.applyMiddleware(http.HandlerFunc(srv.handleGetMappingsForUser)))
 	srv.Mux.Handle("POST /api/users/{id}/logins", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateProviderUserMapping)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.applyMiddleware(http.HandlerFunc(srv.handleCreateProviderUserAccount)))
 	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.applyMiddleware(http.HandlerFunc(srv.handleDeleteProviderUserMapping)))
 }
 

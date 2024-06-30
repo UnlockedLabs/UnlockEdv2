@@ -1,23 +1,23 @@
 package main
 
 import (
-	"database/sql"
-	"log"
+	"UnlockEdv2/src/models"
+	"fmt"
 	"net/http"
 	"os"
-	"sync"
 
+	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
-
-	_ "github.com/glebarez/sqlite"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type ProviderServiceInterface interface {
-	GetID() int
-	GetUsers() ([]UnlockEdImportUser, error)
-	GetPrograms() ([]UnlockEdImportProgram, error)
-	GetMilestonesForProgramUser(courseId, userId string) ([]UnlockEdImportMilestone, error)
-	GetActivityForProgram(courseId string) ([]UnlockEdImportActivity, error)
+	GetUsers(db *gorm.DB) ([]models.ImportUser, error)
+	ImportPrograms(db *gorm.DB) error
+	ImportMilestonesForProgramUser(courseId, userId uint, db *gorm.DB) error
+	ImportActivityForProgram(courseId string, db *gorm.DB) error
 	// TODO: GetOutcomes()
 }
 
@@ -30,11 +30,10 @@ type ServiceHandler struct {
 	services []ProviderServiceInterface
 	Mux      *http.ServeMux
 	token    string
-	db       *sql.DB
-	mutex    sync.Mutex
+	db       *gorm.DB
 }
 
-func newServiceHandler(token string, db *sql.DB) *ServiceHandler {
+func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 	return &ServiceHandler{
 		token:    token,
 		db:       db,
@@ -47,36 +46,21 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Failed to load .env file, using default env variables")
 	}
-	db, err := sql.Open("sqlite", ":memory:")
+	dsn := os.Getenv("APP_DSN")
+	if dsn == "" {
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
+			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	}
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN: dsn,
+	}), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS providers (
-    id INTEGER PRIMARY KEY,
-    type TEXT NOT NULL,
-    account_id TEXT NOT NULL,
-    url TEXT NOT NULL,
-    api_key TEXT,
-    username TEXT,
-    password TEXT
-);`)
-	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
-	}
-	defer db.Close()
-	file := os.Stdout
-	if os.Getenv("APP_ENV") == "prod" {
-		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			file, err = os.Create("logs/provider-middleware.log")
-			if err != nil {
-				log.Fatalf("Failed to create log file: %v", err)
-			}
-		}
-	}
-	log.SetOutput(file)
+	log.Println("Connected to the PostgreSQL database")
 	token := os.Getenv("PROVIDER_SERVICE_KEY")
-	log.Println("Token: ", token)
+	initLogging()
+	log.Debugf("loggin initiated with level %v", log.GetLevel())
 	handler := newServiceHandler(token, db)
 	log.Println("Server started on :8081")
 	handler.registerRoutes()
@@ -84,5 +68,39 @@ func main() {
 	err = http.ListenAndServe(":8081", handler.Mux)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func initLogging() {
+	var file *os.File
+	var err error
+	env := os.Getenv("APP_ENV")
+	if env == "production" || env == "prod" {
+		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			file, err = os.Create("logs/provider-middleware.log")
+			if err != nil {
+				log.Fatalf("Failed to create log file: %v", err)
+			}
+		}
+	} else {
+		file = os.Stdout
+	}
+	log.SetOutput(file)
+	log.SetFormatter(&log.JSONFormatter{})
+	if os.Getenv("LOG_LEVEL") == "" {
+		switch env {
+		case "prod":
+		case "production":
+			log.SetLevel(log.InfoLevel)
+		default:
+			log.SetLevel(log.DebugLevel)
+		}
+	} else {
+		level, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
+		if err != nil {
+			log.SetLevel(log.DebugLevel)
+		}
+		log.SetLevel(level)
 	}
 }

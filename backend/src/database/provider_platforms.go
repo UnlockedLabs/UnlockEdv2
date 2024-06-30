@@ -9,12 +9,8 @@ import (
 func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
 	var total int64
-	if err := db.Conn.Model(&models.ProviderPlatform{}).Count(&total).Error; err != nil {
-		return 0, nil, err
-	}
-	if err := db.Conn.Offset((page - 1) * perPage).
-		Limit(perPage).
-		Find(&platforms).Error; err != nil {
+	offset := (page - 1) * perPage
+	if err := db.Conn.Model(&models.ProviderPlatform{}).Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
 		return 0, nil, err
 	}
 	return total, platforms, nil
@@ -22,7 +18,7 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
-	if err := db.Conn.Where("state = ?", "active").Find(&platforms).Error; err != nil {
+	if err := db.Conn.Model(models.ProviderPlatform{}).Find(&platforms, "state = ?", "active").Error; err != nil {
 		return nil, err
 	}
 	return platforms, nil
@@ -30,7 +26,7 @@ func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error)
 
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
-	if err := db.Conn.Where("id = ?", fmt.Sprintf("%d", id)).First(&platform).Error; err != nil {
+	if err := db.Conn.Model(models.ProviderPlatform{}).Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	key, err := platform.DecryptAccessKey()
@@ -53,7 +49,7 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 		return nil, err
 	}
 	newProv := models.ProviderPlatform{}
-	if err := db.Conn.Where("name = ?", platform.Name).First(&newProv).Error; err != nil {
+	if err := db.Conn.Find(&newProv, "id = ?", platform.ID).Error; err != nil {
 		return nil, err
 	}
 	return &newProv, nil

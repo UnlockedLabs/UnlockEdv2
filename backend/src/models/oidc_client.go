@@ -53,7 +53,7 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	body["metadata"] = map[string]interface{}{
 		"Origin": os.Getenv("APP_URL"),
 	}
-	body["subject_type"] = "username"
+	body["subject_type"] = "pairwise"
 	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL"), os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL")}
 	body["grant_types"] = []string{"authorization_code"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
@@ -162,8 +162,7 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 		log.Error("Error creating authentication provider: no ID in response")
 		return "", err
 	}
-	if id, ok := authProvider["id"].(int); ok {
-		externalId = fmt.Sprintf("%d", id)
-	}
+	externalId = fmt.Sprintf("%d", int(authProvider["id"].(float64)))
+	log.Info("new external id registered from canvas: " + externalId)
 	return externalId, nil
 }

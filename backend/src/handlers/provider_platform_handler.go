@@ -18,7 +18,6 @@ func (srv *Server) registerProviderPlatformRoutes() {
 }
 
 func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) {
-	log.Info("Handling provider index request")
 	page, perPage := srv.GetPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
 	if err != nil {
@@ -27,8 +26,17 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) 
 	}
 	paginationData := models.NewPaginationInfo(page, perPage, total)
 	response := models.PaginatedResource[models.ProviderPlatform]{
-		Data: platforms,
 		Meta: paginationData,
+	}
+	only := r.URL.Query().Get("only")
+	if only == "oidc_enabled" {
+		for _, platform := range platforms {
+			if platform.OidcID != 0 {
+				response.Data = append(response.Data, platform)
+			}
+		}
+	} else {
+		response.Data = platforms
 	}
 	log.Info("Found "+strconv.Itoa(int(total)), " provider platforms")
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
@@ -50,9 +58,9 @@ func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := models.Resource[models.ProviderPlatform]{
-		Data: make([]models.ProviderPlatform, 0),
+		Data:    []models.ProviderPlatform{*platform},
+		Message: "Provider platform found",
 	}
-	response.Data = append(response.Data, *platform)
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -78,7 +86,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 		Message: "Provider platform created successfully",
 	}
 	response.Data = append(response.Data, *newProv)
-	if err = srv.WriteResponse(w, http.StatusOK, &response); err != nil {
+	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
 		log.Error("Error writing response: ", err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}

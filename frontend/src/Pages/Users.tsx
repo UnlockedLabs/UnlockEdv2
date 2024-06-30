@@ -12,9 +12,8 @@ import {
   UserPlusIcon,
   ChevronUpIcon,
 } from "@heroicons/react/20/solid";
-import { User } from "../common";
+import { DEFAULT_ADMIN_ID, PaginatedResponse, User } from "../common";
 import PageNav from "../Components/PageNav";
-import Pagination, { PaginatedData } from "../Components/Pagination";
 import AddUserForm from "../Components/forms/AddUserForm";
 import EditUserForm from "../Components/forms/EditUserForm";
 import Toast, { ToastState } from "../Components/Toast";
@@ -24,6 +23,7 @@ import ResetPasswordForm from "../Components/forms/ResetPasswordForm";
 import ShowTempPasswordForm from "../Components/forms/ShowTempPasswordForm";
 import { useAuth } from "../AuthContext";
 import { useDebounceValue } from "usehooks-ts";
+import Pagination from "@/Components/Pagination";
 
 export default function Users() {
   const auth = useAuth();
@@ -48,7 +48,7 @@ export default function Users() {
   const { data, mutate, error, isLoading } = useSWR(
     `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`,
   );
-  const userData = data as PaginatedData<User>;
+  const userData = data as PaginatedResponse<User>;
   const showToast = (message: string, state: ToastState) => {
     setToast({
       state,
@@ -73,18 +73,30 @@ export default function Users() {
   }
 
   const deleteUser = async () => {
-    const response = await axios.delete("/api/users/" + targetUser?.id);
-    const toastType =
-      response.status == 204 ? ToastState.success : ToastState.error;
-    const message =
-      response.status == 204
-        ? "User deleted successfully"
-        : response.statusText;
-    deleteUserModal.current?.close();
-    showToast(message, toastType);
-    resetModal();
-    mutate();
-    return;
+    if (targetUser?.id === DEFAULT_ADMIN_ID) {
+      showToast(
+        "This is the primary administrator and cannot be deleted",
+        ToastState.error,
+      );
+      return;
+    }
+    try {
+      const response = await axios.delete("/api/users/" + targetUser?.id);
+      const toastType =
+        response.status == 204 ? ToastState.success : ToastState.error;
+      const message =
+        response.status == 204
+          ? "User deleted successfully"
+          : response.statusText;
+      deleteUserModal.current?.close();
+      showToast(message, toastType);
+      resetModal();
+      mutate();
+      return;
+    } catch (err: any) {
+      showToast("Unable to delete user, please try again", ToastState.error);
+      return;
+    }
   };
 
   const onAddUserSuccess = (pswd = "", msg: string, type: ToastState) => {

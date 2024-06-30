@@ -3,6 +3,8 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"errors"
+	"fmt"
+	"strings"
 )
 
 func (db *DB) CreateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
@@ -42,6 +44,59 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 		return errors.New("provider user mapping not found")
 	}
 	return nil
+}
+
+func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch []string) (int64, []models.User, error) {
+	var users []models.User
+	var total int64
+	if providerID == "" {
+		return 0, nil, errors.New("no provider id provided to search unmapped users")
+	}
+	if len(userSearch) != 0 {
+		fmt.Println("getting unmapped usrs, searching for ", userSearch)
+		users, err := db.getUnmappedProviderUsersWithSearch(providerID, userSearch)
+		if err != nil {
+			return 0, nil, err
+		}
+		return int64(len(users)), users, nil
+	}
+	if err := db.Conn.Table("users").Select("*").Where("users.role = ?", "student").Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).Find(&users).Error; err != nil {
+		return 0, nil, err
+	}
+	return total, users, nil
+}
+
+func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch []string) ([]models.User, error) {
+	var users []models.User
+	tx := db.Conn.Table("users u").Select("u.*").Where("u.role = ?", "student").Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID)
+	searchCondition := db.Conn
+	for _, search := range userSearch {
+		split := strings.Split(search, " ")
+		if len(split) > 1 {
+			first := "%" + strings.ToLower(split[0]) + "%"
+			last := "%" + strings.ToLower(split[1]) + "%"
+			searchCondition = searchCondition.Or(db.Conn.Where("u.name_first ILIKE ? OR u.name_last ILIKE ?", first, first).Or("u.name_first ILIKE ? OR u.name_last ILIKE ?", last, last))
+			continue
+		}
+		search = "%" + strings.ToLower(search) + "%"
+		if strings.Contains(search, "@") {
+			searchCondition = searchCondition.Or("u.email ILIKE ?", search)
+			continue
+		}
+		searchCondition = searchCondition.Or("u.name_first ILIKE ?", search).Or("u.name_last ILIKE ?", search).Or("u.username ILIKE ? ", search)
+	}
+
+	tx = tx.Where(searchCondition)
+
+	if err := tx.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		fmt.Println("couldn't find any good searches, returning all")
+		return users, db.Conn.Table("users u").Select("u.*").Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).Find(&users).Error
+	}
+	fmt.Printf("found %d matches", len(users))
+	return users, nil
 }
 
 func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMapping, error) {

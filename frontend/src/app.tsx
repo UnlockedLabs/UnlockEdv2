@@ -14,6 +14,7 @@ import Consent from "./Pages/Auth/Consent";
 import MyCourses from "./Pages/MyCourses";
 import MyProgress from "./Pages/MyProgress";
 import CourseCatalog from "./Pages/CourseCatalog";
+import ProviderUserManagement from "./Pages/ProviderUserManagement";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -56,6 +57,10 @@ export default function App() {
     {
       path: "/course-catalog",
       element: WithAuth({ children: <CourseCatalog /> }),
+    },
+    {
+      path: "/provider-users/:providerId",
+      element: WithAuth({ children: <ProviderUserManagement /> }),
     },
   ]);
 

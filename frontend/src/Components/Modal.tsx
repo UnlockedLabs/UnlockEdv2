@@ -10,6 +10,8 @@ export enum ModalType {
   Edit = "Edit",
   Add = "Add",
   Delete = "Delete",
+  View = "View",
+  Associate = "Associate",
   Blank = "",
 }
 

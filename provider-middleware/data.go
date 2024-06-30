@@ -1,8 +1,8 @@
 package main
 
 import (
+	"UnlockEdv2/src/models"
 	"bytes"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -21,39 +21,19 @@ type KolibriResponse[T any] struct {
 	TotalPages int `json:"total_pages"`
 }
 
-type ProviderPlatform struct {
-	ID        int    `json:"id"`
-	Type      string `json:"type"`
-	AccountID string `json:"account_id"`
-	BaseUrl   string `json:"base_url"`
-	ApiKey    string `json:"api_key"`
-	Username  string `json:"username"`
-	Password  string `json:"password"`
-}
-
-func (prov *ProviderPlatform) SaveProvider(db *sql.DB) error {
-	log.Printf("Saving provider: %v", prov)
-	stmt, err := db.Prepare("INSERT INTO providers (id, type, account_id, url, api_key, username, password) VALUES ($1, $2, $3, $4, $5, $6, $7)")
-	if err != nil {
-		log.Println("Failed to prepare statement")
-		return err
-	}
-	_, err = stmt.Exec(prov.ID, prov.Type, prov.AccountID, prov.BaseUrl, prov.ApiKey, prov.Username, prov.Password)
-	if err != nil {
-		log.Println("Failed to execute statement")
-		return err
-	}
-	log.Println("Provider created successfully")
-	return nil
-}
-
-func (srv *ServiceHandler) LookupProvider(id int) (*ProviderPlatform, error) {
-	var provider ProviderPlatform
-	err := srv.db.QueryRow("SELECT * FROM providers WHERE id = $1", id).Scan(&provider.ID, &provider.Type, &provider.AccountID, &provider.BaseUrl, &provider.ApiKey, &provider.Username, &provider.Password)
+func (srv *ServiceHandler) LookupProvider(id int) (*models.ProviderPlatform, error) {
+	var provider models.ProviderPlatform
+	err := srv.db.Where("id = ?", id).First(&provider).Error
 	if err != nil {
 		log.Println("Failed to find provider")
 		return nil, err
 	}
+	key, err := provider.DecryptAccessKey()
+	if err != nil {
+		log.Println("Failed to decrypt access key")
+		return nil, err
+	}
+	provider.AccessKey = key
 	return &provider, nil
 }
 
@@ -69,7 +49,7 @@ type KolibriUser struct {
 	IsSuperuser bool   `json:"is_superuser"`
 }
 
-func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
+func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
 	first := strings.Split(ku.Fullname, " ")[0]
 	last := strings.Split(ku.Fullname, " ")[1]
 	if len(strings.Split(ku.Fullname, " ")) > 2 {
@@ -79,7 +59,7 @@ func (ku *KolibriUser) IntoImportUser() (*UnlockEdImportUser, error) {
 	if first == "" && last == "" && ku.Username == "" {
 		return nil, errors.New("invalid user")
 	}
-	return &UnlockEdImportUser{
+	return &models.ImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		Email:            email,
@@ -110,20 +90,20 @@ type KolibriContent struct {
 	LastPublished      string      `json:"last_published"`
 }
 
-func (kc *KolibriContent) IntoCourse(provUrl string) *UnlockEdImportProgram {
+func (kc *KolibriContent) IntoCourse(provUrl string) *models.Program {
 	url, err := kc.UploadImage()
 	if err != nil {
 		log.Printf("Failed to upload image %v", err)
 		url = ""
 	}
-	return &UnlockEdImportProgram{
+	return &models.Program{
 		ExternalID:              kc.ID,
 		Name:                    kc.Name,
 		Description:             kc.Description,
 		ThumbnailURL:            url,
 		Type:                    "open_content",
-		OutcomeTypes:            []string{"completion"},
-		TotalProgressMilestones: kc.TotalResourceCount,
+		OutcomeTypes:            "completion",
+		TotalProgressMilestones: uint(kc.TotalResourceCount),
 		ExternalURL:             provUrl + "/channels/" + kc.Root,
 	}
 }
@@ -190,34 +170,12 @@ type Role struct {
 	Id         string `json:"id"`
 }
 
-type UnlockEdImportProgram struct {
-	ProviderPlatformID      int      `json:"provider_platform_id"`
-	Name                    string   `json:"name"`
-	AltName                 string   `json:"alt_name"`
-	Description             string   `json:"description"`
-	ExternalID              string   `json:"external_id"`
-	ThumbnailURL            string   `json:"thumbnail_url"`
-	Type                    string   `json:"type"`
-	ExternalURL             string   `json:"external_url"`
-	OutcomeTypes            []string `json:"outcome_types"`
-	TotalProgressMilestones int      `json:"total_progress_milestones"`
-}
-
 type UnlockEdImportMilestone struct {
 	UserID            int    `json:"user_id"`
 	ExternalProgramID string `json:"external_program_id"`
 	ExternalID        string `json:"external_id"`
 	Type              string `json:"type"`
 	IsCompleted       bool   `json:"is_completed"`
-}
-
-type UnlockEdImportUser struct {
-	Username         string `json:"username"`
-	NameFirst        string `json:"name_first"`
-	NameLast         string `json:"name_last"`
-	Email            string `json:"email"`
-	ExternalUserID   string `json:"external_user_id"`
-	ExternalUsername string `json:"external_username"`
 }
 
 type UnlockEdImportActivity struct {

@@ -74,8 +74,8 @@ func TestHandleShowUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		user := server.Db.GetUserByID(1)
-		if user == nil {
+		user, err := server.Db.GetUserByID(1)
+		if err != nil {
 			t.Fatal(err)
 			return
 		}
@@ -95,13 +95,16 @@ func TestHandleShowUser(t *testing.T) {
 
 func TestCreateUser(t *testing.T) {
 	t.Run("TestCreateUser", func(t *testing.T) {
+		request := map[string]interface{}{}
 		form := make(map[string]string)
 		form["username"] = "test"
 		form["name_first"] = "test"
 		form["name_last"] = "test"
 		form["email"] = "test"
 		form["role"] = "admin"
-		jsonForm, err := json.Marshal(form)
+		request["user"] = form
+		request["providers"] = []int{}
+		jsonForm, err := json.Marshal(request)
 		if err != nil {
 			t.Errorf("failed to marshal form")
 		}

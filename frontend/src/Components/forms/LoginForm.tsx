@@ -71,7 +71,8 @@ export default function LoginForm() {
       }
     } catch (error: any) {
       setProcessing(false);
-      setErrorMessage(error.response.data);
+      setErrorMessage("login failed, please try again");
+      window.location.replace("/self-service/login/browser");
     }
   };
 

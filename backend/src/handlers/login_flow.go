@@ -56,7 +56,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
-			Name:     "token",
+			Name:     "unlocked_token",
 			Value:    signedToken,
 			Expires:  time.Now().Add(24 * time.Hour),
 			SameSite: http.SameSiteDefaultMode,
@@ -64,9 +64,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			Secure:   true,
 			Path:     "/",
 		})
-
-		err = s.WriteResponse(w, http.StatusOK, user)
-		if err != nil {
+		if err = s.WriteResponse(w, http.StatusOK, user); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -89,6 +87,8 @@ func (srv *Server) logoutCookie(w http.ResponseWriter) {
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	delete(orySessions, claims.UserID)
 	s.logoutCookie(w)
 	w.WriteHeader(http.StatusOK)
 }

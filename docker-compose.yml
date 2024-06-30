@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   postgres:
     image: postgres:16
@@ -12,6 +11,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - logs:/var/log/postgresql
       - config:/docker-entrypoint-initdb.d
+    command: >
+      postgres -c 'logging_collector=on' -c 'log_destination=jsonlog' -c 'log_directory=/var/log/postgresql' -c log_line_prefix='%t [%u]'  -c 'log_connections=on' -c 'log_file_mode=0644'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
@@ -19,6 +20,24 @@ services:
       retries: 5
     networks:
       - intranet
+
+  rev_proxy:
+    build:
+      context: config
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    volumes:
+      - ./config/be-dev.nginx.conf:/etc/nginx/conf.d/default.conf
+      - logs:/var/log/nginx/
+    networks:
+      - intranet
+    restart: "on-failure"
+    depends_on:
+      kratos-migrate:
+        condition: service_completed_successfully
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   keto-migrate:
     image: oryd/keto:v0.12.0-alpha.0
@@ -72,22 +91,6 @@ services:
       postgres:
         condition: service_healthy
 
-  kratos-selfservice-ui-node:
-    image: oryd/kratos-selfservice-ui-node:v1.1.0
-    environment:
-      - KRATOS_PUBLIC_URL=http://kratos:4433/
-      - KRATOS_BROWSER_URL=http://127.0.0.1:4433/
-      - COOKIE_SECRET=changeme
-      - CSRF_COOKIE_NAME=ory_csrf_ui
-      - CSRF_COOKIE_SECRET=changeme
-      - PORT=4455
-      - SECURITY_MODE=
-    ports:
-      - "4455:4455"
-    networks:
-      - intranet
-    restart: on-failure
-
   kratos:
     depends_on:
       - kratos-migrate
@@ -110,9 +113,9 @@ services:
   hydra:
     image: oryd/hydra:v2.2.0
     ports:
-      - "4444:4444" # Public port
-      - "4445:4445" # Admin port
-      - "5555:5555" # Port for hydra token user
+      - "4444:4444"
+      - "4445:4445"
+      - "5555:5555"
     command: serve -c /etc/config/hydra/hydra.yml all --dev
     volumes:
       - type: bind
@@ -127,7 +130,6 @@ services:
       - SERVE_ADMIN_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
       - DSN=postgres://hydra:ChangeMe!@postgres:5432/hydra?sslmode=prefer&max_conns=20&max_idle_conns=4
     restart: unless-stopped
-    env_file: ./backend/.env
     depends_on:
       - hydra-migrate
     networks:
@@ -148,26 +150,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-  rev_proxy:
-    build:
-      context: config
-      dockerfile: Dockerfile
-    ports:
-      - 80:80
-    volumes:
-      - ./config/be-dev.nginx.conf:/etc/nginx/conf.d/default.conf
-      - logs:/var/log/nginx/
-    networks:
-      - intranet
-    restart: "on-failure"
-    depends_on:
-      kratos-migrate:
-        condition: service_completed_successfully
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
 networks:
   intranet:
+    driver: bridge
 
 volumes:
   postgres_data:

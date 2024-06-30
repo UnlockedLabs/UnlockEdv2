@@ -11,21 +11,23 @@ import useSWR from "swr";
 // TO DO: mutate the data on save so it stays the same across both views
 
 export default function CourseCatalog() {
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
-  const {data, mutate} = useSWR<ServerResponse<Program>>(`/api/users/${user.id}/catalogue`)
+  const { data, mutate } = useSWR<ServerResponse<Program>>(
+    `/api/users/${user.id}/catalogue`,
+  );
 
   useEffect(() => {
     console.log(data);
   }, [data]);
 
-  function callMutate(){
-    console.log('called')
+  function callMutate() {
+    console.log("called");
     mutate();
   }
 
-  if (!data) return <div></div>
+  if (!data) return <div></div>;
 
   return (
     <AuthenticatedLayout title="Course Catalog">
@@ -49,11 +51,20 @@ export default function CourseCatalog() {
           />
         </div>
         {/* render on gallery or list view */}
-          <div className={`grid mt-8 ${ activeView == ViewType.Grid ? "grid-cols-4 gap-6": "gap-4"}`}>
-            {data?.map((course) => {
-              return <CatalogCourseCard course={course} callMutate={callMutate} view={activeView} key={Math.random()}/>;
-            })}
-          </div>
+        <div
+          className={`grid mt-8 ${activeView == ViewType.Grid ? "grid-cols-4 gap-6" : "gap-4"}`}
+        >
+          {data?.map((course) => {
+            return (
+              <CatalogCourseCard
+                course={course}
+                callMutate={callMutate}
+                view={activeView}
+                key={Math.random()}
+              />
+            );
+          })}
+        </div>
       </div>
     </AuthenticatedLayout>
   );

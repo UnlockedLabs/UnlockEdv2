@@ -2,17 +2,20 @@ package main
 
 import (
 	"UnlockEdv2/src/database"
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
+	client "github.com/ory/kratos-client-go"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func main() {
-	if err := godotenv.Load("./backend/.env"); err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Failed to load .env file: %v", err)
 	}
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
@@ -35,17 +38,77 @@ func MigrateFresh(db *gorm.DB) {
 			log.Printf("Failed to drop table: %v", err)
 		}
 	}
-	storedProc, err := os.ReadFile("./backend/src/activities_proc.sql")
-	if err != nil {
-		log.Fatalf("Failed to read stored procedure file: %v", err)
-	}
+	storedProc := `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
+    _user_id INT,
+    _program_id INT,
+    _type VARCHAR,
+    _total_time INT,
+    _external_id VARCHAR)
+    RETURNS VOID AS $$
+    DECLARE
+        prev_total_time INT;
+    BEGIN
+        SELECT total_time INTO prev_total_time FROM activities
+        WHERE user_id = _user_id AND program_id = _program_id
+        ORDER BY created_at DESC LIMIT 1;
+
+        IF prev_total_time IS NULL THEN
+            prev_total_time := 0;
+        END IF;
+    INSERT INTO activities (user_id, program_id, type, total_time, time_delta, external_id, created_at, updated_at)
+    VALUES (_user_id, _program_id, _type, _total_time, _total_time - prev_total_time, _external_id, NOW(), NOW());
+    END;
+    $$ LANGUAGE plpgsql;`
 	if err := db.Exec(string(storedProc)).Error; err != nil {
 		log.Fatalf("Failed to create stored procedure: %v", err)
 	}
 	log.Println("Stored procedure created successfully.")
 	database.Migrate(db)
-	database.SeedDefaultData(db)
+	if err := syncOryKratos(); err != nil {
+		log.Fatal("unable to delete identities from kratos instance")
+	}
+	database.SeedDefaultData(db, false)
 	log.Println("Database successfully migrated from fresh state.")
+	log.Println("\033[31mIf the server is running, you MUST restart it\033[0m")
+}
+
+func syncOryKratos() error {
+	config := client.Configuration{
+		Servers: client.ServerConfigurations{
+			{
+				URL: os.Getenv("KRATOS_ADMIN_URL"),
+			},
+			{
+				URL: os.Getenv("KRATOS_PUBLIC_URL"),
+			},
+		},
+	}
+	ory := client.NewAPIClient(&config)
+	identities, resp, err := ory.IdentityAPI.ListIdentities(context.Background()).Execute()
+	if err != nil {
+		log.Fatal("Error getting identities from kratos integration")
+		return err
+	}
+	if resp.StatusCode != 200 {
+		log.Fatalf("kratos identites response failed with code %d", resp.StatusCode)
+		return errors.New("kratos client failed to send request")
+	}
+	for _, user := range identities {
+		id := user.GetId()
+		resp, err := ory.IdentityAPI.DeleteIdentity(context.Background(), id).Execute()
+		if err != nil {
+			log.Fatal("unable to delete identity from Ory Kratos")
+			continue
+		}
+		if resp.StatusCode != 204 {
+			log.Fatal("unable to delete identity from Ory Kratos")
+			continue
+		} else {
+			continue
+		}
+	}
+	log.Println("ory identities deleted successfully")
+	return nil
 }
 
 func Migrate(db *gorm.DB) {
