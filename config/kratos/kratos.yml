@@ -82,7 +82,7 @@ selfservice:
 
     logout:
       after:
-        default_browser_return_url: http://127.0.0.1:4455/login
+        default_browser_return_url: http://127.0.0.1/login
 
     login:
       ui_url: http://127.0.0.1/login
