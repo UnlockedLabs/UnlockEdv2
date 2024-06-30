@@ -3,21 +3,23 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"errors"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetCurrentUsers(page, itemsPerPage int) (int64, []models.User, error) {
+func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint) (int64, []models.User, error) {
 	var users []models.User
 	var count int64
 
 	offset := (page - 1) * itemsPerPage
-	if err := db.Conn.Model(&models.User{}).Count(&count).Error; err != nil {
+	if err := db.Conn.Model(&models.User{}).Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).Count(&count).Error; err != nil {
 		log.Printf("Error counting users: %v", err)
 		return 0, nil, err
 	}
 
 	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
+		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
@@ -43,11 +45,11 @@ type UserWithLogins struct {
 	Logins []models.ProviderUserMapping `json:"logins"`
 }
 
-func (db *DB) GetUsersWithLogins(page, per_page int) (int64, []UserWithLogins, error) {
+func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []UserWithLogins, error) {
 	var users []models.User
 	var count int64
 	if err := db.Conn.Model(&models.User{}).
-		Offset((page - 1) * per_page).Limit(per_page).Count(&count).Scan(&users).Error; err != nil {
+		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
 		return 0, nil, err
 	}
 	var userWithLogins []UserWithLogins
@@ -84,7 +86,6 @@ func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	psw := user.CreateTempPassword()
 	user.Password = psw
-	log.Printf("Password: %s", user.Password)
 	err := user.HashPassword()
 	if err != nil {
 		return nil, err
@@ -99,7 +100,7 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 		return nil, error
 	}
 	newUser := &models.User{}
-	if err := db.Conn.Where("username = ?", user.Username).First(&newUser).Error; err != nil {
+	if err := db.Conn.Find(&newUser, "username = ?", user.Username).Error; err != nil {
 		log.Error("Error getting user we just created: ", err)
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func (db *DB) DeleteUser(id int) error {
 
 func (db *DB) GetUserByUsername(username string) *models.User {
 	var user models.User
-	if err := db.Conn.Where("username = ?", username).First(&user).Error; err != nil {
+	if err := db.Conn.Model(models.User{}).Find(&user, "username = ?", username).Error; err != nil {
 		return nil
 	}
 	return &user

@@ -12,7 +12,7 @@ services:
       - logs:/var/log/postgresql
       - config:/docker-entrypoint-initdb.d
     command: >
-      postgres -c 'logging_collector=on' -c 'log_destination=jsonlog' -c 'log_directory=/var/log/postgresql' -c log_line_prefix='%t [%u]'  -c 'log_connections=on' -c 'log_file_mode=0644'
+      postgres -c 'logging_collector=on' -c 'log_destination=jsonlog' -c 'log_directory=/var/log/postgresql' -c log_line_prefix='%t [%u]'  -c 'log_connections=on' -c 'log_file_mode=0644' -c 'log_filename=postgres-%Y-%m-%d.log'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s

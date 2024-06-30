@@ -111,9 +111,13 @@ export const recentCourses = [
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data, error, isLoading } = useSWR<ServerResponse<any>>(`/api/users/${user.id}/student-dashboard`)
-  const { data: admin } = useSWR<ServerResponse<any>>(`/api/users/${user.id}/admin-dashboard`)
-  console.log(admin)
+  const { data, error, isLoading } = useSWR<ServerResponse<any>>(
+    `/api/users/${user.id}/student-dashboard`,
+  );
+  const { data: admin } = useSWR<ServerResponse<any>>(
+    `/api/users/${user.id}/admin-dashboard`,
+  );
+  console.log(admin);
 
   const convertSeconds = (secs: number) => {
     const hours = Math.floor(secs / 3600);

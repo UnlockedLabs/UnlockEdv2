@@ -10,11 +10,11 @@ import (
 )
 
 func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleIndexPrograms)))
+	srv.Mux.Handle("GET /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleIndexPrograms)))
 	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowProgram)))
-	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateProgram)))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteProgram)))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateProgram)))
+	srv.Mux.Handle("POST /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateProgram)))
+	srv.Mux.Handle("DELETE /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteProgram)))
+	srv.Mux.Handle("PATCH /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateProgram)))
 	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.HandleFavoriteProgram)))
 }
 

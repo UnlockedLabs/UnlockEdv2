@@ -13,12 +13,12 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleIndexUsers)))
+	srv.Mux.Handle("GET /api/users", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleIndexUsers)))
 	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowUser)))
-	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateUser)))
-	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleResetStudentPassword)))
+	srv.Mux.Handle("POST /api/users", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateUser)))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteUser)))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateUser)))
+	srv.Mux.Handle("POST /api/users/student-password", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleResetStudentPassword)))
 }
 
 /**
@@ -28,7 +28,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	include := r.URL.Query()["include"]
 	if slices.Contains(include, "logins") {
-		srv.HandleGetUsersWithLogins(w, r)
+		srv.HandleGetUsersWithLogins(w, r.WithContext(r.Context()))
 		return
 	}
 	if slices.Contains(include, "only_unmapped") {
@@ -36,7 +36,8 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		srv.HandleGetUnmappedUsers(w, r, providerId)
 		return
 	}
-	total, users, err := srv.Db.GetCurrentUsers(page, perPage)
+	facilityId := srv.getFacilityID(r)
+	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId)
 	if err != nil {
 		log.Error("IndexUsers Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,9 +61,10 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string) {
+	facilityId := srv.getFacilityID(r)
 	page, perPage := srv.GetPaginationInfo(r)
 	search := r.URL.Query()["search"]
-	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, providerId, search)
+	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, providerId, search, facilityId)
 	if err != nil {
 		log.Error("Database Error getting unmapped users: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -89,8 +91,9 @@ func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 }
 
 func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Request) {
+	facilityId := srv.getFacilityID(r)
 	page, perPage := srv.GetPaginationInfo(r)
-	total, users, err := srv.Db.GetUsersWithLogins(page, perPage)
+	total, users, err := srv.Db.GetUsersWithLogins(page, perPage, facilityId)
 	if err != nil {
 		log.Error("IndexUsers Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -116,7 +119,7 @@ func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Reque
 func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("GET User nandler Error: ", err)
+		log.Error("GET User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -132,16 +135,8 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.Data = append(response.Data, *user)
-	bytes, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(bytes)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error writing response")
 	}
 }
 
@@ -167,6 +162,9 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+	if user.User.FacilityID == 0 {
+		user.User.FacilityID = srv.getFacilityID(r)
+	}
 	newUser, err := srv.Db.CreateUser(&user.User)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

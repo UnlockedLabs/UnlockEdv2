@@ -56,7 +56,6 @@ func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	response := models.Resource[models.ProviderPlatform]{
 		Data:    []models.ProviderPlatform{*platform},
 		Message: "Provider platform found",

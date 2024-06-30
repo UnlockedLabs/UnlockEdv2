@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -22,10 +23,10 @@ type contextKey string
 const ClaimsKey contextKey = "claims"
 
 type Claims struct {
-	UserID        uint   `json:"user_id"`
-	PasswordReset bool   `json:"password_reset"`
-	Role          string `json:"role"`
-	FacilityID    uint   `json:"facility_id"`
+	UserID        uint            `json:"user_id"`
+	PasswordReset bool            `json:"password_reset"`
+	Role          models.UserRole `json:"role"`
+	FacilityID    uint            `json:"facility_id"`
 	jwt.RegisteredClaims
 }
 
@@ -33,6 +34,7 @@ func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(http.HandlerFunc(srv.handleResetPassword)))
 	/* only use auth middleware, user activity bloats the database + results */
 	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleChangeAdminFacility)))
 }
 
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
@@ -65,6 +67,31 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "couldn't parse id from path", http.StatusBadRequest)
+		return
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	claims.FacilityID = uint(id)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte(os.Getenv("APP_KEY")))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "unlocked_token",
+		Value:    signedToken,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
+	})
+	w.WriteHeader(http.StatusOK)
+}
+
 func isAuthRoute(r *http.Request) bool {
 	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth", "/api/consent/accept"}
 	return slices.Contains(paths, r.URL.Path)
@@ -72,7 +99,7 @@ func isAuthRoute(r *http.Request) bool {
 
 func (srv *Server) UserIsAdmin(r *http.Request) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.Role == "admin"
+	return claims.Role == models.Admin
 }
 
 func (srv *Server) canViewUserData(r *http.Request) bool {
@@ -81,22 +108,13 @@ func (srv *Server) canViewUserData(r *http.Request) bool {
 		return false
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.Role == "admin" || claims.UserID == uint(id)
-}
-
-func (srv *Server) UserIsOwner(r *http.Request) bool {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return false
-	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.UserID == uint(id)
+	return claims.Role == models.Admin || claims.UserID == uint(id)
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims := r.Context().Value(ClaimsKey).(*Claims)
-		if claims.Role != "admin" {
+		if claims.Role != models.Admin {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -121,7 +139,7 @@ var orySessions = make(map[uint]OrySession)
 
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
-	fields := log.Fields{"user": "", "handler": "handleCheckAuth"}
+	fields := log.Fields{"handler": "handleCheckAuth"}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil {
@@ -129,7 +147,15 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-	fields["user"] = user.Username
+	fields["user.username"] = user.Username
+	fields["facility_id"] = user.FacilityID
+	if user.Role != models.Admin && user.FacilityID != claims.FacilityID {
+		// user isn't an admin, and has alternate facility_id in the JWT claims
+		fields["claims.facility_id"] = claims.FacilityID
+		log.WithFields(fields).Error("user viewing context for different facility. this should never happen")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	oryCookie, err := r.Cookie("ory_kratos_session")
 	if err == nil {
 		cookieHash := hashCookieValue(oryCookie.Value)

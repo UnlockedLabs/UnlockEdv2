@@ -71,15 +71,20 @@ func InitDB(isTesting bool) *DB {
 
 func SeedDefaultData(db *gorm.DB, isTesting bool) {
 	var count int64
-	if err := db.Table("users").Where("id = 1").Count(&count).Error; err != nil {
+	if err := db.Model(models.User{}).Where("id = ?", fmt.Sprintf("%d", 1)).Count(&count).Error; err != nil {
 		log.Fatal("db transaction failed getting admin user")
 	}
 	if count == 0 {
-		var facility models.Facility
-		if err := db.Model(models.Facility{}).Find(&facility, "name = ?", "Default").Error; err != nil {
-			log.Fatalf("Failed to find facility: %v", err)
+		if err := db.Model(models.Facility{}).Where("id = ?", fmt.Sprintf("%d", 1)).Count(&count).Error; err != nil {
+			log.Fatal("db transaction failed getting default facility")
 		}
-		log.Printf("Facility ID: %d", facility.ID)
+		defaultFacility := models.Facility{
+			Name: "Default",
+		}
+		log.Printf("Creating facility: %v", defaultFacility)
+		if err := db.Create(&defaultFacility).Error; err != nil {
+			log.Fatalf("Failed to create user: %v", err)
+		}
 		user := models.User{
 			Username:      "SuperAdmin",
 			NameFirst:     "Super",
@@ -88,7 +93,7 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			PasswordReset: true,
 			Role:          "admin",
 			Password:      "ChangeMe!",
-			FacilityID:    facility.ID,
+			FacilityID:    1,
 		}
 		log.Printf("Creating user: %v", user)
 		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")

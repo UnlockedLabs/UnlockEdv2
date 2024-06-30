@@ -82,31 +82,36 @@ func (serv *ProviderService) Request(url string) *http.Request {
 }
 
 func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
+	fields := log.Fields{"handler": "GetUsers"}
 	req := serv.Request("/api/users")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting users Client.Do(req): %v", err.Error())
+		fields["error"] = err
+		log.WithFields(fields).Errorln("error getting users Client.Do(req)")
 		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
+		fields["status_code"] = resp.Status
 		log.Errorln("request failed: with code", resp.Status)
 		return nil, errors.New("request failed")
 	}
 	var users []models.ImportUser
 	err = json.NewDecoder(resp.Body).Decode(&users)
 	if err != nil {
-		log.Errorln("error decoding users: ", err.Error())
+		fields["error"] = err
+		log.Errorln("error decoding users from middleware")
 		return nil, err
 	}
 	return users, nil
 }
 
 func (serv *ProviderService) GetPrograms() error {
+	fields := log.Fields{"handler": "GetPrograms", "provider_platform_id": serv.ProviderPlatformID}
 	req := serv.Request("/api/programs")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting content Client.Do(req): %v", err.Error())
+		log.WithFields(fields).Errorln("error getting content from middleware")
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -117,33 +122,37 @@ func (serv *ProviderService) GetPrograms() error {
 }
 
 func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID uint) error {
-	req := serv.Request("/api/users/" + fmt.Sprintf("%d", userID) + "/programs/" + fmt.Sprintf("%d", programID) + "/milestones")
+	fields := log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "ProgramID": programID}
+	req := serv.Request(fmt.Sprintf("/api/users/%d/programs/%d/milestones", userID, programID))
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.WithFields(log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "error": err.Error()}).Error("Failed to get milestones for program user")
+		fields["error"] = err
+		log.WithFields(fields).Errorln("Error getting milestones for program user")
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		log.WithFields(log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "status": resp.StatusCode}).Error("Failed to get milestones for program user")
+		fields["status_code"] = resp.StatusCode
+		log.WithFields(fields).Errorln("Request failed with status code", resp.StatusCode)
 		return errors.New("failed to get milestones for program user")
 	}
 	return nil
 }
 
 func (serv *ProviderService) GetActivityForProgram(programID string) error {
+	fields := log.Fields{"handler": "GetActivityForProgram", "ProgramID": programID}
 	req := serv.Request("/api/programs/" + programID + "/activity")
 	resp, err := serv.Client.Do(req)
 	if err != nil {
-		log.Printf("error getting activity Client.Do(req): %v", err.Error())
+		fields["error"] = err
+		log.WithFields(fields).Errorln("Error getting activity for program in service.go")
 		return err
 	}
-	if err != nil {
-		log.WithFields(log.Fields{"handler": "GetActivityForProgram", "error": err.Error()}).Error("Failed to get activity for program")
-		return err
-	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		log.WithFields(log.Fields{"handler": "GetActivityForProgram", "status": resp.StatusCode}).Error("Failed to get activity for program")
-		return errors.New("failed to get milestones for program user")
+		fields["status_code"] = resp.StatusCode
+		log.WithFields(fields).Errorln("Request failed with status code", resp.StatusCode)
+		return errors.New("failed to get activity for program")
 	}
 	return nil
 }
