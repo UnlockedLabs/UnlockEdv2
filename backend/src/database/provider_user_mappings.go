@@ -46,7 +46,7 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 	return nil
 }
 
-func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch []string) (int64, []models.User, error) {
+func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch []string, facilityId uint) (int64, []models.User, error) {
 	var users []models.User
 	var total int64
 	if providerID == "" {
@@ -54,21 +54,24 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 	}
 	if len(userSearch) != 0 {
 		fmt.Println("getting unmapped usrs, searching for ", userSearch)
-		users, err := db.getUnmappedProviderUsersWithSearch(providerID, userSearch)
+		users, err := db.getUnmappedProviderUsersWithSearch(providerID, userSearch, facilityId)
 		if err != nil {
 			return 0, nil, err
 		}
 		return int64(len(users)), users, nil
 	}
-	if err := db.Conn.Table("users").Select("*").Where("users.role = ?", "student").Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).Find(&users).Error; err != nil {
+	if err := db.Conn.Table("users").Select("*").Where("users.role = ?", "student").
+		Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
+		Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
 		return 0, nil, err
 	}
 	return total, users, nil
 }
 
-func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch []string) ([]models.User, error) {
+func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch []string, facilityId uint) ([]models.User, error) {
 	var users []models.User
-	tx := db.Conn.Table("users u").Select("u.*").Where("u.role = ?", "student").Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID)
+	tx := db.Conn.Table("users u").Select("u.*").Where("u.role = ?", "student").Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
+		Where("facility_id = ?", fmt.Sprintf("%d", facilityId))
 	searchCondition := db.Conn
 	for _, search := range userSearch {
 		split := strings.Split(search, " ")
@@ -93,7 +96,8 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 	}
 	if len(users) == 0 {
 		fmt.Println("couldn't find any good searches, returning all")
-		return users, db.Conn.Table("users u").Select("u.*").Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).Find(&users).Error
+		return users, db.Conn.Table("users u").Select("u.*").Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
+			Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error
 	}
 	fmt.Printf("found %d matches", len(users))
 	return users, nil

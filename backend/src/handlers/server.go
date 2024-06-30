@@ -2,6 +2,7 @@ package handlers
 
 import (
 	database "UnlockEdv2/src/database"
+	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"math"
@@ -41,6 +42,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOidcFlowRoutes()
 	srv.registerProviderUserRoutes()
 	srv.registerOryRoutes()
+	srv.registerFacilitiesRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -79,7 +81,7 @@ func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
 	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
 }
 
-func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
+func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
 	return srv.applyMiddleware(srv.adminMiddleware(h))
 }
 
@@ -170,6 +172,10 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 	return srv.syncKratosAdminDB()
 }
 
+func (srv *Server) getFacilityID(r *http.Request) uint {
+	return r.Context().Value(ClaimsKey).(*Claims).FacilityID
+}
+
 type TestClaims string
 
 const TestingClaimsKey = TestClaims("test_claims")
@@ -183,7 +189,8 @@ func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 		testClaims := &Claims{
 			UserID:        1,
 			PasswordReset: false,
-			Role:          "admin",
+			Role:          models.Admin,
+			FacilityID:    1,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
@@ -199,9 +206,10 @@ func (srv *Server) GetUserID(r *http.Request) uint {
 func (srv *Server) TestAsUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testClaims := &Claims{
-			UserID:        2,
-			Role:          "student",
+			UserID:        4,
+			Role:          models.Student,
 			PasswordReset: false,
+			FacilityID:    1,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		h.ServeHTTP(w, r.WithContext(ctx))

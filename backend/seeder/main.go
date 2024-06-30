@@ -32,6 +32,19 @@ func main() {
 }
 
 func seedTestData(db *gorm.DB) {
+	facilities, err := os.ReadFile("backend/tests/test_data/facilities.json")
+	if err != nil {
+		log.Printf("Failed to read test data: %v", err)
+	}
+	var facility []models.Facility
+	if err := json.Unmarshal(facilities, &facility); err != nil {
+		log.Printf("Failed to unmarshal test data: %v", err)
+	}
+	for _, f := range facility {
+		if err := db.Create(&f).Error; err != nil {
+			log.Printf("Failed to create facility: %v", err)
+		}
+	}
 	platforms, err := os.ReadFile("backend/tests/test_data/provider_platforms.json")
 	if err != nil {
 		log.Printf("Failed to read test data: %v", err)
@@ -120,10 +133,10 @@ func seedTestData(db *gorm.DB) {
 			}
 			if rand.Float32() < 0.4 { // 40% chance to create an outcome
 				outcome := models.Outcome{
-					UserID:    user.ID,
-					ProgramID: prog.ID,
+					UserID:      user.ID,
+					ProgramID:   prog.ID,
 					ProgramName: prog.Name,
-					Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+					Type:        models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 				}
 				if err := db.Create(&outcome).Error; err != nil {
 					log.Printf("Failed to create outcome: %v", err)

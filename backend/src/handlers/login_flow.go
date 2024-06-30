@@ -43,7 +43,8 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		claims := Claims{
 			UserID:        user.ID,
 			PasswordReset: user.PasswordReset,
-			Role:          string(user.Role),
+			Role:          user.Role,
+			FacilityID:    user.FacilityID,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:  "admin",
 				Subject: user.Username,

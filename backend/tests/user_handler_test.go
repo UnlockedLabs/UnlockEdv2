@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -26,7 +28,7 @@ func TestHandleIndexUsers(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		total, dbUsers, err := server.Db.GetCurrentUsers(1, 10)
+		total, dbUsers, err := server.Db.GetCurrentUsers(1, 10, 1)
 		if err != nil {
 			t.Errorf("failed to get users from db")
 		}
@@ -48,13 +50,75 @@ func TestHandleIndexUsers(t *testing.T) {
 			t.Errorf("handler returned unexpected body: got %v want %v",
 				data.Meta.Total, Response.Meta.Total)
 		}
-		if data.Data[0].Username != Response.Data[0].Username {
-			t.Errorf("handler returned unexpected body: got %v want %v",
-				data.Data[0].Username, Response.Data[0].Username)
+		if len(data.Data) != int(total) {
+			t.Errorf("handler returned users from the wrong facility context")
 		}
-		if data.Data[8].Username != Response.Data[8].Username {
-			t.Errorf("handler returned unexpected body: got %v want %v",
-				data.Data[8].Username, Response.Data[8].Username)
+	})
+}
+
+func TestAssertFacilityContext(t *testing.T) {
+	t.Parallel()
+	t.Run("TestAssertFacilityContext", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/api/users", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rr := httptest.NewRecorder()
+		handler := server.TestAsAdmin(http.HandlerFunc(server.HandleIndexUsers))
+		handler.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+		_, dbUsers, err := server.Db.GetCurrentUsers(1, 10, 2)
+		if err != nil {
+			t.Errorf("failed to get users from db")
+		}
+		respUsers := models.Resource[models.User]{}
+		if err := json.NewDecoder(rr.Body).Decode(&respUsers); err != nil {
+			t.Errorf("failed to get users from db")
+		}
+		for _, user := range respUsers.Data {
+			if slices.ContainsFunc(dbUsers, func(other models.User) bool {
+				return user.Username == other.Username
+			}) {
+				t.Error("user found in multiple facility contexts")
+			}
+		}
+	})
+}
+
+func TestAssertNonAdminCantViewAllUsers(t *testing.T) {
+	t.Parallel()
+	t.Run("TestAssertNonAdminCantViewAllUsers", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/api/users", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rr := httptest.NewRecorder()
+		handler := server.TestAsUser(server.ApplyAdminMiddleware(http.HandlerFunc(server.HandleIndexUsers)))
+		handler.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusUnauthorized {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusUnauthorized)
+		}
+	})
+}
+
+func TestAssertNonAdminCanViewThemselves(t *testing.T) {
+	t.Parallel()
+	t.Run("TestAssertNonAdminCanViewThemselves", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/api/users/", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.SetPathValue("id", "4") // default non-admin testing user_id
+		rr := httptest.NewRecorder()
+		handler := server.TestAsUser(http.HandlerFunc(server.HandleShowUser))
+		handler.ServeHTTP(rr, req)
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusUnauthorized)
 		}
 	})
 }
@@ -67,6 +131,7 @@ func TestHandleShowUser(t *testing.T) {
 			t.Fatal(err)
 		}
 		req.SetPathValue("id", "1")
+		log.Println("request URL " + req.URL.String())
 		rr := httptest.NewRecorder()
 		handler := server.TestAsAdmin(http.HandlerFunc(server.HandleShowUser))
 		handler.ServeHTTP(rr, req)
@@ -86,9 +151,9 @@ func TestHandleShowUser(t *testing.T) {
 		if err != nil {
 			t.Errorf("failed to marshal user")
 		}
-		if received != string(userStr) {
+		if strings.Compare(strings.TrimSpace(received), strings.TrimSpace(string(userStr))) != 0 {
 			t.Errorf("handler returned unexpected body: got %v want %v",
-				received, user)
+				received, string(userStr))
 		}
 	})
 }
@@ -151,11 +216,12 @@ func TestUpdateUser(t *testing.T) {
 	t.Run("TestUpdateUser", func(t *testing.T) {
 		// create user to update
 		newUser := models.User{
-			NameFirst: "testUser",
-			NameLast:  "testUser",
-			Username:  "testUser",
-			Email:     "testUser",
-			Role:      "admin",
+			NameFirst:  "testUser",
+			NameLast:   "testUser",
+			Username:   "testUser",
+			Email:      "testUser",
+			Role:       "admin",
+			FacilityID: 1,
 		}
 		created, err := server.Db.CreateUser(&newUser)
 		if err != nil {

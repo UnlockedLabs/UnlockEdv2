@@ -227,7 +227,7 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 	return enrollments
 }
 
-func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error) {
+func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, error) {
 	var recentPrograms [3]models.RecentProgram
 	// first get the users 3 most recently interacted with programs
 	//
@@ -321,4 +321,72 @@ func (db *DB) GetUserDashboardInfo(userID int) (models.UserDashboardJoin, error)
 	}
 
 	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, WeekActivity: activities}, err
+}
+
+func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin, error) {
+	var dashboard models.AdminDashboardJoin
+
+	// Monthly Activity
+	err := db.Conn.Table("activities a").
+		Select("DATE(a.created_at) as date, SUM(a.time_delta) as delta").
+		Joins("JOIN users u ON a.user_id = u.id").
+		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
+		Group("date").
+		Find(&dashboard.MonthlyActivity).Error
+	if err != nil {
+		return dashboard, err
+	}
+
+	// Weekly Active Users, Average Daily Activity, Total Weekly Activity
+	var result struct {
+		WeeklyActiveUsers   uint
+		AvgDailyActivity    float64
+		TotalWeeklyActivity uint
+	}
+
+	err = db.Conn.Table("activities a").
+		Select(`
+			COUNT(DISTINCT a.user_id) as weekly_active_users, 
+			AVG(a.time_delta) as avg_daily_activity,
+			SUM(a.time_delta) as total_weekly_activity`).
+		Joins("JOIN users u ON a.user_id = u.id").
+		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
+		Where("").
+		Find(&result).Error
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
+	}
+
+	dashboard.WeeklyActiveUsers = result.WeeklyActiveUsers
+	dashboard.AvgDailyActivity = uint(result.AvgDailyActivity)
+	dashboard.TotalWeeklyActivity = result.TotalWeeklyActivity
+
+	// Program Milestones
+	err = db.Conn.Table("milestones m").
+		Select("p.alt_name as alt_name, COUNT(m.id) as milestones").
+		Joins("JOIN programs p ON m.program_id = p.id").
+		Joins("JOIN users u ON m.user_id = u.id").
+		Where("u.facility_id = ? AND m.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
+		Where("m.is_completed = true").
+		Group("p.alt_name").
+		Find(&dashboard.ProgramMilestones).Error
+	if err != nil {
+		return dashboard, err
+	}
+
+	// Top 5 Programs by Hours Engaged
+	err = db.Conn.Table("activities a").
+		Select("p.alt_name as program_name, SUM(a.time_delta) as hours_engaged").
+		Joins("JOIN programs p ON a.program_id = p.id").
+		Joins("JOIN users u ON a.user_id = u.id").
+		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
+		Group("p.id").
+		Order("hours_engaged DESC").
+		Limit(5).
+		Find(&dashboard.TopProgramActivity).Error
+	if err != nil {
+		return dashboard, err
+	}
+
+	return dashboard, nil
 }
