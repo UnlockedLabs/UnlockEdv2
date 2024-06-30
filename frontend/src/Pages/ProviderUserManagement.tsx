@@ -7,6 +7,7 @@ import {
   PaginationMeta,
   ProviderPlatform,
   ProviderUser,
+  UserImports,
 } from "../common";
 import PageNav from "../Components/PageNav";
 import Toast, { ToastState } from "../Components/Toast";
@@ -14,9 +15,7 @@ import Modal, { ModalType } from "../Components/Modal";
 import { useAuth } from "../AuthContext";
 import MapUserForm from "@/Components/forms/MapUserForm";
 import PrimaryButton from "@/Components/PrimaryButton";
-import ShowImportedUsers, {
-  ImportUserResponse,
-} from "@/Components/forms/ShowImportedUsers";
+import ShowImportedUsers from "@/Components/forms/ShowImportedUsers";
 import Pagination from "@/Components/Pagination";
 import useSWR from "swr";
 
@@ -38,7 +37,7 @@ export default function ProviderUserManagement() {
     last_page: 0,
   });
   const [provider, setProvider] = useState<ProviderPlatform | null>(null);
-  const [importedUsers, setImportedUsers] = useState<ImportUserResponse[]>([]);
+  const [importedUsers, setImportedUsers] = useState<UserImports[]>([]);
   const [cache, setCache] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -144,9 +143,11 @@ export default function ProviderUserManagement() {
       );
       if (res.status === 200) {
         showToast(res.data.message, ToastState.success);
+        console.log(res.data.data);
         setImportedUsers(res.data.data);
         importedUsersModal.current?.showModal();
         mutate();
+        return;
       }
     } catch (err: any) {
       showToast(
@@ -164,6 +165,7 @@ export default function ProviderUserManagement() {
   function handleCloseImportedUsers() {
     importedUsersModal.current?.close();
     setImportedUsers([]);
+    return;
   }
 
   function handleCloseMapUser() {
@@ -348,19 +350,17 @@ export default function ProviderUserManagement() {
           }
         />
       )}
-      {importedUsers.length > 0 && (
-        <Modal
-          ref={importedUsersModal}
-          type={ModalType.View}
-          item="Imported Users"
-          form={
-            <ShowImportedUsers
-              users={importedUsers}
-              onExit={() => handleCloseImportedUsers()}
-            />
-          }
-        />
-      )}
+      <Modal
+        ref={importedUsersModal}
+        type={ModalType.View}
+        item="Imported Users"
+        form={
+          <ShowImportedUsers
+            users={importedUsers}
+            onExit={handleCloseImportedUsers}
+          />
+        }
+      />
       {displayToast && <Toast {...toast} />}
     </AuthenticatedLayout>
   );

@@ -118,8 +118,8 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		created, err := srv.Db.CreateUser(&newUser)
 		if err != nil {
-			log.Errorln("Error creating user in import-provider-users")
-			userResponse.Error = "error creating user in database, please try again"
+			log.Errorln("Error creating user in import-provider-users", err)
+			userResponse.Error = "error creating user, likely a duplicate username"
 			response.Data = append(response.Data, userResponse)
 			continue
 		}

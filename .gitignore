@@ -5,6 +5,7 @@
 /frontend/.husky/staged-files
 jar
 /logs/*.log
+/logs/*.json
 /frontend/public/build
 /frontend/public/thumbnails/*
 /migrations/migrations

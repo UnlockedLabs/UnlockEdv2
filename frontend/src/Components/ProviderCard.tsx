@@ -63,7 +63,7 @@ export default function ProviderCard({
                 className="btn btn-primary btn-xs"
                 onClick={() => navigate(`/provider-users/${provider.id}`)}
               >
-                Manage Provider Users
+                Manage Provider
               </button>
             </p>
           )}

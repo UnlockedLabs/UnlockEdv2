@@ -11,6 +11,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - logs:/var/log/postgresql
       - config:/docker-entrypoint-initdb.d
+    command: >
+      postgres -c 'logging_collector=on' -c 'log_destination=jsonlog' -c 'log_directory=/var/log/postgresql' -c log_line_prefix='%t [%u]'  -c 'log_connections=on' -c 'log_file_mode=0644'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
@@ -111,9 +113,9 @@ services:
   hydra:
     image: oryd/hydra:v2.2.0
     ports:
-      - "4444:4444" # Public port
-      - "4445:4445" # Admin port
-      - "5555:5555" # Port for hydra token user
+      - "4444:4444"
+      - "4445:4445"
+      - "5555:5555"
     command: serve -c /etc/config/hydra/hydra.yml all --dev
     volumes:
       - type: bind
