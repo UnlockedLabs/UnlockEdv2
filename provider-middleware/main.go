@@ -90,8 +90,7 @@ func initLogging() {
 	log.SetFormatter(&log.JSONFormatter{})
 	if os.Getenv("LOG_LEVEL") == "" {
 		switch env {
-		case "prod":
-		case "production":
+		case "prod", "production":
 			log.SetLevel(log.InfoLevel)
 		default:
 			log.SetLevel(log.DebugLevel)
