@@ -89,9 +89,7 @@ func (provider *ProviderPlatform) EncryptAccessKey() (string, error) {
 
 func (provider *ProviderPlatform) GetDefaultRedirectURI() string {
 	switch provider.Type {
-	case CanvasOSS:
-		return provider.BaseUrl + "/login/oauth2/callback"
-	case CanvasCloud:
+	case CanvasOSS, CanvasCloud:
 		return provider.BaseUrl + "/login/oauth2/callback"
 	case Kolibri:
 		return provider.BaseUrl + "/oidccallback"
