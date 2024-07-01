@@ -10,10 +10,10 @@ func (db *DB) GetOutcomesForUser(id uint, page, perPage int, outcomeType models.
 	offset := (page - 1) * perPage
 
 	query := db.Conn.Model(&models.Outcome{}).Where("user_id = ?", id)
-    
-    if outcomeType != "" {
-        query = query.Where("type = ?", outcomeType)
-    }
+
+	if outcomeType != "" {
+		query = query.Where("type = ?", outcomeType)
+	}
 
 	if err := query.Count(&count).Error; err != nil {
 		return 0, nil, err
@@ -25,7 +25,7 @@ func (db *DB) GetOutcomesForUser(id uint, page, perPage int, outcomeType models.
 }
 
 func (db *DB) CreateOutcome(outcome *models.Outcome) (*models.Outcome, error) {
-	if err := db.Conn.Create(&outcome).Error; err != nil {
+	if err := db.Conn.Create(outcome).Error; err != nil {
 		return nil, err
 	}
 	return outcome, nil
