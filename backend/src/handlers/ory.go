@@ -12,6 +12,82 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (srv *Server) registerOryRoutes() {
+	srv.Mux.Handle("DELETE /api/identities/sync", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleDeleteAllKratosIdentities)))
+}
+
+func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request) {
+	if err := srv.deleteAllKratosIdentities(); err != nil {
+		http.Error(w, "error communicating with Ory Kratos", http.StatusInternalServerError)
+	}
+	if err := srv.WriteResponse(w, http.StatusOK, "identities deleted successfully"); err != nil {
+		http.Error(w, "error writing response", http.StatusInternalServerError)
+	}
+}
+
+func (srv *Server) deleteAllKratosIdentities() error {
+	identities, err := srv.handleFindKratosIdentities()
+	if err != nil {
+		log.Errorln("unable to fetch all identities from Ory Kratos")
+		return err
+	}
+	for _, user := range identities {
+		id := user.GetId()
+		resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(context.Background(), id).Execute()
+		if err != nil {
+			log.WithFields(log.Fields{"identity": id}).Errorln("unable to delete identity from Ory Kratos")
+			continue
+		}
+		if resp.StatusCode != 204 {
+			log.WithFields(log.Fields{"identity": id}).Errorln("unable to delete identity from Ory Kratos")
+			continue
+		} else {
+			continue
+		}
+	}
+	return nil
+}
+
+func (srv *Server) deleteIdentityInKratos(kratosId *string) error {
+	resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(context.Background(), *kratosId).Execute()
+	if err != nil {
+		log.WithFields(log.Fields{"identity": kratosId}).Errorln("unable to delete identity from Ory Kratos")
+		return err
+	}
+	if resp.StatusCode != 204 {
+		log.WithFields(log.Fields{"identity": kratosId}).Errorln("unable to delete identity from Ory Kratos")
+		return errors.New("unable to delete identity from Ory isntance")
+	}
+	return nil
+}
+
+func (srv *Server) handleFindKratosIdentities() ([]client.Identity, error) {
+	identities, resp, err := srv.OryClient.IdentityAPI.ListIdentities(context.Background()).Execute()
+	if err != nil {
+		log.Error("Error getting identities from kratos integration")
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		log.Errorf("kratos identites response failed with code %d", resp.StatusCode)
+		return nil, errors.New("kratos client failed to send request")
+	}
+	log.WithFields(log.Fields{"identities": identities}).Info("kratos identities found")
+	return identities, nil
+}
+
+func (srv *Server) validateUserIDKratos(id string) error {
+	_, resp, err := srv.OryClient.IdentityAPI.GetIdentity(context.Background(), id).Execute()
+	if err != nil {
+		log.WithField("id", id).Error("unable to fetch and validate identity in kratos")
+		return err
+	}
+	if resp.StatusCode != 200 {
+		log.WithField("id", id).Error("unable to fetch and validate identity in kratos")
+		return errors.New("identity not found in kratos instance")
+	}
+	return nil
+}
+
 func (srv *Server) handleCreateUserKratos(username, password string) error {
 	identity := client.NewCreateIdentityBody("default", map[string]interface{}{"username": username})
 	created, resp, err := srv.OryClient.IdentityAPI.CreateIdentity(context.Background()).CreateIdentityBody(*identity).Execute()

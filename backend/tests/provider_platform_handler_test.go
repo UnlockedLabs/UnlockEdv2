@@ -83,7 +83,9 @@ func TestHandleShowProvider(t *testing.T) {
 			t.Fatal(err)
 		}
 		received := rr.Body.String()
-		resource := models.Resource[models.ProviderPlatform]{}
+		resource := models.Resource[models.ProviderPlatform]{
+			Message: "Provider platform found",
+		}
 		resource.Data = append(resource.Data, *provider)
 		userStr, err := json.Marshal(resource)
 		if err != nil {

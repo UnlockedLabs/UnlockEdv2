@@ -3,8 +3,10 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -12,23 +14,31 @@ import (
 func (srv *Server) registerActivityRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetActivityByUserID)))
 	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetDailyActivityByUserID)))
-	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleGetProgramActivity)))
-	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
+	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleGetProgramActivity)))
+	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
 }
 
 func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request) {
+	year := r.URL.Query().Get("year")
+	if year == "" {
+		year = fmt.Sprintf("%d", time.Now().Year())
+	}
+	yearInt, err := strconv.Atoi(year)
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid year")
+		return
+	}
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
-	count, activities, err := srv.Db.GetActivityByUserID(1, 365, userID)
+	activities, err := srv.Db.GetActivityByUserID(uint(userID), yearInt)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
-		"count":      count,
 		"activities": activities,
 	}); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")

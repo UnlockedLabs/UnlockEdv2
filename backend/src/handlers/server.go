@@ -2,6 +2,7 @@ package handlers
 
 import (
 	database "UnlockEdv2/src/database"
+	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"math"
@@ -17,6 +18,7 @@ type Server struct {
 	Db        *database.DB
 	Mux       *http.ServeMux
 	OryClient *ory.APIClient
+	Client    *http.Client
 }
 
 /**
@@ -38,6 +40,9 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOidcRoutes()
 	srv.registerDashboardRoutes()
 	srv.registerOidcFlowRoutes()
+	srv.registerProviderUserRoutes()
+	srv.registerOryRoutes()
+	srv.registerFacilitiesRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -47,18 +52,23 @@ func ServerWithDBHandle(db *database.DB) *Server {
 func NewServer(isTesting bool) *Server {
 	if isTesting {
 		db := database.InitDB(true)
-		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil}
+		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil, Client: nil}
 	} else {
-		configuration := ory.NewConfiguration()
-		configuration.Servers = []ory.ServerConfiguration{
-			{
-				URL: os.Getenv("KRATOS_ADMIN_URL"),
+		configuration := ory.Configuration{
+			Servers: ory.ServerConfigurations{
+				{
+					URL: os.Getenv("KRATOS_ADMIN_URL"),
+				},
+				{
+					URL: os.Getenv("KRATOS_PUBLIC_URL"),
+				},
 			},
+			DefaultHeader: map[string]string{"Authorization": "Bearer " + os.Getenv("KRATOS_TOKEN")},
 		}
-		apiClient := ory.NewAPIClient(configuration)
+		apiClient := ory.NewAPIClient(&configuration)
 		db := database.InitDB(false)
 		mux := http.NewServeMux()
-		server := Server{Db: db, Mux: mux, OryClient: apiClient}
+		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}}
 		server.RegisterRoutes()
 		if err := server.setupDefaultAdminInKratos(); err != nil {
 			log.Fatal("Error setting up default admin in Kratos")
@@ -67,16 +77,11 @@ func NewServer(isTesting bool) *Server {
 	}
 }
 
-const (
-	FrontendPath = "frontend/dist/"
-	IndexPage    = "frontend/dist/index.html"
-)
-
 func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
 	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
 }
 
-func (srv *Server) applyAdminMiddleware(h http.Handler) http.Handler {
+func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
 	return srv.applyMiddleware(srv.adminMiddleware(h))
 }
 
@@ -98,23 +103,77 @@ func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	}
 }
 
-func (srv *Server) setupDefaultAdminInKratos() error {
-	user := srv.Db.GetUserByUsername("SuperAdmin")
-	if user == nil {
-		log.Println("SuperAdmin not found in database, this shouldn't happen")
-		database.SeedDefaultData(srv.Db.Conn)
-		// rerun after seeding the default user
-		if err := srv.setupDefaultAdminInKratos(); err != nil {
-			return err
+func (srv *Server) checkForAdminInKratos() (string, error) {
+	identities, err := srv.handleFindKratosIdentities()
+	if err != nil {
+		log.Error("unable to get identities in kratos")
+		return "", err
+	}
+	log.Debug("checking for admin in kratos")
+	for _, user := range identities {
+		if username, ok := user.GetTraitsOk(); ok {
+			log.Debug("got traits from ory identity")
+			if username != nil {
+				deref := *username
+				if traits, ok := deref.(map[string]interface{}); !ok {
+					log.Debug("cannot deref traits from ory identity")
+					return "", nil
+				} else {
+					if traits["username"].(string) == "SuperAdmin" {
+						log.Debug("checking for admin in kratos, found admin with ID:", user.GetId())
+						return user.GetId(), nil
+					}
+				}
+			}
 		}
 	}
-	if user.KratosID == "" {
+	return "", nil
+}
+
+func (srv *Server) syncKratosAdminDB() error {
+	id, err := srv.checkForAdminInKratos()
+	if err != nil {
+		return err
+	}
+	if id == "" {
+		// this means the default admin was just created, so we use default password
 		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
-			log.Println("Error creating SuperAdmin in Kratos")
 			return err
+		}
+		return nil
+	} else {
+		user, err := srv.Db.GetUserByID(1)
+		if err != nil {
+			log.Fatal("this should never happen, we just created the user")
+		}
+		if user.KratosID != id {
+			log.Debug("KRATOS ID: ", id)
+			if err := srv.Db.Conn.Exec("UPDATE users SET kratos_id = ? WHERE id = 1", id).Error; err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func (srv *Server) setupDefaultAdminInKratos() error {
+	user, err := srv.Db.GetUserByID(1)
+	if err != nil {
+		database.SeedDefaultData(srv.Db.Conn, false)
+		// rerun after seeding the default user
+	}
+	if user.KratosID != "" {
+		// double check that the stored kratos ID is valid
+		if err := srv.validateUserIDKratos(user.KratosID); err != nil {
+			// if not, it's a freshly migrated database
+			return srv.handleCreateUserKratos(user.Username, "ChangeMe!")
+		}
+	}
+	return srv.syncKratosAdminDB()
+}
+
+func (srv *Server) getFacilityID(r *http.Request) uint {
+	return r.Context().Value(ClaimsKey).(*Claims).FacilityID
 }
 
 type TestClaims string
@@ -130,7 +189,8 @@ func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
 		testClaims := &Claims{
 			UserID:        1,
 			PasswordReset: false,
-			Role:          "admin",
+			Role:          models.Admin,
+			FacilityID:    1,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
@@ -146,9 +206,10 @@ func (srv *Server) GetUserID(r *http.Request) uint {
 func (srv *Server) TestAsUser(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		testClaims := &Claims{
-			UserID:        2,
-			Role:          "student",
+			UserID:        4,
+			Role:          models.Student,
 			PasswordReset: false,
+			FacilityID:    1,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
 		h.ServeHTTP(w, r.WithContext(ctx))

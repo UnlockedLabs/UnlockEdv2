@@ -29,7 +29,7 @@ serve:
         - Access-Control-Allow-Origin
     base_url: http://127.0.0.1:4433/
   admin:
-    base_url: http://kratos:4434/
+    base_url: http://127.0.0.1:4434/
 
 oauth2_provider:
   url: http://hydra:4445
@@ -82,7 +82,7 @@ selfservice:
 
     logout:
       after:
-        default_browser_return_url: http://127.0.0.1:4455/login
+        default_browser_return_url: http://127.0.0.1/login
 
     login:
       ui_url: http://127.0.0.1/login

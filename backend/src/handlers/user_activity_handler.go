@@ -11,7 +11,7 @@ import (
 )
 
 func (srv *Server) registerUserActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/activity-log", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
+	srv.Mux.Handle("GET /api/users/activity-log", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
 	srv.Mux.Handle("GET /api/users/{id}/activity-log", srv.applyMiddleware(http.HandlerFunc(srv.handleGetUserActivityByID)))
 }
 

@@ -1,21 +1,8 @@
+import { PaginationMeta } from "@/common";
 import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
 } from "@heroicons/react/24/solid";
-
-interface PaginationMeta {
-  current_page: number;
-  total: number;
-  from: number;
-  to: number;
-  last_page: number;
-  per_page: number;
-}
-
-export interface PaginatedData<T> {
-  data: Array<T>;
-  meta: PaginationMeta;
-}
 
 export default function Pagination({
   meta,

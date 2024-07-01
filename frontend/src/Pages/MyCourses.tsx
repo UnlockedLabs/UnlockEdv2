@@ -25,18 +25,20 @@ enum TabType {
 // TO DO: go back and fix all "key" values that are mapped and make them intentional
 
 export default function MyCourses() {
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
-  const {data, mutate} = useSWR<ServerResponse<Program>>(`/api/users/${user.id}/programs${activeTab !== TabType.All ? `?tags=${activeTab}`: ""}`)
+  const { data, mutate } = useSWR<ServerResponse<Program>>(
+    `/api/users/${user.id}/programs${activeTab !== TabType.All ? `?tags=${activeTab}` : ""}`,
+  );
 
   useEffect(() => {
     console.log(data);
   }, [data]);
 
-  function callMutate(){
-    console.log('called')
+  function callMutate() {
+    console.log("called");
     mutate();
   }
 
@@ -75,7 +77,9 @@ export default function MyCourses() {
           <ToggleView activeView={activeView} setActiveView={setActiveView} />
         </div>
         {/* render on gallery or list view */}
-        <div className={`grid mt-8 ${ activeView == ViewType.Grid ? "grid-cols-4 gap-6": "gap-4"}`}>
+        <div
+          className={`grid mt-8 ${activeView == ViewType.Grid ? "grid-cols-4 gap-6" : "gap-4"}`}
+        >
           {data?.programs?.map((course: any, index: number) => {
             return (
               <EnrolledCourseCard

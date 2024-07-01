@@ -3,6 +3,7 @@ export enum UserRole {
   Student = "student",
 }
 
+export const DEFAULT_ADMIN_ID = 1;
 export interface User {
   id: number;
   name_first: string;
@@ -13,8 +14,38 @@ export interface User {
   [key: string]: any;
 }
 
+export interface UserWithMappings {
+  User: User;
+  logins: Array<ProviderMapping>;
+}
+
+export interface ProviderUser {
+  username: string;
+  name_last: string;
+  name_first: string;
+  email: string;
+  external_user_id: string;
+  external_username: string;
+}
+
+export interface UserImports {
+  username: string;
+  temp_password: string;
+  error?: string;
+}
+
+export interface ProviderMapping {
+  id: number;
+  provider_platform_id: number;
+  user_id: number;
+  external_user_id: string;
+  external_login_id: string;
+  external_username: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface PaginatedResponse<T> {
-  next: string;
   message: string;
   data: Array<T>;
   meta: PaginationMeta;

@@ -69,13 +69,15 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		log.Error(r, err)
+		return
 	}
 	response := models.Resource[models.ClientResponse]{}
 	resp := models.ClientResponse{
-		ClientID:      client.ClientID,
-		ClientSecret:  client.ClientSecret,
-		AuthEndpoint:  os.Getenv("HYDRA_PUBLIC_URL") + "/oauth2/auth",
-		TokenEndpoint: os.Getenv("HYDRA_PUBLIC_URL") + "/oauth2/token",
+		ClientID:     client.ClientID,
+		ClientSecret: client.ClientSecret,
+		// our rev proxy will always redirect these requests, so we use app_url
+		AuthEndpoint:  os.Getenv("APP_URL") + "/oauth2/auth",
+		TokenEndpoint: os.Getenv("APP_URL") + "/oauth2/token",
 		Scopes:        client.Scopes,
 	}
 	response.Data = append(response.Data, resp)

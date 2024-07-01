@@ -83,6 +83,15 @@ func (user *User) HashPassword() error {
 	return nil
 }
 
+func (user *User) GetExternalIDFromProvider(db *gorm.DB, providerId uint) (string, error) {
+	var mapping ProviderUserMapping
+	err := db.Model(ProviderUserMapping{}).Where("provider_platform_id = ?", providerId).Where("user_id = ?", user.ID).Find(&mapping).Error
+	if err != nil {
+		return "", err
+	}
+	return mapping.ExternalUserID, nil
+}
+
 /**
 * This function is called on a user object when it's fresh out of the database, so
 * the password is already hashed and checked against the input string
