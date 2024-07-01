@@ -19,29 +19,36 @@ func (srv *Server) registerFacilitiesRoutes() {
 
 func (srv *Server) HandleIndexFacilities(w http.ResponseWriter, r *http.Request) {
 	log.Info("Handling facility index request")
+	fields := log.Fields{"handler": "HandleIndexFacilities"}
 	facilities, err := srv.Db.GetAllFacilities()
 	if err != nil {
+		fields["error"] = err
+		log.WithFields(fields).Errorln("error fetching facilities from database")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	response := models.Resource[models.Facility]{
-		Data: facilities,
+		Message: "facilities fetched successfully",
+		Data:    facilities,
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		log.WithFields(fields).Error("error writing response")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "HandleShowFacility"}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Error("GET Provider handler Error: ", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+	fields["facility_id"] = id
 	facility, err := srv.Db.GetFacilityByID(id)
 	if err != nil {
-		log.Error("Error: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.WithFields(fields).Error("Error: ", err.Error())
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -50,6 +57,7 @@ func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Data = append(response.Data, *facility)
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
+		log.WithFields(fields).Error("error writing response")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -60,12 +68,12 @@ func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request) 
 	err := json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
 		fields["error"] = err
-		log.Error("Error decoding request body")
+		log.WithFields(fields).Error("Error decoding request body")
 		http.Error(w, "unable to decode request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
-	newFacility, err := srv.Db.CreateFacility(&facility.Name)
+	newFacility, err := srv.Db.CreateFacility(facility.Name)
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error creating facility")
@@ -93,22 +101,24 @@ func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	fields["facilty_id"] = id
-	var facility models.Facility
+	facility := make(map[string]interface{}, 0)
 	err = json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error decoding request body")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "error decoding request body"+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
-	if err := srv.Db.UpdateFacility(&facility.Name, uint(id)); err != nil {
-		log.Error("Error updating provider platform: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	toReturn, err := srv.Db.UpdateFacility(facility["name"].(string), uint(id))
+	if err != nil {
+		fields["error"] = err
+		log.WithFields(fields).Error("Error updating facility")
+		http.Error(w, "facilty couldn't be updated in the database: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	response := models.Resource[models.Facility]{
-		Data:    []models.Facility{facility},
+		Data:    []models.Facility{*toReturn},
 		Message: "facility successfully updated",
 	}
 	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
@@ -123,13 +133,13 @@ func (srv *Server) HandleDeleteFacility(w http.ResponseWriter, r *http.Request) 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		fields["error"] = err
-		log.WithFields(fields).Error("DELETE Provider handler Error")
+		log.WithFields(fields).Error("error parsing value from path")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err = srv.Db.DeleteProviderPlatform(id); err != nil {
+	if err = srv.Db.DeleteFacility(id); err != nil {
 		fields["error"] = err
-		log.WithFields(fields).Error("Error deleting provider platform")
+		log.WithFields(fields).Error("Error deleting facility")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

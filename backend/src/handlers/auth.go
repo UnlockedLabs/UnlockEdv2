@@ -113,9 +113,13 @@ func (srv *Server) canViewUserData(r *http.Request) bool {
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims := r.Context().Value(ClaimsKey).(*Claims)
+		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		if !ok {
+			http.Error(w, "Unauthorized - no claims", http.StatusUnauthorized)
+			return
+		}
 		if claims.Role != models.Admin {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "Unauthorized - not admin", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(r.Context()))
