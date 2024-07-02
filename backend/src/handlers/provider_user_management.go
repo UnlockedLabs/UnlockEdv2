@@ -126,7 +126,6 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			continue
 		}
 		userResponse.TempPassword = created.Password
-		// if we aren't in a testing environment, register the user as an Identity with Kratos
 		if !srv.isTesting(r) {
 			if err := srv.handleCreateUserKratos(created.Username, created.Password); err != nil {
 				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
