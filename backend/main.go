@@ -24,6 +24,7 @@ func main() {
 		port = "8080"
 	}
 	testing := (env == "testing")
+
 	initLogging(env, file)
 	newServer := server.NewServer(testing)
 	fmt.Println("Starting server on :", port)

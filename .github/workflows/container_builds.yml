@@ -42,12 +42,12 @@ jobs:
       - name: conditionally start jobs
         id: determine-changes
         run: |
-          git diff --name-only HEAD^ HEAD > changed_files.txt
-          if [[ ${{ matrix.service }} == 'frontend' && $(grep -E '^frontend/' changed_files.txt | wc -l) -gt 0 ]]; then
+          git diff --cached --name-only --diff-filter=ACMRTUXB > changed_files
+          if [[ ${{ matrix.service }} == 'frontend' && $(grep -E '^frontend/' changed_files | wc -l) -gt 0 ]]; then
             echo "frontend changed=true" >> $GITHUB_ENV
-          elif [[ ${{ matrix.service }} == 'backend' && $(grep -E '^backend/' changed_files.txt | wc -l) -gt 0 ]]; then
+          elif [[ ${{ matrix.service }} == 'backend' && $(grep -E '^backend/' changed_files | wc -l) -gt 0 ]]; then
             echo "backend changed=true" >> $GITHUB_ENV
-          elif [[ ${{ matrix.service }} == 'provider-middleware' && $(grep -E '^provider-middleware/' changed_files.txt | wc -l) -gt 0 ]]; then
+          elif [[ ${{ matrix.service }} == 'provider-middleware' && $(grep -E '^provider-middleware/' changed_files | wc -l) -gt 0 ]]; then
             echo "provider-middleware changed=true" >> $GITHUB_ENV
           fi
 
