@@ -42,7 +42,7 @@ jobs:
       - name: conditionally start jobs
         id: determine-changes
         run: |
-          git diff HEAD~ HEAD --cached --name-only --diff-filter=ACMRTUXB > changed_files
+          git diff refs/remotes/origin/main --cached --name-only > changed_files
           if [[ ${{ matrix.service }} == 'frontend' && $(grep -E '^frontend/' changed_files | wc -l) -gt 0 ]]; then
             echo "frontend changed=true" >> $GITHUB_ENV
           elif [[ ${{ matrix.service }} == 'backend' && $(grep -E '^backend/' changed_files | wc -l) -gt 0 ]]; then

@@ -228,7 +228,6 @@ func TestUpdateUser(t *testing.T) {
 			t.Errorf("failed to create user")
 		}
 		id := created.ID
-		fmt.Printf("CREATED ID: %d", id)
 		form := make(map[string]string)
 		form["username"] = "testUpdate"
 		form["name_first"] = "testUpdate"
