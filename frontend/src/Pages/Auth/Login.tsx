@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import LoginForm from "../../Components/forms/LoginForm";
-import GuestLayout from "../../Layouts/GuestLayout";
+import LoginForm from "@/Components/forms/LoginForm";
+import GuestLayout from "@/Layouts/GuestLayout";
 export default function Login({ status }: { status?: string }) {
   useEffect(() => {
     // if there is no ?flow= query parameter, redirect to /self-service/login/browser

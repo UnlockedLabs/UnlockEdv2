@@ -15,6 +15,7 @@ import MyCourses from "./Pages/MyCourses";
 import MyProgress from "./Pages/MyProgress";
 import CourseCatalog from "./Pages/CourseCatalog";
 import ProviderUserManagement from "./Pages/ProviderUserManagement";
+import Error from "./Pages/Error";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -22,45 +23,74 @@ function WithAuth({ children }) {
 
 export default function App() {
   const router = createBrowserRouter([
-    { path: "/", element: <Welcome /> },
-    { path: "/login", element: <Login /> },
-    { path: "/dashboard", element: WithAuth({ children: <Dashboard /> }) },
-    { path: "/users", element: WithAuth({ children: <Users /> }) },
+    {
+      path: "/",
+      element: <Welcome />,
+      errorElement: <Error />,
+    },
+    {
+      path: "/login",
+      element: <Login />,
+      errorElement: <Error />,
+    },
+    {
+      path: "/dashboard",
+      element: WithAuth({ children: <Dashboard /> }),
+      errorElement: <Error />,
+    },
+    {
+      path: "/users",
+      element: WithAuth({ children: <Users /> }),
+      errorElement: <Error />,
+    },
     {
       path: "/left-menu-management",
       element: WithAuth({ children: <LeftMenuManagement /> }),
+      errorElement: <Error />,
     },
     {
       path: "/user-activity",
       element: WithAuth({ children: <UserActivity /> }),
+      errorElement: <Error />,
     },
     {
       path: "/reset-password",
       element: WithAuth({ children: <ResetPassword /> }),
+      errorElement: <Error />,
     },
     {
       path: "/consent",
       element: WithAuth({ children: <Consent /> }),
+      errorElement: <Error />,
     },
     {
       path: "/provider-platform-management",
       element: WithAuth({ children: <ProviderPlatformManagement /> }),
+      errorElement: <Error />,
     },
     {
       path: "/my-courses",
       element: WithAuth({ children: <MyCourses /> }),
+      errorElement: <Error />,
     },
     {
       path: "/my-progress",
       element: WithAuth({ children: <MyProgress /> }),
+      errorElement: <Error />,
     },
     {
       path: "/course-catalog",
       element: WithAuth({ children: <CourseCatalog /> }),
+      errorElement: <Error />,
     },
     {
       path: "/provider-users/:providerId",
       element: WithAuth({ children: <ProviderUserManagement /> }),
+      errorElement: <Error />,
+    },
+    {
+      path: "/error",
+      element: <Error />,
     },
   ]);
 

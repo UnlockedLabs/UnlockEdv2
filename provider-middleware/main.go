@@ -48,7 +48,7 @@ func main() {
 	}
 	dsn := os.Getenv("APP_DSN")
 	if dsn == "" {
-		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
 			os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 	}
 	db, err := gorm.Open(postgres.New(postgres.Config{
@@ -59,6 +59,7 @@ func main() {
 	}
 	log.Println("Connected to the PostgreSQL database")
 	token := os.Getenv("PROVIDER_SERVICE_KEY")
+	log.Println("TOKEN: " + token)
 	initLogging()
 	log.Debugf("loggin initiated with level %v", log.GetLevel())
 	handler := newServiceHandler(token, db)
@@ -92,6 +93,8 @@ func initLogging() {
 		switch env {
 		case "prod", "production":
 			log.SetLevel(log.InfoLevel)
+		case "dev", "development":
+			log.SetLevel(log.TraceLevel)
 		default:
 			log.SetLevel(log.DebugLevel)
 		}
