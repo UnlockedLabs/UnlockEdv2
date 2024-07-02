@@ -54,6 +54,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 			if claims.PasswordReset && !isAuthRoute(r) {
 				http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)

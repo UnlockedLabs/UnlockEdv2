@@ -26,7 +26,6 @@ func main() {
 	testing := (env == "testing")
 	initLogging(env, file)
 	newServer := server.NewServer(testing)
-	log.Info("Starting server on :", port)
 	fmt.Println("Starting server on :", port)
 	log.Info("LOG_LEVEL: ", log.GetLevel())
 	if err := http.ListenAndServe(":8080", server.CorsMiddleware(newServer.Mux)); err != nil {

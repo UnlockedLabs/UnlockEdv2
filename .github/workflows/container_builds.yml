@@ -1,0 +1,71 @@
+name: Container ECR builds
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "provider-middleware/*"
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [frontend, backend, provider-middleware]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          aws-region: us-west-2
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          region: us-west-2
+
+      - name: conditionally start jobs
+        id: determine-changes
+        run: |
+          git diff --name-only HEAD^ HEAD > changed_files.txt
+          if [[ ${{ matrix.service }} == 'frontend' && $(grep -E '^frontend/' changed_files.txt | wc -l) -gt 0 ]]; then
+            echo "frontend changed=true" >> $GITHUB_ENV
+          elif [[ ${{ matrix.service }} == 'backend' && $(grep -E '^backend/' changed_files.txt | wc -l) -gt 0 ]]; then
+            echo "backend changed=true" >> $GITHUB_ENV
+          elif [[ ${{ matrix.service }} == 'provider-middleware' && $(grep -E '^provider-middleware/' changed_files.txt | wc -l) -gt 0 ]]; then
+            echo "provider-middleware changed=true" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push frontend image
+        if: ${{ matrix.service == 'frontend' && env.frontend == 'true' }}
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker buildx build --platform linux/amd64 -t $REGISTRY/frontend:latest -f frontend/Dockerfile .
+          docker push $REGISTRY/frontend:latest
+
+      - name: Build and push backend image
+        if: ${{ matrix.service == 'backend' && env.backend == 'true' }}
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker buildx build --platform linux/amd64 -t $REGISTRY/unlockedv2:latest -f backend/Dockerfile .
+          docker push $REGISTRY/unlockedv2:latest
+
+      - name: Build and push middleware image
+        if: ${{ matrix.service == 'provider-middleware' && env.provider-middleware == 'true' }}
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker buildx build --platform linux/amd64 -t $REGISTRY/provider_middleware:latest -f provider-middleware/Dockerfile .
+          docker push $REGISTRY/provider_middleware:latest
