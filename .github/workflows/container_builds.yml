@@ -42,18 +42,13 @@ jobs:
       - name: conditionally start jobs
         id: determine-changes
         run: |
-          git diff refs/remotes/origin/main --cached --name-only > changed_files
-          cat changed_files
-          if [[ ${{ matrix.service }} == 'frontend' && $(grep -E '^frontend/' changed_files | wc -l) -gt 0 ]]; then
-            echo "FRONTEND_CHANGED=true" >> $GITHUB_ENV
-          elif [[ ${{ matrix.service }} == 'backend' && $(grep -E '^backend/' changed_files | wc -l) -gt 0 ]]; then
-            echo "BACKEND_CHANGED=true" >> $GITHUB_ENV
-          elif [[ ${{ matrix.service }} == 'provider-middleware' && $(grep -E '^provider-middleware/' changed_files | wc -l) -gt 0 ]]; then
-            echo "PROVIDER_MIDDLEWARE_CHANGED=true" >> $GITHUB_ENV
-          fi
+          git diff --name-only refs/remotes/origin/main > changed_files
+          echo "FRONTEND_CHANGED=$(grep '^frontend/' changed_files | wc -l)" >> $GITHUB_ENV
+          echo "BACKEND_CHANGED=$(grep '^backend/' changed_files | wc -l)" >> $GITHUB_ENV
+          echo "PROVIDER_MIDDLEWARE_CHANGED=$(grep '^provider-middleware/' changed_files | wc -l)" >> $GITHUB_ENV
 
       - name: Build and push frontend image
-        if: ${{ matrix.service == 'frontend' && env.FRONTEND_CHANGED == 'true' }}
+        if: ${{ matrix.service == 'frontend' && env.FRONTEND_CHANGED > 0 }}
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
@@ -61,7 +56,7 @@ jobs:
           docker push $REGISTRY/frontend:latest
 
       - name: Build and push backend image
-        if: ${{ matrix.service == 'backend' && env.BACKEND_CHANGED == 'true' }}
+        if: ${{ matrix.service == 'backend' && env.BACKEND_CHANGED > 0 }}
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
@@ -69,7 +64,7 @@ jobs:
           docker push $REGISTRY/unlockedv2:latest
 
       - name: Build and push middleware image
-        if: ${{ matrix.service == 'provider-middleware' && env.PROVIDER_MIDDLEWARE_CHANGED == 'true' }}
+        if: ${{ matrix.service == 'provider-middleware' && env.PROVIDER_MIDDLEWARE_CHANGED > 0 }}
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
