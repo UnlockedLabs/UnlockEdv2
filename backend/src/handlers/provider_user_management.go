@@ -84,6 +84,7 @@ type ImportUserResponse struct {
 // already in the correct format) and creates a new user in the database for each of them, as well as
 // creating a mapping for each user, and creating a login for each user in the provider
 func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Request) {
+	facilityId := srv.getFacilityID(r)
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid provider platform ID")
@@ -108,10 +109,11 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 	var response models.Resource[ImportUserResponse]
 	for _, user := range users.Users {
 		newUser := models.User{
-			Username:  user.Username,
-			Email:     user.Email,
-			NameFirst: user.NameFirst,
-			NameLast:  user.NameLast,
+			Username:   user.Username,
+			Email:      user.Email,
+			NameFirst:  user.NameFirst,
+			NameLast:   user.NameLast,
+			FacilityID: facilityId,
 		}
 		userResponse := ImportUserResponse{
 			Username: newUser.Username,
@@ -124,7 +126,6 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			continue
 		}
 		userResponse.TempPassword = created.Password
-		// if we aren't in a testing environment, register the user as an Identity with Kratos
 		if !srv.isTesting(r) {
 			if err := srv.handleCreateUserKratos(created.Username, created.Password); err != nil {
 				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {

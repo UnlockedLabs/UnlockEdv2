@@ -38,6 +38,7 @@ func MigrateFresh(db *gorm.DB) {
 			log.Printf("Failed to drop table: %v", err)
 		}
 	}
+
 	storedProc := `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
     _user_id INT,
     _program_id INT,

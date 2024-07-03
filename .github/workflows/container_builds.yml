@@ -1,0 +1,79 @@
+name: Container ECR builds
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - "backend/**"
+      - "provider-middleware/*"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  setup-env:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_changes: ${{ steps.frontend_changes.outputs.changed }}
+      backend_changes: ${{ steps.backend_changes.outputs.changed }}
+      middleware_changes: ${{ steps.middleware_changes.outputs.changed }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 3
+
+      - id: frontend_changes
+        run: |
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^frontend/' | wc -l)" >> $GITHUB_OUTPUT
+      - id: backend_changes
+        run: |
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^backend/' | wc -l)" >> $GITHUB_OUTPUT
+      - id: middleware_changes
+        run: |
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^provider-middleware/' | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Debug outputs
+        run: |
+          echo "Frontend changes: ${{ steps.frontend_changes.outputs.changed }}"
+          echo "Backend changes: ${{ steps.backend_changes.outputs.changed }}"
+          echo "Middleware changes: ${{ steps.middleware_changes.outputs.changed }}"
+
+  build-and-push:
+    needs: setup-env
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          aws-region: us-west-2
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push frontend image
+        if: ${{ needs.setup-env.outputs.frontend_changes != '0' }}
+        run: |
+          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/frontend:latest -f frontend/Dockerfile .
+          docker push ${{ steps.login-ecr.outputs.registry }}/frontend:latest
+
+      - name: Build and push backend image
+        if: ${{ needs.setup-env.outputs.backend_changes != '0' }}
+        run: |
+          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest -f backend/Dockerfile .
+          docker push ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest
+
+      - name: Build and push middleware image
+        if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
+        run: |
+          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest -f provider-middleware/Dockerfile .
+          docker push ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest
