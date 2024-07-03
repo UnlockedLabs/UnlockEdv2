@@ -33,27 +33,33 @@ type CachedProviderUsers struct {
 var cachedProviderUsers = make(map[uint]CachedProviderUsers)
 
 func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "HandleImportUsers", "file": "actions"}
 	service, err := srv.getService(r)
 	if err != nil {
-		log.Errorf("Error getting provider service: %v", err)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("Error getting provider service: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	users, err := service.GetUsers()
 	if err != nil {
-		log.Error("Error getting provider service GetUsers action:" + err.Error())
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error getting provider service GetUsers action:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(service.ProviderPlatformID))
 	if err != nil {
-		log.Errorf("Error getting provider platform by id: %v", err)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("Error getting provider platform by id: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	for _, user := range users {
 		// if this user was parsed improperly (happens randomly, unknown as to why), skip
 		if user.Username == "" && user.Email == "" && user.NameLast == "" {
+			fields["error"] = err.Error()
+			log.WithFields(fields).Debug("received user with null values from provider, skipping")
 			continue
 		}
 		newUser := models.User{
@@ -69,8 +75,9 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		if !srv.isTesting(r) {
 			if err := srv.handleCreateUserKratos(created.Username, created.Password); err != nil {
-				log.Printf("Error creating user in kratos: %v", err)
-				// FIXME: Error handling if we fail
+				fields["error"] = err.Error()
+				log.WithFields(fields).Errorf("Error creating user in kratos: %v", err)
+				// FIXME: Error handling if we fail/handle atomicity
 			}
 		}
 		mapping := models.ProviderUserMapping{
@@ -80,6 +87,8 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 			ExternalUserID:     user.ExternalUserID,
 		}
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
+			fields["error"] = err.Error()
+			log.WithFields(fields).Errorf("error creating a mapping between user %v and provider %d", user, provider.ID)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -95,7 +104,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 
 func paginateUsers(users []models.ImportUser, page, perPage int) (int, []models.ImportUser) {
 	totalUsers := len(users)
-	log.Infof("total of %d uses found to import, returning %d", totalUsers, perPage)
+	log.Debugf("total of %d uses found to import, returning %d", totalUsers, perPage)
 	offset := (page - 1) * perPage
 	if offset > totalUsers {
 		return totalUsers, []models.ImportUser{}
@@ -125,7 +134,11 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	if users, ok := cachedProviderUsers[uint(service.ProviderPlatformID)]; ok {
 		if users.LastUpdated.Add(12 * time.Hour).After(time.Now()) {
 			total, toReturn := paginateUsers(users.Users, page, perPage)
-			response := models.PaginatedResource[models.ImportUser]{Data: toReturn, Message: "Successfully fetched users from provider", Meta: models.NewPaginationInfo(page, perPage, int64(total))}
+			response := models.PaginatedResource[models.ImportUser]{
+				Data:    toReturn,
+				Message: "Successfully fetched users from provider",
+				Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
+			}
 			if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
 				log.Error("Error writing response:" + err.Error())
 				srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -249,4 +262,5 @@ func (srv *Server) HandleImportActivity(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 	}
+	w.WriteHeader(http.StatusOK)
 }
