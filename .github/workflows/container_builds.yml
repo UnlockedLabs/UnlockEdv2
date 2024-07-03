@@ -47,10 +47,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubActionsRole
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/PTHorpe92GHActionsRole
           aws-region: us-west-2
 
       - name: Log in to Amazon ECR
@@ -63,17 +66,34 @@ jobs:
       - name: Build and push frontend image
         if: ${{ needs.setup-env.outputs.frontend_changes != '0' }}
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/frontend:latest -f frontend/Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/frontend:latest
+          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/frontend:latest -f frontend/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/frontend:latest
 
       - name: Build and push backend image
         if: ${{ needs.setup-env.outputs.backend_changes != '0' }}
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest -f backend/Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest
+          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest -f backend/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest
 
       - name: Build and push middleware image
         if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest -f provider-middleware/Dockerfile .
-          docker push ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest
+          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest -f provider-middleware/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest
+
+  deploy-to-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v1
+        with:
+          version: v1.21.0
+
+      - name: Set up Kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+
+      - name: Update Kubernetes Deployment
+        run: |
+          kubectl rollout restart
+      - name: Verify Deployment
+        run: |
+          kubectl rollout deployment

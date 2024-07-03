@@ -15,35 +15,41 @@ func (srv *Server) registerDashboardRoutes() {
 }
 
 func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "HandleStudentDashboard"}
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Errorf("Error parsing user ID: %v", err)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("Error parsing user ID: %v", err)
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId)
 	if err != nil {
-		log.Errorf("Error getting user dashboard info: %v", err)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("Error getting user dashboard info: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, studentDashboard); err != nil {
-		log.Errorf("user dashboard endpoint: error writing response: %v", err)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("user dashboard endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
 
 func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "HandleAdminDashboard"}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	adminDashboard, err := srv.Db.GetAdminDashboardInfo(claims.FacilityID)
 	if err != nil {
-		log.Errorf("Error getting user dashboard info: %v", err)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("Error getting user dashboard info: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if err := srv.WriteResponse(w, http.StatusOK, adminDashboard); err != nil {
-		log.Errorf("user dashboard endpoint: error writing response: %v", err)
+		log.WithFields(fields).Errorf("user dashboard endpoint: error writing response: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}

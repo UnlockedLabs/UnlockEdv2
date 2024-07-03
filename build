@@ -3,15 +3,15 @@
 help="Usage: ./build prod | dev [-f] | migrate-fresh | seed"
 
 if [[ "$1" == "prod" ]]; then
-	docker compose -f docker-compose.yml -f config/docker-compose.prod.yml up --build
+	docker compose -f docker-compose.yml -f config/docker-compose.prod.yml up --build --force-recreate
 	exit 0
 fi
 
 if [[ "$1" == "dev" ]]; then
 	if [[ "$2" == "-f" ]]; then
-		docker compose -f docker-compose.yml -f config/docker-compose.fe-dev.yml up --build
+		docker compose -f docker-compose.yml -f config/docker-compose.fe-dev.yml up --build --force-recreate
 	else
-		docker compose up --build
+		docker compose up --build --force-recreate
 	fi
 fi
 
