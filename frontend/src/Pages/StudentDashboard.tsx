@@ -4,20 +4,11 @@ import NotificationsSideBar from "@/Components/NotificationsSideBar";
 import { useAuth } from "@/AuthContext";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
+import convertSeconds from "@/Components/ConvertSeconds";
 
 export default function StudentDashboard(){
     const { user } = useAuth();
-    const {data, error, isLoading} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/dashboard`)
-
-    const convertSeconds = (secs: number) => {
-      const hours = Math.floor(secs / 3600);
-      const minutes = Math.floor((secs % 3600) / 60);
-      if (hours) {
-        return `${hours} hrs`;
-      } else {
-        return `${minutes} min`;
-      }
-    };
+    const {data, error, isLoading} = useSWR<ServerResponse<any>>(`/api/users/${user.id}/student-dashboard`)
   
     return(
     <div className="flex">
@@ -56,6 +47,7 @@ export default function StudentDashboard(){
                   <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
                     {!error && !isLoading &&
                     (data?.enrollments?.map((course: any, index: number) => {
+                      const totalTime = convertSeconds(course.total_activity_time)
                       return (
                         <tr
                           className="flex flex-row justify-between mr-3"
@@ -63,7 +55,7 @@ export default function StudentDashboard(){
                         >
                           <td className="body-small">{course.name}</td>
                           <td className="body-small">
-                            {convertSeconds(course.total_time)}
+                            {totalTime.number + " " + totalTime.label}
                           </td>
                         </tr>
                       );

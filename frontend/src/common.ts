@@ -142,3 +142,27 @@ export enum ProviderPlatformType {
   CANVAS_OSS = "canvas_oss",
   KOLIBRI = "kolibri",
 }
+
+export interface AdminDashboardJoin {
+  MonthlyActivity: RecentActivity[];
+  WeeklyActiveUsers: number;
+  AvgDailyActivity: number;
+  TotalWeeklyActivity: number;
+  ProgramMilestones: ProgramMilestones[];
+  TopProgramActivity: ProgramActivity[];
+}
+
+export interface ProgramMilestones {
+  alt_name: string;
+  milestones: number;
+}
+
+export interface ProgramActivity {
+  program_name: string;
+  hours_engaged: number;
+}
+
+export interface RecentActivity {
+  date: string;
+  delta: number;
+}

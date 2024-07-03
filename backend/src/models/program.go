@@ -31,8 +31,8 @@ func (Program) TableName() string {
 }
 
 type RecentActivity struct {
-	Date  string `json:"date"`
-	Delta uint   `json:"delta"`
+	Date  string  `json:"date"`
+	Delta float32 `json:"delta"`
 }
 
 type CurrentEnrollment struct {
@@ -73,12 +73,13 @@ type ImportProgram struct {
 //ADMIN STRUCTS
 
 type AdminDashboardJoin struct {
-	MonthlyActivity     []RecentActivity    `json:"monthly_activity"`
-	WeeklyActiveUsers   uint                `json:"weekly_active_users"`
-	AvgDailyActivity    uint                `json:"avg_daily_activity"`
-	TotalWeeklyActivity uint                `json:"total_weekly_activity"`
-	ProgramMilestones   []ProgramMilestones `json:"program_milestones"`
-	TopProgramActivity  []ProgramActivity   `json:"top_program_activity"`
+	FacilityName        string               `json:"facility_name"`
+	MonthlyActivity     []RecentActivity     `json:"monthly_activity"`
+	WeeklyActiveUsers   uint                 `json:"weekly_active_users"`
+	AvgDailyActivity    uint                 `json:"avg_daily_activity"`
+	TotalWeeklyActivity uint                 `json:"total_weekly_activity"`
+	ProgramMilestones   [8]ProgramMilestones `json:"program_milestones"`
+	TopProgramActivity  [5]ProgramActivity   `json:"top_program_activity"`
 }
 
 type ProgramMilestones struct {
@@ -87,6 +88,7 @@ type ProgramMilestones struct {
 }
 
 type ProgramActivity struct {
-	ProgramName  string `json:"program_name"`
-	HoursEngaged int    `json:"hours_engaged"`
+	ProgramName  string  `json:"program_name"`
+	AltName      string  `json:"alt_name"`
+	HoursEngaged float32 `json:"hours_engaged"`
 }

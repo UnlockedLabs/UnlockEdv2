@@ -3,6 +3,7 @@ import { DropdownControl } from "./inputs/DropdownControl";
 import useSWR from "swr";
 import { useAuth } from "@/AuthContext";
 import { ServerResponse } from "@/common";
+import convertSeconds from "./ConvertSeconds";
 
 type ActivityMapData = {
   date: string;
@@ -191,19 +192,6 @@ function ActivityMapTable({
   let aggregateActivityTime = 0;
   let oldMonth, newMonth;
 
-  const convertSeconds = (secs: number) => {
-    const hours = Math.floor(secs / 3600);
-    const minutes = Math.floor((secs % 3600) / 60);
-    const seconds = Math.floor(secs % 60);
-    if (hours) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
-
   const getAggregateActivityTime = (time: number) => {
     if (error) {
       return "Error fetching activity data";
@@ -281,11 +269,12 @@ function ActivityMapTable({
       i < len &&
       dateCount.toISOString().split("T")[0] == data[i].date.split("T")[0]
     ) {
+      const activityTime = convertSeconds(Number(data[i].total_time))
       tableData.push(
         <td className="block" key={dateCount.getTime()}>
           <Node
             date={new Date(dateCount)}
-            activity_time={convertSeconds(Number(data[i].total_time))}
+            activity_time={activityTime.number + " " + activityTime.label}
             quartile={data[i].quartile}
           />
         </td>,

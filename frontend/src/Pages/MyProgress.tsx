@@ -7,6 +7,7 @@ import CompletePill from "@/Components/pill-labels/CompletePill";
 import InProgressPill from "@/Components/pill-labels/InProgressPill";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
+import convertSeconds from "@/Components/ConvertSeconds";
 
 export default function MyProgress() {
   const { user } = useAuth();
@@ -18,16 +19,6 @@ export default function MyProgress() {
   );
 
   console.log(data);
-
-  const convertSeconds = (secs: number) => {
-    const hours = Math.floor(secs / 3600);
-    const minutes = Math.floor((secs % 3600) / 60);
-    if (hours) {
-      return `${hours} hrs`;
-    } else {
-      return `${minutes} min`;
-    }
-  };
 
   return (
     <AuthenticatedLayout title="My Progress">
@@ -70,6 +61,7 @@ export default function MyProgress() {
                   </thead>
                   <tbody className="flex flex-col gap-4 mt-4">
                     {data.programs.map((course: any, index: number) => {
+                      const courseTotalTime = convertSeconds(course.total_time)
                       return (
                         <tr
                           className="flex flex-row justify-between body-small items-center"
@@ -85,7 +77,7 @@ export default function MyProgress() {
                           </td>
                           <td className="w-1/5">{course?.grade || "-"}</td>
                           <td className="w-1/5">
-                            {convertSeconds(course.total_time)}
+                            {courseTotalTime.number + " " + courseTotalTime.label}
                           </td>
                         </tr>
                       );
