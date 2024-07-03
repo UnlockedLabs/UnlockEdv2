@@ -38,10 +38,8 @@ func (db *DB) CreateFacility(name string) (*models.Facility, error) {
 }
 
 func (db *DB) UpdateFacility(name string, id uint) (*models.Facility, error) {
-	fields := log.Fields{"facility_id": id}
-	log.WithFields(fields).Infof("Updating facility")
 	if err := db.Conn.Model(models.Facility{}).Where("id = ?", fmt.Sprintf("%d", id)).Update("name", name).Error; err != nil {
-		log.WithFields(fields).Error("error updating facility name database/UpdateFacility")
+		log.WithField("facility_id", id).Error("error updating facility name database/UpdateFacility")
 		return nil, err
 	}
 	facility := &models.Facility{}
@@ -49,9 +47,5 @@ func (db *DB) UpdateFacility(name string, id uint) (*models.Facility, error) {
 }
 
 func (db *DB) DeleteFacility(id int) error {
-	log.Printf("Deleting facility with ID: %d", id)
-	if err := db.Conn.Delete(&models.Facility{}, "id = ?", fmt.Sprintf("%d", id)).Error; err != nil {
-		return err
-	}
-	return nil
+	return db.Conn.Delete(&models.Facility{}, "id = ?", fmt.Sprintf("%d", id)).Error
 }
