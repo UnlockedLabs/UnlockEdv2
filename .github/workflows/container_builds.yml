@@ -23,16 +23,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 3
 
       - id: frontend_changes
         run: |
-          echo "changed=$(git diff --name-only HEAD~ | grep '^frontend/' | wc -l)" >> $GITHUB_OUTPUT
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^frontend/' | wc -l)" >> $GITHUB_OUTPUT
       - id: backend_changes
         run: |
-          echo "changed=$(git diff --name-only HEAD~ | grep '^backend/' | wc -l)" >> $GITHUB_OUTPUT
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^backend/' | wc -l)" >> $GITHUB_OUTPUT
       - id: middleware_changes
         run: |
-          echo "changed=$(git diff --name-only HEAD~ | grep '^provider-middleware/' | wc -l)" >> $GITHUB_OUTPUT
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^provider-middleware/' | wc -l)" >> $GITHUB_OUTPUT
+
       - name: Debug outputs
         run: |
           echo "Frontend changes: ${{ steps.frontend_changes.outputs.changed }}"

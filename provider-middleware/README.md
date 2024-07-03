@@ -6,12 +6,16 @@ scheduled jobs for these tasks which it will pull off a queue.
 
 ### **API**
 
-_GET_ `/api/users?id=<provider_id>` - Returns all User objects from the specified provider, in the expected JSON format that the provider expects.
+Example:
+
+_GET_ `/api/users?id=<provider_id>`
+
+- Returns all User objects from the specified provider, in the expected JSON format that the provider expects.
 
 Some calls may do the database writes in the middleware, as returning the json to the backend is expensive and rarely necessary.
 Currently only the GetUsers method will return the json, for the client to map user accounts between product and platform.
 
-The middleware will never be exposed to the outside internet, so it can use the `/api` URI prefix (nginx won't forward client requests to it).
+The middleware will never be exposed to the outside internet, so it can use the `/api` URI prefix (just meaning nginx won't forward requests to the backend as it typically would because clients never make requests directly).
 
 `/api/<object>?id=<provider_id>` - Any call to this service will be made with the query parameter `id`. This initial call to the service, will allow the middleware to search for the provider in the database, and initiate the necessary session required to make further calls.
 
@@ -81,3 +85,9 @@ func (sh *ServiceHandler) initService(r *http.Request) (ProviderServiceInterface
  return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
 ```
+
+TODOS:
+
+Currently there is an in-memory cache on the backend for the `GetUsers` method, because there are so many that are returned. We will need a more efficient and production ready solution to this, most likely the same
+service that will host the job queue, can also contain a cache. We also will want to save the dates of the last requests made for things like `Activities`, and find a way to limit the amount of responses returned so
+we can process the data more efficiently.
