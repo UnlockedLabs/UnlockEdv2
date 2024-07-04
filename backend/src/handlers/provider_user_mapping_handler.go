@@ -24,10 +24,7 @@ func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, mappings); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, mappings)
 }
 
 func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *http.Request) {
@@ -43,10 +40,7 @@ func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *htt
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err = srv.WriteResponse(w, http.StatusCreated, mapping); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusCreated, mapping)
 }
 
 func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *http.Request) {
@@ -64,8 +58,5 @@ func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *htt
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err = srv.WriteResponse(w, http.StatusNoContent, nil); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusNoContent, nil)
 }

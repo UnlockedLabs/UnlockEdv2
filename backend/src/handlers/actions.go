@@ -139,11 +139,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 				Message: "Successfully fetched users from provider",
 				Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
 			}
-			if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-				log.Error("Error writing response:" + err.Error())
-				srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-				return
-			}
+			srv.WriteResponse(w, http.StatusOK, response)
 			return
 		} else {
 			delete(cachedProviderUsers, uint(service.ProviderPlatformID))
@@ -159,12 +155,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	total, responseUsers := paginateUsers(externalUsers, page, perPage)
 	cachedProviderUsers[uint(service.ProviderPlatformID)] = CachedProviderUsers{Users: externalUsers, LastUpdated: time.Now()}
 	response := models.PaginatedResource[models.ImportUser]{Data: responseUsers, Message: "Successfully fetched users from provider", Meta: models.NewPaginationInfo(page, perPage, int64(total))}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response:" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		delete(cachedProviderUsers, uint(service.ProviderPlatformID))
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) {
@@ -180,11 +171,7 @@ func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, models.Resource[interface{}]{Message: "Successfully imported courses"}); err != nil {
-		log.Error("Error writing response:" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, models.Resource[interface{}]{Message: "Successfully imported courses"})
 }
 
 func (srv *Server) HandleImportMilestones(w http.ResponseWriter, r *http.Request) {
@@ -210,10 +197,7 @@ func (srv *Server) HandleImportMilestones(w http.ResponseWriter, r *http.Request
 			}
 		}
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, models.Resource[interface{}]{Message: "Successfully imported Milestones"}); err != nil {
-		log.Error("Failed to write response")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "error writing response")
-	}
+	srv.WriteResponse(w, http.StatusOK, models.Resource[interface{}]{Message: "Successfully imported Milestones"})
 }
 
 func (srv *Server) getProgramsAndMappingsForProvider(providerID uint) ([]models.Program, []models.ProviderUserMapping, error) {

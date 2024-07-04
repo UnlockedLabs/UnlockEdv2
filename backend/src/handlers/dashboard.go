@@ -30,12 +30,7 @@ func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, studentDashboard); err != nil {
-		fields["error"] = err.Error()
-		log.WithFields(fields).Errorf("user dashboard endpoint: error writing response: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, studentDashboard)
 }
 
 func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
@@ -48,11 +43,7 @@ func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, adminDashboard); err != nil {
-		log.WithFields(fields).Errorf("user dashboard endpoint: error writing response: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, adminDashboard)
 }
 
 /**
@@ -76,11 +67,7 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, userCatalogue); err != nil {
-		log.Errorf("user catalogue endpoint: error writing response: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, userCatalogue)
 }
 
 func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
@@ -106,9 +93,5 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		"num_completed": numCompleted,
 		"total_time":    totalTime,
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Errorf("user programs endpoint: error writing response: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }

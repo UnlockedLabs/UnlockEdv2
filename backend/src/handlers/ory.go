@@ -20,9 +20,7 @@ func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *htt
 	if err := srv.deleteAllKratosIdentities(); err != nil {
 		http.Error(w, "error communicating with Ory Kratos", http.StatusInternalServerError)
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, "identities deleted successfully"); err != nil {
-		http.Error(w, "error writing response", http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, "identities deleted successfully")
 }
 
 func (srv *Server) deleteAllKratosIdentities() error {

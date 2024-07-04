@@ -55,10 +55,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		Data: users,
 		Meta: paginationData,
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string) {
@@ -84,11 +81,7 @@ func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 		Meta:    paginationData,
 		Message: "unmapped users returned successfully",
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Errorln("Error writing response: ", err)
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Request) {
@@ -108,10 +101,7 @@ func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Reque
 		Total:       total,
 	}
 	response := models.PaginatedResource[database.UserWithLogins]{Data: users, Meta: paginationData, Message: "users with mappings returned successfully"}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 /**
@@ -136,9 +126,7 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.Data = append(response.Data, *user)
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "error writing response")
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 type NewUserResponse struct {
@@ -192,9 +180,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Error creating user in kratos: %v", err)
 		}
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusCreated, response)
 }
 
 /**
@@ -251,9 +237,7 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	response := models.Resource[models.User]{}
 	response.Data = append(response.Data, *updatedUser)
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 type TempPasswordRequest struct {
@@ -261,9 +245,11 @@ type TempPasswordRequest struct {
 }
 
 func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "HandleResetStudentPassword"}
 	temp := TempPasswordRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
-		log.Error("Parsing form failed, using JSON", err.Error())
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Parsing form failed, using JSON", err.Error())
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -272,38 +258,35 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	newPass, err := srv.Db.AssignTempPasswordToUser(uint(temp.UserID))
 	if err != nil {
 		response["message"] = err.Error()
-		err = srv.WriteResponse(w, http.StatusInternalServerError, response)
-		if err != nil {
-			log.Error("Error writing response: ", err.Error())
-			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		}
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("error assigning password to user")
+		srv.WriteResponse(w, http.StatusInternalServerError, response)
 		return
 	}
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
 	if err != nil {
-		log.Errorf("Exising user not found, this should never happen: %v", temp.UserID)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorf("Exising user not found, this should never happen: %v", temp.UserID)
 		http.Error(w, "internal server error: existing user not found", http.StatusInternalServerError)
 		return
 	}
 	if user.KratosID == "" {
 		err := srv.handleCreateUserKratos(user.Username, newPass)
 		if err != nil {
-			log.Errorf("Error creating user in kratos: %v", err)
+			fields["error"] = err.Error()
+			log.WithFields(fields).Errorf("Error creating user in kratos: %v", err)
 			http.Error(w, "internal server error: error creating user in kratos", http.StatusInternalServerError)
 			return
 		}
 	} else {
 		if err := srv.handleUpdatePasswordKratos(user, newPass); err != nil {
-			log.Error("Error updating password for new kratos user")
+			fields["error"] = err.Error()
+			log.WithFields(fields).Error("Error updating password for new kratos user")
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: ", err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }

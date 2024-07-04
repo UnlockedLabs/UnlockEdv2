@@ -52,11 +52,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request) {

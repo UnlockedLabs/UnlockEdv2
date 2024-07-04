@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   setup-env:
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     runs-on: ubuntu-latest
     outputs:
       frontend_changes: ${{ steps.frontend_changes.outputs.changed }}
@@ -43,6 +44,7 @@ jobs:
           echo "Middleware changes: ${{ steps.middleware_changes.outputs.changed }}"
 
   build-and-push:
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
 
@@ -53,8 +55,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/PTHorpe92GHActionsRole
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
           aws-region: us-west-2
+          mask-aws-account-id: true
 
       - name: Log in to Amazon ECR
         id: login-ecr
@@ -79,6 +82,7 @@ jobs:
           docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest -f provider-middleware/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest
 
   deploy-to-staging:
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -89,7 +93,7 @@ jobs:
 
       - name: Set up Kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          echo "${{ secrets.KUBECTL_CONFIG }}" > $HOME/.kube/config
 
       - name: Update Kubernetes Deployment
         run: |

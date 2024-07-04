@@ -68,7 +68,7 @@ func (db *DB) AssignTempPasswordToUser(id uint) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if user.Role == "admin" {
+	if user.Role == models.Admin {
 		return "", errors.New("user not found, or user is admin and cannot have password reset")
 	}
 	psw := user.CreateTempPassword()

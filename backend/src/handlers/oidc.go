@@ -24,10 +24,7 @@ func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
 		Data:    clients,
 		Message: "Successfully fetched all registered clients",
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error(r, err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 type RegisterClientRequest struct {
@@ -86,8 +83,5 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 	} else {
 		response.Message = "Client successfully created"
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, response); err != nil {
-		log.Error(r, err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusCreated, response)
 }
