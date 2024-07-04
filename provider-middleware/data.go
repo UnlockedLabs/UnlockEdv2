@@ -169,20 +169,3 @@ type Role struct {
 	Kind       string `json:"kind"`
 	Id         string `json:"id"`
 }
-
-type UnlockEdImportMilestone struct {
-	UserID            int    `json:"user_id"`
-	ExternalProgramID string `json:"external_program_id"`
-	ExternalID        string `json:"external_id"`
-	Type              string `json:"type"`
-	IsCompleted       bool   `json:"is_completed"`
-}
-
-type UnlockEdImportActivity struct {
-	ExternalUserID    string `json:"external_user_id"`
-	ExternalProgramID string `json:"external_program_id"`
-	Type              string `json:"type"`
-	TotalTime         int    `json:"total_time"`
-	Date              string `json:"date"`
-	ExternalContentID string `json:"external_content_id"`
-}

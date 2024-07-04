@@ -55,15 +55,6 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 			Timeout: time.Second * 20,
 		},
 	}
-	// send initial test request with the provider ID, to see if the service exists
-	test := "/"
-	request := newService.Request(test)
-	resp, err := newService.Client.Do(request)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		// send the required information to the middleware to satisfy the request
-		log.WithFields(log.Fields{"error": err, "status": resp.StatusCode}).Error("Error creating provider service")
-		return nil, err
-	}
 	return &newService, nil
 }
 

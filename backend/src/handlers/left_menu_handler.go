@@ -24,11 +24,7 @@ func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 	response := models.Resource[models.LeftMenuLink]{
 		Data: links,
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request) {

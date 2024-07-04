@@ -51,10 +51,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 		Meta: paginationData,
 		Data: milestones,
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request) {
@@ -68,11 +65,7 @@ func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, miles); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusCreated, miles)
 }
 
 func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request) {
@@ -117,9 +110,5 @@ func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, toUpdate); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, toUpdate)
 }

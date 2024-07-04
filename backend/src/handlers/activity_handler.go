@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerActivityRoutes() {
@@ -38,19 +36,16 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
-	}); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		log.Error("Failed to write response", err)
-	}
+	})
 }
 
 /****
  * @Query Params:
  * ?year=: year (default last year)
  ****/
- func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
 	// Parse userID from path
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -79,14 +74,10 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Write response
-	if err = srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
-	}); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		log.Error("Failed to write response", err)
-	}
+	})
 }
-
 
 func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request) {
 	programID, err := strconv.Atoi(r.PathValue("id"))
@@ -100,13 +91,10 @@ func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Reque
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
 		"count":      count,
 		"activities": activities,
-	}); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		log.Error("Failed to write response", err)
-	}
+	})
 }
 
 func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) {
@@ -119,8 +107,5 @@ func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to create activity")
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, activity); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to write response")
-		log.Error("Failed to write response", err)
-	}
+	srv.WriteResponse(w, http.StatusOK, activity)
 }

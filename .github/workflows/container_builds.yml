@@ -1,12 +1,8 @@
-name: Container ECR builds
+name: Container ECR build + deploy
 on:
   push:
     branches:
       - main
-    paths:
-      - "frontend/**"
-      - "backend/**"
-      - "provider-middleware/*"
 
 permissions:
   id-token: write
@@ -14,6 +10,7 @@ permissions:
 
 jobs:
   setup-env:
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     runs-on: ubuntu-latest
     outputs:
       frontend_changes: ${{ steps.frontend_changes.outputs.changed }}
@@ -43,6 +40,7 @@ jobs:
           echo "Middleware changes: ${{ steps.middleware_changes.outputs.changed }}"
 
   build-and-push:
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
 
@@ -53,8 +51,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/PTHorpe92GHActionsRole
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
           aws-region: us-west-2
+          mask-aws-account-id: true
 
       - name: Log in to Amazon ECR
         id: login-ecr
@@ -66,19 +65,20 @@ jobs:
       - name: Build and push frontend image
         if: ${{ needs.setup-env.outputs.frontend_changes != '0' }}
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/frontend:latest -f frontend/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/frontend:latest
+          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:latest --push frontend/.
 
       - name: Build and push backend image
         if: ${{ needs.setup-env.outputs.backend_changes != '0' }}
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest -f backend/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest
+          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest --push  -f backend/Dockerfile .
 
       - name: Build and push middleware image
         if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest -f provider-middleware/Dockerfile . --push ${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest
+          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
 
   deploy-to-staging:
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -89,7 +89,8 @@ jobs:
 
       - name: Set up Kubeconfig
         run: |
-          echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
+          mkdir -p $HOME/.kube && touch $HOME/.kube/config
+          echo "${{ secrets.KUBECTL_CONFIG }}" > $HOME/.kube/config
 
       - name: Update Kubernetes Deployment
         run: |
