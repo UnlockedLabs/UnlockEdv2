@@ -79,6 +79,7 @@ jobs:
 
   deploy-to-staging:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -90,11 +91,5 @@ jobs:
       - name: Set up Kubeconfig
         run: |
           mkdir -p $HOME/.kube && touch $HOME/.kube/config
-          echo "${{ secrets.KUBECTL_CONFIG }}" > $HOME/.kube/config
-
-      - name: Update Kubernetes Deployment
-        run: |
-          kubectl rollout restart
-      - name: Verify Deployment
-        run: |
-          kubectl rollout deployment
+          echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > $HOME/.kube/config
+          kubectl rollout restart deployment
