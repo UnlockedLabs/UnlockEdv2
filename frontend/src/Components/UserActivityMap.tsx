@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DropdownControl } from "./inputs/DropdownControl";
+import DropdownControl from "./inputs/DropdownControl";
 import useSWR from "swr";
 import { useAuth } from "@/AuthContext";
 import { ServerResponse } from "@/common";
