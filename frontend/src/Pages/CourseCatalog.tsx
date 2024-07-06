@@ -4,6 +4,7 @@ import ToggleView, { ViewType } from "@/Components/ToggleView";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { useEffect, useState } from "react";
 import CatalogCourseCard from "@/Components/CatalogCourseCard";
+import SearchBar from "@/Components/inputs/SearchBar";
 import { Program, ServerResponse } from "@/common";
 import useSWR from "swr";
 
@@ -13,9 +14,10 @@ import useSWR from "swr";
 export default function CourseCatalog() {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data, mutate } = useSWR<ServerResponse<Program>>(
-    `/api/users/${user.id}/catalogue`,
+    `/api/users/${user.id}/catalogue`
   );
 
   useEffect(() => {
@@ -25,6 +27,11 @@ export default function CourseCatalog() {
   function callMutate() {
     console.log("called");
     mutate();
+  }
+
+  function handleSearch(newSearch: string) {
+    setSearchTerm(newSearch);
+    // setPageQuery(1);
   }
 
   if (!data) return <div></div>;
@@ -38,17 +45,7 @@ export default function CourseCatalog() {
           <ToggleView activeView={activeView} setActiveView={setActiveView} />
         </div>
         <div className="flex flex-row items-center mt-4 justify-between">
-          {/* TO DO: REPLACE WITH MADE SEARCH BAR */}
-          <input
-            type="text"
-            placeholder="Search..."
-            className="input input-bordered w-full max-w-xs input-sm"
-            // value={searchTerm}
-            // onChange={(e) => {
-            // setSearchTerm(e.target.value);
-            // setPageQuery(1);
-            // }}
-          />
+          <SearchBar searchTerm={searchTerm} changeCallback={handleSearch} />
         </div>
         {/* render on gallery or list view */}
         <div
