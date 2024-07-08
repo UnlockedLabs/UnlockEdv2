@@ -112,7 +112,7 @@ func seedTestData(db *gorm.DB) {
 				if i%5 == 0 {
 					continue
 				}
-				randTime := rand.Intn(100)
+				randTime := rand.Intn(1000)
 				// we want activity for the last year
 				yearAgo := time.Now().AddDate(-1, 0, 0)
 				time := yearAgo.AddDate(0, 0, i)
