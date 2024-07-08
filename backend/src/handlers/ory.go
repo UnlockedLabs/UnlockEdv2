@@ -20,9 +20,7 @@ func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *htt
 	if err := srv.deleteAllKratosIdentities(); err != nil {
 		http.Error(w, "error communicating with Ory Kratos", http.StatusInternalServerError)
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, "identities deleted successfully"); err != nil {
-		http.Error(w, "error writing response", http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, "identities deleted successfully")
 }
 
 func (srv *Server) deleteAllKratosIdentities() error {
@@ -51,11 +49,11 @@ func (srv *Server) deleteAllKratosIdentities() error {
 func (srv *Server) deleteIdentityInKratos(kratosId *string) error {
 	resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(context.Background(), *kratosId).Execute()
 	if err != nil {
-		log.WithFields(log.Fields{"identity": kratosId}).Errorln("unable to delete identity from Ory Kratos")
+		log.WithField("identity", kratosId).Errorln("unable to delete identity from Ory Kratos")
 		return err
 	}
 	if resp.StatusCode != 204 {
-		log.WithFields(log.Fields{"identity": kratosId}).Errorln("unable to delete identity from Ory Kratos")
+		log.WithField("identity", kratosId).Errorln("unable to delete identity from Ory Kratos")
 		return errors.New("unable to delete identity from Ory isntance")
 	}
 	return nil

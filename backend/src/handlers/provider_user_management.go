@@ -67,11 +67,7 @@ func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	}
-	if err = srv.WriteResponse(w, http.StatusCreated, mapping); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Errorln("Error writing response for map-provider-user")
-		return
-	}
+	srv.WriteResponse(w, http.StatusCreated, mapping)
 }
 
 type ImportUserResponse struct {
@@ -162,10 +158,7 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		response.Data = append(response.Data, userResponse)
 	}
 	response.Message = "Provider users imported, please check for any accounts that couldn't be created"
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Errorln("Error writing response for import-provider-users")
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) registerProviderLogin(provider *models.ProviderPlatform, user *models.User) error {
@@ -213,10 +206,7 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusCreated, nil); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusCreated, nil)
 }
 
 func (srv *Server) createAndRegisterProviderUserAccount(provider *models.ProviderPlatform, user *models.User) error {

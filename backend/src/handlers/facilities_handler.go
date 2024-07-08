@@ -31,10 +31,7 @@ func (srv *Server) HandleIndexFacilities(w http.ResponseWriter, r *http.Request)
 		Message: "facilities fetched successfully",
 		Data:    facilities,
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.WithFields(fields).Error("error writing response")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request) {
@@ -56,10 +53,7 @@ func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request) {
 		Data: make([]models.Facility, 0),
 	}
 	response.Data = append(response.Data, *facility)
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.WithFields(fields).Error("error writing response")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request) {
@@ -84,11 +78,7 @@ func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request) 
 		Data:    []models.Facility{*newFacility},
 		Message: "Facility created successfully",
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		fields["error"] = err
-		log.Error("Error writing response")
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) {
@@ -121,11 +111,7 @@ func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) 
 		Data:    []models.Facility{*toReturn},
 		Message: "facility successfully updated",
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		fields["error"] = err
-		log.WithFields(fields).Error("error writing response")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleDeleteFacility(w http.ResponseWriter, r *http.Request) {

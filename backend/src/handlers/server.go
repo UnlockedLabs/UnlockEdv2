@@ -238,17 +238,21 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 	return intPage, intPerPage
 }
 
-func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) error {
+func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if data == nil {
-		return nil
+		return
 	}
 	if resp, ok := data.(string); ok {
 		_, err := w.Write([]byte(resp))
-		return err
+		log.Error("error writing response: ", err)
+		return
 	}
-	return json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Error("Error writing json response", err)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error writing response")
+	}
 }
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {

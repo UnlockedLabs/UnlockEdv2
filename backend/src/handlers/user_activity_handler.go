@@ -93,9 +93,7 @@ func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Req
 		Meta: pagination,
 		Data: activities,
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, string(err.Error()))
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Request) {
@@ -120,8 +118,5 @@ func (srv *Server) handleGetUserActivityByID(w http.ResponseWriter, r *http.Requ
 		Meta: pagination,
 		Data: activity,
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Debug("Error writing response: ", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }

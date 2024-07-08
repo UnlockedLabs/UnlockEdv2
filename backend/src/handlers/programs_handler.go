@@ -46,11 +46,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 		Meta: paginationData,
 		Data: programs,
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
@@ -66,11 +62,7 @@ func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, program); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, program)
 }
 
 func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
@@ -116,11 +108,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := srv.WriteResponse(w, http.StatusOK, updated); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, updated)
 }
 
 func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) {
@@ -167,15 +155,8 @@ func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request)
 			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		if err := srv.WriteResponse(w, http.StatusNoContent, nil); err != nil {
-			log.Error("Error writing response: " + err.Error())
-			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-	}
-	if err := srv.WriteResponse(w, http.StatusOK, nil); err != nil {
-		log.Error("Error writing response: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		srv.WriteResponse(w, http.StatusNoContent, nil)
 		return
 	}
+	srv.WriteResponse(w, http.StatusOK, nil)
 }

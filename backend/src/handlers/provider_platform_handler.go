@@ -39,9 +39,7 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) 
 		response.Data = platforms
 	}
 	log.Info("Found "+strconv.Itoa(int(total)), " provider platforms")
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
@@ -60,9 +58,7 @@ func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request) {
 		Data:    []models.ProviderPlatform{*platform},
 		Message: "Provider platform found",
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) {
@@ -85,10 +81,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request) 
 		Message: "Provider platform created successfully",
 	}
 	response.Data = append(response.Data, *newProv)
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("Error writing response: ", err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
@@ -116,9 +109,7 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) 
 		Data: make([]models.ProviderPlatform, 0),
 	}
 	response.Data = append(response.Data, *updated)
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) {

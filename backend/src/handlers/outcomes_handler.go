@@ -41,10 +41,7 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 	response := models.PaginatedResource[models.Outcome]{}
 	response.Meta = models.NewPaginationInfo(page, perPage, total)
 	response.Data = outcome
-	if err = srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("handler: getOutcomes: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request) {
@@ -102,10 +99,7 @@ func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request) {
 	}
 	response := models.Resource[models.Outcome]{}
 	response.Data = append(response.Data, *updatedOutcome)
-	if err := srv.WriteResponse(w, http.StatusOK, response); err != nil {
-		log.Error("handler: updateOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) HandleDeleteOutcome(w http.ResponseWriter, r *http.Request) {

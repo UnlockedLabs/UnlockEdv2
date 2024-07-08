@@ -167,11 +167,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 		if orySession, ok := orySessions[user.ID]; ok {
 			// check the cached session hash + expiration
 			if orySession.Active && orySession.TokenHash == cookieHash && orySession.Expires.After(time.Now()) {
-				if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
-					srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-					log.Error("Error writing response: " + err.Error())
-					return
-				}
+				srv.WriteResponse(w, http.StatusOK, user)
 				log.WithFields(fields).Info("checked cached session active for user")
 				return
 			}
@@ -182,11 +178,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 			srv.ErrorResponse(w, http.StatusUnauthorized, "ory session was not valid, please login again")
 			return
 		}
-		if err := srv.WriteResponse(w, http.StatusOK, user); err != nil {
-			log.Error("Error writing response: " + err.Error())
-			srv.ErrorResponse(w, http.StatusUnauthorized, "unauthorized, ory session not found")
-			return
-		}
+		srv.WriteResponse(w, http.StatusOK, user)
 		return
 	}
 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -298,11 +290,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err = srv.WriteResponse(w, http.StatusOK, "Password reset successfully"); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error("Error writing response: " + err.Error())
-		return
-	}
+	srv.WriteResponse(w, http.StatusOK, "Password reset successfully")
 }
 
 func validatePassword(pass string) bool {

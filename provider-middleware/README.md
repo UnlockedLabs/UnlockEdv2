@@ -1,8 +1,8 @@
 ## Provider Platform Middleware
 
 This middleware is intended to run as a service in the same cluster, connected to the same database as an instance of UnlockEdv2.
-It will handy the resource intensive business of fetching, parsing, deduping data from platform integrations, and eventually will run
-scheduled jobs for these tasks which it will pull off a queue.
+It will handy the resource intensive business of fetching, parsing, de-duping data from platform integrations, and eventually will run
+scheduled jobs for these tasks which it will pull off a queue. (Currently looking at using NATS for caching and queue)
 
 ### **API**
 
@@ -51,9 +51,9 @@ type ProviderServiceInterface interface {
 // and then define a concrete implementation of the interface in the `{provider_name}.go` file.
 ```
 
-typically they will need the database connection along with any relevant information needed to make the calls.
-The concrete implementation of each ProviderServiceInterface should always store the info needed to communicate with the Provider,
-and have helper methods that can be called to make requests, convert data types, etc.
+Typically they will need the database connection along with any relevant information needed to make the calls.
+The concrete implementation of each `ProviderServiceInterface` should always store the info needed to communicate with the Provider, (headers, cookies, login/session info, etc)
+and have helper methods that can be called to make requests, canonicalize data types, etc.
 
 When the provider middleware gets a request, it looks up the provider id in the database, and depending on the Type of provider,
 it instantiates a new instance of the concrete type and returns it so the methods defined in the interface can be called.
@@ -86,8 +86,6 @@ func (sh *ServiceHandler) initService(r *http.Request) (ProviderServiceInterface
 }
 ```
 
-TODOS:
+**TODO:**
 
-Currently there is an in-memory cache on the backend for the `GetUsers` method, because there are so many that are returned. We will need a more efficient and production ready solution to this, most likely the same
-service that will host the job queue, can also contain a cache. We also will want to save the dates of the last requests made for things like `Activities`, and find a way to limit the amount of responses returned so
-we can process the data more efficiently.
+Currently there is an in-memory cache on the backend for the `GetUsers` method, because there are so many that are returned. We will need a more efficient and production ready solution to this, most likely the same service that will host the job queue, can also contain a cache. We also will want to save the dates of the last requests made for things like `Activities`, and find a way to limit the amount of responses returned so we can process the data more efficiently.
