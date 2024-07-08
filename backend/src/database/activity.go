@@ -339,12 +339,21 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin, error) {
 	var dashboard models.AdminDashboardJoin
 
+	// facility name
+	err := db.Conn.Table("facilities f").
+		Select("f.name as facility_name").
+		Where("f.id = ?", facilityID).
+		Find(&dashboard.FacilityName).Error
+	if err != nil {
+		return dashboard, err
+	}
+
 	// Monthly Activity
-	err := db.Conn.Table("activities a").
-		Select("DATE(a.created_at) as date, SUM(a.time_delta) as delta").
+	err = db.Conn.Table("activities a").
+		Select("TO_CHAR(a.created_at, 'YYYY-MM-DD') as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
-		Group("date").
+		Group("TO_CHAR(a.created_at, 'YYYY-MM-DD')").
 		Find(&dashboard.MonthlyActivity).Error
 	if err != nil {
 		return dashboard, err
@@ -364,7 +373,6 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 			SUM(a.time_delta) as total_weekly_activity`).
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
-		Where("").
 		Find(&result).Error
 	if err != nil {
 		log.Fatalf("Query failed: %v", err)
@@ -375,13 +383,13 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	dashboard.TotalWeeklyActivity = result.TotalWeeklyActivity
 
 	// Program Milestones
-	err = db.Conn.Table("milestones m").
-		Select("p.alt_name as alt_name, COUNT(m.id) as milestones").
-		Joins("JOIN programs p ON m.program_id = p.id").
-		Joins("JOIN users u ON m.user_id = u.id").
-		Where("u.facility_id = ? AND m.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
-		Where("m.is_completed = true").
+	err = db.Conn.Table("programs p").
+		Select("p.alt_name as alt_name, COALESCE(COUNT(m.id), 0) as milestones").
+		Joins("LEFT JOIN milestones m ON m.program_id = p.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
+		Joins("LEFT JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
 		Group("p.alt_name").
+		Order("milestones DESC").
+		Limit(8).
 		Find(&dashboard.ProgramMilestones).Error
 	if err != nil {
 		return dashboard, err
@@ -389,7 +397,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	// Top 5 Programs by Hours Engaged
 	err = db.Conn.Table("activities a").
-		Select("p.alt_name as program_name, SUM(a.time_delta) as hours_engaged").
+		Select("p.name as program_name, p.alt_name as alt_name, SUM(a.time_delta) / 3600.0 as hours_engaged").
 		Joins("JOIN programs p ON a.program_id = p.id").
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
