@@ -164,11 +164,6 @@ func (db *DB) ResetUserPassword(id uint, password string) error {
 		return err
 	}
 	user.PasswordReset = false
-
-	// Ensure facility_id is set
-	if user.FacilityID == 0 {
-		return errors.New("invalid facility ID")
-	}
 	if err := db.Conn.Save(&user).Error; err != nil {
 		return err
 	}

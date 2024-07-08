@@ -75,6 +75,7 @@ export const handleLogout = async () => {
       window.location.href = "/self-service/login/browser";
     }
   } catch (error) {
+    window.location.href = "/login";
     console.log("Logout failed", error);
   }
 };

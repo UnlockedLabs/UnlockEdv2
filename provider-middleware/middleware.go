@@ -1,6 +1,7 @@
 package main
 
 import (
+	"UnlockEdv2/src/models"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -25,14 +26,14 @@ func (sh *ServiceHandler) initService(r *http.Request) (ProviderServiceInterface
 		return nil, fmt.Errorf("failed to find provider: %v", err)
 	}
 	switch provider.Type {
-	case "kolibri":
+	case models.Kolibri:
 		kolibriService := NewKolibriService(provider)
 		if err := kolibriService.InitiateSession(); err != nil {
 			log.Printf("Failed to initiate session: %v", err)
 			return nil, fmt.Errorf("failed to initiate session: %v", err)
 		}
 		return kolibriService, nil
-	case "canvas_oss", "canvas_cloud":
+	case models.CanvasCloud, models.CanvasOSS:
 		canvasService := newCanvasService(provider)
 		return canvasService, nil
 	}

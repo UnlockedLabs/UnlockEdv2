@@ -227,6 +227,17 @@ func dashboardHelper(results []result) []models.CurrentEnrollment {
 	return enrollments
 }
 
+/*
+RETURNS:
+
+	type UserDashboardJoin struct {
+		Enrollments    []CurrentEnrollment `json:"enrollments"`
+		RecentPrograms [3]RecentProgram    `json:"recent_programs"`
+		WeekActivity   []RecentActivity    `json:"week_activity"`
+	}
+
+For the users dashboard. TODO:  We have to cache this so we aren't running on each visit to home
+*/
 func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, error) {
 	var recentPrograms [3]models.RecentProgram
 	// first get the users 3 most recently interacted with programs
@@ -256,6 +267,7 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 		log.Errorf("Error getting recent programs: %v", err)
 		recentPrograms = [3]models.RecentProgram{}
 	}
+
 	// then get the users current enrollments
 	// which is the program.alt_name, program.name, provider_platform.name as provider_platform_name (join on provider_platform_id = provider_platform.id), program.external_url,
 	// and acitvity.total_activity_time for the last 7 days of activity where activity.user_id = userID and activity.program_id = program.id
@@ -308,6 +320,7 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 			log.Printf("enrollments: %v", enrollments)
 		}
 	}
+
 	// get activity for past 7 days
 	var activities []models.RecentActivity
 
