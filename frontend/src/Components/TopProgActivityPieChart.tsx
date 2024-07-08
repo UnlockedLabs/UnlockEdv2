@@ -1,16 +1,16 @@
-import { PieChart, Pie, Legend, Cell, ResponsiveContainer } from 'recharts';
-import { ThemeContext } from './ThemeContext';
-import { useContext } from 'react';
+import { PieChart, Pie, Legend, Cell, ResponsiveContainer } from "recharts";
+import { ThemeContext } from "./ThemeContext";
+import { useContext } from "react";
 
-export default function TopProgPieChart ({data}:{data:any}){
+export default function TopProgPieChart({ data }: { data: any }) {
   const { theme } = useContext(ThemeContext);
 
-    var COLORS = ['#D7F4F1',"#B0DFDA", "#18ABA0", "#005952", "#002E2A"]
-    if (theme == "dark" ) {
-        COLORS = ['#11554E',"#13746C", "#14958A", "#61BAB2", "#B0DFDA"]
-    }
+  var COLORS = ["#D7F4F1", "#B0DFDA", "#18ABA0", "#005952", "#002E2A"];
+  if (theme == "dark") {
+    COLORS = ["#11554E", "#13746C", "#14958A", "#61BAB2", "#B0DFDA"];
+  }
 
-    return (
+  return (
     <ResponsiveContainer width="100%" height={400}>
       <PieChart>
         <Pie
@@ -31,5 +31,5 @@ export default function TopProgPieChart ({data}:{data:any}){
         <Legend />
       </PieChart>
     </ResponsiveContainer>
-    )
+  );
 }
