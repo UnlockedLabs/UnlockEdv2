@@ -52,7 +52,7 @@ export default function AdminDashboard(){
                             {!error && !isLoading &&
                             (data.top_program_activity.map((course: any, index: number) => {
                                 var courseTime:string
-                                if (course.hours_engaged < 1) courseTime = course.hours_engaged * 60 + " min"
+                                if (course.hours_engaged < 1) courseTime = Math.round(course.hours_engaged * 60) + " min"
                                 else {
                                     const hours = Math.floor(course.hours_engaged)
                                     const leftoverMins = Math.round(course.hours_engaged * 60) % 60
