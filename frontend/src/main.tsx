@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       }}
     >
       <ThemeProvider>
-      <App />
+        <App />
       </ThemeProvider>
     </SWRConfig>
   </React.StrictMode>,

@@ -269,7 +269,7 @@ function ActivityMapTable({
       i < len &&
       dateCount.toISOString().split("T")[0] == data[i].date.split("T")[0]
     ) {
-      const activityTime = convertSeconds(Number(data[i].total_time))
+      const activityTime = convertSeconds(Number(data[i].total_time));
       tableData.push(
         <td className="block" key={dateCount.getTime()}>
           <Node

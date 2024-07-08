@@ -77,12 +77,6 @@ jobs:
         run: |
           docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
 
-  deploy-to-staging:
-    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
-
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
         with:
@@ -92,4 +86,27 @@ jobs:
         run: |
           mkdir -p $HOME/.kube && touch $HOME/.kube/config
           echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > $HOME/.kube/config
-          kubectl rollout restart deployment
+
+      - name: Create k8s ECR secret
+        run: |
+          kubectl delete secret ecr-secret --ignore-not-found
+          kubectl create secret docker-registry ecr-secret \
+            --docker-server=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com \
+            --docker-username=AWS \
+            --docker-password=$(aws ecr get-login-password --region us-west-2) \
+            --docker-email=none
+
+      - name: restart frontend
+        if: ${{ needs.setup-env.outputs.frontend_changes != '0' }}
+        run: |
+          kubectl rollout restart deployment frontend
+
+      - name: restart server
+        if: ${{ needs.setup-env.outputs.backend_changes != '0' }}
+        run: |
+          kubectl rollout restart deployment server
+
+      - name: restart provider_middleware
+        if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
+        run: |
+          kubectl rollout restart deployment provider-service

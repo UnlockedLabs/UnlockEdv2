@@ -61,7 +61,7 @@ export default function MyProgress() {
                   </thead>
                   <tbody className="flex flex-col gap-4 mt-4">
                     {data.programs.map((course: any, index: number) => {
-                      const courseTotalTime = convertSeconds(course.total_time)
+                      const courseTotalTime = convertSeconds(course.total_time);
                       return (
                         <tr
                           className="flex flex-row justify-between body-small items-center"
@@ -77,7 +77,9 @@ export default function MyProgress() {
                           </td>
                           <td className="w-1/5">{course?.grade || "-"}</td>
                           <td className="w-1/5">
-                            {courseTotalTime.number + " " + courseTotalTime.label}
+                            {courseTotalTime.number +
+                              " " +
+                              courseTotalTime.label}
                           </td>
                         </tr>
                       );

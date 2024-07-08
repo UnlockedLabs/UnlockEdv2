@@ -11,7 +11,11 @@ export default function Dashboard() {
   return (
     <AuthenticatedLayout title="Dashboard">
       <PageNav user={user} path={["Dashboard"]} />
-      {user.role==UserRole.Student ? <StudentDashboard /> : <AdminDashboard /> }
+      {user.role == UserRole.Student ? (
+        <StudentDashboard />
+      ) : (
+        <AdminDashboard />
+      )}
     </AuthenticatedLayout>
   );
 }
