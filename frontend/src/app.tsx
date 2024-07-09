@@ -90,6 +90,11 @@ export default function App() {
       errorElement: <Error />,
     },
     {
+      path: "/open-content",
+      element: WithAuth({ children: <OpenContent /> }),
+      errorElement: <Error />,
+    },
+    {
       path: "/error",
       element: <Error />,
     },
