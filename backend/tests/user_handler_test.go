@@ -28,7 +28,7 @@ func TestHandleIndexUsers(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		total, dbUsers, err := server.Db.GetCurrentUsers(1, 10, 1)
+		total, dbUsers, err := server.Db.GetCurrentUsers(1, 10, 1, "")
 		if err != nil {
 			t.Errorf("failed to get users from db")
 		}
@@ -70,7 +70,7 @@ func TestAssertFacilityContext(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}
-		_, dbUsers, err := server.Db.GetCurrentUsers(1, 10, 2)
+		_, dbUsers, err := server.Db.GetCurrentUsers(1, 10, 2, "")
 		if err != nil {
 			t.Errorf("failed to get users from db")
 		}

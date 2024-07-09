@@ -22,7 +22,7 @@ export default function ChangePasswordForm() {
     reset,
     formState: { errors },
   } = useForm<Inputs>();
-  
+
   const password = useWatch({
     control,
     name: "password",
@@ -32,7 +32,7 @@ export default function ChangePasswordForm() {
     control,
     name: "confirm",
   });
-  
+
   const isLengthValid = password && password.length >= 8;
   const hasNumber = /\d/.test(password);
   const passwordsMatch = password === confirm;
@@ -53,7 +53,7 @@ export default function ChangePasswordForm() {
       setProcessing(false);
       setErrorMessage(
         error.response.data ||
-          "Your passwords didn't pass validation, please try again."
+          "Your passwords didn't pass validation, please try again.",
       );
       reset();
     }
@@ -74,12 +74,26 @@ export default function ChangePasswordForm() {
       />
 
       <div className="mt-2 text-sm">
-        <p className={`flex items-center ${isLengthValid ? 'text-success' : 'text-error'}`}>
-          {isLengthValid ? <CheckIcon className="h-5 w-5" /> : <XMarkIcon className="h-5 w-5" />} Password is 8 or more characters
+        <p
+          className={`flex items-center ${isLengthValid ? "text-success" : "text-error"}`}
+        >
+          {isLengthValid ? (
+            <CheckIcon className="h-5 w-5" />
+          ) : (
+            <XMarkIcon className="h-5 w-5" />
+          )}{" "}
+          Password is 8 or more characters
         </p>
-        <p className={`flex items-center ${hasNumber ? 'text-success' : 'text-error'}`}>
-          {hasNumber ? <CheckIcon className="h-5 w-5" /> : <XMarkIcon className="h-5 w-5" />} Password includes at least one number
-        </p>            
+        <p
+          className={`flex items-center ${hasNumber ? "text-success" : "text-error"}`}
+        >
+          {hasNumber ? (
+            <CheckIcon className="h-5 w-5" />
+          ) : (
+            <XMarkIcon className="h-5 w-5" />
+          )}{" "}
+          Password includes at least one number
+        </p>
       </div>
 
       <TextInput
@@ -94,9 +108,16 @@ export default function ChangePasswordForm() {
       />
 
       <div className="mt-2 text-sm">
-        <p className={`flex items-center ${passwordsMatch ? 'text-success' : 'text-error'}`}>
-          {passwordsMatch ? <CheckIcon className="h-5 w-5" /> : <XMarkIcon className="h-5 w-5" />} Passwords match
-        </p>         
+        <p
+          className={`flex items-center ${passwordsMatch ? "text-success" : "text-error"}`}
+        >
+          {passwordsMatch ? (
+            <CheckIcon className="h-5 w-5" />
+          ) : (
+            <XMarkIcon className="h-5 w-5" />
+          )}{" "}
+          Passwords match
+        </p>
       </div>
 
       {errorMessage && (
@@ -106,7 +127,10 @@ export default function ChangePasswordForm() {
       )}
 
       <div className="flex items-center justify-end mt-4">
-        <PrimaryButton className="ms-4 w-44 h-10" disabled={processing || !isValid}>
+        <PrimaryButton
+          className="ms-4 w-44 h-10"
+          disabled={processing || !isValid}
+        >
           {processing ? (
             <span className="loading loading-spinner loading-sm mx-auto"></span>
           ) : (

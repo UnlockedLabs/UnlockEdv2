@@ -8,12 +8,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint) (int64, []models.User, error) {
+func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, search string) (int64, []models.User, error) {
 	var users []models.User
 	var count int64
-
+	if search != "" {
+		return db.SearchCurrentUsers(page, itemsPerPage, facilityId, search)
+	}
 	offset := (page - 1) * itemsPerPage
-	if err := db.Conn.Model(&models.User{}).Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).Count(&count).Error; err != nil {
+	if err := db.Conn.Model(&models.User{}).Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
+		Count(&count).Error; err != nil {
 		log.Printf("Error counting users: %v", err)
 		return 0, nil, err
 	}
@@ -23,6 +26,24 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint) (int64, [
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Error; err != nil {
+		log.Printf("Error fetching users: %v", err)
+		return 0, nil, err
+	}
+	log.Debugf("found %d users", count)
+	return count, users, nil
+}
+
+func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, search string) (int64, []models.User, error) {
+	var users []models.User
+	var count int64
+	offset := (page - 1) * itemsPerPage
+
+	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
+		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
+		Where("name_first ILIKE ? OR username ILIKE ? OR name_last ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").
+		Offset(offset).
+		Limit(itemsPerPage).
+		Find(&users).Count(&count).Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, err
 	}

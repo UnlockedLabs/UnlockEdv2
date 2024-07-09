@@ -16,6 +16,7 @@ import MyProgress from "./Pages/MyProgress";
 import CourseCatalog from "./Pages/CourseCatalog";
 import ProviderUserManagement from "./Pages/ProviderUserManagement";
 import Error from "./Pages/Error";
+import OpenContent from "./Pages/OpenContent";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
