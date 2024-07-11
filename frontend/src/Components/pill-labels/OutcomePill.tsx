@@ -1,6 +1,12 @@
 import { OutcomePillType } from "../CatalogCourseCard";
 
-export default function OutcomePill({ outcome }: { outcome: OutcomePillType }) {
+export default function OutcomePill({
+  outcome,
+  children,
+}: {
+  outcome: OutcomePillType;
+  children: any;
+}) {
   return (
     <div className="flex">
       <p className="catalog-pill bg-grey-1 text-body-text">
@@ -8,7 +14,7 @@ export default function OutcomePill({ outcome }: { outcome: OutcomePillType }) {
           ? "Certificate"
           : outcome == OutcomePillType.CollegeCredit
             ? "College Credit"
-            : ""}
+            : children}
       </p>
     </div>
   );

@@ -4,7 +4,7 @@ import StatsCard from "@/Components/StatsCard";
 import UserActivityMap from "@/Components/UserActivityMap";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import CompletePill from "@/Components/pill-labels/CompletePill";
-import InProgressPill from "@/Components/pill-labels/InProgressPill";
+import TealPill from "@/Components/pill-labels/TealPill";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
 import convertSeconds from "@/Components/ConvertSeconds";
@@ -12,10 +12,10 @@ import convertSeconds from "@/Components/ConvertSeconds";
 export default function MyProgress() {
   const { user } = useAuth();
   const { data } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/programs`,
+    `/api/users/${user.id}/programs`
   );
   const { data: certificates } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/outcomes?type=certificate`,
+    `/api/users/${user.id}/outcomes?type=certificate`
   );
 
   console.log(data);
@@ -72,7 +72,7 @@ export default function MyProgress() {
                             {course.course_progress == 100 ? (
                               <CompletePill />
                             ) : (
-                              <InProgressPill />
+                              <TealPill>In Progress</TealPill>
                             )}
                           </td>
                           <td className="w-1/5">{course?.grade || "-"}</td>
@@ -109,7 +109,7 @@ export default function MyProgress() {
                           <td className="w-1/2">{certificate.program_name}</td>
                           <td className="w-1/5 flex">
                             {new Date(
-                              certificate.created_at.split("T")[0],
+                              certificate.created_at.split("T")[0]
                             ).toLocaleDateString("en-US")}
                           </td>
                         </tr>
