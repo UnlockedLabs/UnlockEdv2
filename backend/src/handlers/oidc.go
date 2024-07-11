@@ -44,6 +44,7 @@ func clientToResponse(client *models.OidcClient) *models.ClientResponse {
 	}
 }
 
+
 func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleGetOidcClient"}
 	id := r.PathValue("id")
