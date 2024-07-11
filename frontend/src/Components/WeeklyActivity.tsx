@@ -14,6 +14,7 @@ import { RecentActivity } from "@/common";
 const WeekActivityChart = ({ data }: { data: any }) => {
   const { theme } = useContext(ThemeContext);
   var lineColor = theme == "light" ? "#18ABA0" : "#61BAB2";
+  var gridColor = theme == "light" ? "#ECECEC" : "#737373";
   var backgroundColor = theme == "light" ? "#FFFFFF" : "#0F2926";
   console.log(data);
 
@@ -76,7 +77,7 @@ const WeekActivityChart = ({ data }: { data: any }) => {
         data={result}
         margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
       >
-        <CartesianGrid />
+        <CartesianGrid stroke={gridColor} />
         <XAxis dataKey={"date"} tick={<XAxisTick />} />
         <YAxis
           dataKey={"delta"}
