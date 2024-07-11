@@ -16,7 +16,6 @@ import MyProgress from "./Pages/MyProgress";
 import CourseCatalog from "./Pages/CourseCatalog";
 import ProviderUserManagement from "./Pages/ProviderUserManagement";
 import Error from "./Pages/Error";
-import OpenContent from "./Pages/OpenContent";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -87,11 +86,6 @@ export default function App() {
     {
       path: "/provider-users/:providerId",
       element: WithAuth({ children: <ProviderUserManagement /> }),
-      errorElement: <Error />,
-    },
-    {
-      path: "/open-content",
-      element: WithAuth({ children: <OpenContent /> }),
       errorElement: <Error />,
     },
     {

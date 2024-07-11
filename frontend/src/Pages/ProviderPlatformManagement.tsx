@@ -24,7 +24,7 @@ export default function ProviderPlatformManagement() {
   const addProviderModal = useRef<null | HTMLDialogElement>(null);
   const editProviderModal = useRef<null | HTMLDialogElement>(null);
   const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
-    null
+    null,
   );
   const openOidcClientModal = useRef<null | HTMLDialogElement>(null);
   const openOidcRegistrationModal = useRef<null | HTMLDialogElement>(null);
@@ -44,7 +44,7 @@ export default function ProviderPlatformManagement() {
   // TO DO: SORT THIS IN THE BACKEND AND RETURN SORTED
   providers?.data.sort(function (
     providerA: ProviderPlatform,
-    providerB: ProviderPlatform
+    providerB: ProviderPlatform,
   ) {
     if (providerA.state === "enabled" && providerB.state !== "enabled") {
       return -1;
@@ -96,7 +96,7 @@ export default function ProviderPlatformManagement() {
 
   const onRegisterOidcClientClose = (
     response: ServerResponse<OidcClient>,
-    state: ToastState
+    state: ToastState,
   ) => {
     openOidcClientModal.current?.close();
     setEditProvider(null);

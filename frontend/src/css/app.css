@@ -31,10 +31,10 @@
     @apply shadow-md rounded-lg border border-black border-opacity-[10%] bg-base-teal;
   }
   .card-h-padding {
-    @apply mt-4 ml-4
+    @apply mt-4 ml-4;
   }
   .catalog-pill {
-    @apply text-xs px-3 py-1 rounded-2xl flex-grow-0 mx-2
+    @apply text-xs px-3 py-1 rounded-2xl flex-grow-0 mx-2;
   }
   .table-2 {
     @apply w-full;
@@ -43,7 +43,7 @@
     @apply grid grid-flow-col auto-cols-max justify-between border border-x-0 border-t-0 mt-2;
   }
   .table-2 th {
-    @apply body text-grey-4 font-medium
+    @apply body text-grey-4 font-medium;
   }
   .table-2 tbody {
     @apply flex flex-col gap-4 mt-4;
@@ -52,10 +52,10 @@
     @apply grid grid-flow-col auto-cols-max justify-between mr-3;
   }
   .table-2 td {
-    @apply body-small my-auto
+    @apply body-small my-auto;
   }
   .button {
-    @apply bg-teal-3 body text-white py-3 px-3 flex flex-row gap-3 rounded-lg
+    @apply bg-teal-3 body text-white py-3 px-3 flex flex-row gap-3 rounded-lg;
   }
 }
 

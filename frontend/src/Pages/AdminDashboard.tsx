@@ -10,7 +10,7 @@ import convertSeconds from "../Components/ConvertSeconds";
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<AdminDashboardJoin>>(
-    `/api/users/${user.id}/admin-dashboard`
+    `/api/users/${user.id}/admin-dashboard`,
   );
 
   if (error || isLoading) return <div></div>;
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
                           <td>{courseTime}</td>
                         </tr>
                       );
-                    }
+                    },
                   )}
               </tbody>
             </table>
