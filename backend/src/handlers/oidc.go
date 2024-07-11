@@ -12,6 +12,7 @@ import (
 func (srv *Server) registerOidcRoutes() {
 	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.HandleGetAllClients)
 	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.HandleRegisterClient)
+	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.handleGetOidcClient)
 }
 
 func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +32,24 @@ type RegisterClientRequest struct {
 	RedirectURI        string `json:"redirect_uri"`
 	ProviderPlatformID uint   `json:"provider_platform_id"`
 	AutoRegister       bool   `json:"auto_register"`
+}
+
+func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "handleGetOidcClient"}
+	id := r.PathValue("id")
+	fields["oidc_id"] = id
+	var client models.OidcClient
+	if err := srv.Db.Conn.Find(&client, "id = ?", id).Error; err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("error finding oidc client")
+		srv.ErrorResponse(w, http.StatusBadRequest, "OIDC client info not found")
+		return
+	}
+	resp := models.Resource[models.OidcClient]{
+		Message: "Client found",
+		Data:    []models.OidcClient{client},
+	}
+	srv.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
