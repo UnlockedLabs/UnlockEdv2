@@ -12,6 +12,7 @@ import Toast, { ToastState } from "@/Components/Toast";
 import { useAuth } from "../AuthContext";
 import RegisterOidcClientForm from "@/Components/forms/RegisterOidcClientForm";
 import NewOidcClientNotification from "@/Components/NewOidcClientNotification";
+import axios from "axios";
 
 interface ToastProps {
   state: ToastState;
@@ -123,6 +124,15 @@ export default function ProviderPlatformManagement() {
       });
   };
 
+  const showAuthorizationInfo = async (provider: ProviderPlatform) => {
+    const resp = await axios(`/api/oidc/clients/${provider.oidc_id}`);
+    if (resp.data) {
+      setOidcClient(resp.data.data[0] as OidcClient);
+      openOidcRegistrationModal.current?.showModal();
+      return;
+    }
+  };
+
   return (
     <AuthenticatedLayout title="Provider Platform Management">
       <PageNav
@@ -161,7 +171,9 @@ export default function ProviderPlatformManagement() {
                     provider={provider}
                     openEditProvider={openEditProvider}
                     oidcClient={() => registerOidcClient(provider)}
-                    showAuthorizationInfo={() => null}
+                    showAuthorizationInfo={() =>
+                      showAuthorizationInfo(provider)
+                    }
                   />
                 );
               })

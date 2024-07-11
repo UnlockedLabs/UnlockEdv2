@@ -113,7 +113,7 @@ export default function ProviderCard({
                 <div className="tooltip" data-tip="Auth Info">
                   <InformationCircleIcon
                     className="w-4"
-                    onClick={() => showAuthorizationInfo()}
+                    onClick={() => showAuthorizationInfo(provider)}
                   />
                 </div>
                 <div className="tooltip" data-tip="Manage Users">
