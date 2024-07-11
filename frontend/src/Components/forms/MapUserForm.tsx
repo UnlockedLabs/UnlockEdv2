@@ -26,11 +26,11 @@ export default function MapUserForm({
   const [selectedUser, setSelectedUser] = useState(null);
   const usersPerPage = 5;
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
   };
 
-  const handleUserSelection = (userId) => {
+  const handleUserSelection = (userId: number) => {
     setSelectedUser(userId);
   };
 
@@ -61,7 +61,9 @@ export default function MapUserForm({
       return;
     }
     if (displayUsers.length < totalUnmapped.length) {
-      setDisplayUsers(totalUnmapped);
+      totalUnmapped.length === 0
+        ? onSubmit("No unmapped users in UnlockEd", ToastState.error)
+        : setDisplayUsers(totalUnmapped);
     } else {
       setDisplayUsers(usersToMap);
     }

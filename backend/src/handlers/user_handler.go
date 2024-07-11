@@ -26,7 +26,7 @@ func (srv *Server) registerUserRoutes() {
 **/
 func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
-	// TODO: impl search
+	search := r.URL.Query().Get("search")
 	include := r.URL.Query()["include"]
 	if slices.Contains(include, "logins") {
 		srv.HandleGetUsersWithLogins(w, r.WithContext(r.Context()))
@@ -38,7 +38,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	facilityId := srv.getFacilityID(r)
-	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId)
+	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId, search)
 	if err != nil {
 		log.Error("IndexUsers Database Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

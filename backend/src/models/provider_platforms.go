@@ -28,15 +28,15 @@ const (
 
 type ProviderPlatform struct {
 	DatabaseFields
-	Type                   ProviderPlatformType  `gorm:"size:100" json:"type"`
-	Name                   string                `gorm:"size:255" json:"name"`
+	Type                   ProviderPlatformType  `gorm:"size:100"  json:"type"`
+	Name                   string                `gorm:"size:255"  json:"name"`
 	Description            string                `gorm:"size:1024" json:"description"`
-	IconUrl                string                `gorm:"size:255" json:"icon_url"`
-	AccountID              string                `gorm:"size:64" json:"account_id"`
-	AccessKey              string                `gorm:"size:255" json:"access_key"`
-	BaseUrl                string                `gorm:"size:255" json:"base_url"`
-	State                  ProviderPlatformState `gorm:"size:100" json:"state"`
-	ExternalAuthProviderId string                `gorm:"size:128" json:"external_auth_provider_id"`
+	IconUrl                string                `gorm:"size:255"  json:"icon_url"`
+	AccountID              string                `gorm:"size:64"   json:"account_id"`
+	AccessKey              string                `gorm:"size:255"  json:"access_key"`
+	BaseUrl                string                `gorm:"size:255"  json:"base_url"`
+	State                  ProviderPlatformState `gorm:"size:100"  json:"state"`
+	ExternalAuthProviderId string                `gorm:"size:128"  json:"external_auth_provider_id"`
 	OidcID                 uint                  `json:"oidc_id"`
 
 	Programs             []Program             `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
