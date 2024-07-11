@@ -30,11 +30,11 @@
   .card {
     @apply shadow-md rounded-lg border border-black border-opacity-[10%] bg-base-teal;
   }
-  .card h2{
-    @apply mt-4 ml-4;
+  .card-h-padding {
+    @apply mt-4 ml-4
   }
   .catalog-pill {
-    @apply text-xs px-3 py-1 rounded-2xl;
+    @apply text-xs px-3 py-1 rounded-2xl flex-grow-0 mx-2
   }
   .table-2 {
     @apply w-full;

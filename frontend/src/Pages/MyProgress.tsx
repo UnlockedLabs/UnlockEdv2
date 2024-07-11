@@ -3,7 +3,7 @@ import PageNav from "@/Components/PageNav";
 import StatsCard from "@/Components/StatsCard";
 import UserActivityMap from "@/Components/UserActivityMap";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import CompletePill from "@/Components/pill-labels/CompletePill";
+import DarkGreenPill from "@/Components/pill-labels/DarkGreenPill";
 import TealPill from "@/Components/pill-labels/TealPill";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
@@ -70,9 +70,9 @@ export default function MyProgress() {
                           <td className="w-1/2">{course.program_name}</td>
                           <td className="w-1/5 flex">
                             {course.course_progress == 100 ? (
-                              <CompletePill />
+                              <DarkGreenPill>completed</DarkGreenPill>
                             ) : (
-                              <TealPill>In Progress</TealPill>
+                              <TealPill>in progress</TealPill>
                             )}
                           </td>
                           <td className="w-1/5">{course?.grade || "-"}</td>

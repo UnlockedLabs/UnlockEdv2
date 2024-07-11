@@ -8,8 +8,8 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import TealPill from "./pill-labels/TealPill";
-import SelfPacedPill from "./pill-labels/SelfPacedPill";
-import OutcomePill from "./pill-labels/OutcomePill";
+import YellowPill from "./pill-labels/YellowPill";
+import OutcomePill from "./pill-labels/GreyPill";
 
 export default function ProviderCard({
   provider,
@@ -100,38 +100,45 @@ export default function ProviderCard({
         ) : provider.state == ProviderPlatformState.DISABLED ? (
           <OutcomePill outcome={null}>disabled</OutcomePill>
         ) : provider.state == ProviderPlatformState.ARCHIVED ? (
-          <SelfPacedPill />
+          <YellowPill>archived</YellowPill>
         ) : (
           <p>Status unavailable</p>
         )}
       </td>
       <td className="flex flex-row gap-3 justify-self-end">
-        {provider.oidc_id !== 0 ? (
+        {provider.state !== ProviderPlatformState.ARCHIVED && (
           <>
-            <div className="tooltip" data-tip="Auth Info">
-              <InformationCircleIcon
+            {provider.oidc_id !== 0 ? (
+              <>
+                <div className="tooltip" data-tip="Auth Info">
+                  <InformationCircleIcon
+                    className="w-4"
+                    onClick={() => showAuthorizationInfo()}
+                  />
+                </div>
+                <div className="tooltip" data-tip="Manage Users">
+                  <UserGroupIcon
+                    className="w-4"
+                    onClick={() => navigate(`/provider-users/${provider.id}`)}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="tooltip" data-tip="Register Provider">
+                <LinkIcon
+                  className="w-4 "
+                  onClick={() => oidcClient(provider)}
+                />
+              </div>
+            )}
+            <div className="tooltip" data-tip="Edit Provider">
+              <PencilSquareIcon
                 className="w-4"
-                onClick={() => showAuthorizationInfo()}
-              />
-            </div>
-            <div className="tooltip" data-tip="Manage Users">
-              <UserGroupIcon
-                className="w-4"
-                onClick={() => navigate(`/provider-users/${provider.id}`)}
+                onClick={() => openEditProvider(provider)}
               />
             </div>
           </>
-        ) : (
-          <div className="tooltip" data-tip="Register Provider">
-            <LinkIcon className="w-4 " onClick={() => oidcClient(provider)} />
-          </div>
         )}
-        <div className="tooltip" data-tip="Edit Provider">
-          <PencilSquareIcon
-            className="w-4"
-            onClick={() => openEditProvider(provider)}
-          />
-        </div>
       </td>
     </tr>
   );

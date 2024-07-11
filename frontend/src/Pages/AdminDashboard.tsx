@@ -24,7 +24,7 @@ export default function AdminDashboard() {
       <div className="flex flex-row mt-12 gap-12">
         <div className="flex flex-col gap-6">
           <div className="card h-[240px]">
-            <h2>Overall Platform Engagement</h2>
+            <h2 className="card-h-padding">Overall Platform Engagement</h2>
             <ActivityChart data={data.monthly_activity} />
           </div>
           <div className="grid grid-cols-3 gap-6">
@@ -45,7 +45,9 @@ export default function AdminDashboard() {
             />
           </div>
           <div className="card h-[368px]">
-            <h2>This Week's Milestone Completion Per Course</h2>
+            <h2 className="card-h-padding">
+              This Week's Milestone Completion Per Course
+            </h2>
             <MilestonesBarChart data={data.program_milestones} />
           </div>
         </div>

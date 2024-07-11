@@ -145,7 +145,7 @@ export default function ProviderPlatformManagement() {
         </div>
         <table className="table-2">
           <thead>
-            <tr className="grid-cols-4">
+            <tr className="grid-cols-4 px-4">
               <th className="justify-self-start">Name</th>
               <th>Registered</th>
               <th>Status</th>
