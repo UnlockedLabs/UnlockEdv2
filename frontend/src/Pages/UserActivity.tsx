@@ -1,12 +1,13 @@
 import PageNav from "../Components/PageNav";
 import Pagination from "../Components/Pagination";
 import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
+import DropdownControl from "@/Components/inputs/DropdownControl";
+import SearchBar from "../Components/inputs/SearchBar";
 import { Activity, PaginatedResponse } from "../common";
 import { useState } from "react";
 import useSWR from "swr";
 // import { useDebounceValue } from "usehooks-ts";
 
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
 import { useAuth } from "../AuthContext";
 
 export default function UserActivity() {
@@ -17,41 +18,45 @@ export default function UserActivity() {
   const [pageQuery, setPageQuery] = useState(1);
   pageQuery;
 
-  const [sortQuery, setSortQuery] = useState("desc");
+  const [sortQuery, setSortQuery] = useState("user_id DESC");
 
-  const { data, error, isLoading } = useSWR(`/api/users/activity-log`);
+  const { data, error, isLoading } = useSWR(
+    `/api/users/activity-log?sort=${sortQuery}&page=${pageQuery}&search=${searchTerm}`
+  );
 
   const userActivityData = data as PaginatedResponse<Activity>;
+
+  const handleChange = (newSearch: string) => {
+    setSearchTerm(newSearch);
+    setPageQuery(1);
+  };
 
   return (
     <AuthenticatedLayout title="User Activity">
       <PageNav user={user!} path={["Settings", "User Activity"]} />
       <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
         <div className="flex justify-between">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="input input-bordered w-full max-w-xs input-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="flex space-x-4">
+            <SearchBar searchTerm={searchTerm} changeCallback={handleChange} />
+            <DropdownControl
+              label="Sort By"
+              enumType={{
+                "Time (Newest)": "user_activities.created_at desc",
+                "Time (Oldest)": "user_activities.created_at asc",
+                "Name (A-Z)":
+                  "user_activities.user_id asc, user_activities.created_at desc",
+                "Name (Z-A)":
+                  "user_activities.user_id desc, user_activities.created_at desc",
+              }}
+              callback={setSortQuery}
+            />
+          </div>
         </div>
         <table className="table">
           <thead>
             <tr className="border-gray-600">
               <th className="flex flex-row">
                 <span>User</span>
-                {sortQuery == "asc" ? (
-                  <ChevronDownIcon
-                    className="h-4 text-accent cursor-pointer"
-                    onClick={() => setSortQuery("desc")}
-                  />
-                ) : (
-                  <ChevronUpIcon
-                    className="h-4 text-accent cursor-pointer"
-                    onClick={() => setSortQuery("asc")}
-                  />
-                )}
               </th>
               <th>Browser</th>
               <th>URL</th>
