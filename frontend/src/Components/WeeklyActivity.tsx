@@ -16,7 +16,6 @@ const WeekActivityChart = ({ data }: { data: any }) => {
   var lineColor = theme == "light" ? "#18ABA0" : "#61BAB2";
   var gridColor = theme == "light" ? "#ECECEC" : "#737373";
   var backgroundColor = theme == "light" ? "#FFFFFF" : "#0F2926";
-  console.log(data);
 
   const result: RecentActivity[] = new Array(7);
   let currentDate = new Date();
@@ -24,18 +23,16 @@ const WeekActivityChart = ({ data }: { data: any }) => {
   for (let i = 6; i >= 0; i--) {
     let date = new Date(currentDate);
     date.setDate(date.getDate() - i);
-    const dateString = date.toISOString().split("T")[0] + "T00:00:00Z";
+    const dateString = date.toISOString().split("T")[0];
     let entry = data.find(
-      (activity: RecentActivity) => activity.date === dateString
+      (activity: RecentActivity) => activity.date.split("T")[0] === dateString
     );
-    if (entry) {
-      entry = {
-        date: entry.date.split("T")[0],
-        delta: Math.round(entry.delta / 60),
-      };
-    } else {
-      entry = { date: dateString.split("T")[0], delta: 0 };
-    }
+    entry
+      ? (entry = {
+          date: entry.date.split("T")[0],
+          delta: Math.round(entry.delta / 60),
+        })
+      : (entry = { date: dateString, delta: 0 });
     result[6 - i] = entry;
   }
 
@@ -51,10 +48,8 @@ const WeekActivityChart = ({ data }: { data: any }) => {
   ];
   const XAxisTick = (props) => {
     const { x, y, payload } = props;
-    console.log(payload.value);
     let day = new Date(payload.value).getDay() + 1;
-    console.log(day);
-    console.log(weekdays[day]);
+    if (new Date().getDay() == day) day = 7;
     return (
       <g transform={`translate(${x},${y})`}>
         <text
@@ -62,7 +57,7 @@ const WeekActivityChart = ({ data }: { data: any }) => {
           y={0}
           dy={16}
           textAnchor="end"
-          fill="#666"
+          fill="#808080"
           transform="rotate(-35)"
           style={{ fontSize: 12 }}
         >
