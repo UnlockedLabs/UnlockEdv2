@@ -4,10 +4,10 @@ const convertSeconds = (secs: number) => {
   const seconds = Math.floor(secs % 60);
 
   return hours
-    ? { number: hours, label: `hour${hours === 1 ? "" : "s"}` }
+    ? { number: hours, label: `hr${hours === 1 ? "" : "s"}` }
     : minutes
-      ? { number: minutes, label: `minute${minutes === 1 ? "" : "s"}` }
-      : { number: seconds, label: `second${seconds === 1 ? "" : "s"}` };
+      ? { number: minutes, label: `min${minutes === 1 ? "" : "s"}` }
+      : { number: seconds, label: `sec${seconds === 1 ? "" : "s"}` };
 };
 
 export default convertSeconds;
