@@ -166,3 +166,13 @@ export interface RecentActivity {
   date: string;
   delta: number;
 }
+
+export interface Link {
+  [name: string]: string;
+}
+
+export interface Resource {
+  name: string;
+  links: Array<Link>;
+  rank: number;
+}

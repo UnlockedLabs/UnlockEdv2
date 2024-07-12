@@ -1,15 +1,15 @@
 import CourseCard from "@/Components/EnrolledCourseCard";
 import CurrentlyEnrolledClass from "@/Components/CurrentlyEnrolledClass";
-import NotificationsSideBar from "@/Components/NotificationsSideBar";
 import { useAuth } from "@/AuthContext";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
 import convertSeconds from "@/Components/ConvertSeconds";
+import ResourcesSideBar from "@/Components/ResourcesSideBar";
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/student-dashboard`,
+    `/api/users/${user.id}/student-dashboard`
   );
 
   return (
@@ -46,7 +46,7 @@ export default function StudentDashboard() {
                     !isLoading &&
                     data?.enrollments?.map((course: any, index: number) => {
                       const totalTime = convertSeconds(
-                        course.total_activity_time,
+                        course.total_activity_time
                       );
                       return (
                         <tr
@@ -79,7 +79,7 @@ export default function StudentDashboard() {
         </div>
       </div>
       <div className="min-w-px bg-grey-1"></div>
-      <NotificationsSideBar />
+      <ResourcesSideBar />
     </div>
   );
 }
