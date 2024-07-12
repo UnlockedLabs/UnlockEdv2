@@ -5,25 +5,27 @@ interface DropdownControlProps {
 }
 
 /* a dropdown that executes a callback function on change */
-export function DropdownControl({
+export default function DropdownControl({
   label,
   callback,
   enumType,
 }: DropdownControlProps) {
   return (
-    <label className="form-control w-full">
-      {label && (
-        <div className="label">
-          <span className="label-text">{label}</span>
-        </div>
-      )}
+    <label className="form-control">
       <select
         className="select select-bordered"
         onChange={(e) => callback(e.target.value)}
       >
+        {label ? (
+          <option value="" disabled selected>
+            {label}
+          </option>
+        ) : (
+          ""
+        )}
         {Object.entries(enumType).map(([key, value]) => (
           <option key={key} value={value}>
-            {value}
+            {key}
           </option>
         ))}
       </select>
