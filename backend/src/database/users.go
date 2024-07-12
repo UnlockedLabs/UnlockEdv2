@@ -8,39 +8,40 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, search string) (int64, []models.User, error) {
-	var users []models.User
-	var count int64
+func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order string, search string) (int64, []models.User, error) {
+	if order == "" {
+		order = "created_at desc"
+	}
 	if search != "" {
-		return db.SearchCurrentUsers(page, itemsPerPage, facilityId, search)
+		return db.SearchCurrentUsers(page, itemsPerPage, facilityId, order, search)
 	}
 	offset := (page - 1) * itemsPerPage
-	if err := db.Conn.Model(&models.User{}).Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
-		Count(&count).Error; err != nil {
-		log.Printf("Error counting users: %v", err)
-		return 0, nil, err
-	}
-
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
-		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
+	var count int64
+	var users []models.User
+	if err := db.Conn.Table("users").
+		Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
 		Offset(offset).
 		Limit(itemsPerPage).
-		Find(&users).Error; err != nil {
+		Order(order).
+		Find(&users, "facility_id = ?", facilityId).
+		Count(&count).
+		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, err
 	}
-	log.Debugf("found %d users", count)
+	log.Tracef("found %d users", count)
 	return count, users, nil
 }
 
-func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, search string) (int64, []models.User, error) {
+func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order, search string) (int64, []models.User, error) {
 	var users []models.User
 	var count int64
 	offset := (page - 1) * itemsPerPage
-
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
+	if err := db.Conn.Table("users").
+		Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
 		Where("name_first ILIKE ? OR username ILIKE ? OR name_last ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").
+		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).Count(&count).Error; err != nil {

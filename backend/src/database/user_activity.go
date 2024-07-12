@@ -16,17 +16,20 @@ type UserAcitivityJoin struct {
 	UpdatedAt     string `json:"updated_at"`
 }
 
-func (db *DB) GetAllUserActivity(page, perPage int) (int64, []UserAcitivityJoin, error) {
+func (db *DB) GetAllUserActivity(order string, page, perPage int) (int64, []UserAcitivityJoin, error) {
 	var count int64
 	if err := db.Conn.Model(&models.UserActivity{}).Count(&count).Error; err != nil {
 		return 0, nil, err
+	}
+	if order == "" {
+		order = "user_activities.created_at desc"
 	}
 	var userActivities []UserAcitivityJoin
 	if err := db.Conn.
 		Table("user_activities").
 		Select("user_activities.id, user_activities.user_id, user_activities.browser_name, user_activities.clicked_url, user_activities.created_at, user_activities.device, user_activities.platform, user_activities.updated_at, users.name_first as user_name_first, users.name_last as user_name_last").
 		Joins("JOIN users ON user_activities.user_id = users.id").
-		Order("user_activities.created_at DESC").
+		Order(order).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&userActivities).
@@ -36,10 +39,18 @@ func (db *DB) GetAllUserActivity(page, perPage int) (int64, []UserAcitivityJoin,
 	return count, userActivities, nil
 }
 
-func (db *DB) SearchUserActivity(search string, page, perPage int) (int64, []UserAcitivityJoin, error) {
+func (db *DB) SearchUserActivity(search string, order string, page, perPage int) (int64, []UserAcitivityJoin, error) {
 	var count int64
-	if err := db.Conn.Model(&models.UserActivity{}).Where("clicked_url LIKE ?", "%"+search+"%").Count(&count).Error; err != nil {
+	if err := db.Conn.Model(&models.UserActivity{}).
+		Joins("JOIN users ON user_activities.user_id = users.id").
+		Where("clicked_url LIKE ?", "%"+search+"%").
+		Or("LOWER(users.name_last) LIKE ?", "%"+search+"%").
+		Or("LOWER(users.name_first) LIKE ?", "%"+search+"%").
+		Count(&count).Error; err != nil {
 		return 0, nil, err
+	}
+	if order == "" {
+		order = "user_activities.created_at desc"
 	}
 	var userActivities []UserAcitivityJoin
 	if err := db.Conn.
@@ -47,9 +58,9 @@ func (db *DB) SearchUserActivity(search string, page, perPage int) (int64, []Use
 		Select("user_activities.id, user_activities.user_id, user_activities.browser_name, user_activities.clicked_url, user_activities.created_at, user_activities.device, user_activities.platform, user_activities.updated_at, users.name_first as user_name_first, users.name_last as user_name_last").
 		Joins("JOIN users ON user_activities.user_id = users.id").
 		Where("clicked_url LIKE ?", "%"+search+"%").
-		Or("users.name_last LIKE ?", "%"+search+"%").
-		Or("users.name_first LIKE ?", "%"+search+"%").
-		Order("user_activities.created_at DESC").
+		Or("LOWER(users.name_last) LIKE ?", "%"+search+"%").
+		Or("LOWER(users.name_first) LIKE ?", "%"+search+"%").
+		Order(order).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&userActivities).

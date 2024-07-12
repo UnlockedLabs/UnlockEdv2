@@ -70,18 +70,21 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 func (srv *Server) handleGetAllUserActivities(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	search := r.URL.Query().Get("search")
+	search = strings.ToLower(search)
+	search = strings.TrimSpace(search)
+	order := strings.ToLower(r.URL.Query().Get("sort"))
 	total := int64(0)
 	var activities []database.UserAcitivityJoin
 	err := error(nil)
 	if search != "" {
-		total, activities, err = srv.Db.SearchUserActivity(search, page, perPage)
+		total, activities, err = srv.Db.SearchUserActivity(search, order, page, perPage)
 		if err != nil {
 			log.Debug("Error fetching user activities: ", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 	} else {
-		total, activities, err = srv.Db.GetAllUserActivity(page, perPage)
+		total, activities, err = srv.Db.GetAllUserActivity(order, page, perPage)
 		if err != nil {
 			log.Debug("Error fetching user activities: ", err)
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
