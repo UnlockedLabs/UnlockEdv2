@@ -57,14 +57,14 @@ export default function AdminDashboard() {
           <TopProgPieChart data={data.top_program_activity} />
           <div className="px-4 py-10">
             {/* TO DO: caption needs to be added */}
-            <table className="w-full">
+            <table className="table-2">
               <thead>
-                <tr className="flex flex-row justify-between border border-x-0 border-t-0 mt-2">
-                  <th className="body text-grey-4">Course Name</th>
-                  <th className="body text-grey-4">Time Spent</th>
+                <tr>
+                  <th>Course Name</th>
+                  <th>Time Spent</th>
                 </tr>
               </thead>
-              <tbody className="flex flex-col gap-6 mt-4">
+              <tbody className="!gap-6">
                 {!error &&
                   !isLoading &&
                   data.top_program_activity.map(
@@ -82,18 +82,17 @@ export default function AdminDashboard() {
                           courseTime = hours + " hr " + leftoverMins + " min";
                       }
                       var legendColor = "bg-teal-" + (index + 1).toString();
+                      // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
+                      if (index == 4) legendColor = "bg-[#002E2A]";
                       return (
-                        <tr
-                          className="flex flex-row justify-between mr-3"
-                          key={index}
-                        >
-                          <td className="body-small flex flex-row gap-2">
+                        <tr key={index}>
+                          <td className="flex flex-row gap-2">
                             <div
                               className={`h-3 w-3 ${legendColor} my-auto`}
                             ></div>
                             {course.program_name}
                           </td>
-                          <td className="body-small">{courseTime}</td>
+                          <td>{courseTime}</td>
                         </tr>
                       );
                     },

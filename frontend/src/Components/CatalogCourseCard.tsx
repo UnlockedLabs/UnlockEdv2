@@ -1,11 +1,11 @@
 import { BookmarkIcon } from "@heroicons/react/24/solid";
 import { BookmarkIcon as BookmarkIconOutline } from "@heroicons/react/24/outline";
-import OpenEnrollmentPill from "./pill-labels/OpenEnrollmentPill";
-import PermissionOnlyPill from "./pill-labels/PermissionOnlyPill";
-import SelfPacedPill from "./pill-labels/SelfPacedPill";
+import LightGreenPill from "./pill-labels/LightGreenPill";
+import RedPill from "./pill-labels/RedPill";
+import YellowPill from "./pill-labels/YellowPill";
 import axios from "axios";
 import { ViewType } from "./ToggleView";
-import OutcomePill from "./pill-labels/OutcomePill";
+import GreyPill from "./pill-labels/GreyPill";
 
 export interface CatalogCourseCard {
   name: string;
@@ -52,10 +52,12 @@ export default function CatalogCourseCard({
   }
 
   let programPill: JSX.Element;
-  if (program_type == PillTagType.Open) programPill = <OpenEnrollmentPill />;
+  if (program_type == PillTagType.Open)
+    programPill = <LightGreenPill>Open Enrollment</LightGreenPill>;
   if (program_type == PillTagType.Permission)
-    programPill = <PermissionOnlyPill />;
-  if (program_type == PillTagType.SelfPaced) programPill = <SelfPacedPill />;
+    programPill = <RedPill>Permission Only</RedPill>;
+  if (program_type == PillTagType.SelfPaced)
+    programPill = <YellowPill>Self-Paced</YellowPill>;
 
   let bookmark: JSX.Element;
   if (course.is_favorited)
@@ -72,7 +74,14 @@ export default function CatalogCourseCard({
     .filter((type) => Object.values(OutcomePillType).includes(type));
   const outcomePills = outcomeTypes.map((outcomeString: string) => {
     const outcome = outcomeString as OutcomePillType;
-    return <OutcomePill outcome={outcome} key={"outcome" + course.id} />;
+    console.log(outcome);
+    const pillLabel =
+      outcome == OutcomePillType.Certificate
+        ? "Certificate Granting"
+        : outcome == OutcomePillType.CollegeCredit
+          ? "College Credit"
+          : "no label";
+    return <GreyPill key={"outcome" + course.id}>{pillLabel}</GreyPill>;
   });
 
   return (
@@ -80,7 +89,7 @@ export default function CatalogCourseCard({
       {view == ViewType.List ? (
         <div className="card bg-base-teal body-small p-6 flex flex-row items-center">
           <div className="flex flex-col justify-between gap-3">
-            <div className="flex flex-row gap-3 items-center ">
+            <div className="flex flex-row gap-3 items-center">
               <div onClick={() => updateFavorite()}>{bookmark}</div>
               <h2>{course.program_name}</h2>
               <p className="body">|</p>
@@ -121,7 +130,7 @@ export default function CatalogCourseCard({
               <p className="text-xs">{course.provider_name}</p>
               <h3 className="card-title text-sm">{course.program_name}</h3>
               <p className="body-small line-clamp-2">{course.description}</p>
-              <div className="flex flex-row py-1 gap-2 mt-2">
+              <div className="flex flex-wrap py-1 mt-2 space-y-2">
                 {programPill} {outcomePills}
               </div>
             </div>
