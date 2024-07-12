@@ -2,6 +2,7 @@ import { Link, Resource, ServerResponse } from "@/common";
 import Error from "@/Pages/Error";
 import useSWR from "swr";
 import KolibriImg from "../../public/kolibri-card-cover.png";
+import WikiImg from "../../public/wikipedia.png";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
 const ExternalLink = ({ children, url }: { children: any; url: string }) => {
@@ -17,6 +18,7 @@ const ExternalLink = ({ children, url }: { children: any; url: string }) => {
   );
 };
 
+// this isnt best practice but this is just a temp solution so will change in future & creat a component if need be
 const KolibriCard = () => {
   return (
     <div className="card card-compact bg-base-teal overflow-hidden">
@@ -30,6 +32,27 @@ const KolibriCard = () => {
         {/* Temporary-- replace with external link to Kolibri */}
         <ExternalLink url="https://learningequality.org/kolibri/">
           Explore Kolibri's Content
+        </ExternalLink>
+      </div>
+    </div>
+  );
+};
+
+const WikiCard = () => {
+  return (
+    <div className="card card-compact bg-base-teal overflow-hidden">
+      <div className="h-[105px] bg-[#D9D9D9] flex content-center justify-center">
+        <img src={WikiImg} alt="Wikipedia logo" />
+      </div>
+      <div className="card-body gap-2">
+        <h3 className="card-title text-sm">Wikipedia</h3>
+        <p className="body-small">
+          Wikipedia offers a vast collection of articles covering a wide range
+          of topics across various academic disciplines.
+        </p>
+        {/* Temporary-- replace with external link to Wiki */}
+        <ExternalLink url="https://www.wikipedia.org/">
+          Explore Wikipedia's Content
         </ExternalLink>
       </div>
     </div>
@@ -59,10 +82,11 @@ export default function ResourcesSideBar() {
   console.log(data);
 
   return (
-    <div className="w-[409px] min-[1400px]:min-w-[409px] bg-background flex flex-col gap-4 py-4 px-9">
+    <div className="w-[409px] min-[1400px]:min-w-[409px] bg-background py-4 px-9">
       <div className="p-4 space-y-4">
         <h2>Open Content</h2>
         <KolibriCard />
+        <WikiCard />
       </div>
       <div className="p-4 space-y-4">
         <h2>Resources</h2>
