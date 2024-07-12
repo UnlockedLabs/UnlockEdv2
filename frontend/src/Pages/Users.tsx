@@ -38,7 +38,7 @@ export default function Users() {
   const [toast, setToast] = useState({
     state: ToastState.null,
     message: "",
-    reset: () => { },
+    reset: () => {},
   });
 
   const [searchTerm, setSearchTerm] = useState("");
