@@ -4,13 +4,11 @@ import axios from "axios";
 
 import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
 import {
-  ChevronDownIcon,
   ArrowPathRoundedSquareIcon,
   ArrowUpRightIcon,
   PencilIcon,
   TrashIcon,
   UserPlusIcon,
-  ChevronUpIcon,
 } from "@heroicons/react/20/solid";
 import { DEFAULT_ADMIN_ID, PaginatedResponse, User } from "../common";
 import PageNav from "../Components/PageNav";
@@ -21,6 +19,8 @@ import Modal, { ModalType } from "../Components/Modal";
 import DeleteForm from "../Components/DeleteForm";
 import ResetPasswordForm from "../Components/forms/ResetPasswordForm";
 import ShowTempPasswordForm from "../Components/forms/ShowTempPasswordForm";
+import DropdownControl from "@/Components/inputs/DropdownControl";
+import SearchBar from "../Components/inputs/SearchBar";
 import { useAuth } from "../AuthContext";
 import { useDebounceValue } from "usehooks-ts";
 import Pagination from "@/Components/Pagination";
@@ -44,9 +44,9 @@ export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const searchQuery = useDebounceValue(searchTerm, 300);
   const [pageQuery, setPageQuery] = useState(1);
-  const [sortQuery, setSortQuery] = useState("asc");
+  const [sortQuery, setSortQuery] = useState("created_at DESC");
   const { data, mutate, error, isLoading } = useSWR(
-    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`,
+    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`
   );
   const userData = data as PaginatedResponse<User>;
   const showToast = (message: string, state: ToastState) => {
@@ -76,7 +76,7 @@ export default function Users() {
     if (targetUser?.id === DEFAULT_ADMIN_ID) {
       showToast(
         "This is the primary administrator and cannot be deleted",
-        ToastState.error,
+        ToastState.error
       );
       return;
     }
@@ -142,21 +142,30 @@ export default function Users() {
     resetModal();
   };
 
+  const handleChange = (newSearch: string) => {
+    setSearchTerm(newSearch);
+    setPageQuery(1);
+  };
+
   return (
     <AuthenticatedLayout title="Users">
       <PageNav user={auth.user!} path={["Settings", "Users"]} />
       <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
         <div className="flex justify-between">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="input input-bordered w-full max-w-xs input-sm"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPageQuery(1);
-            }}
-          />
+          <div className="flex flex-row gap-x-2">
+            <SearchBar searchTerm={searchTerm} changeCallback={handleChange} />
+            <DropdownControl
+              label="Sort by"
+              callback={setSortQuery}
+              enumType={{
+                "Name (A-Z)": "name_last asc",
+                "Name (Z-A)": "name_last desc",
+                "Account Created ↓ ": "created_at desc",
+                "Account Created ↑ ": "created_at asc",
+              }}
+            />
+          </div>
+
           <div className="tooltip tooltip-left" data-tip="Add User">
             <button
               className="btn btn-primary btn-sm"
@@ -171,17 +180,6 @@ export default function Users() {
             <tr className="border-gray-600">
               <th className="flex">
                 <span>Name</span>
-                {sortQuery == "asc" ? (
-                  <ChevronDownIcon
-                    className="h-4 text-accent cursor-pointer"
-                    onClick={() => setSortQuery("desc")}
-                  />
-                ) : (
-                  <ChevronUpIcon
-                    className="h-4 text-accent cursor-pointer"
-                    onClick={() => setSortQuery("asc")}
-                  />
-                )}
               </th>
               <th>Username</th>
               <th>Role</th>

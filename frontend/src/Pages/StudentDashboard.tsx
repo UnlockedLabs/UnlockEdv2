@@ -5,12 +5,18 @@ import useSWR from "swr";
 import { ServerResponse } from "@/common";
 import convertSeconds from "@/Components/ConvertSeconds";
 import ResourcesSideBar from "@/Components/ResourcesSideBar";
+import WeekActivityChart from "@/Components/WeeklyActivity";
+import Error from "./Error";
+
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<any>>(
     `/api/users/${user.id}/student-dashboard`
   );
+
+  if (isLoading) return <div></div>;
+  if (error) return <Error />;
 
   return (
     <div className="flex">
@@ -28,7 +34,7 @@ export default function StudentDashboard() {
         <div className="flex flex-row gap-12 mt-12">
           <div className="w-1/2 h-[254px] bg-base-teal card">
             <h2 className="mt-4 ml-4">My Activity</h2>
-            {/* graph placeholder */}
+            <WeekActivityChart data={data?.week_activity} />
           </div>
           <div className="w-1/2 h-[254px] bg-base-teal card">
             <h2 className="mt-4 ml-4">Learning Time</h2>

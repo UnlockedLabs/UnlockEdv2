@@ -34,6 +34,17 @@ type RegisterClientRequest struct {
 	AutoRegister       bool   `json:"auto_register"`
 }
 
+func clientToResponse(client *models.OidcClient) *models.ClientResponse {
+	return &models.ClientResponse{
+		ClientID:      client.ClientID,
+		ClientSecret:  client.ClientSecret,
+		AuthEndpoint:  os.Getenv("APP_URL") + "/oauth2/auth",
+		TokenEndpoint: os.Getenv("APP_URL") + "/oauth2/token",
+		Scopes:        client.Scopes,
+	}
+}
+
+
 func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleGetOidcClient"}
 	id := r.PathValue("id")
@@ -45,9 +56,9 @@ func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, "OIDC client info not found")
 		return
 	}
-	resp := models.Resource[models.OidcClient]{
+	resp := models.Resource[models.ClientResponse]{
 		Message: "Client found",
-		Data:    []models.OidcClient{client},
+		Data:    []models.ClientResponse{*clientToResponse(&client)},
 	}
 	srv.WriteResponse(w, http.StatusOK, resp)
 }
@@ -87,16 +98,10 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		log.Error(r, err)
 		return
 	}
-	response := models.Resource[models.ClientResponse]{}
-	resp := models.ClientResponse{
-		ClientID:     client.ClientID,
-		ClientSecret: client.ClientSecret,
-		// our rev proxy will always redirect these requests, so we use app_url
-		AuthEndpoint:  os.Getenv("APP_URL") + "/oauth2/auth",
-		TokenEndpoint: os.Getenv("APP_URL") + "/oauth2/token",
-		Scopes:        client.Scopes,
+	response := models.Resource[models.ClientResponse]{
+		Message: "Client registered successfully",
+		Data:    []models.ClientResponse{*clientToResponse(client)},
 	}
-	response.Data = append(response.Data, resp)
 	if request.AutoRegister {
 		response.Message = "Client successfully created and registered with the provider"
 	} else {

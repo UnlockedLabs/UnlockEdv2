@@ -12,6 +12,7 @@ import Toast, { ToastState } from "@/Components/Toast";
 import { useAuth } from "../AuthContext";
 import RegisterOidcClientForm from "@/Components/forms/RegisterOidcClientForm";
 import NewOidcClientNotification from "@/Components/NewOidcClientNotification";
+import axios from "axios";
 
 interface ToastProps {
   state: ToastState;
@@ -40,26 +41,27 @@ export default function ProviderPlatformManagement() {
     isLoading,
   } = useSWR(`/api/provider-platforms`);
 
+  // TO DO: SORT THIS IN THE BACKEND AND RETURN SORTED
   providers?.data.sort(function (
     providerA: ProviderPlatform,
     providerB: ProviderPlatform,
   ) {
     if (providerA.state === "enabled" && providerB.state !== "enabled") {
-      return -1; // providerA comes before providerB
+      return -1;
     } else if (providerA.state !== "enabled" && providerB.state === "enabled") {
-      return 1; // providerB comes before providerA
+      return 1;
     } else if (
       providerA.state === "archived" &&
       providerB.state !== "archived"
     ) {
-      return 1; // providerA comes after providerB
+      return 1;
     } else if (
       providerA.state !== "archived" &&
       providerB.state === "archived"
     ) {
-      return -1; // providerB comes after providerA
+      return -1;
     } else {
-      return 0; // if states are the same or not 'enabled' or 'archived', maintain current order
+      return 0;
     }
   });
 
@@ -122,40 +124,66 @@ export default function ProviderPlatformManagement() {
       });
   };
 
+  const showAuthorizationInfo = async (provider: ProviderPlatform) => {
+    const resp = await axios(`/api/oidc/clients/${provider.oidc_id}`);
+    if (resp.data) {
+      setOidcClient(resp.data.data[0] as OidcClient);
+      openOidcRegistrationModal.current?.showModal();
+      return;
+    }
+  };
+
   return (
     <AuthenticatedLayout title="Provider Platform Management">
       <PageNav
         user={user}
         path={["Settings", "Provider Platform Management"]}
       />
-      <div className="flex flex-col gap-4 p-4">
-        <div className="flex justify-end">
+      <div className="px-8 py-4">
+        <h1>Provider Platforms</h1>
+        <div className="flex flex-row justify-between">
+          <div>{/* TO DO: this is where SEARCH and SORT will go */}</div>
           <button
-            className="btn btn-primary btn-sm"
+            className="button"
             onClick={() => {
               addProviderModal.current?.showModal();
             }}
           >
-            <PlusCircleIcon className="h-4 text-base-100" />
-            <span className="text-base-100">Add Provider</span>
+            <PlusCircleIcon className="w-4 my-auto" />
+            Add Provider
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-5">
-          {!isLoading && !error ? (
-            providers.data.map((provider: ProviderPlatform) => {
-              return (
-                <ProviderCard
-                  provider={provider}
-                  openEditProvider={openEditProvider}
-                  key={provider.id}
-                  oidcClient={() => registerOidcClient(provider)}
-                />
-              );
-            })
-          ) : (
-            <div>No platform providers to show.</div>
-          )}
-        </div>
+        <table className="table-2">
+          <thead>
+            <tr className="grid-cols-4 px-4">
+              <th className="justify-self-start">Name</th>
+              <th>Registered</th>
+              <th>Status</th>
+              <th className="justify-self-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!isLoading && !error ? (
+              providers.data.map((provider: ProviderPlatform) => {
+                return (
+                  <ProviderCard
+                    key={provider.id}
+                    provider={provider}
+                    openEditProvider={openEditProvider}
+                    oidcClient={() => registerOidcClient(provider)}
+                    showAuthorizationInfo={() =>
+                      showAuthorizationInfo(provider)
+                    }
+                  />
+                );
+              })
+            ) : (
+              <tr>
+                <td>No provider platforms</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
       {/* Modals */}
       <Modal
