@@ -1,12 +1,13 @@
 import CourseCard from "@/Components/EnrolledCourseCard";
 import CurrentlyEnrolledClass from "@/Components/CurrentlyEnrolledClass";
-import NotificationsSideBar from "@/Components/NotificationsSideBar";
 import { useAuth } from "@/AuthContext";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
 import convertSeconds from "@/Components/ConvertSeconds";
+import ResourcesSideBar from "@/Components/ResourcesSideBar";
 import WeekActivityChart from "@/Components/WeeklyActivity";
 import Error from "./Error";
+
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -84,7 +85,7 @@ export default function StudentDashboard() {
         </div>
       </div>
       <div className="min-w-px bg-grey-1"></div>
-      <NotificationsSideBar />
+      <ResourcesSideBar />
     </div>
   );
 }
