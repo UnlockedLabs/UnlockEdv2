@@ -14,6 +14,7 @@ const ActivityChart = ({ data }: { data: any }) => {
   const { theme } = useContext(ThemeContext);
 
   var lineColor = theme == "light" ? "#18ABA0" : "#61BAB2";
+  var gridColor = theme == "light" ? "#ECECEC" : "#737373";
   var backgroundColor = theme == "light" ? "#FFFFFF" : "#0F2926";
 
   return (
@@ -22,7 +23,7 @@ const ActivityChart = ({ data }: { data: any }) => {
         data={data}
         margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
       >
-        <CartesianGrid />
+        <CartesianGrid stroke={gridColor} />
         <XAxis
           dataKey={"date"}
           tick={false}
