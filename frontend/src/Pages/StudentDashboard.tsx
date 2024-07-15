@@ -8,11 +8,10 @@ import ResourcesSideBar from "@/Components/ResourcesSideBar";
 import WeekActivityChart from "@/Components/WeeklyActivity";
 import Error from "./Error";
 
-
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/student-dashboard`
+    `/api/users/${user.id}/student-dashboard`,
   );
 
   if (isLoading) return <div></div>;
@@ -52,7 +51,7 @@ export default function StudentDashboard() {
                     !isLoading &&
                     data?.enrollments?.map((course: any, index: number) => {
                       const totalTime = convertSeconds(
-                        course.total_activity_time
+                        course.total_activity_time,
                       );
                       return (
                         <tr

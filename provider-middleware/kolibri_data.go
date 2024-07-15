@@ -50,10 +50,17 @@ type KolibriUser struct {
 }
 
 func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
-	first := strings.Split(ku.Fullname, " ")[0]
-	last := strings.Split(ku.Fullname, " ")[1]
-	if len(strings.Split(ku.Fullname, " ")) > 2 {
+	var first, last string
+
+	splitName := strings.Split(ku.Fullname, " ")
+	if len(splitName) > 1 {
+		first = strings.Split(ku.Fullname, " ")[0]
+		last = strings.Split(ku.Fullname, " ")[1]
+	} else if len(splitName) > 2 {
 		last = strings.Join(strings.Split(ku.Fullname, " ")[1:], " ")
+	} else {
+		first = ku.Fullname
+		last = ku.Username
 	}
 	email := ku.Username + "@unlocked.v2"
 	if first == "" && last == "" && ku.Username == "" {
@@ -62,8 +69,8 @@ func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
 	return &models.ImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
-		Email:            email,
 		NameLast:         last,
+		Email:            email,
 		ExternalUserID:   ku.Id,
 		ExternalUsername: ku.Username,
 	}, nil

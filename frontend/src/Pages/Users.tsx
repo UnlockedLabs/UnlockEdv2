@@ -46,7 +46,7 @@ export default function Users() {
   const [pageQuery, setPageQuery] = useState(1);
   const [sortQuery, setSortQuery] = useState("created_at DESC");
   const { data, mutate, error, isLoading } = useSWR(
-    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`
+    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`,
   );
   const userData = data as PaginatedResponse<User>;
   const showToast = (message: string, state: ToastState) => {
@@ -76,7 +76,7 @@ export default function Users() {
     if (targetUser?.id === DEFAULT_ADMIN_ID) {
       showToast(
         "This is the primary administrator and cannot be deleted",
-        ToastState.error
+        ToastState.error,
       );
       return;
     }

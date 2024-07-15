@@ -25,7 +25,7 @@ const WeekActivityChart = ({ data }: { data: any }) => {
     date.setDate(date.getDate() - i);
     const dateString = date.toISOString().split("T")[0];
     let entry = data.find(
-      (activity: RecentActivity) => activity.date.split("T")[0] === dateString
+      (activity: RecentActivity) => activity.date.split("T")[0] === dateString,
     );
     entry
       ? (entry = {
