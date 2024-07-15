@@ -27,7 +27,6 @@ type KolibriService struct {
 	password           string
 	AccountID          string
 	CSRFToken          string
-	CancelRefresh      chan bool
 }
 
 /**
@@ -68,6 +67,7 @@ func NewKolibriService(provider *models.ProviderPlatform) *KolibriService {
 * and get the necessary cookies and tokens
 **/
 func (ks *KolibriService) InitiateSession() error {
+	log.Infoln("initiating kolibri session")
 	initialBody := map[string]interface{}{
 		"active": false,
 		"browser": map[string]string{

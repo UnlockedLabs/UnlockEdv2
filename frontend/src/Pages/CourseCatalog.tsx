@@ -17,7 +17,7 @@ export default function CourseCatalog() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data, mutate } = useSWR<ServerResponse<Program>>(
-    `/api/users/${user.id}/catalogue`
+    `/api/users/${user.id}/catalogue`,
   );
 
   useEffect(() => {

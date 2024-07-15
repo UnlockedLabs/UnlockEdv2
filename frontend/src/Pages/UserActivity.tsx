@@ -21,7 +21,7 @@ export default function UserActivity() {
   const [sortQuery, setSortQuery] = useState("user_id DESC");
 
   const { data, error, isLoading } = useSWR(
-    `/api/users/activity-log?sort=${sortQuery}&page=${pageQuery}&search=${searchTerm}`
+    `/api/users/activity-log?sort=${sortQuery}&page=${pageQuery}&search=${searchTerm}`,
   );
 
   const userActivityData = data as PaginatedResponse<Activity>;
