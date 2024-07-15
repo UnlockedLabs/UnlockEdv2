@@ -4,6 +4,8 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import EnrolledCourseCard from "@/Components/EnrolledCourseCard";
 import { useEffect, useState } from "react";
 import ToggleView, { ViewType } from "@/Components/ToggleView";
+import SearchBar from "@/Components/inputs/SearchBar";
+import DropdownControl from "@/Components/inputs/DropdownControl";
 import { Program, ServerResponse } from "@/common";
 import useSWR from "swr";
 
@@ -26,11 +28,15 @@ enum TabType {
 
 export default function MyCourses() {
   const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sort, setSort] = useState<string>("order=asc&orderby=program_name");
   const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
   const { data, mutate } = useSWR<ServerResponse<Program>>(
-    `/api/users/${user.id}/programs${activeTab !== TabType.All ? `?tags=${activeTab}` : ""}`,
+    `/api/users/${user.id}/programs?${
+      sort + (activeTab !== TabType.All ? `&tags=${activeTab}` : "") + (searchTerm ? `&search=${searchTerm}` : "")
+    }`
   );
 
   useEffect(() => {
@@ -40,6 +46,15 @@ export default function MyCourses() {
   function callMutate() {
     console.log("called");
     mutate();
+  }
+
+  const handleChange = (newSearch: string) => {
+    setSearchTerm(newSearch);
+    //setPageQuery(1);
+  };
+
+  function handleDropdownChange(value: string) {
+    setSort(value);
   }
 
   return (
@@ -61,17 +76,17 @@ export default function MyCourses() {
           ))}
         </div>
         <div className="flex flex-row items-center mt-4 justify-between">
-          {/* TO DO: REPLACE WITH MADE SEARCH BAR */}
-          <div className="flex flex-row">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="input input-bordered w-full max-w-xs input-sm"
-              // value={searchTerm}
-              // onChange={(e) => {
-              // setSearchTerm(e.target.value);
-              // setPageQuery(1);
-              // }}
+          <div className="flex flex-row gap-x-2">
+            <SearchBar searchTerm={searchTerm} changeCallback={handleChange} />
+            <DropdownControl
+              label="Sort by"
+              callback={handleDropdownChange}
+              enumType={{
+                "Name (A-Z)": "order=asc&orderby=program_name",
+                "Name (Z-A)": "order=desc&orderby=program_name",
+                "Progress (ascending)": "order=asc&orderby=course_progress",
+                "Progress (descending)": "order=desc&orderby=course_progress",
+              }}
             />
           </div>
           <ToggleView activeView={activeView} setActiveView={setActiveView} />

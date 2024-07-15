@@ -43,11 +43,12 @@ type UserPrograms struct {
 	ExternalURL    string  `json:"external_url"`
 	CourseProgress float64 `json:"course_progress"`
 	IsFavorited    bool    `json:"is_favorited"`
-	TotalTime 	   uint    `json:"total_time"`
+	TotalTime      uint    `json:"total_time"`
 }
 
-func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint, uint, error) {
+func (db *DB) GetUserPrograms(userId uint, order string, orderby string, search string, tags []string) ([]UserPrograms, uint, uint, error) {
 	programs := []UserPrograms{}
+	orderStr := orderby + " " + order
 	tx := db.Conn.Table("programs p").
 		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
@@ -66,6 +67,15 @@ func (db *DB) GetUserPrograms(userId uint, tags []string) ([]UserPrograms, uint,
         )`, userId).
 		Where("p.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
+	if orderby != "" && order != "" {
+		tx = tx.Order(orderStr)
+	}
+	if orderby == "course_progress" {
+		tx = tx.Order("p.name")
+	}
+	if search != "" {
+		tx = tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
+	}
 	for i, tag := range tags {
 		var query string
 		switch tag {

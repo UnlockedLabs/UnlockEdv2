@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -81,8 +82,13 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's programs")
 		return
 	}
+	order := r.URL.Query().Get("order")
+	orderBy := r.URL.Query().Get("orderby")
+	search := r.URL.Query().Get("search")
+	search = strings.ToLower(search)
+	search = strings.TrimSpace(search)
 	tags := r.URL.Query()["tags"]
-	userPrograms, numCompleted, totalTime, err := srv.Db.GetUserPrograms(uint(userId), tags)
+	userPrograms, numCompleted, totalTime, err := srv.Db.GetUserPrograms(uint(userId), order, orderBy, search, tags)
 	if err != nil {
 		log.Errorf("Error getting user programs: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
