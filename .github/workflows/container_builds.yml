@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - demo
 
 permissions:
   id-token: write
@@ -82,10 +83,17 @@ jobs:
         with:
           version: v1.21.0
 
-      - name: Set up Kubeconfig
+      - name: Set up Kubeconfig Staging
+        if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p $HOME/.kube && touch $HOME/.kube/config
           echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Set up Kubeconfig Demo
+        if: github.ref == 'refs/heads/demo'
+        run: |
+          mkdir -p $HOME/.kube && touch $HOME/.kube/config
+          echo "${{ secrets.KUBECTL_CONFIG_DEMO }}" | base64 -d > $HOME/.kube/config
 
       - name: Create k8s ECR secret
         run: |
