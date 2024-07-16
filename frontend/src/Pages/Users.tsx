@@ -5,7 +5,6 @@ import axios from "axios";
 import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
 import {
   ArrowPathRoundedSquareIcon,
-  ArrowUpRightIcon,
   PencilIcon,
   TrashIcon,
   UserPlusIcon,
@@ -183,7 +182,7 @@ export default function Users() {
               </th>
               <th>Username</th>
               <th>Role</th>
-              <th>Activity</th>
+              <th>Last Updated</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -191,6 +190,7 @@ export default function Users() {
             {!isLoading &&
               !error &&
               userData.data.map((user: any) => {
+                const updatedAt = new Date(user.updated_at);
                 return (
                   <tr key={user.id} className="border-gray-600">
                     <td>
@@ -201,8 +201,13 @@ export default function Users() {
                     <td>
                       <div className="tooltip" data-tip="User Activity">
                         <a className="flex justify-start cursor-pointer">
-                          <span>Today</span>
-                          <ArrowUpRightIcon className="w-4 text-accent" />
+                          <span>
+                            {updatedAt.toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
                         </a>
                       </div>
                     </td>
