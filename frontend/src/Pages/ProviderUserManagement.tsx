@@ -146,10 +146,12 @@ export default function ProviderUserManagement() {
         console.log(res.data.data);
         setImportedUsers(res.data.data);
         importedUsersModal.current?.showModal();
+        setUsersToImport([]);
         mutate();
         return;
       }
     } catch (err: any) {
+      setUsersToImport([]);
       showToast(
         "error importing users, please check accounts",
         ToastState.error,
