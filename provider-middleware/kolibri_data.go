@@ -47,6 +47,7 @@ type KolibriUser struct {
 	Gender      string `json:"gender"`
 	BirthYear   string `json:"birth_year"`
 	IsSuperuser bool   `json:"is_superuser"`
+	Password    string `json:"password"`
 }
 
 func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
@@ -66,14 +67,16 @@ func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
 	if first == "" && last == "" && ku.Username == "" {
 		return nil, errors.New("invalid user")
 	}
-	return &models.ImportUser{
+	user := models.ImportUser{
 		Username:         ku.Username,
 		NameFirst:        first,
 		NameLast:         last,
 		Email:            email,
 		ExternalUserID:   ku.Id,
 		ExternalUsername: ku.Username,
-	}, nil
+	}
+	log.Printf("user to return: %v", user)
+	return &user, nil
 }
 
 type KolibriContent struct {

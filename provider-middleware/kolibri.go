@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
@@ -147,27 +148,23 @@ func (kh *KolibriService) SendGETRequest(url string) (*http.Response, error) {
 	}
 	req.Header.Add("Referrer", kh.BaseURL+"/en/learn/")
 	req.Header.Add("X-CSRFToken", kh.CSRFToken)
-	resp, err := kh.HttpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return kh.HttpClient.Do(req)
 }
 
 func (ks *KolibriService) SendPOSTRequest(url string, body []byte) (*http.Response, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
+		log.Errorln("Error creating POST request KolibriService")
 		return nil, err
 	}
 	for key, value := range ks.BaseHeaders {
 		req.Header.Set(key, value)
 	}
-	req.Header.Add("X-CSRFToken", ks.CSRFToken)
-	resp, err := ks.HttpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	req.Header.Set("Referrer", ks.BaseURL+"/en/facility/")
+	req.Header.Set("X-CSRFToken", ks.CSRFToken)
+	log.Debugf("REQUEST to kolibri: %v", req)
+	return ks.HttpClient.Do(req)
 }
 
 func (ks *KolibriService) SendPUTRequest(url string, body []byte) (*http.Response, error) {
@@ -179,11 +176,7 @@ func (ks *KolibriService) SendPUTRequest(url string, body []byte) (*http.Respons
 		req.Header.Set(key, value)
 	}
 	req.Header.Add("X-CSRFToken", ks.CSRFToken)
-	resp, err := ks.HttpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return ks.HttpClient.Do(req)
 }
 
 func (ks *KolibriService) RefreshSession() error {
@@ -243,7 +236,7 @@ func (ks *KolibriService) GetUsers(_db *gorm.DB) ([]models.ImportUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	importUsers := make([]models.ImportUser, len(users))
+	importUsers := make([]models.ImportUser, 0)
 	for _, user := range users {
 		// TODO: dedupe these, check for existing users
 		ulUser, err := user.IntoImportUser()
@@ -278,6 +271,56 @@ func (ks *KolibriService) ImportPrograms(db *gorm.DB) error {
 			log.Warn("Error creating course: ", err)
 			continue
 		}
+	}
+	return nil
+}
+
+func (ks *KolibriService) CreateUserInKolibri(db *gorm.DB, userId int) error {
+	url := ks.BaseURL + "/api/auth/facilityuser/"
+	var user models.User
+	if err := db.Find(&user, "id = ?", userId).Error; err != nil {
+		log.Errorln("error finding user by id CreateUserInKolibri")
+		return err
+	}
+	kUser := make(map[string]interface{}, 0)
+	kUser["facility"] = ks.AccountID
+	kUser["full_name"] = user.NameFirst + user.NameLast
+	kUser["password"] = "NOT_SPECIFIED"
+	kUser["username"] = user.Username
+	kUser["id_number"] = fmt.Sprintf("%d", user.ID)
+	kUser["gender"] = "Male"
+	kUser["birth_year"] = "1992"
+	kUser["extra_demographics"] = make(map[string]interface{})
+	bytes, err := json.Marshal(kUser)
+	if err != nil {
+		log.Errorln("error marshalling json into bytes at CreateUserInKolibri")
+		return err
+	}
+	resp, err := ks.SendPOSTRequest(url, bytes)
+	if err != nil {
+		log.Errorf("error creating request at CreateUserInKolibri: %v", err)
+		return err
+	}
+	if resp.StatusCode != 201 {
+		log.Debugln("request sent to create new user: ", resp.Status)
+		log.Debugln(resp)
+		return errors.New("failed response received trying to create user in kolibri")
+	}
+	defer resp.Body.Close()
+	var userResp KolibriUser
+	if err := json.NewDecoder(resp.Body).Decode(&userResp); err != nil {
+		log.Errorln("error decoding request at CreateUserInKolibri")
+		return err
+	}
+	mapping := models.ProviderUserMapping{
+		ExternalUserID:     userResp.Id,
+		UserID:             user.ID,
+		ProviderPlatformID: ks.ProviderPlatformID,
+		ExternalUsername:   user.Username,
+	}
+	if err := db.Create(&mapping).Error; err != nil {
+		log.Errorln("error creating mapping in CreateUserInKolibri")
+		return err
 	}
 	return nil
 }

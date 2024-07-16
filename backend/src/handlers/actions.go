@@ -154,6 +154,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 		delete(cachedProviderUsers, uint(service.ProviderPlatformID))
 		return
 	}
+	log.Printf("Received import users: %v", externalUsers)
 	total, responseUsers := paginateUsers(externalUsers, page, perPage)
 	cachedProviderUsers[uint(service.ProviderPlatformID)] = CachedProviderUsers{Users: externalUsers, LastUpdated: time.Now()}
 	response := models.PaginatedResource[models.ImportUser]{Data: responseUsers, Message: "Successfully fetched users from provider", Meta: models.NewPaginationInfo(page, perPage, int64(total))}

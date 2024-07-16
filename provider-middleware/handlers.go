@@ -14,6 +14,7 @@ func (sh *ServiceHandler) registerRoutes() {
 		w.WriteHeader(http.StatusOK)
 	})))
 	sh.Mux.Handle("GET /api/users", sh.applyMiddleware(http.HandlerFunc(sh.handleUsers)))
+	sh.Mux.Handle("POST /api/users/{id}", sh.applyMiddleware(http.HandlerFunc(sh.handleCreateKolibriUser)))
 	sh.Mux.Handle("GET /api/programs", sh.applyMiddleware(http.HandlerFunc(sh.handlePrograms)))
 	sh.Mux.Handle("GET /api/users/{id}/programs/{program_id}/milestones", sh.applyMiddleware(http.HandlerFunc(sh.handleMilestonesForProgramUser)))
 	sh.Mux.Handle("GET /api/programs/{id}/activity", sh.applyMiddleware(http.HandlerFunc(sh.handleAcitivityForProgram)))
@@ -45,18 +46,21 @@ func (sh *ServiceHandler) handlePrograms(w http.ResponseWriter, r *http.Request)
 * and User objects
 **/
 func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "handleUsers"}
 	service, err := sh.initService(r)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Failed to initialize service")
 	}
 	users, err := service.GetUsers(sh.db)
 	if err != nil {
-		log.Printf("Failed to retrieve users: %v", err)
+		log.WithFields(fields).Errorln("Failed to retrieve users")
 		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
 		return
 	}
 	responseData, err := json.Marshal(&users)
 	if err != nil {
+		log.WithFields(fields).Errorln("Failed to marshal users")
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
@@ -68,9 +72,41 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 /**
-* POST: /api/milestones
-* body: {"user_id": x,"program_id": y}
- */
+* POST: /api/users/{id}
+* create a new user in Kolibri
+**/
+func (sh *ServiceHandler) handleCreateKolibriUser(w http.ResponseWriter, r *http.Request) {
+	log.Infoln("handleCreateKolibriUser called")
+	fields := log.Fields{"handler": "handleCreateKolibriUser"}
+	provService, err := sh.initService(r)
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("error getting provider service")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	userId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("invalid id, unable to decode into integer")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	service, ok := provService.(*KolibriService)
+	if !ok {
+		log.WithFields(fields).Errorln("user creation can only be called on KolibriService")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := service.CreateUserInKolibri(sh.db, userId); err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("unable to create user in Kolibri")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func (sh *ServiceHandler) handleMilestonesForProgramUser(w http.ResponseWriter, r *http.Request) {
 	service, err := sh.initService(r)
 	if err != nil {

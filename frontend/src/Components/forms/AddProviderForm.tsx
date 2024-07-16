@@ -38,6 +38,9 @@ export default function AddProviderForm({
 
   const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
     try {
+      if (!data.base_url.startsWith("http")) {
+        data.base_url = "https://" + data.base_url;
+      }
       setErrorMessage("");
       const response = await axios.post("/api/provider-platforms", data);
       if (response.status !== 201) {
