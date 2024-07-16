@@ -53,18 +53,22 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderby string, search 
 		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
     f.user_id IS NOT NULL as is_favorited,
-    CASE WHEN COUNT(o.type) > 0 THEN 100 ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones END as course_progress,
-	a.total_time`).
+    CASE
+        WHEN COUNT(o.type) > 0 THEN 100
+        WHEN p.total_progress_milestones = 0 THEN 0
+        ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones
+    END as course_progress,
+    a.total_time`).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("LEFT JOIN milestones on milestones.program_id = p.id AND milestones.user_id = ?", userId).
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (
-            SELECT id FROM activities 
-            WHERE program_id = p.id AND user_id = ? 
-            ORDER BY created_at DESC 
-            LIMIT 1
-        )`, userId).
+        SELECT id FROM activities 
+        WHERE program_id = p.id AND user_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 1
+    )`, userId).
 		Where("p.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 	if orderby != "" && order != "" {

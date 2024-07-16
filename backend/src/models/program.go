@@ -54,7 +54,7 @@ type RecentProgram struct {
 
 type UserDashboardJoin struct {
 	Enrollments    []CurrentEnrollment `json:"enrollments"`
-	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
+	RecentPrograms []RecentProgram     `json:"recent_programs"`
 	WeekActivity   []RecentActivity    `json:"week_activity"`
 }
 
@@ -70,8 +70,7 @@ type ImportProgram struct {
 	TotalProgressMilestones int      `json:"total_progress_milestones"`
 }
 
-//ADMIN STRUCTS
-
+// ADMIN STRUCTS
 type AdminDashboardJoin struct {
 	FacilityName        string               `json:"facility_name"`
 	MonthlyActivity     []RecentActivity     `json:"monthly_activity"`
