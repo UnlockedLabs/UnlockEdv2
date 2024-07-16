@@ -35,8 +35,10 @@ export default function MyCourses() {
 
   const { data, mutate } = useSWR<ServerResponse<Program>>(
     `/api/users/${user.id}/programs?${
-      sort + (activeTab !== TabType.All ? `&tags=${activeTab}` : "") + (searchTerm ? `&search=${searchTerm}` : "")
-    }`
+      sort +
+      (activeTab !== TabType.All ? `&tags=${activeTab}` : "") +
+      (searchTerm ? `&search=${searchTerm}` : "")
+    }`,
   );
 
   useEffect(() => {
