@@ -251,17 +251,15 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
         p.thumbnail_url,
         p.external_url,
         pp.name as provider_platform_name,
-        COUNT(sub_milestones.id) * 100.0 / p.total_progress_milestones as course_progress`).
-		Joins(`LEFT JOIN (
-    SELECT id, program_id FROM milestones
-    WHERE user_id = ? AND type IN ('assignment_submission', 'quiz_submission') AND is_completed = true
-    ORDER BY created_at DESC
-    LIMIT 3 ) sub_milestones ON sub_milestones.program_id = p.id`, userID).
+        CASE WHEN COUNT(o.type) > 0 THEN 100 ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones END as course_progress`).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+		Joins("LEFT JOIN milestones ON milestones.program_id = p.id AND milestones.user_id = ?", userID).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).
 		Where("p.id IN (SELECT program_id FROM activities WHERE user_id = ?)", userID).
 		Where("o.type IS NULL").
 		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name").
+		Order("MAX(milestones.created_at) DESC").
+		Limit(3).
 		Find(&recentPrograms).Error
 	if err != nil {
 		log.Errorf("Error getting recent programs: %v", err)
