@@ -146,10 +146,12 @@ export default function ProviderUserManagement() {
         console.log(res.data.data);
         setImportedUsers(res.data.data);
         importedUsersModal.current?.showModal();
+        setUsersToImport([]);
         mutate();
         return;
       }
     } catch (err: any) {
+      setUsersToImport([]);
       showToast(
         "error importing users, please check accounts",
         ToastState.error,
@@ -285,6 +287,7 @@ export default function ProviderUserManagement() {
                               type="checkbox"
                               className="checkbox"
                               onChange={() => handleAddImportUser(user)}
+                              checked={usersToImport.includes(user)}
                             />
                           </label>
                         </div>

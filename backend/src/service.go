@@ -72,6 +72,20 @@ func (serv *ProviderService) Request(url string) *http.Request {
 	return request
 }
 
+func (serv *ProviderService) PostRequest(url string) *http.Request {
+	log.Println("Init request for provider service")
+	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
+	finalUrl := serv.ServiceURL + url + "?id=" + strconv.Itoa(int(serv.ProviderPlatformID))
+	log.Printf("url: %s \n", finalUrl)
+	request, err := http.NewRequest("POST", finalUrl, nil)
+	if err != nil {
+		log.Printf("error creating request %v", err.Error())
+	}
+	request.Header.Set("Authorization", serviceKey)
+	log.Printf("request: %v", request)
+	return request
+}
+
 func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	fields := log.Fields{"handler": "GetUsers"}
 	req := serv.Request("/api/users")
@@ -94,7 +108,24 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 		log.Errorln("error decoding users from middleware")
 		return nil, err
 	}
+	log.Debugf("users received from middleware: %v", users)
 	return users, nil
+}
+
+func (serv *ProviderService) CreateKolibriUser(userId int) error {
+	fields := log.Fields{"handler": "CreateKolibriUser", "provider_platform_id": serv.ProviderPlatformID}
+	req := serv.PostRequest(fmt.Sprintf("/api/users/%d", userId))
+	resp, err := serv.Client.Do(req)
+	if err != nil {
+		log.WithFields(fields).Errorln("error getting content from middleware")
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		fields["status_code"] = resp.Status
+		log.WithFields(fields).Error("Failed to get programs")
+		return errors.New("failed to get programs")
+	}
+	return nil
 }
 
 func (serv *ProviderService) GetPrograms() error {

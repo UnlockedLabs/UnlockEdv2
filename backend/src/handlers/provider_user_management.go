@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
@@ -20,32 +21,37 @@ func (srv *Server) registerProviderUserRoutes() {
 // in the request body, and a currently existing user's ID in the path, and create a mapping
 // for that user, as well as create a login for that user in the provider
 func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "HandleMapProviderUser"}
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid provider platform ID")
 		return
 	}
+	fields["provider_platform_id"] = providerId
 	defer r.Body.Close()
 	var userBody models.ImportUser
 	err = json.NewDecoder(r.Body).Decode(&userBody)
 	if err != nil {
-		log.Errorln("Error decoding exernal user body from request in map-provider-user")
+		log.WithFields(fields).Errorln("Error decoding exernal user body from request in map-provider-user")
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user body")
 		return
 	}
 	userId, err := strconv.Atoi(r.PathValue("user_id"))
 	if err != nil {
+		log.WithFields(fields).Errorln("error decoding user id into integer")
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
+	fields["user_id"] = userId
 	provider, err := srv.Db.GetProviderPlatformByID(providerId)
 	if err != nil {
+		log.WithFields(fields).Errorln("Error getting provider platform by ID")
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Error getting provider platform")
 		return
 	}
 	user, err := srv.Db.GetUserByID(uint(userId))
 	if err != nil {
-		log.Errorln("Error getting user by ID to map to provider-user")
+		log.WithFields(fields).Errorln("Error getting user by ID to map to provider-user")
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Error getting user to map to provider user")
 		return
 	}
@@ -210,10 +216,15 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) createAndRegisterProviderUserAccount(provider *models.ProviderPlatform, user *models.User) error {
+	fields := log.Fields{"func": "createAndRegisterCanvasUserAccount"}
 	if provider.Type == models.CanvasCloud || provider.Type == models.CanvasOSS {
 		return srv.createAndRegisterCanvasUserAccount(provider, user)
 	} else {
-		// TODO: Kolibri account creation
-		return nil
+		log.Println("creating kolibri user")
+		service, err := src.GetProviderService(provider)
+		if err != nil {
+			log.WithFields(fields).Errorln("error getting provider service creating kolibri user")
+		}
+		return service.CreateKolibriUser(int(user.ID))
 	}
 }

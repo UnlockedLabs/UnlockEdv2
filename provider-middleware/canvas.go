@@ -166,10 +166,17 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 			description = course["course_code"].(string)
 		}
 		progType := "fixed_enrollment"
-		is_pub := course["is_public"].(bool)
+		is_pub, ok := course["is_public"].(bool)
+		if !ok {
+			is_pub = false
+		}
+		outcome_types := "grade"
 		if is_pub {
 			progType = "open_enrollment"
+		} else {
+			outcome_types += ", college_credit"
 		}
+
 		unlockedCourse := models.Program{
 			ProviderPlatformID:      srv.ProviderPlatformID,
 			Name:                    course["name"].(string),
