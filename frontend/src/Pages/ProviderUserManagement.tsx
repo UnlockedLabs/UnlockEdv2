@@ -285,6 +285,7 @@ export default function ProviderUserManagement() {
                               type="checkbox"
                               className="checkbox"
                               onChange={() => handleAddImportUser(user)}
+                              checked={usersToImport.includes(user)}
                             />
                           </label>
                         </div>
