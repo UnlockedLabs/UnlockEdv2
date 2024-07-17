@@ -75,7 +75,7 @@ export default function EnrolledCourseCard({
         </div>
       ) : (
         <div
-          className={`card card-compact ${status == CourseStatus.Recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative min-w-[228px]`}
+          className={`card card-compact ${recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
         >
           <div
             className="absolute top-2 right-2"
@@ -97,15 +97,17 @@ export default function EnrolledCourseCard({
                   src={coverImage}
                   // TO DO: add in alt text here
                   alt=""
-                  className="object-contain"
+                  className="object-cover w-full h-full"
                 />
               ) : (
                 <div className="bg-teal-1 h-full w-full"></div>
               )}
             </figure>
             <div className="card-body gap-0.5">
-              <p className="text-xs">{course.provider_platform_name}</p>
-              <h3 className="card-title text-sm h-10">
+              <p className="text-xs line-clamp-1">
+                {course.provider_platform_name}
+              </p>
+              <h3 className="card-title text-sm h-10 line-clamp-2">
                 {course.alt_name && course.alt_name + " - "}
                 {course.program_name}
               </h3>

@@ -22,7 +22,11 @@ const ExternalLink = ({ children, url }: { children: any; url: string }) => {
 const KolibriCard = () => {
   return (
     <div className="card card-compact bg-base-teal overflow-hidden">
-      <img src={KolibriImg} alt="Kolibri logo" />
+      <img
+        src={KolibriImg}
+        alt="Kolibri logo"
+        className="h-[105px] object-cover"
+      />
       <div className="card-body gap-2">
         <h3 className="card-title text-sm">Kolibri</h3>
         <p className="body-small">
