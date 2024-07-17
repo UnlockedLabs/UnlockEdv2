@@ -5,7 +5,6 @@ import Welcome from "@/Pages/Welcome";
 import Dashboard from "@/Pages/Dashboard";
 import Login from "@/Pages/Auth/Login";
 import Users from "@/Pages/Users";
-import LeftMenuManagement from "@/Pages/LeftMenuManagement";
 import UserActivity from "@/Pages/UserActivity";
 import ResetPassword from "@/Pages/Auth/ResetPassword";
 import ProviderPlatformManagement from "./Pages/ProviderPlatformManagement";
@@ -16,6 +15,7 @@ import MyProgress from "./Pages/MyProgress";
 import CourseCatalog from "./Pages/CourseCatalog";
 import ProviderUserManagement from "./Pages/ProviderUserManagement";
 import Error from "./Pages/Error";
+import ResourcesManagement from "./Pages/ResourcesManagement";
 
 function WithAuth({ children }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -44,8 +44,8 @@ export default function App() {
       errorElement: <Error />,
     },
     {
-      path: "/left-menu-management",
-      element: WithAuth({ children: <LeftMenuManagement /> }),
+      path: "/resources-management",
+      element: WithAuth({ children: <ResourcesManagement /> }),
       errorElement: <Error />,
     },
     {

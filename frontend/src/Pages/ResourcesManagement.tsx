@@ -19,7 +19,7 @@ interface ToastProps {
   message: string;
 }
 
-export default function LeftMenuManagement() {
+export default function ResourcesManagement() {
   const auth = useAuth();
   const { data, error, mutate, isLoading } = useSWR("/api/left-menu");
 
@@ -159,7 +159,7 @@ export default function LeftMenuManagement() {
   function moveLink(
     category: Category,
     linkIndex: number,
-    direction: "up" | "down",
+    direction: "up" | "down"
   ) {
     let index: number;
     if (direction == "up") {
@@ -206,7 +206,7 @@ export default function LeftMenuManagement() {
     //remove and save the dragged item content
     const draggedItemContent = newCategoryList.splice(
       draggedItem.current,
-      1,
+      1
     )[0];
 
     if (insertAtIndex[0] == categoryList.length)
@@ -264,7 +264,7 @@ export default function LeftMenuManagement() {
 
   return (
     <AuthenticatedLayout title="Categories">
-      <PageNav user={auth.user} path={["Settings", "Left Menu Management"]} />
+      <PageNav user={auth.user} path={["Settings", "Resource Management"]} />
       <div className="p-4">
         <div className="flex justify-between">
           <button
