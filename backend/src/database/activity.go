@@ -382,12 +382,12 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	// Program Milestones
 	err = db.Conn.Table("programs p").
-		Select("p.alt_name as alt_name, COALESCE(COUNT(m.id), 0) as milestones").
+		Select("CONCAT(p.alt_name, ' - ', p.name) AS combined_name, COALESCE(COUNT(m.id), 0) as milestones").
 		Joins("LEFT JOIN milestones m ON m.program_id = p.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
 		Joins("LEFT JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
-		Group("p.alt_name").
+		Group("p.name, p.alt_name").
 		Order("milestones DESC").
-		Limit(8).
+		Limit(5).
 		Find(&dashboard.ProgramMilestones).Error
 	if err != nil {
 		return dashboard, err

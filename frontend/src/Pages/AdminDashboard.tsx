@@ -10,7 +10,7 @@ import convertSeconds from "../Components/ConvertSeconds";
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<AdminDashboardJoin>>(
-    `/api/users/${user.id}/admin-dashboard`,
+    `/api/users/${user.id}/admin-dashboard`
   );
 
   if (error || isLoading) return <div></div>;
@@ -44,10 +44,8 @@ export default function AdminDashboard() {
               label={totalActivity.label}
             />
           </div>
-          <div className="card h-[368px]">
-            <h2 className="card-h-padding">
-              This Week's Milestone Completion Per Course
-            </h2>
+          <div className="card h-[368px] p-4">
+            <h2>Top Milestone Completion Per Course</h2>
             <MilestonesBarChart data={data.program_milestones} />
           </div>
         </div>
@@ -95,7 +93,7 @@ export default function AdminDashboard() {
                           <td>{courseTime}</td>
                         </tr>
                       );
-                    },
+                    }
                   )}
               </tbody>
             </table>
