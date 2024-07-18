@@ -28,7 +28,7 @@
     @apply text-xs;
   }
   .card {
-    @apply shadow-md rounded-lg border border-black border-opacity-[10%] bg-base-teal;
+    @apply shadow-md rounded-lg border border-black border-opacity-[10%] bg-base-teal overflow-auto;
   }
   .card-h-padding {
     @apply mt-4 ml-4;
