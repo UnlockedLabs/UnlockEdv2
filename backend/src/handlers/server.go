@@ -43,6 +43,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerProviderUserRoutes()
 	srv.registerOryRoutes()
 	srv.registerFacilitiesRoutes()
+	srv.registerOpenContentRoutes()
 }
 
 func ServerWithDBHandle(db *database.DB) *Server {
@@ -77,12 +78,12 @@ func NewServer(isTesting bool) *Server {
 	}
 }
 
-func (srv *Server) applyMiddleware(h http.Handler) http.Handler {
-	return srv.AuthMiddleware(srv.UserActivityMiddleware(h))
+func (srv *Server) applyMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return http.HandlerFunc(srv.AuthMiddleware(srv.UserActivityMiddleware(h)))
 }
 
-func (srv *Server) ApplyAdminMiddleware(h http.Handler) http.Handler {
-	return srv.applyMiddleware(srv.adminMiddleware(h))
+func (srv *Server) ApplyAdminMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return http.HandlerFunc(srv.applyMiddleware(srv.adminMiddleware(h)))
 }
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
@@ -109,6 +110,7 @@ func (srv *Server) checkForAdminInKratos() (string, error) {
 		log.Error("unable to get identities in kratos")
 		return "", err
 	}
+
 	log.Debug("checking for admin in kratos")
 	for _, user := range identities {
 		if username, ok := user.GetTraitsOk(); ok {
@@ -137,7 +139,7 @@ func (srv *Server) syncKratosAdminDB() error {
 	}
 	if id == "" {
 		// this means the default admin was just created, so we use default password
-		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
+		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
 		}
 		return nil
@@ -168,7 +170,7 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 		// double check that the stored kratos ID is valid
 		if err := srv.validateUserIDKratos(user.KratosID); err != nil {
 			// if not, it's a freshly migrated database
-			return srv.handleCreateUserKratos(user.Username, "ChangeMe!")
+			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}
 	return srv.syncKratosAdminDB()

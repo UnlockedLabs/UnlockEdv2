@@ -18,8 +18,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	offset := (page - 1) * itemsPerPage
 	var count int64
 	var users []models.User
-	if err := db.Conn.Table("users").
-		Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
+	if err := db.Conn.Model(models.User{}).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Order(order).
@@ -37,8 +36,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 	var users []models.User
 	var count int64
 	offset := (page - 1) * itemsPerPage
-	if err := db.Conn.Table("users").
-		Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
+	if err := db.Conn.Model(models.User{}).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
 		Where("name_first ILIKE ? OR username ILIKE ? OR name_last ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").
 		Order(order).
@@ -54,9 +52,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	var user models.User
-	if err := db.Conn.Select("id", "email", "username", "name_first", "name_last", "role", "created_at", "updated_at", "password_reset", "kratos_id", "facility_id").
-		Where("id = ?", id).
-		First(&user).Error; err != nil {
+	if err := db.Conn.First(&user, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

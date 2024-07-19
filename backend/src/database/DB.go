@@ -34,6 +34,7 @@ var TableList = []interface{}{
 	&models.OidcClient{},
 	&models.UserFavorite{},
 	&models.Facility{},
+	&models.OpenContentProvider{},
 }
 
 func InitDB(isTesting bool) *DB {

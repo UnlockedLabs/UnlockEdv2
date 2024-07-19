@@ -10,10 +10,10 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetActivityByUserID)))
-	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetDailyActivityByUserID)))
-	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleGetProgramActivity)))
-	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateActivity)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.HandleGetActivityByUserID))
+	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.HandleGetDailyActivityByUserID))
+	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleGetProgramActivity))
+	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleCreateActivity))
 }
 
 func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request) {

@@ -6,15 +6,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerProviderUserRoutes() {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleMapProviderUser)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleImportProviderUsers)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.ApplyAdminMiddleware(srv.HandleMapProviderUser))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.ApplyAdminMiddleware(srv.HandleImportProviderUsers))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.ApplyAdminMiddleware(srv.handleCreateProviderUserAccount))
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,
@@ -82,6 +83,21 @@ type ImportUserResponse struct {
 	Error        string `json:"error"`
 }
 
+func removeChars(str string, toStrip string) string {
+	removeMap := make(map[rune]bool)
+	for _, char := range toStrip {
+		removeMap[char] = true
+	}
+	return strings.Map(func(r rune) rune {
+		if removeMap[r] {
+			return -1
+		}
+		return r
+	}, str)
+}
+
+const disallowedChars string = "`; )(|\\\"'"
+
 // This function takes an array of 1 or more Provider users (that come from the middleware, so they are
 // already in the correct format) and creates a new user in the database for each of them, as well as
 // creating a mapping for each user, and creating a login for each user in the provider
@@ -110,8 +126,9 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 	}
 	var response models.Resource[ImportUserResponse]
 	for _, user := range users.Users {
+		username := removeChars(user.Username, disallowedChars)
 		newUser := models.User{
-			Username:   user.Username,
+			Username:   username,
 			Email:      user.Email,
 			NameFirst:  user.NameFirst,
 			NameLast:   user.NameLast,
@@ -128,16 +145,14 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			continue
 		}
 		userResponse.TempPassword = created.Password
-		if !srv.isTesting(r) {
-			if err := srv.handleCreateUserKratos(created.Username, created.Password); err != nil {
-				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
-					log.Errorf("Error deleting user after failed provider user mapping import-provider-users")
-				}
-				log.Warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
-				userResponse.Error = "error creating authentication for user in kratos, please try again"
-				response.Data = append(response.Data, userResponse)
-				continue
+		if err := srv.HandleCreateUserKratos(created.Username, created.Password); err != nil {
+			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
+				log.Errorf("Error deleting user after failed provider user mapping import-provider-users")
 			}
+			log.Warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
+			userResponse.Error = "error creating authentication for user in kratos, please try again"
+			response.Data = append(response.Data, userResponse)
+			continue
 		}
 		mapping := models.ProviderUserMapping{
 			UserID:             created.ID,

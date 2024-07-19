@@ -11,11 +11,11 @@ import (
 )
 
 func (srv *Server) registerUserActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/activity-log", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleGetAllUserActivities)))
-	srv.Mux.Handle("GET /api/users/{id}/activity-log", srv.applyMiddleware(http.HandlerFunc(srv.handleGetUserActivityByID)))
+	srv.Mux.Handle("GET /api/users/activity-log", srv.ApplyAdminMiddleware(srv.handleGetAllUserActivities))
+	srv.Mux.Handle("GET /api/users/{id}/activity-log", srv.applyMiddleware(srv.handleGetUserActivityByID))
 }
 
-func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
+func (srv *Server) UserActivityMiddleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userAgent := r.Header.Get("User-Agent")
 		if userAgent == "" {
@@ -34,7 +34,7 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 			}
 		}
 		split := strings.Split(userAgent, " ")
-		last := split[len(split)-1]
+		last := split[uint(len(split)-1)]
 
 		browser := "Unknown"
 		if strings.Contains(last, "Chrome") {
@@ -63,7 +63,7 @@ func (srv *Server) UserActivityMiddleware(next http.Handler) http.Handler {
 			log.Error("Error creating user activity: " + err.Error())
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		}
-		next.ServeHTTP(w, r.WithContext(r.Context()))
+		http.HandlerFunc(next).ServeHTTP(w, r.WithContext(r.Context()))
 	})
 }
 

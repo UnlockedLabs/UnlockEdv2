@@ -236,45 +236,34 @@ RETURNS:
 		WeekActivity   []RecentActivity    `json:"week_activity"`
 	}
 
-	type RecentProgram struct {
-		ProgramName          string `json:"program_name"`
-		CourseProgress       string `json:"course_progress"`
-		AltName              string `json:"alt_name"`
-		ThumbnailUrl         string `json:"thumbnail_url"`
-		ProviderPlatformName string `json:"provider_platform_name"`
-		ExternalUrl          string `json:"external_url"`
-	}
-
 For the users dashboard. TODO:  We have to cache this so we aren't running on each visit to home
 */
 func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, error) {
+	var recentPrograms [3]models.RecentProgram
 	// first get the users 3 most recently interacted with programs
+	//
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
 	// where the user has an entry in the activity table
-	var recentPrograms []models.RecentProgram
-
 	err := db.Conn.Table("programs p").
 		Select(`p.name as program_name,
         p.alt_name,
         p.thumbnail_url,
         p.external_url,
         pp.name as provider_platform_name,
-        CASE
-        WHEN COUNT(o.id) > 0 THEN 100
-        WHEN p.total_progress_milestones = 0 THEN 0
-        ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones END as course_progress`).
-		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
+        CASE WHEN COUNT(o.type) > 0 THEN 100 ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones END as course_progress`).
+		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("LEFT JOIN milestones ON milestones.program_id = p.id AND milestones.user_id = ?", userID).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).
 		Where("p.id IN (SELECT program_id FROM activities WHERE user_id = ?)", userID).
-		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name, p.total_progress_milestones").
+		Where("o.type IS NULL").
+		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name").
 		Order("MAX(milestones.created_at) DESC").
 		Limit(3).
 		Find(&recentPrograms).Error
 	if err != nil {
 		log.Errorf("Error getting recent programs: %v", err)
-		recentPrograms = make([]models.RecentProgram, 3)
+		recentPrograms = [3]models.RecentProgram{}
 	}
 
 	// then get the users current enrollments

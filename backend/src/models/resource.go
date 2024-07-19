@@ -13,6 +13,13 @@ type Resource[T any] struct {
 	Data    []T    `json:"data"`
 }
 
+func DefaultResource[T any](data []T) Resource[T] {
+	return Resource[T]{
+		Message: "resource fetched successfully",
+		Data:    data,
+	}
+}
+
 type PaginationMeta struct {
 	CurrentPage int   `json:"current_page"`
 	LastPage    int   `json:"last_page"`

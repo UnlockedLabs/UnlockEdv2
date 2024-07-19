@@ -13,12 +13,12 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(http.HandlerFunc(srv.HandleGetUsers)))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.HandleGetUsers))
 
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportUsers)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-programs", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportPrograms)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-milestones", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportMilestones)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-activity", srv.applyMiddleware(http.HandlerFunc(srv.HandleImportActivity)))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.HandleImportUsers))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-programs", srv.applyMiddleware(srv.HandleImportPrograms))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-milestones", srv.applyMiddleware(srv.HandleImportMilestones))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-activity", srv.applyMiddleware(srv.HandleImportActivity))
 }
 
 /****************************************************************************************************
@@ -76,7 +76,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if !srv.isTesting(r) {
-			if err := srv.handleCreateUserKratos(created.Username, created.Password); err != nil {
+			if err := srv.HandleCreateUserKratos(created.Username, created.Password); err != nil {
 				fields["error"] = err.Error()
 				log.WithFields(fields).Errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity

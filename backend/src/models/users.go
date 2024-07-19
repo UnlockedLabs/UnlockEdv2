@@ -35,7 +35,7 @@ type User struct {
 	KratosID      string   `gorm:"size:255" json:"kratos_id"`
 	FacilityID    uint     `json:"facility_id"`
 
-	/* foreign key */
+	/* foreign keys */
 	Mappings    []ProviderUserMapping `json:"-"`
 	ActivityLog []UserActivity        `json:"-"`
 	Facility    *Facility             `gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL" json:"-"`
@@ -72,14 +72,12 @@ func (user *User) CreateTempPassword() string {
 }
 
 func (user *User) HashPassword() error {
-	log.Printf("Hashing password for user %s", user.Username)
-	log.Printf("Password: %s", user.Password)
 	bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	user.Password = string(bytes)
-	log.Printf("Password hashed for user %s", user.Password)
+	log.Printf("Password hashed for user %s", user.Username)
 	return nil
 }
 

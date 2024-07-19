@@ -54,7 +54,7 @@ type RecentProgram struct {
 
 type UserDashboardJoin struct {
 	Enrollments    []CurrentEnrollment `json:"enrollments"`
-	RecentPrograms []RecentProgram     `json:"recent_programs"`
+	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
 	WeekActivity   []RecentActivity    `json:"week_activity"`
 }
 

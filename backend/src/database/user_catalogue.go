@@ -1,5 +1,10 @@
 package database
 
+import (
+	"slices"
+	"strings"
+)
+
 type UserCatalogueJoin struct {
 	ProgramID    uint   `json:"program_id"`
 	ThumbnailURL string `json:"thumbnail_url"`
@@ -46,21 +51,40 @@ type UserPrograms struct {
 	TotalTime      uint    `json:"total_time"`
 }
 
-func (db *DB) GetUserPrograms(userId uint, order string, orderby string, search string, tags []string) ([]UserPrograms, uint, uint, error) {
+func validOrder(str string) string {
+	if slices.Contains([]string{"asc", "desc"}, strings.ToLower(str)) {
+		return strings.ToLower(str)
+	}
+	return "desc"
+}
+
+func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search string, tags []string) ([]UserPrograms, uint, uint, error) {
 	programs := []UserPrograms{}
-	orderStr := orderby + " " + order
+	fieldMap := map[string]string{
+		"program_name":    "p.name",
+		"provider_name":   "pp.name",
+		"course_progress": "course_progress",
+		"is_favorited":    "is_favorited",
+	}
+	dbField, ok := fieldMap[orderBy]
+	if !ok {
+		dbField = "p.name"
+	}
+	orderStr := dbField + " " + validOrder(order)
 	tx := db.Conn.Table("programs p").
 		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
     f.user_id IS NOT NULL as is_favorited,
     CASE
-        WHEN COUNT(o.type) > 0 THEN 100
+        WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.program_id = p.id AND o.user_id = ?) THEN 100
         WHEN p.total_progress_milestones = 0 THEN 0
-        ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones
+        ELSE (SELECT COUNT(m.id) * 100.0 / p.total_progress_milestones
+              FROM milestones m
+              WHERE m.program_id = p.id AND m.user_id = ?)
     END as course_progress,
-    a.total_time`).
+    a.total_time`, userId, userId).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("LEFT JOIN milestones on milestones.program_id = p.id AND milestones.user_id = ?", userId).
+		Joins("LEFT JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.program_id = p.id", userId).
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (
@@ -70,13 +94,10 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderby string, search 
         LIMIT 1
     )`, userId).
 		Where("p.deleted_at IS NULL").
-		Where("pp.deleted_at IS NULL")
-	if orderby != "" && order != "" {
-		tx = tx.Order(orderStr)
-	}
-	if orderby == "course_progress" {
-		tx = tx.Order("p.name")
-	}
+		Where("pp.deleted_at IS NULL").
+		Where("m.user_id IS NOT NULL")
+	tx = tx.Order(orderStr)
+
 	if search != "" {
 		tx = tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
 	}

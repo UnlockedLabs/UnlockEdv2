@@ -14,12 +14,12 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleIndexUsers)))
-	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowUser)))
-	srv.Mux.Handle("POST /api/users", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateUser)))
-	srv.Mux.Handle("POST /api/users/student-password", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleResetStudentPassword)))
+	srv.Mux.Handle("GET /api/users", srv.ApplyAdminMiddleware(srv.HandleIndexUsers))
+	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.HandleShowUser))
+	srv.Mux.Handle("POST /api/users", srv.ApplyAdminMiddleware(srv.HandleCreateUser))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyAdminMiddleware(srv.HandleDeleteUser))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyAdminMiddleware(srv.HandleUpdateUser))
+	srv.Mux.Handle("POST /api/users/student-password", srv.ApplyAdminMiddleware(srv.HandleResetStudentPassword))
 }
 
 /**
@@ -37,7 +37,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		srv.HandleGetUnmappedUsers(w, r, providerId)
 		return
 	}
-	order := r.URL.Query().Get("order")
+	order := r.URL.Query().Get("order_by")
 	search := strings.ToLower(r.URL.Query().Get("search"))
 	search = strings.TrimSpace(search)
 	facilityId := srv.getFacilityID(r)
@@ -157,6 +157,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.User.FacilityID == 0 {
 		user.User.FacilityID = srv.getFacilityID(r)
 	}
+	user.User.Username = removeChars(user.User.Username, disallowedChars)
 	newUser, err := srv.Db.CreateUser(&user.User)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -179,7 +180,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos
 	if !srv.isTesting(r) {
-		if err := srv.handleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
+		if err := srv.HandleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
 			log.Printf("Error creating user in kratos: %v", err)
 		}
 	}
@@ -191,19 +192,26 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
  */
 func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
+	fields := log.Fields{"handler": "HandleDeleteUser", "user_id": id}
 	if err != nil {
-		log.Error("DELETE User handler Error: ", err)
+		log.WithFields(fields).Error("DELETE User handler Error: ", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	user, err := srv.Db.GetUserByID(uint(id))
 	if err != nil {
-		log.WithField("user_id", id).Error("unable to find user to be deleted")
+		log.WithFields(fields).Error("unable to find user to be deleted")
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
-		log.WithField("user_id", id).Error("error deleting user in kratos")
+		log.WithFields(fields).Error("error deleting user in kratos")
 		srv.ErrorResponse(w, http.StatusInternalServerError, "error deleting user in kratos")
+		return
+	}
+	if err := srv.Db.DeleteUser(id); err != nil {
+		log.WithFields(fields).Errorln("unable to delete user")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error deleting user in database")
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -276,7 +284,7 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if user.KratosID == "" {
-		err := srv.handleCreateUserKratos(user.Username, newPass)
+		err := srv.HandleCreateUserKratos(user.Username, newPass)
 		if err != nil {
 			fields["error"] = err.Error()
 			log.WithFields(fields).Errorf("Error creating user in kratos: %v", err)

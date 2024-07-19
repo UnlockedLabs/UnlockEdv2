@@ -3,7 +3,8 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.ProviderPlatform, error) {
@@ -47,6 +48,18 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 	log.Printf("Creating provider platform: %v", platform)
 	if err := db.Conn.Create(&platform).Error; err != nil {
 		return nil, err
+	}
+	if platform.Type == models.Kolibri {
+		contentProv := models.OpenContentProvider{
+			Url:                platform.BaseUrl,
+			Thumbnail:          platform.IconUrl,
+			ProviderPlatformID: platform.ID,
+			CurrentlyEnabled:   true,
+			Description:        models.KolibriDescription,
+		}
+		if err := db.Conn.Create(&contentProv).Error; err != nil {
+			log.Errorln("unable to create relevant content provider for new kolibri instance")
+		}
 	}
 	newProv := models.ProviderPlatform{}
 	if err := db.Conn.Find(&newProv, "id = ?", platform.ID).Error; err != nil {
