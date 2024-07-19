@@ -239,7 +239,7 @@ RETURNS:
 For the users dashboard. TODO:  We have to cache this so we aren't running on each visit to home
 */
 func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, error) {
-	var recentPrograms [3]models.RecentProgram
+	var recentPrograms []models.RecentProgram
 	// first get the users 3 most recently interacted with programs
 	//
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
@@ -263,7 +263,21 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 		Find(&recentPrograms).Error
 	if err != nil {
 		log.Errorf("Error getting recent programs: %v", err)
-		recentPrograms = [3]models.RecentProgram{}
+		recentPrograms = []models.RecentProgram{}
+	}
+
+	// TOP PROGRAMS
+	var topPrograms []string
+	err = db.Conn.Table("activities a").
+		Select("p.name as program_name").
+		Joins("JOIN programs p ON a.program_id = p.id").
+		Joins("JOIN users u ON a.user_id = u.id").
+		Group("p.id").
+		Order("SUM(a.time_delta) DESC").
+		Limit(6).
+		Find(&topPrograms).Error
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
 	}
 
 	// then get the users current enrollments
@@ -331,7 +345,7 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 		log.Fatalf("Query failed: %v", err)
 	}
 
-	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, WeekActivity: activities}, err
+	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, TopPrograms: topPrograms, WeekActivity: activities}, err
 }
 
 func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin, error) {
