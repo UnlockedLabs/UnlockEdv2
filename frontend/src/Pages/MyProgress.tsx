@@ -1,22 +1,45 @@
 import { useAuth } from "@/AuthContext";
+import { useState } from "react";
 import PageNav from "@/Components/PageNav";
 import StatsCard from "@/Components/StatsCard";
 import UserActivityMap from "@/Components/UserActivityMap";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import DarkGreenPill from "@/Components/pill-labels/DarkGreenPill";
 import TealPill from "@/Components/pill-labels/TealPill";
+import DropdownControl from "@/Components/inputs/DropdownControl";
 import useSWR from "swr";
 import { ServerResponse } from "@/common";
 import convertSeconds from "@/Components/ConvertSeconds";
 
 export default function MyProgress() {
+  const [sortPrograms, setSortPrograms] = useState<string>("order=asc&order_by=program_name");
+  const [sortCertificates, setSortCertificates] = useState<string>("order=asc&order_by=program_name");
+  const [filterPrograms, setFilterPrograms] = useState<number>(0);
   const { user } = useAuth();
   const { data } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/programs`,
+    `/api/users/${user.id}/programs?${sortPrograms}`,
   );
   const { data: certificates } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/outcomes?type=certificate`,
+    `/api/users/${user.id}/outcomes?type=certificate&${sortCertificates}`,
   );
+
+  function handleSortPrograms(value: string) {
+    const defaultSort = "order=asc&order_by=program_name";
+    if(value == "completed") {
+      setFilterPrograms(1);
+      setSortPrograms(defaultSort);
+    } else if(value == "in_progress") {
+      setFilterPrograms(-1);
+      setSortPrograms(defaultSort);
+    } else {
+      setFilterPrograms(0);
+      setSortPrograms(value);
+    }
+  }
+
+  function handleSortCertificates(value: string) {
+    setSortCertificates(value);
+  }
 
   console.log(data);
 
@@ -46,9 +69,19 @@ export default function MyProgress() {
             </div>
             <div className="flex flex-row gap-12 mt-12">
               <div className="card bg-base-teal h-[531px] w-[60%] p-4 overflow-y-auto">
-                <div className="flex flex-row">
-                  <h2>All Courses</h2>
-                  {/* dropdown will go here */}
+                <div className="flex flex-row gap-x-4">
+                  <h2 className="mt-2">All Courses</h2>
+                  <DropdownControl
+              label="Sort by"
+              callback={handleSortPrograms}
+              enumType={{
+                "Name": "order=asc&order_by=program_name",
+                "Completed Only": "completed",
+                "In Progress Only": "in_progress",
+                "Total time": "order=desc&order_by=total_time",
+                //"Grade": "order=asc&order_by=grade",
+              }}
+            />
                 </div>
                 <table className="w-full mt-4">
                   <thead>
@@ -62,6 +95,11 @@ export default function MyProgress() {
                   <tbody className="flex flex-col gap-4 mt-4">
                     {data.programs.map((course: any, index: number) => {
                       const courseTotalTime = convertSeconds(course.total_time);
+                      if(filterPrograms == 1 && course.course_progress < 100) {
+                        return;
+                      } else if(filterPrograms == -1 && course.course_progress == 100) {
+                        return;
+                      }
                       return (
                         <tr
                           className="flex flex-row justify-between body-small items-center"
@@ -88,9 +126,18 @@ export default function MyProgress() {
                 </table>
               </div>
               <div className="card bg-base-teal h-[531px] w-[40%] p-4 overflow-y-auto">
-                <div className="flex flex-row">
-                  <h2>Certificates Earned</h2>
-                  {/* dropdown will go here */}
+                <div className="flex flex-row gap-x-4">
+                  <h2 className="mt-2">Certificates Earned</h2>
+                  <DropdownControl
+                    label="Sort by"
+                    callback={handleSortCertificates}
+                    enumType={{
+                      "Name (A-Z)": "order=asc&order_by=program_name",
+                      "Name (Z-A)": "order=desc&order_by=program_name",
+                      "Newest": "order=desc&order_by=created_at",
+                      "Oldest": "order=asc&order_by=created_at",
+                    }}
+                  />
                 </div>
                 <table className="w-full mt-4">
                   <thead>

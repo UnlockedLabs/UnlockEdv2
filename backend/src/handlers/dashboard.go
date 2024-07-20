@@ -83,7 +83,7 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	order := r.URL.Query().Get("order")
-	orderBy := r.URL.Query().Get("orderby")
+	orderBy := r.URL.Query().Get("order_by")
 	search := r.URL.Query().Get("search")
 	search = strings.ToLower(search)
 	search = strings.TrimSpace(search)
