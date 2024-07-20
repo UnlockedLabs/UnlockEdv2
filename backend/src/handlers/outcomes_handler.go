@@ -28,11 +28,13 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	// Get type from query param
+	// Get vars from query params
 	typeString := r.URL.Query().Get("type")
+	order := r.URL.Query().Get("order")
+	orderBy := r.URL.Query().Get("order_by")
 	outcomeType := models.OutcomeType(typeString)
 
-	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage, outcomeType)
+	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage, order, orderBy, outcomeType)
 	if err != nil {
 		log.Error("handler: getOutcomes: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

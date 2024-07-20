@@ -29,7 +29,7 @@ enum TabType {
 export default function MyCourses() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sort, setSort] = useState<string>("order=asc&orderby=program_name");
+  const [sort, setSort] = useState<string>("order=asc&order_by=program_name");
   const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
@@ -84,10 +84,10 @@ export default function MyCourses() {
               label="Sort by"
               callback={handleDropdownChange}
               enumType={{
-                "Name (A-Z)": "order=asc&orderby=program_name",
-                "Name (Z-A)": "order=desc&orderby=program_name",
-                "Progress (ascending)": "order=asc&orderby=course_progress",
-                "Progress (descending)": "order=desc&orderby=course_progress",
+                "Name (A-Z)": "order=asc&order_by=program_name",
+                "Name (Z-A)": "order=desc&order_by=program_name",
+                "Progress (ascending)": "order=asc&order_by=course_progress",
+                "Progress (descending)": "order=desc&order_by=course_progress",
               }}
             />
           </div>
