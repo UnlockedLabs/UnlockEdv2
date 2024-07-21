@@ -143,10 +143,26 @@ func (db *DB) DeleteUser(id int) error {
 
 func (db *DB) GetUserByUsername(username string) *models.User {
 	var user models.User
+	var count int64
+
+	_ = db.Conn.Model(models.User{}).Find(&user, "username = ?", username).Count(&count)
 	if err := db.Conn.Model(models.User{}).Find(&user, "username = ?", username).Error; err != nil {
 		return nil
 	}
+	if count == 0 {
+		return nil
+	}
 	return &user
+}
+
+func (db *DB) IsValidUsername(username string) bool {
+	userExists := false
+	err := db.Conn.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", username).
+		Scan(&userExists)
+	if err != nil {
+		log.Error("Error checking if username exists: ", err)
+	}
+	return userExists
 }
 
 func (db *DB) UpdateUser(user *models.User) (*models.User, error) {

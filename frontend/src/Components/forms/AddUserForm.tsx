@@ -27,6 +27,7 @@ export default function AddUserForm({
     reset,
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<Inputs>();
 
@@ -48,7 +49,12 @@ export default function AddUserForm({
         ToastState.success,
       );
     } catch (error: any) {
-      setErrorMessage(error.response.data.message);
+      const response = error.response.data.trim()
+      if(response === "userexists") {
+        setError("username", { type: "custom", message: "Username already exists" });
+      } else {
+        setErrorMessage(error.response.data);
+      }
     }
   };
 
@@ -78,7 +84,10 @@ export default function AddUserForm({
 
   return (
     <div>
-      <CloseX close={() => reset()} />
+      <CloseX close={() => {
+        setErrorMessage("");
+        reset()
+      }}/>
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextInput
           label={"First Name"}

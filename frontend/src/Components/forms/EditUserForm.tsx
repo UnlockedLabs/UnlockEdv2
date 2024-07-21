@@ -27,6 +27,7 @@ export default function EditUserForm({
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<Inputs>({
     defaultValues: {
@@ -59,13 +60,21 @@ export default function EditUserForm({
 
       onSuccess();
     } catch (error: any) {
-      setErrorMessage(error.response.data.message);
+      const response = error.response.data.trim()
+      if(response === "userexists") {
+        setError("username", { type: "custom", message: "Username already exists" });
+      } else {
+        setErrorMessage(response);
+      }
     }
   };
 
   return (
     <>
-      <CloseX close={() => onSuccess()} />
+      <CloseX close={() => {
+        onSuccess();
+        setErrorMessage("");
+      }} />
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextInput
           label={"First Name"}
