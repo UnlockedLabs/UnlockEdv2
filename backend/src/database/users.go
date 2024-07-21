@@ -143,7 +143,27 @@ func (db *DB) DeleteUser(id int) error {
 
 func (db *DB) GetUserByUsername(username string) *models.User {
 	var user models.User
+	var count int64
+
+	_ = db.Conn.Model(models.User{}).Find(&user, "username = ?", username).Count(&count)
 	if err := db.Conn.Model(models.User{}).Find(&user, "username = ?", username).Error; err != nil {
+		return nil
+	}
+	if count == 0 {
+		return nil
+	}
+	return &user
+}
+
+func (db *DB) GetUserByEmail(email string) *models.User {
+	var user models.User
+	var count int64
+
+	_ = db.Conn.Model(models.User{}).Find(&user, "email = ?", email).Count(&count)
+	if err := db.Conn.Model(models.User{}).Find(&user, "email = ?", email).Error; err != nil {
+		return nil
+	}
+	if count == 0 {
 		return nil
 	}
 	return &user
