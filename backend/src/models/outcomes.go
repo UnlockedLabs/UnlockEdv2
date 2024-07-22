@@ -15,8 +15,9 @@ type Outcome struct {
 type OutcomeType string
 
 const (
-	Certificate       OutcomeType = "certificate"
-	ProgramCompletion OutcomeType = "grade"
-	PathwayCompletion OutcomeType = "pathway_completion"
-	CollegeCredit     OutcomeType = "college_credit"
+	Certificate        OutcomeType = "certificate"
+	ProgramCompletion  OutcomeType = "grade"
+	ProgressCompletion OutcomeType = "progress_completion"
+	PathwayCompletion  OutcomeType = "pathway_completion"
+	CollegeCredit      OutcomeType = "college_credit"
 )

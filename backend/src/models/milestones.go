@@ -5,8 +5,8 @@ type MilestoneType string
 const (
 	Enrollment           MilestoneType = "enrollment"
 	QuizSubmission       MilestoneType = "quiz_submission"
-	GradeReceived        MilestoneType = "grade_received"
 	AssignmentSubmission MilestoneType = "assignment_submission"
+	GradeReceived        MilestoneType = "grade_received"
 	DiscussionPost       MilestoneType = "discussion_post"
 )
 

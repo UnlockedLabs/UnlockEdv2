@@ -2,20 +2,19 @@ package models
 
 type Program struct {
 	DatabaseFields
-	ProviderPlatformID      uint        `gorm:"not null" json:"provider_platform_id"`
-	Name                    string      `gorm:"size:60" json:"name"`
-	Description             string      `gorm:"size:510" json:"description"`
-	ExternalID              string      `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
-	ThumbnailURL            string      `gorm:"size:255" json:"thumbnail_url"`
-	Type                    ProgramType `gorm:"size:255" json:"type"`
-	OutcomeTypes            string      `gorm:"size:255" json:"outcome_types"`
-	ExternalURL             string      `gorm:"size:255" json:"external_url"`
-	AltName                 string      `gorm:"size:255" json:"alt_name"`
-	TotalProgressMilestones uint        `json:"total_progress_milestones"`
-
-	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
-	Milestones       []Milestone       `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
-	Outcomes         []Outcome         `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
+	ProviderPlatformID      uint              `gorm:"not null" json:"provider_platform_id"`
+	Name                    string            `gorm:"size:60" json:"name"`
+	Description             string            `gorm:"size:510" json:"description"`
+	ExternalID              string            `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
+	ThumbnailURL            string            `gorm:"size:255" json:"thumbnail_url"`
+	Type                    ProgramType       `gorm:"size:255" json:"type"`
+	OutcomeTypes            string            `gorm:"size:255" json:"outcome_types"`
+	ExternalURL             string            `gorm:"size:255" json:"external_url"`
+	AltName                 string            `gorm:"size:255" json:"alt_name"`
+	TotalProgressMilestones uint              `json:"total_progress_milestones"`
+	ProviderPlatform        *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
+	Milestones              []Milestone       `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
+	Outcomes                []Outcome         `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
 }
 
 type ProgramType string

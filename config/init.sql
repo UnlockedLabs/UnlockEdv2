@@ -15,3 +15,9 @@ CREATE DATABASE accesscontroldb;
 GRANT ALL PRIVILEGES ON DATABASE accesscontroldb TO keto;
 \c accesscontroldb
 GRANT ALL ON SCHEMA public TO keto;
+
+CREATE USER kolibri WITH PASSWORD 'dev';
+CREATE DATABASE kolibri;
+GRANT ALL PRIVILEGES ON DATABASE kolibri TO kolibri;
+\c kolibri
+GRANT ALL ON SCHEMA public TO kolibri;

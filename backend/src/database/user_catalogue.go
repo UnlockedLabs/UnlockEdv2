@@ -1,6 +1,7 @@
 package database
 
 import (
+	"UnlockEdv2/src/models"
 	"slices"
 	"strings"
 )
@@ -78,9 +79,11 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
     CASE
         WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.program_id = p.id AND o.user_id = ?) THEN 100
         WHEN p.total_progress_milestones = 0 THEN 0
-        ELSE (SELECT COUNT(m.id) * 100.0 / p.total_progress_milestones
+        ELSE
+           CASE WHEN (SELECT COUNT(m.id) * 100.0 / p.total_progress_milestones
               FROM milestones m
-              WHERE m.program_id = p.id AND m.user_id = ?)
+              WHERE m.program_id = p.id AND m.user_id = ?) = 100 THEN 99.999
+          ELSE (SELECT COUNT(m.id) * 100.0 / p.total_progress_milestones) END
     END as course_progress,
     a.total_time`, userId, userId).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
@@ -88,9 +91,9 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (
-        SELECT id FROM activities 
-        WHERE program_id = p.id AND user_id = ? 
-        ORDER BY created_at DESC 
+        SELECT id FROM activities
+        WHERE program_id = p.id AND user_id = ?
+        ORDER BY created_at DESC
         LIMIT 1
     )`, userId).
 		Where("p.deleted_at IS NULL").
@@ -124,14 +127,14 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		return nil, 0, 0, err
 	}
 
-	var numCompleted uint
+	var numCompleted int64
+	if err := db.Conn.Model(&models.Outcome{}).Where("user_id = ?", userId).Count(&numCompleted).Error; err != nil {
+		return nil, 0, 0, err
+	}
 	var totalTime uint
 	for _, program := range programs {
-		if program.CourseProgress == 100 {
-			numCompleted++
-		}
 		totalTime += program.TotalTime
 	}
 
-	return programs, numCompleted, totalTime, nil
+	return programs, uint(numCompleted), totalTime, nil
 }
