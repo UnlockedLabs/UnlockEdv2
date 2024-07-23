@@ -59,7 +59,7 @@ export default function EditUserForm({
 
       onSuccess();
     } catch (error: any) {
-      setErrorMessage(error.response.data.message);
+      setErrorMessage(error.response.data);
     }
   };
 

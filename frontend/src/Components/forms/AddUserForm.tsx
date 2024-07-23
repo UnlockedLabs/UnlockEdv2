@@ -48,7 +48,7 @@ export default function AddUserForm({
         ToastState.success,
       );
     } catch (error: any) {
-      setErrorMessage(error.response.data.message);
+      setErrorMessage(error.response.data);
     }
   };
 

@@ -157,6 +157,17 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.User.FacilityID == 0 {
 		user.User.FacilityID = srv.getFacilityID(r)
 	}
+	userNameExists := srv.Db.GetUserByUsername(user.User.Username)
+	if userNameExists != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Username already exists")
+		return
+	}
+	newEmail := user.User.Username + "@unlocked.v2"
+	emailExists := srv.Db.GetUserByEmail(newEmail)
+	if emailExists != nil {
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Email already exists")
+		return
+	}
 	newUser, err := srv.Db.CreateUser(&user.User)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
