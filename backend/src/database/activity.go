@@ -238,8 +238,8 @@ RETURNS:
 
 For the users dashboard. TODO:  We have to cache this so we aren't running on each visit to home
 */
-func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, error) {
-	var recentPrograms [3]models.RecentProgram
+func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserDashboardJoin, error) {
+	var recentPrograms []models.RecentProgram
 	// first get the users 3 most recently interacted with programs
 	//
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
@@ -263,7 +263,22 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 		Find(&recentPrograms).Error
 	if err != nil {
 		log.Errorf("Error getting recent programs: %v", err)
-		recentPrograms = [3]models.RecentProgram{}
+		recentPrograms = []models.RecentProgram{}
+	}
+
+	// TOP PROGRAMS
+	var topPrograms []string
+	err = db.Conn.Table("activities a").
+		Select("p.name as program_name").
+		Joins("JOIN programs p ON a.program_id = p.id").
+		Joins("JOIN users u ON a.user_id = u.id").
+		Where("u.facility_id = ?", facilityID).
+		Group("p.id").
+		Order("SUM(a.time_delta) DESC").
+		Limit(6).
+		Find(&topPrograms).Error
+	if err != nil {
+		log.Fatalf("Query failed: %v", err)
 	}
 
 	// then get the users current enrollments
@@ -331,7 +346,7 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 		log.Fatalf("Query failed: %v", err)
 	}
 
-	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, WeekActivity: activities}, err
+	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, TopPrograms: topPrograms, WeekActivity: activities}, err
 }
 
 func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin, error) {
@@ -382,12 +397,12 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	// Program Milestones
 	err = db.Conn.Table("programs p").
-		Select("p.alt_name as alt_name, COALESCE(COUNT(m.id), 0) as milestones").
+		Select("CONCAT(p.alt_name, ' - ', p.name) AS combined_name, COALESCE(COUNT(m.id), 0) as milestones").
 		Joins("LEFT JOIN milestones m ON m.program_id = p.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
 		Joins("LEFT JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
-		Group("p.alt_name").
+		Group("p.name, p.alt_name").
 		Order("milestones DESC").
-		Limit(8).
+		Limit(5).
 		Find(&dashboard.ProgramMilestones).Error
 	if err != nil {
 		return dashboard, err

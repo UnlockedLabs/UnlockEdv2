@@ -22,6 +22,7 @@ export default {
           "--teal-5": "#002E2A",
           "--base-teal": "#FFFFFF",
           "--background": "#F9FBFB",
+          "--inner-background": "#FFFFFF",
           "--dark-yellow": "#EA9B00",
           "--primary-yellow": "#FDC601",
           "--pale-yellow": "#18ABA0",

@@ -54,7 +54,8 @@ type RecentProgram struct {
 
 type UserDashboardJoin struct {
 	Enrollments    []CurrentEnrollment `json:"enrollments"`
-	RecentPrograms [3]RecentProgram    `json:"recent_programs"`
+	RecentPrograms []RecentProgram     `json:"recent_programs"`
+	TopPrograms    []string            `json:"top_programs"`
 	WeekActivity   []RecentActivity    `json:"week_activity"`
 }
 
@@ -78,13 +79,13 @@ type AdminDashboardJoin struct {
 	WeeklyActiveUsers   uint                 `json:"weekly_active_users"`
 	AvgDailyActivity    uint                 `json:"avg_daily_activity"`
 	TotalWeeklyActivity uint                 `json:"total_weekly_activity"`
-	ProgramMilestones   [8]ProgramMilestones `json:"program_milestones"`
+	ProgramMilestones   [5]ProgramMilestones `json:"program_milestones"`
 	TopProgramActivity  [5]ProgramActivity   `json:"top_program_activity"`
 }
 
 type ProgramMilestones struct {
-	AltName    string `json:"alt_name"`
-	Milestones int    `json:"milestones"`
+	CombinedName string `json:"combined_name"`
+	Milestones   int    `json:"milestones"`
 }
 
 type ProgramActivity struct {

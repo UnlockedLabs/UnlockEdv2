@@ -17,6 +17,7 @@ func (srv *Server) registerDashboardRoutes() {
 
 func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "HandleStudentDashboard"}
+	faciltiyId := srv.getFacilityID(r)
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		fields["error"] = err.Error()
@@ -24,7 +25,7 @@ func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId)
+	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId, faciltiyId)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Errorf("Error getting user dashboard info: %v", err)

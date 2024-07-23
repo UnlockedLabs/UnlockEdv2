@@ -105,9 +105,9 @@ export default function PageNav({
                       </a>
                     </li>
                     <li>
-                      <a href="/left-menu-management">
+                      <a href="/resources-management">
                         <ArchiveBoxIcon className="h-4" />
-                        Left Menu
+                        Resources
                       </a>
                     </li>
                     <li>

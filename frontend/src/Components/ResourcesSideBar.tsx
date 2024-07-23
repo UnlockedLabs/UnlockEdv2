@@ -1,4 +1,4 @@
-import { Link, Resource, ServerResponse } from "@/common";
+import { Category, Link, Resource, ServerResponse } from "@/common";
 import Error from "@/Pages/Error";
 import useSWR from "swr";
 import KolibriImg from "../../public/kolibri-card-cover.png";
@@ -22,7 +22,11 @@ const ExternalLink = ({ children, url }: { children: any; url: string }) => {
 const KolibriCard = () => {
   return (
     <div className="card card-compact bg-base-teal overflow-hidden">
-      <img src={KolibriImg} alt="Kolibri logo" />
+      <img
+        src={KolibriImg}
+        alt="Kolibri logo"
+        className="h-[105px] object-cover"
+      />
       <div className="card-body gap-2">
         <h3 className="card-title text-sm">Kolibri</h3>
         <p className="body-small">
@@ -66,7 +70,11 @@ const ResourcesCard = ({ resource }: { resource: Resource }) => {
         <h3 className="card-title text-sm !mb-0">{resource.name}</h3>
         {resource.links.map((link: Link) => {
           const [title, url] = Object.entries(link)[0];
-          return <ExternalLink url={url}>{title}</ExternalLink>;
+          return (
+            <ExternalLink key={url} url={url}>
+              {title}
+            </ExternalLink>
+          );
         })}
       </div>
     </div>
@@ -79,7 +87,6 @@ export default function ResourcesSideBar() {
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <Error />;
-  console.log(data);
 
   return (
     <div className="w-[409px] min-[1400px]:min-w-[409px] bg-background py-4 px-9">
@@ -91,8 +98,13 @@ export default function ResourcesSideBar() {
       <div className="p-4 space-y-4">
         <h2>Resources</h2>
         <div className="flex flex-col gap-4">
-          {data.data.map((category) => {
-            return <ResourcesCard resource={category} />;
+          {data.data.map((category: Category, index: number) => {
+            return (
+              <ResourcesCard
+                key={category.id + " " + index}
+                resource={category}
+              />
+            );
           })}
         </div>
       </div>
