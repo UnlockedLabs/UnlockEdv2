@@ -80,24 +80,15 @@ func (ku *KolibriUser) IntoImportUser() (*models.ImportUser, error) {
 }
 
 type KolibriContent struct {
-	Author             string      `json:"author"`
-	Description        string      `json:"description"`
-	Tagline            interface{} `json:"tagline"`
-	ID                 string      `json:"id"`
-	LastUpdated        string      `json:"last_updated"`
-	Name               string      `json:"name"`
-	Root               string      `json:"root"`
-	Thumbnail          string      `json:"thumbnail"`
-	Version            int         `json:"version"`
-	Public             bool        `json:"public"`
-	TotalResourceCount int         `json:"total_resource_count"`
-	PublishedSize      int         `json:"published_size"`
-	NumCoachContents   int         `json:"num_coach_contents"`
-	Available          bool        `json:"available"`
-	LangCode           string      `json:"lang_code"`
-	LangName           string      `json:"lang_name"`
-	IncludedLanguages  []string    `json:"included_languages"`
-	LastPublished      string      `json:"last_published"`
+	Author             string `json:"author"`
+	Description        string `json:"description"`
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	Root               string `json:"root_id"`
+	Thumbnail          string `json:"thumbnail"`
+	Version            int    `json:"version"`
+	Public             bool   `json:"public"`
+	TotalResourceCount int    `json:"total_resource_count"`
 }
 
 func (kc *KolibriContent) IntoCourse(provUrl string) *models.Program {
@@ -114,7 +105,7 @@ func (kc *KolibriContent) IntoCourse(provUrl string) *models.Program {
 		Type:                    "open_content",
 		OutcomeTypes:            "completion",
 		TotalProgressMilestones: uint(kc.TotalResourceCount),
-		ExternalURL:             provUrl + "/channels/" + kc.Root,
+		ExternalURL:             provUrl + "en/learn/#/topics/t/" + kc.ID + "/folders?last=HOME",
 	}
 }
 
