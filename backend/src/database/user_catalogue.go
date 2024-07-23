@@ -1,5 +1,10 @@
 package database
 
+import (
+	"slices"
+	"strings"
+)
+
 type UserCatalogueJoin struct {
 	ProgramID    uint   `json:"program_id"`
 	ThumbnailURL string `json:"thumbnail_url"`
@@ -46,9 +51,26 @@ type UserPrograms struct {
 	TotalTime      uint    `json:"total_time"`
 }
 
-func (db *DB) GetUserPrograms(userId uint, order string, orderby string, search string, tags []string) ([]UserPrograms, uint, uint, error) {
+func validOrder(str string) string {
+	if slices.Contains([]string{"asc", "desc"}, strings.ToLower(str)) {
+		return strings.ToLower(str)
+	}
+	return "desc"
+}
+
+func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search string, tags []string) ([]UserPrograms, uint, uint, error) {
 	programs := []UserPrograms{}
-	orderStr := orderby + " " + order
+	fieldMap := map[string]string{
+		"program_name":    "program_name",
+		"created_at":      "created_at",
+		"course_progress": "course_progress",
+		"total_time":      "a.total_time",
+	}
+	dbField, ok := fieldMap[orderBy]
+	if !ok {
+		dbField = "program_name"
+	}
+	orderStr := dbField + " " + validOrder(order)
 	tx := db.Conn.Table("programs p").
 		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
@@ -66,13 +88,9 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderby string, search 
             LIMIT 1
         )`, userId).
 		Where("p.deleted_at IS NULL").
-		Where("pp.deleted_at IS NULL")
-	if orderby != "" && order != "" {
-		tx = tx.Order(orderStr)
-	}
-	if orderby == "course_progress" {
-		tx = tx.Order("p.name")
-	}
+		Where("pp.deleted_at IS NULL").
+		Order(orderStr)
+
 	if search != "" {
 		tx = tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
 	}
