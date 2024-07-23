@@ -78,7 +78,7 @@ export default function StudentDashboard() {
         <h2 className="mt-7"> Pick Up Where You Left Off</h2>
         <div className="mt-3 bg-base-teal p-6 card">
           <div
-            className={`gap-5 grid grid-cols-3 ${data.recent_programs.length < 2 ? "grid-cols-2" : ""}`}
+            className={`gap-5 grid ${data.recent_programs.length < 2 ? "grid-cols-2" : "grid-cols-3"}`}
           >
             {data?.recent_programs.map((course, index) => {
               return <CourseCard course={course} recent={true} key={index} />;

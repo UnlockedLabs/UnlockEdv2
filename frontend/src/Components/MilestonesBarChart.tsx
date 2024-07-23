@@ -20,6 +20,7 @@ const MilestonesBarChart = ({ data }: { data: any }) => {
   const maxYAxisLabel = (props) => {
     const { x, y, payload } = props;
     const alt_name = payload.value.split(" - ")[0];
+    console.log(payload.value.split(" - ")[1]);
     return (
       <>
         {alt_name.length > 10 ? (
@@ -35,7 +36,7 @@ const MilestonesBarChart = ({ data }: { data: any }) => {
           </>
         ) : (
           <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill="#666">
-            {alt_name}
+            {alt_name.length == 0 ? payload.value.split(" - ")[1] : alt_name}
           </text>
         )}
       </>
