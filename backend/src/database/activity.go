@@ -238,7 +238,7 @@ RETURNS:
 
 For the users dashboard. TODO:  We have to cache this so we aren't running on each visit to home
 */
-func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, error) {
+func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserDashboardJoin, error) {
 	var recentPrograms []models.RecentProgram
 	// first get the users 3 most recently interacted with programs
 	//
@@ -272,6 +272,7 @@ func (db *DB) GetStudentDashboardInfo(userID int) (models.UserDashboardJoin, err
 		Select("p.name as program_name").
 		Joins("JOIN programs p ON a.program_id = p.id").
 		Joins("JOIN users u ON a.user_id = u.id").
+		Where("u.facility_id = ?", facilityID).
 		Group("p.id").
 		Order("SUM(a.time_delta) DESC").
 		Limit(6).
