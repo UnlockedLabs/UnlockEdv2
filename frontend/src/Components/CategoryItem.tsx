@@ -47,7 +47,7 @@ export default function CategoryItem({
           <ChevronRightIcon className="w-4 cursor-pointer" />
         )}
       </summary>
-      <ul className="card p-4 gap-y-2 rounded-bl-none">
+      <ul className="card !overflow-hidden p-4 gap-y-2 rounded-bl-none">
         <div className="flex flex-cols-2 font-bold gap-2 pr-6">
           <h3 className="w-1/3">Title</h3>
           <h3 className="w-2/3">URL</h3>
