@@ -1,6 +1,7 @@
 package main
 
 import (
+	"UnlockEdv2/src/handlers"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
@@ -32,6 +33,8 @@ func main() {
 }
 
 func seedTestData(db *gorm.DB) {
+	// isTesting is false because this needs to seed real users w/ kratos
+	testServer := handlers.NewServer(false)
 	facilities, err := os.ReadFile("backend/tests/test_data/facilities.json")
 	if err != nil {
 		log.Printf("Failed to read test data: %v", err)
@@ -67,9 +70,16 @@ func seedTestData(db *gorm.DB) {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
 	for idx, u := range users {
+		u.Password = "ChangeMe!"
+		if err := u.HashPassword(); err != nil {
+			log.Fatalf("unable to hash user password")
+		}
 		log.Printf("Creating user %s", u.Username)
 		if err := db.Create(&u).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)
+		}
+		if err := testServer.HandleCreateUserKratos(u.Username, "ChangeMe!"); err != nil {
+			log.Fatalf("unable to create test user in kratos")
 		}
 		for i := 0; i < len(platform); i++ {
 			mapping := models.ProviderUserMapping{
@@ -105,6 +115,7 @@ func seedTestData(db *gorm.DB) {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
+	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
 	for _, user := range users {
 		for _, prog := range programs {
 			startTime := 0
@@ -125,7 +136,6 @@ func seedTestData(db *gorm.DB) {
 					ExternalID: strconv.Itoa(rand.Intn(1000)),
 					CreatedAt:  time,
 				}
-				log.Printf("Creating activity for user %s on %v", user.Username, time)
 				startTime += randTime
 				if err := db.Create(&activity).Error; err != nil {
 					log.Printf("Failed to create activity: %v", err)
@@ -141,20 +151,19 @@ func seedTestData(db *gorm.DB) {
 				if err := db.Create(&outcome).Error; err != nil {
 					log.Printf("Failed to create outcome: %v", err)
 				}
+			} else {
+				newMilestone := models.Milestone{
+					ProgramID:   prog.ID,
+					IsCompleted: false,
+					Type:        milestoneTypes[rand.Intn(len(milestoneTypes))],
+					UserID:      user.ID,
+					ExternalID:  strconv.Itoa(rand.Intn(1000)),
+				}
+				if err := db.Create(&newMilestone).Error; err != nil {
+					log.Printf("Failed to create milestone: %v", err)
+				}
+				log.Printf("Creating milestone for user %s", user.Username)
 			}
-		}
-		for _, m := range milestones {
-			newMilestone := models.Milestone{
-				ProgramID:   m.ProgramID,
-				IsCompleted: m.IsCompleted,
-				Type:        m.Type,
-				UserID:      user.ID,
-				ExternalID:  strconv.Itoa(rand.Intn(1000)) + m.ExternalID,
-			}
-			if err := db.Create(&newMilestone).Error; err != nil {
-				log.Printf("Failed to create milestone: %v", err)
-			}
-			log.Printf("Creating milestone for user %s", user.Username)
 		}
 	}
 }

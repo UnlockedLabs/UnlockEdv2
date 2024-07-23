@@ -10,9 +10,9 @@ import (
 )
 
 func (srv *Server) registerOidcRoutes() {
-	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.HandleGetAllClients)
-	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.HandleRegisterClient)
-	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.handleGetOidcClient)
+	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleGetAllClients))
+	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleRegisterClient))
+	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.handleGetOidcClient))
 }
 
 func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +43,6 @@ func clientToResponse(client *models.OidcClient) *models.ClientResponse {
 		Scopes:        client.Scopes,
 	}
 }
-
 
 func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleGetOidcClient"}

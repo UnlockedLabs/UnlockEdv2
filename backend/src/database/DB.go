@@ -34,6 +34,7 @@ var TableList = []interface{}{
 	&models.OidcClient{},
 	&models.UserFavorite{},
 	&models.Facility{},
+	&models.OpenContentProvider{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -113,32 +114,14 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
 	}
-	storedProc := `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
-    _user_id INT,
-    _program_id INT,
-    _type VARCHAR,
-    _total_time INT,
-    _external_id VARCHAR)
-    RETURNS VOID AS $$
-    DECLARE
-        prev_total_time INT;
-    BEGIN
-        SELECT total_time INTO prev_total_time FROM activities
-        WHERE user_id = _user_id AND program_id = _program_id
-        ORDER BY created_at DESC LIMIT 1;
-
-        IF prev_total_time IS NULL THEN
-            prev_total_time := 0;
-        END IF;
-    INSERT INTO activities (user_id, program_id, type, total_time, time_delta, external_id, created_at, updated_at)
-    VALUES (_user_id, _program_id, _type, _total_time, _total_time - prev_total_time, _external_id, NOW(), NOW());
-    END;
-    $$ LANGUAGE plpgsql;`
+	procedures := []string{dailyActivityProc, createOutcomeTriggerFunction}
 	if !isTesting {
-		if err := db.Exec(string(storedProc)).Error; err != nil {
-			log.Fatalf("Failed to create stored procedure: %v", err)
+		for _, proc := range procedures {
+			if err := db.Exec(proc).Error; err != nil {
+				log.Fatalf("Failed to create stored procedure: %v", err)
+			}
+			log.Println("Stored procedure created successfully.")
 		}
-		log.Println("Stored procedure created successfully.")
 	}
 }
 
@@ -258,3 +241,62 @@ func (db *DB) SeedTestData() {
 		}
 	}
 }
+
+const (
+	dailyActivityProc string = `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
+    _user_id INT,
+    _program_id INT,
+    _type VARCHAR,
+    _total_time INT,
+    _external_id VARCHAR)
+    RETURNS VOID AS $$
+    DECLARE
+        prev_total_time INT;
+    BEGIN
+        SELECT total_time INTO prev_total_time FROM activities
+        WHERE user_id = _user_id AND program_id = _program_id
+        ORDER BY created_at DESC LIMIT 1;
+
+        IF prev_total_time IS NULL THEN
+            prev_total_time := 0;
+        END IF;
+    INSERT INTO activities (user_id, program_id, type, total_time, time_delta, external_id, created_at, updated_at)
+    VALUES (_user_id, _program_id, _type, _total_time, _total_time - prev_total_time, _external_id, NOW(), NOW());
+    END;
+    $$ LANGUAGE plpgsql;`
+
+	createOutcomeTriggerFunction string = `
+DROP TRIGGER IF EXISTS milestone_completion_trigger ON milestones;
+
+DROP FUNCTION IF EXISTS check_milestone_completion();
+
+CREATE OR REPLACE FUNCTION check_milestone_completion()
+RETURNS TRIGGER AS $$
+DECLARE
+    total_milestones INT;
+    user_milestones INT;
+BEGIN
+    SELECT total_progress_milestones
+    INTO total_milestones
+    FROM programs
+    WHERE id = NEW.program_id;
+
+    SELECT COUNT(*)
+    INTO user_milestones
+    FROM milestones
+    WHERE program_id = NEW.program_id AND user_id = NEW.user_id;
+
+    IF user_milestones = total_milestones THEN
+        INSERT INTO outcomes (type, program_id, user_id, value)
+        VALUES ('progress_completion', NEW.program_id, NEW.user_id, '100');
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER milestone_completion_trigger
+AFTER INSERT ON milestones
+FOR EACH ROW
+EXECUTE FUNCTION check_milestone_completion();`
+)

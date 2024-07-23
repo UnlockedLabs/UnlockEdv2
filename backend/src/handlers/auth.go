@@ -31,13 +31,13 @@ type Claims struct {
 }
 
 func (srv *Server) registerAuthRoutes() {
-	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(http.HandlerFunc(srv.handleResetPassword)))
+	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
 	/* only use auth middleware, user activity bloats the database + results */
 	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleChangeAdminFacility)))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
-func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
+func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("unlocked_token")
 		if err != nil {
@@ -112,7 +112,7 @@ func (srv *Server) canViewUserData(r *http.Request) bool {
 	return claims.Role == models.Admin || claims.UserID == uint(id)
 }
 
-func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
+func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 		if !ok {
@@ -123,7 +123,7 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized - not admin", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(r.Context()))
+		http.HandlerFunc(next).ServeHTTP(w, r.WithContext(r.Context()))
 	})
 }
 

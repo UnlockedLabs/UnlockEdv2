@@ -9,10 +9,10 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleStudentDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyMiddleware(http.HandlerFunc(srv.HandleAdminDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserCatalogue)))
-	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(http.HandlerFunc(srv.HandleUserPrograms)))
+	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.HandleStudentDashboard))
+	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyMiddleware(srv.HandleAdminDashboard))
+	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.HandleUserCatalogue))
+	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(srv.HandleUserPrograms))
 }
 
 func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	order := r.URL.Query().Get("order")
-	orderBy := r.URL.Query().Get("orderby")
+	orderBy := r.URL.Query().Get("order_by")
 	search := r.URL.Query().Get("search")
 	search = strings.ToLower(search)
 	search = strings.TrimSpace(search)

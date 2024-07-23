@@ -11,10 +11,10 @@ import (
 )
 
 func (srv *Server) registerMilestonesRoutes() {
-	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(http.HandlerFunc(srv.HandleIndexMilestones)))
-	srv.Mux.Handle("POST /api/milestones", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateMilestone)))
-	srv.Mux.Handle("DELETE /api/milestones", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteMilestone)))
-	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateMilestone)))
+	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.HandleIndexMilestones))
+	srv.Mux.Handle("POST /api/milestones", srv.ApplyAdminMiddleware(srv.HandleCreateMilestone))
+	srv.Mux.Handle("DELETE /api/milestones", srv.ApplyAdminMiddleware(srv.HandleDeleteMilestone))
+	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.ApplyAdminMiddleware(srv.HandleUpdateMilestone))
 }
 
 func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request) {

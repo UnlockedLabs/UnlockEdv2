@@ -137,26 +137,21 @@ func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request)
 
 	user_id := srv.GetUserID(r)
 	var favorite models.UserFavorite
-	err = srv.Db.Conn.Model(models.UserFavorite{}).Where("user_id = ? AND program_id = ?", user_id, id).First(&favorite).Error
-	if err != nil {
-		log.Info("Favorite not found, creating new favorite")
-		favorite = models.UserFavorite{
-			UserID:    user_id,
-			ProgramID: uint(id),
-		}
-		if err = srv.Db.Conn.Create(&favorite).Error; err != nil {
-			log.Error("Error creating favorite: " + err.Error())
-			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-	} else {
+	if srv.Db.Conn.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
 		if err = srv.Db.Conn.Delete(&favorite).Error; err != nil {
 			log.Error("Error deleting favorite: " + err.Error())
 			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		srv.WriteResponse(w, http.StatusNoContent, nil)
+		w.WriteHeader(http.StatusNoContent)
 		return
+	} else {
+		favorite = models.UserFavorite{UserID: user_id, ProgramID: uint(id)}
+		if err = srv.Db.Conn.Create(&favorite).Error; err != nil {
+			log.Error("Error creating favorite: " + err.Error())
+			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 	srv.WriteResponse(w, http.StatusOK, nil)
 }

@@ -12,8 +12,8 @@ import (
 
 func (srv *Server) registerOidcFlowRoutes() {
 	srv.Mux.Handle("POST /api/login", http.HandlerFunc(srv.handleLogin))
-	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(http.HandlerFunc(srv.handleLogout)))
-	// srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(http.HandlerFunc(srv.handleConsent)))
+	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleLogout))
+	// srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleConsent))
 }
 
 const (

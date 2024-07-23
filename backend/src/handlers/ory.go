@@ -86,7 +86,7 @@ func (srv *Server) validateUserIDKratos(id string) error {
 	return nil
 }
 
-func (srv *Server) handleCreateUserKratos(username, password string) error {
+func (srv *Server) HandleCreateUserKratos(username, password string) error {
 	identity := client.NewCreateIdentityBody("default", map[string]interface{}{"username": username})
 	created, resp, err := srv.OryClient.IdentityAPI.CreateIdentity(context.Background()).CreateIdentityBody(*identity).Execute()
 	if err != nil {

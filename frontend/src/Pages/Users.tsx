@@ -45,7 +45,7 @@ export default function Users() {
   const [pageQuery, setPageQuery] = useState(1);
   const [sortQuery, setSortQuery] = useState("created_at DESC");
   const { data, mutate, error, isLoading } = useSWR(
-    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order=${sortQuery}`,
+    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`,
   );
   const userData = data as PaginatedResponse<User>;
   const showToast = (message: string, state: ToastState) => {
@@ -154,7 +154,7 @@ export default function Users() {
           <div className="flex flex-row gap-x-2">
             <SearchBar searchTerm={searchTerm} changeCallback={handleChange} />
             <DropdownControl
-              label="Sort by"
+              label="order by"
               callback={setSortQuery}
               enumType={{
                 "Name (A-Z)": "name_last asc",
