@@ -72,18 +72,18 @@ type ImportProgram struct {
 
 // ADMIN STRUCTS
 type AdminDashboardJoin struct {
-	FacilityName        string               `json:"facility_name"`
-	MonthlyActivity     []RecentActivity     `json:"monthly_activity"`
-	WeeklyActiveUsers   uint                 `json:"weekly_active_users"`
-	AvgDailyActivity    uint                 `json:"avg_daily_activity"`
-	TotalWeeklyActivity uint                 `json:"total_weekly_activity"`
-	ProgramMilestones   [5]ProgramMilestones `json:"program_milestones"`
-	TopProgramActivity  [5]ProgramActivity   `json:"top_program_activity"`
+	FacilityName        string              `json:"facility_name"`
+	MonthlyActivity     []RecentActivity    `json:"monthly_activity"`
+	WeeklyActiveUsers   uint                `json:"weekly_active_users"`
+	AvgDailyActivity    uint                `json:"avg_daily_activity"`
+	TotalWeeklyActivity uint                `json:"total_weekly_activity"`
+	ProgramMilestones   []ProgramMilestones `json:"program_milestones"`
+	TopProgramActivity  []ProgramActivity   `json:"top_program_activity"`
 }
 
 type ProgramMilestones struct {
-	CombinedName string `json:"combined_name"`
-	Milestones   int    `json:"milestones"`
+	Name       string `json:"name"`
+	Milestones int    `json:"milestones"`
 }
 
 type ProgramActivity struct {

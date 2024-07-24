@@ -19,24 +19,23 @@ const MilestonesBarChart = ({ data }: { data: any }) => {
 
   const maxYAxisLabel = (props) => {
     const { x, y, payload } = props;
-    const alt_name = payload.value.split(" - ")[0];
-    console.log(payload.value.split(" - ")[1]);
+    const name = payload.value;
     return (
       <>
-        {alt_name.length > 10 ? (
+        {name.length > 10 ? (
           <>
             <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill="#666">
-              {alt_name.slice(0, 11)}
+              {name.slice(0, 11)}
             </text>
             <text x={x} y={y + 15} textAnchor="end" fontSize={10} fill="#666">
-              {alt_name.length > 20
-                ? alt_name.slice(11, 20) + "..."
-                : alt_name.slice(11, 20)}
+              {name.length > 20
+                ? name.slice(11, 20) + "..."
+                : name.slice(11, 20)}
             </text>
           </>
         ) : (
           <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill="#666">
-            {alt_name.length == 0 ? payload.value.split(" - ")[1] : alt_name}
+            {name}
           </text>
         )}
       </>
@@ -59,7 +58,7 @@ const MilestonesBarChart = ({ data }: { data: any }) => {
           <Label value="Milestones" position="bottom" />
         </XAxis>
         <YAxis
-          dataKey="combined_name"
+          dataKey={"name"}
           type="category"
           width={70}
           tick={<YAxisTick />}

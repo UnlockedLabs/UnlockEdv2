@@ -20,7 +20,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="px-8 py-4">
-      <h1 className="text-5xl">{data.facility_name}</h1>
+      <h1 className="text-5xl">{"Potosi Correctional Center"}</h1>
       <div className="flex flex-row mt-12 gap-12">
         <div className="flex flex-col gap-6">
           <div className="card h-[240px]">
@@ -50,10 +50,10 @@ export default function AdminDashboard() {
           </div>
         </div>
         {/* Top course engagement */}
-        <div className="card h-100 w-[35%] flex flex-col justify-between">
+        <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
           <h2 className="card-h-padding">Top Course Engagement</h2>
           <TopProgPieChart data={data.top_program_activity} />
-          <div className="px-4 py-10">
+          <div className="px-4 pb-10">
             {/* TO DO: caption needs to be added */}
             <table className="table-2">
               <thead>
