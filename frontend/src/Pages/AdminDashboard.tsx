@@ -20,7 +20,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="px-8 py-4">
-      <h1 className="text-5xl">{data.facility_name}</h1>
+      <h1 className="text-5xl">{"Potosi Correctional Center"}</h1>
       <div className="flex flex-row mt-12 gap-12">
         <div className="flex flex-col gap-6">
           <div className="card h-[240px]">
