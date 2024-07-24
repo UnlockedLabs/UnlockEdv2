@@ -10,13 +10,15 @@ export default function TopProgPieChart({ data }: { data: any }) {
     COLORS = ["#11554E", "#13746C", "#14958A", "#61BAB2", "#B0DFDA"];
   }
 
+  console.log(data);
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <PieChart>
         <Pie
           data={data}
           dataKey="hours_engaged"
-          nameKey="alt_name"
+          nameKey="program_name"
           cx="50%"
           cy="50%"
           outerRadius="80%"
@@ -28,7 +30,7 @@ export default function TopProgPieChart({ data }: { data: any }) {
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Legend />
+        <Legend layout="horizontal" />
       </PieChart>
     </ResponsiveContainer>
   );

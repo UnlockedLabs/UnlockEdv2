@@ -53,7 +53,7 @@ export default function AdminDashboard() {
         <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
           <h2 className="card-h-padding">Top Course Engagement</h2>
           <TopProgPieChart data={data.top_program_activity} />
-          <div className="px-4 py-10">
+          <div className="px-4 pb-10">
             {/* TO DO: caption needs to be added */}
             <table className="table-2">
               <thead>
