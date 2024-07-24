@@ -24,7 +24,7 @@ export default function ProviderCard({
 }) {
   const navigate = useNavigate();
   return (
-    <tr className="bg-base-teal card !overflow-hidden p-4 w-full grid-cols-4 justify-items-center">
+    <tr className="bg-base-teal card p-4 w-full grid-cols-4 justify-items-center">
       <td className="justify-self-start">{provider.name}</td>
       <td>
         {provider.oidc_id !== 0 ? (

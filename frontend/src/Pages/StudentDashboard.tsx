@@ -27,7 +27,7 @@ export default function StudentDashboard() {
 
   const ExploreCourseCatalogCard = () => {
     return (
-      <div className="card card-compact bg-inner-background overflow-hidden relative">
+      <div className="card card-compact bg-inner-background relative">
         <figure className="h-[124px] bg-teal-3">
           <BuildingStorefrontIcon className="h-20 text-background" />
         </figure>

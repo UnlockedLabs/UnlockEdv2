@@ -12,10 +12,10 @@ import convertSeconds from "@/Components/ConvertSeconds";
 export default function MyProgress() {
   const { user } = useAuth();
   const { data } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/programs`,
+    `/api/users/${user.id}/programs`
   );
   const { data: certificates } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/outcomes?type=certificate`,
+    `/api/users/${user.id}/outcomes?type=certificate`
   );
 
   console.log(data);
@@ -23,7 +23,7 @@ export default function MyProgress() {
   return (
     <AuthenticatedLayout title="My Progress">
       <PageNav user={user} path={["My Progress"]} />
-      <div className="px-8 py-4 overflow-hidden">
+      <div className="px-8 py-4">
         <h1>My Progress</h1>
         {data && (
           <>
@@ -109,7 +109,7 @@ export default function MyProgress() {
                           <td className="w-1/2">{certificate.program_name}</td>
                           <td className="w-1/5 flex">
                             {new Date(
-                              certificate.created_at.split("T")[0],
+                              certificate.created_at.split("T")[0]
                             ).toLocaleDateString("en-US")}
                           </td>
                         </tr>

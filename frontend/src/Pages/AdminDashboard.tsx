@@ -50,7 +50,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         {/* Top course engagement */}
-        <div className="card h-100 w-[35%] flex flex-col justify-between">
+        <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
           <h2 className="card-h-padding">Top Course Engagement</h2>
           <TopProgPieChart data={data.top_program_activity} />
           <div className="px-4 py-10">
