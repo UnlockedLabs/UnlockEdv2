@@ -188,6 +188,15 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		if err := srv.HandleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
 			log.Printf("Error creating user in kratos: %v", err)
 		}
+		kolibri, err := srv.Db.FindKolibriInstance()
+		if err != nil {
+			log.Error("error getting kolibri instance")
+			srv.WriteResponse(w, http.StatusCreated, response)
+			return
+		}
+		if err := srv.CreateUserInKolibri(newUser, kolibri); err != nil {
+			log.Error("error creating user in kolibri")
+		}
 	}
 	srv.WriteResponse(w, http.StatusCreated, response)
 }

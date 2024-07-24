@@ -102,8 +102,8 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
         LIMIT 1
     )`, userId).
 		Where("p.deleted_at IS NULL").
-		Where("pp.deleted_at IS NULL").
-		Where("m.user_id IS NOT NULL")
+		Where("pp.deleted_at IS NULL")
+
 	tx = tx.Order(orderStr)
 
 	if search != "" {

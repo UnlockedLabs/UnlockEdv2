@@ -91,40 +91,46 @@ type KolibriContent struct {
 	TotalResourceCount int    `json:"total_resource_count"`
 }
 
-func (kc *KolibriContent) IntoCourse(provUrl string) *models.Program {
-	url, err := kc.UploadImage()
+func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Program {
+	thumbnail := data["thumbnail"].(string)
+	root := data["root_id"].(string)
+	id := data["id"].(string)
+	name := data["name"].(string)
+	description := data["description"].(string)
+	totalResourceCount := data["total_resource_count"].(int)
+	url, err := UploadImage(thumbnail, root, id)
 	if err != nil {
 		log.Printf("Failed to upload image %v", err)
 		url = ""
 	}
 	return &models.Program{
-		ExternalID:              kc.ID,
-		Name:                    kc.Name,
-		Description:             kc.Description,
+		ExternalID:              id,
+		Name:                    name,
+		Description:             description,
 		ThumbnailURL:            url,
 		Type:                    "open_content",
 		OutcomeTypes:            "completion",
-		TotalProgressMilestones: uint(kc.TotalResourceCount),
-		ExternalURL:             provUrl + "en/learn/#/topics/t/" + kc.ID + "/folders?last=HOME",
+		TotalProgressMilestones: uint(totalResourceCount),
+		ExternalURL:             kc.BaseURL + "en/learn/#/topics/t/" + id + "/folders?last=HOME",
 	}
 }
 
-func (kc *KolibriContent) DecodeImg() []byte {
-	if strings.Contains(kc.Thumbnail, "data:image/png;base64") {
-		img := strings.Split(kc.Thumbnail, ",")[1]
+func decodeImg(thumbnail string) []byte {
+	if strings.Contains(thumbnail, "data:image/png;base64") {
+		img := strings.Split(thumbnail, ",")[1]
 		imgDec, _ := base64.StdEncoding.DecodeString(img)
 		return imgDec
 	}
 	return nil
 }
 
-func (kc *KolibriContent) UploadImage() (string, error) {
+func UploadImage(thumbnail, root, id string) (string, error) {
 	log.Println("Uploading image")
-	imgData := kc.DecodeImg()
+	imgData := decodeImg(thumbnail)
 	if imgData == nil {
 		return "", errors.New("no image data available or decoding failed")
 	}
-	filename := "image_" + kc.Root + "/" + kc.ID + ".png"
+	filename := "image_" + root + "/" + id + ".png"
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("file", filename)

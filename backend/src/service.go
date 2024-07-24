@@ -112,24 +112,9 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	return users, nil
 }
 
-func (serv *ProviderService) CreateKolibriUser(userId int) error {
-	fields := log.Fields{"handler": "CreateKolibriUser", "provider_platform_id": serv.ProviderPlatformID}
-	req := serv.PostRequest(fmt.Sprintf("/api/users/%d", userId))
-	resp, err := serv.Client.Do(req)
-	if err != nil {
-		log.WithFields(fields).Errorln("error getting content from middleware")
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		fields["status_code"] = resp.Status
-		log.WithFields(fields).Error("Failed to get programs")
-		return errors.New("failed to get programs")
-	}
-	return nil
-}
-
 func (serv *ProviderService) GetPrograms() error {
 	fields := log.Fields{"handler": "GetPrograms", "provider_platform_id": serv.ProviderPlatformID}
+	log.WithFields(fields).Info("Getting programs from middleware")
 	req := serv.Request("/api/programs")
 	resp, err := serv.Client.Do(req)
 	if err != nil {

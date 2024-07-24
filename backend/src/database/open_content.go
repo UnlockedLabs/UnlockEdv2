@@ -36,3 +36,12 @@ func (db *DB) CreateContentProvider(url, thumbnail, description string, id int) 
 	}
 	return db.Conn.Create(&provider).Error
 }
+
+func (db *DB) FindKolibriInstance() (*models.ProviderPlatform, error) {
+	kolibri := models.ProviderPlatform{}
+	if err := db.Conn.First(&kolibri, "type = ?", "kolibri").Error; err != nil {
+		log.Error("error getting kolibri provider platform")
+		return nil, err
+	}
+	return &kolibri, nil
+}
