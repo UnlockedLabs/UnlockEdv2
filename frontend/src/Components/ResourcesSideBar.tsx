@@ -55,7 +55,7 @@ const WikiCard = () => {
           of topics across various academic disciplines.
         </p>
         {/* Temporary-- replace with external link to Wiki */}
-        <ExternalLink url="https://www.wikipedia.org/">
+        <ExternalLink url="https://kiwix.v2.unlockedlabs.xyz/viewer#wikipedia/A/User%3AThe_other_Kiwix_guy/Landing">
           Explore Wikipedia's Content
         </ExternalLink>
       </div>
