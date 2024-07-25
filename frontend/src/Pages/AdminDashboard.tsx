@@ -6,12 +6,15 @@ import TopProgPieChart from "@/Components/TopProgActivityPieChart";
 import { AdminDashboardJoin, ServerResponse } from "@/common";
 import useSWR from "swr";
 import convertSeconds from "../Components/ConvertSeconds";
+import { useContext } from "react";
+import { ThemeContext } from "@/Components/ThemeContext";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<AdminDashboardJoin>>(
     `/api/users/${user.id}/admin-dashboard`
   );
+  const { theme } = useContext(ThemeContext);
 
   if (error || isLoading) return <div></div>;
   const avgActivity = convertSeconds(data.avg_daily_activity);
@@ -81,7 +84,9 @@ export default function AdminDashboard() {
                       }
                       var legendColor = "bg-teal-" + (index + 1).toString();
                       // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
-                      if (index == 4) legendColor = "bg-[#002E2A]";
+                      if (index == 4)
+                        legendColor =
+                          theme == "light" ? "bg-[#002E2A]" : "bg-[#B0DFDA]";
                       return (
                         <tr key={index}>
                           <td className="flex flex-row gap-2">
