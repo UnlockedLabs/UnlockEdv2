@@ -6,6 +6,7 @@ import YellowPill from "./pill-labels/YellowPill";
 import axios from "axios";
 import { ViewType } from "./ToggleView";
 import GreyPill from "./pill-labels/GreyPill";
+import { MouseEvent } from "react";
 
 export interface CatalogCourseCard {
   name: string;
@@ -39,7 +40,8 @@ export default function CatalogCourseCard({
   const coverImage = course.thumbnail_url;
   const program_type: PillTagType = course.program_type as PillTagType;
 
-  function updateFavorite() {
+  function updateFavorite(e: MouseEvent) {
+    e.preventDefault();
     axios
       .put(`/api/programs/${course.program_id}/save`)
       .then((response) => {
@@ -87,15 +89,17 @@ export default function CatalogCourseCard({
   return (
     <>
       {view == ViewType.List ? (
-        <div className="card bg-base-teal body-small p-6 flex flex-row items-center">
+        <a
+          className="card bg-base-teal body-small p-6 flex flex-row items-center"
+          href={course.external_url}
+          target="_blank"
+        >
           <div className="flex flex-col justify-between gap-3">
             <div className="flex flex-row gap-3 items-center">
-              <div onClick={() => updateFavorite()}>{bookmark}</div>
+              <div onClick={(e) => updateFavorite(e)}>{bookmark}</div>
               <h2>{course.program_name}</h2>
               <p className="body">|</p>
-              <a href={course.provider_platform_url} className="body">
-                {course.provider_name}
-              </a>
+              <p className="body">{course.provider_name}</p>
               {programPill}
               {outcomePills}
             </div>
@@ -103,16 +107,20 @@ export default function CatalogCourseCard({
               {course.description}
             </p>
           </div>
-        </div>
+        </a>
       ) : (
         <div className="card card-compact bg-base-teal overflow-hidden relative">
           <div
             className="absolute top-2 right-2"
-            onClick={() => updateFavorite()}
+            onClick={(e) => updateFavorite(e)}
           >
             {bookmark}
           </div>
-          <a href={course.url} target="_blank" rel="noopener noreferrer">
+          <a
+            href={course.external_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <figure className="h-[124px]">
               {coverImage !== "" ? (
                 <img

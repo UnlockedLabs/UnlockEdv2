@@ -34,7 +34,7 @@ const KolibriCard = () => {
           for all learning levels.
         </p>
         {/* Temporary-- replace with external link to Kolibri */}
-        <ExternalLink url="https://learningequality.org/kolibri/">
+        <ExternalLink url="https://kolibri.v2.unlockedlabs.xyz">
           Explore Kolibri's Content
         </ExternalLink>
       </div>

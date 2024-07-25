@@ -30,7 +30,8 @@ export default function EnrolledCourseCard({
   let status: CourseStatus;
   if (course.course_progress == 100) status = CourseStatus.Completed;
 
-  function updateFavorite() {
+  function updateFavorite(e) {
+    e.preventDefault();
     axios
       .put(`/api/programs/${course.id}/save`)
       .then((response) => {
@@ -45,19 +46,24 @@ export default function EnrolledCourseCard({
   return (
     <>
       {view == ViewType.List ? (
-        <div className="card bg-inner-background flex flex-row items-center justify-between body-small p-6">
+        <a
+          className="card bg-inner-background flex flex-row items-center justify-between body-small p-6"
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <div className="flex flex-row gap-3 items-center">
-            {!recent &&
-              (course.is_favorited ? (
-                <StarIcon className="h-5 text-primary-yellow"></StarIcon>
-              ) : (
-                <StarIconOutline className="h-5 text-header-text"></StarIconOutline>
-              ))}
+            <div onClick={(e) => updateFavorite(e)}>
+              {!recent &&
+                (course.is_favorited ? (
+                  <StarIcon className="h-5 text-primary-yellow"></StarIcon>
+                ) : (
+                  <StarIconOutline className="h-5 text-header-text"></StarIconOutline>
+                ))}
+            </div>
             <h2>{course.program_name}</h2>
             <p className="body">|</p>
-            <a href={course.provider_platform_url} className="body">
-              {course.provider_platform_name}
-            </a>
+            <p className="body">{course.provider_platform_name}</p>
           </div>
           {status == CourseStatus.Completed ? (
             <div className="flex flex-row gap-2 body-small text-teal-3">
@@ -72,16 +78,14 @@ export default function EnrolledCourseCard({
               <ProgressBar percent={Math.floor(course.course_progress)} />
             </div>
           )}
-        </div>
+        </a>
       ) : (
         <div
           className={`card card-compact ${recent ? "bg-inner-background" : "bg-base-teal"} overflow-hidden relative`}
         >
           <div
             className="absolute top-2 right-2"
-            onClick={() => {
-              updateFavorite();
-            }}
+            onClick={(e) => updateFavorite(e)}
           >
             {!recent &&
               (course.is_favorited ? (

@@ -19,11 +19,12 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	var count int64
 	var users []models.User
 	if err := db.Conn.Model(models.User{}).
+		Where("facility_id = ?", facilityId).
+		Count(&count).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Order(order).
-		Find(&users, "facility_id = ?", facilityId).
-		Count(&count).
+		Find(&users).
 		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, err
