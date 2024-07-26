@@ -116,7 +116,12 @@ func seedTestData(db *gorm.DB) {
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
-	for _, user := range users {
+	var dbUsers []models.User
+	if db.Find(&dbUsers).Error != nil {
+		log.Fatalf("Failed to get users from db")
+		return
+	}
+	for _, user := range dbUsers {
 		for _, prog := range programs {
 			startTime := 0
 			for i := 0; i < 365; i++ {

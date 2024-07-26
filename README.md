@@ -8,6 +8,7 @@ Currently, UnlockEdv2 is tested on Windows (WSL), Mac (homebrew) and Linux.
 - Go 1.23
 - Node.js > 18.0
 - Yarn
+- Make (optional, but recommended)
 
 ## Development
 
@@ -26,30 +27,31 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 - Clone the repository
 - `cp .env.example .env && cp frontend/.env.example frontend/.env`
+- run `make help` for complete instructions
 
 **For frontend development:**
 
-- Run `./build dev -f`
+- Run `make frontend-dev`
 
 This will build everything but the client, which you can then run separately with `yarn run dev` in the frontend directory.
 
 **For backend development:**
 
-- Run `./build dev`
+- Run `make backend-dev`
 
-This will build only the Auth and run Postgres. You are responsible for building and running the server and middleware.
+This will build only the Auth and run Postgres. You are responsible for building and running the server, middleware, and optionally the client/vite.
 
 **For Production:**
 
-- Run `./build prod` to build the entire project in docker. You can then go to `localhost` in your browser.
+- Run `make prod` to build the entire project in docker. You can then go to `localhost` in your browser.
 
 Login with `SuperAdmin` and password: `ChangeMe!`
 
 You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
 
-### To migrate the database to a fresh state, run `./build migrate-fresh` (you can do this while docker is running with all the services, but you must restart the server (e.g. `docker restart unlockedv2-server-1` if your directory is called UnlockEdv2)
+### To migrate the database to a fresh state, run `make migrate-fresh` (you can do this while docker is running with all the services, but you must restart the server (e.g. `docker restart unlockedv2-server-1` if your repo directory is called UnlockEdv2)
 
-### To seed the database with some basic test data, run `./build seed`
+### To seed the database with some basic test data, run `make seed`
 
 ### **Quick fixes to common issues with development**
 

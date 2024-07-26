@@ -5,8 +5,9 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { useEffect, useState } from "react";
 import CatalogCourseCard from "@/Components/CatalogCourseCard";
 import SearchBar from "@/Components/inputs/SearchBar";
-import { Program, ServerResponse } from "@/common";
+import { CourseCatalogue, Program, ServerResponse } from "@/common";
 import useSWR from "swr";
+import DropdownControl from "@/Components/inputs/DropdownControl";
 
 // TO DO: make it paginated
 // TO DO: mutate the data on save so it stays the same across both views
@@ -15,9 +16,9 @@ export default function CourseCatalog() {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [order, setOrder] = useState("asc");
   const { data, mutate } = useSWR<ServerResponse<Program>>(
-    `/api/users/${user.id}/catalogue`,
+    `/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`,
   );
 
   useEffect(() => {
@@ -46,18 +47,26 @@ export default function CourseCatalog() {
         </div>
         <div className="flex flex-row items-center mt-4 justify-between">
           <SearchBar searchTerm={searchTerm} changeCallback={handleSearch} />
+          <DropdownControl
+            label="order"
+            callback={setOrder}
+            enumType={{
+              Ascending: "asc",
+              Descending: "desc",
+            }}
+          />
         </div>
         {/* render on gallery or list view */}
         <div
           className={`grid mt-8 ${activeView == ViewType.Grid ? "grid-cols-4 gap-6" : "gap-4"}`}
         >
-          {data?.map((course) => {
+          {data?.map((course: CourseCatalogue) => {
             return (
               <CatalogCourseCard
                 course={course}
                 callMutate={callMutate}
                 view={activeView}
-                key={Math.random()}
+                key={course.program_id}
               />
             );
           })}

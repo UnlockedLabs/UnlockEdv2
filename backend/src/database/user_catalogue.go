@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 	"slices"
 	"strings"
 )
@@ -18,7 +19,7 @@ type UserCatalogueJoin struct {
 	OutcomeTypes string `json:"outcome_types"`
 }
 
-func (db *DB) GetUserCatalogue(userId int, tags []string) ([]UserCatalogueJoin, error) {
+func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) ([]UserCatalogueJoin, error) {
 	catalogue := []UserCatalogueJoin{}
 	tx := db.Conn.Table("programs p").
 		Select("p.id as program_id, p.thumbnail_url, p.name as program_name, pp.name as provider_name, p.external_url, p.type as program_type, p.description, p.outcome_types, f.user_id IS NOT NULL as is_favorited").
@@ -33,6 +34,9 @@ func (db *DB) GetUserCatalogue(userId int, tags []string) ([]UserCatalogueJoin, 
 			tx.Or("p.outcome_types ILIKE ?", "%"+tag+"%")
 		}
 		tx.Or("p.type ILIKE ?", "%"+tag+"%")
+	}
+	if search != "" {
+		tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%").Order(fmt.Sprintf("p.name %s", validOrder(order)))
 	}
 	err := tx.Scan(&catalogue).Error
 	if err != nil {
