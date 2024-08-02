@@ -45,7 +45,7 @@ export default function Users() {
   const [pageQuery, setPageQuery] = useState(1);
   const [sortQuery, setSortQuery] = useState("created_at DESC");
   const { data, mutate, error, isLoading } = useSWR(
-    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`,
+    `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`
   );
   const userData = data as PaginatedResponse<User>;
   const showToast = (message: string, state: ToastState) => {
@@ -75,7 +75,7 @@ export default function Users() {
     if (targetUser?.id === DEFAULT_ADMIN_ID) {
       showToast(
         "This is the primary administrator and cannot be deleted",
-        ToastState.error,
+        ToastState.error
       );
       return;
     }
@@ -278,8 +278,8 @@ export default function Users() {
       />
       <Modal
         ref={deleteUserModal}
-        type={ModalType.Delete}
-        item="User"
+        type={ModalType.Confirm}
+        item="Delete User"
         form={
           <DeleteForm
             item="User"
@@ -290,8 +290,8 @@ export default function Users() {
       />
       <Modal
         ref={resetUserPasswordModal}
-        type={`Reset Password`}
-        item=""
+        type={ModalType.Confirm}
+        item="Reset Password"
         form={
           <ResetPasswordForm
             user={targetUser}
@@ -302,8 +302,8 @@ export default function Users() {
       />
       <Modal
         ref={showUserPassword}
-        type={`New Password`}
-        item={""}
+        type={ModalType.Show}
+        item={"New Password"}
         form={
           <ShowTempPasswordForm
             tempPassword={tempPassword}
