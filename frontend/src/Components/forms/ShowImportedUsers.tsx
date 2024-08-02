@@ -26,7 +26,7 @@ const PaginatedUserTable = ({ users, onExit }: ImportedUserProps) => {
       <div className="overflow-x-auto">
         <table className="table table-xs table-auto w-full">
           <thead>
-            <tr className="bg-gray-200">
+            <tr className="bg-grey-1 text-body-text">
               <th className="px-4 py-2">Username</th>
               <th className="px-4 py-2">Temp Password</th>
               <th className="px-4 py-2">Error</th>
