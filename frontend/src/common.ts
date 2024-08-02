@@ -106,6 +106,19 @@ export interface Program {
   created_at: Date;
   updated_at: Date;
 }
+export interface CourseCatalogue {
+  key: [number, string, boolean];
+  program_id: number;
+  thumbnail_url: string;
+  program_name: string;
+  provider_name: string;
+  external_url: string;
+  program_type: string;
+  description: string;
+  is_favorited: boolean;
+  outcome_types: string;
+}
+
 export interface Milestone {
   id: number;
   program_id: number;

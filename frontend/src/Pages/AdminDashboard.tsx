@@ -12,7 +12,7 @@ import { ThemeContext } from "@/Components/ThemeContext";
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { data, error, isLoading } = useSWR<ServerResponse<AdminDashboardJoin>>(
-    `/api/users/${user.id}/admin-dashboard`
+    `/api/users/${user.id}/admin-dashboard`,
   );
   const { theme } = useContext(ThemeContext);
 
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
                           <td>{courseTime}</td>
                         </tr>
                       );
-                    }
+                    },
                   )}
               </tbody>
             </table>

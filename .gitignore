@@ -13,3 +13,4 @@ jar
 /provider-middleware/providers.db
 /backend/server
 /provider-middleware/middleware
+/bin/*

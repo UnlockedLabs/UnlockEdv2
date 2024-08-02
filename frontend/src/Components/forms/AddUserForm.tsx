@@ -45,7 +45,7 @@ export default function AddUserForm({
       onSuccess(
         response.data.temp_password,
         "User created successfully with temporary password",
-        ToastState.success
+        ToastState.success,
       );
     } catch (error: any) {
       setErrorMessage(error.response.data.message);
@@ -64,7 +64,7 @@ export default function AddUserForm({
     const fetchActiveProviders = async () => {
       try {
         const resp = await axios.get(
-          `/api/provider-platforms?only=oidc_enabled`
+          `/api/provider-platforms?only=oidc_enabled`,
         );
         if (resp.status === 200) {
           setProviders(resp.data.data);

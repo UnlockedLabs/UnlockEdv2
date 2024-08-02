@@ -7,6 +7,7 @@ import axios from "axios";
 import { ViewType } from "./ToggleView";
 import GreyPill from "./pill-labels/GreyPill";
 import { MouseEvent } from "react";
+import { CourseCatalogue } from "@/common";
 
 export interface CatalogCourseCard {
   name: string;
@@ -33,7 +34,7 @@ export default function CatalogCourseCard({
   callMutate,
   view,
 }: {
-  course: any;
+  course: CourseCatalogue;
   callMutate: () => void;
   view?: ViewType;
 }) {
@@ -73,7 +74,10 @@ export default function CatalogCourseCard({
 
   const outcomeTypes: OutcomePillType[] = course.outcome_types
     .split(",")
-    .filter((type) => Object.values(OutcomePillType).includes(type));
+    .map((outcome) => outcome as OutcomePillType)
+    .filter((type) =>
+      Object.values(OutcomePillType).includes(type as OutcomePillType),
+    );
   const outcomePills = outcomeTypes.map((outcomeString: string) => {
     const outcome = outcomeString as OutcomePillType;
     console.log(outcome);
@@ -83,7 +87,7 @@ export default function CatalogCourseCard({
         : outcome == OutcomePillType.CollegeCredit
           ? "College Credit"
           : "no label";
-    return <GreyPill key={"outcome" + course.id}>{pillLabel}</GreyPill>;
+    return <GreyPill key={"outcome" + course.program_id}>{pillLabel}</GreyPill>;
   });
 
   return (

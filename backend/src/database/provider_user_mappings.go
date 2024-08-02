@@ -88,12 +88,12 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 	for _, search := range userSearch {
 		split := strings.Split(search, " ")
 		if len(split) > 1 {
-			first := "%" + strings.ToLower(split[0]) + "%"
-			last := "%" + strings.ToLower(split[1]) + "%"
+			first := "%" + strings.TrimSpace(strings.ToLower(split[0])) + "%"
+			last := "%" + strings.TrimSpace(strings.ToLower(split[1])) + "%"
 			searchCondition = searchCondition.Or(db.Conn.Where("u.name_first ILIKE ? OR u.name_last ILIKE ?", first, first).Or("u.name_first ILIKE ? OR u.name_last ILIKE ?", last, last))
 			continue
 		}
-		search = "%" + strings.ToLower(search) + "%"
+		search = "%" + strings.TrimSpace(strings.ToLower(search)) + "%"
 		if strings.Contains(search, "@") {
 			searchCondition = searchCondition.Or("u.email ILIKE ?", search)
 			continue

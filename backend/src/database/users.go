@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"errors"
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -37,9 +38,11 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 	var users []models.User
 	var count int64
 	offset := (page - 1) * itemsPerPage
+	search = strings.TrimSpace(search)
+	likeSearch := "%" + search + "%"
 	if err := db.Conn.Model(models.User{}).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
-		Where("name_first ILIKE ? OR username ILIKE ? OR name_last ILIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%").
+		Where("name_first ILIKE ? OR username ILIKE ? OR name_last ILIKE ?", likeSearch, likeSearch, likeSearch).
 		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
@@ -47,7 +50,25 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, err
 	}
-	log.Debugf("found %d users", count)
+	if len(users) == 0 {
+		split := strings.Fields(search)
+		if len(split) > 1 {
+			first := "%" + split[0] + "%"
+			last := "%" + split[1] + "%"
+			if err := db.Conn.Model(&models.User{}).
+				Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
+				Where("(name_first ILIKE ? AND name_last ILIKE ?) OR (name_first ILIKE ? AND name_last ILIKE ?)", first, last, last, first).
+				Order(order).
+				Offset(offset).
+				Limit(itemsPerPage).
+				Find(&users).Count(&count).Error; err != nil {
+				log.Printf("Error fetching users: %v", err)
+				return 0, nil, err
+			}
+		}
+	}
+
+	log.Printf("found %d users", count)
 	return count, users, nil
 }
 

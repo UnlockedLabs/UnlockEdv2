@@ -18,7 +18,7 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data, error, isLoading } = useSWR<ServerResponse<any>>(
-    `/api/users/${user.id}/student-dashboard`
+    `/api/users/${user.id}/student-dashboard`,
   );
 
   if (isLoading) return <div></div>;
@@ -107,7 +107,7 @@ export default function StudentDashboard() {
                   {!error && !isLoading && data.enrollments !== null ? (
                     data?.enrollments?.map((course: any, index: number) => {
                       const totalTime = convertSeconds(
-                        course.total_activity_time
+                        course.total_activity_time,
                       );
                       return (
                         <tr

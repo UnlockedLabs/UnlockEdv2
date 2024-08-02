@@ -4,7 +4,7 @@ import PageNav from "../Components/PageNav";
 import Toast, { ToastState } from "../Components/Toast";
 import AddCategoryForm from "../Components/forms/AddCategoryForm";
 import AuthenticatedLayout from "../Layouts/AuthenticatedLayout";
-import { Category, CategoryLink } from "../common";
+import { Category, CategoryLink, Resource } from "../common";
 import { PlusCircleIcon, DocumentCheckIcon } from "@heroicons/react/24/outline";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import axios from "axios";
@@ -38,8 +38,15 @@ export default function ResourcesManagement() {
   const dragOverItem = useDebounceValue(draggedOverItem, 100);
 
   useEffect(() => {
-    if (data != undefined) {
-      setCategoryList(data.data);
+    if (data !== undefined) {
+      const updatedData = data.data.map(
+        (category: Resource) =>
+          ({
+            ...category,
+            id: Math.random(),
+          }) as Resource,
+      );
+      setCategoryList(updatedData);
     }
   }, [data]);
 
@@ -159,7 +166,7 @@ export default function ResourcesManagement() {
   function moveLink(
     category: Category,
     linkIndex: number,
-    direction: "up" | "down"
+    direction: "up" | "down",
   ) {
     let index: number;
     if (direction == "up") {
@@ -206,7 +213,7 @@ export default function ResourcesManagement() {
     //remove and save the dragged item content
     const draggedItemContent = newCategoryList.splice(
       draggedItem.current,
-      1
+      1,
     )[0];
 
     if (insertAtIndex[0] == categoryList.length)
