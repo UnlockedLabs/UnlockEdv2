@@ -1,7 +1,7 @@
 export function SubmitButton({ errorMessage }: { errorMessage: string }) {
   return (
     <label className="form-control pt-4">
-      <input className="btn btn-primary" type="submit" />
+      <input className="btn btn-primary" type="submit" value="Sumbit" />
       <div className="text-error text-center pt-2">{errorMessage}</div>
     </label>
   );
