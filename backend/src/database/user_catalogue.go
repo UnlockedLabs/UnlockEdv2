@@ -36,8 +36,9 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 		tx.Or("p.type ILIKE ?", "%"+tag+"%")
 	}
 	if search != "" {
-		tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%").Order(fmt.Sprintf("p.name %s", validOrder(order)))
+		tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
 	}
+	tx.Order(fmt.Sprintf("p.name %s", validOrder(order)))
 	err := tx.Scan(&catalogue).Error
 	if err != nil {
 		return nil, err
