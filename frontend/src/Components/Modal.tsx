@@ -18,7 +18,7 @@ export enum ModalType {
 
 const Modal = forwardRef<HTMLDialogElement, ModalProps>(function Modal(
   { type, item, form },
-  ref
+  ref,
 ) {
   return (
     <dialog ref={ref} className="modal">

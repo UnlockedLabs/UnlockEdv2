@@ -50,7 +50,7 @@ export default function ProviderUserManagement() {
     reset: () => {},
   });
   const { data, mutate } = useSWR<PaginatedResponse<ProviderUser>>(
-    `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&clear_cache=${cache}`
+    `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&clear_cache=${cache}`,
   );
 
   const changePage = (page: number) => {
@@ -58,7 +58,7 @@ export default function ProviderUserManagement() {
   };
 
   const handleChangeUsersPerPage = (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setPerPage(parseInt(e.target.value));
     setCurrentPage(1); // Reset to the first page when changing per page
@@ -89,25 +89,25 @@ export default function ProviderUserManagement() {
   async function handleImportAllPrograms() {
     try {
       let resp = await axios.post(
-        `/api/actions/provider-platforms/${providerId}/import-programs`
+        `/api/actions/provider-platforms/${providerId}/import-programs`,
       );
       if (resp.status != 200) {
         showToast(
           "error importing all or some programs, please try again later",
-          ToastState.error
+          ToastState.error,
         );
         return;
       } else {
         showToast(
           "Programs imported successfully from provider",
-          ToastState.success
+          ToastState.success,
         );
         return;
       }
     } catch (err: any) {
       showToast(
         "error importing all or some programs, please try again later",
-        ToastState.error
+        ToastState.error,
       );
       return;
     }
@@ -116,12 +116,12 @@ export default function ProviderUserManagement() {
   async function handleImportAllUsers() {
     try {
       let res = await axios.post(
-        `/api/actions/provider-platforms/${providerId}/import-users`
+        `/api/actions/provider-platforms/${providerId}/import-users`,
       );
       if (res.status === 200) {
         showToast(
           "Users imported successfully, please check for accounts not created",
-          ToastState.success
+          ToastState.success,
         );
         window.location.reload();
       }
@@ -135,7 +135,7 @@ export default function ProviderUserManagement() {
     try {
       let res = await axios.post(
         `/api/provider-platforms/${providerId}/users/import`,
-        { users: usersToImport }
+        { users: usersToImport },
       );
       if (res.status === 200) {
         showToast(res.data.message, ToastState.success);
@@ -150,7 +150,7 @@ export default function ProviderUserManagement() {
       setUsersToImport([]);
       showToast(
         "error importing users, please check accounts",
-        ToastState.error
+        ToastState.error,
       );
     }
   }

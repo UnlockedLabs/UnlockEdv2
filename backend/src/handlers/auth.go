@@ -16,6 +16,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type contextKey string
@@ -94,7 +95,7 @@ func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Requ
 }
 
 func isAuthRoute(r *http.Request) bool {
-	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth", "/api/consent/accept"}
+	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth", "/api/consent/accept", "/api/facilities/1"}
 	return slices.Contains(paths, r.URL.Path)
 }
 
@@ -236,8 +237,9 @@ func (srv *Server) validateOrySession(cookie *http.Cookie, userID uint) error {
 }
 
 type ResetPasswordRequest struct {
-	Password string `json:"password"`
-	Confirm  string `json:"confirm"`
+	Password     string `json:"password"`
+	Confirm      string `json:"confirm"`
+	FacilityName string `json:"facility_name"`
 }
 
 func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
@@ -258,16 +260,51 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Password must be at least 8 characters long and contain a number", http.StatusBadRequest)
 		return
 	}
-	if err := srv.Db.ResetUserPassword(claims.UserID, password); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Error("Error Resetting users password: " + err.Error())
+	tx := srv.Db.Conn.Begin()
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(form.Password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Error("Error hashing password: ", err)
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
+	user := models.User{}
+	user.ID = claims.UserID
+	tx.Model(&user).Updates(map[string]interface{}{"password": string(hashedPassword), "password_reset": false})
+
 	claims.PasswordReset = false
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString([]byte(os.Getenv("APP_KEY")))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		tx.Rollback()
+		return
+	}
+	if claims.UserID == 1 && claims.Role == "admin" && claims.Subject == "SuperAdmin" && form.FacilityName != "" {
+		if _, err := srv.Db.UpdateFacility(form.FacilityName, 1); err != nil {
+			log.Error("Failed to update facility default name: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			tx.Rollback()
+			return
+		}
+	}
+
+	if !srv.isTesting(r) {
+		user, err := srv.Db.GetUserByID(claims.UserID)
+		if err != nil {
+			log.Fatal("user from claims not found, this should never happen")
+			tx.Rollback()
+			return
+		}
+		if err := srv.handleUpdatePasswordKratos(user, password); err != nil {
+			log.Errorln("Error updating password in kratos: ", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			tx.Rollback()
+			return
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		log.Error("Commit transaction failed: ", err)
+		http.Error(w, "Transaction commit failed", http.StatusInternalServerError)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -278,18 +315,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		Path:     "/",
 	})
-	if !srv.isTesting(r) {
-		user, err := srv.Db.GetUserByID(claims.UserID)
-		if err != nil {
-			log.Fatal("user from claims not found, this should never happen")
-			return
-		}
-		if err := srv.handleUpdatePasswordKratos(user, password); err != nil {
-			log.Errorln("Error updating password in kratos: ", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-	}
+
 	srv.WriteResponse(w, http.StatusOK, "Password reset successfully")
 }
 

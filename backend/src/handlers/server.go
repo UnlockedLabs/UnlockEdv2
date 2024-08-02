@@ -247,9 +247,10 @@ func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interfa
 		return
 	}
 	if resp, ok := data.(string); ok {
-		_, err := w.Write([]byte(resp))
-		log.Error("error writing response: ", err)
-		return
+		if _, err := w.Write([]byte(resp)); err != nil {
+			log.Error("error writing response: ", err)
+			return
+		}
 	}
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Error("Error writing json response", err)
