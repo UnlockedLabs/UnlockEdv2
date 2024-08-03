@@ -9,15 +9,16 @@ export interface ModalProps {
 export enum ModalType {
   Edit = "Edit",
   Add = "Add",
-  Delete = "Delete",
-  View = "View",
+  Show = "Show",
   Associate = "Associate",
+  Confirm = "Confirm",
+  Register = "Register",
   Blank = "",
 }
 
 const Modal = forwardRef<HTMLDialogElement, ModalProps>(function Modal(
   { type, item, form },
-  ref,
+  ref
 ) {
   return (
     <dialog ref={ref} className="modal">

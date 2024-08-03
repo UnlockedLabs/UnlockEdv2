@@ -18,11 +18,13 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import ShowImportedUsers from "@/Components/forms/ShowImportedUsers";
 import Pagination from "@/Components/Pagination";
 import useSWR from "swr";
+import ConfirmImportAllUsersForm from "@/Components/forms/ConfirmImportAllUsersForm";
 
 export default function ProviderUserManagement() {
   const auth = useAuth();
   const mapUserModal = useRef<null | HTMLDialogElement>(null);
   const importedUsersModal = useRef<null | HTMLDialogElement>(null);
+  const importAllUsersModal = useRef<null | HTMLDialogElement>(null);
   const [displayToast, setDisplayToast] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
@@ -48,7 +50,7 @@ export default function ProviderUserManagement() {
     reset: () => {},
   });
   const { data, mutate } = useSWR<PaginatedResponse<ProviderUser>>(
-    `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&clear_cache=${cache}`,
+    `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&clear_cache=${cache}`
   );
 
   const changePage = (page: number) => {
@@ -56,7 +58,7 @@ export default function ProviderUserManagement() {
   };
 
   const handleChangeUsersPerPage = (
-    e: React.ChangeEvent<HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     setPerPage(parseInt(e.target.value));
     setCurrentPage(1); // Reset to the first page when changing per page
@@ -87,45 +89,39 @@ export default function ProviderUserManagement() {
   async function handleImportAllPrograms() {
     try {
       let resp = await axios.post(
-        `/api/actions/provider-platforms/${providerId}/import-programs`,
+        `/api/actions/provider-platforms/${providerId}/import-programs`
       );
       if (resp.status != 200) {
         showToast(
           "error importing all or some programs, please try again later",
-          ToastState.error,
+          ToastState.error
         );
         return;
       } else {
         showToast(
           "Programs imported successfully from provider",
-          ToastState.success,
+          ToastState.success
         );
         return;
       }
     } catch (err: any) {
       showToast(
         "error importing all or some programs, please try again later",
-        ToastState.error,
+        ToastState.error
       );
       return;
     }
   }
 
   async function handleImportAllUsers() {
-    let ans = prompt(
-      "Are you sure you want to import all users from this provider? (yes/no)",
-    );
-    if (ans != "yes") {
-      return;
-    }
     try {
       let res = await axios.post(
-        `/api/actions/provider-platforms/${providerId}/import-users`,
+        `/api/actions/provider-platforms/${providerId}/import-users`
       );
       if (res.status === 200) {
         showToast(
           "Users imported successfully, please check for accounts not created",
-          ToastState.success,
+          ToastState.success
         );
         window.location.reload();
       }
@@ -139,7 +135,7 @@ export default function ProviderUserManagement() {
     try {
       let res = await axios.post(
         `/api/provider-platforms/${providerId}/users/import`,
-        { users: usersToImport },
+        { users: usersToImport }
       );
       if (res.status === 200) {
         showToast(res.data.message, ToastState.success);
@@ -154,7 +150,7 @@ export default function ProviderUserManagement() {
       setUsersToImport([]);
       showToast(
         "error importing users, please check accounts",
-        ToastState.error,
+        ToastState.error
       );
     }
   }
@@ -239,7 +235,7 @@ export default function ProviderUserManagement() {
             Refresh
           </button>
           <PrimaryButton
-            onClick={() => handleImportAllUsers()}
+            onClick={() => importAllUsersModal.current?.showModal()}
             disabled={!provider}
           >
             Import All Users
@@ -360,12 +356,23 @@ export default function ProviderUserManagement() {
       )}
       <Modal
         ref={importedUsersModal}
-        type={ModalType.View}
+        type={ModalType.Show}
         item="Imported Users"
         form={
           <ShowImportedUsers
             users={importedUsers}
             onExit={handleCloseImportedUsers}
+          />
+        }
+      />
+      <Modal
+        ref={importAllUsersModal}
+        type={ModalType.Confirm}
+        item="Import All Users"
+        form={
+          <ConfirmImportAllUsersForm
+            onCancel={() => importAllUsersModal.current?.close()}
+            onSuccess={handleImportAllUsers}
           />
         }
       />

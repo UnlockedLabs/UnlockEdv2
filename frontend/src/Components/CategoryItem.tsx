@@ -10,7 +10,7 @@ import {
   PlusIcon,
   ChevronUpIcon,
 } from "@heroicons/react/24/solid";
-import Modal from "./Modal";
+import Modal, { ModalType } from "./Modal";
 import DeleteForm from "./forms/DeleteForm";
 
 export default function CategoryItem({
@@ -99,8 +99,8 @@ export default function CategoryItem({
       </ul>
       {/* Modals */}
       <Modal
-        type="Delete"
-        item="Link"
+        type={ModalType.Confirm}
+        item="Delete Link"
         form={
           <DeleteForm
             item="Link"
@@ -111,7 +111,7 @@ export default function CategoryItem({
         ref={deleteLinkModal}
       />
       <Modal
-        type="Add"
+        type={ModalType.Add}
         item="Link"
         form={
           <AddLinkForm

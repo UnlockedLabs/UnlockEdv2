@@ -2,7 +2,7 @@ import PageNav from "@/Components/PageNav";
 import ProviderCard from "@/Components/ProviderCard";
 import AddProviderForm from "@/Components/forms/AddProviderForm";
 import EditProviderForm from "@/Components/forms/EditProviderForm";
-import Modal from "@/Components/Modal";
+import Modal, { ModalType } from "@/Components/Modal";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { OidcClient, ProviderPlatform, ServerResponse } from "@/common";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
@@ -24,7 +24,7 @@ export default function ProviderPlatformManagement() {
   const addProviderModal = useRef<null | HTMLDialogElement>(null);
   const editProviderModal = useRef<null | HTMLDialogElement>(null);
   const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
-    null,
+    null
   );
   const openOidcClientModal = useRef<null | HTMLDialogElement>(null);
   const openOidcRegistrationModal = useRef<null | HTMLDialogElement>(null);
@@ -44,7 +44,7 @@ export default function ProviderPlatformManagement() {
   // TO DO: SORT THIS IN THE BACKEND AND RETURN SORTED
   providers?.data.sort(function (
     providerA: ProviderPlatform,
-    providerB: ProviderPlatform,
+    providerB: ProviderPlatform
   ) {
     if (providerA.state === "enabled" && providerB.state !== "enabled") {
       return -1;
@@ -96,7 +96,7 @@ export default function ProviderPlatformManagement() {
 
   const onRegisterOidcClientClose = (
     response: ServerResponse<OidcClient>,
-    state: ToastState,
+    state: ToastState
   ) => {
     openOidcClientModal.current?.close();
     setEditProvider(null);
@@ -187,7 +187,7 @@ export default function ProviderPlatformManagement() {
       </div>
       {/* Modals */}
       <Modal
-        type="Add"
+        type={ModalType.Add}
         item="Provider"
         form={
           <AddProviderForm
@@ -199,7 +199,7 @@ export default function ProviderPlatformManagement() {
         ref={addProviderModal}
       />
       <Modal
-        type="Edit"
+        type={ModalType.Edit}
         item="Provider"
         form={
           editProvider ? (
@@ -216,7 +216,7 @@ export default function ProviderPlatformManagement() {
         ref={editProviderModal}
       />
       <Modal
-        type="Register"
+        type={ModalType.Register}
         item="Provider"
         form={
           editProvider ? (
@@ -232,7 +232,7 @@ export default function ProviderPlatformManagement() {
         ref={openOidcClientModal}
       />
       <Modal
-        type="Register"
+        type={ModalType.Register}
         item="OIDC Client"
         form={
           oidcClient ? (

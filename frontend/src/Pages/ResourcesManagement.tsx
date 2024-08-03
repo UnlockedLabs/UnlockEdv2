@@ -1,5 +1,5 @@
 import CategoryItem from "../Components/CategoryItem";
-import Modal from "../Components/Modal";
+import Modal, { ModalType } from "../Components/Modal";
 import PageNav from "../Components/PageNav";
 import Toast, { ToastState } from "../Components/Toast";
 import AddCategoryForm from "../Components/forms/AddCategoryForm";
@@ -294,7 +294,7 @@ export default function ResourcesManagement() {
       </div>
       {/* Modals */}
       <Modal
-        type="Add"
+        type={ModalType.Add}
         item="Category"
         form={
           <AddCategoryForm onSuccess={(title: string) => addCategory(title)} />
@@ -302,8 +302,8 @@ export default function ResourcesManagement() {
         ref={addCategoryModal}
       />
       <Modal
-        type="Delete"
-        item="Category"
+        type={ModalType.Confirm}
+        item="Delete Category"
         form={
           <DeleteForm
             item="Category"
