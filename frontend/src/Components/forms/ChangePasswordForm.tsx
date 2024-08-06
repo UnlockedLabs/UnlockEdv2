@@ -61,9 +61,7 @@ export default function ChangePasswordForm() {
   const passwordsMatch = password === confirm;
   const isValid = isLengthValid && hasNumber && passwordsMatch;
   const validFacility =
-    facility &&
-    facility.length > 2 &&
-    facility.trim().length === facility.length;
+    facility && facility.length > 2 && facility.trim().length > 2;
   const isFirstAdminLogin =
     auth.user.id === 1 && auth.user.role === "admin" && isFacilityDefault;
 
@@ -71,6 +69,9 @@ export default function ChangePasswordForm() {
     try {
       setErrorMessage("");
       setProcessing(true);
+      if (data.facility_name) {
+        data.facility_name = data.facility_name.trim();
+      }
       const response = await axios.post("/api/reset-password", data);
       if (response.status === 200) {
         window.location.replace("dashboard");
@@ -157,6 +158,16 @@ export default function ChangePasswordForm() {
 
       {isFirstAdminLogin && (
         <>
+          <TextInput
+            label={"New default facility name"}
+            interfaceRef={"facility_name"}
+            length={50}
+            required={true}
+            errors={errors}
+            register={register}
+            password={false}
+            autoComplete=""
+          />
           <div className="mt-2 text-sm">
             <p
               className={`flex items-center ${validFacility ? "text-success" : "text-error"}`}
@@ -166,20 +177,9 @@ export default function ChangePasswordForm() {
               ) : (
                 <XMarkIcon className="h-5 w-5" />
               )}{" "}
-              Valid Facility Name
+              Valid facility name
             </p>
           </div>
-
-          <TextInput
-            label={"New Default Facility Name"}
-            interfaceRef={"facility_name"}
-            length={50}
-            required={true}
-            errors={errors}
-            register={register}
-            password={false}
-            autoComplete=""
-          />
         </>
       )}
 
