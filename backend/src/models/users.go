@@ -1,7 +1,6 @@
 package models
 
 import (
-	"log"
 	"math/rand"
 	"time"
 
@@ -56,7 +55,7 @@ func (User) TableName() string {
 
 func (usr *User) BeforeCreate(tx *gorm.DB) error {
 	if usr.Email == "" {
-		usr.Email = usr.NameLast + "." + usr.NameFirst + "@unlocked.v2"
+		usr.Email = usr.Username + "@unlocked.v2"
 	}
 	return nil
 }
@@ -77,7 +76,6 @@ func (user *User) HashPassword() error {
 		return err
 	}
 	user.Password = string(bytes)
-	log.Printf("Password hashed for user %s", user.Username)
 	return nil
 }
 
@@ -95,6 +93,5 @@ func (user *User) GetExternalIDFromProvider(db *gorm.DB, providerId uint) (strin
 * the password is already hashed and checked against the input string
 **/
 func (user *User) CheckPasswordHash(password string) bool {
-	log.Printf("Checking password for user %s", user.Username)
 	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil
 }

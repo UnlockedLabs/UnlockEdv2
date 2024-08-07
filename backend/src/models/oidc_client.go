@@ -18,7 +18,7 @@ type OidcClient struct {
 	ClientName         string `gorm:"size:255" json:"client_name"`
 	ClientSecret       string `gorm:"size:255" json:"client_secret"`
 	RedirectURIs       string `gorm:"size:255" json:"redirect_uris"`
-	Scopes             string `gorm:"size:255" json:"scopes"`
+	Scopes             string `gorm:"size:255" json:"scope"`
 
 	Provider *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
 }
@@ -26,12 +26,12 @@ type OidcClient struct {
 type ClientResponse struct {
 	ClientID      string `json:"client_id"`
 	ClientSecret  string `json:"client_secret"`
-	Scopes        string `json:"scopes"`
+	Scopes        string `json:"scope"`
 	AuthEndpoint  string `json:"auth_url"`
 	TokenEndpoint string `json:"token_url"`
 }
 
-const DefaultScopes = "openid offline_access profile email"
+const DefaultScopes = "openid offline profile email"
 
 func (OidcClient) TableName() string {
 	return "oidc_clients"
@@ -48,20 +48,21 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcCli
 	body["client_name"] = prov.Name
 	body["client_uri"] = prov.BaseUrl
 	body["redirect_uris"] = []string{redirectURI}
-	body["scopes"] = DefaultScopes
+	body["scope"] = DefaultScopes
 	body["acces_token_strategy"] = "opaque"
 	body["metadata"] = map[string]interface{}{
 		"Origin": os.Getenv("APP_URL"),
 	}
+	body["response_types"] = []string{"code", "id_token", "token"}
 	body["subject_type"] = "pairwise"
-	body["allowed_cors_origins"] = []string{os.Getenv("HYDRA_ADMIN_URL"), os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL")}
-	body["grant_types"] = []string{"authorization_code"}
+	body["allowed_cors_origins"] = []string{os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL"), "http://127.0.0.1"}
+	body["grant_types"] = []string{"authorization_code", "refresh_token"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
 	body["authorization_code_grant_id_token_lifespan"] = "3h"
 	body["authorization_code_grant_refresh_token_lifespan"] = "3h"
 	body["skip_consent"] = true
 	body["skip_logout_consent"] = true
-	body["token_endpoint_auth_method"] = "client_secret_basic"
+	body["token_endpoint_auth_method"] = "client_secret_post"
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, externalId, err

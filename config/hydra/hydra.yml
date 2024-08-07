@@ -4,8 +4,6 @@ serve:
       enabled: true
       allowed_origins:
         - http://127.0.0.1
-        - http://localhost:8080
-        - http://localhost:5173
         - http://localhost
         - https://staging.canvas.unlockedlabs.xyz
       allowed_methods:
@@ -38,16 +36,16 @@ serve:
         - Content-Type
         - Access-Control-Allowed-Origins
   cookies:
-    same_site_mode: None
+    same_site_mode: Lax
 log:
   leak_sensitive_values: true
 
 urls:
   self:
     issuer: http://127.0.0.1
+  login: http://127.0.0.1/self-service/login/browser
   consent: http://127.0.0.1/consent
-  login: http://127.0.0.1:4433/self-service/login/browser
-  logout: http://127.0.0.1:4433/self-service/login/browser
+  logout: http://127.0.0.1/logout
 
 dev: true
 secrets:
