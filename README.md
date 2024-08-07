@@ -28,6 +28,7 @@ If you would like to contribute, please have a look at our [contribution guideli
 - Clone the repository
 - `cp .env.example .env && cp frontend/.env.example frontend/.env`
 - run `make help` for complete instructions
+- run `cd frontend && yarn prepare`
 
 **For frontend development:**
 

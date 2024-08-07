@@ -20,25 +20,22 @@ const MilestonesBarChart = ({ data }: { data: any }) => {
   const maxYAxisLabel = (props) => {
     const { x, y, payload } = props;
     const name = payload.value;
-    return (
-      <>
-        {name.length > 10 ? (
-          <>
-            <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill="#666">
-              {name.slice(0, 11)}
-            </text>
-            <text x={x} y={y + 15} textAnchor="end" fontSize={10} fill="#666">
-              {name.length > 20
-                ? name.slice(11, 20) + "..."
-                : name.slice(11, 20)}
-            </text>
-          </>
-        ) : (
+    if (name.length > 10) {
+      return (
+        <>
           <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill="#666">
-            {name}
+            {name.slice(0, 11)}
           </text>
-        )}
-      </>
+          <text x={x} y={y + 15} textAnchor="end" fontSize={10} fill="#666">
+            {name.length > 20 ? name.slice(11, 20) + "..." : name.slice(11, 20)}
+          </text>
+        </>
+      );
+    }
+    return (
+      <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill="#666">
+        {name}
+      </text>
     );
   };
 

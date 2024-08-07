@@ -59,7 +59,10 @@ export default function StudentDashboard() {
           <ul className="space-y-3 mt-3">
             {data.top_programs.map((name: string) => {
               return (
-                <li className="body-small flex flex-row gap-2 content-center">
+                <li
+                  className="body-small flex flex-row gap-2 content-center"
+                  key={name}
+                >
                   <AcademicCapIcon className="w-4" />
                   <p className="line-clamp-1">{name}</p>
                 </li>
