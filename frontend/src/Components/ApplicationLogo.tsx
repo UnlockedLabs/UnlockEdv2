@@ -1,5 +1,5 @@
-import { HTMLAttributes } from "react";
+import { HTMLAttributes } from 'react';
 
 export default function ApplicationLogo(props: HTMLAttributes<HTMLElement>) {
-  return <img {...props} src="/ul-logo.png" />;
+    return <img {...props} src="/ul-logo.png" />;
 }
