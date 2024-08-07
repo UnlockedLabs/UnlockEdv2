@@ -128,5 +128,6 @@ courier:
     from_address: no-reply@ory.kratos.sh
     local_name: localhost
 
+dev: true
 feature_flags:
   use_continue_with_transitions: true

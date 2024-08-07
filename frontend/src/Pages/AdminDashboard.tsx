@@ -3,7 +3,7 @@ import MilestonesBarChart from "@/Components/MilestonesBarChart";
 import ActivityChart from "@/Components/MonthActivityChart";
 import StatsCard from "@/Components/StatsCard";
 import TopProgPieChart from "@/Components/TopProgActivityPieChart";
-import { AdminDashboardJoin, ServerResponse } from "@/common";
+import { AdminDashboardJoin } from "@/common";
 import useSWR from "swr";
 import convertSeconds from "../Components/ConvertSeconds";
 import { useContext } from "react";
@@ -11,7 +11,7 @@ import { ThemeContext } from "@/Components/ThemeContext";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { data, error, isLoading } = useSWR<ServerResponse<AdminDashboardJoin>>(
+  const { data, error, isLoading } = useSWR<AdminDashboardJoin>(
     `/api/users/${user.id}/admin-dashboard`,
   );
   const { theme } = useContext(ThemeContext);
@@ -23,7 +23,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="px-8 py-4">
-      <h1 className="text-5xl">{"Potosi Correctional Center"}</h1>
+      <h1 className="text-5xl">{data.facility_name}</h1>
       <div className="flex flex-row mt-12 gap-12">
         <div className="flex flex-col gap-6">
           <div className="card h-[240px]">
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-3 gap-6">
             <StatsCard
               title={"ACTIVE USERS"}
-              number={data.weekly_active_users}
+              number={`${data.weekly_active_users}`}
               label={"students"}
             />
             <StatsCard

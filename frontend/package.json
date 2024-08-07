@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "lint-staged": "oxlint src",
     "preview": "vite preview",
-    "prepare": "husky"
+    "prepare": "cd .. && husky frontend/.husky"
   },
   "dependencies": {
     "autoprefixer": "^10.4.19",

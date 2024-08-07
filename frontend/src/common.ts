@@ -157,16 +157,17 @@ export enum ProviderPlatformType {
 }
 
 export interface AdminDashboardJoin {
-  MonthlyActivity: RecentActivity[];
-  WeeklyActiveUsers: number;
-  AvgDailyActivity: number;
-  TotalWeeklyActivity: number;
-  ProgramMilestones: ProgramMilestones[];
-  TopProgramActivity: ProgramActivity[];
+  monthly_activity: RecentActivity[];
+  weekly_active_users: number;
+  avg_daily_activity: number;
+  total_weekly_activity: number;
+  program_milestones: ProgramMilestones[];
+  top_program_activity: ProgramActivity[];
+  facility_name: string;
 }
 
 export interface ProgramMilestones {
-  alt_name: string;
+  name: string;
   milestones: number;
 }
 
