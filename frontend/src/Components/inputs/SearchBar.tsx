@@ -1,25 +1,25 @@
-import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
+import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 
 export default function SearchBar({
-  searchTerm,
-  changeCallback,
+    searchTerm,
+    changeCallback
 }: {
-  searchTerm: string;
-  changeCallback: (arg: string) => void;
+    searchTerm: string;
+    changeCallback: (arg: string) => void;
 }) {
-  return (
-    <label className="form-control">
-      <div className="relative">
-        <MagnifyingGlassIcon className="absolute top-1/2 right-2 transform -translate-y-1/2 w-5 h-5 text-secondary" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="input input-bordered w-full max-w-xs"
-          value={searchTerm}
-          onChange={(e) => changeCallback(e.target.value)}
-          autoFocus={true}
-        />
-      </div>
-    </label>
-  );
+    return (
+        <label className="form-control">
+            <div className="relative">
+                <MagnifyingGlassIcon className="absolute top-1/2 right-2 transform -translate-y-1/2 w-5 h-5 text-secondary" />
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    className="input input-bordered w-full max-w-xs"
+                    value={searchTerm}
+                    onChange={(e) => changeCallback(e.target.value)}
+                    autoFocus={true}
+                />
+            </div>
+        </label>
+    );
 }
