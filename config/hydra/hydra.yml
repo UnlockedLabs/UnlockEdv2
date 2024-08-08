@@ -46,6 +46,9 @@ urls:
   login: http://127.0.0.1/self-service/login/browser
   consent: http://127.0.0.1/consent
   logout: http://127.0.0.1/logout
+  identity_provider:
+    url: http://kratos:4434/admin
+    publicUrl: http://kratos:4433
 
 dev: true
 secrets:

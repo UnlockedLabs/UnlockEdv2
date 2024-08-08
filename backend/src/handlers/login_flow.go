@@ -16,15 +16,17 @@ func (srv *Server) registerOidcFlowRoutes() {
 	srv.Mux.HandleFunc("POST /api/login", srv.handleLogin)
 	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleLogout))
 	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleOidcConsent))
+	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleRefreshAuth))
 }
 
 const (
-	ConsentPutEndpoint = "/admin/oauth2/auth/requests/consent/accept"
-	ConsentGetEndpoint = "/admin/oauth2/auth/requests/consent?consent_challenge="
+	ConsentPutEndpoint  = "/admin/oauth2/auth/requests/consent/accept"
+	AcceptLoginEndpoint = "/admin/oauth2/auth/requests/login/accept"
+	ConsentGetEndpoint  = "/admin/oauth2/auth/requests/consent?consent_challenge="
 )
 
 type LoginRequest struct {
-	Username  string `json:"username"`
+	Username  string `json:"identifier"`
 	Password  string `json:"password"`
 	FlowID    string `json:"flow_id"`
 	Challenge string `json:"challenge"`
@@ -92,7 +94,6 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		req.Header.Set("Cookie", cookie)
 		req.Header.Set("X-CSRF-Token", form.CsrfToken)
-		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 		resp, err := s.Client.Do(req)
@@ -253,7 +254,7 @@ func buildConsentBody(user *models.User) ([]byte, error) {
 	body := make(map[string]interface{})
 	body["remember"] = true
 	body["grant_access_token_audience"] = []string{os.Getenv("APP_URL")}
-	body["remember_for"] = 3600
+	body["remember_for"] = 3600 * 24
 	body["grant_scope"] = []string{"openid", "offline", "profile", "email"}
 	body["session"] = map[string]interface{}{
 		"access_token": map[string]interface{}{
@@ -267,4 +268,70 @@ func buildConsentBody(user *models.User) ([]byte, error) {
 		},
 	}
 	return json.Marshal(body)
+}
+
+// this endpoint is used when the user has an existing Kratos session, and is directed to
+// oauth2 client login flow. Kratos by default will make the user login again despite
+// acknowledging that the user has a session. So in this case, we skip kratos and accept
+// the hydra login request directly because this endpoint sits behind auth middleware.
+func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "handleRefreshAuth"}
+	var form map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&form)
+	if err != nil {
+		log.WithFields(fields).Error("Error decoding request body")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	defer r.Body.Close()
+	session := form["session"].(map[string]interface{})
+	toSend := map[string]interface{}{
+		"identity_provider_session_id": session["id"].(string),
+		"remember":                     true,
+		"remember_for":                 3600 * 24,
+		"subject":                      form["identity"].(string),
+	}
+	jsonBody, err := json.Marshal(toSend)
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error marshalling body")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	req, err := http.NewRequest(http.MethodPut, *acceptLoginEndpoint(form), bytes.NewReader(jsonBody))
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error creating request")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	req.Header.Add("Cookie", r.Header.Get("Cookie"))
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
+	response, err := srv.Client.Do(req)
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error sending request to hydra")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	defer response.Body.Close()
+	var consentResponse map[string]interface{}
+	err = json.NewDecoder(response.Body).Decode(&consentResponse)
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error decoding response")
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	srv.WriteResponse(w, http.StatusOK, map[string]string{
+		"redirect_to": consentResponse["redirect_to"].(string),
+	})
+}
+
+func acceptLoginEndpoint(form map[string]interface{}) *string {
+	challenge := form["challenge"].(string)
+	challenge = "?login_challenge=" + challenge
+	endpoint := os.Getenv("HYDRA_ADMIN_URL") + AcceptLoginEndpoint + challenge
+	return &endpoint
 }
