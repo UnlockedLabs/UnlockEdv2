@@ -150,8 +150,6 @@ func (srv *Server) syncKratosAdminDB() error {
 			log.Fatal("this should never happen, we just created the user")
 		}
 		if user.KratosID != id {
-			log.Debug("KRATOS ID: ", id)
-			// update user kratos_id
 			if err := srv.Db.Conn.Exec("UPDATE users SET kratos_id = ? WHERE id = 1", id).Error; err != nil {
 				return err
 			}

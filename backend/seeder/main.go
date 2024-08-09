@@ -123,6 +123,19 @@ func seedTestData(db *gorm.DB) {
 	}
 	for _, user := range dbUsers {
 		for _, prog := range programs {
+			// all test programs are open_enrollment
+			enrollment := models.Milestone{
+				ProgramID:   prog.ID,
+				Type:        models.Enrollment,
+				UserID:      user.ID,
+				IsCompleted: true,
+				ExternalID:  fmt.Sprintf("%d", rand.Intn(1000)),
+			}
+			enrollment.CreatedAt = prog.CreatedAt
+			if err := db.Create(&enrollment).Error; err != nil {
+				log.Printf("Failed to create enrollment milestone: %v", err)
+				continue
+			}
 			startTime := 0
 			for i := 0; i < 365; i++ {
 				if i%5 == 0 {

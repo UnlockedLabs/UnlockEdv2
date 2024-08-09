@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { User } from './types';
 import axios from 'axios';
+import { BROWSER_URL } from './common';
 
 interface AuthContextType {
     user: User | null;
@@ -66,16 +67,15 @@ export const useAuth = () => {
 
 export const handleLogout = async () => {
     try {
-        await axios.post('/api/logout');
-        const logout_response = await axios.get('/self-service/logout/browser');
-        if (logout_response.data.logout_url) {
-            window.location.href = logout_response.data.logout_url;
-        } else {
-            console.log('Logout failed', logout_response);
-            window.location.href = '/self-service/login/browser';
+        const resp = await axios.post('/api/logout');
+        if (resp.status === 200) {
+            const logout = await axios.get(resp.data.redirect_to);
+            if (logout.status === 200) {
+                window.location.href = logout.data.logout_url;
+            }
         }
     } catch (error) {
-        window.location.href = '/login';
+        window.location.href = BROWSER_URL;
         console.log('Logout failed', error);
     }
 };

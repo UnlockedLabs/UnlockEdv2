@@ -13,28 +13,20 @@ ascii_art:
 	@echo '|    |  /   |  \  |_(  <_> )  \___|    <\  ___// /_/ | \   //       \ '
 	@echo '|______/|___|  /____/\____/ \___  >__|_ \\___  >____ |  \_/ \_______ \'
 	@echo '             \/                 \/     \/    \/     \/              \/'
-	@echo "Usage: make [target]"
-	@echo "Targets:"
-	@echo "  prod           Run the production Docker Compose setup (all containers)"
-	@echo "  frontend-dev   Run the development Docker Compose setup (requires vite)"
-	@echo "  backend-dev    Run only the essential containers (requires vite, server and middleware)"
-	@echo "  migrate-fresh  Run the Go migration script"
-	@echo "  seed           Run the seeder script"
-	@echo "  build-binaries Build Go binaries for different platforms"
 
 
 .PHONY: help prod backend-dev frontend-dev migrate-fresh seed build-binaries install
 
 
 help: ascii_art
-	@echo "Usage: make [target]"
-	@echo "Targets:"
-	@echo "  prod           Run the production Docker Compose setup (all containers)"
-	@echo "  frontend-dev   Run the development Docker Compose setup (requires vite)"
-	@echo "  backend-dev    Run only the essential containers (requires vite, server and middleware)"
-	@echo "  migrate-fresh  Run the Go migration script"
-	@echo "  seed           Run the seeder script"
-	@echo "  build-binaries Build Go binaries for different platforms"
+	@echo " ⚡Usage: make [target] ⚡"
+	@echo " Targets:"
+	@echo "   prod           Run the production Docker Compose setup (all containers)"
+	@echo "   frontend-dev   Run the development Docker Compose setup (requires vite)"
+	@echo "   backend-dev    Run only the essential containers (requires vite, server and middleware)"
+	@echo "   migrate-fresh  Run the Go migration script"
+	@echo " 󱘤  seed           Run the seeder script"
+	@echo "   build-binaries Build Go binaries for different platforms"
 
 prod: ascii_art
 	docker compose -f $(DOCKER_COMPOSE) -f $(PROD_COMPOSE) up --build --force-recreate

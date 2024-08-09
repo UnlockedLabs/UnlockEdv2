@@ -1,51 +1,57 @@
 import axios from 'axios';
+import DangerButton from '../DangerButton';
+import PrimaryButton from '../PrimaryButton';
 
 export default function ConsentForm() {
     const accept = async () => {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const consent = urlParams.get('consent_challenge');
-            await axios(`/api/consent/accept`, {
+            const resp = await axios(`/api/consent/accept`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 data: { consent_challenge: consent }
             });
+
+            if (resp.status === 200) {
+                const location = resp.data.redirect_to;
+                console.log('Redirecting to', location);
+                window.location.replace(location);
+                return;
+            }
             return;
         } catch (error: any) {
-            console.error(error.response);
+            console.error(error);
         }
     };
     const deny = () => {
-        window.location.replace('/');
+        window.location.replace('/dashboard');
     };
     return (
-        <div title="Consent Form">
-            <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 flex flex-col my-2">
-                <h2 className="text-2xl font-bold text-center mb-4">
-                    Consent Form
-                </h2>
-                <p className="text-center mb-4">
-                    Do you consent to give this external application access to
-                    your account?
-                </p>
-                <div className="flex items-center justify-between">
-                    <button
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                        type="button"
-                        onClick={accept}
-                    >
-                        Accept
-                    </button>
-                    <button
-                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                        type="button"
-                        onClick={deny}
-                    >
-                        Decline
-                    </button>
-                </div>
+        <div className="bg-base-100 shadow-lg rounded-lg p-8 mb-4 flex flex-col my-2 max-w-screen-xl mx-auto">
+            <h1 className="text-3xl font-bold text-center mb-4">
+                External Provider Login
+            </h1>
+            <p className="text-center mb-6">
+                Continue to login to the Education Provider?
+            </p>
+            <div className="flex justify-evenly">
+                <DangerButton
+                    className="btn btn-warning w-24"
+                    type="button"
+                    onClick={deny}
+                >
+                    Decline
+                </DangerButton>
+                <PrimaryButton
+                    className="btn btn-primary w-24"
+                    type="button"
+                    onClick={accept}
+                >
+                    Accept
+                </PrimaryButton>
             </div>
         </div>
     );

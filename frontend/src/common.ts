@@ -3,6 +3,8 @@ export enum UserRole {
     Student = 'student'
 }
 
+export const BROWSER_URL = '/self-service/login/browser';
+
 export const DEFAULT_ADMIN_ID = 1;
 export interface User {
     id: number;
@@ -78,7 +80,7 @@ export interface CategoryLink {
 export interface OidcClient {
     client_id: string;
     client_secret: string;
-    scopes: string;
+    scope: string;
     auth_url: string;
     token_url: string;
 }

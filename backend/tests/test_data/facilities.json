@@ -1,32 +1,27 @@
 [
-    {
-        "id":        2,
-        "created_at": "2024-06-27T19:15:00.123456789Z",
-        "updated_at": "2024-06-27T19:15:00.123456789Z",
-        "name":      "Jefferson City Correctional Center"
-    },
-    {
-        "id":        3,
-        "created_at": "2024-06-27T19:15:00.123456789Z",
-        "updated_at": "2024-06-27T19:15:00.123456789Z",
-        "name":      "Missouri Eastern Correctional Center"
-    },
-    {
-        "id":        4,
-        "created_at": "2024-06-27T19:15:00.123456789Z",
-        "updated_at": "2024-06-27T19:15:00.123456789Z",
-        "name":      "Potosi Correctional Center"
-    },
-    {
-        "id":        5,
-        "created_at": "2024-06-27T19:15:00.123456789Z",
-        "updated_at": "2024-06-27T19:15:00.123456789Z",
-        "name":      "Farmington Correctional Center"
-    },
-    {
-        "id":        6,
-        "created_at": "2024-06-27T19:15:00.123456789Z",
-        "updated_at": "2024-06-27T19:15:00.123456789Z",
-        "name":      "Algoa Correctional Center"
-    }
+  {
+    "created_at": "2024-06-27T19:15:00.123456789Z",
+    "updated_at": "2024-06-27T19:15:00.123456789Z",
+    "name": "Jefferson City Correctional Center"
+  },
+  {
+    "created_at": "2024-06-27T19:15:00.123456789Z",
+    "updated_at": "2024-06-27T19:15:00.123456789Z",
+    "name": "Missouri Eastern Correctional Center"
+  },
+  {
+    "created_at": "2024-06-27T19:15:00.123456789Z",
+    "updated_at": "2024-06-27T19:15:00.123456789Z",
+    "name": "Potosi Correctional Center"
+  },
+  {
+    "created_at": "2024-06-27T19:15:00.123456789Z",
+    "updated_at": "2024-06-27T19:15:00.123456789Z",
+    "name": "Farmington Correctional Center"
+  },
+  {
+    "created_at": "2024-06-27T19:15:00.123456789Z",
+    "updated_at": "2024-06-27T19:15:00.123456789Z",
+    "name": "Algoa Correctional Center"
+  }
 ]

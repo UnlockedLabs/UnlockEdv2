@@ -2,7 +2,6 @@ import CourseCard from '@/Components/EnrolledCourseCard';
 import CurrentlyEnrolledClass from '@/Components/CurrentlyEnrolledClass';
 import { useAuth } from '@/AuthContext';
 import useSWR from 'swr';
-import { ServerResponse } from '@/common';
 import convertSeconds from '@/Components/ConvertSeconds';
 import ResourcesSideBar from '@/Components/ResourcesSideBar';
 import WeekActivityChart from '@/Components/WeeklyActivity';
@@ -17,10 +16,9 @@ import {
 export default function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { data, error, isLoading } = useSWR<ServerResponse<any>>(
+    const { data, error, isLoading } = useSWR<any>(
         `/api/users/${user.id}/student-dashboard`
     );
-
     if (isLoading) return <div></div>;
     if (error) return <Error />;
     console.log(data);
@@ -63,10 +61,7 @@ export default function StudentDashboard() {
                     <ul className="space-y-3 mt-3">
                         {data.top_programs.map((name: string) => {
                             return (
-                                <li
-                                    className="body-small flex flex-row gap-2 content-center"
-                                    key={name}
-                                >
+                                <li className="body-small flex flex-row gap-2 content-center">
                                     <AcademicCapIcon className="w-4" />
                                     <p className="line-clamp-1">{name}</p>
                                 </li>

@@ -11,7 +11,6 @@ const ExternalLink = ({ children, url }: { children: any; url: string }) => {
             className="flex gap-2 body-small text-body-text items-center"
             href={url}
             target="_blank"
-            rel="noreferrer"
         >
             <ArrowTopRightOnSquareIcon className="w-4" />
             {children}

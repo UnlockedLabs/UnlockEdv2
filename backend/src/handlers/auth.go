@@ -3,8 +3,6 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -19,17 +17,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type contextKey string
-
 const ClaimsKey contextKey = "claims"
 
-type Claims struct {
-	UserID        uint            `json:"user_id"`
-	PasswordReset bool            `json:"password_reset"`
-	Role          models.UserRole `json:"role"`
-	FacilityID    uint            `json:"facility_id"`
-	jwt.RegisteredClaims
-}
+type (
+	contextKey string
+	Claims     struct {
+		UserID        uint            `json:"user_id"`
+		PasswordReset bool            `json:"password_reset"`
+		Role          models.UserRole `json:"role"`
+		FacilityID    uint            `json:"facility_id"`
+		jwt.RegisteredClaims
+	}
+)
 
 func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
@@ -55,7 +54,6 @@ func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 			return
 		}
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
 			if claims.PasswordReset && !isAuthRoute(r) {
 				http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
@@ -128,21 +126,6 @@ func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)
 	})
 }
 
-type OrySession struct {
-	Active    bool
-	TokenHash string
-	Expires   time.Time
-}
-
-func hashCookieValue(cookieValue string) string {
-	hash := sha256.New()
-	hash.Write([]byte(cookieValue))
-	return hex.EncodeToString(hash.Sum(nil))
-}
-
-// cache ory sessions in memory to avoid unnecessary calls
-var orySessions = make(map[uint]OrySession)
-
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleCheckAuth"}
@@ -162,39 +145,24 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	oryCookie, err := r.Cookie("ory_kratos_session")
-	if err == nil {
-		cookieHash := hashCookieValue(oryCookie.Value)
-		if orySession, ok := orySessions[user.ID]; ok {
-			// check the cached session hash + expiration
-			if orySession.Active && orySession.TokenHash == cookieHash && orySession.Expires.After(time.Now()) {
-				srv.WriteResponse(w, http.StatusOK, user)
-				log.WithFields(fields).Info("checked cached session active for user")
-				return
-			}
-			log.WithFields(fields).Info("session was cached but invalidated")
-		}
-		if err := srv.validateOrySession(oryCookie, user.ID); err != nil {
-			log.WithFields(fields).Errorln("invalid ory session found")
-			srv.ErrorResponse(w, http.StatusUnauthorized, "ory session was not valid, please login again")
-			return
-		}
-		srv.WriteResponse(w, http.StatusOK, user)
+	if err := srv.validateOrySession(r, user.ID); err != nil {
+		log.WithFields(fields).Errorln("invalid ory session found")
+		srv.ErrorResponse(w, http.StatusUnauthorized, "ory session was not valid, please login again")
 		return
 	}
-	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	srv.WriteResponse(w, http.StatusOK, user)
 }
 
 // we pull the ory session cookie, and send request to kratos to validate the user session
-func (srv *Server) validateOrySession(cookie *http.Cookie, userID uint) error {
+func (srv *Server) validateOrySession(r *http.Request, userID uint) error {
 	fields := log.Fields{"handler": "validateOrySession", "user_id": userID}
 	request, err := http.NewRequest("GET", os.Getenv("KRATOS_PUBLIC_URL")+"/sessions/whoami", nil)
 	if err != nil {
 		log.WithFields(fields).Error("Error creating request to ory: ", err)
 		return err
 	}
-	// for some reason you have to send the entire cookie, instead of cookie.Value
-	request.Header.Add("Cookie", cookie.String())
+	cookie := r.Header.Get("Cookie")
+	request.Header.Add("Cookie", cookie)
 	response, err := srv.Client.Do(request)
 	if err != nil {
 		log.WithFields(fields).Error("Error sending equest to ory: ", err)
@@ -226,13 +194,10 @@ func (srv *Server) validateOrySession(cookie *http.Cookie, userID uint) error {
 			if expires.After(time.Now()) {
 				log.WithFields(fields).Info("Got active  session from ory")
 				// hash the ory token for easy comparison/validation, so we cache
-				hashed := hashCookieValue(cookie.Value)
-				orySessions[userID] = OrySession{Active: true, TokenHash: hashed, Expires: expires}
 				return nil
 			}
 		}
 	}
-	delete(orySessions, userID)
 	return errors.New("invalid ory session")
 }
 

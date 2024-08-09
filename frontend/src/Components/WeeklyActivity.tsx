@@ -17,7 +17,7 @@ const WeekActivityChart = ({ data }: { data: any }) => {
     var gridColor = theme == 'light' ? '#ECECEC' : '#737373';
     var backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
 
-    const result: RecentActivity[] = Array.from({ length: 7 });
+    const result: RecentActivity[] = new Array(7);
     let currentDate = new Date();
 
     for (let i = 6; i >= 0; i--) {

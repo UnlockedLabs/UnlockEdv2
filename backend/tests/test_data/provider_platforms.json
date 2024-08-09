@@ -1,6 +1,5 @@
 [
   {
-    "id": 1,
     "type": "canvas_oss",
     "name": "CanvasLMS",
     "description": "Staging instance of canvas",
@@ -10,7 +9,6 @@
     "state": "enabled"
   },
   {
-    "id": 2,
     "type": "canvas_oss",
     "name": "Claude Anderson",
     "description": "Enim quam.",
@@ -20,7 +18,6 @@
     "state": "disabled"
   },
   {
-    "id": 3,
     "type": "canvas_oss",
     "name": "Prof. Rodrick Will",
     "description": "Est laudantium et.",
@@ -30,7 +27,6 @@
     "state": "enabled"
   },
   {
-    "id": 4,
     "type": "canvas_cloud",
     "name": "Brayan Carter",
     "description": "Aut et et aut.",
@@ -40,7 +36,6 @@
     "state": "enabled"
   },
   {
-    "id": 5,
     "type": "canvas_cloud",
     "name": "Miss Iva Feil Sr.",
     "description": "Incidunt eius ut facere.",
@@ -50,7 +45,6 @@
     "state": "archived"
   },
   {
-    "id": 6,
     "type": "canvas_cloud",
     "name": "Daphne Goyette V",
     "description": "Molestiae distinctio quas.",
@@ -60,7 +54,6 @@
     "state": "archived"
   },
   {
-    "id": 7,
     "type": "canvas_cloud",
     "name": "Adell Pacocha",
     "description": "Voluptatem suscipit voluptatem quaerat.",
@@ -70,7 +63,6 @@
     "state": "disabled"
   },
   {
-    "id": 8,
     "type": "canvas_cloud",
     "name": "Rosa Carroll",
     "description": "Quas voluptatibus unde.",
@@ -80,7 +72,6 @@
     "state": "disabled"
   },
   {
-    "id": 9,
     "type": "canvas_cloud",
     "name": "Itzel Williamson",
     "description": "Accusamus aperiam corrupti.",
@@ -90,7 +81,6 @@
     "state": "disabled"
   },
   {
-    "id": 10,
     "type": "canvas_cloud",
     "name": "King Denesik I",
     "description": "Est magnam quia quam.",
@@ -100,7 +90,6 @@
     "state": "enabled"
   },
   {
-    "id": 11,
     "type": "canvas_cloud",
     "name": "Cullen Kuphal",
     "description": "Facilis voluptatum neque.",
@@ -110,7 +99,6 @@
     "state": "enabled"
   },
   {
-    "id": 12,
     "type": "canvas_cloud",
     "name": "Alessandra Kirlin",
     "description": "Ab repellendus omnis dolorum.",
