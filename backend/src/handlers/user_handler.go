@@ -157,6 +157,11 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.User.FacilityID == 0 {
 		user.User.FacilityID = srv.getFacilityID(r)
 	}
+	userNameExists := srv.Db.UsernameExists(user.User.Username)
+	if userNameExists {
+		srv.ErrorResponse(w, http.StatusBadRequest, "userexists")
+		return
+	}
 	user.User.Username = removeChars(user.User.Username, disallowedChars)
 	newUser, err := srv.Db.CreateUser(&user.User)
 	if err != nil {
@@ -238,6 +243,13 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		log.Error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		srv.ErrorResponse(w, http.StatusNotFound, "user not found")
 		return
+	}
+	if toUpdate.Username != user.Username && user.Username != "" {
+		userNameExists := srv.Db.UsernameExists(user.Username)
+		if userNameExists {
+			srv.ErrorResponse(w, http.StatusBadRequest, "userexists")
+			return
+		}
 	}
 	models.UpdateStruct(&toUpdate, &user)
 
