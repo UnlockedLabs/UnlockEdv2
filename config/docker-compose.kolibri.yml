@@ -1,7 +1,7 @@
 services:
   # requires logging in to our ECR account
   kolibri:
-    image: 239442854891.dkr.ecr.us-west-2.amazonaws.com/kolibri:latest
+    image: unlockedlabs.org/kolibri:latest
     ports:
       - 8000:8000
     networks:

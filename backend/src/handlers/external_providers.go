@@ -178,6 +178,13 @@ func (srv *Server) createUserInCanvas(user *models.User, providerId uint) (int, 
 // This requires that the password is set to an UNHASHED plaintext temporary password
 // don't call this method on a normal user queried from the database
 func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderPlatform) error {
+	if prov.AccountID == "TODO" {
+		// here we check if this if this instance has been setup, if so we set the account id
+		if err := srv.checkKolibriAccountSetup(prov); err != nil {
+			log.Error("error checking kolibri account setup")
+			return err
+		}
+	}
 	fields := log.Fields{"user_id": user.ID, "provider_platform_id": prov.ID}
 	log.WithFields(fields).Info("creating user in kolibri")
 	kUser := make(map[string]interface{}, 0)
@@ -229,4 +236,33 @@ func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderP
 		return err
 	}
 	return nil
+}
+
+func (srv *Server) checkKolibriAccountSetup(prov *models.ProviderPlatform) error {
+	request, err := http.NewRequest(http.MethodGet, prov.BaseUrl+"/api/public/v1/facility/", nil)
+	if err != nil {
+		log.Error("error creating request for kolibri facility check")
+		return err
+	}
+	resp, err := srv.Client.Do(request)
+	if err != nil {
+		log.Error("error sending request to kolibri for facility check")
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		log.Info("kolibri facility not found, creating")
+		return errors.New(("kolibri facility or instance not found"))
+	}
+	body := make([]map[string]interface{}, 0)
+	if err = json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		log.Error("error decoding response from kolibri facility check")
+		return err
+	}
+	if len(body) == 0 {
+		log.Info("kolibri facility not found")
+		return errors.New("kolibri facility or instance not found")
+	}
+	first := body[0]["id"].(string)
+	return srv.Db.Conn.Model(prov).Update("account_id", first).Error
 }

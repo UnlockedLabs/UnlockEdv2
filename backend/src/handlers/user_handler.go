@@ -183,7 +183,7 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		User:         *newUser,
 		TempPassword: newUser.Password,
 	}
-	// if we aren't in a testing environment, register the user as an Identity with Kratos
+	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
 		if err := srv.HandleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
 			log.Printf("Error creating user in kratos: %v", err)
@@ -191,6 +191,8 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		kolibri, err := srv.Db.FindKolibriInstance()
 		if err != nil {
 			log.Error("error getting kolibri instance")
+			// still return 201 because user has been created in kratos,
+			// kolibri might not be set up/available
 			srv.WriteResponse(w, http.StatusCreated, response)
 			return
 		}

@@ -37,10 +37,9 @@ func (OidcClient) TableName() string {
 	return "oidc_clients"
 }
 
-func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool) (*OidcClient, string, error) {
+func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *http.Client) (*OidcClient, string, error) {
 	externalId := ""
 	redirectURI := prov.GetDefaultRedirectURI()
-	client := http.Client{}
 	headers := map[string]string{}
 	headers["Authorization"] = "Bearer " + os.Getenv("ORY_TOKEN")
 	headers["Origin"] = os.Getenv("APP_URL")
