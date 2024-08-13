@@ -82,7 +82,7 @@ so be sure that it didn't update in a later commit.
 > Chances are, this is a permissions issue with docker. If you are new to docker, you may need to run `sudo usermod -aG docker $USER`
 > to add yourself to the docker group. You will need to log out and back in for this to take effect.
 > Try starting docker with `sudo dockerd`, or restarting the daemon with `sudo systemctl restart docker.service`, followed by `docker run hello-world`
-> to ensure docker is running properly before again trying the `sail up` command.
+> to ensure docker is running properly before again trying any of the `make` or `docker compose` commands.
 
 ### Docker says "network {UUID} not found"
 

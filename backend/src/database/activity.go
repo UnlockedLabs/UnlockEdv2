@@ -245,13 +245,16 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
 	// where the user has an entry in the activity table
-	err := db.Conn.Table("programs p").
-		Select(`p.name as program_name,
+	err := db.Conn.Table("programs p").Select(`p.name as program_name,
         p.alt_name,
         p.thumbnail_url,
         p.external_url,
         pp.name as provider_platform_name,
-        CASE WHEN COUNT(o.type) > 0 THEN 100 ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones END as course_progress`).
+        CASE
+            WHEN COUNT(o.type) > 0 THEN 100
+            WHEN COUNT(p.total_progress_milestones) = 0 THEN 0
+            ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones
+        END as course_progress`).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("LEFT JOIN milestones ON milestones.program_id = p.id AND milestones.user_id = ?", userID).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userID).

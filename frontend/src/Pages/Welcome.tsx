@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Brand from '../Components/Brand';
 import axios from 'axios';
+import { BROWSER_URL } from '@/common';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv1Sm.webp');
@@ -39,9 +40,7 @@ export default function Welcome() {
                     <ul className="menu menu-horizontal px-1 text-primary">
                         {!isLoggedIn ? (
                             <li>
-                                <a href={'/self-service/login/browser'}>
-                                    Log in
-                                </a>
+                                <a href={BROWSER_URL}>Log in</a>
                             </li>
                         ) : (
                             <li>

@@ -60,7 +60,9 @@ export default function App() {
         },
         {
             path: '/consent',
-            element: WithAuth({ children: <Consent /> }),
+            element: WithAuth({
+                children: <Consent />
+            }),
             errorElement: <Error />
         },
         {

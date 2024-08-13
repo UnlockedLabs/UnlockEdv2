@@ -1,13 +1,17 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
-
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
 echo "checking frontend .........."
 cd frontend
 echo "running prettier 󰎙 ..."
-npx prettier -w .
+FILES=$(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
+if [ -z "$FILES" ]; then
+  echo "No files to check"
+else
+  npx prettier -w $FILES
+fi
 echo "running oxlint 󰎙 ..."
-npx oxlint --fix .
+npx oxlint --fix $(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
 echo "checking backend ..............."
 cd ../backend
 echo "running golangci-lint  ......"

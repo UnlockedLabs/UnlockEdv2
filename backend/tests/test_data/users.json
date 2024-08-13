@@ -1,6 +1,5 @@
 [
   {
-    "id": 13,
     "name_first": "Dr. Opal Murphy DDS",
     "name_last": "Agnes Bailey",
     "email": "cedrick.donnelly@example.org",
@@ -12,7 +11,6 @@
     "facility_id": 1
   },
   {
-    "id": 16,
     "name_first": "Cindy Murphy I",
     "name_last": "Ahmed Parker",
     "email": "trycia.jenkins@example.com",
@@ -24,7 +22,6 @@
     "facility_id": 3
   },
   {
-    "id": 22,
     "name_first": "Mr. Garett Willms",
     "name_last": "Aracely McLaughlin",
     "email": "katrina98@example.org",
@@ -36,7 +33,6 @@
     "facility_id": 4
   },
   {
-    "id": 21,
     "name_first": "Rebeka Gleichner",
     "name_last": "Ardith Becker",
     "email": "ygulgowski@example.net",
@@ -48,7 +44,6 @@
     "facility_id": 1
   },
   {
-    "id": 4,
     "name_first": "Miss Loyce Borer",
     "name_last": "Arely King",
     "email": "gustave59@example.org",
@@ -60,7 +55,6 @@
     "facility_id": 1
   },
   {
-    "id": 3,
     "name_first": "Keaton Waters",
     "name_last": "Ashleigh Kunde Jr.",
     "email": "smorar@example.com",
@@ -72,7 +66,6 @@
     "facility_id": 4
   },
   {
-    "id": 20,
     "name_first": "Eliseo Reichert",
     "name_last": "Earline Ruecker",
     "email": "rbarton@example.net",
@@ -84,7 +77,6 @@
     "facility_id": 5
   },
   {
-    "id": 14,
     "name_first": "Santino Kautzer",
     "name_last": "Elwyn Kreiger Jr.",
     "email": "alexandre.bergstrom@example.org",
@@ -96,7 +88,6 @@
     "facility_id": 3
   },
   {
-    "id": 19,
     "name_first": "Raina Upton",
     "name_last": "Euna Halvorson",
     "email": "grimes.olin@example.org",

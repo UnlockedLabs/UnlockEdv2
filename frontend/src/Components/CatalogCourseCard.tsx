@@ -91,8 +91,7 @@ export default function CatalogCourseCard({
             <GreyPill key={'outcome' + course.program_id}>{pillLabel}</GreyPill>
         );
     });
-
-    if (view == ViewType.List)
+    if (view == ViewType.List) {
         return (
             <a
                 className="card bg-base-teal body-small p-6 flex flex-row items-center"
@@ -114,45 +113,47 @@ export default function CatalogCourseCard({
                 </div>
             </a>
         );
-    return (
-        <div className="card card-compact bg-base-teal overflow-hidden relative">
-            <div
-                className="absolute top-2 right-2"
-                onClick={(e) => updateFavorite(e)}
-            >
-                {bookmark}
-            </div>
-            <a
-                href={course.external_url}
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                <figure className="h-[124px]">
-                    {coverImage !== '' ? (
-                        <img
-                            src={coverImage}
-                            // TO DO: add in alt text here
-                            alt=""
-                            className="object-contain"
-                        />
-                    ) : (
-                        <div className="bg-teal-1 h-full w-full"></div>
-                    )}
-                </figure>
-                <div className="card-body gap-0.5">
-                    {/* this should be the school or program that offers the course */}
-                    <p className="text-xs">{course.provider_name}</p>
-                    <h3 className="card-title text-sm">
-                        {course.program_name}
-                    </h3>
-                    <p className="body-small line-clamp-2">
-                        {course.description}
-                    </p>
-                    <div className="flex flex-wrap py-1 mt-2 space-y-2">
-                        {programPill} {outcomePills}
-                    </div>
+    } else {
+        return (
+            <div className="card card-compact bg-base-teal overflow-hidden relative">
+                <div
+                    className="absolute top-2 right-2"
+                    onClick={(e) => updateFavorite(e)}
+                >
+                    {bookmark}
                 </div>
-            </a>
-        </div>
-    );
+                <a
+                    href={course.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <figure className="h-[124px]">
+                        {coverImage !== '' ? (
+                            <img
+                                src={coverImage}
+                                // TO DO: add in alt text here
+                                alt=""
+                                className="object-contain"
+                            />
+                        ) : (
+                            <div className="bg-teal-1 h-full w-full"></div>
+                        )}
+                    </figure>
+                    <div className="card-body gap-0.5">
+                        {/* this should be the school or program that offers the course */}
+                        <p className="text-xs">{course.provider_name}</p>
+                        <h3 className="card-title text-sm">
+                            {course.program_name}
+                        </h3>
+                        <p className="body-small line-clamp-2">
+                            {course.description}
+                        </p>
+                        <div className="flex flex-wrap py-1 mt-2 space-y-2">
+                            {programPill} {outcomePills}
+                        </div>
+                    </div>
+                </a>
+            </div>
+        );
+    }
 }

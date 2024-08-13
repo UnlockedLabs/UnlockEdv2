@@ -37,7 +37,7 @@ export default function NewOidcClientNotification({
                 <div className="text-info">{client.token_url}</div>
                 <br />
                 <p className="font-semibold">Scopes:</p>
-                <div className="text-info">{client.scopes}</div>
+                <div className="text-info">{client.scope}</div>
             </div>
         </div>
     );

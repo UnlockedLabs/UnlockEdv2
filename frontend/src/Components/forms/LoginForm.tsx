@@ -1,93 +1,137 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import Checkbox from '../../Components/inputs/Checkbox';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import axios from 'axios';
+import { handleLogout } from '@/AuthContext';
+import { BROWSER_URL } from '@/common';
 
 type Inputs = {
     identifier: string;
-    method: string;
     password: string;
+    flow_id: string;
+    challenge: string;
+    csrf_token: string;
 };
 
 export default function LoginForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [user, setUser] = useState<string | null>(null);
     const {
         register,
         handleSubmit,
         formState: { errors }
     } = useForm<Inputs>();
+    const kratosUrl = '/self-service/login/flows?id=';
+    const sessionUrl = '/sessions/whoami';
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         try {
-            let kratosData = {
-                identifier: data.identifier,
-                password: data.password
-            };
-            const urlParams = new URLSearchParams(window.location.search);
-            const login_challenge = urlParams.get('login_challenge');
-            const login_flow = urlParams.get('flow');
-            if (!login_flow) {
-                console.error('No kratos login flow found');
-                window.location.replace('/');
-                return;
-            }
-            const flow_response = await axios.get(
-                '/self-service/login/flows?id=' + login_flow
-            );
+            const attributes = await initFlow();
+            user ? (data.identifier = user) : data.identifier;
+            const reqBody = { ...data, ...attributes };
             setErrorMessage('');
             setProcessing(true);
-            const url = '/self-service/login?flow=' + login_flow;
-            if (login_challenge) {
-                kratosData['method'] = 'oidc';
-            } else {
-                kratosData['method'] = 'password';
-            }
-            const cookie = flow_response.data.ui.nodes[0].attributes.value;
-            kratosData['csrf_token'] = cookie;
-            const response = await axios(url, {
-                method: 'POST',
-                data: kratosData,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': cookie
+            console.log('Submitting login request', reqBody);
+            const resp = await axios.post('/api/login', reqBody);
+            if (resp.status === 200) {
+                let location = resp.data.redirect_to;
+                if (!location) {
+                    location = resp.data.redirect_browser_to;
                 }
-            });
-            if (response.data.session.active) {
-                const loginResp = await axios.post('/api/login', {
-                    username: data.identifier,
-                    password: data.password
-                });
-                const user = loginResp.data;
-                if (user.reset_password) {
-                    window.location.replace('reset-password');
-                    return;
-                } else if (response.status === 200) {
-                    window.location.replace('/dashboard');
-                    return;
-                }
-            } else {
-                setErrorMessage('Login failed, session is not active');
+                console.log('Redirecting to', location);
+                window.location.replace(location);
+                return;
             }
+            return;
         } catch (error: any) {
+            if (error.response.data.redirect_browser_to) {
+                window.location.replace(
+                    error.response.data.redirect_browser_to
+                );
+                return;
+            }
             setProcessing(false);
-            setErrorMessage('login failed, please try again');
+            setErrorMessage('Login failed, please try again');
         }
+    };
+
+    useEffect(() => {
+        const checkExistingFlow = async () => {
+            try {
+                const checkResp = await axios.get(sessionUrl);
+                if (checkResp.status === 200 && checkResp.data.active) {
+                    setUser(checkResp.data.identity.traits.username);
+                    const attributes = await initFlow();
+                    const reqBody = {
+                        identity: checkResp.data.identity.id,
+                        csrf_token: attributes.csrf_token,
+                        session: checkResp.data,
+                        challenge: attributes.challenge
+                    };
+                    console.log('request body to refresh auth', reqBody);
+                    const resp = await axios.post('/api/auth/refresh', reqBody);
+                    if (resp.status === 200) {
+                        console.log('Refreshed session');
+                        window.location.replace(resp.data.redirect_to);
+                        return;
+                    }
+                    return;
+                }
+            } catch (error: any) {
+                console.error('No active sessions found for this user');
+                return;
+            }
+        };
+        checkExistingFlow();
+    }, []);
+
+    const initFlow = async () => {
+        const queryParams = new URLSearchParams(window.location.search);
+        if (!queryParams.has('flow')) {
+            setErrorMessage('No login flow specified');
+            window.location.replace(BROWSER_URL);
+            return;
+        }
+        let url = kratosUrl + queryParams.get('flow');
+        const resp = await axios.get(url);
+        if (resp.status !== 200) {
+            console.error('Error initializing login flow');
+            return;
+        }
+        console.log('login flow: ', resp.data);
+        return {
+            flow_id: resp.data.id,
+            challenge: resp.data.oauth2_login_challenge,
+            csrf_token: resp.data.ui.nodes[0].attributes.value
+        };
     };
 
     return (
         <form onSubmit={handleSubmit(submit)}>
-            <TextInput
-                label={'Username'}
-                interfaceRef={'identifier'}
-                required={true}
-                length={50}
-                errors={errors}
-                register={register}
-            />
+            {user ? (
+                <div className="block">
+                    <div className="text-lg text-center font-bold">
+                        Logged in as
+                        <div className="text-primary text-3xl text-bold">
+                            {user}
+                        </div>
+                        Please confirm your password.
+                    </div>
+                </div>
+            ) : (
+                <TextInput
+                    label={'Username'}
+                    interfaceRef={'identifier'}
+                    required={true}
+                    length={50}
+                    errors={errors}
+                    register={register}
+                />
+            )}
 
             <TextInput
                 label={'Password'}
@@ -104,23 +148,39 @@ export default function LoginForm() {
                     <InputError message={errorMessage} className="pt-2" />
                 </div>
             )}
-
-            <div className="block mt-4 ml-2">
-                <label className="flex items-center">
-                    <Checkbox
-                        label={'Remember me'}
-                        interfaceRef={'remember'}
-                        register={register}
-                    />
-                </label>
-            </div>
-
+            {user ? (
+                <div className="text-sm text-body-text text-center mt-2">
+                    <button
+                        className="btn pr-3 btn-sm btn-ghost"
+                        autoFocus={false}
+                        onClick={handleLogout}
+                    >
+                        Not You? Log out
+                    </button>
+                </div>
+            ) : (
+                <div className="block mt-4 ml-2">
+                    <label className="flex items-center">
+                        <Checkbox
+                            label={'Remember me'}
+                            interfaceRef={'remember'}
+                            register={register}
+                        />
+                    </label>
+                </div>
+            )}
             <div className="flex items-center justify-end mt-4">
-                <PrimaryButton className="ms-4 w-24 h-10" disabled={processing}>
+                <PrimaryButton
+                    className="ms-4 w-24 h-10"
+                    autoFocus={true}
+                    disabled={processing}
+                >
                     {processing ? (
                         <span className="loading loading-spinner loading-sm mx-auto"></span>
                     ) : (
-                        <div className="m-auto">Log in</div>
+                        <div className="m-auto">
+                            {user ? 'Confirm' : 'Log in'}
+                        </div>
                     )}
                 </PrimaryButton>
             </div>
