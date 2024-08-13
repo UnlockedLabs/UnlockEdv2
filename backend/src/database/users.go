@@ -167,6 +167,16 @@ func (db *DB) GetUserByUsername(username string) *models.User {
 	return &user
 }
 
+func (db *DB) UsernameExists(username string) bool {
+	userExists := false
+	err := db.Conn.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", username).
+		Scan(&userExists)
+	if err != nil {
+		log.Error("Error checking if username exists: ", err)
+	}
+	return userExists
+}
+
 func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 	if user.ID == 0 {
 		return nil, errors.New("invalid user ID")
