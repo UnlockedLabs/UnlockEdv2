@@ -71,6 +71,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		"provider_name":   "pp.name",
 		"course_progress": "course_progress",
 		"is_favorited":    "is_favorited",
+		"total_time":      "a.total_time",
 	}
 	dbField, ok := fieldMap[orderBy]
 	if !ok {
