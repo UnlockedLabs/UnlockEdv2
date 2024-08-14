@@ -105,6 +105,13 @@ export default function AddUserForm({
                     length={50}
                     errors={errors}
                     register={register}
+                    validationRules={{
+                        pattern: {
+                            value: /^[a-zA-Z0-9]+$/,
+                            message:
+                                'Username must only contain letters and numbers'
+                        }
+                    }}
                 />
                 <DropdownInput
                     label={'Role'}

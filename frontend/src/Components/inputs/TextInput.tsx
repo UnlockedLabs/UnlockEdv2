@@ -10,6 +10,7 @@ interface TextProps {
     password?: boolean;
     isFocused?: boolean;
     autoComplete?: string;
+    validationRules?: Record<string, any>;
 }
 
 export function TextInput({
@@ -21,9 +22,10 @@ export function TextInput({
     register,
     password = false,
     isFocused = false,
-    autoComplete = 'on'
+    autoComplete = 'on',
+    validationRules,
 }: TextProps) {
-    const options = {
+    let options = {
         required: {
             value: required,
             message: `${label} is required`
@@ -35,6 +37,9 @@ export function TextInput({
             }
         })
     };
+    if(validationRules) {
+        options = { ...options, ...validationRules };
+    }
     return (
         <label className="form-control">
             <div className="label">
