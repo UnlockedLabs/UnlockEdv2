@@ -2,7 +2,7 @@ import { useAuth } from '@/AuthContext';
 import PageNav from '@/Components/PageNav';
 import ToggleView, { ViewType } from '@/Components/ToggleView';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import CatalogCourseCard from '@/Components/CatalogCourseCard';
 import SearchBar from '@/Components/inputs/SearchBar';
 import { CourseCatalogue, Program, ServerResponse } from '@/common';
