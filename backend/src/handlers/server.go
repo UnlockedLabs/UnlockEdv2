@@ -132,6 +132,40 @@ func (srv *Server) checkForAdminInKratos() (string, error) {
 	return "", nil
 }
 
+func (srv *Server) generateKolibriOidcClient() error {
+	fields := log.Fields{"func": "generateKolibriOidcClient"}
+	if os.Getenv("KOLIBRI_URL") == "" {
+		log.Println("no KOLIBRI_URL set, not registering new OIDC client")
+		// there is no kolibri deployment registered
+		return nil
+	}
+	provider, err := srv.Db.FindKolibriInstance()
+	if err != nil {
+		provider = &models.ProviderPlatform{
+			Name:      string(models.Kolibri),
+			Type:      models.Kolibri,
+			BaseUrl:   os.Getenv("KOLIBRI_URL"),
+			AccessKey: os.Getenv("KOLIBRI_USERNAME") + ":" + os.Getenv("KOLIBRI_PASSWORD"),
+			AccountID: "TODO", // kolibri wont be running yet. This will be updated the first time a user is added
+			State:     models.Enabled,
+			IconUrl:   "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
+		}
+		provider, err = srv.Db.CreateProviderPlatform(provider)
+		if err != nil {
+			fields["error"] = err.Error()
+			log.WithFields(fields).Errorln("error creating kolibri provider")
+			return err
+		}
+	}
+	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client)
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("error creating kolibri auth client")
+		return err
+	}
+	return srv.Db.Conn.Create(client).Error
+}
+
 func (srv *Server) syncKratosAdminDB() error {
 	id, err := srv.checkForAdminInKratos()
 	if err != nil {
@@ -139,6 +173,10 @@ func (srv *Server) syncKratosAdminDB() error {
 	}
 	if id == "" {
 		// this means the default admin was just created, so we use default password
+		err := srv.generateKolibriOidcClient()
+		if err != nil {
+			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
+		}
 		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
 		}
@@ -162,12 +200,16 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 	user, err := srv.Db.GetUserByID(1)
 	if err != nil {
 		database.SeedDefaultData(srv.Db.Conn, false)
+		return srv.setupDefaultAdminInKratos()
 		// rerun after seeding the default user
 	}
 	if user.KratosID != "" {
 		// double check that the stored kratos ID is valid
 		if err := srv.validateUserIDKratos(user.KratosID); err != nil {
 			// if not, it's a freshly migrated database
+			// so we create the OIDC client if KOLIBRI_URL is set
+			// then create the default admin in kratos
+			log.Println("kratos id not found")
 			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}
@@ -258,7 +300,12 @@ func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interfa
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
 	log.Error(message)
-	http.Error(w, message, status)
+	resource := models.Resource[interface{}]{Message: message}
+	err := json.NewEncoder(w).Encode(resource)
+	if err != nil {
+		log.Error("error writing error response: ", err)
+		http.Error(w, message, status)
+	}
 }
 
 func (srv *Server) CalculateLast(total int64, perPage int) int {

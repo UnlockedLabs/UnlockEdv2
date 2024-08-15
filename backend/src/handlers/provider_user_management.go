@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
@@ -154,6 +153,13 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			response.Data = append(response.Data, userResponse)
 			continue
 		}
+		kolibri, err := srv.Db.FindKolibriInstance()
+		if err != nil {
+			log.Errorln("Error getting kolibri instance")
+		}
+		if err = srv.CreateUserInKolibri(created, kolibri); err != nil {
+			log.Errorln("Error creating kolibri user")
+		}
 		mapping := models.ProviderUserMapping{
 			UserID:             created.ID,
 			ProviderPlatformID: provider.ID,
@@ -235,11 +241,8 @@ func (srv *Server) createAndRegisterProviderUserAccount(provider *models.Provide
 	if provider.Type == models.CanvasCloud || provider.Type == models.CanvasOSS {
 		return srv.createAndRegisterCanvasUserAccount(provider, user)
 	} else {
-		log.Println("creating kolibri user")
-		service, err := src.GetProviderService(provider)
-		if err != nil {
-			log.WithFields(fields).Errorln("error getting provider service creating kolibri user")
-		}
-		return service.CreateKolibriUser(int(user.ID))
+		log.WithFields(fields).Println("creating kolibri user")
+		user.Password = "NOT_SPECIFIED"
+		return srv.CreateUserInKolibri(user, provider)
 	}
 }

@@ -114,7 +114,7 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
 	}
-	procedures := []string{dailyActivityProc, createOutcomeTriggerFunction}
+	procedures := []string{DailyActivityProc, CreateOutcomeTriggerFunction}
 	if !isTesting {
 		for _, proc := range procedures {
 			if err := db.Exec(proc).Error; err != nil {
@@ -243,7 +243,7 @@ func (db *DB) SeedTestData() {
 }
 
 const (
-	dailyActivityProc string = `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
+	DailyActivityProc string = `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
     _user_id INT,
     _program_id INT,
     _type VARCHAR,
@@ -265,7 +265,7 @@ const (
     END;
     $$ LANGUAGE plpgsql;`
 
-	createOutcomeTriggerFunction string = `
+	CreateOutcomeTriggerFunction string = `
 DROP TRIGGER IF EXISTS milestone_completion_trigger ON milestones;
 
 DROP FUNCTION IF EXISTS check_milestone_completion();

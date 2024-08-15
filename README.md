@@ -42,13 +42,31 @@ This will build everything but the client, which you can then run separately wit
 
 This will build only the Auth and run Postgres. You are responsible for building and running the server, middleware, and optionally the client/vite.
 
-**For Production:**
+**For 'Production':**
 
 - Run `make prod` to build the entire project in docker. You can then go to `localhost` in your browser.
+  NOTE: This is not a true production build, but simply a way to run the entire project in containers
 
 Login with `SuperAdmin` and password: `ChangeMe!`
 
-You will be prompted immediately to set a new password, and then you will be redirected to the dashboard.
+You will be prompted immediately to set a new password and name for the default facility, and then you
+will be redirected to the dashboard.
+
+**Integrations:**
+
+- _Kolibri_:
+  If you wish to run + develop against `Kolibri` locally:
+  first, you need to build and tag the docker image
+
+  - `docker buildx build . -f config/kolibri.Dockerfile -t unlockedlabs.org/kolibri:latest`
+  - Run `make kolibri`
+    This will run all the containers, similarly to the 'prod' command but with the addition of the kolibri container,
+    which will be available at `localhost:8000`
+
+  The server will automatically create an OIDC client, which you can access either by logging in for the first
+  time and going to `/api/oidc/clients` and adding the client_id and client_secret as environment variables in
+  the `config/docker-compose.kolibri.yml` file. After you set this value, run `docker restart unlockedv2-kolibri-1`
+  and you should be able to access the provider at `localhost:8000`
 
 ### To migrate the database to a fresh state, run `make migrate-fresh` (you can do this while docker is running with all the services, but you must restart the server (e.g. `docker restart unlockedv2-server-1` if your repo directory is called UnlockEdv2)
 

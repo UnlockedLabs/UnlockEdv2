@@ -159,12 +159,7 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 		if course["image_download_url"] != nil {
 			thumbnailURL = course["image_download_url"].(string)
 		}
-		description := ""
-		if course["public_description"] != nil {
-			description = course["public_description"].(string)
-		} else {
-			description = course["course_code"].(string)
-		}
+		description := course["course_code"].(string)
 		progType := "fixed_enrollment"
 		is_pub, ok := course["is_public"].(bool)
 		if !ok {

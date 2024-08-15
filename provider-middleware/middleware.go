@@ -27,15 +27,9 @@ func (sh *ServiceHandler) initService(r *http.Request) (ProviderServiceInterface
 	}
 	switch provider.Type {
 	case models.Kolibri:
-		kolibriService := NewKolibriService(provider)
-		if err := kolibriService.InitiateSession(); err != nil {
-			log.Printf("Failed to initiate session: %v", err)
-			return nil, fmt.Errorf("failed to initiate session: %v", err)
-		}
-		return kolibriService, nil
+		return NewKolibriService(provider), nil
 	case models.CanvasCloud, models.CanvasOSS:
-		canvasService := newCanvasService(provider)
-		return canvasService, nil
+		return newCanvasService(provider), nil
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }

@@ -80,7 +80,7 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		log.Error(r, err)
 		return
 	}
-	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister)
+	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister, srv.Client)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		log.Error(r, err)

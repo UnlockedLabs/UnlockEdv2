@@ -1,0 +1,20 @@
+services:
+  # requires logging in to our ECR account
+  kolibri:
+    image: unlockedlabs.org/kolibri:latest
+    environment:
+      CLIENT_ID: #placeholder for generated
+      CLIENT_SECRET: #client on first login
+    ports:
+      - 8000:8000
+    networks:
+      - intranet
+    restart: always
+    depends_on:
+      - postgres
+
+  server:
+    environment:
+      KOLIBRI_URL: http://127.0.0.1:8000
+      KOLIBRI_USERNAME: SuperAdmin
+      KOLIBRI_PASSWORD: ChangeMe!

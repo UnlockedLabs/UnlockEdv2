@@ -261,8 +261,8 @@ func buildConsentBody(user *models.User) ([]byte, error) {
 			"scope": []string{"openid", "offline", "profile", "email"},
 		},
 		"id_token": map[string]string{
-			"sub":                user.Username,
-			"email":              user.Email,
+			"nickname":           user.Username,
+			"email":              user.Username,
 			"preferred_username": user.Username,
 			"locale":             "en",
 		},
