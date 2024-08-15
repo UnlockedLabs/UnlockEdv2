@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -30,7 +31,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	path := filepath.Join("frontend", "public", "thumbnails", header.Filename)
+	path := filepath.Join(os.Getenv("IMG_FILEPATH"), header.Filename)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		log.Error("Error opening file: " + err.Error())
@@ -55,8 +56,14 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request) {
 	srv.WriteResponse(w, http.StatusOK, response)
 }
 
-func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request) {
+func getImagePath(r *http.Request) string {
 	img := r.PathValue("id")
-	path := filepath.Join("frontend", "public", "thumbnails", img)
-	http.ServeFile(w, r, path)
+	if strings.Contains(img, "..") {
+		return ""
+	}
+	return filepath.Join(os.Getenv("IMG_FILEPATH"), img)
+}
+
+func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, getImagePath(r))
 }
