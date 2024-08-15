@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -46,14 +47,13 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	body := map[string]interface{}{}
 	body["client_name"] = prov.Name
 	body["client_uri"] = prov.BaseUrl
-	body["redirect_uris"] = []string{redirectURI}
+	body["redirect_uris"] = redirectURI
 	body["scope"] = DefaultScopes
 	body["acces_token_strategy"] = "opaque"
 	body["metadata"] = map[string]interface{}{
 		"Origin": os.Getenv("APP_URL"),
 	}
 	body["response_types"] = []string{"code", "id_token", "token"}
-	body["subject_type"] = "pairwise"
 	body["allowed_cors_origins"] = []string{os.Getenv("APP_URL"), prov.BaseUrl, os.Getenv("HYDRA_PUBLIC_URL"), "http://127.0.0.1"}
 	body["grant_types"] = []string{"authorization_code", "refresh_token"}
 	body["authorization_code_grant_access_token_lifespan"] = "3h"
@@ -61,7 +61,14 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	body["authorization_code_grant_refresh_token_lifespan"] = "3h"
 	body["skip_consent"] = true
 	body["skip_logout_consent"] = true
-	body["token_endpoint_auth_method"] = "client_secret_post"
+	switch prov.Type {
+	case CanvasCloud, CanvasOSS:
+		body["token_endpoint_auth_method"] = "client_secret_post"
+		body["subject_type"] = "pairwise"
+	case Kolibri:
+		body["token_endpoint_auth_method"] = "client_secret_basic"
+		body["subject_type"] = "public"
+	}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, externalId, err
@@ -87,20 +94,17 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	if clientData == nil {
 		return nil, externalId, fmt.Errorf("error creating client: %s", resp.Status)
 	}
-	redirects := clientData["redirect_uris"].([]interface{})
+	redirects := clientData["redirect_uris"].([]string)
 	if len(redirects) == 0 {
 		return nil, externalId, fmt.Errorf("error creating client: no redirect URIs")
 	}
-	receivedURI := redirects[0].(string)
-	if receivedURI != redirectURI {
-		return nil, externalId, fmt.Errorf("error creating client: redirect URI mismatch")
-	}
+	joined := strings.Join(redirectURI, ",")
 	oidcClient := &OidcClient{
 		ProviderPlatformID: prov.ID,
 		ClientID:           clientData["client_id"].(string),
 		ClientName:         clientData["client_name"].(string),
 		ClientSecret:       clientData["client_secret"].(string),
-		RedirectURIs:       receivedURI,
+		RedirectURIs:       joined,
 		Scopes:             clientData["scope"].(string),
 	}
 	if autoRegister && (prov.Type == CanvasCloud || prov.Type == CanvasOSS) {

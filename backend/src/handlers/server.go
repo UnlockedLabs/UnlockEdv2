@@ -135,6 +135,7 @@ func (srv *Server) checkForAdminInKratos() (string, error) {
 func (srv *Server) generateKolibriOidcClient() error {
 	fields := log.Fields{"func": "generateKolibriOidcClient"}
 	if os.Getenv("KOLIBRI_URL") == "" {
+		log.Println("no KOLIBRI_URL set, not registering new OIDC client")
 		// there is no kolibri deployment registered
 		return nil
 	}
@@ -172,6 +173,10 @@ func (srv *Server) syncKratosAdminDB() error {
 	}
 	if id == "" {
 		// this means the default admin was just created, so we use default password
+		err := srv.generateKolibriOidcClient()
+		if err != nil {
+			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
+		}
 		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
 		}
@@ -195,6 +200,7 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 	user, err := srv.Db.GetUserByID(1)
 	if err != nil {
 		database.SeedDefaultData(srv.Db.Conn, false)
+		return srv.setupDefaultAdminInKratos()
 		// rerun after seeding the default user
 	}
 	if user.KratosID != "" {
@@ -203,10 +209,7 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 			// if not, it's a freshly migrated database
 			// so we create the OIDC client if KOLIBRI_URL is set
 			// then create the default admin in kratos
-			err := srv.generateKolibriOidcClient()
-			if err != nil {
-				log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
-			}
+			log.Println("kratos id not found")
 			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"io"
 	"os"
+	"strings"
 )
 
 type ProviderPlatformType string
@@ -87,12 +88,14 @@ func (provider *ProviderPlatform) EncryptAccessKey() (string, error) {
 	return encoded, nil
 }
 
-func (provider *ProviderPlatform) GetDefaultRedirectURI() string {
+func (provider *ProviderPlatform) GetDefaultRedirectURI() []string {
 	switch provider.Type {
 	case CanvasOSS, CanvasCloud:
-		return provider.BaseUrl + "/login/oauth2/callback"
+		return []string{provider.BaseUrl + "/login/oauth2/callback"}
 	case Kolibri:
-		return provider.BaseUrl + "/oidccallback"
+		defaultUri := provider.BaseUrl + "/oidccallback/"
+		stripped := strings.Replace(defaultUri, "https", "http", 1)
+		return []string{defaultUri, stripped}
 	}
-	return ""
+	return []string{}
 }
