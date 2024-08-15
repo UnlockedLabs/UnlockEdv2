@@ -18,8 +18,7 @@ export default function NewOidcClientNotification({
             </div>
             <div className="modal-body">
                 <div className="text-warning font-semibold">
-                    Please make sure to save the following information. It will
-                    not be displayed again.
+                    Please make sure to save the following information.
                 </div>
                 <br />
                 <div className="label-text-alt text-md font-semibold">

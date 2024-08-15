@@ -1,9 +1,11 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { Provider, useEffect, useState } from 'react';
 import { ToastState } from '../Toast';
-import { ProviderUser } from '@/common';
-import { User } from '@/types';
+import { PaginatedResponse, ProviderUser } from '@/common';
 import { CloseX } from '../inputs/CloseX';
+import { UserCircleIcon } from '@heroicons/react/24/outline';
+import Pagination from '../Pagination';
+import useSWR from 'swr';
 
 interface Props {
     externalUser: ProviderUser;
@@ -19,20 +21,25 @@ export default function MapUserForm({
     onCancel
 }: Props) {
     const [errorMessage, setErrorMessage] = useState('');
-    const [usersToMap, setUsersToMap] = useState<User[]>([]);
-    const [totalUnmapped, setTotalUnmapped] = useState<User[]>([]);
-    const [displayUsers, setDisplayUsers] = useState<User[]>([]);
+    const [fuzzySearchUsers, setFuzzySearchUsers] = useState<ProviderUser[]>();
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState(null);
-    const usersPerPage = 5;
+    const [seeAllUsers, setSeeAllUsers] = useState(false);
+    const {
+        data: allUnmappedUsers,
+        isLoading: isLoadingUnmapped,
+        error: errorUnmappedUsers
+    } = useSWR<PaginatedResponse<any>>(
+        `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
+    );
 
-    const handlePageChange = (newPage: number) => {
-        setCurrentPage(newPage);
-    };
-
-    const handleUserSelection = (userId: number) => {
-        setSelectedUser(userId);
-    };
+    function cancel() {
+        setSelectedUser(null);
+        setCurrentPage(1);
+        setSeeAllUsers(false);
+        setErrorMessage('');
+        onCancel;
+    }
 
     const handleSubmit = async (userId: number) => {
         try {
@@ -45,10 +52,7 @@ export default function MapUserForm({
             if (response.status !== 201) {
                 onSubmit('', ToastState.error);
             }
-            onSubmit(
-                'User created successfully with temporary password',
-                ToastState.success
-            );
+            onSubmit('User successfully mapped', ToastState.success);
         } catch (error: any) {
             setErrorMessage(error.response.data.message);
             onSubmit('Failed to map user', ToastState.error);
@@ -56,124 +60,148 @@ export default function MapUserForm({
         }
     };
 
-    function handleGetAllUnmappedUsers() {
-        if (usersToMap.length === totalUnmapped.length) {
-            return;
-        }
-        if (displayUsers.length < totalUnmapped.length) {
-            totalUnmapped.length === 0
-                ? onSubmit('No unmapped users in UnlockEd', ToastState.error)
-                : setDisplayUsers(totalUnmapped);
-        } else {
-            setDisplayUsers(usersToMap);
-        }
-    }
-
     useEffect(() => {
-        async function fetchUsers() {
+        async function fetchFuzzyUsers() {
             try {
-                const all = await axios.get(
-                    `/api/users?include=only_unmapped&provider_id=${providerId}`
-                );
-                if (all.status !== 200) {
-                    onSubmit(
-                        'failed to fetch users, please try again',
-                        ToastState.error
-                    );
-                    return;
-                }
-                setTotalUnmapped(all.data.data);
                 const response = await axios.get(
                     `/api/users?include=only_unmapped&provider_id=${providerId}&search=${externalUser.username}&search=${externalUser.email}`
                 );
                 if (response.status !== 200) {
-                    onSubmit('Failed to fetch users', ToastState.error);
+                    setErrorMessage('Failed to fetch any matching users');
                     return;
                 }
-                setUsersToMap(response.data.data);
-                setDisplayUsers(response.data.data);
+                setFuzzySearchUsers(response.data.data);
             } catch (error: any) {
-                console.log(error);
                 setErrorMessage(error);
-                onSubmit('Failed to fetch users', ToastState.error);
                 return;
             }
         }
-        externalUser && fetchUsers();
+        externalUser && fetchFuzzyUsers();
     }, [externalUser]);
 
-    const indexOfLastUser = currentPage * usersPerPage;
-    const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const currentUsers = displayUsers.slice(indexOfFirstUser, indexOfLastUser);
-    const totalPages = Math.ceil(displayUsers.length / usersPerPage);
+    const UserRadioInput = ({ user }: { user: any }) => {
+        return (
+            <div key={user.id} className="flex flex-row">
+                <input
+                    type="radio"
+                    id={`${user.id}`}
+                    name="user"
+                    className="radio radio-primary my-auto"
+                    value={user.id}
+                    checked={selectedUser === user.id}
+                    onChange={() => setSelectedUser(user.id)}
+                />
+                <label htmlFor={`${user.id}`} className="ml-2">
+                    <h2>
+                        {user.name_first} {user.name_last}
+                    </h2>
+                    <p className="body-small text-grey-3">
+                        {user.username} • {user.email}
+                    </p>
+                </label>
+            </div>
+        );
+    };
 
     return (
         <div>
-            <CloseX close={onCancel} />
-            <div className="text-sm font-bold">
-                <div className="text-sm">Provider Username:</div>
-                <div className="text-sm text-primary">
-                    {externalUser?.username ?? errorMessage}
-                    <br />
+            <CloseX close={cancel} />
+            <h2>User Information from Provider Platform:</h2>
+            <div className="flex flex-row gap-2 mt-4 card p-2">
+                <UserCircleIcon className="h-10" />
+                <div className="flex-col">
+                    <h3>
+                        {externalUser?.name_first +
+                            ' ' +
+                            externalUser?.name_last}
+                    </h3>
+                    <p className="body-small text-grey-3">
+                        {externalUser?.username} • {externalUser?.email}
+                    </p>
                 </div>
-                <div className="text-sm">Provider Email:</div>
-                <div className="text-sm text-primary">
-                    {externalUser?.email ?? ''}
-                </div>
-                <div>to UnlockEd Users:</div>
             </div>
-            <button
-                className="btn btn-sm btn-outline"
-                onClick={handleGetAllUnmappedUsers}
-                disabled={totalUnmapped.length === usersToMap.length}
-            >
-                {displayUsers.length !== totalUnmapped.length
-                    ? 'see all'
-                    : 'see search results'}
-            </button>
-            <div>
-                {currentUsers.map((user) => (
-                    <div key={user.id} className="border px-4 py-2">
-                        <input
-                            type="radio"
-                            id={`${user.id}`}
-                            name="user"
-                            className="radio radio-primary"
-                            value={user.id}
-                            checked={selectedUser === user.id}
-                            onChange={() => handleUserSelection(user.id)}
+            <div className="mt-8 flex flex-col gap-2">
+                <h2 className="my-auto">
+                    Associate to UnlockEd User (select one):
+                </h2>
+                {errorUnmappedUsers || isLoadingUnmapped ? (
+                    <div>Error finding users. </div>
+                ) : fuzzySearchUsers?.length != 0 && !seeAllUsers ? (
+                    <>
+                        <p className="body-small mb-2">
+                            We have found a potential match to the student you'd
+                            like to map:
+                        </p>
+                        {fuzzySearchUsers?.map((user: any) => {
+                            return (
+                                <UserRadioInput
+                                    user={user}
+                                    key={'fuzzyUser' + user.id}
+                                />
+                            );
+                        })}
+                        <p className="body-small mt-2">
+                            Not the user you are looking for?{' '}
+                            <button
+                                className="text-teal-3 underline"
+                                onClick={() => {
+                                    setSeeAllUsers(true), setSelectedUser(null);
+                                }}
+                            >
+                                See all users
+                            </button>
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        {fuzzySearchUsers?.length != 0 ? (
+                            <button
+                                className="body-small text-teal-3 underline text-left mb-2"
+                                onClick={() => {
+                                    setSeeAllUsers(false),
+                                        setSelectedUser(null);
+                                }}
+                            >
+                                Go back to potential matches
+                            </button>
+                        ) : (
+                            <p className="body-small text-error">
+                                It does not appear there are any users that
+                                match the provided information. You may search
+                                through all existing unmapped users if you
+                                choose to do so.
+                            </p>
+                        )}
+                        {allUnmappedUsers?.data.map((user) => {
+                            return (
+                                <UserRadioInput
+                                    user={user}
+                                    key={'allUsers' + user.id}
+                                />
+                            );
+                        })}
+                        <Pagination
+                            meta={allUnmappedUsers?.meta}
+                            setPage={setCurrentPage}
                         />
-                        <label htmlFor={`${user.id}`} className="ml-2">
-                            {user.username} - {user.name_first} {user.name_last}{' '}
-                            - {user.email}
-                        </label>
-                    </div>
-                ))}
+                    </>
+                )}
             </div>
-            <div className="flex justify-between">
-                <button
-                    className="btn btn-sm btn-circle"
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                >
-                    Previous
+            {errorMessage && (
+                <div className="text-error text-center pt-2">
+                    {errorMessage}
+                </div>
+            )}
+            <div className="flex flex-row justify-between mt-4">
+                <button className="btn" onClick={() => onCancel()}>
+                    Cancel
                 </button>
                 <button
-                    className="btn btn-sm btn-circle"
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                >
-                    Next
-                </button>
-            </div>
-            <div>
-                <br />
-                <button
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    className="btn btn-primary"
                     onClick={() => handleSubmit(selectedUser)}
                     disabled={!selectedUser}
                 >
-                    Map to student
+                    Map Student
                 </button>
             </div>
         </div>
