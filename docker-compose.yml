@@ -56,6 +56,18 @@ services:
     networks:
       - intranet
 
+  nats:
+    image: nats:latest
+    networks:
+      - intranet
+    ports:
+      - 8222:8222
+      - 4222:4222
+    command: --js -c /config/nats-server.conf
+    volumes:
+      - config:/config
+      - nats_data:/data
+
   keto:
     image: oryd/keto:v0.11.1-alpha.0
     links:
@@ -155,6 +167,7 @@ networks:
     driver: bridge
 
 volumes:
+  nats_data:
   postgres_data:
   config:
     driver: local
@@ -162,6 +175,7 @@ volumes:
       type: none
       o: bind
       device: ./config
+
   logs:
     driver: local
     driver_opts:
