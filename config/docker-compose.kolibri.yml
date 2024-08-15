@@ -3,8 +3,8 @@ services:
   kolibri:
     image: unlockedlabs.org/kolibri:latest
     environment:
-      CLIENT_ID: 9a044f55-5a0d-4f99-9851-d791255d153a
-      CLIENT_SECRET: v3jrlBt1Uw-zqAVjHU28SEWO1J
+      CLIENT_ID: #placeholder for generated
+      CLIENT_SECRET: #client on first login
     ports:
       - 8000:8000
     networks:
