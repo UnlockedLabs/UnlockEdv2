@@ -10,32 +10,20 @@ import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 
 // TO DO: make it paginated
-// TO DO: mutate the data on save so it stays the same across both views
 
 export default function CourseCatalog() {
     const { user } = useAuth();
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [order, setOrder] = useState('asc');
-    const { data, mutate } = useSWR<ServerResponse<Program>>(
+    const { data, error, mutate } = useSWR<ServerResponse<Program>>(
         `/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`
     );
-
-    useEffect(() => {
-        console.log(data);
-    }, [data]);
-
-    function callMutate() {
-        console.log('called');
-        mutate();
-    }
 
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
         // setPageQuery(1);
     }
-
-    if (!data) return <div></div>;
 
     return (
         <AuthenticatedLayout title="Course Catalog">
@@ -66,16 +54,22 @@ export default function CourseCatalog() {
                 <div
                     className={`grid mt-8 ${activeView == ViewType.Grid ? 'grid-cols-4 gap-6' : 'gap-4'}`}
                 >
-                    {data?.map((course: CourseCatalogue) => {
-                        return (
-                            <CatalogCourseCard
-                                course={course}
-                                callMutate={callMutate}
-                                view={activeView}
-                                key={course.program_id}
-                            />
-                        );
-                    })}
+                    {error ? (
+                        <p className="text-error">Error loading courses.</p>
+                    ) : data?.length == 0 ? (
+                        <p className="text-error">No courses to display.</p>
+                    ) : (
+                        data?.map((course: CourseCatalogue) => {
+                            return (
+                                <CatalogCourseCard
+                                    course={course}
+                                    callMutate={() => mutate()}
+                                    view={activeView}
+                                    key={course.program_id}
+                                />
+                            );
+                        })
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>
