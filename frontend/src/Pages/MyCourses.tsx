@@ -1,5 +1,4 @@
 import { useAuth } from '@/AuthContext';
-import PageNav from '@/Components/PageNav';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import EnrolledCourseCard from '@/Components/EnrolledCourseCard';
 import { useEffect, useState } from 'react';
@@ -60,8 +59,7 @@ export default function MyCourses() {
     }
 
     return (
-        <AuthenticatedLayout title="My Courses">
-            <PageNav user={user} path={['My Courses']} />
+        <AuthenticatedLayout title="My Courses" path={['My Courses']}>
             <div className="px-8 py-4">
                 <h1>My Courses</h1>
                 <div className="flex flex-row gap-16 w-100 border-b-2 border-grey-2 py-3">

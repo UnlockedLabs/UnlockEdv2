@@ -1,5 +1,4 @@
 import { useAuth } from '@/AuthContext';
-import PageNav from '@/Components/PageNav';
 import ToggleView, { ViewType } from '@/Components/ToggleView';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
@@ -26,8 +25,7 @@ export default function CourseCatalog() {
     }
 
     return (
-        <AuthenticatedLayout title="Course Catalog">
-            <PageNav user={user} path={['Course Catalog']} />
+        <AuthenticatedLayout title="Course Catalog" path={['Course Catalog']}>
             <div className="px-8 py-4">
                 <div className="flex flex-row justify-between">
                     <h1>Course Catalog</h1>

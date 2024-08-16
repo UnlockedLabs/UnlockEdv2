@@ -6,19 +6,52 @@ import {
     BuildingStorefrontIcon,
     HomeIcon,
     RectangleStackIcon,
+    ChevronDoubleLeftIcon,
+    ChevronDoubleRightIcon,
     TrophyIcon,
     UsersIcon
 } from '@heroicons/react/24/solid';
 import { useAuth } from '@/AuthContext';
 
-export default function Navbar() {
+export default function Navbar({
+    isPinned,
+    onTogglePin
+}: {
+    isPinned: boolean;
+    onTogglePin: () => void;
+}) {
     const user = useAuth();
     return (
-        <div className="w-60 min-w-[240px] h-screen flex flex-col justify-between bg-background">
+        <div className="w-60 min-w-[240px] h-screen flex flex-col justify-start bg-background group">
+            <div className="hidden lg:flex self-end py-6 mr-4">
+                {isPinned ? (
+                    <div
+                        className="tooltip tooltip-left"
+                        data-tip="Close sidebar"
+                    >
+                        <ChevronDoubleLeftIcon
+                            className="w-4 opacity-0 group-hover:opacity-100 transition-opacity duration=300 cursor-pointer"
+                            onClick={onTogglePin}
+                        ></ChevronDoubleLeftIcon>
+                    </div>
+                ) : (
+                    <div
+                        className="tooltip tooltip-left"
+                        data-tip="Lock sidebar open"
+                    >
+                        <ChevronDoubleRightIcon
+                            className="w-4 opacity-0 group-hover:opacity-100 transition-opacity duration=300 cursor-pointer"
+                            onClick={onTogglePin}
+                        ></ChevronDoubleRightIcon>
+                    </div>
+                )}
+            </div>
+
+            <a href="/" className="mt-16">
+                <Brand />
+            </a>
+
             <ul className="menu">
-                <a href="/" className="mt-24">
-                    <Brand />
-                </a>
                 {user.user.role == UserRole.Admin ? (
                     <>
                         {/* admin view */}

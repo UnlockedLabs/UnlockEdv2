@@ -76,7 +76,7 @@ func TestCreateFacility(t *testing.T) {
 		}
 		created := facilities.Data[0]
 		if strings.Compare(created.Name, "TestingFacility") != 0 {
-			t.Error("incorrect output, expected: TestingFacility, got: " + created.Name)
+			t.Errorf("incorrect output, expected: TestingFacility, got %v", created.Name)
 		}
 	})
 }

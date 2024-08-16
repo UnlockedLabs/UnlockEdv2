@@ -1,4 +1,3 @@
-import PageNav from '../Components/PageNav';
 import Pagination from '../Components/Pagination';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -8,12 +7,9 @@ import { useState } from 'react';
 import useSWR from 'swr';
 // import { useDebounceValue } from "usehooks-ts";
 
-import { useAuth } from '../AuthContext';
-
 export default function UserActivity() {
     const [searchTerm, setSearchTerm] = useState('');
     // const searchQuery = useDebounceValue(searchTerm, 300);
-    const { user } = useAuth();
     // TO DO: come back and figure out pagequery
     const [pageQuery, setPageQuery] = useState(1);
     pageQuery;
@@ -32,8 +28,10 @@ export default function UserActivity() {
     };
 
     return (
-        <AuthenticatedLayout title="User Activity">
-            <PageNav user={user!} path={['Settings', 'User Activity']} />
+        <AuthenticatedLayout
+            title="User Activity"
+            path={['Settings', 'User Activity']}
+        >
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <div className="flex space-x-4">

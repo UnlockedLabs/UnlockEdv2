@@ -1,22 +1,27 @@
 import { User, UserRole } from '../common';
 import { useEffect, useRef } from 'react';
+import { useAuth } from '../AuthContext';
 import {
     ArrowRightEndOnRectangleIcon,
     HomeIcon,
     UsersIcon,
     RectangleStackIcon,
+    Bars3Icon,
     ArchiveBoxIcon
 } from '@heroicons/react/24/solid';
 import ThemeToggle from './ThemeToggle';
 import { handleLogout } from '../AuthContext';
 
 export default function PageNav({
-    user,
-    path
+    path,
+    showOpenMenu,
+    onShowNav
 }: {
-    user: User;
     path: Array<string>;
+    showOpenMenu: boolean;
+    onShowNav?: () => void;
 }) {
+    const { user } = useAuth();
     const detailsRef = useRef<HTMLDetailsElement>(null);
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -37,11 +42,25 @@ export default function PageNav({
 
     return (
         <div className="navbar px-8">
-            <div className="navbar-start breadcrumbs pl-0">
+            <div className="navbar-start breadcrumbs !py-0 pl-0">
                 <ul>
-                    <li>
-                        <HomeIcon className="h-5" />
-                    </li>
+                    {showOpenMenu ? (
+                        <li>
+                            <Bars3Icon
+                                onClick={onShowNav}
+                                className="w-4 cursor-pointer"
+                            />
+                        </li>
+                    ) : (
+                        <li>
+                            <Bars3Icon
+                                onClick={onShowNav}
+                                className="w-4 lg:hidden cursor-pointer"
+                            />
+                            <HomeIcon className="w-4 hidden lg:block" />
+                        </li>
+                    )}
+
                     {path.map((p) => (
                         <li key={p}>{p}</li>
                     ))}
