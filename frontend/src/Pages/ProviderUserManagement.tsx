@@ -9,7 +9,6 @@ import {
     ProviderUser,
     UserImports
 } from '../common';
-import PageNav from '../Components/PageNav';
 import Toast, { ToastState } from '../Components/Toast';
 import Modal, { ModalType } from '../Components/Modal';
 import { useAuth } from '../AuthContext';
@@ -190,14 +189,13 @@ export default function ProviderUserManagement() {
     }, [providerId]);
 
     return (
-        <AuthenticatedLayout title="Users">
-            <PageNav
-                user={auth.user!}
-                path={[
-                    'Provider Platforms',
-                    `Provider User Management${provider ? ' (' + provider[0]?.name + ')' : ''}`
-                ]}
-            />
+        <AuthenticatedLayout
+            title="Users"
+            path={[
+                'Provider Platforms',
+                `Provider User Management${provider ? ' (' + provider[0]?.name + ')' : ''}`
+            ]}
+        >
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <SearchBar

@@ -1,4 +1,3 @@
-import PageNav from '@/Components/PageNav';
 import ProviderCard from '@/Components/ProviderCard';
 import AddProviderForm from '@/Components/forms/AddProviderForm';
 import EditProviderForm from '@/Components/forms/EditProviderForm';
@@ -9,7 +8,6 @@ import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import Toast, { ToastState } from '@/Components/Toast';
-import { useAuth } from '../AuthContext';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import axios from 'axios';
@@ -20,7 +18,6 @@ interface ToastProps {
 }
 
 export default function ProviderPlatformManagement() {
-    const { user } = useAuth();
     const addProviderModal = useRef<null | HTMLDialogElement>(null);
     const editProviderModal = useRef<null | HTMLDialogElement>(null);
     const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
@@ -137,11 +134,10 @@ export default function ProviderPlatformManagement() {
     };
 
     return (
-        <AuthenticatedLayout title="Provider Platform Management">
-            <PageNav
-                user={user}
-                path={['Settings', 'Provider Platform Management']}
-            />
+        <AuthenticatedLayout
+            title="Provider Platform Management"
+            path={['Provider Platform Management']}
+        >
             <div className="px-8 py-4">
                 <h1>Provider Platforms</h1>
                 <div className="flex flex-row justify-between">

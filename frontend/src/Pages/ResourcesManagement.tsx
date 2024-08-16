@@ -1,6 +1,5 @@
 import CategoryItem from '../Components/CategoryItem';
 import Modal, { ModalType } from '../Components/Modal';
-import PageNav from '../Components/PageNav';
 import Toast, { ToastState } from '../Components/Toast';
 import AddCategoryForm from '../Components/forms/AddCategoryForm';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
@@ -12,7 +11,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
-import { useAuth } from '../AuthContext';
 
 interface ToastProps {
     state: ToastState;
@@ -20,7 +18,6 @@ interface ToastProps {
 }
 
 export default function ResourcesManagement() {
-    const auth = useAuth();
     const { data, error, mutate, isLoading } = useSWR('/api/left-menu');
 
     const [categoryList, setCategoryList] = useState(Array<Category>);
@@ -284,11 +281,7 @@ export default function ResourcesManagement() {
     }
 
     return (
-        <AuthenticatedLayout title="Categories">
-            <PageNav
-                user={auth.user}
-                path={['Settings', 'Resource Management']}
-            />
+        <AuthenticatedLayout title="Categories" path={['Resource Management']}>
             <div className="p-4">
                 <div className="flex justify-between">
                     <button

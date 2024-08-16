@@ -1,4 +1,3 @@
-import PageNav from '@/Components/PageNav';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useAuth } from '@/AuthContext';
 import { UserRole } from '@/common';
@@ -9,8 +8,7 @@ export default function Dashboard() {
     const { user } = useAuth();
 
     return (
-        <AuthenticatedLayout title="Dashboard">
-            <PageNav user={user} path={['Dashboard']} />
+        <AuthenticatedLayout title="Dashboard" path={['Dashboard']}>
             {user.role == UserRole.Student ? (
                 <StudentDashboard />
             ) : (

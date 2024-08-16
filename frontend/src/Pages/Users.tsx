@@ -10,7 +10,6 @@ import {
     UserPlusIcon
 } from '@heroicons/react/20/solid';
 import { DEFAULT_ADMIN_ID, PaginatedResponse, User } from '../common';
-import PageNav from '../Components/PageNav';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
 import Toast, { ToastState } from '../Components/Toast';
@@ -20,12 +19,10 @@ import ResetPasswordForm from '../Components/forms/ResetPasswordForm';
 import ShowTempPasswordForm from '../Components/forms/ShowTempPasswordForm';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '../Components/inputs/SearchBar';
-import { useAuth } from '../AuthContext';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 
 export default function Users() {
-    const auth = useAuth();
     const addUserModal = useRef<null | HTMLDialogElement>(null);
     const editUserModal = useRef<null | HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
@@ -150,8 +147,7 @@ export default function Users() {
     };
 
     return (
-        <AuthenticatedLayout title="Users">
-            <PageNav user={auth.user!} path={['Settings', 'Users']} />
+        <AuthenticatedLayout title="Users" path={['Users']}>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">

@@ -1,6 +1,5 @@
 import { useAuth } from '@/AuthContext';
 import { useState } from 'react';
-import PageNav from '@/Components/PageNav';
 import StatsCard from '@/Components/StatsCard';
 import UserActivityMap from '@/Components/UserActivityMap';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -48,8 +47,7 @@ export default function MyProgress() {
     console.log(data);
 
     return (
-        <AuthenticatedLayout title="My Progress">
-            <PageNav user={user} path={['My Progress']} />
+        <AuthenticatedLayout title="My Progress" path={['My Progress']}>
             <div className="px-8 py-4">
                 <h1>My Progress</h1>
                 {data && (
