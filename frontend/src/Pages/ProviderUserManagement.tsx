@@ -208,8 +208,6 @@ export default function ProviderUserManagement() {
         getData();
     }, [providerId]);
 
-    console.log(provider);
-
     return (
         <AuthenticatedLayout title="Users">
             <PageNav

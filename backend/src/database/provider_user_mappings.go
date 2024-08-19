@@ -106,14 +106,6 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 	if err := tx.Find(&users).Error; err != nil {
 		return nil, err
 	}
-	if len(users) == 0 {
-		fmt.Println("couldn't find any good searches, returning all")
-		return users, db.Conn.Table("users u").Select("u.*").
-			Where("u.role = ?", "student").
-			Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
-			Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
-			Find(&users).Error
-	}
 
 	fmt.Printf("found %d matches", len(users))
 	return users, nil
