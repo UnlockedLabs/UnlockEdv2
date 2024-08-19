@@ -10,11 +10,11 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() {
-	srv.Mux.Handle("GET /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.HandleIndexProviders)))
-	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowProvider)))
-	srv.Mux.Handle("POST /api/provider-platforms", srv.applyMiddleware(http.HandlerFunc(srv.HandleCreateProvider)))
-	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleUpdateProvider)))
-	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleDeleteProvider)))
+	srv.Mux.HandleFunc("GET /api/provider-platforms", srv.ApplyAdminMiddleware(srv.HandleIndexProviders))
+	srv.Mux.HandleFunc("GET /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.HandleShowProvider))
+	srv.Mux.HandleFunc("POST /api/provider-platforms", srv.ApplyAdminMiddleware(srv.HandleCreateProvider))
+	srv.Mux.HandleFunc("PATCH /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.HandleUpdateProvider))
+	srv.Mux.HandleFunc("DELETE /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.HandleDeleteProvider))
 }
 
 func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request) {

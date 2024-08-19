@@ -10,6 +10,7 @@ import React, {
 import { User } from './types';
 import axios from 'axios';
 import { BROWSER_URL } from './common';
+import UnauthorizedNotFound from './Pages/Unauthorized';
 
 interface AuthContextType {
     user: User | null;
@@ -30,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 setUser(response.data);
             } catch (error) {
                 console.log('Authentication check failed', error);
+                window.location.href = BROWSER_URL;
                 setUser(null);
             } finally {
                 setLoading(false);
@@ -55,6 +57,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             {children}
         </AuthContext.Provider>
     );
+};
+
+export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({
+    children
+}) => {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
+    if (user.role === 'admin') {
+        return <>{children}</>;
+    } else {
+        return <UnauthorizedNotFound which="unauthorized" />;
+    }
 };
 
 export const useAuth = () => {

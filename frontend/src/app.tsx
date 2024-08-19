@@ -7,7 +7,7 @@ import Login from '@/Pages/Auth/Login';
 import Users from '@/Pages/Users';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import ProviderPlatformManagement from './Pages/ProviderPlatformManagement';
-import { AuthProvider } from './AuthContext';
+import { AdminOnly, AuthProvider } from './AuthContext';
 import Consent from './Pages/Auth/Consent';
 import MyCourses from './Pages/MyCourses';
 import MyProgress from './Pages/MyProgress';
@@ -15,9 +15,18 @@ import CourseCatalog from './Pages/CourseCatalog';
 import ProviderUserManagement from './Pages/ProviderUserManagement';
 import Error from './Pages/Error';
 import ResourcesManagement from './Pages/ResourcesManagement';
+import UnauthorizedNotFound from './Pages/Unauthorized';
 
 function WithAuth({ children }) {
     return <AuthProvider>{children}</AuthProvider>;
+}
+
+function WithAdmin({ children }) {
+    return (
+        <WithAuth>
+            <AdminOnly>{children}</AdminOnly>
+        </WithAuth>
+    );
 }
 
 export default function App() {
@@ -39,12 +48,12 @@ export default function App() {
         },
         {
             path: '/users',
-            element: WithAuth({ children: <Users /> }),
+            element: WithAdmin({ children: <Users /> }),
             errorElement: <Error />
         },
         {
             path: '/resources-management',
-            element: WithAuth({ children: <ResourcesManagement /> }),
+            element: WithAdmin({ children: <ResourcesManagement /> }),
             errorElement: <Error />
         },
         {
@@ -61,7 +70,7 @@ export default function App() {
         },
         {
             path: '/provider-platform-management',
-            element: WithAuth({ children: <ProviderPlatformManagement /> }),
+            element: WithAdmin({ children: <ProviderPlatformManagement /> }),
             errorElement: <Error />
         },
         {
@@ -81,12 +90,18 @@ export default function App() {
         },
         {
             path: '/provider-users/:providerId',
-            element: WithAuth({ children: <ProviderUserManagement /> }),
+            element: WithAdmin({ children: <ProviderUserManagement /> }),
             errorElement: <Error />
         },
         {
             path: '/error',
             element: <Error />
+        },
+        {
+            path: '/*',
+            element: WithAuth({
+                children: <UnauthorizedNotFound which="notFound" />
+            })
         }
     ]);
 
