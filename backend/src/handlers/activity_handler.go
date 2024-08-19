@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerActivityRoutes() {
@@ -46,34 +48,37 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
  * ?year=: year (default last year)
  ****/
 func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
-	// Parse userID from path
+	fields := log.Fields{"handler": "HandleGetDailyActivityByUserID"}
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
-
-	// Get year from query param
+	fields["user_id"] = userID
+	requestingUser := int(srv.GetUserID(r))
+	if requestingUser != userID && !srv.UserIsAdmin(r) {
+		log.WithFields(fields).Error("Non admin requesting to view other student activities")
+		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's activities")
+		return
+	}
 	yearStr := r.URL.Query().Get("year")
-
-	// Convert year parameter to integer
 	var year int
 	if yearStr != "" {
 		year, err = strconv.Atoi(yearStr)
 		if err != nil {
+			fields["error"] = err.Error()
+			log.WithFields(fields).Error("Invalid year parameter")
 			srv.ErrorResponse(w, http.StatusBadRequest, "Invalid year parameter")
 			return
 		}
 	}
-
-	// Retrieve daily activities for the given userID and year
 	activities, err := srv.Db.GetDailyActivityByUserID(userID, year)
 	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Failed to get activities")
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
-
-	// Write response
 	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
 	})

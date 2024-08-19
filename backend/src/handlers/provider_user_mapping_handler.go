@@ -8,10 +8,10 @@ import (
 )
 
 func (srv *Server) registerProviderMappingRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/logins", srv.applyMiddleware(srv.handleGetMappingsForUser))
-	srv.Mux.Handle("POST /api/users/{id}/logins", srv.applyMiddleware(srv.handleCreateProviderUserMapping))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.applyMiddleware(srv.handleCreateProviderUserAccount))
-	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.applyMiddleware(srv.handleDeleteProviderUserMapping))
+	srv.Mux.Handle("GET /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.handleGetMappingsForUser))
+	srv.Mux.Handle("POST /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.handleCreateProviderUserMapping))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.ApplyAdminMiddleware(srv.handleCreateProviderUserAccount))
+	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.ApplyAdminMiddleware(srv.handleDeleteProviderUserMapping))
 }
 
 func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request) {

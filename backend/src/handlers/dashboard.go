@@ -10,7 +10,7 @@ import (
 
 func (srv *Server) registerDashboardRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.HandleStudentDashboard))
-	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyMiddleware(srv.HandleAdminDashboard))
+	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.ApplyAdminMiddleware(srv.HandleAdminDashboard))
 	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.HandleUserCatalogue))
 	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(srv.HandleUserPrograms))
 }
