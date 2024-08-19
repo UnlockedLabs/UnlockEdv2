@@ -76,6 +76,20 @@ export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({
   }
 };
 
+export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({
+    children
+}) => {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
+    if (user.role === 'admin') {
+        return <>{children}</>;
+    } else {
+        return <UnauthorizedNotFound which="unauthorized" />;
+    }
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
