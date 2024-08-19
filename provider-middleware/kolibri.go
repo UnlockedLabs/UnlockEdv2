@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -23,6 +24,7 @@ type KolibriService struct {
 	Client             *http.Client
 	AccountID          string
 	db                 *gorm.DB
+	JobParams          *map[string]interface{}
 }
 
 /**
@@ -30,11 +32,11 @@ type KolibriService struct {
 * Pulls the login info from ENV variables. In production, these should be set
 * in /etc/environment
 **/
-func NewKolibriService(provider *models.ProviderPlatform) *KolibriService {
+func NewKolibriService(provider *models.ProviderPlatform, params *map[string]interface{}) *KolibriService {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	password := os.Getenv("KOLIBRI_DB_PASSWORD")
-	dsn := fmt.Sprintf("host=%s user=kolibri password=%s dbname=kolibri port=%s sslmode=disable TimeZone=UTC", host, password, port)
+	dsn := fmt.Sprintf("host=%s user=kolibri password=%s dbname=kolibri port=%s sslmode=disable TimeZone=America/New_York", host, password, port)
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Errorln("error connecting to db in NewKolibriService")
@@ -45,7 +47,12 @@ func NewKolibriService(provider *models.ProviderPlatform) *KolibriService {
 		ProviderPlatformID: provider.ID,
 		AccountID:          provider.AccountID,
 		db:                 conn,
+		JobParams:          params,
 	}
+}
+
+func (ks *KolibriService) GetJobParams() *map[string]interface{} {
+	return ks.JobParams
 }
 
 /**
@@ -112,12 +119,13 @@ func (ks *KolibriService) ImportPrograms(db *gorm.DB) error {
 	return nil
 }
 
-func (ks *KolibriService) ImportMilestonesForProgramUser(courseId, userId uint, db *gorm.DB) error {
+func (ks *KolibriService) ImportMilestonesForProgramUser(programPair map[string]interface{}, mapping *models.ProviderUserMapping, db *gorm.DB, lastRun time.Time) error {
 	// sql := `SELECT id, complete, time_spent FROM logger_attemptlog where user_id = ? AND content_id = ?`
 	return nil
 }
 
 type KolibriActivity struct {
+	ID                  string `json:"id"`
 	UserId              string `json:"user_id"`
 	TimeSpent           string `json:"time_spent"`
 	CompletionTimestamp string `json:"completion_timestamp"`
@@ -126,20 +134,12 @@ type KolibriActivity struct {
 	Kind                string `json:"kind"`
 }
 
-func (ks *KolibriService) ImportActivityForProgram(courseId string, db *gorm.DB) error {
-	courseID, err := strconv.Atoi(courseId)
-	if err != nil {
-		log.Errorln("error parsing course id in ImportActivityForProgram")
-		return err
-	}
+func (ks *KolibriService) ImportActivityForProgram(programIdPair map[string]interface{}, db *gorm.DB) error {
+	programId := int(programIdPair["id"].(float64))
+	externalId := programIdPair["external_id"].(string)
+	sql := `SELECT id, user_id, time_spent, completion_timestamp, content_id, progress, kind FROM logger_contentsummarylog WHERE channel_id = ?`
 	var activities []KolibriActivity
-	var programId string
-	if err := db.Model(&models.Program{}).Select("external_id").First(&programId, "course_id = ? AND provider_platform_id = ?", courseId, ks.ProviderPlatformID).Error; err != nil {
-		log.Errorln("error finding program by external id in ImportActivityForProgram")
-		return err
-	}
-	sql := `SELECT user_id, time_spent, completion_timestamp, content_id, progress, kind FROM logger_contentsummarylog WHERE channel_id = ?`
-	if err := ks.db.Raw(sql, courseId).Find(&activities).Error; err != nil {
+	if err := ks.db.Raw(sql, externalId).Find(&activities).Error; err != nil {
 		log.Errorln("error querying kolibri database for program activities")
 		return err
 	}
@@ -165,14 +165,8 @@ func (ks *KolibriService) ImportActivityForProgram(courseId string, db *gorm.DB)
 		if !ok {
 			kind = models.ContentInteraction
 		}
-		newActivity := models.Activity{
-			UserID:    user_id,
-			ProgramID: uint(courseID),
-			Type:      kind,
-			TimeDelta: uint(time),
-		}
-		if err := db.Create(&newActivity).Error; err != nil {
-			log.Errorln("error creating activity in ImportActivityForProgram")
+		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", user_id, programId, kind, time, activity.ID).Error; err != nil {
+			log.WithFields(log.Fields{"userId": user_id, "program_id": programId, "error": err}).Error("Failed to create activity")
 			continue
 		}
 	}

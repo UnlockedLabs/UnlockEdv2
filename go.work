@@ -1,9 +1,10 @@
-go 1.22.3
+go 1.23.0
 
 use (
 	./backend
 	./backend/migrations
 	./backend/seeder
+	./backend/tasks
 	./canvas-seeder
 	./provider-middleware
 )

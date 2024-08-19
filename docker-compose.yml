@@ -162,6 +162,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
 networks:
   intranet:
     driver: bridge

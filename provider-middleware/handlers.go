@@ -1,11 +1,12 @@
 package main
 
 import (
+	"UnlockEdv2/src/models"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strconv"
+	"time"
 
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,9 +15,31 @@ func (sh *ServiceHandler) registerRoutes() {
 		w.WriteHeader(http.StatusOK)
 	})))
 	sh.Mux.Handle("GET /api/users", sh.applyMiddleware(http.HandlerFunc(sh.handleUsers)))
-	sh.Mux.Handle("GET /api/programs", sh.applyMiddleware(http.HandlerFunc(sh.handlePrograms)))
-	sh.Mux.Handle("GET /api/users/{id}/programs/{program_id}/milestones", sh.applyMiddleware(http.HandlerFunc(sh.handleMilestonesForProgramUser)))
-	sh.Mux.Handle("GET /api/programs/{id}/activity", sh.applyMiddleware(http.HandlerFunc(sh.handleAcitivityForProgram)))
+}
+
+func (sh *ServiceHandler) initSubscription() error {
+	_, err := sh.nats.Subscribe("tasks.get_programs", func(msg *nats.Msg) {
+		go sh.handlePrograms(msg)
+	})
+	if err != nil {
+		log.Fatalf("Error subscribing to NATS topic: %v", err)
+		return err
+	}
+	_, err = sh.nats.Subscribe("tasks.get_milestones", func(msg *nats.Msg) {
+		go sh.handleMilestonesForProgramUser(msg)
+	})
+	if err != nil {
+		log.Fatalf("Error subscribing to NATS topic: %v", err)
+		return err
+	}
+	_, err = sh.nats.Subscribe("tasks.get_activity", func(msg *nats.Msg) {
+		go sh.handleAcitivityForProgram(msg)
+	})
+	if err != nil {
+		log.Fatalf("Error subscribing to NATS topic: %v", err)
+		return err
+	}
+	return nil
 }
 
 /**
@@ -24,18 +47,24 @@ func (sh *ServiceHandler) registerRoutes() {
 * This handler will be responsible for importing courses from Providers
 * to the UnlockEd platform, mapping their Content objects to our Course object
  */
-func (sh *ServiceHandler) handlePrograms(w http.ResponseWriter, r *http.Request) {
-	service, err := sh.initService(r)
+func (sh *ServiceHandler) handlePrograms(msg *nats.Msg) {
+	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 	}
+	params := *service.GetJobParams()
+	jobId := params["job_id"].(string)
+	providerPlatformId := int(params["provider_platform_id"].(float64))
 	err = service.ImportPrograms(sh.db)
 	if err != nil {
-		log.Println(err)
-		http.Error(w, "Failed to retrieve programs", http.StatusBadRequest)
+		sh.cleanupJob(providerPlatformId, jobId, false)
+		log.Println("error fetching provider service from msg parameters", err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	finished := nats.NewMsg("tasks.get_programs.completed")
+	finished.Data = []byte(`{"job_id": "` + jobId + `"}`)
+	sh.nats.PublishMsg(finished)
+	sh.cleanupJob(providerPlatformId, jobId, true)
 }
 
 /**
@@ -46,7 +75,7 @@ func (sh *ServiceHandler) handlePrograms(w http.ResponseWriter, r *http.Request)
 **/
 func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleUsers"}
-	service, err := sh.initService(r)
+	service, err := sh.initServiceFromRequest(r)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Error("Failed to initialize service")
@@ -70,43 +99,67 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (sh *ServiceHandler) handleMilestonesForProgramUser(w http.ResponseWriter, r *http.Request) {
-	service, err := sh.initService(r)
+func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
+	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
-	}
-	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		log.Errorln("failed to parse integer from path value handleMilestonesForProgramUser")
-		http.Error(w, "failed to parse userID from path", http.StatusBadRequest)
-		return
-	}
-	programId, err := strconv.Atoi(r.PathValue("program_id"))
-	if err != nil {
-		log.Errorln("failed to parse integer from path value handleMilestonesForProgramUser")
-		http.Error(w, "failed to parse programID from path", http.StatusBadRequest)
-		return
 	}
 	log.Println("initiating GetMilestonesForProgramUser milestones")
-	err = service.ImportMilestonesForProgramUser(uint(userId), uint(programId), sh.db)
-	if err != nil {
-		log.Errorf("Failed to retrieve milestones: %v", err)
+	params := *service.GetJobParams()
+	log.Println("params for milestones job: ", params)
+	programs, ok := params["programs"].([]map[string]interface{})
+	if !ok {
+		log.Errorf("failed to parse programs: %v", params["programs"])
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	userMappings, ok := params["user_mappings"].([]models.ProviderUserMapping)
+	if !ok {
+		log.Errorf("failed to parse user mappings: %v", params["user_mappings"])
+		return
+	}
+	jobId := params["job_id"].(string)
+	lastRunStr := params["last_run"].(string)
+	lastRun, err := time.Parse(time.RFC3339, lastRunStr)
+	if err != nil {
+		log.Errorf("failed to parse last run time: %v", err)
+		// set last run to one week ago
+		lastRun = time.Now().AddDate(0, 0, -7)
+	}
+	providerPlatformId := int(params["provider_platform_id"].(float64))
+	for _, program := range programs {
+		for _, user := range userMappings {
+			err = service.ImportMilestonesForProgramUser(program, &user, sh.db, lastRun)
+			if err != nil {
+				sh.cleanupJob(providerPlatformId, jobId, true)
+				log.Errorf("Failed to retrieve milestones: %v", err)
+				continue
+			}
+		}
+	}
+	sh.cleanupJob(providerPlatformId, jobId, true)
 }
 
-func (srv *ServiceHandler) handleAcitivityForProgram(w http.ResponseWriter, r *http.Request) {
-	service, err := srv.initService(r)
+func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
+	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 	}
-	programId := r.PathValue("id")
-	err = service.ImportActivityForProgram(programId, srv.db)
-	if err != nil {
-		log.Errorf("failed to get program activity: %v", err)
-		http.Error(w, fmt.Sprintf("failed to get program activity: %v", err), http.StatusInternalServerError)
+	params := *service.GetJobParams()
+	log.Println("params for activity job: ", params)
+	programs, ok := params["programs"].([]map[string]interface{})
+	if !ok {
+		log.Errorf("failed to parse programs: %v", params["programs"])
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	jobId := params["job_id"].(string)
+	providerPlatformId := int(params["provider_platform_id"].(float64))
+	for _, program := range programs {
+		err = service.ImportActivityForProgram(program, sh.db)
+		if err != nil {
+			sh.cleanupJob(providerPlatformId, jobId, false)
+			log.Errorf("failed to get program activity: %v", err)
+			continue
+		}
+	}
+	sh.cleanupJob(providerPlatformId, jobId, true)
 }

@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -72,20 +71,6 @@ func (serv *ProviderService) Request(url string) *http.Request {
 	return request
 }
 
-func (serv *ProviderService) PostRequest(url string) *http.Request {
-	log.Println("Init request for provider service")
-	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
-	finalUrl := serv.ServiceURL + url + "?id=" + strconv.Itoa(int(serv.ProviderPlatformID))
-	log.Printf("url: %s \n", finalUrl)
-	request, err := http.NewRequest("POST", finalUrl, nil)
-	if err != nil {
-		log.Printf("error creating request %v", err.Error())
-	}
-	request.Header.Set("Authorization", serviceKey)
-	log.Printf("request: %v", request)
-	return request
-}
-
 func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	fields := log.Fields{"handler": "GetUsers"}
 	req := serv.Request("/api/users")
@@ -110,56 +95,4 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	}
 	log.Debugf("users received from middleware: %v", users)
 	return users, nil
-}
-
-func (serv *ProviderService) GetPrograms() error {
-	fields := log.Fields{"handler": "GetPrograms", "provider_platform_id": serv.ProviderPlatformID}
-	log.WithFields(fields).Info("Getting programs from middleware")
-	req := serv.Request("/api/programs")
-	resp, err := serv.Client.Do(req)
-	if err != nil {
-		log.WithFields(fields).Errorln("error getting content from middleware")
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.WithFields(log.Fields{"handler": "GetPrograms", "status": resp.StatusCode}).Error("Failed to get programs")
-		return errors.New("failed to get programs")
-	}
-	return nil
-}
-
-func (serv *ProviderService) GetMilestonesForProgramUser(programID, userID uint) error {
-	fields := log.Fields{"handler": "GetMilestonesForProgramUser", "UserID": userID, "ProgramID": programID}
-	req := serv.Request(fmt.Sprintf("/api/users/%d/programs/%d/milestones", userID, programID))
-	resp, err := serv.Client.Do(req)
-	if err != nil {
-		fields["error"] = err
-		log.WithFields(fields).Errorln("Error getting milestones for program user")
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		fields["status_code"] = resp.StatusCode
-		log.WithFields(fields).Errorln("Request failed with status code", resp.StatusCode)
-		return errors.New("failed to get milestones for program user")
-	}
-	return nil
-}
-
-func (serv *ProviderService) GetActivityForProgram(programID string) error {
-	fields := log.Fields{"handler": "GetActivityForProgram", "ProgramID": programID}
-	req := serv.Request("/api/programs/" + programID + "/activity")
-	resp, err := serv.Client.Do(req)
-	if err != nil {
-		fields["error"] = err
-		log.WithFields(fields).Errorln("Error getting activity for program in service.go")
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		fields["status_code"] = resp.StatusCode
-		log.WithFields(fields).Errorln("Request failed with status code", resp.StatusCode)
-		return errors.New("failed to get activity for program")
-	}
-	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,6 +20,8 @@ type Server struct {
 	Mux       *http.ServeMux
 	OryClient *ory.APIClient
 	Client    *http.Client
+	Nats      *nats.Conn
+	Kv        nats.KeyValue
 }
 
 /**
@@ -69,13 +72,56 @@ func NewServer(isTesting bool) *Server {
 		apiClient := ory.NewAPIClient(&configuration)
 		db := database.InitDB(false)
 		mux := http.NewServeMux()
-		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}}
+		conn, err := setupNats()
+		if err != nil {
+			log.Errorf("Failed to connect to NATS: %v", err)
+		}
+		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}, Nats: conn}
+		err = server.setupBucket()
+		if err != nil {
+			log.Errorf("Failed to setup JetStream KV store: %v", err)
+		}
 		server.RegisterRoutes()
 		if err := server.setupDefaultAdminInKratos(); err != nil {
 			log.Fatal("Error setting up default admin in Kratos")
 		}
 		return &server
 	}
+}
+
+func setupNats() (*nats.Conn, error) {
+	options := nats.GetDefaultOptions()
+	options.Url = os.Getenv("NATS_URL")
+	options.User = os.Getenv("NATS_USER")
+	options.Password = os.Getenv("NATS_PASSWORD")
+	conn, err := options.Connect()
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	return conn, nil
+}
+
+const CachedUsers string = "cached_users"
+
+func (srv *Server) setupBucket() error {
+	js, err := srv.Nats.JetStream()
+	if err != nil {
+		log.Fatalf("Error initializing JetStream: %v", err)
+		return err
+	}
+	// TODO: store a map of const bucket names : buckets ?
+	kv, err := js.KeyValue(CachedUsers)
+	if err == nats.ErrBucketNotFound {
+		kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
+			Bucket: CachedUsers,
+		})
+		if err != nil {
+			log.Errorf("Error creating JetStream KV store: %v", err)
+			return err
+		}
+	}
+	srv.Kv = kv
+	return nil
 }
 
 func (srv *Server) applyMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {

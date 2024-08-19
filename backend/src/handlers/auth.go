@@ -17,7 +17,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const ClaimsKey contextKey = "claims"
+const (
+	ClaimsKey         contextKey = "claims"
+	KratosBrowserFlow string     = "/self-service/login/browser"
+)
 
 type (
 	contextKey string
@@ -61,8 +64,9 @@ func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
+			s.ErrorResponse(w, http.StatusUnauthorized, "Invalid token")
 			log.Println("Invalid claims")
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
 		}
 	})
 }
@@ -129,7 +133,12 @@ func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleCheckAuth"}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
+	claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+	if !ok {
+		log.WithFields(fields).Error("No claims found in context")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil {
 		log.Error("Error getting user by ID")
@@ -147,7 +156,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := srv.validateOrySession(r, user.ID); err != nil {
 		log.WithFields(fields).Errorln("invalid ory session found")
-		srv.ErrorResponse(w, http.StatusUnauthorized, "ory session was not valid, please login again")
+		srv.ErrorResponse(w, http.StatusUnauthorized, "Invalid session")
 		return
 	}
 	srv.WriteResponse(w, http.StatusOK, user)
