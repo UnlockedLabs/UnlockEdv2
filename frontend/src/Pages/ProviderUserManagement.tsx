@@ -86,33 +86,6 @@ export default function ProviderUserManagement() {
         setDisplayToast(true);
     };
 
-    async function handleImportAllPrograms() {
-        try {
-            let resp = await axios.post(
-                `/api/actions/provider-platforms/${providerId}/import-programs`
-            );
-            if (resp.status != 200) {
-                showToast(
-                    'error importing all or some programs, please try again later',
-                    ToastState.error
-                );
-                return;
-            } else {
-                showToast(
-                    'Programs imported successfully from provider',
-                    ToastState.success
-                );
-                return;
-            }
-        } catch (err: any) {
-            showToast(
-                'error importing all or some programs, please try again later',
-                ToastState.error
-            );
-            return;
-        }
-    }
-
     async function handleImportAllUsers() {
         try {
             let res = await axios.post(
@@ -242,12 +215,6 @@ export default function ProviderUserManagement() {
                         disabled={!provider}
                     >
                         Import All Users
-                    </PrimaryButton>
-                    <PrimaryButton
-                        onClick={() => handleImportAllPrograms()}
-                        disabled={!provider}
-                    >
-                        Import Programs from Provider
                     </PrimaryButton>
                     <PrimaryButton
                         onClick={() => handleImportSelectedUsers()}

@@ -5,7 +5,7 @@ go 1.22.3
 require (
 	github.com/joho/godotenv v1.5.1
 	gorm.io/driver/postgres v1.5.9
-	gorm.io/gorm v1.25.10
+	gorm.io/gorm v1.25.11
 )
 
 require (

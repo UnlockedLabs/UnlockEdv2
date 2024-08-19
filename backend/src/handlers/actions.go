@@ -3,6 +3,8 @@ package handlers
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,26 +15,14 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.ApplyAdminMiddleware(srv.HandleGetUsers))
-
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.ApplyAdminMiddleware(srv.HandleImportUsers))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-programs", srv.ApplyAdminMiddleware(srv.HandleImportPrograms))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-milestones", srv.ApplyAdminMiddleware(srv.HandleImportMilestones))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-activity", srv.ApplyAdminMiddleware(srv.HandleImportActivity))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.HandleGetUsers))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.HandleImportUsers))
 }
-
-/****************************************************************************************************
-* Due to how the middleware now works, ALL ID's used to communicate between backend <-> middleware
-* will be OUR local ID's. This means the middleware must handle doing lookups to get the appropriate
-* foreign/externalID's in order to make the relevant calls to the provider.
-*****************************************************************************************************/
 
 type CachedProviderUsers struct {
 	Users       []models.ImportUser
 	LastUpdated time.Time
 }
-
-var cachedProviderUsers = make(map[uint]CachedProviderUsers)
 
 func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "HandleImportUsers", "file": "actions"}
@@ -118,8 +108,6 @@ func paginateUsers(users []models.ImportUser, page, perPage int) (int, []models.
 	return totalUsers, users[offset:end]
 }
 
-// Here we get all the users from a Provider and send them to the client to be
-// mapped by hand or imported into our system
 func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	page, perPage := srv.GetPaginationInfo(r)
 	service, err := srv.getService(r)
@@ -128,93 +116,68 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	cacheKey := fmt.Sprintf("provider_%d_users", service.ProviderPlatformID)
+
 	fresh := r.URL.Query().Get("clear_cache")
 	if strings.Compare(fresh, "true") == 0 {
-		log.Debug("clearing cached provider users, re-fetching from provider")
-		delete(cachedProviderUsers, uint(service.ProviderPlatformID))
-	}
-	if users, ok := cachedProviderUsers[uint(service.ProviderPlatformID)]; ok {
-		if users.LastUpdated.Add(12 * time.Hour).After(time.Now()) {
-			total, toReturn := paginateUsers(users.Users, page, perPage)
-			response := models.PaginatedResource[models.ImportUser]{
-				Data:    toReturn,
-				Message: "Successfully fetched users from provider",
-				Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
-			}
-			srv.WriteResponse(w, http.StatusOK, response)
-			return
-		} else {
-			delete(cachedProviderUsers, uint(service.ProviderPlatformID))
+		log.Debug("clearing cached provider users in JetStream, re-fetching from provider")
+		if err := srv.Kv.Delete(cacheKey); err != nil {
+			log.Errorf("Error clearing cache: %v", err)
 		}
 	}
+
+	entry, err := srv.Kv.Get(cacheKey)
+	if err == nil {
+		var cachedUsers CachedProviderUsers
+		if err := json.Unmarshal(entry.Value(), &cachedUsers); err == nil {
+			if cachedUsers.LastUpdated.Add(1 * time.Hour).After(time.Now()) {
+				total, toReturn := paginateUsers(cachedUsers.Users, page, perPage)
+				response := models.PaginatedResource[models.ImportUser]{
+					Data:    toReturn,
+					Message: "Successfully fetched users from provider",
+					Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
+				}
+				srv.WriteResponse(w, http.StatusOK, response)
+				return
+			}
+		}
+		if srv.Kv.Delete(cacheKey) != nil {
+			log.Error("Error deleting cache key")
+		}
+	}
+
 	externalUsers, err := service.GetUsers()
 	if err != nil {
 		log.Error("Error getting provider service GetUsers action:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		delete(cachedProviderUsers, uint(service.ProviderPlatformID))
+		if srv.Kv.Delete(cacheKey) != nil {
+			log.Error("Error deleting cache")
+		}
 		return
 	}
+
 	log.Printf("Received import users: %v", externalUsers)
 	total, responseUsers := paginateUsers(externalUsers, page, perPage)
-	cachedProviderUsers[uint(service.ProviderPlatformID)] = CachedProviderUsers{Users: externalUsers, LastUpdated: time.Now()}
-	response := models.PaginatedResource[models.ImportUser]{Data: responseUsers, Message: "Successfully fetched users from provider", Meta: models.NewPaginationInfo(page, perPage, int64(total))}
-	srv.WriteResponse(w, http.StatusOK, response)
-}
 
-func (srv *Server) HandleImportPrograms(w http.ResponseWriter, r *http.Request) {
-	service, err := srv.getService(r)
-	if err != nil {
-		log.Errorf("Error getting provider service: %v", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+	cachedUsers := CachedProviderUsers{
+		Users:       externalUsers,
+		LastUpdated: time.Now(),
 	}
-	err = service.GetPrograms()
-	if err != nil {
-		log.Error("Error getting provider service GetPrograms:" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	srv.WriteResponse(w, http.StatusOK, models.Resource[interface{}]{Message: "Successfully imported courses"})
-}
-
-func (srv *Server) HandleImportMilestones(w http.ResponseWriter, r *http.Request) {
-	service, err := srv.getService(r)
-	if err != nil {
-		log.Errorf("Error getting provider service: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	programs, userMappings, err := srv.getProgramsAndMappingsForProvider(service.ProviderPlatformID)
-	if err != nil {
-		log.Errorf("Error getting programs and user mappings for provider: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	log.Printf("Importing milestones")
-	for _, program := range programs {
-		for _, userMapping := range userMappings {
-			err := service.GetMilestonesForProgramUser(program.ID, userMapping.UserID)
-			if err != nil {
-				log.Errorf("Error getting provider service milestones: %v", err)
-				continue
-			}
+	cacheData, err := json.Marshal(&cachedUsers)
+	if err == nil {
+		_, err := srv.Kv.Put(cacheKey, cacheData)
+		if err != nil {
+			log.Error("Error caching users")
 		}
 	}
-	srv.WriteResponse(w, http.StatusOK, models.Resource[interface{}]{Message: "Successfully imported Milestones"})
-}
 
-func (srv *Server) getProgramsAndMappingsForProvider(providerID uint) ([]models.Program, []models.ProviderUserMapping, error) {
-	userMappings, err := srv.Db.GetUserMappingsForProvider(providerID)
-	if err != nil {
-		log.Errorf("Error getting user mappings for provider: %v", err)
-		return nil, nil, err
+	response := models.PaginatedResource[models.ImportUser]{
+		Data:    responseUsers,
+		Message: "Successfully fetched users from provider",
+		Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
 	}
-	programs, err := srv.Db.GetProgramByProviderPlatformID(int(providerID))
-	if err != nil {
-		log.Errorf("Error getting programs for provider: %v", err)
-		return nil, nil, err
-	}
-	return programs, userMappings, nil
+	srv.WriteResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) getService(r *http.Request) (*src.ProviderService, error) {
@@ -227,27 +190,4 @@ func (srv *Server) getService(r *http.Request) (*src.ProviderService, error) {
 		return nil, err
 	}
 	return src.GetProviderService(provider)
-}
-
-func (srv *Server) HandleImportActivity(w http.ResponseWriter, r *http.Request) {
-	service, err := srv.getService(r)
-	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	programs, err := srv.Db.GetProgramByProviderPlatformID(int(service.ProviderPlatformID))
-	if err != nil {
-		log.Errorf("Error getting programs and user mappings for provider: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	for _, program := range programs {
-		log.Printf("Program ID: %d", program.ID)
-		err := service.GetActivityForProgram(program.ExternalID)
-		if err != nil {
-			log.Errorf("Error getting provider service activity: %v", err)
-			continue
-		}
-	}
-	w.WriteHeader(http.StatusOK)
 }

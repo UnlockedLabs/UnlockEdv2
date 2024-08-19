@@ -94,10 +94,6 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	if clientData == nil {
 		return nil, externalId, fmt.Errorf("error creating client: %s", resp.Status)
 	}
-	redirects := clientData["redirect_uris"].([]string)
-	if len(redirects) == 0 {
-		return nil, externalId, fmt.Errorf("error creating client: no redirect URIs")
-	}
 	joined := strings.Join(redirectURI, ",")
 	oidcClient := &OidcClient{
 		ProviderPlatformID: prov.ID,

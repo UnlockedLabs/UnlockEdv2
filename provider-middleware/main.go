@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -16,9 +18,10 @@ import (
 type ProviderServiceInterface interface {
 	GetUsers(db *gorm.DB) ([]models.ImportUser, error)
 	ImportPrograms(db *gorm.DB) error
-	ImportMilestonesForProgramUser(courseId, userId uint, db *gorm.DB) error
-	ImportActivityForProgram(courseId string, db *gorm.DB) error
+	ImportMilestonesForProgramUser(programPair map[string]interface{}, mapping *models.ProviderUserMapping, db *gorm.DB, lastRun time.Time) error
+	ImportActivityForProgram(programPair map[string]interface{}, db *gorm.DB) error
 	// TODO: GetOutcomes()
+	GetJobParams() *map[string]interface{}
 }
 
 /**
@@ -28,15 +31,26 @@ type ProviderServiceInterface interface {
 **/
 type ServiceHandler struct {
 	services []ProviderServiceInterface
+	nats     *nats.Conn
 	Mux      *http.ServeMux
 	token    string
 	db       *gorm.DB
 }
 
 func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
+	options := nats.GetDefaultOptions()
+	options.Url = os.Getenv("NATS_URL")
+	options.User = os.Getenv("NATS_USER")
+	options.Password = os.Getenv("NATS_PASSWORD")
+	conn, err := options.Connect()
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	log.Println("Connected to NATS at ", options.Url)
 	return &ServiceHandler{
 		token:    token,
 		db:       db,
+		nats:     conn,
 		services: make([]ProviderServiceInterface, 0),
 		Mux:      http.NewServeMux(),
 	}
@@ -58,14 +72,14 @@ func main() {
 		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
 	log.Println("Connected to the PostgreSQL database")
+
 	token := os.Getenv("PROVIDER_SERVICE_KEY")
-	log.Println("TOKEN: " + token)
-	initLogging()
-	log.Debugf("loggin initiated with level %v", log.GetLevel())
 	handler := newServiceHandler(token, db)
 	log.Println("Server started on :8081")
 	handler.registerRoutes()
+	handler.initSubscription()
 	log.Println("Routes registered")
+	initLogging()
 	err = http.ListenAndServe(":8081", handler.Mux)
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)

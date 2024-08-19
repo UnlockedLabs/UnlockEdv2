@@ -15,8 +15,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var database *DB
-
 type DB struct {
 	Conn *gorm.DB
 }
@@ -35,6 +33,8 @@ var TableList = []interface{}{
 	&models.UserFavorite{},
 	&models.Facility{},
 	&models.OpenContentProvider{},
+	&models.CronJob{},
+	&models.RunnableTask{},
 }
 
 func InitDB(isTesting bool) *DB {
@@ -61,7 +61,7 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database")
 	}
-	database = &DB{Conn: db}
+	database := &DB{Conn: db}
 	Migrate(db)
 	SeedDefaultData(db, isTesting)
 	if isTesting {
