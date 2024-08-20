@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -29,7 +28,7 @@ type ProviderService struct {
 	ServiceURL         string       `json:"-"`
 }
 
-func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error) {
+func GetProviderService(prov *models.ProviderPlatform, client *http.Client) (*ProviderService, error) {
 	serviceUrl := os.Getenv("PROVIDER_SERVICE_URL")
 	// If the provider is Kolibri, we need to split the key into username and password
 	// In the future, we will need to have similar fields for Oauth2 retrieval from canvas
@@ -50,9 +49,7 @@ func GetProviderService(prov *models.ProviderPlatform) (*ProviderService, error)
 		Password:           password,
 		Type:               string(prov.Type),
 		ServiceURL:         serviceUrl,
-		Client: &http.Client{
-			Timeout: time.Second * 20,
-		},
+		Client:             client,
 	}
 	return &newService, nil
 }
