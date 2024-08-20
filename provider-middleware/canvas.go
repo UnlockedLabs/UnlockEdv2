@@ -348,11 +348,13 @@ func (srv *CanvasService) getUserSubmissionsForCourse(userId, courseId string, l
 * get submissions for the user for each quiz
 *  /api/v1/courses/:course_id/quizzes/:quiz_id/submissions/:user_id
 * */
-func (srv *CanvasService) ImportMilestonesForProgramUser(programIdPair map[string]interface{}, mapping *models.ProviderUserMapping, db *gorm.DB, lastRun time.Time) error {
+func (srv *CanvasService) ImportMilestonesForProgramUser(programIdPair map[string]interface{}, mapping map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	programId := int(programIdPair["id"].(float64))
 	externalProgramId := programIdPair["external_id"].(string)
-	fields := log.Fields{"handler": "ImportMilestonesForProgramUser", "user_id": mapping.UserID, "course_id": programId, "external_id": externalProgramId}
-	submissions, err := srv.getUserSubmissionsForCourse(mapping.ExternalUserID, externalProgramId, lastRun)
+	userId := int(mapping["id"].(float64))
+	externalUserId := mapping["external_user_id"].(string)
+	fields := log.Fields{"handler": "ImportMilestonesForProgramUser", "user_id": userId, "external_user_id": externalUserId, "course_id": programId, "external_id": externalProgramId}
+	submissions, err := srv.getUserSubmissionsForCourse(externalUserId, externalProgramId, lastRun)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.Printf("Failed to get submission for assignment: %v", err)
@@ -360,7 +362,7 @@ func (srv *CanvasService) ImportMilestonesForProgramUser(programIdPair map[strin
 	}
 	for _, submission := range submissions {
 		milestone := models.Milestone{
-			UserID:      mapping.UserID,
+			UserID:      uint(userId),
 			ExternalID:  fmt.Sprintf("%d", int(submission["id"].(float64))),
 			ProgramID:   uint(programId),
 			Type:        "assignment_submission",
@@ -382,7 +384,7 @@ func (srv *CanvasService) ImportMilestonesForProgramUser(programIdPair map[strin
 	for _, quiz := range quizzes {
 		// go through each quiz and see if we have a submission from the user
 		quizId := int(quiz["id"].(float64))
-		if submission, err := srv.getUserSubmissionForQuiz(externalProgramId, fmt.Sprintf("%d", quizId), mapping.ExternalUserID, lastRun); err == nil {
+		if submission, err := srv.getUserSubmissionForQuiz(externalProgramId, fmt.Sprintf("%d", quizId), externalUserId, lastRun); err == nil {
 			state, ok := submission["workflow_state"].(string)
 			if !ok || state == "untaken" {
 				continue
@@ -396,7 +398,7 @@ func (srv *CanvasService) ImportMilestonesForProgramUser(programIdPair map[strin
 			}
 			milestone := models.Milestone{
 				ExternalID: submission["id"].(string),
-				UserID:     mapping.UserID,
+				UserID:     uint(userId),
 				ProgramID:  uint(programId),
 				Type:       models.MilestoneType(milestoneType),
 			}

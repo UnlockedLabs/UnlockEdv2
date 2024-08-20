@@ -18,7 +18,7 @@ import (
 type ProviderServiceInterface interface {
 	GetUsers(db *gorm.DB) ([]models.ImportUser, error)
 	ImportPrograms(db *gorm.DB) error
-	ImportMilestonesForProgramUser(programPair map[string]interface{}, mapping *models.ProviderUserMapping, db *gorm.DB, lastRun time.Time) error
+	ImportMilestonesForProgramUser(programPair map[string]interface{}, mappings map[string]interface{}, db *gorm.DB, lastRun time.Time) error
 	ImportActivityForProgram(programPair map[string]interface{}, db *gorm.DB) error
 	// TODO: GetOutcomes()
 	GetJobParams() *map[string]interface{}
@@ -30,11 +30,10 @@ type ProviderServiceInterface interface {
 * It will have a refernce to the KolibriService struct
 **/
 type ServiceHandler struct {
-	services []ProviderServiceInterface
-	nats     *nats.Conn
-	Mux      *http.ServeMux
-	token    string
-	db       *gorm.DB
+	nats  *nats.Conn
+	Mux   *http.ServeMux
+	token string
+	db    *gorm.DB
 }
 
 func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
@@ -48,11 +47,10 @@ func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 	}
 	log.Println("Connected to NATS at ", options.Url)
 	return &ServiceHandler{
-		token:    token,
-		db:       db,
-		nats:     conn,
-		services: make([]ProviderServiceInterface, 0),
-		Mux:      http.NewServeMux(),
+		token: token,
+		db:    db,
+		nats:  conn,
+		Mux:   http.NewServeMux(),
 	}
 }
 

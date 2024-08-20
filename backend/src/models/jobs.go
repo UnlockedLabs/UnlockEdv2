@@ -46,7 +46,7 @@ const (
 
 func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, error) {
 	var skip bool
-	var users []ProviderUserMapping
+	users := []map[string]interface{}{}
 	if err := db.Model(ProviderUserMapping{}).Select("id, external_user_id").Find(&users, "provider_platform_id = ?", provId).Error; err != nil {
 		log.Errorf("failed to fetch users: %v", err)
 		skip = true

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -108,7 +107,7 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 	params := *service.GetJobParams()
 	log.Println("params for milestones job: ", params)
 	programs := params["programs"].([]interface{})
-	userMappings, ok := params["user_mappings"].([]models.ProviderUserMapping)
+	userMappings, ok := params["user_mappings"].([]interface{})
 	if !ok {
 		log.Errorf("failed to parse user mappings: %v", params["user_mappings"])
 		return
@@ -125,7 +124,8 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 	for _, prog := range programs {
 		program := prog.(map[string]interface{})
 		for _, user := range userMappings {
-			err = service.ImportMilestonesForProgramUser(program, &user, sh.db, lastRun)
+			userIds := user.(map[string]interface{})
+			err = service.ImportMilestonesForProgramUser(program, userIds, sh.db, lastRun)
 			if err != nil {
 				sh.cleanupJob(providerPlatformId, jobId, true)
 				log.Errorf("Failed to retrieve milestones: %v", err)
