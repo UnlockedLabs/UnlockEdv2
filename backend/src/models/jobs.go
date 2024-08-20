@@ -47,12 +47,12 @@ const (
 func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, error) {
 	var skip bool
 	users := []map[string]interface{}{}
-	if err := db.Model(ProviderUserMapping{}).Select("id, external_user_id").Find(&users, "provider_platform_id = ?", provId).Error; err != nil {
+	if err := db.Model(ProviderUserMapping{}).Select("user_id, external_user_id").Find(&users, "provider_platform_id = ?", provId).Error; err != nil {
 		log.Errorf("failed to fetch users: %v", err)
 		skip = true
 	}
 	programs := []map[string]interface{}{}
-	if err := db.Model(Program{}).Select("id, external_id").Find(&programs, "provider_platform_id = ?", provId).Error; err != nil {
+	if err := db.Model(Program{}).Select("id as program_id, external_id").Find(&programs, "provider_platform_id = ?", provId).Error; err != nil {
 		log.Errorf("failed to fetch programs: %v", err)
 		skip = true
 	}
