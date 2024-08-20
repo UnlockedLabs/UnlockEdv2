@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -44,16 +45,22 @@ const (
 )
 
 func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, error) {
+	var skip bool
 	var users []ProviderUserMapping
-	if err := db.Model(ProviderUserMapping{}).Find(&users, "provider_platform_id = ?", provId).Error; err != nil {
+	if err := db.Model(ProviderUserMapping{}).Select("id, external_user_id").Find(&users, "provider_platform_id = ?", provId).Error; err != nil {
 		log.Errorf("failed to fetch users: %v", err)
+		skip = true
 	}
-	var programs []map[string]interface{}
+	programs := []map[string]interface{}{}
 	if err := db.Model(Program{}).Select("id, external_id").Find(&programs, "provider_platform_id = ?", provId).Error; err != nil {
 		log.Errorf("failed to fetch programs: %v", err)
+		skip = true
 	}
 	switch jt {
 	case GetMilestonesJob:
+		if skip {
+			return nil, errors.New("no users or programs found for provider platform")
+		}
 		return map[string]interface{}{
 			"user_mappings":        users,
 			"programs":             programs,
@@ -66,6 +73,9 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, e
 			"job_type":             jt,
 		}, nil
 	case GetActivityJob:
+		if skip {
+			return nil, errors.New("no users or programs found for provider platform")
+		}
 		return map[string]interface{}{
 			"provider_platform_id": provId,
 			"programs":             programs,
@@ -73,6 +83,9 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, e
 			"job_type":             jt,
 		}, nil
 	case GetOutcomesJob:
+		if skip {
+			return nil, errors.New("no users or programs found for provider platform")
+		}
 		return map[string]interface{}{
 			"provider_platform_id": provId,
 			"user_mappings":        users,

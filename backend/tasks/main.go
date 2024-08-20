@@ -11,7 +11,10 @@ import (
 )
 
 func main() {
-	godotenv.Load(".env")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Error("error loading .env file, using default env variables")
+	}
 	initLogging()
 	runner := getRunner()
 	scheduler, err := gocron.NewScheduler()
@@ -19,27 +22,14 @@ func main() {
 		log.Fatalf("Failed to create scheduler: %v", err)
 		return
 	}
-	tasks, err := runner.generateTasks()
+	newJob, err := scheduler.NewJob(gocron.CronJob(os.Getenv("MIDDLEWARE_CRON_SCHEDULE"), false), gocron.NewTask(runner.execute))
 	if err != nil {
-		log.Fatalf("Failed to generate tasks: %v", err)
-	}
-	for _, task := range tasks {
-		log.Info("task schedule: ", task.Schedule)
-		newJob, err := scheduler.NewJob(gocron.CronJob(task.Schedule, false), gocron.NewTask(runner.runTask, &task))
-		if err != nil {
-			log.Errorf("Failed to create new job: %v", err)
-			continue
-		}
-		log.Infof("Created job %s", newJob.ID)
+		log.Fatalf("Failed to create job: %v", err)
 	}
 	scheduler.Start()
 
-	for _, job := range scheduler.Jobs() {
-		if err := job.RunNow(); err != nil {
-			log.Errorf("Failed to run job: %v", err)
-		}
-	}
-	log.Infof("Scheduler started")
+	newJob.RunNow()
+	log.Infof("Scheduler started, running %s", newJob.ID())
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 

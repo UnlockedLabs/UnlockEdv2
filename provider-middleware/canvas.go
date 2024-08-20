@@ -436,22 +436,16 @@ func (srv *CanvasService) ImportActivityForProgram(programPair map[string]interf
 	}
 	for _, enrollment := range enrollments {
 		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(float64)))
-		var user models.ProviderUserMapping
-		err := db.Model(models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", srv.ProviderPlatformID).Where("external_user_id = ?", userId).Find(&user).Error
+		var userID uint
+		err := db.Model(models.ProviderUserMapping{}).Select("user_id").First(&userID, "provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, userId).Error
 		if err != nil {
 			log.Printf("Failed to get user: %v", err)
 			continue
 		}
-		activity := models.Activity{
-			ExternalID: externalId,
-			UserID:     user.UserID,
-			Type:       "interaction",
-			TotalTime:  uint(enrollment["total_activity_time"].(float64)),
-			ProgramID:  uint(programId),
-		}
+		totalTime := uint(enrollment["total_activity_time"].(float64))
 		// NOTE: this is calling a stored procedure to calculate the time delta
-		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", activity.UserID, activity.ProgramID, activity.Type, activity.TotalTime, activity.ExternalID).Error; err != nil {
-			log.WithFields(log.Fields{"userId": user.ID, "program_id": programId, "error": err}).Error("Failed to create activity")
+		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userID, programId, "program_interaction", totalTime, externalId).Error; err != nil {
+			log.WithFields(log.Fields{"userId": userID, "program_id": programId, "error": err}).Error("Failed to create activity")
 			continue
 		}
 	}
