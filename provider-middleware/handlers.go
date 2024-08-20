@@ -107,11 +107,7 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 	log.Println("initiating GetMilestonesForProgramUser milestones")
 	params := *service.GetJobParams()
 	log.Println("params for milestones job: ", params)
-	programs, ok := params["programs"].([]map[string]interface{})
-	if !ok {
-		log.Errorf("failed to parse programs: %v", params["programs"])
-		return
-	}
+	programs := params["programs"].([]interface{})
 	userMappings, ok := params["user_mappings"].([]models.ProviderUserMapping)
 	if !ok {
 		log.Errorf("failed to parse user mappings: %v", params["user_mappings"])
@@ -126,7 +122,8 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 		lastRun = time.Now().AddDate(0, 0, -7)
 	}
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	for _, program := range programs {
+	for _, prog := range programs {
+		program := prog.(map[string]interface{})
 		for _, user := range userMappings {
 			err = service.ImportMilestonesForProgramUser(program, &user, sh.db, lastRun)
 			if err != nil {
@@ -146,14 +143,11 @@ func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
 	}
 	params := *service.GetJobParams()
 	log.Println("params for activity job: ", params)
-	programs, ok := params["programs"].([]map[string]interface{})
-	if !ok {
-		log.Errorf("failed to parse programs: %v", params["programs"])
-		return
-	}
+	programs := params["programs"].([]interface{})
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	for _, program := range programs {
+	for _, prog := range programs {
+		program := prog.(map[string]interface{})
 		err = service.ImportActivityForProgram(program, sh.db)
 		if err != nil {
 			sh.cleanupJob(providerPlatformId, jobId, false)

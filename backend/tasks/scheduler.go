@@ -26,7 +26,6 @@ func newJobRunner() *JobRunner {
 	options.Url = os.Getenv("NATS_URL")
 	options.AllowReconnect = true
 	options.Password = os.Getenv("NATS_PASSWORD")
-	options.Token = os.Getenv("NATS_TOKEN")
 	options.User = os.Getenv("NATS_USER")
 	conn, err := options.Connect()
 	if err != nil {
@@ -50,10 +49,12 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 		log.Debug("provJobs: ", provJobs)
 		for _, job := range provJobs {
 			log.Infof("Checking job: %v", job)
-			if err := jr.createIfNotExists(job, &provider); err != nil {
+			jobId, err := jr.createIfNotExists(job, &provider)
+			if err != nil {
 				log.Errorf("failed to create job: %v", err)
 				return nil, err
 			}
+			job.ID = jobId // dedupe
 			task, err := jr.intoTask(&provider, job)
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
@@ -70,14 +71,14 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 
 func (jr *JobRunner) intoTask(prov *models.ProviderPlatform, cj *models.CronJob) (*models.RunnableTask, error) {
 	task := models.RunnableTask{}
-	if err := jr.db.First(&task, "provider_platform_id = ? AND job_id = ?", prov.ID, cj.ID).Error; err != nil {
+	if err := jr.db.Model(models.RunnableTask{}).First(&task, "provider_platform_id = ? AND job_id = ?", prov.ID, cj.ID).Error; err != nil {
 		log.Errorf("failed to fetch existing task: %v", err)
 		// this is the first run
 		task = models.RunnableTask{
 			ProviderPlatformID: prov.ID,
 			JobID:              cj.ID,
 			Status:             models.StatusPending,
-			// on first run, we fetch a semester's worth of data
+			// on first run, we fetch all the data a course would have
 			LastRun:  time.Now().AddDate(0, -6, 0),
 			Schedule: cj.Schedule,
 		}

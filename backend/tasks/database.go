@@ -27,17 +27,17 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) error {
+func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) (string, error) {
 	existing := models.CronJob{}
-	if err := jr.db.First(&existing, "name = ?", cj.Name).Error; err == nil {
-		return nil
+	if err := jr.db.Model(models.CronJob{}).First(&existing, "name = ?", cj.Name).Error; err == nil {
+		return existing.ID, nil
 	}
 	if err := jr.db.Create(cj).Error; err != nil {
 		log.Errorf("Failed to create cron job %s: %v", cj.Name, err)
-		return err
+		return "", err
 	}
 	jr.checkFirstRun(prov)
-	return nil
+	return cj.ID, nil
 }
 
 func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
