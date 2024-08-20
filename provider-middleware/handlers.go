@@ -50,6 +50,7 @@ func (sh *ServiceHandler) handlePrograms(msg *nats.Msg) {
 	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
+		return
 	}
 	params := *service.GetJobParams()
 	jobId := params["job_id"].(string)
@@ -78,6 +79,7 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Error("Failed to initialize service")
+		return
 	}
 	users, err := service.GetUsers(sh.db)
 	if err != nil {
@@ -102,32 +104,26 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
+		return
 	}
 	log.Println("initiating GetMilestonesForProgramUser milestones")
 	params := *service.GetJobParams()
-	log.Println("params for milestones job: ", params)
-	programs := params["programs"].([]interface{})
-	userMappings, ok := params["user_mappings"].([]interface{})
-	if !ok {
-		log.Errorf("failed to parse user mappings: %v", params["user_mappings"])
-		return
-	}
+	log.Traceln("params for milestones job: ", params)
+	programs := extractArrayMap(params, "programs")
+	users := extractArrayMap(params, "users")
 	jobId := params["job_id"].(string)
 	lastRunStr := params["last_run"].(string)
+	providerPlatformId := int(params["provider_platform_id"].(float64))
 	lastRun, err := time.Parse(time.RFC3339, lastRunStr)
 	if err != nil {
-		log.Errorf("failed to parse last run time: %v", err)
-		// set last run to one week ago
-		lastRun = time.Now().AddDate(0, 0, -7)
+		sh.cleanupJob(providerPlatformId, jobId, false)
+		return
 	}
-	providerPlatformId := int(params["provider_platform_id"].(float64))
-	for _, prog := range programs {
-		program := prog.(map[string]interface{})
-		for _, user := range userMappings {
-			userIds := user.(map[string]interface{})
-			err = service.ImportMilestonesForProgramUser(program, userIds, sh.db, lastRun)
+	for _, program := range programs {
+		for _, user := range users {
+			err = service.ImportMilestonesForProgramUser(program, user, sh.db, lastRun)
+			time.Sleep(1 * time.Second) // to avoid rate limiting with the provider
 			if err != nil {
-				sh.cleanupJob(providerPlatformId, jobId, true)
 				log.Errorf("Failed to retrieve milestones: %v", err)
 				continue
 			}
@@ -140,14 +136,14 @@ func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
 	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
+		return
 	}
 	params := *service.GetJobParams()
 	log.Println("params for activity job: ", params)
-	programs := params["programs"].([]interface{})
+	programs := extractArrayMap(params, "programs")
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	for _, prog := range programs {
-		program := prog.(map[string]interface{})
+	for _, program := range programs {
 		err = service.ImportActivityForProgram(program, sh.db)
 		if err != nil {
 			sh.cleanupJob(providerPlatformId, jobId, false)
@@ -156,4 +152,13 @@ func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
 		}
 	}
 	sh.cleanupJob(providerPlatformId, jobId, true)
+}
+
+func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {
+	array := params[mapType].([]interface{})
+	extractTo := []map[string]interface{}{}
+	for _, prog := range array {
+		extractTo = append(extractTo, prog.(map[string]interface{}))
+	}
+	return extractTo
 }

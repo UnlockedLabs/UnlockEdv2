@@ -45,6 +45,7 @@ func (sh *ServiceHandler) initService(msg *nats.Msg) (ProviderServiceInterface, 
 	if !ok {
 		return nil, fmt.Errorf("failed to parse job_id: %v", body["job_id"])
 	}
+	// prior to here, we are unable to cleanup the job
 	provider, err := sh.LookupProvider(int(providerId))
 	log.Println("InitService called")
 	if err != nil {

@@ -10,9 +10,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - config:/docker-entrypoint-initdb.d
-    # command:
-    #   > #  this feels kinda hacky: we have to log to a sub directory in a directory owned by the user :1000 so postgres doesn't complain
-    #   postgres -c 'logging_collector=on' -c 'log_destination=jsonlog' -c 'log_directory=/docker-entrypoint-initdb.d/logs' -c log_line_prefix='%t [%u]'  -c 'log_connections=on' -c 'log_file_mode=0644' -c 'log_filename=postgres-%Y-%m-%d.log'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
