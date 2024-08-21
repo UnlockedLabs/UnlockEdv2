@@ -5,7 +5,6 @@ import Welcome from '@/Pages/Welcome';
 import Dashboard from '@/Pages/Dashboard';
 import Login from '@/Pages/Auth/Login';
 import Users from '@/Pages/Users';
-//import UserActivity from '@/Pages/UserActivity';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import ProviderPlatformManagement from './Pages/ProviderPlatformManagement';
 import { AuthProvider } from './AuthContext';
@@ -48,11 +47,6 @@ export default function App() {
             element: WithAuth({ children: <ResourcesManagement /> }),
             errorElement: <Error />
         },
-        // {
-        //     path: '/user-activity',
-        //     element: WithAuth({ children: <UserActivity /> }),
-        //     errorElement: <Error />
-        // },
         {
             path: '/reset-password',
             element: WithAuth({ children: <ResetPassword /> }),
