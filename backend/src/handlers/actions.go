@@ -96,6 +96,9 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 
 func paginateUsers(users []models.ImportUser, page, perPage int) (int, []models.ImportUser) {
 	totalUsers := len(users)
+	if totalUsers == 0 {
+		return 0, []models.ImportUser{}
+	}
 	log.Debugf("total of %d uses found to import, returning %d", totalUsers, perPage)
 	offset := (page - 1) * perPage
 	if offset > totalUsers {
@@ -108,7 +111,18 @@ func paginateUsers(users []models.ImportUser, page, perPage int) (int, []models.
 	return totalUsers, users[offset:end]
 }
 
+func (srv *Server) searchForUser(search string, users []models.ImportUser) []models.ImportUser {
+	foundUsers := []models.ImportUser{}
+	for _, user := range users {
+		if strings.Contains(user.Username, search) || strings.Contains(user.NameFirst, search) || strings.Contains(user.NameLast, search) {
+			foundUsers = append(foundUsers, user)
+		}
+	}
+	return foundUsers
+}
+
 func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
+	kv := srv.Buckets[CachedUsers]
 	page, perPage := srv.GetPaginationInfo(r)
 	service, err := srv.getService(r)
 	if err != nil {
@@ -118,21 +132,24 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := fmt.Sprintf("provider_%d_users", service.ProviderPlatformID)
-
 	fresh := r.URL.Query().Get("clear_cache")
 	if strings.Compare(fresh, "true") == 0 {
 		log.Debug("clearing cached provider users in JetStream, re-fetching from provider")
-		if err := srv.Kv.Delete(cacheKey); err != nil {
+		if err := kv.Delete(cacheKey); err != nil {
 			log.Errorf("Error clearing cache: %v", err)
 		}
 	}
-
-	entry, err := srv.Kv.Get(cacheKey)
+	search := r.URL.Query().Get("search")
+	entry, err := kv.Get(cacheKey)
 	if err == nil {
 		var cachedUsers CachedProviderUsers
 		if err := json.Unmarshal(entry.Value(), &cachedUsers); err == nil {
 			if cachedUsers.LastUpdated.Add(1 * time.Hour).After(time.Now()) {
-				total, toReturn := paginateUsers(cachedUsers.Users, page, perPage)
+				foundUsers := cachedUsers.Users
+				if search != "" {
+					foundUsers = srv.searchForUser(search, foundUsers)
+				}
+				total, toReturn := paginateUsers(foundUsers, page, perPage)
 				response := models.PaginatedResource[models.ImportUser]{
 					Data:    toReturn,
 					Message: "Successfully fetched users from provider",
@@ -142,7 +159,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if srv.Kv.Delete(cacheKey) != nil {
+		if kv.Delete(cacheKey) != nil {
 			log.Error("Error deleting cache key")
 		}
 	}
@@ -151,26 +168,27 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("Error getting provider service GetUsers action:" + err.Error())
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		if srv.Kv.Delete(cacheKey) != nil {
+		if kv.Delete(cacheKey) != nil {
 			log.Error("Error deleting cache")
 		}
 		return
 	}
-
-	log.Printf("Received import users: %v", externalUsers)
-	total, responseUsers := paginateUsers(externalUsers, page, perPage)
-
 	cachedUsers := CachedProviderUsers{
 		Users:       externalUsers,
 		LastUpdated: time.Now(),
 	}
 	cacheData, err := json.Marshal(&cachedUsers)
 	if err == nil {
-		_, err := srv.Kv.Put(cacheKey, cacheData)
+		_, err := kv.Put(cacheKey, cacheData)
 		if err != nil {
 			log.Error("Error caching users")
 		}
 	}
+	log.Printf("Received import users: %v", externalUsers)
+	if search != "" {
+		externalUsers = srv.searchForUser(search, externalUsers)
+	}
+	total, responseUsers := paginateUsers(externalUsers, page, perPage)
 
 	response := models.PaginatedResource[models.ImportUser]{
 		Data:    responseUsers,

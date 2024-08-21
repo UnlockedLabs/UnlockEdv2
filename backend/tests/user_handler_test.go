@@ -96,7 +96,7 @@ func TestAssertNonAdminCantViewAllUsers(t *testing.T) {
 			t.Fatal(err)
 		}
 		rr := httptest.NewRecorder()
-		handler := server.TestAsUser(server.ApplyAdminMiddleware(http.HandlerFunc(server.HandleIndexUsers)))
+		handler := server.TestAsUser(server.ApplyAdminTestingMiddleware(http.HandlerFunc(server.HandleIndexUsers)))
 		handler.ServeHTTP(rr, req)
 		if status := rr.Code; status != http.StatusUnauthorized {
 			t.Errorf("handler returned wrong status code: got %v want %v",

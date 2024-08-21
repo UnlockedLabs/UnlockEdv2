@@ -110,7 +110,7 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 	params := *service.GetJobParams()
 	log.Traceln("params for milestones job: ", params)
 	programs := extractArrayMap(params, "programs")
-	users := extractArrayMap(params, "users")
+	users := extractArrayMap(params, "user_mappings")
 	jobId := params["job_id"].(string)
 	lastRunStr := params["last_run"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
@@ -155,8 +155,11 @@ func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
 }
 
 func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {
-	array := params[mapType].([]interface{})
 	extractTo := []map[string]interface{}{}
+	array, ok := params[mapType].([]interface{})
+	if !ok {
+		return extractTo
+	}
 	for _, prog := range array {
 		extractTo = append(extractTo, prog.(map[string]interface{}))
 	}

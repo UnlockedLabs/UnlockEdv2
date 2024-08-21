@@ -3,6 +3,8 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,13 +43,77 @@ func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
+type CachedSession struct {
+	Claims    Claims    `json:"claims"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+func checkCachedSession(kv nats.KeyValue, hashedToken string) (*Claims, error) {
+	value, err := kv.Get(hashedToken)
+	if err != nil {
+		log.Traceln("cached session not found")
+		return nil, err
+	}
+	var cachedSession CachedSession
+	if err := json.Unmarshal(value.Value(), &cachedSession); err != nil {
+		log.Errorln("error unmarshalling cached session")
+		return nil, err
+	}
+	if cachedSession.ExpiresAt.After(time.Now()) {
+		cachedSession.ExpiresAt = time.Now().Add(6 * time.Hour)
+		if err := putCachedSession(kv, hashedToken, &cachedSession.Claims); err != nil {
+			log.Errorln("error putting cached session")
+			return nil, err
+		}
+		return &cachedSession.Claims, nil
+	}
+	return nil, errors.New("cached session expired")
+}
+
+func shaHashValue(cookie string) string {
+	hash := sha256.Sum256([]byte(cookie))
+	hashKey := hex.EncodeToString(hash[:])
+	return hashKey
+}
+
+func putCachedSession(kv nats.KeyValue, hashedToken string, claims *Claims) error {
+	cachedSession := CachedSession{
+		Claims:    *claims,
+		ExpiresAt: time.Now().Add(6 * time.Hour),
+	}
+	bytes, err := json.Marshal(&cachedSession)
+	if err != nil {
+		log.Errorln("error marshalling cached session")
+		return err
+	}
+	if _, err := kv.Put(hashedToken, bytes); err != nil {
+		log.Errorln("error putting cached session")
+		return err
+	}
+	return nil
+}
+
 func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		kv := s.Buckets[CachedSessions]
 		cookie, err := r.Cookie("unlocked_token")
 		if err != nil {
 			log.Error("No token found " + err.Error())
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
+		}
+		hashedToken := shaHashValue(cookie.Value)
+		claims, err := checkCachedSession(kv, hashedToken)
+		if err == nil {
+			log.Info("Found cached session")
+			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
+			if claims.PasswordReset && !isAuthRoute(r) {
+				http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
+				return
+			} else {
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
 		}
 		token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte(os.Getenv("APP_KEY")), nil
@@ -58,6 +125,9 @@ func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 		}
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 			ctx := context.WithValue(r.Context(), ClaimsKey, claims)
+			if err := putCachedSession(kv, hashedToken, claims); err != nil {
+				log.Error("Error putting cached session: ", err)
+			}
 			if claims.PasswordReset && !isAuthRoute(r) {
 				http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 				return

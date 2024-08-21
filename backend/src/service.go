@@ -54,7 +54,7 @@ func GetProviderService(prov *models.ProviderPlatform, client *http.Client) (*Pr
 	return &newService, nil
 }
 
-func (serv *ProviderService) Request(url string) *http.Request {
+func (serv *ProviderService) Request(url string) (*http.Request, error) {
 	log.Println("Init request for provider service")
 	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
 	finalUrl := serv.ServiceURL + url + "?id=" + strconv.Itoa(int(serv.ProviderPlatformID))
@@ -62,15 +62,21 @@ func (serv *ProviderService) Request(url string) *http.Request {
 	request, err := http.NewRequest("GET", finalUrl, nil)
 	if err != nil {
 		log.Printf("error creating request %v", err.Error())
+		return nil, err
 	}
 	request.Header.Set("Authorization", serviceKey)
 	log.Printf("request: %v", request)
-	return request
+	return request, nil
 }
 
 func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 	fields := log.Fields{"handler": "GetUsers"}
-	req := serv.Request("/api/users")
+	req, err := serv.Request("/api/users")
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("error creating request ")
+		return nil, err
+	}
 	resp, err := serv.Client.Do(req)
 	if err != nil {
 		fields["error"] = err
