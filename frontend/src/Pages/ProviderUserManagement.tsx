@@ -19,6 +19,8 @@ import ShowImportedUsers from '@/Components/forms/ShowImportedUsers';
 import Pagination from '@/Components/Pagination';
 import useSWR from 'swr';
 import ConfirmImportAllUsersForm from '@/Components/forms/ConfirmImportAllUsersForm';
+import { useDebounceValue } from 'usehooks-ts';
+import SearchBar from '@/Components/inputs/SearchBar';
 
 export default function ProviderUserManagement() {
     const auth = useAuth();
@@ -26,7 +28,6 @@ export default function ProviderUserManagement() {
     const importedUsersModal = useRef<null | HTMLDialogElement>(null);
     const importAllUsersModal = useRef<null | HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<null | ProviderUser>(null);
     const [perPage, setPerPage] = useState(10);
@@ -38,6 +39,8 @@ export default function ProviderUserManagement() {
         total: 0,
         last_page: 0
     });
+    const [search, setSearch] = useState('');
+    const searchQuery = useDebounceValue(search, 400);
     const [provider, setProvider] = useState<ProviderPlatform | null>(null);
     const [importedUsers, setImportedUsers] = useState<UserImports[]>([]);
     const [cache, setCache] = useState(false);
@@ -50,7 +53,7 @@ export default function ProviderUserManagement() {
         reset: () => {}
     });
     const { data, mutate } = useSWR<PaginatedResponse<ProviderUser>>(
-        `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&clear_cache=${cache}`
+        `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
 
     const changePage = (page: number) => {
@@ -157,6 +160,11 @@ export default function ProviderUserManagement() {
         }
     }
 
+    const handleChange = (newSearch: string) => {
+        setSearch(newSearch);
+        setCurrentPage(1);
+    };
+
     useEffect(() => {
         if (data) {
             setMeta(data.meta);
@@ -192,15 +200,9 @@ export default function ProviderUserManagement() {
             />
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="input input-bordered w-full max-w-xs input-sm"
-                        value={searchTerm}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            setCurrentPage(1);
-                        }}
+                    <SearchBar
+                        searchTerm={searchQuery[0]}
+                        changeCallback={handleChange}
                     />
                 </div>
                 <div className="flex justify-between">

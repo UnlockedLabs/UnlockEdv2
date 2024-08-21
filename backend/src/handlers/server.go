@@ -21,7 +21,7 @@ type Server struct {
 	OryClient *ory.APIClient
 	Client    *http.Client
 	Nats      *nats.Conn
-	Kv        nats.KeyValue
+	Buckets   map[string]nats.KeyValue
 }
 
 /**
@@ -101,7 +101,12 @@ func setupNats() (*nats.Conn, error) {
 	return conn, nil
 }
 
-const CachedUsers string = "cached_users"
+const (
+	CachedUsers    string = "cache_users"
+	CachedSessions string = "cached_sessions"
+	RateLimit      string = "rate_limit"
+	CsrfToken      string = "csrf_token"
+)
 
 func (srv *Server) setupBucket() error {
 	js, err := srv.Nats.JetStream()
@@ -109,27 +114,38 @@ func (srv *Server) setupBucket() error {
 		log.Fatalf("Error initializing JetStream: %v", err)
 		return err
 	}
-	// TODO: store a map of const bucket names : buckets ?
-	kv, err := js.KeyValue(CachedUsers)
-	if err == nats.ErrBucketNotFound {
-		kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
-			Bucket: CachedUsers,
-		})
-		if err != nil {
-			log.Errorf("Error creating JetStream KV store: %v", err)
-			return err
+	buckets := map[string]nats.KeyValue{}
+	for _, bucket := range []string{CachedUsers, CachedSessions, RateLimit, CsrfToken} {
+		kv, err := js.KeyValue(bucket)
+		if err == nats.ErrBucketNotFound {
+			kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
+				Bucket: bucket,
+			})
+			if err != nil {
+				log.Errorf("Error creating JetStream KV store: %v", err)
+				return err
+			}
 		}
+		buckets[bucket] = kv
 	}
-	srv.Kv = kv
+	srv.Buckets = buckets
 	return nil
 }
 
 func (srv *Server) applyMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return http.HandlerFunc(srv.AuthMiddleware(srv.UserActivityMiddleware(h)))
+	return http.HandlerFunc(
+		srv.setCsrfTokenMiddleware(
+			srv.rateLimitMiddleware(
+				srv.AuthMiddleware(
+					srv.UserActivityMiddleware(h)))))
 }
 
 func (srv *Server) ApplyAdminMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return http.HandlerFunc(srv.applyMiddleware(srv.adminMiddleware(h)))
+}
+
+func (srv *Server) ApplyAdminTestingMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+	return http.HandlerFunc(srv.AuthMiddleware(srv.adminMiddleware(h)))
 }
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {

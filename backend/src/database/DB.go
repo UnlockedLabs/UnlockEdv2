@@ -231,9 +231,8 @@ func (db *DB) SeedTestData() {
 				}
 			}
 			outcome := models.Outcome{
-				ProgramID:   prog.ID,
-				Type:        models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
-				ProgramName: prog.Name,
+				ProgramID: prog.ID,
+				Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 			}
 			if err := db.Conn.Create(&outcome).Error; err != nil {
 				log.Fatalf("Failed to create outcome: %v", err)
