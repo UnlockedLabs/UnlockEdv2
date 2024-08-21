@@ -96,7 +96,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, e
 	return nil, nil
 }
 
-var AllDefaultJobs = []JobType{GetMilestonesJob, GetProgramsJob, GetActivityJob, GetOutcomesJob}
+var AllDefaultJobs = []JobType{GetMilestonesJob, GetProgramsJob, GetActivityJob /* GetOutcomesJob */}
 
 func NewCronJob(name JobType) *CronJob {
 	return &CronJob{

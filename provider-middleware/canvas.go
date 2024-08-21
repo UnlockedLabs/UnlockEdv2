@@ -139,8 +139,9 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 		id := int(course["id"].(float64))
 		var count int64 = 0
 		log.Infof("importing course %d", id)
-		err := db.Table("programs").Where("provider_platform_id = ?", srv.ProviderPlatformID).Where("external_id = ?", fmt.Sprintf("%d", id)).Count(&count).Error
-		if err != nil {
+		if db.Table("programs").Where("provider_platform_id = ?", srv.ProviderPlatformID).
+			Where("external_id = ?", fmt.Sprintf("%d", id)).
+			Count(&count).Error != nil {
 			log.Error("error getting count of provider courses")
 			continue
 		}
@@ -155,13 +156,6 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 		} else {
 			log.Printf("total assignments: %d", assignments)
 			totalMilestones += assignments
-		}
-		quizzes, err := srv.getQuizzesForCourse(fmt.Sprintf("%d", id))
-		if err != nil {
-			log.Printf("Failed to get quizzes for course: %v", err)
-		} else {
-			log.Printf("total quizzes: %d", len(quizzes))
-			totalMilestones += len(quizzes)
 		}
 		thumbnailURL := ""
 		if course["image_download_url"] != nil {
@@ -200,22 +194,23 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 	return nil
 }
 
-func (srv *CanvasService) getQuizzesForCourse(externalCourseId string) ([]map[string]interface{}, error) {
-	url := srv.BaseURL + "/api/v1/courses/" + externalCourseId + "/quizzes"
-	resp, err := srv.SendRequest(url)
-	if err != nil {
-		log.Printf("Failed to send request: %v", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-	quizzes := make([]map[string]interface{}, 0)
-	err = json.NewDecoder(resp.Body).Decode(&quizzes)
-	if err != nil {
-		return nil, err
-	}
-	return quizzes, nil
-}
-
+// it turns out that quizzes are included in the assignments for a course, so this was fetching duplicate data
+//
+//	func (srv *CanvasService) getQuizzesForCourse(externalCourseId string) ([]map[string]interface{}, error) {
+//		url := srv.BaseURL + "/api/v1/courses/" + externalCourseId + "/quizzes"
+//		resp, err := srv.SendRequest(url)
+//		if err != nil {
+//			log.Printf("Failed to send request: %v", err)
+//			return nil, err
+//		}
+//		defer resp.Body.Close()
+//		quizzes := make([]map[string]interface{}, 0)
+//		err = json.NewDecoder(resp.Body).Decode(&quizzes)
+//		if err != nil {
+//			return nil, err
+//		}
+//		return quizzes, nil
+//	}
 func getNodesLength(data map[string]interface{}) int {
 	if courseData, ok := data["data"].(map[string]interface{}); ok {
 		if course, ok := courseData["course"].(map[string]interface{}); ok {
@@ -314,13 +309,12 @@ func (srv *CanvasService) getUserSubmissionForQuiz(courseId, quizId, userId stri
 	return submissions, nil
 }
 
-func (srv *CanvasService) getUserSubmissionsForCourse(userId, courseId string, lastRun time.Time) ([]map[string]interface{}, error) {
+func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryString url.Values, lastRun time.Time) ([]map[string]interface{}, error) {
 	fields := log.Fields{"handler": "getUserSubmissionForCourse"}
-	queryParams := url.Values{}
-	queryParams.Add("submitted_since", lastRun.Format(time.RFC3339))
-	queryParams.Add("student_ids[]", userId)
+	queryString.Add("submitted_since", lastRun.Format(time.RFC3339))
+	queryString.Add("per_page", "100")
 	url := srv.BaseURL + "/api/v1/courses/" + courseId + "/students/submissions"
-	url += "?" + queryParams.Encode()
+	url += "?" + queryString.Encode()
 	log.WithFields(fields).Printf("url: %v", url)
 	resp, err := srv.SendRequest(url)
 	if err != nil {
@@ -350,75 +344,86 @@ func (srv *CanvasService) getUserSubmissionsForCourse(userId, courseId string, l
 * Then we get the submissions for the assignment
 *  /api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id
 *
-* Then we get all the quizzes for the course
-*  /api/v1/courses/98/quizzes
-*
-* get submissions for the user for each quiz
-*  /api/v1/courses/:course_id/quizzes/:quiz_id/submissions/:user_id
+* Quizzes are included in assignments so we don't need to get them separately
 * */
-func (srv *CanvasService) ImportMilestonesForProgramUser(programIdPair map[string]interface{}, mapping map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
+func (srv *CanvasService) ImportMilestones(programIdPair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	programId := int(programIdPair["program_id"].(float64))
 	externalProgramId := programIdPair["external_id"].(string)
-	userId := int(mapping["user_id"].(float64))
-	externalUserId := mapping["external_user_id"].(string)
-	fields := log.Fields{"handler": "ImportMilestonesForProgramUser", "user_id": userId, "external_user_id": externalUserId, "course_id": programId, "external_id": externalProgramId}
-
-	submissions, err := srv.getUserSubmissionsForCourse(externalUserId, externalProgramId, lastRun)
+	values := url.Values{}
+	reversed := make(map[string]int)
+	for _, userMap := range mapping {
+		reversed[userMap["external_user_id"].(string)] = int(userMap["user_id"].(float64))
+		values.Add("user_ids[]", userMap["external_user_id"].(string))
+	}
+	fields := log.Fields{"task": "ImportMilestones", "course_id": programId, "external_id": externalProgramId}
+	submissions, err := srv.getUsersSubmissionsForCourse(externalProgramId, values, lastRun)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.Printf("Failed to get submission for assignment: %v", err)
 		return err
 	}
 	for _, submission := range submissions {
+		externalUserID := fmt.Sprintf("%d", int(submission["user_id"].(float64)))
 		milestone := models.Milestone{
-			UserID:      uint(userId),
+			UserID:      uint(reversed[externalUserID]),
 			ExternalID:  fmt.Sprintf("%d", int(submission["id"].(float64))),
 			ProgramID:   uint(programId),
 			Type:        "assignment_submission",
 			IsCompleted: submission["workflow_state"] == "complete" || submission["workflow_state"] == "graded",
 		}
-		err = db.Create(&milestone).Error
-		if err != nil {
+		if db.Create(&milestone).Error != nil {
 			log.Errorln("failed to create milestone in GetMilestonesForProgramUser: ", err)
+		}
+		_, ok := submission["grade"].(string)
+		if !ok {
+			log.WithFields(fields).Traceln("no grade found for quiz submission")
 			continue
 		}
-	}
-	quizzes, err := srv.getQuizzesForCourse(externalProgramId)
-	if err != nil {
-		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Failed to get quizzes for course")
-		// just return what we have
-		return nil
-	}
-	for _, quiz := range quizzes {
-		// go through each quiz and see if we have a submission from the user
-		quizId := int(quiz["id"].(float64))
-		if submission, err := srv.getUserSubmissionForQuiz(externalProgramId, fmt.Sprintf("%d", quizId), externalUserId, lastRun); err == nil {
-			state, ok := submission["workflow_state"].(string)
-			if !ok || state == "untaken" {
-				continue
+		if checkTimespanOfSubmission(lastRun, submission) {
+			anonId := submission["anonymous_id"].(string)
+			gradeReceived := models.Milestone{
+				ProgramID:   uint(programId),
+				UserID:      uint(reversed[externalUserID]),
+				ExternalID:  anonId,
+				Type:        "grade_received",
+				IsCompleted: true,
 			}
-			milestoneType := "quiz_assignment"
-			if state == "complete" {
-				milestoneType = "quiz_submission"
-			}
-			if state == "complete" {
-				milestoneType = "quiz_completion"
-			}
-			milestone := models.Milestone{
-				ExternalID: submission["id"].(string),
-				UserID:     uint(userId),
-				ProgramID:  uint(programId),
-				Type:       models.MilestoneType(milestoneType),
-			}
-			err := db.Create(&milestone).Error
-			if err != nil {
-				log.Errorln("failed to create milestone in GetMilestonesForProgramUser: ", err)
+			if db.Create(&gradeReceived).Error != nil {
+				log.WithFields(fields).Errorln("failed to create grade_received milestone: ", err)
 				continue
 			}
 		}
 	}
 	return nil
+}
+
+func checkTimespanOfSubmission(lastRun time.Time, submission map[string]interface{}) bool {
+	if submission["submitted_at"] == nil {
+		// assignment not submitted, so we don't care about it
+		return false
+	}
+	submittedAt, err := time.Parse(time.RFC3339, submission["submitted_at"].(string))
+	if err != nil {
+		// failed to parse time, so we don't care about it
+		return false
+	}
+	if submittedAt.After(lastRun) {
+		// assignment was submitted after last run, so this is valid
+		return true
+	} else {
+		// if not, we check if it was graded after last run
+		if submission["graded_at"] == nil {
+			return false
+		}
+		gradedAt, err := time.Parse(time.RFC3339, submission["graded_at"].(string))
+		if err != nil {
+			return false
+		}
+		if gradedAt.After(lastRun) {
+			return true
+		}
+	}
+	return false
 }
 
 func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string]interface{}, error) {
@@ -462,3 +467,15 @@ func (srv *CanvasService) ImportActivityForProgram(programPair map[string]interf
 	}
 	return nil
 }
+
+// func (srv *CanvasService) ImportOutcomesForProgram(programPair map[string]interface{}, userMappings []map[string]interface{}) error {
+// 	programId := int(programPair["program_id"].(float64))
+// 	externalId := programPair["external_id"].(string)
+// 	fields := log.Fields{"task": "ImportOutcomesForProgram", "course_id": programId, "external_id": externalId}
+// 	for _, mapping := range userMappings {
+// 		userId := int(mapping["user_id"].(float64))
+// 		externalUserId := mapping["external_user_id"].(string)
+// 		log.WithFields(fields).Debug("importing outcomes from canvas")
+//
+// 	}
+// }

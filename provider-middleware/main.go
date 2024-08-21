@@ -18,7 +18,7 @@ import (
 type ProviderServiceInterface interface {
 	GetUsers(db *gorm.DB) ([]models.ImportUser, error)
 	ImportPrograms(db *gorm.DB) error
-	ImportMilestonesForProgramUser(programPair map[string]interface{}, mappings map[string]interface{}, db *gorm.DB, lastRun time.Time) error
+	ImportMilestones(programPair map[string]interface{}, mappings []map[string]interface{}, db *gorm.DB, lastRun time.Time) error
 	ImportActivityForProgram(programPair map[string]interface{}, db *gorm.DB) error
 	// TODO: GetOutcomes()
 	GetJobParams() *map[string]interface{}

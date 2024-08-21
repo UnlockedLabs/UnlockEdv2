@@ -4,3 +4,5 @@ All default log directories for services like `nginx`, `postgres`, etc will have
 `/var/log/nginx/`
 
 Logs will all be `json` whenever possible and will be aggregated in production
+
+TODO: rotate log files for backend + services
