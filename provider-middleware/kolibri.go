@@ -119,7 +119,7 @@ func (ks *KolibriService) ImportPrograms(db *gorm.DB) error {
 	return nil
 }
 
-func (ks *KolibriService) ImportMilestonesForProgramUser(programPair map[string]interface{}, mapping map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
+func (ks *KolibriService) ImportMilestones(programPair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	// sql := `SELECT id, complete, time_spent FROM logger_attemptlog where user_id = ? AND content_id = ?`
 	return nil
 }

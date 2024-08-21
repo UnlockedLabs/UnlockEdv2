@@ -120,13 +120,11 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 		return
 	}
 	for _, program := range programs {
-		for _, user := range users {
-			err = service.ImportMilestonesForProgramUser(program, user, sh.db, lastRun)
-			time.Sleep(1 * time.Second) // to avoid rate limiting with the provider
-			if err != nil {
-				log.Errorf("Failed to retrieve milestones: %v", err)
-				continue
-			}
+		err = service.ImportMilestones(program, users, sh.db, lastRun)
+		time.Sleep(1 * time.Second) // to avoid rate limiting with the provider
+		if err != nil {
+			log.Errorf("Failed to retrieve milestones: %v", err)
+			continue
 		}
 	}
 	sh.cleanupJob(providerPlatformId, jobId, true)

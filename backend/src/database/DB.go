@@ -38,22 +38,22 @@ var TableList = []interface{}{
 }
 
 func InitDB(isTesting bool) *DB {
-	var db *gorm.DB
+	var gormDb *gorm.DB
 	var err error
-
 	if isTesting {
-		db, err = gorm.Open(sqlite.Open("file:memdb1?mode=memory&cache=shared"), &gorm.Config{})
+		gormDb, err = gorm.Open(sqlite.Open("file:memdb1?mode=memory&cache=shared"), &gorm.Config{})
 		if err != nil {
 			log.Fatal("Failed to connect to SQLite database:", err)
 		}
 		log.Println("Connected to the SQLite database in memory")
+		MigrateTesting(gormDb)
 	} else {
 		dsn := os.Getenv("APP_DSN")
 		if dsn == "" {
 			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
 				os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 		}
-		db, err = gorm.Open(postgres.New(postgres.Config{
+		gormDb, err = gorm.Open(postgres.New(postgres.Config{
 			DSN: dsn,
 		}), &gorm.Config{})
 		if err != nil {
@@ -61,13 +61,21 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database")
 	}
-	database := &DB{Conn: db}
-	Migrate(db)
-	SeedDefaultData(db, isTesting)
+	database := &DB{Conn: gormDb}
+	SeedDefaultData(gormDb, isTesting)
 	if isTesting {
 		database.SeedTestData()
 	}
 	return database
+}
+
+func MigrateTesting(db *gorm.DB) {
+	for _, table := range TableList {
+		log.Printf("Migrating %T table...", table)
+		if err := db.AutoMigrate(table); err != nil {
+			log.Fatal("Failed to migrate table: ", err)
+		}
+	}
 }
 
 func SeedDefaultData(db *gorm.DB, isTesting bool) {
@@ -114,30 +122,9 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
 	}
-	procedures := []string{DailyActivityProc, CreateOutcomeTriggerFunction}
-	if !isTesting {
-		for _, proc := range procedures {
-			if err := db.Exec(proc).Error; err != nil {
-				log.Fatalf("Failed to create stored procedure: %v", err)
-			}
-			log.Println("Stored procedure created successfully.")
-		}
-	}
 }
 
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
-
-/**
-* Register Migrations here
-**/
-func Migrate(db *gorm.DB) {
-	for _, table := range TableList {
-		log.Printf("Migrating %T table...", table)
-		if err := db.AutoMigrate(table); err != nil {
-			log.Fatal("Failed to migrate table: ", err)
-		}
-	}
-}
 
 func (db *DB) SeedTestData() {
 	platforms, err := os.ReadFile("test_data/provider_platforms.json")
@@ -240,62 +227,3 @@ func (db *DB) SeedTestData() {
 		}
 	}
 }
-
-const (
-	DailyActivityProc string = `CREATE OR REPLACE FUNCTION public.insert_daily_activity(
-    _user_id INT,
-    _program_id INT,
-    _type VARCHAR,
-    _total_time INT,
-    _external_id VARCHAR)
-    RETURNS VOID AS $$
-    DECLARE
-        prev_total_time INT;
-    BEGIN
-        SELECT total_time INTO prev_total_time FROM activities
-        WHERE user_id = _user_id AND program_id = _program_id
-        ORDER BY created_at DESC LIMIT 1;
-
-        IF prev_total_time IS NULL THEN
-            prev_total_time := 0;
-        END IF;
-    INSERT INTO activities (user_id, program_id, type, total_time, time_delta, external_id, created_at, updated_at)
-    VALUES (_user_id, _program_id, _type, _total_time, _total_time - prev_total_time, _external_id, NOW(), NOW());
-    END;
-    $$ LANGUAGE plpgsql;`
-
-	CreateOutcomeTriggerFunction string = `
-DROP TRIGGER IF EXISTS milestone_completion_trigger ON milestones;
-
-DROP FUNCTION IF EXISTS check_milestone_completion();
-
-CREATE OR REPLACE FUNCTION check_milestone_completion()
-RETURNS TRIGGER AS $$
-DECLARE
-    total_milestones INT;
-    user_milestones INT;
-BEGIN
-    SELECT total_progress_milestones
-    INTO total_milestones
-    FROM programs
-    WHERE id = NEW.program_id;
-
-    SELECT COUNT(*)
-    INTO user_milestones
-    FROM milestones
-    WHERE program_id = NEW.program_id AND user_id = NEW.user_id;
-
-    IF user_milestones = total_milestones THEN
-        INSERT INTO outcomes (type, program_id, user_id, value)
-        VALUES ('progress_completion', NEW.program_id, NEW.user_id, '100');
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER milestone_completion_trigger
-AFTER INSERT ON milestones
-FOR EACH ROW
-EXECUTE FUNCTION check_milestone_completion();`
-)
