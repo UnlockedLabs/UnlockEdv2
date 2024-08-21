@@ -4,7 +4,6 @@ import {
     ArchiveBoxIcon,
     BookOpenIcon,
     BuildingStorefrontIcon,
-    ChartBarIcon,
     HomeIcon,
     RectangleStackIcon,
     TrophyIcon,
@@ -32,12 +31,6 @@ export default function Navbar() {
                             <a href="/users">
                                 <UsersIcon className="h-4" />
                                 Users
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/user-activity">
-                                <ChartBarIcon className="h-4" />
-                                Activity
                             </a>
                         </li>
                         <li>

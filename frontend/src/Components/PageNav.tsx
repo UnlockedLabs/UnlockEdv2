@@ -4,7 +4,6 @@ import {
     ArrowRightEndOnRectangleIcon,
     HomeIcon,
     UsersIcon,
-    ChartBarIcon,
     RectangleStackIcon,
     ArchiveBoxIcon
 } from '@heroicons/react/24/solid';
@@ -101,12 +100,6 @@ export default function PageNav({
                                             <a href="/users">
                                                 <UsersIcon className="h-4" />
                                                 Users
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="/user-activity">
-                                                <ChartBarIcon className="h-4" />
-                                                Activity
                                             </a>
                                         </li>
                                         <li>
