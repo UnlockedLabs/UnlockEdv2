@@ -75,7 +75,7 @@ export default function MyProgress() {
                         </div>
                         <div className="flex flex-row gap-12 mt-12">
                             <div className="card bg-base-teal h-[531px] w-[60%] p-4 overflow-y-auto">
-                                <div className="flex flex-row gap-x-4">
+                                <div className="flex flex-row justify-between">
                                     <h2 className="mt-2">All Courses</h2>
                                     <DropdownControl
                                         label="Sort by"
