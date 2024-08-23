@@ -58,11 +58,7 @@ CREATE TABLE public.users (
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.runnable_tasks CASCADE;
-DROP SEQUENCE IF EXISTS public.runnable_tasks_id_seq;
-
 DROP TABLE IF EXISTS public.user_activities CASCADE;
-DROP SEQUENCE IF EXISTS public.user_activities_id_seq;
 
 DROP TABLE IF EXISTS public.users CASCADE;
-DROP SEQUENCE IF EXISTS public.users_id_seq;
 -- +goose StatementEnd

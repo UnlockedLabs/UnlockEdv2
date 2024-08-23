@@ -21,7 +21,7 @@ CREATE TABLE public.milestones (
     deleted_at timestamp with time zone,
     user_id bigint NOT NULL,
     program_id bigint NOT NULL,
-    external_id character varying(255) NOT NULL,
+    external_id character varying(255) NOT NULL UNIQUE,
     type character varying(255) NOT NULL,
     is_completed boolean DEFAULT false
 );
@@ -33,11 +33,8 @@ CREATE TABLE public.milestones (
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.favorites CASCADE;
-DROP SEQUENCE IF EXISTS public.favorites_id_seq;
 
 DROP TABLE IF EXISTS public.left_menu_links CASCADE;
-DROP SEQUENCE IF EXISTS public.left_menu_links_id_seq;
 
 DROP TABLE IF EXISTS public.milestones CASCADE;
-DROP SEQUENCE IF EXISTS public.milestones_id_seq;
 -- +goose StatementEnd
