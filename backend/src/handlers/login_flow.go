@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"time"
@@ -298,7 +299,11 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	req, err := http.NewRequest(http.MethodPut, *acceptLoginEndpoint(form), bytes.NewReader(jsonBody))
+	url, err := acceptLoginEndpoint(form)
+	if err == nil {
+		srv.ErrorResponse(w, http.StatusContinue, "invalid request, must include challenge")
+	}
+	req, err := http.NewRequest(http.MethodPut, *url, bytes.NewReader(jsonBody))
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Error("Error creating request")
@@ -329,9 +334,12 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func acceptLoginEndpoint(form map[string]interface{}) *string {
-	challenge := form["challenge"].(string)
+func acceptLoginEndpoint(form map[string]interface{}) (*string, error) {
+	challenge, ok := form["challenge"].(string)
+	if !ok {
+		return nil, errors.New("login refresh not sent with challenge, must revalidate password")
+	}
 	challenge = "?login_challenge=" + challenge
 	endpoint := os.Getenv("HYDRA_ADMIN_URL") + AcceptLoginEndpoint + challenge
-	return &endpoint
+	return &endpoint, nil
 }

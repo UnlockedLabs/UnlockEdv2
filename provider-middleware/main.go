@@ -41,6 +41,9 @@ func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 	options.Url = os.Getenv("NATS_URL")
 	options.User = os.Getenv("NATS_USER")
 	options.Password = os.Getenv("NATS_PASSWORD")
+	if options.Url == "" {
+		options.Url = "nats://nats:4222"
+	}
 	conn, err := options.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)

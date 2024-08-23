@@ -35,10 +35,6 @@ CREATE TABLE public.facilities (
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.activities CASCADE;
-DROP SEQUENCE IF EXISTS public.activities_id_seq;
-
 DROP TABLE IF EXISTS public.cron_jobs CASCADE;
-
 DROP TABLE IF EXISTS public.facilities CASCADE;
-DROP SEQUENCE IF EXISTS public.facilities_id_seq;
 -- +goose StatementEnd

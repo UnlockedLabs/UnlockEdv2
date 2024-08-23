@@ -24,28 +24,21 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 - Node.js > 18.0
 - Postgres 16.0
+- NATS w/ `Jetstream`
+- Ory: `Hydra` + `Kratos`
+
+### Steps
 
 - Clone the repository
-- `cp .env.example .env && cp frontend/.env.example frontend/.env`
-- run `make help` for complete instructions
-- run `cd frontend && yarn prepare`
 
-**For frontend development:**
+- `cp .env.example .env`
 
-- Run `make frontend-dev`
+- run `make init` to install dependencies and setup git hooks
 
-This will build everything but the client, which you can then run separately with `yarn run dev` in the frontend directory.
+- run `make dev` to start the development environment in docker compose
 
-**For backend development:**
-
-- Run `make backend-dev`
-
-This will build only the Auth and run Postgres. You are responsible for building and running the server, middleware, and optionally the client/vite.
-
-**For 'Production':**
-
-- Run `make prod` to build the entire project in docker. You can then go to `localhost` in your browser.
-  NOTE: This is not a true production build, but simply a way to run the entire project in containers
+NOTE: you must be sure to use `127.0.0.1` in place of `localhost`, as the cookies required for authentication are not shared between the two,
+and this can cause bad states in the browser that will prevent successful login/auth flow.
 
 Login with `SuperAdmin` and password: `ChangeMe!`
 
@@ -93,7 +86,19 @@ so be sure that it didn't update in a later commit.
 
 #### Proper linting/formatting _will_ run automatically in a git hook before each commit. If you want to run them beforehand, you can `cd` into frontend and run `npx prettier -w .` or `cd backend` and `gofmt -w .` IF for some reason you need to skip the pre-commit hooks, you can run `git commit --no-verify`but _do not_ do this unless you know what you are doing and you understand the CI/CD will fail if you submit a PR
 
-# FAQ/Troubleshooting
+## FAQ/Troubleshooting
+
+### I cannot log in with the default credentials or with the credentials I previously set
+
+> This is likely an issue with the cookies that are set by our auth provider. Try the following steps:
+
+- Clear your cookies in your browser
+- Go to `127.0.0.1` in your browser (not `localhost`)
+- Make sure you are clicking on the `Login` button on the welcome page, which should direct you to `127.0.0.1/self-service/login/browser`
+
+- If you are still having issues, try restarting the server with `docker compose down --volumes` to clear the database
+  before repeating the first 3 steps. Be sure that you are not using `localhost` in your browser,
+  and that your URL has a ?flow={uuid} query parameter on the `/login` page.
 
 ### Why is docker not starting properly?
 

@@ -84,8 +84,6 @@ ALTER TABLE ONLY public.users
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS milestone_completion_trigger ON public.milestones;
-
 DROP INDEX IF EXISTS idx_activities_deleted_at;
 DROP INDEX IF EXISTS idx_facilities_deleted_at;
 DROP INDEX IF EXISTS idx_milestones_deleted_at;
@@ -98,6 +96,8 @@ DROP INDEX IF EXISTS idx_provider_user_mappings_deleted_at;
 DROP INDEX IF EXISTS idx_runnable_tasks_deleted_at;
 DROP INDEX IF EXISTS idx_user_activities_deleted_at;
 DROP INDEX IF EXISTS idx_users_deleted_at;
+
+DROP TRIGGER IF EXISTS milestone_completion_trigger ON public.milestones;
 
 ALTER TABLE public.activities DROP CONSTRAINT IF EXISTS fk_activities_program;
 ALTER TABLE public.activities DROP CONSTRAINT IF EXISTS fk_activities_user;
@@ -133,19 +133,4 @@ DROP TABLE IF EXISTS public.runnable_tasks CASCADE;
 DROP TABLE IF EXISTS public.user_activities CASCADE;
 DROP TABLE IF EXISTS public.users CASCADE;
 
-DROP SEQUENCE IF EXISTS public.milestones_id_seq;
-DROP SEQUENCE IF EXISTS public.activities_id_seq;
-DROP SEQUENCE IF EXISTS public.cron_jobs_id_seq;
-DROP SEQUENCE IF EXISTS public.facilities_id_seq;
-DROP SEQUENCE IF EXISTS public.favorites_id_seq;
-DROP SEQUENCE IF EXISTS public.left_menu_links_id_seq;
-DROP SEQUENCE IF EXISTS public.oidc_clients_id_seq;
-DROP SEQUENCE IF EXISTS public.open_content_providers_id_seq;
-DROP SEQUENCE IF EXISTS public.outcomes_id_seq;
-DROP SEQUENCE IF EXISTS public.programs_id_seq;
-DROP SEQUENCE IF EXISTS public.provider_platforms_id_seq;
-DROP SEQUENCE IF EXISTS public.provider_user_mappings_id_seq;
-DROP SEQUENCE IF EXISTS public.runnable_tasks_id_seq;
-DROP SEQUENCE IF EXISTS public.user_activities_id_seq;
-DROP SEQUENCE IF EXISTS public.users_id_seq;
 -- +goose StatementEnd

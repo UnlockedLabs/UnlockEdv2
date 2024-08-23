@@ -43,11 +43,6 @@ CREATE TABLE public.outcomes (
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.oidc_clients CASCADE;
-DROP SEQUENCE IF EXISTS public.oidc_clients_id_seq;
-
 DROP TABLE IF EXISTS public.open_content_providers CASCADE;
-DROP SEQUENCE IF EXISTS public.open_content_providers_id_seq;
-
 DROP TABLE IF EXISTS public.outcomes CASCADE;
-DROP SEQUENCE IF EXISTS public.outcomes_id_seq;
 -- +goose StatementEnd

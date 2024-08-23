@@ -53,11 +53,6 @@ CREATE TABLE public.provider_user_mappings (
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.programs CASCADE;
-DROP SEQUENCE IF EXISTS public.programs_id_seq;
-
 DROP TABLE IF EXISTS public.provider_platforms CASCADE;
-DROP SEQUENCE IF EXISTS public.provider_platforms_id_seq;
-
 DROP TABLE IF EXISTS public.provider_user_mappings CASCADE;
-DROP SEQUENCE IF EXISTS public.provider_user_mappings_id_seq;
 -- +goose StatementEnd

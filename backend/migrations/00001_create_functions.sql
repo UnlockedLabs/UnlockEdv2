@@ -1,4 +1,3 @@
--- skip_testing!
 -- +goose Up
 -- +goose StatementBegin
 CREATE FUNCTION public.check_milestone_completion() RETURNS trigger

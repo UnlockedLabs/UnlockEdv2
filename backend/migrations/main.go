@@ -38,11 +38,10 @@ func main() {
 	log.Println("Connected to the PostgreSQL database")
 	if *fresh {
 		log.Println("Running fresh migrations...")
-		if err := goose.Down(db, migrationDir); err != nil {
+		if err := goose.Reset(db, migrationDir, goose.WithAllowMissing()); err != nil {
 			log.Fatalf("Failed to run down migrations: %v", err)
 		}
 	}
-
 	log.Println("Running up migrations...")
 	if err := goose.Up(db, migrationDir); err != nil {
 		log.Fatalf("Migration failed: %v", err)
@@ -101,15 +100,6 @@ func syncOryKratos() error {
 	}
 	log.Println("ory identities deleted successfully")
 	return nil
-}
-
-func Migrate(db *gorm.DB) {
-	for _, table := range database.TableList {
-		log.Printf("Migrating %T table...", table)
-		if err := db.AutoMigrate(table); err != nil {
-			log.Fatal("Failed to migrate table: ", err)
-		}
-	}
 }
 
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`

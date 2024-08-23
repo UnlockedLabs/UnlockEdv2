@@ -1,9 +1,8 @@
 INSTALL_GOOSE=go install github.com/pressly/goose/v3/cmd/goose@latest
+INSTALL_AIR=go install github.com/air-verse/air@latest
 INIT_HOOKS=cd frontend && yarn prepare && cd ..
 DOCKER_COMPOSE=docker-compose.yml
-PROD_COMPOSE=config/docker-compose.prod.yml
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
-FE_DEV_COMPOSE=config/docker-compose.fe-dev.yml
 MIGRATE_MAIN=backend/migrations/main.go --dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
 SEED_MAIN=backend/seeder/main.go
@@ -21,35 +20,32 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod backend-dev frontend-dev migrate-fresh seed build-binaries init kolibri migrate
+.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset
 
 
 help: ascii_art
 	@echo " ⚡Usage: make [target] ⚡"
 	@echo " Targets:"
 	@echo " ⚡ init           Install initial development dependencies for the project"
-	@echo "   prod           Run the production Docker Compose setup (all containers)"
-	@echo "   kolibri        Run all containers with Kolibri (requires login to UL ECR | team only)"
-	@echo "   frontend-dev   Run the development Docker Compose setup (requires vite)"
-	@echo "   backend-dev    Run only the essential containers (requires vite, server and middleware)"
-	@echo "   migrate        Run the Go migration script"
-	@echo "   migrate-fresh  Run the Go migration script to reset the database to a fresh state"
+	@echo "   dev            Run containers in development mode with hot-reloading for server and frontend only"
+	@echo " 󱗆  kolibri        Run all containers with Kolibri (requires login to UL ECR | team only)"
+	@echo "   migrate        Apply the migrations"
+	@echo "   migrate-fresh  Drop the tables in the main application and to reset the database to a fresh state"
 	@echo " 󱘤  seed           Run the seeder script"
 	@echo "   build          Build Go binaries for different platforms"
+	@echo " 󰑙  reset          Drop all volumes and reset all data in the database"
 
-prod: ascii_art
-	docker compose -f $(DOCKER_COMPOSE) -f $(PROD_COMPOSE) up $(BUILD_RECREATE)
 
-install: ascii_art
+reset: ascii_art
+	docker compose down --volumes
+
+init: ascii_art
 	@echo 'Installing dependencies...'
-	$(INSTALL_GOOSE) && $(INIT_HOOKS)
+	$(INSTALL_GOOSE) && $(INIT_HOOKS) && $(INSTALL_AIR)
 	@echo 'Dependencies installed successfully.'
 
-backend-dev: ascii_art
-	docker compose up --build --force-recreate
-
-frontend-dev: ascii_art
-	docker compose -f $(DOCKER_COMPOSE) -f $(FE_DEV_COMPOSE) up $(BUILD_RECREATE)
+dev: ascii_art
+	docker compose up $(BUILD_RECREATE)
 
 migrate-fresh: ascii_art
 	go run $(MIGRATE_MAIN) --fresh
@@ -58,7 +54,7 @@ migrate: ascii_art
 	go run $(MIGRATE_MAIN)
 
 kolibri: ascii_art
-	docker compose -f $(DOCKER_COMPOSE) -f $(PROD_COMPOSE) -f $(KOLIBRI_COMPOSE) up $(BUILD_RECREATE)
+	docker compose -f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE) up $(BUILD_RECREATE)
 
 seed: ascii_art
 	go run $(SEED_MAIN)

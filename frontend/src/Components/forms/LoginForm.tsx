@@ -35,14 +35,12 @@ export default function LoginForm() {
             const reqBody = { ...data, ...attributes };
             setErrorMessage('');
             setProcessing(true);
-            console.log('Submitting login request', reqBody);
             const resp = await axios.post('/api/login', reqBody);
             if (resp.status === 200) {
                 let location = resp.data.redirect_to;
                 if (!location) {
                     location = resp.data.redirect_browser_to;
                 }
-                console.log('Redirecting to', location);
                 window.location.replace(location);
                 return;
             }
@@ -72,10 +70,8 @@ export default function LoginForm() {
                         session: checkResp.data,
                         challenge: attributes.challenge
                     };
-                    console.log('request body to refresh auth', reqBody);
                     const resp = await axios.post('/api/auth/refresh', reqBody);
                     if (resp.status === 200) {
-                        console.log('Refreshed session');
                         window.location.replace(resp.data.redirect_to);
                         return;
                     }
@@ -102,7 +98,6 @@ export default function LoginForm() {
             console.error('Error initializing login flow');
             return;
         }
-        console.log('login flow: ', resp.data);
         return {
             flow_id: resp.data.id,
             challenge: resp.data.oauth2_login_challenge,
