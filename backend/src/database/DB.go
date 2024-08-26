@@ -10,6 +10,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -37,6 +38,8 @@ var TableList = []interface{}{
 	&models.RunnableTask{},
 }
 
+var validate *validator.Validate
+
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
@@ -61,6 +64,7 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database")
 	}
+	validate = validator.New(validator.WithRequiredStructEnabled())
 	database := &DB{Conn: gormDb}
 	SeedDefaultData(gormDb, isTesting)
 	if isTesting {
