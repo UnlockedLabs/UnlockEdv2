@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func (srv *Server) registerUserRoutes() {
@@ -134,6 +136,10 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if user.User.FacilityID == 0 {
 		user.User.FacilityID = srv.getFacilityID(r)
 	}
+	invalidUser := validateUsername(user.User)
+	if invalidUser != "" {
+		return newBadRequestServiceError(err, invalidUser)
+	}
 	userNameExists := srv.Db.UsernameExists(user.User.Username)
 	if userNameExists {
 		return newBadRequestServiceError(err, "userexists")
@@ -230,6 +236,10 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 			return newBadRequestServiceError(err, "userexists")
 		}
 	}
+	invalidUser := validateUsername(user)
+	if invalidUser != "" {
+		return newBadRequestServiceError(err, invalidUser)
+	}
 	models.UpdateStruct(&toUpdate, &user)
 
 	updatedUser, err := srv.Db.UpdateUser(toUpdate)
@@ -272,4 +282,15 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		}
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
+}
+
+func validateUsername(user models.User) string {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	err := validate.Struct(user)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			return err.Tag()
+		}
+	}
+	return ""
 }

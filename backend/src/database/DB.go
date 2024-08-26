@@ -13,6 +13,7 @@ import (
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/pressly/goose/v3"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -38,6 +39,8 @@ var TableList = []interface{}{
 	&models.CronJob{},
 	&models.RunnableTask{},
 }
+
+var validate *validator.Validate
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
@@ -78,6 +81,7 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database via GORM")
 	}
+	validate = validator.New(validator.WithRequiredStructEnabled())
 	database := &DB{gormDb}
 	SeedDefaultData(gormDb, isTesting)
 	if isTesting {
