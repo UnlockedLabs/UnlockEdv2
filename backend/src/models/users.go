@@ -24,7 +24,7 @@ type DatabaseFields struct {
 
 type User struct {
 	DatabaseFields
-	Username      string   `gorm:"size:255;not null;unique" json:"username"`
+	Username      string   `gorm:"size:255;not null;unique" json:"username" validate:"alphanum"`
 	NameFirst     string   `gorm:"size:255;not null" json:"name_first"`
 	Email         string   `gorm:"size:255;not null;unique" json:"email"`
 	Password      string   `gorm:"size:255;not null" json:"-"`

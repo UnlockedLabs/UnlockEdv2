@@ -169,7 +169,7 @@ func (db *DB) GetUserByUsername(username string) *models.User {
 
 func (db *DB) UsernameExists(username string) bool {
 	userExists := false
-	err := db.Conn.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", username).
+	err := db.Conn.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", strings.ToLower(username) ).
 		Scan(&userExists).Error
 	if err != nil {
 		log.Error("Error checking if username exists: ", err)

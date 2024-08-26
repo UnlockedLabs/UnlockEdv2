@@ -56,19 +56,26 @@ export default function EditUserForm({
         try {
             setErrorMessage('');
             const cleanData = diffFormData(data, user);
-            await axios.patch(`/api/users/${user.id}`, cleanData);
-
-            onSuccess();
-        } catch (error: any) {
-            const response = error.response.data.trim();
-            if (response === 'userexists') {
+            const response = await axios.patch(`/api/users/${user.id}`, cleanData);
+            if (response.data.message === "") {
+                onSuccess();
+            } else if (response.data.message === 'userexists') {
                 setError('username', {
                     type: 'custom',
                     message: 'Username already exists'
                 });
+            } else if(response.data.message === 'alphanum') {
+                setError('username', {
+                    type: 'custom',
+                    message: 'Username must contain letters and numbers only',
+                });
             } else {
-                setErrorMessage(response);
+                setErrorMessage(response.data.message);
             }
+        }
+        catch (error: any) {
+            const response = error.response.data.trim();
+            setErrorMessage(response);
         }
     };
 

@@ -38,7 +38,22 @@ export default function AddUserForm({
                 user: data,
                 provider_platforms: selectedProviders
             });
-
+            if (response.status === 200) {
+                if (response.data.message === 'userexists') {
+                    setError('username', {
+                        type: 'custom',
+                        message: 'Username already exists',
+                    });
+                } else if(response.data.message === 'alphanum') {
+                    setError('username', {
+                        type: 'custom',
+                        message: 'Username must contain letters and numbers only',
+                    });
+                } else {
+                    setErrorMessage(response.data.message);
+                }
+                return;
+            }
             if (response.status !== 201) {
                 onSuccess('', 'Failed to create user', ToastState.error);
             }
@@ -49,15 +64,7 @@ export default function AddUserForm({
                 ToastState.success
             );
         } catch (error: any) {
-            const response = error.response.data.trim();
-            if (response === 'userexists') {
-                setError('username', {
-                    type: 'custom',
-                    message: 'Username already exists'
-                });
-            } else {
-                setErrorMessage(error.response.data);
-            }
+            setErrorMessage(error.response.data);
         }
     };
 
