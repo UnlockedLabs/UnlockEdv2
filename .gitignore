@@ -16,3 +16,4 @@ jar
 /provider-middleware/middleware
 /bin/*
 /tmp
+/canvas-seeder/users.txt
