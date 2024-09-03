@@ -1,4 +1,4 @@
-import { User, UserRole } from '../common';
+import { UserRole } from '../common';
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../AuthContext';
 import {

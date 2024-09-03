@@ -11,7 +11,6 @@ import {
 } from '../common';
 import Toast, { ToastState } from '../Components/Toast';
 import Modal, { ModalType } from '../Components/Modal';
-import { useAuth } from '../AuthContext';
 import MapUserForm from '@/Components/forms/MapUserForm';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ShowImportedUsers from '@/Components/forms/ShowImportedUsers';
@@ -22,7 +21,6 @@ import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 
 export default function ProviderUserManagement() {
-    const auth = useAuth();
     const mapUserModal = useRef<null | HTMLDialogElement>(null);
     const importedUsersModal = useRef<null | HTMLDialogElement>(null);
     const importAllUsersModal = useRef<null | HTMLDialogElement>(null);
