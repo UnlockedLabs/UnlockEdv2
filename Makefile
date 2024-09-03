@@ -3,7 +3,8 @@ INSTALL_AIR=go install github.com/air-verse/air@latest
 INIT_HOOKS=cd frontend && yarn prepare && cd ..
 DOCKER_COMPOSE=docker-compose.yml
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
-MIGRATE_MAIN=backend/migrations/main.go --dir backend/migrations
+MIGRATION_DIR=-dir backend/migrations
+MIGRATE_MAIN=backend/migrations/main.go $(MIGRATION_DIR)
 BUILD_RECREATE=--build --force-recreate
 SEED_MAIN=backend/seeder/main.go
 BINARY_NAME=server
@@ -20,20 +21,21 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset
+.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset migration
 
 
 help: ascii_art
 	@echo " ⚡Usage: make [target] ⚡"
 	@echo " Targets:"
-	@echo " ⚡ init           Install initial development dependencies for the project"
-	@echo "   dev            Run containers in development mode with hot-reloading for server and frontend only"
-	@echo " 󱗆  kolibri        Run all containers with Kolibri (requires login to UL ECR | team only)"
-	@echo "   migrate        Apply the migrations"
-	@echo "   migrate-fresh  Drop the tables in the main application and to reset the database to a fresh state"
-	@echo " 󱘤  seed           Run the seeder script"
-	@echo "   build          Build Go binaries for different platforms"
-	@echo " 󰑙  reset          Drop all volumes and reset all data in the database"
+	@echo " ⚡ init				  Install initial development dependencies for the project"
+	@echo "   dev				  Run containers in development mode with hot-reloading for server and frontend only"
+	@echo " 󱗆  kolibri			  Run all containers with Kolibri (requires login to UL ECR | team only)"
+	@echo "   migrate			  Apply the migrations"
+	@echo "   migrate-fresh	  Drop the tables in the main application and to reset the database to a fresh state"
+	@echo "   migration NAME=x	  Create a new migration with the provided name"
+	@echo " 󱘤  seed				  Run the seeder script"
+	@echo "   build			  Build Go binaries for different platforms"
+	@echo " 󰑙  reset			  Drop all volumes and reset all data in the database"
 
 
 reset: ascii_art
@@ -60,6 +62,15 @@ seed: ascii_art
 	go run $(SEED_MAIN)
 
 build: ascii_art
-	@echo "Building binaries for different platforms..."
-	go build -o bin/$(BINARY_NAME)-$(GOOS)-$(GOARCH) backend/main.go && go build -o bin/$(MIDDLEWARE)-$(GOOS)-$(GOARCH) provider-middleware/. && go build -o bin/cron-tasks-$(GOOS)-$(GOARCH) ./backend/tasks/.
+	@echo "Building binaries for your platform..."
+	go build -o bin/$(BINARY_NAME)-$(GOOS)-$(GOARCH) backend/main.go && go build -o bin/$(MIDDLEWARE)-$(GOOS)-$(GOARCH) $(MIDDLEWARE)/. && go build -o bin/cron-tasks-$(GOOS)-$(GOARCH) ./backend/tasks/.
 	@echo "Binaries built successfully."
+
+migration: ascii_art
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME is not set"; \
+		exit 1; \
+	fi
+	@echo "Creating migration with name $(NAME)..."
+	goose $(MIGRATION_DIR) create $(NAME) sql
+	goose $(MIGRATION_DIR) fix
