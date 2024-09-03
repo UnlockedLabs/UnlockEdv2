@@ -13,15 +13,21 @@ fi
 echo "running oxlint 󰎙 ..."
 npx oxlint --fix $(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
 echo "checking backend ..............."
-cd ../backend
-echo "running golangci-lint  ......"
-golangci-lint run -v
-go mod tidy -v
-echo "running go fmt  ...."
-go fmt
-echo "Running Go tests  .."
-cd tests
-go test -v
-cd ../../
-git add $(cat frontend/.husky/staged-files)
-echo "All checks passed! 🎉"
+BACKEND_FILES=$(cat .husky/staged-files | grep '^backend/.*\.\(go\)$' | sed 's/^backend\///')
+if [ -z "$BACKEND_FILES" ]; then
+  echo "All checks passed! 🎉"
+  exit 0
+else
+  echo "running golangci-lint  ......"
+  cd ../backend
+  golangci-lint run -v
+  go mod tidy -v
+  echo "running go fmt  ...."
+  go fmt
+  echo "Running Go tests  .."
+  cd tests
+  go test -v
+  cd ../../
+  git add $(cat frontend/.husky/staged-files)
+  echo "All checks passed! 🎉"
+fi
