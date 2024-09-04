@@ -161,10 +161,9 @@ func seedTestData(db *gorm.DB) {
 			}
 			if rand.Float32() < 0.4 { // 40% chance to create an outcome
 				outcome := models.Outcome{
-					UserID:      user.ID,
-					ProgramID:   prog.ID,
-					ProgramName: prog.Name,
-					Type:        models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+					UserID:    user.ID,
+					ProgramID: prog.ID,
+					Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 				}
 				if err := db.Create(&outcome).Error; err != nil {
 					log.Printf("Failed to create outcome: %v", err)

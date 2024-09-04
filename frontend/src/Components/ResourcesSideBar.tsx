@@ -6,6 +6,7 @@ import WikiImg from '../../public/wikipedia.png';
 import StaticContentCard from './StaticContentCard';
 import ResourcesCategoryCard from './ResourcesCategoryCard';
 
+// this isnt best practice but this is just a temp solution so will change in future & creat a component if need be
 const KolibriCard = () => {
     return (
         <StaticContentCard

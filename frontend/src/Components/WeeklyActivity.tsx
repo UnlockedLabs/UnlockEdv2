@@ -11,13 +11,16 @@ import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
 import { RecentActivity } from '@/common';
 
-const WeekActivityChart = ({ data }: { data: any }) => {
+const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
     const { theme } = useContext(ThemeContext);
     var lineColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
     var gridColor = theme == 'light' ? '#ECECEC' : '#737373';
     var backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
 
-    const result: RecentActivity[] = new Array(7);
+    const result: RecentActivity[] = Array.from(
+        { length: 7 },
+        () => ({}) as RecentActivity
+    );
     let currentDate = new Date();
 
     for (let i = 6; i >= 0; i--) {

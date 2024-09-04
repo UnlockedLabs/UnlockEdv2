@@ -168,6 +168,28 @@ export interface AdminDashboardJoin {
     facility_name: string;
 }
 
+export interface StudentDashboardJoin {
+    enrollments: CurrentEnrollment[];
+    recent_programs: RecentProgram[];
+    top_programs: string[];
+    week_activity: RecentActivity[];
+}
+
+export interface CurrentEnrollment {
+    alt_name: string;
+    name: string;
+    provider_platform_name: string;
+    external_url: string;
+    total_activity_time: number;
+}
+export interface RecentProgram {
+    program_name: string;
+    course_progress: string;
+    alt_name: string;
+    thumbnail_url: string;
+    provider_platform_name: string;
+    external_url: string;
+}
 export interface ProgramMilestones {
     name: string;
     milestones: number;
