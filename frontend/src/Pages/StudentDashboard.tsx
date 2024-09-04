@@ -12,11 +12,12 @@ import {
     ArrowRightIcon,
     BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
+import { RecentProgram, StudentDashboardJoin } from '@/common';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { data, error, isLoading } = useSWR<any>(
+    const { data, error, isLoading } = useSWR<StudentDashboardJoin>(
         `/api/users/${user.id}/student-dashboard`
     );
     if (isLoading) return <div></div>;
@@ -59,9 +60,12 @@ export default function StudentDashboard() {
                         Popular Courses on UnlockEd
                     </h3>
                     <ul className="space-y-3 mt-3">
-                        {data.top_programs.map((name: string) => {
+                        {data.top_programs.map((name: string, idx: number) => {
                             return (
-                                <li className="body-small flex flex-row gap-2 content-center">
+                                <li
+                                    className="body-small flex flex-row gap-2 content-center"
+                                    key={idx}
+                                >
                                     <AcademicCapIcon className="w-4" />
                                     <p className="line-clamp-1">{name}</p>
                                 </li>
@@ -82,15 +86,17 @@ export default function StudentDashboard() {
                     <div
                         className={`gap-5 grid grid-cols-3 ${data.recent_programs.length < 2 ? '!grid-cols-2' : ''}`}
                     >
-                        {data?.recent_programs.map((course, index) => {
-                            return (
-                                <CourseCard
-                                    course={course}
-                                    recent={true}
-                                    key={index}
-                                />
-                            );
-                        })}
+                        {data?.recent_programs.map(
+                            (course: RecentProgram, index: number) => {
+                                return (
+                                    <CourseCard
+                                        course={course}
+                                        recent={true}
+                                        key={index}
+                                    />
+                                );
+                            }
+                        )}
                         {data.recent_programs.length < 3 && (
                             <ExploreCourseCatalogCard />
                         )}
