@@ -148,9 +148,6 @@ export default function CatalogCourseCard({
                         <p className="body-small line-clamp-2">
                             {course.description}
                         </p>
-                        {/*<div className="flex flex-col sm:flex-row flex-wrap py-1 mt-2 gap-2">*/}
-                        {/*    {programPill}  {outcomePills}*/}
-                        {/*</div>*/}
                         <div className="flex flex-col sm:flex-row flex-wrap py-1 mt-2 space-y-2 sm:space-y-0 sm:gap-2">
                             {programPill} {outcomePills}
                         </div>
