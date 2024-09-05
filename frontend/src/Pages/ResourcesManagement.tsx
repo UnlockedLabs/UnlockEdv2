@@ -3,7 +3,7 @@ import Modal, { ModalType } from '../Components/Modal';
 import Toast, { ToastState } from '../Components/Toast';
 import AddCategoryForm from '../Components/forms/AddCategoryForm';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
-import { Category, CategoryLink, Resource } from '../common';
+import { ResourceCategory, ResourceLink } from '../common';
 import { PlusCircleIcon, DocumentCheckIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/solid';
 import axios from 'axios';
@@ -20,7 +20,7 @@ interface ToastProps {
 export default function ResourcesManagement() {
     const { data, error, mutate, isLoading } = useSWR('/api/left-menu');
 
-    const [categoryList, setCategoryList] = useState(Array<Category>);
+    const [categoryList, setCategoryList] = useState(Array<ResourceCategory>);
     const [categoryToDelete, setCategoryToDelete] = useState<number | null>(
         null
     );
@@ -39,11 +39,11 @@ export default function ResourcesManagement() {
     useEffect(() => {
         if (data !== undefined) {
             const updatedData = data.data.map(
-                (category: Resource) =>
+                (category: ResourceCategory) =>
                     ({
                         ...category,
                         id: Math.random()
-                    }) as Resource
+                    }) as ResourceCategory
             );
             setCategoryList(updatedData);
         }
@@ -146,8 +146,12 @@ export default function ResourcesManagement() {
         setCategoryList(newCategories);
     }
 
-    function addLink(category: Category, newTitle: string, newURL: string) {
-        const newLink: CategoryLink = {};
+    function addLink(
+        category: ResourceCategory,
+        newTitle: string,
+        newURL: string
+    ) {
+        const newLink: ResourceLink = {};
         newLink[newTitle] = newURL;
         const newCategoryList = categoryList.map((c, _) => {
             if (c == category) {
@@ -159,7 +163,10 @@ export default function ResourcesManagement() {
         setCategoryList(newCategoryList);
     }
 
-    function deleteLink(category: Category, activeLinkToDelete: CategoryLink) {
+    function deleteLink(
+        category: ResourceCategory,
+        activeLinkToDelete: ResourceLink
+    ) {
         const newCategoryList = categoryList.map((c, _) => {
             if (c == category) {
                 // delete link of the category
@@ -171,7 +178,7 @@ export default function ResourcesManagement() {
     }
 
     function moveLink(
-        category: Category,
+        category: ResourceCategory,
         linkIndex: number,
         direction: 'up' | 'down'
     ) {
@@ -198,7 +205,7 @@ export default function ResourcesManagement() {
     }
 
     function updateLink(
-        category: Category,
+        category: ResourceCategory,
         linkIndex: number,
         newLinkPair: any
     ) {

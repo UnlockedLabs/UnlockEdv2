@@ -66,14 +66,14 @@ export interface ServerResponse<T> {
     data: Array<T>;
 }
 
-export interface Category {
+export interface ResourceCategory {
     id: number;
     name: string;
-    links: Array<CategoryLink>;
+    links: Array<ResourceLink>;
     rank: number;
 }
 
-export interface CategoryLink {
+export interface ResourceLink {
     [linkName: string]: string;
 }
 
@@ -181,14 +181,4 @@ export interface ProgramActivity {
 export interface RecentActivity {
     date: string;
     delta: number;
-}
-
-export interface Link {
-    [name: string]: string;
-}
-
-export interface Resource {
-    name: string;
-    links: Array<Link>;
-    rank: number;
 }

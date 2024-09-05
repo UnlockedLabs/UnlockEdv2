@@ -1,4 +1,4 @@
-import { CategoryLink } from '@/common';
+import { ResourceLink } from '@/common';
 import { useState } from 'react';
 
 export default function LinkItem({
@@ -20,7 +20,7 @@ export default function LinkItem({
                 defaultValue={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={() => {
-                    const newLinkPair: CategoryLink = {};
+                    const newLinkPair: ResourceLink = {};
                     newLinkPair[name] = url;
                     callUpdateLink(newLinkPair);
                 }}
@@ -31,7 +31,7 @@ export default function LinkItem({
                 defaultValue={url}
                 onChange={(e) => setURL(e.target.value)}
                 onBlur={() => {
-                    const newLinkPair: CategoryLink = {};
+                    const newLinkPair: ResourceLink = {};
                     newLinkPair[name] = url;
                     callUpdateLink(newLinkPair);
                 }}
