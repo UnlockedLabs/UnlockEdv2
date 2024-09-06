@@ -3,8 +3,13 @@ services:
   kolibri:
     image: unlockedlabs.org/kolibri:latest
     environment:
-      CLIENT_ID: #placeholder for generated
-      CLIENT_SECRET: #client on first login
+      CLIENT_ID:  # replace with generated client ID
+      CLIENT_SECRET:  # replace with generated client secret
+      KOLIBRI_OIDC_JWKS_URI: http://hydra:4444/.well-known/jwks.json
+      KOLIBRI_OIDC_AUTHORIZATION_ENDPOINT: http://hydra:4444/oauth2/auth
+      KOLIBRI_OIDC_TOKEN_ENDPOINT: http://hydra:4444/oauth2/token
+      KOLIBRI_OIDC_USERINFO_ENDPOINT: http://hydra:4444/userinfo
+      KOLIBRI_OIDC_CLIENT_URL: http://127.0.0.1:8000
     ports:
       - 8000:8000
     networks:

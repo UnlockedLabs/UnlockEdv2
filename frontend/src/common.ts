@@ -108,6 +108,7 @@ export interface Program {
     created_at: Date;
     updated_at: Date;
 }
+
 export interface CourseCatalogue {
     key: [number, string, boolean];
     program_id: number;

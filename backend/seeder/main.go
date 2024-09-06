@@ -61,6 +61,10 @@ func seedTestData(db *gorm.DB) {
 			log.Printf("Failed to create platform: %v", err)
 		}
 	}
+	var newPlatforms []models.ProviderPlatform
+	if err := db.Find(&newPlatforms).Error; err != nil {
+		log.Fatal("Failed to get platforms from db")
+	}
 	userFile, err := os.ReadFile("backend/tests/test_data/users.json")
 	if err != nil {
 		log.Printf("Failed to read test data: %v", err)
@@ -69,23 +73,23 @@ func seedTestData(db *gorm.DB) {
 	if err := json.Unmarshal(userFile, &users); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	for idx, u := range users {
-		u.Password = "ChangeMe!"
-		if err := u.HashPassword(); err != nil {
+	for idx := range users {
+		users[idx].Password = "ChangeMe!"
+		if err := users[idx].HashPassword(); err != nil {
 			log.Fatalf("unable to hash user password")
 		}
-		log.Printf("Creating user %s", u.Username)
-		if err := db.Create(&u).Error; err != nil {
+		log.Printf("Creating user %s", users[idx].Username)
+		if err := db.Create(&users[idx]).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)
 		}
-		if err := testServer.HandleCreateUserKratos(u.Username, "ChangeMe!"); err != nil {
+		if err := testServer.HandleCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
 			log.Fatalf("unable to create test user in kratos")
 		}
-		for i := 0; i < len(platform); i++ {
+		for i := 0; i < len(newPlatforms); i++ {
 			mapping := models.ProviderUserMapping{
-				UserID:             u.ID,
-				ProviderPlatformID: platform[i].ID,
-				ExternalUsername:   u.Username,
+				UserID:             users[idx].ID,
+				ProviderPlatformID: newPlatforms[i].ID,
+				ExternalUsername:   users[idx].Username,
 				ExternalUserID:     strconv.Itoa(idx),
 			}
 			if err = db.Create(&mapping).Error; err != nil {
@@ -101,18 +105,10 @@ func seedTestData(db *gorm.DB) {
 	if err := json.Unmarshal(progs, &programs); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	for _, p := range programs {
-		if err := db.Create(&p).Error; err != nil {
+	for idx := range programs {
+		if err := db.Create(&programs[idx]).Error; err != nil {
 			log.Printf("Failed to create program: %v", err)
 		}
-	}
-	var milestones []models.Milestone
-	mstones, err := os.ReadFile("backend/tests/test_data/milestones.json")
-	if err != nil {
-		log.Printf("Failed to read test data: %v", err)
-	}
-	if err := json.Unmarshal(mstones, &milestones); err != nil {
-		log.Printf("Failed to unmarshal test data: %v", err)
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}

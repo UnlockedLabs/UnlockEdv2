@@ -58,5 +58,6 @@ oidc:
   subject_identifiers:
     supported_types:
       - pairwise
+      - public
     pairwise:
       salt: 2839o82hy2839OO#@#$@OFw@ksj8*^@*^$LSwsifw2692oCHANGE_ME_IN_PROD
