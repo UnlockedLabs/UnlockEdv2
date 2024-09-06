@@ -16,8 +16,14 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 ### Dependencies (Local)
 
+**Please ensure you have the following installed properly before the further steps**
+
 - Go 1.23
-- Node.js > 18.0
+
+- Node.js >= v18.0
+
+- Yarn 1.22.22
+
 - Docker && Docker-Compose
 
 ### Dependencies (Deployment/Production)
@@ -29,21 +35,29 @@ If you would like to contribute, please have a look at our [contribution guideli
 
 ### Steps
 
-- Clone the repository
+- Clone the repository.
 
-- `cp .env.example .env`
+- `cp .env.example .env`.
 
-- run `make init` to install dependencies and setup git hooks
+- run `make init` to install dependencies, setup git hooks, and run the containers.
 
-- run `make dev` to start the development environment in docker compose
+- run `make migrate` to run the initial migrations and populate database tables.
 
-NOTE: you must be sure to use `127.0.0.1` in place of `localhost`, as the cookies required for authentication are not shared between the two,
+- Optionally, If you wish to seed the database with some basic test data, run `make seed`.
+
+
+Subsequent runs can be done with `make dev`, which will start all the necessary containers
+with hot reloading on the client and the backend.
+
+
+**NOTE:** you _must_ be sure to use `127.0.0.1` in place of `localhost` in your browser, as the cookies required for authentication are not shared between the two,
 and this can cause bad states in the browser that will prevent successful login/auth flow.
 
 Login with `SuperAdmin` and password: `ChangeMe!`
 
 You will be prompted immediately to set a new password and name for the default facility, and then you
 will be redirected to the dashboard.
+
 
 **Integrations:**
 
@@ -63,7 +77,7 @@ will be redirected to the dashboard.
 
 ### To migrate the database to a fresh state, run `make migrate-fresh` (you can do this while docker is running with all the services, but you must restart the server (e.g. `docker restart unlockedv2-server-1` if your repo directory is called UnlockEdv2)
 
-### To seed the database with some basic test data, run `make seed`
+
 
 ### **Quick fixes to common issues with development**
 

@@ -46,6 +46,9 @@ func main() {
 	if err := goose.Up(db, migrationDir); err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
+	if *fresh {
+		MigrateFresh(db)
+	}
 	log.Println("Migrations completed successfully")
 	os.Exit(0)
 }
@@ -95,6 +98,7 @@ func syncOryKratos() error {
 			log.Fatal("unable to delete identity from Ory Kratos")
 			continue
 		} else {
+			log.Println("identity deleted successfully")
 			continue
 		}
 	}

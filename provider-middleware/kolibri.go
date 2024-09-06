@@ -135,7 +135,7 @@ type KolibriActivity struct {
 }
 
 func (ks *KolibriService) ImportActivityForProgram(programIdPair map[string]interface{}, db *gorm.DB) error {
-	programId := int(programIdPair["id"].(float64))
+	programId := int(programIdPair["program_id"].(float64))
 	externalId := programIdPair["external_id"].(string)
 	sql := `SELECT id, user_id, time_spent, completion_timestamp, content_id, progress, kind FROM logger_contentsummarylog WHERE channel_id = ?`
 	var activities []KolibriActivity

@@ -61,9 +61,7 @@ export default function PageNav({
                         </li>
                     )}
 
-                    {path.map((p) => (
-                        <li key={p}>{p}</li>
-                    ))}
+                    {path && path.map((p) => <li key={p}>{p}</li>)}
                 </ul>
             </div>
             <div className="navbar-end">

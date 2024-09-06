@@ -43,54 +43,92 @@ export default function App() {
         },
         {
             path: '/dashboard',
-            element: WithAuth({ children: <Dashboard /> }),
+            element: (
+                <WithAuth>
+                    <Dashboard />
+                </WithAuth>
+            ),
             errorElement: <Error />
         },
         {
             path: '/users',
-            element: WithAdmin({ children: <Users /> }),
+            element: (
+                <WithAdmin>
+                    <Users />
+                </WithAdmin>
+            ),
             errorElement: <Error />
         },
         {
             path: '/resources-management',
-            element: WithAdmin({ children: <ResourcesManagement /> }),
+            element: (
+                <WithAdmin>
+                    <ResourcesManagement />
+                </WithAdmin>
+            ),
             errorElement: <Error />
         },
         {
             path: '/reset-password',
-            element: WithAuth({ children: <ResetPassword /> }),
+            element: (
+                <WithAuth>
+                    <ResetPassword />
+                </WithAuth>
+            ),
             errorElement: <Error />
         },
         {
             path: '/consent',
-            element: WithAuth({
-                children: <Consent />
-            }),
+            element: (
+                <WithAuth>
+                    <Consent />
+                </WithAuth>
+            ),
             errorElement: <Error />
         },
         {
             path: '/provider-platform-management',
-            element: WithAdmin({ children: <ProviderPlatformManagement /> }),
+            element: (
+                <WithAdmin>
+                    <ProviderPlatformManagement />
+                </WithAdmin>
+            ),
             errorElement: <Error />
         },
         {
             path: '/my-courses',
-            element: WithAuth({ children: <MyCourses /> }),
+            element: (
+                <WithAuth>
+                    <MyCourses />
+                </WithAuth>
+            ),
             errorElement: <Error />
         },
         {
             path: '/my-progress',
-            element: WithAuth({ children: <MyProgress /> }),
+            element: (
+                <WithAuth>
+                    <MyProgress />
+                </WithAuth>
+            ),
             errorElement: <Error />
         },
         {
             path: '/course-catalog',
-            element: WithAuth({ children: <CourseCatalog /> }),
+            element: (
+                <WithAuth>
+                    <CourseCatalog />
+                </WithAuth>
+            ),
             errorElement: <Error />
         },
         {
             path: '/provider-users/:providerId',
-            element: WithAdmin({ children: <ProviderUserManagement /> }),
+            element: (
+                <WithAdmin>
+                    <ProviderUserManagement />
+                </WithAdmin>
+            ),
             errorElement: <Error />
         },
         {
@@ -99,9 +137,12 @@ export default function App() {
         },
         {
             path: '/*',
-            element: WithAuth({
-                children: <UnauthorizedNotFound which="notFound" />
-            })
+            element: (
+                <WithAuth>
+                    <UnauthorizedNotFound which="notFound" />
+                </WithAuth>
+            ),
+            errorElement: <Error />
         }
     ]);
 

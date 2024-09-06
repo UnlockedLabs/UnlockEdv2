@@ -92,17 +92,33 @@ export default function LoginForm() {
             window.location.replace(BROWSER_URL);
             return;
         }
-        let url = kratosUrl + queryParams.get('flow');
-        const resp = await axios.get(url);
-        if (resp.status !== 200) {
-            console.error('Error initializing login flow');
-            return;
+        const flowId = queryParams.get('flow');
+        let url = kratosUrl + flowId;
+
+        try {
+            const resp = await axios.get(url);
+            if (resp.status !== 200 || !resp.data) {
+                console.error(
+                    'Error initializing login flow or response data is missing'
+                );
+                return;
+            }
+            if (
+                !resp.data.id ||
+                !resp.data.oauth2_login_challenge ||
+                !resp.data.ui?.nodes[0]?.attributes?.value
+            ) {
+                console.error('Required fields from flow are missing');
+                return;
+            }
+            return {
+                flow_id: resp.data.id,
+                challenge: resp.data.oauth2_login_challenge,
+                csrf_token: resp.data.ui.nodes[0].attributes.value
+            };
+        } catch (error) {
+            console.error('Failed to fetch flow data', error);
         }
-        return {
-            flow_id: resp.data.id,
-            challenge: resp.data.oauth2_login_challenge,
-            csrf_token: resp.data.ui.nodes[0].attributes.value
-        };
     };
 
     return (

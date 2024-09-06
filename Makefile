@@ -1,6 +1,3 @@
-INSTALL_GOOSE=go install github.com/pressly/goose/v3/cmd/goose@latest
-INSTALL_AIR=go install github.com/air-verse/air@latest
-INIT_HOOKS=cd frontend && yarn prepare && cd ..
 DOCKER_COMPOSE=docker-compose.yml
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
 MIGRATION_DIR=-dir backend/migrations
@@ -43,8 +40,9 @@ reset: ascii_art
 
 init: ascii_art
 	@echo 'Installing dependencies...'
-	$(INSTALL_GOOSE) && $(INIT_HOOKS) && $(INSTALL_AIR)
+	go install github.com/pressly/goose/v3/cmd/goose@latest && go install github.com/air-verse/air@latest && cd frontend && yarn install && yarn prepare && cd ..
 	@echo 'Dependencies installed successfully.'
+	docker-compose up $(BUILD_RECREATE)
 
 dev: ascii_art
 	docker-compose up $(BUILD_RECREATE)
