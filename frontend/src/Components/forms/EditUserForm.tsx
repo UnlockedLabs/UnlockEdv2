@@ -1,11 +1,11 @@
 import { User, UserRole } from '../../common';
-import axios from 'axios';
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';
+import API from '@/api/api';
 
 type Inputs = {
     name_first: string;
@@ -53,23 +53,21 @@ export default function EditUserForm({
     }
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        try {
-            setErrorMessage('');
-            const cleanData = diffFormData(data, user);
-            await axios.patch(`/api/users/${user.id}`, cleanData);
-
-            onSuccess();
-        } catch (error: any) {
-            const response = error.response.data.trim();
-            if (response === 'userexists') {
+        setErrorMessage('');
+        const cleanData = diffFormData(data, user);
+        const resp = await API.patch(`users/${user.id}`, cleanData);
+        if (!resp.success) {
+            const msg = resp.message;
+            if (msg === 'userexists') {
                 setError('username', {
                     type: 'custom',
                     message: 'Username already exists'
                 });
             } else {
-                setErrorMessage(response);
+                setErrorMessage(msg);
             }
         }
+        onSuccess();
     };
 
     return (

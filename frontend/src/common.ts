@@ -13,12 +13,33 @@ export interface User {
     username: string;
     role: string;
     email: string;
+    password_reset?: boolean;
     [key: string]: any;
 }
 
 export interface UserWithMappings {
     User: User;
     logins: Array<ProviderMapping>;
+}
+
+export interface AuthResponse {
+    redirect_to: string;
+}
+export interface NewUserResponse {
+    user: User;
+    temp_password: string;
+}
+
+export interface ResetPasswordResponse {
+    temp_password: string;
+    message: string;
+}
+
+export interface Facility {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface ProviderUser {
@@ -47,12 +68,6 @@ export interface ProviderMapping {
     updated_at: Date;
 }
 
-export interface PaginatedResponse<T> {
-    message: string;
-    data: Array<T>;
-    meta: PaginationMeta;
-}
-
 export interface PaginationMeta {
     total: number;
     current_page: number;
@@ -63,7 +78,8 @@ export interface PaginationMeta {
 export interface ServerResponse<T> {
     [key: string]: any;
     message: string;
-    data: Array<T>;
+    data: Array<T> | T | null;
+    pagination?: PaginationMeta;
 }
 
 export interface Category {
@@ -107,6 +123,29 @@ export interface Program {
     external_url: string;
     created_at: Date;
     updated_at: Date;
+}
+export interface Outcome {
+    id: number;
+    type: string;
+    program_id: number;
+    user_id: number;
+    value: string;
+}
+export interface UserProgramsInfo {
+    num_completed: number;
+    total_time: number;
+    programs: UserPrograms[];
+}
+export interface UserPrograms {
+    id: number;
+    thumbnail_url: string;
+    program_name: string;
+    provider_platform_name: string;
+    external_url: string;
+    course_progress: number;
+    is_favorited: boolean;
+    total_time: number;
+    grade?: string;
 }
 
 export interface CourseCatalogue {

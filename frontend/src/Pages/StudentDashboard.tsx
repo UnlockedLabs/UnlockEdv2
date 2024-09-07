@@ -12,17 +12,18 @@ import {
     ArrowRightIcon,
     BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
-import { RecentProgram, StudentDashboardJoin } from '@/common';
+import { RecentProgram, ServerResponse, StudentDashboardJoin } from '@/common';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { data, error, isLoading } = useSWR<StudentDashboardJoin>(
-        `/api/users/${user.id}/student-dashboard`
-    );
-    if (isLoading) return <div></div>;
+    const { data, error, isLoading } = useSWR<
+        ServerResponse<StudentDashboardJoin>
+    >(`/api/users/${user.id}/student-dashboard`);
+    const userData = data?.data as StudentDashboardJoin;
+
+    if (isLoading) return <div>Loading...</div>;
     if (error) return <Error />;
-    console.log(data);
 
     const ExploreCourseCatalogCard = () => {
         return (
@@ -60,17 +61,19 @@ export default function StudentDashboard() {
                         Popular Courses on UnlockEd
                     </h3>
                     <ul className="space-y-3 mt-3">
-                        {data.top_programs.map((name: string, idx: number) => {
-                            return (
-                                <li
-                                    className="body-small flex flex-row gap-2 content-center"
-                                    key={idx}
-                                >
-                                    <AcademicCapIcon className="w-4" />
-                                    <p className="line-clamp-1">{name}</p>
-                                </li>
-                            );
-                        })}
+                        {userData.top_programs.map(
+                            (name: string, idx: number) => {
+                                return (
+                                    <li
+                                        className="body-small flex flex-row gap-2 content-center"
+                                        key={idx}
+                                    >
+                                        <AcademicCapIcon className="w-4" />
+                                        <p className="line-clamp-1">{name}</p>
+                                    </li>
+                                );
+                            }
+                        )}
                     </ul>
                 </div>
             </div>
@@ -84,9 +87,9 @@ export default function StudentDashboard() {
                 <h2 className="mt-7"> Pick Up Where You Left Off</h2>
                 <div className="mt-3 bg-base-teal p-6 card">
                     <div
-                        className={`gap-5 grid grid-cols-3 ${data.recent_programs.length < 2 ? '!grid-cols-2' : ''}`}
+                        className={`gap-5 grid grid-cols-3 ${userData.recent_programs.length < 2 ? '!grid-cols-2' : ''}`}
                     >
-                        {data?.recent_programs.map(
+                        {userData?.recent_programs.map(
                             (course: RecentProgram, index: number) => {
                                 return (
                                     <CourseCard
@@ -97,10 +100,10 @@ export default function StudentDashboard() {
                                 );
                             }
                         )}
-                        {data.recent_programs.length < 3 && (
+                        {userData.recent_programs.length < 3 && (
                             <ExploreCourseCatalogCard />
                         )}
-                        {data.recent_programs.length < 2 && (
+                        {userData.recent_programs.length < 2 && (
                             <PopularCoursesCard />
                         )}
                     </div>
@@ -108,7 +111,7 @@ export default function StudentDashboard() {
                 <div className="flex flex-row gap-12 mt-12">
                     <div className="w-1/2 h-[254px] bg-base-teal card">
                         <h2 className="mt-4 ml-4">My Activity</h2>
-                        <WeekActivityChart data={data?.week_activity} />
+                        <WeekActivityChart data={userData?.week_activity} />
                     </div>
                     <div className="w-1/2 h-[254px] bg-base-teal card">
                         <h2 className="mt-4 ml-4">Learning Time</h2>
@@ -128,8 +131,8 @@ export default function StudentDashboard() {
                                 <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
                                     {!error &&
                                     !isLoading &&
-                                    data.enrollments !== null ? (
-                                        data?.enrollments?.map(
+                                    userData.enrollments !== null ? (
+                                        userData?.enrollments?.map(
                                             (course: any, index: number) => {
                                                 const totalTime =
                                                     convertSeconds(
@@ -166,8 +169,8 @@ export default function StudentDashboard() {
                 <div className="mt-3 bg-base-teal p-6 card">
                     {!error && !isLoading && (
                         <div className="flex flex-col gap-3">
-                            {data.enrollments ? (
-                                data?.enrollments?.map((course: any) => {
+                            {userData.enrollments ? (
+                                userData?.enrollments?.map((course: any) => {
                                     return (
                                         <CurrentlyEnrolledClass
                                             course={course}

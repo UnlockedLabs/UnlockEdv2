@@ -7,8 +7,8 @@ import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import ProgressBar from './ProgressBar';
 import { CourseStatus } from '@/Pages/MyCourses';
 import { ViewType } from './ToggleView';
-import axios from 'axios';
 import React from 'react';
+import API from '@/api/api';
 
 // this might also want to live within courses, as the type of course it is (ie currently enrolled, completed, favorited, pending)
 // recent would probably be a boolean, which would only need to be accessed on the homepage
@@ -33,8 +33,7 @@ export default function EnrolledCourseCard({
 
     function updateFavorite(e: React.MouseEvent) {
         e.preventDefault();
-        axios
-            .put(`/api/programs/${course.id}/save`)
+        API.put(`programs/${course.id}/save`, {})
             .then((response) => {
                 callMutate();
                 console.log(response);

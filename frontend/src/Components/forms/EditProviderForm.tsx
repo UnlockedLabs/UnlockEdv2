@@ -4,7 +4,6 @@ import {
     ProviderPlatformType
 } from '@/common';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
-import axios from 'axios';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import {
@@ -15,6 +14,7 @@ import {
     SubmitButton
 } from '../inputs';
 import { ToastState } from '../Toast';
+import API from '@/api/api';
 
 type ProviderInputs = {
     id: number;
@@ -65,16 +65,15 @@ export default function EditProviderForm({
             setShowAccessKey(true);
             return;
         }
-        try {
-            const response = await axios.get(
-                `/api/provider-platforms/${provider.id}`
-            );
-            setAccessKey(response.data.data[0]['access_key']);
-            setShowAccessKey(true);
-        } catch (error) {
-            console.log(error);
-            setErrorMessage(error.response.data.message);
+        const response = await API.get<ProviderPlatform>(
+            `provider-platforms/${provider.id}`
+        );
+        if (!response.success) {
+            setErrorMessage('Failed to get access key');
+            return;
         }
+        setAccessKey(response.data['access_key']);
+        setShowAccessKey(true);
     };
 
     function diffFormData(formData: any, currentUserData: any) {
@@ -92,26 +91,17 @@ export default function EditProviderForm({
 
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         const cleanData = diffFormData(data, provider);
-        try {
-            setErrorMessage('');
-            const response = await axios.patch(
-                `/api/provider-platforms/${provider?.id}`,
-                cleanData
-            );
-            if (response.status !== 201) {
-                onSuccess(
-                    ToastState.error,
-                    'Failed to update provider platform'
-                );
-            }
-            reset();
-            onSuccess(
-                ToastState.success,
-                'Provider platform updated successfully'
-            );
-        } catch (error: any) {
-            setErrorMessage(error.response.data.message);
+        setErrorMessage('');
+        const response = await API.patch(
+            `provider-platforms/${provider?.id}`,
+            cleanData
+        );
+        if (!response.success) {
+            onSuccess(ToastState.error, 'Failed to update provider platform');
+            return;
         }
+        reset();
+        onSuccess(ToastState.success, 'Provider platform updated successfully');
     };
 
     function closeAndReset() {

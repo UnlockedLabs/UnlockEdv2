@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useParams } from 'react-router-dom';
 import {
-    PaginatedResponse,
+    ServerResponse,
     PaginationMeta,
     ProviderPlatform,
     ProviderUser,
@@ -19,6 +18,7 @@ import useSWR from 'swr';
 import ConfirmImportAllUsersForm from '@/Components/forms/ConfirmImportAllUsersForm';
 import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
+import API from '@/api/api';
 
 export default function ProviderUserManagement() {
     const mapUserModal = useRef<null | HTMLDialogElement>(null);
@@ -49,9 +49,11 @@ export default function ProviderUserManagement() {
         message: '',
         reset: () => {}
     });
-    const { data, mutate } = useSWR<PaginatedResponse<ProviderUser>>(
+
+    const { data, mutate } = useSWR<ServerResponse<ProviderUser>>(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
+    const providerData = (data?.data as ProviderUser[]) ?? [];
 
     const changePage = (page: number) => {
         setCurrentPage(page);
@@ -65,6 +67,7 @@ export default function ProviderUserManagement() {
     };
 
     const handleRefetch = () => {
+        setError(false);
         setCache(true);
         mutate();
     };
@@ -87,39 +90,38 @@ export default function ProviderUserManagement() {
     };
 
     async function handleImportAllUsers() {
-        try {
-            let res = await axios.post(
-                `/api/actions/provider-platforms/${providerId}/import-users`
+        let res = await API.post(
+            `actions/provider-platforms/${providerId}/import-users`,
+            {}
+        );
+        if (res.success) {
+            showToast(
+                'Users imported successfully, please check for accounts not created',
+                ToastState.success
             );
-            if (res.status === 200) {
-                showToast(
-                    'Users imported successfully, please check for accounts not created',
-                    ToastState.success
-                );
-                window.location.reload();
-            }
-        } catch (error: any) {
-            setError(true);
-            showToast('Failed to import users', ToastState.error);
+            window.location.reload();
+        } else {
+            showToast(
+                'error importing users, please check accounts',
+                ToastState.error
+            );
         }
     }
 
     async function handleImportSelectedUsers() {
-        try {
-            let res = await axios.post(
-                `/api/provider-platforms/${providerId}/users/import`,
-                { users: usersToImport }
-            );
-            if (res.status === 200) {
-                showToast(res.data.message, ToastState.success);
-                console.log(res.data.data);
-                setImportedUsers(res.data.data);
-                importedUsersModal.current?.showModal();
-                setUsersToImport([]);
-                mutate();
-                return;
-            }
-        } catch (err: any) {
+        let res = await API.post<UserImports>(
+            `provider-platforms/${providerId}/users/import`,
+            { users: usersToImport }
+        );
+        if (res.success) {
+            showToast(res.message, ToastState.success);
+            console.log(res.data);
+            setImportedUsers(res.data as UserImports[]);
+            importedUsersModal.current?.showModal();
+            setUsersToImport([]);
+            mutate();
+            return;
+        } else {
             setUsersToImport([]);
             showToast(
                 'error importing users, please check accounts',
@@ -171,15 +173,13 @@ export default function ProviderUserManagement() {
 
     useEffect(() => {
         const getData = async () => {
-            try {
-                const res = await axios.get(
-                    `/api/provider-platforms/${providerId}`
-                );
-                if (res.status === 200) {
-                    setProvider(res.data.data);
-                    setIsLoading(false);
-                }
-            } catch (error: any) {
+            const res = await API.get<ProviderPlatform>(
+                `provider-platforms/${providerId}`
+            );
+            if (res.success) {
+                setProvider(res.data as ProviderPlatform);
+                setIsLoading(false);
+            } else {
                 showToast('Failed to fetch provider users', ToastState.error);
             }
         };
@@ -191,7 +191,7 @@ export default function ProviderUserManagement() {
             title="Users"
             path={[
                 'Provider Platforms',
-                `Provider User Management${provider ? ' (' + provider[0]?.name + ')' : ''}`
+                `Provider User Management${provider ? ' (' + provider.name + ')' : ''}`
             ]}
         >
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
@@ -235,8 +235,7 @@ export default function ProviderUserManagement() {
                         <tbody>
                             {!isLoading &&
                                 !error &&
-                                data &&
-                                data.data.map((user: any) => (
+                                providerData.map((user: ProviderUser) => (
                                     <tr
                                         key={user.external_user_id}
                                         className="border-gray-600 table-row"
@@ -300,7 +299,7 @@ export default function ProviderUserManagement() {
                     <div className="flex-col-1 align-middle">
                         per page:
                         <br />
-                        {!isLoading && data && (
+                        {!isLoading && providerData && (
                             <select
                                 className="select select-none select-sm select-bordered"
                                 value={perPage}

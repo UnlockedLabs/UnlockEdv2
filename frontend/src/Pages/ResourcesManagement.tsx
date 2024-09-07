@@ -6,11 +6,11 @@ import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { Category, CategoryLink, Resource } from '../common';
 import { PlusCircleIcon, DocumentCheckIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/solid';
-import axios from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
+import API from '@/api/api';
 
 interface ToastProps {
     state: ToastState;
@@ -19,7 +19,6 @@ interface ToastProps {
 
 export default function ResourcesManagement() {
     const { data, error, mutate, isLoading } = useSWR('/api/left-menu');
-
     const [categoryList, setCategoryList] = useState(Array<Category>);
     const [categoryToDelete, setCategoryToDelete] = useState<number | null>(
         null
@@ -246,37 +245,21 @@ export default function ResourcesManagement() {
             c.id = i;
             return c;
         });
-        try {
-            const response = await axios.put('/api/left-menu', newCategoryList);
-            // check response is okay, and give notification
-            if (response.status !== 201) {
-                // show error
-                setToast({
-                    state: ToastState.error,
-                    message: 'Error Saving Categories'
-                });
-            } else {
-                mutate();
-                // show success
-                setToast({
-                    state: ToastState.success,
-                    message: 'Categories Saved!'
-                });
-            }
-        } catch (err: any) {
-            console.log(err);
-            if (err.response.status == 422) {
-                setToast({
-                    state: ToastState.error,
-                    message: 'All categories must have associated links'
-                });
-            } else {
-                // show general error
-                setToast({
-                    state: ToastState.error,
-                    message: 'Error Saving Categories'
-                });
-            }
+        const response = await API.put('left-menu', newCategoryList);
+        // check response is okay, and give notification
+        if (!response.success) {
+            // show error
+            setToast({
+                state: ToastState.error,
+                message: 'Error Saving Categories'
+            });
+        } else {
+            mutate();
+            // show success
+            setToast({
+                state: ToastState.success,
+                message: 'Categories Saved!'
+            });
         }
     }
 

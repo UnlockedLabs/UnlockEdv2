@@ -3,7 +3,7 @@ import MilestonesBarChart from '@/Components/MilestonesBarChart';
 import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
 import TopProgPieChart from '@/Components/TopProgActivityPieChart';
-import { AdminDashboardJoin } from '@/common';
+import { AdminDashboardJoin, ServerResponse } from '@/common';
 import useSWR from 'swr';
 import convertSeconds from '../Components/ConvertSeconds';
 import { useContext } from 'react';
@@ -11,31 +11,31 @@ import { ThemeContext } from '@/Components/ThemeContext';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
-    const { data, error, isLoading } = useSWR<AdminDashboardJoin>(
-        `/api/users/${user.id}/admin-dashboard`
-    );
+    const { data, error, isLoading } = useSWR<
+        ServerResponse<AdminDashboardJoin>
+    >(`/api/users/${user.id}/admin-dashboard`);
     const { theme } = useContext(ThemeContext);
 
     if (error || isLoading) return <div></div>;
-    const avgActivity = convertSeconds(data.avg_daily_activity);
-    const totalActivity = convertSeconds(data.total_weekly_activity);
-    console.log(data);
+    const activityData = data.data as AdminDashboardJoin;
+    const avgActivity = convertSeconds(activityData.avg_daily_activity);
+    const totalActivity = convertSeconds(activityData.total_weekly_activity);
 
     return (
         <div className="px-8 py-4">
-            <h1 className="text-5xl">{data.facility_name}</h1>
+            <h1 className="text-5xl">{activityData.facility_name}</h1>
             <div className="flex flex-row mt-12 gap-12">
                 <div className="flex flex-col gap-6">
                     <div className="card h-[240px]">
                         <h2 className="card-h-padding">
                             Overall Platform Engagement
                         </h2>
-                        <ActivityChart data={data.monthly_activity} />
+                        <ActivityChart data={activityData.monthly_activity} />
                     </div>
                     <div className="grid grid-cols-3 gap-6">
                         <StatsCard
                             title={'ACTIVE USERS'}
-                            number={`${data.weekly_active_users}`}
+                            number={`${activityData.weekly_active_users}`}
                             label={'students'}
                         />
                         <StatsCard
@@ -51,13 +51,15 @@ export default function AdminDashboard() {
                     </div>
                     <div className="card h-[368px] p-4">
                         <h2>Top Milestone Completion Per Course</h2>
-                        <MilestonesBarChart data={data.program_milestones} />
+                        <MilestonesBarChart
+                            data={activityData.program_milestones}
+                        />
                     </div>
                 </div>
                 {/* Top course engagement */}
                 <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
                     <h2 className="card-h-padding">Top Course Engagement</h2>
-                    <TopProgPieChart data={data.top_program_activity} />
+                    <TopProgPieChart data={activityData.top_program_activity} />
                     <div className="px-4 pb-10">
                         {/* TO DO: caption needs to be added */}
                         <table className="table-2">
@@ -70,7 +72,8 @@ export default function AdminDashboard() {
                             <tbody className="!gap-6">
                                 {!error &&
                                     !isLoading &&
-                                    data.top_program_activity.map(
+                                    activityData &&
+                                    activityData.top_program_activity.map(
                                         (course: any, index: number) => {
                                             var courseTime: string;
                                             if (course.hours_engaged < 1)

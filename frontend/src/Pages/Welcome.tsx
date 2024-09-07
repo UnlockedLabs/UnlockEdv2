@@ -1,24 +1,15 @@
 import { useState, useEffect } from 'react';
 import Brand from '../Components/Brand';
-import axios from 'axios';
-import { BROWSER_URL } from '@/common';
+import { BROWSER_URL, User } from '@/common';
+import API from '@/api/api';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv1Sm.webp');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-
     const checkLoggedIn = async () => {
-        try {
-            const response = await axios.get('/api/auth');
-            if (response.status === 200) {
-                console.log(response.data);
-                setIsLoggedIn(true);
-                return;
-            }
-            return;
-        } catch (error) {
-            console.log('not logged in');
-            return;
+        const user = await API.get<User>(`auth`);
+        if (user.success) {
+            setIsLoggedIn(true);
         }
     };
     useEffect(() => {

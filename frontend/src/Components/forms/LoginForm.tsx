@@ -6,7 +6,8 @@ import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import axios from 'axios';
 import { handleLogout } from '@/AuthContext';
-import { BROWSER_URL } from '@/common';
+import { AuthResponse, BROWSER_URL } from '@/common';
+import API from '@/api/api';
 
 type Inputs = {
     identifier: string;
@@ -29,27 +30,22 @@ export default function LoginForm() {
     const sessionUrl = '/sessions/whoami';
 
     const submit: SubmitHandler<Inputs> = async (data) => {
-        try {
-            const attributes = await initFlow();
-            user ? (data.identifier = user) : data.identifier;
-            const reqBody = { ...data, ...attributes };
-            setErrorMessage('');
-            setProcessing(true);
-            const resp = await axios.post('/api/login', reqBody);
-            if (resp.status === 200) {
-                let location = resp.data.redirect_to;
-                if (!location) {
-                    location = resp.data.redirect_browser_to;
-                }
-                window.location.replace(location);
-                return;
+        const attributes = await initFlow();
+        user ? (data.identifier = user) : data.identifier;
+        const reqBody = { ...data, ...attributes };
+        setErrorMessage('');
+        setProcessing(true);
+        const resp = await API.post<AuthResponse>('login', reqBody);
+        if (resp.success) {
+            let location = (resp.data as AuthResponse).redirect_to;
+            if (!location) {
+                location = resp.data['redirect_browser_to'];
             }
+            window.location.replace(location);
             return;
-        } catch (error: any) {
-            if (error.response.data.redirect_browser_to) {
-                window.location.replace(
-                    error.response.data.redirect_browser_to
-                );
+        } else {
+            if (resp.data['redirect_browser_to']) {
+                window.location.replace(resp.data['redirect_browser_to']);
                 return;
             }
             setProcessing(false);
@@ -70,9 +66,14 @@ export default function LoginForm() {
                         session: checkResp.data,
                         challenge: attributes.challenge
                     };
-                    const resp = await axios.post('/api/auth/refresh', reqBody);
+                    const resp = await API.post<AuthResponse>(
+                        'auth/refresh',
+                        reqBody
+                    );
                     if (resp.status === 200) {
-                        window.location.replace(resp.data.redirect_to);
+                        window.location.replace(
+                            (resp.data as AuthResponse).redirect_to
+                        );
                         return;
                     }
                     return;
@@ -92,33 +93,17 @@ export default function LoginForm() {
             window.location.replace(BROWSER_URL);
             return;
         }
-        const flowId = queryParams.get('flow');
-        let url = kratosUrl + flowId;
-
-        try {
-            const resp = await axios.get(url);
-            if (resp.status !== 200 || !resp.data) {
-                console.error(
-                    'Error initializing login flow or response data is missing'
-                );
-                return;
-            }
-            if (
-                !resp.data.id ||
-                !resp.data.oauth2_login_challenge ||
-                !resp.data.ui?.nodes[0]?.attributes?.value
-            ) {
-                console.error('Required fields from flow are missing');
-                return;
-            }
-            return {
-                flow_id: resp.data.id,
-                challenge: resp.data.oauth2_login_challenge,
-                csrf_token: resp.data.ui.nodes[0].attributes.value
-            };
-        } catch (error) {
-            console.error('Failed to fetch flow data', error);
+        let url = kratosUrl + queryParams.get('flow');
+        const resp = await axios.get(url);
+        if (resp.status !== 200) {
+            console.error('Error initializing login flow');
+            return;
         }
+        return {
+            flow_id: resp.data.id,
+            challenge: resp.data.oauth2_login_challenge,
+            csrf_token: resp.data.ui.nodes[0].attributes.value
+        };
     };
 
     return (

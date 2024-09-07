@@ -1,5 +1,4 @@
-import { ProviderPlatform, UserRole } from '../../common';
-import axios from 'axios';
+import { NewUserResponse, ProviderPlatform, UserRole } from '../../common';
 import { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { ToastState } from '../Toast';
@@ -7,6 +6,7 @@ import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
+import API from '@/api/api';
 
 type Inputs = {
     name_first: string;
@@ -32,33 +32,29 @@ export default function AddUserForm({
     } = useForm<Inputs>();
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        try {
-            setErrorMessage('');
-            const response = await axios.post('/api/users', {
-                user: data,
-                provider_platforms: selectedProviders
-            });
+        setErrorMessage('');
+        const response = await API.post<NewUserResponse>('users', {
+            user: data,
+            provider_platforms: selectedProviders
+        });
 
-            if (response.status !== 201) {
-                onSuccess('', 'Failed to create user', ToastState.error);
-            }
-            reset();
-            onSuccess(
-                response.data.temp_password,
-                'User created successfully with temporary password',
-                ToastState.success
-            );
-        } catch (error: any) {
-            const response = error.response.data.trim();
-            if (response === 'userexists') {
+        if (!response.success) {
+            const msg = response.message.trim();
+            if (msg === 'userexists') {
                 setError('username', {
                     type: 'custom',
                     message: 'Username already exists'
                 });
-            } else {
-                setErrorMessage(error.response.data);
+                onSuccess('', 'Failed to create user', ToastState.error);
+                return;
             }
         }
+        reset();
+        onSuccess(
+            (response.data as NewUserResponse).temp_password,
+            'User created successfully with temporary password',
+            ToastState.success
+        );
     };
 
     const handleAddUserToProviderList = (providerId: number) => {
@@ -73,15 +69,11 @@ export default function AddUserForm({
 
     useEffect(() => {
         const fetchActiveProviders = async () => {
-            try {
-                const resp = await axios.get(
-                    `/api/provider-platforms?only=oidc_enabled`
-                );
-                if (resp.status === 200) {
-                    setProviders(resp.data.data);
-                }
-            } catch (error: any) {
-                setErrorMessage(error.response.data.message);
+            const resp = await API.get<ProviderPlatform>(
+                `provider-platforms?only=oidc_enabled`
+            );
+            if (resp.success) {
+                setProviders(resp.data as ProviderPlatform[]);
             }
         };
         fetchActiveProviders();

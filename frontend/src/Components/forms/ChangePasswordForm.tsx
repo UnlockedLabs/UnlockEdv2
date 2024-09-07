@@ -4,9 +4,9 @@ import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
-
-import axios from 'axios';
 import { useAuth } from '@/AuthContext';
+import API from '@/api/api';
+import { Facility } from '@/common';
 type Inputs = {
     password: string;
     confirm: string;
@@ -16,7 +16,7 @@ type Inputs = {
 export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
-    const [isFacilityDefault, setIsFacilityDefault] = useState(null);
+    const [isFacilityDefault, setIsFacilityDefault] = useState<boolean>(false);
     const auth = useAuth();
 
     const {
@@ -43,14 +43,15 @@ export default function ChangePasswordForm() {
     });
     useEffect(() => {
         const checkFacilityName = async () => {
-            try {
-                const resp = await axios.get('/api/facilities/1');
-                if (resp.status === 200) {
-                    setIsFacilityDefault(resp.data.data[0].name === 'Default');
-                    return;
-                }
-            } catch (error: any) {
-                setIsFacilityDefault(false);
+            if (auth.user.role !== 'admin') {
+                return;
+            }
+            const resp = await API.get<Facility>('facilities/1');
+            if (resp.success) {
+                setIsFacilityDefault(
+                    (resp.data as Facility).name === 'Default'
+                );
+                return;
             }
         };
         checkFacilityName();
@@ -66,25 +67,17 @@ export default function ChangePasswordForm() {
         auth.user.id === 1 && auth.user.role === 'admin' && isFacilityDefault;
 
     const submit: SubmitHandler<Inputs> = async (data) => {
-        try {
-            setErrorMessage('');
-            setProcessing(true);
-            if (data.facility_name) {
-                data.facility_name = data.facility_name.trim();
-            }
-            const response = await axios.post('/api/reset-password', data);
-            if (response.status === 200) {
-                window.location.replace('dashboard');
-            } else {
-                setErrorMessage(`Your passwords did not pass validation, 
+        setErrorMessage('');
+        setProcessing(true);
+        if (data.facility_name) {
+            data.facility_name = data.facility_name.trim();
+        }
+        const response = await API.post('reset-password', data);
+        if (response.success) {
+            window.location.replace('dashboard');
+        } else {
+            setErrorMessage(`Your passwords did not pass validation, 
         please check that they match and are 8 or more characters with at least 1 number.`);
-            }
-        } catch (error: any) {
-            setProcessing(false);
-            setErrorMessage(
-                error.response.data ||
-                    "Your passwords didn't pass validation, please try again."
-            );
             reset();
         }
     };

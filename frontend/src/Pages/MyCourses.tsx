@@ -1,11 +1,11 @@
 import { useAuth } from '@/AuthContext';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import EnrolledCourseCard from '@/Components/EnrolledCourseCard';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ToggleView, { ViewType } from '@/Components/ToggleView';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { Program, ServerResponse } from '@/common';
+import { ServerResponse, UserPrograms, UserProgramsInfo } from '@/common';
 import useSWR from 'swr';
 
 // TO DO: make sure this lives in the right place
@@ -32,26 +32,22 @@ export default function MyCourses() {
     const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
-    const { data, mutate } = useSWR<ServerResponse<Program>>(
+    const { data, mutate, isLoading, error } = useSWR<
+        ServerResponse<UserProgramsInfo>
+    >(
         `/api/users/${user.id}/programs?${
             sort +
             (activeTab !== TabType.All ? `&tags=${activeTab}` : '') +
             (searchTerm ? `&search=${searchTerm}` : '')
         }`
     );
-
-    useEffect(() => {
-        console.log(data);
-    }, [data]);
-
-    function callMutate() {
-        console.log('called');
-        mutate();
-    }
+    const programData = data?.data as UserProgramsInfo;
+    if (isLoading) return <div>Loading...</div>;
+    if (error) return <div>Error loading courses.</div>;
 
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
-        //setPageQuery(1);
+        // setPageQuery(1);
     };
 
     function handleDropdownChange(value: string) {
@@ -106,16 +102,18 @@ export default function MyCourses() {
                 <div
                     className={`grid mt-8 ${activeView == ViewType.Grid ? 'grid-cols-4 gap-6' : 'gap-4'}`}
                 >
-                    {data?.programs?.map((course: any, index: number) => {
-                        return (
-                            <EnrolledCourseCard
-                                course={course}
-                                view={activeView}
-                                callMutate={callMutate}
-                                key={index}
-                            />
-                        );
-                    })}
+                    {programData.programs.map(
+                        (course: UserPrograms, index: number) => {
+                            return (
+                                <EnrolledCourseCard
+                                    course={course}
+                                    view={activeView}
+                                    callMutate={mutate}
+                                    key={index}
+                                />
+                            );
+                        }
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

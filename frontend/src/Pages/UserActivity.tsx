@@ -2,7 +2,7 @@ import Pagination from '../Components/Pagination';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '../Components/inputs/SearchBar';
-import { Activity, PaginatedResponse } from '../common';
+import { Activity, ServerResponse } from '../common';
 import { useState } from 'react';
 import useSWR from 'swr';
 // import { useDebounceValue } from "usehooks-ts";
@@ -20,7 +20,7 @@ export default function UserActivity() {
         `/api/users/activity-log?sort=${sortQuery}&page=${pageQuery}&search=${searchTerm}`
     );
 
-    const userActivityData = data as PaginatedResponse<Activity>;
+    const userActivityData = data as ServerResponse<Activity>;
 
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
@@ -69,6 +69,7 @@ export default function UserActivity() {
                     <tbody>
                         {!isLoading &&
                             !error &&
+                            userActivityData.data &&
                             userActivityData.data.map((activityInstance) => {
                                 const dateTime = new Date(
                                     activityInstance.created_at
