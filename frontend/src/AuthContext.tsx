@@ -7,10 +7,10 @@ import React, {
     Dispatch,
     SetStateAction
 } from 'react';
-import { User } from './types';
 import axios from 'axios';
-import { BROWSER_URL } from './common';
+import { AuthResponse, User, BROWSER_URL } from './common';
 import UnauthorizedNotFound from './Pages/Unauthorized';
+import API from './api/api';
 
 interface AuthContextType {
     user: User | null;
@@ -26,19 +26,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const fetchUser = async () => {
-            try {
-                const response = await axios.get(`/api/auth`);
-                setUser(response.data);
-            } catch (error) {
-                console.log('Authentication check failed', error);
-                if (error.response.status === 401) {
-                    window.location.href = BROWSER_URL;
-                    return;
-                }
-                setUser(null);
-            } finally {
-                setLoading(false);
-            }
+            const response = await API.get<User>(`auth`);
+            setUser(response.data as User);
+            setLoading(false);
         };
         fetchUser();
     }, []);
@@ -70,7 +60,7 @@ export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({
         return null;
     }
     if (user.role === 'admin') {
-        return <div>{children}</div>;
+        return <>{children}</>;
     } else {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
@@ -86,9 +76,11 @@ export const useAuth = () => {
 
 export const handleLogout = async () => {
     try {
-        const resp = await axios.post('/api/logout');
-        if (resp.status === 200) {
-            const logout = await axios.get(resp.data.redirect_to);
+        const resp = await API.post<AuthResponse>('logout', {});
+        if (resp.success) {
+            const logout = await axios.get(
+                (resp.data as AuthResponse).redirect_to
+            );
             if (logout.status === 200) {
                 window.location.href = logout.data.logout_url;
             }

@@ -1,9 +1,14 @@
 import { PieChart, Pie, Legend, Cell, ResponsiveContainer } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
+import { ProgramActivity } from '@/common';
 
-export default function TopProgPieChart({ data }: { data: any }) {
+export default function TopProgPieChart({ data }: { data: ProgramActivity[] }) {
     const { theme } = useContext(ThemeContext);
+    const safeData =
+        data && data.length > 0
+            ? data
+            : [{ program_name: '', hours_engaged: 0 }];
 
     var COLORS = ['#D7F4F1', '#B0DFDA', '#18ABA0', '#005952', '#002E2A'];
     if (theme == 'dark') {
@@ -16,7 +21,7 @@ export default function TopProgPieChart({ data }: { data: any }) {
         <ResponsiveContainer width="100%" height={400}>
             <PieChart>
                 <Pie
-                    data={data}
+                    data={safeData}
                     dataKey="hours_engaged"
                     nameKey="program_name"
                     cx="50%"

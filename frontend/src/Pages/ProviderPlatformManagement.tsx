@@ -10,7 +10,7 @@ import useSWR from 'swr';
 import Toast, { ToastState } from '@/Components/Toast';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
-import axios from 'axios';
+import API from '@/api/api';
 
 interface ToastProps {
     state: ToastState;
@@ -36,10 +36,12 @@ export default function ProviderPlatformManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR(`/api/provider-platforms`);
-
+    } = useSWR<ServerResponse<ProviderPlatform>>(`/api/provider-platforms`);
+    const providerData = providers?.data
+        ? (providers.data as ProviderPlatform[])
+        : [];
     // TO DO: SORT THIS IN THE BACKEND AND RETURN SORTED
-    providers?.data.sort(function (
+    providerData.sort(function (
         providerA: ProviderPlatform,
         providerB: ProviderPlatform
     ) {
@@ -125,9 +127,11 @@ export default function ProviderPlatformManagement() {
     };
 
     const showAuthorizationInfo = async (provider: ProviderPlatform) => {
-        const resp = await axios(`/api/oidc/clients/${provider.oidc_id}`);
-        if (resp.data) {
-            setOidcClient(resp.data.data[0] as OidcClient);
+        const resp = await API.get<OidcClient>(
+            `oidc/clients/${provider.oidc_id}`
+        );
+        if (resp.success) {
+            setOidcClient(resp.data as OidcClient);
             openOidcRegistrationModal.current?.showModal();
             return;
         }
@@ -165,7 +169,7 @@ export default function ProviderPlatformManagement() {
                     </thead>
                     <tbody>
                         {!isLoading && !error ? (
-                            providers.data.map((provider: ProviderPlatform) => {
+                            providerData.map((provider: ProviderPlatform) => {
                                 return (
                                     <ProviderCard
                                         key={provider.id}

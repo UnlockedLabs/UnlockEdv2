@@ -10,17 +10,19 @@ import {
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
 
-const ActivityChart = ({ data }: { data: any }) => {
+const ActivityChart = ({ data }: { data: any[] }) => {
     const { theme } = useContext(ThemeContext);
 
-    var lineColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
-    var gridColor = theme == 'light' ? '#ECECEC' : '#737373';
-    var backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
+    var lineColor = theme === 'light' ? '#18ABA0' : '#61BAB2';
+    var gridColor = theme === 'light' ? '#ECECEC' : '#737373';
+    var backgroundColor = theme === 'light' ? '#FFFFFF' : '#0F2926';
+
+    const safeData = data && data.length > 0 ? data : [{ date: '', delta: 0 }];
 
     return (
         <ResponsiveContainer width="100%" height="100%">
             <LineChart
-                data={data}
+                data={safeData}
                 margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
             >
                 <CartesianGrid stroke={gridColor} />
@@ -32,7 +34,7 @@ const ActivityChart = ({ data }: { data: any }) => {
                 <YAxis
                     dataKey={'delta'}
                     label={{
-                        value: `Hours`,
+                        value: 'Hours',
                         style: { textAnchor: 'middle' },
                         angle: -90,
                         position: 'left',

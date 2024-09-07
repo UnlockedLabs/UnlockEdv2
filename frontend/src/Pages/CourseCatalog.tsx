@@ -4,7 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
 import CatalogCourseCard from '@/Components/CatalogCourseCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { CourseCatalogue, Program, ServerResponse } from '@/common';
+import { CourseCatalogue, ServerResponse } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 
@@ -15,9 +15,10 @@ export default function CourseCatalog() {
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [order, setOrder] = useState('asc');
-    const { data, error, mutate } = useSWR<ServerResponse<Program>>(
+    const { data, error, mutate } = useSWR<ServerResponse<CourseCatalogue>>(
         `/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`
     );
+    const courseData = data?.data as CourseCatalogue[];
 
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
@@ -54,10 +55,10 @@ export default function CourseCatalog() {
                 >
                     {error ? (
                         <p className="text-error">Error loading courses.</p>
-                    ) : data?.length == 0 ? (
+                    ) : courseData?.length == 0 ? (
                         <p className="text-error">No courses to display.</p>
                     ) : (
-                        data?.map((course: CourseCatalogue) => {
+                        courseData?.map((course: CourseCatalogue) => {
                             return (
                                 <CatalogCourseCard
                                     course={course}

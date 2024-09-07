@@ -1,11 +1,11 @@
 import { OidcClient, ProviderPlatform, ServerResponse } from '../../common';
-import axios from 'axios';
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';
 import { ToastState } from '../Toast';
+import API from '@/api/api';
 
 type Inputs = {
     redirect_url: string;
@@ -39,20 +39,15 @@ export default function RegisterOidcClientForm({
     });
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        try {
-            setErrorMessage('');
-            data.auto_register = hasAuto;
-            const response = await axios.post('/api/oidc/clients', data);
-            if (response.status !== 201) {
-                setErrorMessage('Failed to register OIDC client.');
-                onSuccess(response.data, ToastState.error);
-            }
-            const client = response.data as ServerResponse<OidcClient>;
-            onSuccess(client, ToastState.success);
-        } catch (error: any) {
-            setErrorMessage(error);
-            onSuccess(error.response.data, ToastState.error);
+        setErrorMessage('');
+        data.auto_register = hasAuto;
+        const response = await API.post<OidcClient>('oidc/clients', data);
+        if (!response.success) {
+            setErrorMessage('Failed to register OIDC client.');
+            onSuccess(response, ToastState.error);
         }
+        const client = response as ServerResponse<OidcClient>;
+        onSuccess(client, ToastState.success);
     };
 
     return (

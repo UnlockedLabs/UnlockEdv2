@@ -10,8 +10,9 @@ import {
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
+import { ProgramMilestones } from '@/common';
 
-const MilestonesBarChart = ({ data }: { data: any }) => {
+const MilestonesBarChart = ({ data }: { data: ProgramMilestones[] }) => {
     const { theme } = useContext(ThemeContext);
 
     var barColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
@@ -53,15 +54,17 @@ const MilestonesBarChart = ({ data }: { data: any }) => {
         );
     };
 
-    const YAxisTick = (props) => {
+    const YAxisTick = (props: any) => {
         return <g>{maxYAxisLabel(props)}</g>;
     };
 
+    const safeData =
+        data && data.length > 0 ? data : [{ name: 'No data', milestones: 0 }];
     return (
         <ResponsiveContainer width="100%" height="100%">
             <BarChart
                 layout="vertical"
-                data={data}
+                data={safeData}
                 margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
             >
                 <CartesianGrid strokeDasharray="3 3" />

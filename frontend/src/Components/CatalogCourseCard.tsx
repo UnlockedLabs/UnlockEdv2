@@ -3,11 +3,11 @@ import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline
 import LightGreenPill from './pill-labels/LightGreenPill';
 import RedPill from './pill-labels/RedPill';
 import YellowPill from './pill-labels/YellowPill';
-import axios from 'axios';
 import { ViewType } from './ToggleView';
 import GreyPill from './pill-labels/GreyPill';
 import { MouseEvent } from 'react';
 import { CourseCatalogue } from '@/common';
+import API from '@/api/api';
 
 export interface CatalogCourseCard {
     name: string;
@@ -43,8 +43,7 @@ export default function CatalogCourseCard({
 
     function updateFavorite(e: MouseEvent) {
         e.preventDefault();
-        axios
-            .put(`/api/programs/${course.program_id}/save`)
+        API.put(`programs/${course.program_id}/save`, {})
             .then((response) => {
                 callMutate();
                 console.log(response);

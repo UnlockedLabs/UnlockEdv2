@@ -1,11 +1,11 @@
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ToastState } from '../Toast';
-import { PaginatedResponse, ProviderUser } from '@/common';
+import { ServerResponse, User, ProviderUser } from '@/common';
 import { CloseX } from '../inputs/CloseX';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '../Pagination';
 import useSWR from 'swr';
+import API from '@/api/api';
 
 interface Props {
     externalUser: ProviderUser;
@@ -21,7 +21,7 @@ export default function MapUserForm({
     onCancel
 }: Props) {
     const [errorMessage, setErrorMessage] = useState('');
-    const [fuzzySearchUsers, setFuzzySearchUsers] = useState<ProviderUser[]>();
+    const [fuzzySearchUsers, setFuzzySearchUsers] = useState<User[]>();
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedUser, setSelectedUser] = useState(null);
     const [seeAllUsers, setSeeAllUsers] = useState(false);
@@ -29,7 +29,7 @@ export default function MapUserForm({
         data: allUnmappedUsers,
         isLoading: isLoadingUnmapped,
         error: errorUnmappedUsers
-    } = useSWR<PaginatedResponse<any>>(
+    } = useSWR<ServerResponse<any>>(
         `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
     );
 
@@ -42,39 +42,29 @@ export default function MapUserForm({
     }
 
     const handleSubmit = async (userId: number) => {
-        try {
-            setErrorMessage('');
-            const response = await axios.post(
-                `/api/provider-platforms/${providerId}/map-user/${userId}`,
-                externalUser
-            );
-
-            if (response.status !== 201) {
-                onSubmit('', ToastState.error);
-            }
-            onSubmit('User successfully mapped', ToastState.success);
-        } catch (error: any) {
-            setErrorMessage(error.response.data.message);
+        setErrorMessage('');
+        const response = await API.post(
+            `provider-platforms/${providerId}/map-user/${userId}`,
+            externalUser
+        );
+        if (!response.success) {
+            setErrorMessage(response.message);
             onSubmit('Failed to map user', ToastState.error);
             return;
         }
+        onSubmit('User successfully mapped', ToastState.success);
     };
 
     useEffect(() => {
         async function fetchFuzzyUsers() {
-            try {
-                const response = await axios.get(
-                    `/api/users?include=only_unmapped&provider_id=${providerId}&search=${externalUser.username}&search=${externalUser.email}`
-                );
-                if (response.status !== 200) {
-                    setErrorMessage('Failed to fetch any matching users');
-                    return;
-                }
-                setFuzzySearchUsers(response.data.data);
-            } catch (error: any) {
-                setErrorMessage(error);
+            const response = await API.get<User>(
+                `users?include=only_unmapped&provider_id=${providerId}&search=${externalUser.username}&search=${externalUser.email}`
+            );
+            if (!response.success) {
+                setErrorMessage('Failed to fetch any matching users');
                 return;
             }
+            setFuzzySearchUsers(response.data as User[]);
         }
         externalUser && fetchFuzzyUsers();
     }, [externalUser]);
@@ -172,7 +162,7 @@ export default function MapUserForm({
                                 choose to do so.
                             </p>
                         )}
-                        {allUnmappedUsers?.data.map((user) => {
+                        {allUnmappedUsers?.data.map((user: User) => {
                             return (
                                 <UserRadioInput
                                     user={user}

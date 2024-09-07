@@ -1,30 +1,22 @@
-import axios from 'axios';
 import DangerButton from '../DangerButton';
 import PrimaryButton from '../PrimaryButton';
+import API from '@/api/api';
+import { AuthResponse } from '@/common';
 
 export default function ConsentForm() {
     const accept = async () => {
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const consent = urlParams.get('consent_challenge');
-            const resp = await axios(`/api/consent/accept`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                data: { consent_challenge: consent }
-            });
-
-            if (resp.status === 200) {
-                const location = resp.data.redirect_to;
-                console.log('Redirecting to', location);
-                window.location.replace(location);
-                return;
-            }
+        const urlParams = new URLSearchParams(window.location.search);
+        const consent = urlParams.get('consent_challenge');
+        const resp = await API.post<AuthResponse>(`consent/accept`, {
+            consent_challenge: consent
+        });
+        if (resp.success) {
+            const location = (resp.data as AuthResponse).redirect_to;
+            console.log('Redirecting to', location);
+            window.location.replace(location);
             return;
-        } catch (error: any) {
-            console.error(error);
         }
+        return;
     };
     const deny = () => {
         window.location.replace('/dashboard');

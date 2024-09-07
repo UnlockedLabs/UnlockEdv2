@@ -13,11 +13,12 @@ export default function DropdownControl({
     return (
         <label className="form-control">
             <select
+                defaultValue={label}
                 className="select select-bordered"
                 onChange={(e) => callback(e.target.value)}
             >
                 {label ? (
-                    <option value="" disabled selected>
+                    <option value="" disabled>
                         {label}
                     </option>
                 ) : (

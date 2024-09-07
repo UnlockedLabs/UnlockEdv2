@@ -1,5 +1,4 @@
 import { ProviderPlatformState, ProviderPlatformType } from '@/common';
-import axios from 'axios';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import {
@@ -10,6 +9,7 @@ import {
     TextInput
 } from '../inputs';
 import { ToastState } from '../Toast';
+import API from '@/api/api';
 
 type ProviderInputs = {
     name: string;
@@ -37,23 +37,17 @@ export default function AddProviderForm({
     } = useForm<ProviderInputs>();
 
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
-        try {
-            if (!data.base_url.startsWith('http')) {
-                data.base_url = 'https://' + data.base_url;
-            }
-            setErrorMessage('');
-            const response = await axios.post('/api/provider-platforms', data);
-            if (response.status !== 201) {
-                onSuccess(ToastState.error, 'Failed to add provider platform');
-            }
-            reset();
-            onSuccess(
-                ToastState.success,
-                'Provider platform created successfully'
-            );
-        } catch (error: any) {
-            setErrorMessage(error.response.data.message);
+        if (!data.base_url.startsWith('http')) {
+            data.base_url = 'https://' + data.base_url;
         }
+        setErrorMessage('');
+        const response = await API.post('provider-platforms', data);
+        if (!response.success) {
+            onSuccess(ToastState.error, 'Failed to add provider platform');
+            return;
+        }
+        reset();
+        onSuccess(ToastState.success, 'Provider platform created successfully');
     };
 
     return (

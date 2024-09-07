@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-import axios from 'axios';
 
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
@@ -9,7 +8,7 @@ import {
     TrashIcon,
     UserPlusIcon
 } from '@heroicons/react/20/solid';
-import { DEFAULT_ADMIN_ID, PaginatedResponse, User } from '../common';
+import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
 import Toast, { ToastState } from '../Components/Toast';
@@ -21,6 +20,7 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
+import API from '@/api/api';
 
 export default function Users() {
     const addUserModal = useRef<null | HTMLDialogElement>(null);
@@ -41,10 +41,10 @@ export default function Users() {
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const { data, mutate, error, isLoading } = useSWR(
+    const { data, mutate, error, isLoading } = useSWR<ServerResponse<User>>(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`
     );
-    const userData = data as PaginatedResponse<User>;
+    const userData = data?.data as User[] | [];
     const showToast = (message: string, state: ToastState) => {
         setToast({
             state,
@@ -76,26 +76,17 @@ export default function Users() {
             );
             return;
         }
-        try {
-            const response = await axios.delete('/api/users/' + targetUser?.id);
-            const toastType =
-                response.status == 204 ? ToastState.success : ToastState.error;
-            const message =
-                response.status == 204
-                    ? 'User deleted successfully'
-                    : response.statusText;
-            deleteUserModal.current?.close();
-            showToast(message, toastType);
-            resetModal();
-            mutate();
-            return;
-        } catch (err: any) {
-            showToast(
-                'Unable to delete user, please try again',
-                ToastState.error
-            );
-            return;
-        }
+        const response = await API.delete('users/' + targetUser?.id);
+        const toastType =
+            response.success == 204 ? ToastState.success : ToastState.error;
+        const message = response.success
+            ? 'User deleted successfully'
+            : response.statusText;
+        deleteUserModal.current?.close();
+        showToast(message, toastType);
+        resetModal();
+        mutate();
+        return;
     };
 
     const onAddUserSuccess = (pswd = '', msg: string, type: ToastState) => {
@@ -191,7 +182,7 @@ export default function Users() {
                     <tbody>
                         {!isLoading &&
                             !error &&
-                            userData.data.map((user: any) => {
+                            userData.map((user: User) => {
                                 const updatedAt = new Date(user.updated_at);
                                 return (
                                     <tr
@@ -267,15 +258,15 @@ export default function Users() {
                             })}
                     </tbody>
                 </table>
-                {!isLoading && !error && data.data.length != 0 && (
-                    <Pagination meta={userData.meta} setPage={setPageQuery} />
+                {!isLoading && !error && userData.length != 0 && (
+                    <Pagination meta={data.meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && data.data.length == 0 && (
+                {!isLoading && !error && userData.length == 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>

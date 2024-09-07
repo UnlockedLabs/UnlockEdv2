@@ -1,6 +1,6 @@
-import axios from 'axios';
-import { User, UserRole } from '../../common';
+import { ResetPasswordResponse, User, UserRole } from '../../common';
 import { CloseX } from '../inputs/CloseX';
+import API from '@/api/api';
 
 interface ResetPasswordFormProps {
     onCancel: (message: string, is_err: boolean) => void;
@@ -14,21 +14,18 @@ export default function ResetPasswordForm({
     onCancel
 }: ResetPasswordFormProps) {
     const getTempPassword = async () => {
-        try {
-            const response = await axios.post('/api/users/student-password', {
+        const response = await API.post<ResetPasswordResponse>(
+            'users/student-password',
+            {
                 user_id: user?.id
-            });
-            if (response.status !== 200) {
-                onCancel('Failed to reset password', true);
-                return;
             }
-            console.log(response.data['temp_password']);
-            onSuccess(response.data['temp_password']);
-            return;
-        } catch (error: any) {
-            onCancel(error.response.data.message, true);
+        );
+        if (!response.success) {
+            onCancel('Failed to reset password', true);
             return;
         }
+        onSuccess(response.data['temp_password']);
+        return;
     };
     return (
         <div>
