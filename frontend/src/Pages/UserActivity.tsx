@@ -16,11 +16,11 @@ export default function UserActivity() {
 
     const [sortQuery, setSortQuery] = useState('user_id DESC');
 
-    const { data, error, isLoading } = useSWR(
+    const { data, error, isLoading } = useSWR<ServerResponse<Activity>>(
         `/api/users/activity-log?sort=${sortQuery}&page=${pageQuery}&search=${searchTerm}`
     );
 
-    const userActivityData = data as ServerResponse<Activity>;
+    const userActivityData = data?.data as Activity[];
 
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
@@ -69,8 +69,7 @@ export default function UserActivity() {
                     <tbody>
                         {!isLoading &&
                             !error &&
-                            userActivityData.data &&
-                            userActivityData.data.map((activityInstance) => {
+                            userActivityData.map((activityInstance) => {
                                 const dateTime = new Date(
                                     activityInstance.created_at
                                 );
@@ -113,18 +112,15 @@ export default function UserActivity() {
                             })}
                     </tbody>
                 </table>
-                {!isLoading && !error && data.data.length != 0 && (
-                    <Pagination
-                        meta={userActivityData.meta}
-                        setPage={setPageQuery}
-                    />
+                {!isLoading && !error && userActivityData.length != 0 && (
+                    <Pagination meta={data.meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && data.data.length == 0 && (
+                {!isLoading && !error && userActivityData.length == 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>
