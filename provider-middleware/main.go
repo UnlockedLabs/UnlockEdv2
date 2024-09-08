@@ -78,7 +78,10 @@ func main() {
 	handler := newServiceHandler(token, db)
 	log.Println("Server started on :8081")
 	handler.registerRoutes()
-	handler.initSubscription()
+	err = handler.initSubscription()
+	if err != nil {
+		log.Fatalf("Failed to subscribe to NATS: %v", err)
+	}
 	log.Println("Routes registered")
 	initLogging()
 	err = http.ListenAndServe(":8081", handler.Mux)

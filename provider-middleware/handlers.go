@@ -63,7 +63,10 @@ func (sh *ServiceHandler) handlePrograms(msg *nats.Msg) {
 	}
 	finished := nats.NewMsg("tasks.get_programs.completed")
 	finished.Data = []byte(`{"job_id": "` + jobId + `"}`)
-	sh.nats.PublishMsg(finished)
+	err = sh.nats.PublishMsg(finished)
+	if err != nil {
+		log.Errorln("Failed to publish message to NATS")
+	}
 	sh.cleanupJob(providerPlatformId, jobId, true)
 }
 

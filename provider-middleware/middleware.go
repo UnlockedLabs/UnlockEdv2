@@ -17,6 +17,10 @@ func (srv *ServiceHandler) applyMiddleware(h http.Handler) http.Handler {
 
 func (sh *ServiceHandler) initServiceFromRequest(r *http.Request) (ProviderServiceInterface, error) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		log.Printf("Error: %v", err)
+		return nil, fmt.Errorf("failed to find provider: %v", err)
+	}
 	provider, err := sh.LookupProvider(id)
 	if err != nil {
 		log.Printf("Error: %v", err)
