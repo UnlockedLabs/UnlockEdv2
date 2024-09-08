@@ -1,5 +1,6 @@
 run:
   timeout: 3m
+  go: '1.23'
 
 linters-settings:
   cyclop:
@@ -107,6 +108,8 @@ linters:
   disable-all: true
   enable:
     - errcheck
+    - errcheckjson
+    - prealloc
     - gosimple
     - govet
     - ineffassign

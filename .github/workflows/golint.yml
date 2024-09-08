@@ -22,7 +22,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.60.1
-          args: ./backend/. --timeout 5m
+          args: -v ./backend/cmd ./backend/migrations ./backend/src/handlers ./backend/src/database ./backend/src/models ./provider-middleware
           install-mode: "binary"
       - name: check go mod
         run: |
