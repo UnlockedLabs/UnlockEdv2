@@ -74,10 +74,6 @@ func seedTestData(db *gorm.DB) {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
 	for idx := range users {
-		users[idx].Password = "ChangeMe!"
-		if err := users[idx].HashPassword(); err != nil {
-			log.Fatalf("unable to hash user password")
-		}
 		log.Printf("Creating user %s", users[idx].Username)
 		if err := db.Create(&users[idx]).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)

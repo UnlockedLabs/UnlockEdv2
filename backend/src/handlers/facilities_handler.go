@@ -18,20 +18,15 @@ func (srv *Server) registerFacilitiesRoutes() {
 }
 
 func (srv *Server) HandleIndexFacilities(w http.ResponseWriter, r *http.Request) {
-	log.Info("Handling facility index request")
 	fields := log.Fields{"handler": "HandleIndexFacilities"}
 	facilities, err := srv.Db.GetAllFacilities()
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Errorln("error fetching facilities from database")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error fetching facilities from database")
 		return
 	}
-	response := models.Resource[models.Facility]{
-		Message: "facilities fetched successfully",
-		Data:    facilities,
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, facilities)
 }
 
 func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request) {
@@ -39,21 +34,17 @@ func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Error("GET Provider handler Error: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "error decoding request body")
 	}
 	fields["facility_id"] = id
 	facility, err := srv.Db.GetFacilityByID(id)
 	if err != nil {
 		log.WithFields(fields).Error("Error: ", err.Error())
-		http.Error(w, err.Error(), http.StatusNotFound)
+		srv.ErrorResponse(w, http.StatusNotFound, "error fetching facility with that ID")
 		return
 	}
 
-	response := models.Resource[models.Facility]{
-		Data: make([]models.Facility, 0),
-	}
-	response.Data = append(response.Data, *facility)
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, facility)
 }
 
 func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +54,7 @@ func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error decoding request body")
-		http.Error(w, "unable to decode request body", http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "error decoding request body")
 		return
 	}
 	defer r.Body.Close()
@@ -71,14 +62,10 @@ func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error creating facility")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "facility couldn't be created in the database")
 		return
 	}
-	response := models.Resource[models.Facility]{
-		Data:    []models.Facility{*newFacility},
-		Message: "Facility created successfully",
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, newFacility)
 }
 
 func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +74,7 @@ func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("error decoding id from path:")
-		http.Error(w, "error decoding id from path", http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "error decoding provided ID")
 		return
 	}
 	fields["facilty_id"] = id
@@ -96,7 +83,7 @@ func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error decoding request body")
-		http.Error(w, "error decoding request body"+err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "error decoding request body")
 		return
 	}
 	defer r.Body.Close()
@@ -104,14 +91,10 @@ func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error updating facility")
-		http.Error(w, "facilty couldn't be updated in the database: "+err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error updating facility, please check the values provided")
 		return
 	}
-	response := models.Resource[models.Facility]{
-		Data:    []models.Facility{*toReturn},
-		Message: "facility successfully updated",
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, *toReturn)
 }
 
 func (srv *Server) HandleDeleteFacility(w http.ResponseWriter, r *http.Request) {
@@ -120,14 +103,14 @@ func (srv *Server) HandleDeleteFacility(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("error parsing value from path")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error deleting facility, invalid ID provided")
 		return
 	}
 	if err = srv.Db.DeleteFacility(id); err != nil {
 		fields["error"] = err
 		log.WithFields(fields).Error("Error deleting facility")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error deleting facility")
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJsonResponse(w, http.StatusNoContent, "facility deleted successfully")
 }

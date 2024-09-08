@@ -10,7 +10,7 @@ import (
 
 func (db *DB) CreateActivity(activity *models.Activity) error {
 	// This function is calling a stored procedure in the database to calculate the delta (src/activity_proc.sql)
-	return db.Conn.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
+	return db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
 		activity.UserID, activity.ProgramID, activity.Type, activity.TotalTime, activity.ExternalID).Error
 }
 
@@ -61,7 +61,7 @@ func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error
 		ranked_activities
 	ORDER BY
 		activity_date;`
-	rows, err := db.Conn.Raw(query, userID, year, year).Rows()
+	rows, err := db.Raw(query, userID, year, year).Rows()
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error
 
 	// Fetch all activities for the given user and year
 	var activities []models.Activity
-	if err = db.Conn.Table("activities").Select("*").Where(`user_id = ? AND created_at BETWEEN
+	if err = db.Table("activities").Select("*").Where(`user_id = ? AND created_at BETWEEN
 			CASE
 				WHEN ? = 0 THEN DATE_TRUNC('day', NOW() - INTERVAL '1 year')
 				ELSE DATE_TRUNC('day', MAKE_DATE(?, 1, 1))
@@ -129,7 +129,7 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 		endDate = time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC).Add(-1 * time.Second)
 	}
 
-	if err := db.Conn.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
+	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
 		return nil, err
 	}
 
@@ -187,12 +187,12 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 func (db *DB) GetActivityByProgramID(page, perPage, programID int) (int64, []models.Activity, error) {
 	var activities []models.Activity
 	var count int64
-	_ = db.Conn.Model(&models.Activity{}).Where("program_id = ?", programID).Count(&count)
-	return count, activities, db.Conn.Where("program_id = ?", programID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error
+	_ = db.Model(&models.Activity{}).Where("program_id = ?", programID).Count(&count)
+	return count, activities, db.Where("program_id = ?", programID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error
 }
 
 func (db *DB) DeleteActivity(activityID int) error {
-	return db.Conn.Delete(&models.Activity{}, activityID).Error
+	return db.Delete(&models.Activity{}, activityID).Error
 }
 
 type result struct {
@@ -245,7 +245,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// get the users 3 most recent programs. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
 	// where the user has an entry in the activity table
-	err := db.Conn.Table("programs p").Select(`p.name as program_name,
+	err := db.Table("programs p").Select(`p.name as program_name,
         p.alt_name,
         p.thumbnail_url,
         p.external_url,
@@ -271,7 +271,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 
 	// TOP PROGRAMS
 	var topPrograms []string
-	err = db.Conn.Table("activities a").
+	err = db.Table("activities a").
 		Select("p.name as program_name").
 		Joins("JOIN programs p ON a.program_id = p.id").
 		Joins("JOIN users u ON a.user_id = u.id").
@@ -289,7 +289,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// and acitvity.total_activity_time for the last 7 days of activity where activity.user_id = userID and activity.program_id = program.id
 	results := []result{}
 
-	err = db.Conn.Table("programs p").
+	err = db.Table("programs p").
 		Select(`p.id as program_id,
 				p.alt_name,
 				p.name,
@@ -317,7 +317,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 			ProviderPlatformName string
 			ExternalURL          string
 		}
-		err = db.Conn.Table("programs p").Select(`p.id as program_id, p.alt_name, p.name, pp.name as provider_platform_name, p.external_url`).
+		err = db.Table("programs p").Select(`p.id as program_id, p.alt_name, p.name, pp.name as provider_platform_name, p.external_url`).
 			Joins(`JOIN provider_platforms pp ON p.provider_platform_id = pp.id`).
 			Joins(`LEFT JOIN milestones m on m.program_id = p.id`).Where(`m.user_id`, userID).Find(&newEnrollments).Error
 		if err != nil {
@@ -340,7 +340,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// get activity for past 7 days
 	var activities []models.RecentActivity
 
-	err = db.Conn.Table("activities a").
+	err = db.Table("activities a").
 		Select(`DATE(a.created_at) as date, SUM(a.time_delta) as delta`).
 		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
 		Group("date").
@@ -356,7 +356,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	var dashboard models.AdminDashboardJoin
 
 	// facility name
-	err := db.Conn.Table("facilities f").
+	err := db.Table("facilities f").
 		Select("f.name as facility_name").
 		Where("f.id = ?", facilityID).
 		Find(&dashboard.FacilityName).Error
@@ -365,7 +365,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	}
 
 	// Monthly Activity
-	err = db.Conn.Table("activities a").
+	err = db.Table("activities a").
 		Select("TO_CHAR(a.created_at, 'YYYY-MM-DD') as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
@@ -382,7 +382,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		TotalWeeklyActivity uint
 	}
 
-	err = db.Conn.Table("activities a").
+	err = db.Table("activities a").
 		Select(`
 			COUNT(DISTINCT a.user_id) as weekly_active_users, 
 			AVG(a.time_delta) as avg_daily_activity,
@@ -399,7 +399,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	dashboard.TotalWeeklyActivity = result.TotalWeeklyActivity
 
 	// Program Milestones
-	err = db.Conn.Table("programs p").
+	err = db.Table("programs p").
 		Select("p.name as name, COALESCE(COUNT(m.id), 0) as milestones").
 		Joins("LEFT JOIN milestones m ON m.program_id = p.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
 		Joins("LEFT JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
@@ -412,7 +412,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	}
 
 	// Top 5 Programs by Hours Engaged
-	err = db.Conn.Table("activities a").
+	err = db.Table("activities a").
 		Select("p.name as program_name, p.alt_name as alt_name, SUM(a.time_delta) / 3600.0 as hours_engaged").
 		Joins("JOIN programs p ON a.program_id = p.id").
 		Joins("JOIN users u ON a.user_id = u.id").

@@ -65,8 +65,9 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 			log.Error("Error creating user:" + err.Error())
 			continue
 		}
+		tempPw := created.CreateTempPassword()
 		if !srv.isTesting(r) {
-			if err := srv.HandleCreateUserKratos(created.Username, created.Password); err != nil {
+			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 				fields["error"] = err.Error()
 				log.WithFields(fields).Errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity
@@ -91,7 +92,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	w.WriteHeader(http.StatusOK)
+	writeJsonResponse(w, http.StatusOK, "Users imported successfully")
 }
 
 func paginateUsers(users []models.ImportUser, page, perPage int) (int, []models.ImportUser) {
@@ -122,7 +123,7 @@ func (srv *Server) searchForUser(search string, users []models.ImportUser) []mod
 }
 
 func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
-	kv := srv.Buckets[CachedUsers]
+	kv := srv.buckets[CachedUsers]
 	page, perPage := srv.GetPaginationInfo(r)
 	service, err := srv.getService(r)
 	if err != nil {
@@ -150,12 +151,8 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 					foundUsers = srv.searchForUser(search, foundUsers)
 				}
 				total, toReturn := paginateUsers(foundUsers, page, perPage)
-				response := models.PaginatedResource[models.ImportUser]{
-					Data:    toReturn,
-					Message: "Successfully fetched users from provider",
-					Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
-				}
-				srv.WriteResponse(w, http.StatusOK, response)
+				meta := models.NewPaginationInfo(page, perPage, int64(total))
+				writePaginatedResponse(w, http.StatusOK, toReturn, meta)
 				return
 			}
 		}
@@ -190,12 +187,8 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	total, responseUsers := paginateUsers(externalUsers, page, perPage)
 
-	response := models.PaginatedResource[models.ImportUser]{
-		Data:    responseUsers,
-		Message: "Successfully fetched users from provider",
-		Meta:    models.NewPaginationInfo(page, perPage, int64(total)),
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	meta := models.NewPaginationInfo(page, perPage, int64(total))
+	writePaginatedResponse(w, http.StatusOK, responseUsers, meta)
 }
 
 func (srv *Server) getService(r *http.Request) (*src.ProviderService, error) {

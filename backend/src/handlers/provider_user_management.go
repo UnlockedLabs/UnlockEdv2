@@ -73,7 +73,7 @@ func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	}
-	srv.WriteResponse(w, http.StatusCreated, mapping)
+	writeJsonResponse(w, http.StatusCreated, mapping)
 }
 
 type ImportUserResponse struct {
@@ -123,7 +123,7 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		log.Errorln("Error decoding exernal user body from request in import-provider-users")
 		return
 	}
-	var response models.Resource[ImportUserResponse]
+	toReturn := make([]ImportUserResponse, 0)
 	for _, user := range users.Users {
 		username := removeChars(user.Username, disallowedChars)
 		newUser := models.User{
@@ -140,17 +140,18 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		if err != nil {
 			log.Errorln("Error creating user in import-provider-users", err)
 			userResponse.Error = "error creating user, likely a duplicate username"
-			response.Data = append(response.Data, userResponse)
+			toReturn = append(toReturn, userResponse)
 			continue
 		}
-		userResponse.TempPassword = created.Password
-		if err := srv.HandleCreateUserKratos(created.Username, created.Password); err != nil {
+		tempPw := created.CreateTempPassword()
+		userResponse.TempPassword = tempPw
+		if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
 				log.Errorf("Error deleting user after failed provider user mapping import-provider-users")
 			}
 			log.Warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
 			userResponse.Error = "error creating authentication for user in kratos, please try again"
-			response.Data = append(response.Data, userResponse)
+			toReturn = append(toReturn, userResponse)
 			continue
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
@@ -171,21 +172,20 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 				log.Errorf("Error deleting user after failed provider user mapping import-provider-users")
 			}
 			userResponse.Error = "user was created in database, but there was an error creating provider user mapping, please try again"
-			response.Data = append(response.Data, userResponse)
+			toReturn = append(toReturn, userResponse)
 			continue
 		}
 		if provider.OidcID != 0 {
 			if err = srv.registerProviderLogin(provider, &newUser); err != nil {
 				log.Error("error creating provider login, user has been deleted")
 				userResponse.Error = "user was created in database, but there was an error creating provider login, please try again"
-				response.Data = append(response.Data, userResponse)
+				toReturn = append(toReturn, userResponse)
 				continue
 			}
 		}
-		response.Data = append(response.Data, userResponse)
+		toReturn = append(toReturn, userResponse)
 	}
-	response.Message = "Provider users imported, please check for any accounts that couldn't be created"
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, toReturn)
 }
 
 func (srv *Server) registerProviderLogin(provider *models.ProviderPlatform, user *models.User) error {
@@ -233,7 +233,7 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusCreated, nil)
+	writeJsonResponse(w, http.StatusCreated, "User created successfully")
 }
 
 func (srv *Server) createAndRegisterProviderUserAccount(provider *models.ProviderPlatform, user *models.User) error {
@@ -242,7 +242,6 @@ func (srv *Server) createAndRegisterProviderUserAccount(provider *models.Provide
 		return srv.createAndRegisterCanvasUserAccount(provider, user)
 	} else {
 		log.WithFields(fields).Println("creating kolibri user")
-		user.Password = "NOT_SPECIFIED"
 		return srv.CreateUserInKolibri(user, provider)
 	}
 }

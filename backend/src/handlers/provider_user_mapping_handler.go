@@ -24,7 +24,7 @@ func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 	}
-	srv.WriteResponse(w, http.StatusOK, mappings)
+	writeJsonResponse(w, http.StatusOK, mappings)
 }
 
 func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *htt
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusCreated, mapping)
+	writeJsonResponse(w, http.StatusCreated, mapping)
 }
 
 func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *http.Request) {
@@ -58,5 +58,5 @@ func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *htt
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusNoContent, nil)
+	writeJsonResponse(w, http.StatusNoContent, "Mapping deleted successfully")
 }

@@ -32,7 +32,7 @@ Provider calls.
 From the handlers, given a provider platform:
 
 ```go
-provider, err :=  Db.Conn.GetProviderPlatformByID(id)
+provider, err :=  Db.GetProviderPlatformByID(id)
 service := src.GetProviderService(&provider)
 
 service.GetUsers()

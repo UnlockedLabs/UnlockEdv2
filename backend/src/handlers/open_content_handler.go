@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -29,7 +28,7 @@ func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Unable to fetch records from DB")
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, models.DefaultResource(content))
+	writeJsonResponse(w, http.StatusOK, content)
 }
 
 func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +44,7 @@ func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Unable to find records from DB")
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	writeJsonResponse(w, http.StatusOK, "Content provider toggled successfully")
 }
 
 type NewContentRequest struct {
@@ -69,5 +68,5 @@ func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Unable to find records from DB")
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	writeJsonResponse(w, http.StatusCreated, "Content provider created successfully")
 }

@@ -21,11 +21,7 @@ func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response := models.Resource[models.OidcClient]{
-		Data:    clients,
-		Message: "Successfully fetched all registered clients",
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, clients)
 }
 
 type RegisterClientRequest struct {
@@ -49,17 +45,13 @@ func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	fields["oidc_id"] = id
 	var client models.OidcClient
-	if err := srv.Db.Conn.Find(&client, "id = ?", id).Error; err != nil {
+	if err := srv.Db.Find(&client, "id = ?", id).Error; err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Errorln("error finding oidc client")
 		srv.ErrorResponse(w, http.StatusBadRequest, "OIDC client info not found")
 		return
 	}
-	resp := models.Resource[models.ClientResponse]{
-		Message: "Client found",
-		Data:    []models.ClientResponse{*clientToResponse(&client)},
-	}
-	srv.WriteResponse(w, http.StatusOK, resp)
+	writeJsonResponse(w, http.StatusOK, *clientToResponse(&client))
 }
 
 func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
@@ -97,14 +89,5 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		log.Error(r, err)
 		return
 	}
-	response := models.Resource[models.ClientResponse]{
-		Message: "Client registered successfully",
-		Data:    []models.ClientResponse{*clientToResponse(client)},
-	}
-	if request.AutoRegister {
-		response.Message = "Client successfully created and registered with the provider"
-	} else {
-		response.Message = "Client successfully created"
-	}
-	srv.WriteResponse(w, http.StatusCreated, response)
+	writeJsonResponse(w, http.StatusCreated, *clientToResponse(client))
 }

@@ -2,14 +2,10 @@ package main
 
 import (
 	server "UnlockEdv2/src/handlers"
-	"fmt"
-	"net/http"
 	"os"
 
-	log "github.com/sirupsen/logrus"
-
-	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -19,19 +15,10 @@ func main() {
 		log.Info("no .env file found, using default env variables")
 	}
 	env := os.Getenv("APP_ENV")
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8080"
-	}
 	testing := (env == "testing")
-
 	initLogging(env, file)
 	newServer := server.NewServer(testing)
-	fmt.Println("Starting server on :", port)
-	log.Info("LOG_LEVEL: ", log.GetLevel())
-	if err := http.ListenAndServe(":8080", server.CorsMiddleware(newServer.Mux)); err != nil {
-		log.Fatalf("Error starting server: %v", err)
-	}
+	newServer.ListenAndServe()
 }
 
 func initLogging(env string, file *os.File) {

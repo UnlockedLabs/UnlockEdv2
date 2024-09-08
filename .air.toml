@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "bin"
 
 [build]
-cmd = "go build -o ./bin/main backend/main.go"
+cmd = "go build -o ./bin/main backend/cmd/main.go"
 bin = "bin/main"
 include_dir = ["backend"]
 include_file = []

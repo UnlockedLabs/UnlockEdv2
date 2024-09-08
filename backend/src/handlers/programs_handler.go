@@ -32,7 +32,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 	total, programs, err := srv.Db.GetProgram(page, perPage, search)
 	if err != nil {
 		log.Debug("IndexPrograms Database Error: ", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error fetching programs from database")
 		return
 	}
 	last := srv.CalculateLast(total, perPage)
@@ -42,11 +42,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: page,
 		Total:       total,
 	}
-	response := models.PaginatedResource[models.Program]{
-		Meta: paginationData,
-		Data: programs,
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writePaginatedResponse(w, http.StatusOK, programs, paginationData)
 }
 
 func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +58,7 @@ func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, program)
+	writeJsonResponse(w, http.StatusOK, program)
 }
 
 func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +76,7 @@ func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	writeJsonResponse(w, http.StatusCreated, "Program created successfully")
 }
 
 func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +104,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, updated)
+	writeJsonResponse(w, http.StatusOK, updated)
 }
 
 func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +120,7 @@ func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Info("Program deleted")
-	w.WriteHeader(http.StatusNoContent)
+	writeJsonResponse(w, http.StatusNoContent, "Program deleted successfully")
 }
 
 func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request) {
@@ -137,8 +133,8 @@ func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request)
 
 	user_id := srv.GetUserID(r)
 	var favorite models.UserFavorite
-	if srv.Db.Conn.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
-		if err = srv.Db.Conn.Delete(&favorite).Error; err != nil {
+	if srv.Db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
+		if err = srv.Db.Delete(&favorite).Error; err != nil {
 			log.Error("Error deleting favorite: " + err.Error())
 			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
@@ -147,11 +143,11 @@ func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request)
 		return
 	} else {
 		favorite = models.UserFavorite{UserID: user_id, ProgramID: uint(id)}
-		if err = srv.Db.Conn.Create(&favorite).Error; err != nil {
+		if err = srv.Db.Create(&favorite).Error; err != nil {
 			log.Error("Error creating favorite: " + err.Error())
 			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 		}
 	}
-	srv.WriteResponse(w, http.StatusOK, nil)
+	writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
 }

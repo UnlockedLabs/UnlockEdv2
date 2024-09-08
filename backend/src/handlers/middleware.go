@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -24,7 +26,7 @@ type csrfTokenKey string
 func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "setCsrfTokenMiddleware"}
-		bucket := srv.Buckets[CsrfToken]
+		bucket := srv.buckets[CsrfToken]
 		checkExists, err := r.Cookie("unlocked_csrf_token")
 		if err == nil {
 			fields["csrf_token"] = checkExists.Value
@@ -33,7 +35,7 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 			val, err := bucket.Get(checkExists.Value)
 			if err != nil {
 				log.WithFields(fields).Traceln("CSRF token is invalid")
-				http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+				srv.ErrorResponse(w, http.StatusForbidden, "Invalid CSRF token")
 				return
 			}
 			log.WithFields(fields).Traceln("CSRF token is valid")
@@ -53,7 +55,7 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 			_, err := bucket.Put(uniqueId, []byte(time.Now().Add(24*time.Hour).String()))
 			if err != nil {
 				log.WithFields(fields).Errorf("Failed to set CSRF token: %v", err)
-				http.Error(w, "Failed to set CSRF token", http.StatusInternalServerError)
+				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 				return
 			}
 			ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(uniqueId))
@@ -65,11 +67,11 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "rateLimitMiddleware"}
-		kv := srv.Buckets[RateLimit]
+		kv := srv.buckets[RateLimit]
 		hashedValue, err := getUniqueRequestInfo(r)
 		if err != nil {
 			log.WithFields(fields).Errorf("Failed to get unique request info: %v", err)
-			http.Error(w, "Failed to get unique request info", http.StatusInternalServerError)
+			srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 			return
 		}
 		value, err := kv.Get(hashedValue)
@@ -81,7 +83,7 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 			}
 			if err := putRequestInfo(kv, hashedValue, reqInfo); err != nil {
 				log.WithFields(fields).Errorf("Failed to marshal request info: %v", err)
-				http.Error(w, "Failed to marshal request info", http.StatusInternalServerError)
+				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -90,7 +92,7 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 			var reqInfo requestInfo
 			if err := json.Unmarshal(value.Value(), &reqInfo); err != nil {
 				log.WithFields(fields).Errorf("Failed to unmarshal request info: %v", err)
-				http.Error(w, "Failed to unmarshal request info", http.StatusInternalServerError)
+				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to decode request info")
 				return
 			}
 			if time.Since(reqInfo.Timestamp) > timeWindow {
@@ -99,13 +101,13 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 			} else {
 				reqInfo.Count++
 				if reqInfo.Count > maxRequests {
-					http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+					srv.ErrorResponse(w, http.StatusTooManyRequests, "rate limit exceeded")
 					return
 				}
 			}
 			if err := putRequestInfo(kv, hashedValue, &reqInfo); err != nil {
 				log.WithFields(fields).Errorf("Failed to marshal request info: %v", err)
-				http.Error(w, "Failed to marshal request info", http.StatusInternalServerError)
+				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -135,11 +137,20 @@ func getUniqueRequestInfo(r *http.Request) (string, error) {
 	if !ok {
 		return "", errors.New("CSRF token not found")
 	}
-	fwdHost := r.Header.Get("X-Forwarded-For")
-	if fwdHost == "" {
-		fwdHost = r.RemoteAddr
+	uniq := r.Header.Get("X-Real-IP")
+	if uniq == "" {
+		uniq = r.Header.Get("X-Forwarded-For")
+		if uniq == "" {
+			uniq = r.RemoteAddr
+		}
 	}
-	unique := r.Header.Get("User-Agent") + fwdHost + csrf
+	unique := r.Header.Get("User-Agent") + uniq + csrf
 	hashedValue := shaHashValue(unique)
 	return hashedValue, nil
+}
+
+func shaHashValue(value string) string {
+	hash := sha256.New()
+	hash.Write([]byte(value))
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }

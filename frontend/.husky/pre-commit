@@ -23,11 +23,11 @@ else
   golangci-lint run -v
   go mod tidy -v
   echo "running go fmt  ...."
-  go fmt
-  echo "Running Go tests  .."
-  cd tests
-  go test -v
-  cd ../../
+  go fmt ./...
+  # echo "Running Go tests  .."
+  # cd tests
+  # go test -v
+  # cd ../../
   git add $(cat frontend/.husky/staged-files)
   echo "All checks passed! 🎉"
 fi

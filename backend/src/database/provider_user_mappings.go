@@ -8,12 +8,12 @@ import (
 )
 
 func (db *DB) CreateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
-	return db.Conn.Create(providerUserMapping).Error
+	return db.Create(providerUserMapping).Error
 }
 
 func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string, providerId uint) (*models.ProviderUserMapping, error) {
 	var providerUserMapping models.ProviderUserMapping
-	if err := db.Conn.Where("external_user_id = ? AND provider_platform_id = ?", externalUserID, providerId).First(&providerUserMapping).Error; err != nil {
+	if err := db.Where("external_user_id = ? AND provider_platform_id = ?", externalUserID, providerId).First(&providerUserMapping).Error; err != nil {
 		return nil, err
 	}
 	return &providerUserMapping, nil
@@ -21,7 +21,7 @@ func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string, prov
 
 func (db *DB) GetUserMappingsForProvider(providerId uint) ([]models.ProviderUserMapping, error) {
 	var users []models.ProviderUserMapping
-	if err := db.Conn.Find(&users).Where("provider_platform_id = ?", providerId).Error; err != nil {
+	if err := db.Find(&users).Where("provider_platform_id = ?", providerId).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
@@ -29,14 +29,14 @@ func (db *DB) GetUserMappingsForProvider(providerId uint) ([]models.ProviderUser
 
 func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUserMapping, error) {
 	var providerUserMapping models.ProviderUserMapping
-	if err := db.Conn.Where("user_id = ? AND provider_platform_id = ?", userID, providerID).First(&providerUserMapping).Error; err != nil {
+	if err := db.Where("user_id = ? AND provider_platform_id = ?", userID, providerID).First(&providerUserMapping).Error; err != nil {
 		return nil, err
 	}
 	return &providerUserMapping, nil
 }
 
 func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
-	result := db.Conn.Model(&models.ProviderUserMapping{}).Where("id = ?", providerUserMapping.ID).Updates(providerUserMapping)
+	result := db.Model(&models.ProviderUserMapping{}).Where("id = ?", providerUserMapping.ID).Updates(providerUserMapping)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -63,7 +63,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 		return int64(len(users)), users, nil
 	}
 
-	if err := db.Conn.Table("users").Select("*").
+	if err := db.Table("users").Select("*").
 		Where("users.role = ?", "student").
 		Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
@@ -79,18 +79,18 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 
 func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch []string, facilityId uint) ([]models.User, error) {
 	var users []models.User
-	tx := db.Conn.Table("users u").Select("u.*").
+	tx := db.Table("users u").Select("u.*").
 		Where("u.role = ?", "student").
 		Where("u.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId))
 
-	searchCondition := db.Conn
+	searchCondition := db.DB
 	for _, search := range userSearch {
 		split := strings.Split(search, " ")
 		if len(split) > 1 {
 			first := "%" + strings.TrimSpace(strings.ToLower(split[0])) + "%"
 			last := "%" + strings.TrimSpace(strings.ToLower(split[1])) + "%"
-			searchCondition = searchCondition.Or(db.Conn.Where("u.name_first ILIKE ? OR u.name_last ILIKE ?", first, first).Or("u.name_first ILIKE ? OR u.name_last ILIKE ?", last, last))
+			searchCondition = searchCondition.Or(db.Where("u.name_first ILIKE ? OR u.name_last ILIKE ?", first, first).Or("u.name_first ILIKE ? OR u.name_last ILIKE ?", last, last))
 			continue
 		}
 		search = "%" + strings.TrimSpace(strings.ToLower(search)) + "%"
@@ -100,7 +100,6 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 		}
 		searchCondition = searchCondition.Or("u.name_first ILIKE ?", search).Or("u.name_last ILIKE ?", search).Or("u.username ILIKE ?", search)
 	}
-
 	tx = tx.Where(searchCondition)
 
 	if err := tx.Find(&users).Error; err != nil {
@@ -113,14 +112,14 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 
 func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMapping, error) {
 	var providerUserMappings []models.ProviderUserMapping
-	if err := db.Conn.Where("user_id = ?", userID).Find(&providerUserMappings).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).Find(&providerUserMappings).Error; err != nil {
 		return nil, err
 	}
 	return providerUserMappings, nil
 }
 
 func (db *DB) DeleteProviderUserMappingByUserID(userID, providerID int) error {
-	result := db.Conn.Model(&models.ProviderUserMapping{}).Where("user_id = ? AND provider_platform_id = ?", userID, providerID).Delete(&models.ProviderUserMapping{})
+	result := db.Model(&models.ProviderUserMapping{}).Where("user_id = ? AND provider_platform_id = ?", userID, providerID).Delete(&models.ProviderUserMapping{})
 	if result.Error != nil {
 		return result.Error
 	}

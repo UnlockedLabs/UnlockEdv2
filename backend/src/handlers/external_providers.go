@@ -190,7 +190,7 @@ func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderP
 	kUser := make(map[string]interface{}, 0)
 	kUser["facility"] = prov.AccountID
 	kUser["full_name"] = user.NameFirst + user.NameLast
-	kUser["password"] = user.Password
+	kUser["password"] = "NOT_SPECIFIED"
 	kUser["username"] = user.Username
 	kUser["id_number"] = user.ID
 	kUser["gender"] = "NOT_SPECIFIED"
@@ -264,5 +264,5 @@ func (srv *Server) checkKolibriAccountSetup(prov *models.ProviderPlatform) error
 		return errors.New("kolibri facility or instance not found")
 	}
 	first := body[0]["id"].(string)
-	return srv.Db.Conn.Model(prov).Update("account_id", first).Error
+	return srv.Db.Model(prov).Update("account_id", first).Error
 }
