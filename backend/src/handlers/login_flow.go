@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,6 +20,7 @@ func (srv *Server) registerOidcFlowRoutes() {
 }
 
 const (
+	LoginEndpoint       = "/self-service/login"
 	ConsentPutEndpoint  = "/admin/oauth2/auth/requests/consent/accept"
 	AcceptLoginEndpoint = "/admin/oauth2/auth/requests/login/accept"
 	ConsentGetEndpoint  = "/admin/oauth2/auth/requests/consent?consent_challenge="
@@ -34,25 +34,13 @@ type LoginRequest struct {
 	CsrfToken string `json:"csrf_token"`
 }
 
-func (srv *Server) logoutCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "unlocked_token",
-		Value:    "",
-		Expires:  time.Now().Add(-1 * time.Hour),
-		SameSite: http.SameSiteNoneMode,
-		HttpOnly: true,
-		Secure:   true,
-		Path:     "/",
-	})
-}
-
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
-	s.logoutCookie(w)
 	resp := map[string]string{}
 	resp["redirect_to"] = "/self-service/logout/browser"
-	s.WriteResponse(w, http.StatusOK, resp)
+	writeJsonResponse(w, http.StatusOK, resp)
 }
 
+// (oauth) login flow is semi complicated, so I will do my best to comment
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleLogin"}
 	var form LoginRequest
@@ -63,111 +51,97 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		log.WithFields(fields).Error("Parsing form failed, using urlform")
 	}
 	fields["form"] = form
-	if form.Username == "" || form.Password == "" {
-		log.WithFields(fields).Error("Invalid form data, need username, password")
-		s.ErrorResponse(w, http.StatusBadRequest, "Invalid form data")
+	// create json body to send to kratos for processing login
+	jsonBody, err := buildKratosLoginForm(form)
+	if err != nil {
+		log.WithFields(fields).Error("Error marshalling body")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	cookie := r.Header.Get("Cookie")
-	if user, err := s.Db.AuthorizeUser(form.Username, form.Password); err == nil {
-		body := map[string]interface{}{}
-		body["identifier"] = form.Username
-		body["password"] = form.Password
-		body["method"] = "password"
-		body["flow"] = form.FlowID
-		body["csrf_token"] = form.CsrfToken
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			log.WithFields(fields).Error("Error marshalling body")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		url := os.Getenv("KRATOS_PUBLIC_URL") + "/self-service/login?flow=" + form.FlowID
-		if form.Challenge != "" {
-			url += "&login_challenge=" + form.Challenge
-		}
-		req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
-		if err != nil {
-			fields["error"] = err.Error()
-			log.WithFields(fields).Error("Error creating request")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		req.Header.Set("Cookie", cookie)
-		req.Header.Set("X-CSRF-Token", form.CsrfToken)
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json")
-		resp, err := s.Client.Do(req)
-		if err != nil {
-			fields["error"] = err.Error()
-			log.WithFields(fields).Error("Error sending request to kratos")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		decoded := map[string]interface{}{}
-		if err = json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
-			fields["error"] = err.Error()
-			log.WithFields(fields).Error("Error decoding response")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		respBody := map[string]string{}
-		log.Debug("Decoded response from kratos", decoded)
-		if resp.StatusCode == 422 {
-			claims := getClaims(user)
-			token := signToken(claims)
-			setLoginCookies(resp, w, *token)
-			respBody["redirect_to"] = decoded["redirect_browser_to"].(string)
-			s.WriteResponse(w, http.StatusOK, respBody)
-			return
-		}
-		claims := getClaims(user)
-		token := signToken(claims)
-		if token == nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		setLoginCookies(resp, w, *token)
-		switch user.PasswordReset {
-		case true:
+	url := os.Getenv("KRATOS_PUBLIC_URL") + LoginEndpoint + "?flow=" + form.FlowID
+	if form.Challenge != "" {
+		// if there was an oauth2 code challenge, we append it to the kratos url
+		url += "&login_challenge=" + form.Challenge
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error creating request")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	resp, err := s.submitKratosLoginRequest(form.CsrfToken, r, req)
+	if err != nil {
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("Error sending request to kratos")
+		s.ErrorResponse(w, http.StatusUnauthorized, "Invalid login, unable to submit flow to kratos")
+		return
+	}
+	// set the cookies from kratos to authenticate the client
+	setLoginCookies(resp, w)
+	redirect, err := getKratosRedirect(resp)
+	if err != nil {
+		log.WithFields(fields).Errorln("invalid login with kratos")
+		s.ErrorResponse(w, resp.StatusCode, "Invalid login")
+		return
+	}
+	writeJsonResponse(w, http.StatusOK, redirect)
+}
+
+func (srv *Server) submitKratosLoginRequest(token string, client, kratos *http.Request) (*http.Response, error) {
+	// get the cookie from the client request and send it to kratos along w/
+	// login form data, headers and the csrf token from the client
+	cookie := client.Header.Get("Cookie")
+	kratos.Header.Set("Cookie", cookie)
+	kratos.Header.Set("X-CSRF-Token", token)
+	kratos.Header.Set("Content-Type", "application/json")
+	kratos.Header.Set("Accept", "application/json")
+	return srv.Client.Do(kratos)
+}
+
+func buildKratosLoginForm(form LoginRequest) ([]byte, error) {
+	if form.Username == "" || form.Password == "" {
+		return nil, errors.New("username or password is empty")
+	}
+	body := map[string]interface{}{}
+	body["identifier"] = form.Username
+	body["password"] = form.Password
+	body["method"] = "password"
+	body["flow"] = form.FlowID
+	body["csrf_token"] = form.CsrfToken
+	return json.Marshal(body)
+}
+
+func getKratosRedirect(resp *http.Response) (map[string]string, error) {
+	respBody := map[string]string{}
+	decoded := map[string]interface{}{}
+	var err error
+	defer resp.Body.Close()
+	if err = json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return nil, err
+	}
+	switch resp.StatusCode {
+	case 422:
+		// kratos responds with a 422 if there was an oauth2 flow initiated
+		// in that case, we need to redirect the user to the `redirect_browser_to` url
+		respBody["redirect_to"] = decoded["redirect_browser_to"].(string)
+	case 200:
+		// successful login from kratos without oauth2
+		session := decoded["session"].(map[string]interface{})
+		identity := session["identity"].(map[string]interface{})
+		traits := identity["traits"].(map[string]interface{})
+		if traits["password_reset"].(bool) {
 			respBody["redirect_to"] = "/reset-password"
-		default:
+		} else {
 			respBody["redirect_to"] = "/dashboard"
 		}
-		s.WriteResponse(w, http.StatusOK, respBody)
-		return
-	} else {
-		log.WithFields(fields).Error("Error authorizing user")
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
-		return
+	default:
+		return nil, errors.New("invalid login")
 	}
+	return respBody, nil
 }
 
-func getClaims(user *models.User) *Claims {
-	claims := Claims{
-		UserID:        user.ID,
-		PasswordReset: user.PasswordReset,
-		Role:          user.Role,
-		FacilityID:    user.FacilityID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:  "admin",
-			Subject: user.Username,
-		},
-	}
-	return &claims
-}
-
-func signToken(claims *Claims) *string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(os.Getenv("APP_KEY")))
-	if err != nil {
-		return nil
-	}
-	return &signedToken
-}
-
-func setLoginCookies(resp *http.Response, w http.ResponseWriter, token string) {
-	// set Ory cookies
+func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 	for _, cookie := range resp.Cookies() {
 		http.SetCookie(w, &http.Cookie{
 			Name:     cookie.Name,
@@ -179,19 +153,12 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter, token string) {
 			Path:     "/",
 		})
 	}
-	http.SetCookie(w, &http.Cookie{
-		Name:     "unlocked_token",
-		Value:    token,
-		Expires:  time.Now().Add(24 * time.Hour),
-		SameSite: http.SameSiteDefaultMode,
-		HttpOnly: true,
-		Secure:   true,
-		Path:     "/",
-	})
 }
 
 func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleOidcConsent"}
+	// decode the request body, the client should have sent us the consent challenge
+	// that they received from hydra along with the user's consent
 	var decoded map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&decoded)
 	if err != nil {
@@ -201,8 +168,8 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	id := s.GetUserID(r)
-	user, err := s.Db.GetUserByID(id)
+	// get the user from the database
+	user, err := s.Db.GetUserByID(s.GetUserID(r))
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Error("Error getting user from db")
@@ -210,6 +177,7 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	consentChallenge := "?consent_challenge=" + decoded["consent_challenge"].(string)
+	// build the consent body to send to hydra with info about the oauth2 identity token
 	jsonBody, err := buildConsentBody(user)
 	if err != nil {
 		fields["error"] = err.Error()
@@ -217,6 +185,7 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+	// send the consent request to hydra
 	req, err := http.NewRequest(http.MethodPut, os.Getenv("HYDRA_ADMIN_URL")+ConsentPutEndpoint+consentChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
 		fields["error"] = err.Error()
@@ -224,31 +193,22 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	req.Header.Add("Cookie", r.Header.Get("Cookie"))
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
-	response, err := s.Client.Do(req)
+	// making sure to add the cookies, and relevant headers. If we don't add accept json
+	// header, hydra will return a redirect automatically as if we were a browser
+	response, err := s.sendAndDecodeOryRequest(r, req)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Error("Error sending request to hydra")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	defer response.Body.Close()
-	var consentResponse map[string]interface{}
-	err = json.NewDecoder(response.Body).Decode(&consentResponse)
-	if err != nil {
-		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error decoding response")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	log.Info("consent response: ", consentResponse)
-	redirectURI := consentResponse["redirect_to"].(string)
+	log.Info("consent response: ", response)
+	// send the client the redirect uri that hydra sent us
+	redirectURI := response["redirect_to"].(string)
 	respBody := map[string]string{
 		"redirect_to": redirectURI,
 	}
-	s.WriteResponse(w, http.StatusOK, respBody)
+	writeJsonResponse(w, http.StatusOK, respBody)
 }
 
 func buildConsentBody(user *models.User) ([]byte, error) {
@@ -262,6 +222,8 @@ func buildConsentBody(user *models.User) ([]byte, error) {
 			"scope": []string{"openid", "offline", "profile", "email"},
 		},
 		"id_token": map[string]string{
+			// we use the username for all these fields, because different platforms
+			// allow different field options by default, so we include a few just in case
 			"nickname":           user.Username,
 			"email":              user.Username,
 			"preferred_username": user.Username,
@@ -269,6 +231,20 @@ func buildConsentBody(user *models.User) ([]byte, error) {
 		},
 	}
 	return json.Marshal(body)
+}
+
+func (srv *Server) sendAndDecodeOryRequest(client, req *http.Request) (map[string]interface{}, error) {
+	req.Header.Add("Cookie", client.Header.Get("Cookie"))
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
+	resp, err := srv.Client.Do(req)
+	if err != nil {
+		log.Errorln("Error sending request to ory", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var responseBody map[string]interface{}
+	return responseBody, json.NewDecoder(resp.Body).Decode(&responseBody)
 }
 
 // this endpoint is used when the user has an existing Kratos session, and is directed to
@@ -310,26 +286,14 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	req.Header.Add("Cookie", r.Header.Get("Cookie"))
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ORY_TOKEN"))
-	response, err := srv.Client.Do(req)
+	consentResponse, err := srv.sendAndDecodeOryRequest(r, req)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error sending request to hydra")
+		log.WithFields(fields).Error("Error creating request")
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	defer response.Body.Close()
-	var consentResponse map[string]interface{}
-	err = json.NewDecoder(response.Body).Decode(&consentResponse)
-	if err != nil {
-		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error decoding response")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		return
-	}
-	srv.WriteResponse(w, http.StatusOK, map[string]string{
+	writeJsonResponse(w, http.StatusOK, map[string]string{
 		"redirect_to": consentResponse["redirect_to"].(string),
 	})
 }

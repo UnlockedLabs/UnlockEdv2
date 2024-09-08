@@ -53,7 +53,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, response)
 }
 
 func getImagePath(r *http.Request) string {

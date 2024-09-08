@@ -25,7 +25,7 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Error("handler: getOutcomes: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user id")
 	}
 
 	// Get vars from query param
@@ -37,58 +37,64 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request) {
 	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage, order, orderBy, outcomeType)
 	if err != nil {
 		log.Error("handler: getOutcomes: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error fetching outcomes from database")
 		return
 	}
-	response := models.PaginatedResource[models.Outcome]{}
-	response.Meta = models.NewPaginationInfo(page, perPage, total)
-	response.Data = outcome
-	srv.WriteResponse(w, http.StatusOK, response)
+	meta := models.NewPaginationInfo(page, perPage, total)
+	writePaginatedResponse(w, http.StatusOK, outcome, meta)
 }
 
 func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "createOutcome"}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("handler: createOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("error parsing id from path")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error creating outcome, invalid form")
 		return
 	}
 	outcome := &models.Outcome{}
 	err = json.NewDecoder(r.Body).Decode(&outcome)
 	if err != nil {
-		log.Error("handler: createOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("error parsing id from path")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error creating outcome, invalid form")
 		return
 	}
 	if outcome.UserID == 0 {
 		outcome.UserID = uint(id)
 	}
 	if outcome, err = srv.Db.CreateOutcome(outcome); err != nil {
-		log.Error("handler: createOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.WithFields(fields).Error("error creating outcome in the database")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error creating outcome, invalid form")
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	writeJsonResponse(w, http.StatusCreated, *outcome)
 }
 
 func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request) {
+	fields := log.Fields{"handler": "updateOutcome"}
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
-		log.Error("handler: updateOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("handler: updateOutcome: ", err.Error())
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error updating outcome, invalid outcome ID")
 		return
 	}
 	uid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("handler: updateOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Error("handler: updateOutcome: ", err.Error())
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error updating outcome, invalid user ID")
 		return
 	}
 	outcome := models.Outcome{}
 	err = json.NewDecoder(r.Body).Decode(&outcome)
 	defer r.Body.Close()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		fields["error"] = err.Error()
+		log.WithFields(fields).Errorln("Error decoding request body")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error updating outcome, invalid form")
 		return
 	}
 	if outcome.UserID == 0 {
@@ -96,23 +102,22 @@ func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request) {
 	}
 	updatedOutcome, err := srv.Db.UpdateOutcome(&outcome, uint(id))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.WithFields(fields).Errorln("Error updating outcome in the database")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error updating outcome")
 		return
 	}
-	response := models.Resource[models.Outcome]{}
-	response.Data = append(response.Data, *updatedOutcome)
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, *updatedOutcome)
 }
 
 func (srv *Server) HandleDeleteOutcome(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
 		log.Error("handler: deleteOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid outcome id")
 	}
 	if err = srv.Db.DeleteOutcome(uint(id)); err != nil {
 		log.Error("handler: deleteOutcome: ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error deleting outcome, invalid outcome id")
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJsonResponse(w, http.StatusNoContent, "Outcome deleted successfully")
 }

@@ -29,14 +29,14 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 		total, milestones, err = srv.Db.GetMilestonesForUser(page, perPage, userId)
 		if err != nil {
 			log.Debug("IndexMilestones Database Error: ", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			srv.ErrorResponse(w, http.StatusInternalServerError, "Error fetching milestones from database")
 			return
 		}
 	} else {
 		total, milestones, err = srv.Db.GetMilestones(page, perPage, search, orderBy)
 		if err != nil {
 			log.Debug("IndexMilestones Database Error: ", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			srv.ErrorResponse(w, http.StatusInternalServerError, "Error fetching milestones from database")
 			return
 		}
 	}
@@ -47,11 +47,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 		CurrentPage: page,
 		Total:       total,
 	}
-	response := models.PaginatedResource[database.MilestoneResponse]{
-		Meta: paginationData,
-		Data: milestones,
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writePaginatedResponse(w, http.StatusOK, milestones, paginationData)
 }
 
 func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +61,7 @@ func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusCreated, miles)
+	writeJsonResponse(w, http.StatusCreated, miles)
 }
 
 func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +74,7 @@ func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	writeJsonResponse(w, http.StatusOK, "Milestone deleted successfully")
 }
 
 func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request) {
@@ -110,5 +106,5 @@ func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, toUpdate)
+	writeJsonResponse(w, http.StatusOK, toUpdate)
 }

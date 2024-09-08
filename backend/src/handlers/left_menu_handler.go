@@ -21,10 +21,7 @@ func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	response := models.Resource[models.LeftMenuLink]{
-		Data: links,
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, links)
 }
 
 func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request) {
@@ -32,18 +29,18 @@ func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Reques
 	err := json.NewDecoder(r.Body).Decode(&links)
 	if err != nil {
 		log.Error("PostLeftMenuLinks Error:" + err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "Error decoding request form")
 		return
 	}
 	if err = srv.Db.DeleteAllLinks(); err != nil {
 		log.Error("PostLeftMenuLinks Error:" + err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error deleting links in database")
 		return
 	}
 	if err = srv.Db.CreateFreshLeftMenuLinks(links); err != nil {
 		log.Error("PostLeftMenuLinks Error:" + err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating links in database")
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	writeJsonResponse(w, http.StatusCreated, links)
 }

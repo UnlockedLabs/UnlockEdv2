@@ -5,15 +5,15 @@ import "reflect"
 type PaginatedResource[T any] struct {
 	Message string         `json:"message"`
 	Data    []T            `json:"data"`
-	Meta    PaginationMeta `json:"meta"`
+	Meta    PaginationMeta `json:"meta,omitempty"`
 }
 
 type Resource[T any] struct {
 	Message string `json:"message"`
-	Data    []T    `json:"data"`
+	Data    T      `json:"data"`
 }
 
-func DefaultResource[T any](data []T) Resource[T] {
+func DefaultResource[T any](data T) Resource[T] {
 	return Resource[T]{
 		Message: "resource fetched successfully",
 		Data:    data,

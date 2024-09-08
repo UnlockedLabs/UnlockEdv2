@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -24,15 +25,13 @@ type DatabaseFields struct {
 
 type User struct {
 	DatabaseFields
-	Username      string   `gorm:"size:255;not null;unique" json:"username"`
-	NameFirst     string   `gorm:"size:255;not null" json:"name_first"`
-	Email         string   `gorm:"size:255;not null;unique" json:"email"`
-	Password      string   `gorm:"size:255;not null" json:"-"`
-	PasswordReset bool     `gorm:"default:true" json:"password_reset"`
-	NameLast      string   `gorm:"size:255;not null" json:"name_last"`
-	Role          UserRole `gorm:"size:255;default:student" json:"role"`
-	KratosID      string   `gorm:"size:255" json:"kratos_id"`
-	FacilityID    uint     `json:"facility_id"`
+	Username   string   `gorm:"size:255;not null;unique" json:"username"`
+	NameFirst  string   `gorm:"size:255;not null" json:"name_first"`
+	Email      string   `gorm:"size:255;not null;unique" json:"email"`
+	NameLast   string   `gorm:"size:255;not null" json:"name_last"`
+	Role       UserRole `gorm:"size:255;default:student" json:"role"`
+	KratosID   string   `gorm:"size:255" json:"kratos_id"`
+	FacilityID uint     `json:"facility_id"`
 
 	/* foreign keys */
 	Mappings    []ProviderUserMapping `json:"-"`
@@ -70,13 +69,21 @@ func (user *User) CreateTempPassword() string {
 	return string(b)
 }
 
-func (user *User) HashPassword() error {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+func HashPassword(password string) string {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		logrus.Errorf("Error hashing password: %v", err)
+		return ""
 	}
-	user.Password = string(bytes)
-	return nil
+	return string(bytes)
+}
+
+func (user *User) GetTraits() map[string]interface{} {
+	return map[string]interface{}{
+		"username":    user.Username,
+		"role":        user.Role,
+		"facility_id": user.FacilityID,
+	}
 }
 
 func (user *User) GetExternalIDFromProvider(db *gorm.DB, providerId uint) (string, error) {
@@ -86,12 +93,4 @@ func (user *User) GetExternalIDFromProvider(db *gorm.DB, providerId uint) (strin
 		return "", err
 	}
 	return mapping.ExternalUserID, nil
-}
-
-/**
-* This function is called on a user object when it's fresh out of the database, so
-* the password is already hashed and checked against the input string
-**/
-func (user *User) CheckPasswordHash(password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil
 }

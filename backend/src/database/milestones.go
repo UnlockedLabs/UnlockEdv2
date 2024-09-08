@@ -21,8 +21,8 @@ func IsValidOrderBy(orderBy string) bool {
 func (db *DB) GetMilestonesByProgramID(page, perPage, id int) (int64, []models.Milestone, error) {
 	content := []models.Milestone{}
 	total := int64(0)
-	_ = db.Conn.Model(&models.Milestone{}).Where("program_id = ?", id).Count(&total)
-	if err := db.Conn.Where("program_id = ?", id).Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
+	_ = db.Model(&models.Milestone{}).Where("program_id = ?", id).Count(&total)
+	if err := db.Where("program_id = ?", id).Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
 		return 0, nil, err
 	}
 	return total, content, nil
@@ -44,7 +44,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 		content []MilestoneResponse
 		total   int64
 	)
-	query := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
+	query := db.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
 		Joins("JOIN programs ON milestones.program_id = programs.id").
 		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
 		Joins("JOIN users ON milestones.user_id = users.id")
@@ -72,7 +72,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []MilestoneResponse, error) {
 	content := []MilestoneResponse{}
 	total := int64(0)
-	err := db.Conn.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
+	err := db.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, programs.name as program_name, users.username").
 		Joins("JOIN programs ON milestones.program_id = programs.id").
 		Joins("JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
 		Joins("JOIN users ON milestones.user_id = users.id").
@@ -89,21 +89,21 @@ func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []Milesto
 }
 
 func (db *DB) CreateMilestone(content *models.Milestone) (*models.Milestone, error) {
-	if err := db.Conn.Create(content).Error; err != nil {
+	if err := db.Create(content).Error; err != nil {
 		return nil, err
 	}
 	return content, nil
 }
 
 func (db *DB) UpdateMilestone(content *models.Milestone) (*models.Milestone, error) {
-	if err := db.Conn.Save(content).Error; err != nil {
+	if err := db.Save(content).Error; err != nil {
 		return nil, err
 	}
 	return content, nil
 }
 
 func (db *DB) DeleteMilestone(id int) error {
-	if err := db.Conn.Where("id = ?", id).Delete(&models.Milestone{}).Error; err != nil {
+	if err := db.Where("id = ?", id).Delete(&models.Milestone{}).Error; err != nil {
 		return err
 	}
 	return nil
@@ -111,7 +111,7 @@ func (db *DB) DeleteMilestone(id int) error {
 
 func (db *DB) GetMilestoneByID(id int) (*models.Milestone, error) {
 	content := &models.Milestone{}
-	if err := db.Conn.Where("id = ?", id).First(content).Error; err != nil {
+	if err := db.Where("id = ?", id).First(content).Error; err != nil {
 		return nil, err
 	}
 	return content, nil

@@ -16,6 +16,18 @@
               }
             }
           }
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role"
+        },
+        "facility_id": {
+          "type": "integer",
+          "description": "The facility associated with the user"
+        },
+        "password_reset": {
+          "type": "boolean",
+          "description": "Whether the user has requested a password reset"
         }
       }
     }

@@ -32,7 +32,7 @@ func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, studentDashboard)
+	writeJsonResponse(w, http.StatusOK, studentDashboard)
 }
 
 func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +45,7 @@ func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, adminDashboard)
+	writeJsonResponse(w, http.StatusOK, adminDashboard)
 }
 
 /**
@@ -71,7 +71,7 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, userCatalogue)
+	writeJsonResponse(w, http.StatusOK, userCatalogue)
 }
 
 func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
@@ -102,5 +102,5 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		"num_completed": numCompleted,
 		"total_time":    totalTime,
 	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, response)
 }

@@ -20,8 +20,8 @@ type Server struct {
 	Mux       *http.ServeMux
 	OryClient *ory.APIClient
 	Client    *http.Client
-	Nats      *nats.Conn
-	Buckets   map[string]nats.KeyValue
+	nats      *nats.Conn
+	buckets   map[string]nats.KeyValue
 }
 
 /**
@@ -31,7 +31,6 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerAuthRoutes()
 	srv.registerUserRoutes()
 	srv.registerProviderPlatformRoutes()
-	srv.registerUserActivityRoutes()
 	srv.registerProviderMappingRoutes()
 	srv.registerActionsRoutes()
 	srv.registerLeftMenuRoutes()
@@ -51,6 +50,17 @@ func (srv *Server) RegisterRoutes() {
 
 func ServerWithDBHandle(db *database.DB) *Server {
 	return &Server{Db: db, Mux: http.NewServeMux()}
+}
+
+func (srv *Server) ListenAndServe() {
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Println("Starting server on port: ", port)
+	if err := http.ListenAndServe(":"+port, CorsMiddleware(srv.Mux)); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func NewServer(isTesting bool) *Server {
@@ -76,7 +86,7 @@ func NewServer(isTesting bool) *Server {
 		if err != nil {
 			log.Errorf("Failed to connect to NATS: %v", err)
 		}
-		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}, Nats: conn}
+		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}, nats: conn}
 		err = server.setupBucket()
 		if err != nil {
 			log.Errorf("Failed to setup JetStream KV store: %v", err)
@@ -102,20 +112,19 @@ func setupNats() (*nats.Conn, error) {
 }
 
 const (
-	CachedUsers    string = "cache_users"
-	CachedSessions string = "cached_sessions"
-	RateLimit      string = "rate_limit"
-	CsrfToken      string = "csrf_token"
+	CachedUsers string = "cache_users"
+	RateLimit   string = "rate_limit"
+	CsrfToken   string = "csrf_token"
 )
 
 func (srv *Server) setupBucket() error {
-	js, err := srv.Nats.JetStream()
+	js, err := srv.nats.JetStream()
 	if err != nil {
 		log.Fatalf("Error initializing JetStream: %v", err)
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, CachedSessions, RateLimit, CsrfToken} {
+	for _, bucket := range []string{CachedUsers, RateLimit, CsrfToken} {
 		kv, err := js.KeyValue(bucket)
 		if err == nats.ErrBucketNotFound {
 			kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
@@ -128,16 +137,15 @@ func (srv *Server) setupBucket() error {
 		}
 		buckets[bucket] = kv
 	}
-	srv.Buckets = buckets
+	srv.buckets = buckets
 	return nil
 }
 
-func (srv *Server) applyMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func (srv *Server) applyMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(
 		srv.setCsrfTokenMiddleware(
 			srv.rateLimitMiddleware(
-				srv.AuthMiddleware(
-					srv.UserActivityMiddleware(h)))))
+				srv.AuthMiddleware(h))))
 }
 
 func (srv *Server) ApplyAdminMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
@@ -225,7 +233,7 @@ func (srv *Server) generateKolibriOidcClient() error {
 		log.WithFields(fields).Errorln("error creating kolibri auth client")
 		return err
 	}
-	return srv.Db.Conn.Create(client).Error
+	return srv.Db.Create(client).Error
 }
 
 func (srv *Server) syncKratosAdminDB() error {
@@ -250,7 +258,7 @@ func (srv *Server) syncKratosAdminDB() error {
 			log.Fatal("this should never happen, we just created the user")
 		}
 		if user.KratosID != id {
-			if err := srv.Db.Conn.Exec("UPDATE users SET kratos_id = ? WHERE id = 1", id).Error; err != nil {
+			if err := srv.Db.Exec("UPDATE users SET kratos_id = ? WHERE id = 1", id).Error; err != nil {
 				return err
 			}
 		}
@@ -261,7 +269,7 @@ func (srv *Server) syncKratosAdminDB() error {
 func (srv *Server) setupDefaultAdminInKratos() error {
 	user, err := srv.Db.GetUserByID(1)
 	if err != nil {
-		database.SeedDefaultData(srv.Db.Conn, false)
+		database.SeedDefaultData(srv.Db.DB, false)
 		return srv.setupDefaultAdminInKratos()
 		// rerun after seeding the default user
 	}
@@ -342,26 +350,36 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 	return intPage, intPerPage
 }
 
-func (srv *Server) WriteResponse(w http.ResponseWriter, status int, data interface{}) {
+func writePaginatedResponse[T any](w http.ResponseWriter, status int, data []T, meta models.PaginationMeta) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if data == nil {
-		return
+	resp := models.PaginatedResource[T]{Message: "", Data: data, Meta: meta}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Error("Error writing json response", err)
+		http.Error(w, "error writing response", http.StatusInternalServerError)
 	}
-	if resp, ok := data.(string); ok {
-		if _, err := w.Write([]byte(resp)); err != nil {
+}
+
+func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if str, ok := any(data).(string); ok {
+		resp := models.Resource[struct{}]{Message: str, Data: struct{}{}}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			log.Error("error writing response: ", err)
 			return
 		}
 	}
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	resp := models.Resource[T]{Message: "Data fetched successfully", Data: data}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		log.Error("Error writing json response", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, "error writing response")
+		http.Error(w, "error writing response", http.StatusInternalServerError)
 	}
 }
 
 func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
-	log.Error(message)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	resource := models.Resource[interface{}]{Message: message}
 	err := json.NewEncoder(w).Encode(resource)
 	if err != nil {

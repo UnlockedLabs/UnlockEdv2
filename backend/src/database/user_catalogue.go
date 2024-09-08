@@ -21,7 +21,7 @@ type UserCatalogueJoin struct {
 
 func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) ([]UserCatalogueJoin, error) {
 	catalogue := []UserCatalogueJoin{}
-	tx := db.Conn.Table("programs p").
+	tx := db.Table("programs p").
 		Select("p.id as program_id, p.thumbnail_url, p.name as program_name, pp.name as provider_name, p.external_url, p.type as program_type, p.description, p.outcome_types, f.user_id IS NOT NULL as is_favorited").
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
@@ -78,7 +78,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		dbField = "p.name"
 	}
 	orderStr := dbField + " " + validOrder(order)
-	tx := db.Conn.Table("programs p").
+	tx := db.Table("programs p").
 		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
     f.user_id IS NOT NULL as is_favorited,
@@ -93,7 +93,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
     END as course_progress,
     a.total_time`, userId, userId).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("LEFT JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.program_id = p.id", userId).
+		Joins("JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.program_id = p.id", userId).
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (
@@ -134,7 +134,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 	}
 
 	var numCompleted int64
-	if err := db.Conn.Model(&models.Outcome{}).Where("user_id = ?", userId).Count(&numCompleted).Error; err != nil {
+	if err := db.Model(&models.Outcome{}).Where("user_id = ?", userId).Count(&numCompleted).Error; err != nil {
 		return nil, 0, 0, err
 	}
 	var totalTime uint

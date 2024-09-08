@@ -38,7 +38,7 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
 	})
 }
@@ -79,7 +79,7 @@ func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
 	})
 }
@@ -96,7 +96,7 @@ func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Reque
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, map[string]interface{}{
+	writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"count":      count,
 		"activities": activities,
 	})
@@ -112,5 +112,5 @@ func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to create activity")
 		return
 	}
-	srv.WriteResponse(w, http.StatusOK, activity)
+	writeJsonResponse(w, http.StatusOK, activity)
 }

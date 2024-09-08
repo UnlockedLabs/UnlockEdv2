@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -9,15 +10,16 @@ import (
 	"strconv"
 	"time"
 
+	_ "github.com/ncruces/go-sqlite3/embed"
+	"github.com/ncruces/go-sqlite3/gormlite"
+
+	"github.com/pressly/goose/v3"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type DB struct {
-	Conn *gorm.DB
-}
+type DB struct{ *gorm.DB }
 
 var TableList = []interface{}{
 	&models.User{},
@@ -41,7 +43,7 @@ func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
-		gormDb, err = gorm.Open(sqlite.Open("file:memdb1?mode=memory&cache=shared"), &gorm.Config{})
+		gormDb, err = gorm.Open(gormlite.Open(":memory:"), &gorm.Config{})
 		if err != nil {
 			log.Fatal("Failed to connect to SQLite database:", err)
 		}
@@ -53,15 +55,30 @@ func InitDB(isTesting bool) *DB {
 			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
 				os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 		}
+		db, err := sql.Open("pgx", dsn)
+		if err != nil {
+			log.Fatalf("Failed to open database connection: %v", err)
+		}
+		if err := db.Ping(); err != nil {
+			log.Fatalf("Failed to ping database: %v", err)
+		}
+		log.Println("Running up migrations...")
+		migrationDir := os.Getenv("MIGRATION_DIR")
+		if migrationDir == "" {
+			migrationDir = "migrations"
+		}
+		if err := goose.Up(db, migrationDir); err != nil {
+			log.Fatalf("Migration failed: %v", err)
+		}
 		gormDb, err = gorm.Open(postgres.New(postgres.Config{
-			DSN: dsn,
+			Conn: db,
 		}), &gorm.Config{})
 		if err != nil {
-			log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
+			log.Fatalf("Failed to connect to PostgreSQL database using GORM: %v", err)
 		}
-		log.Println("Connected to the PostgreSQL database")
+		log.Println("Connected to the PostgreSQL database via GORM")
 	}
-	database := &DB{Conn: gormDb}
+	database := &DB{gormDb}
 	SeedDefaultData(gormDb, isTesting)
 	if isTesting {
 		database.SeedTestData()
@@ -95,21 +112,15 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			log.Fatalf("Failed to create user: %v", err)
 		}
 		user := models.User{
-			Username:      "SuperAdmin",
-			NameFirst:     "Super",
-			NameLast:      "Admin",
-			Email:         "admin@unlocked.v2",
-			PasswordReset: true,
-			Role:          "admin",
-			Password:      "ChangeMe!",
-			FacilityID:    1,
+			Username:   "SuperAdmin",
+			NameFirst:  "Super",
+			NameLast:   "Admin",
+			Email:      "admin@unlocked.v2",
+			Role:       "admin",
+			FacilityID: 1,
 		}
 		log.Printf("Creating user: %v", user)
 		log.Println("Make sure to sync the Kratos instance if you are freshly migrating")
-		err := user.HashPassword()
-		if err != nil {
-			log.Fatalf("Failed to hash password: %v", err)
-		}
 		if err := db.Create(&user).Error; err != nil {
 			log.Fatalf("Failed to create user: %v", err)
 		}
@@ -127,6 +138,19 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
 
 func (db *DB) SeedTestData() {
+	facilitiesFile, err := os.ReadFile("test_data/facilities.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var facilities []models.Facility
+	if err := json.Unmarshal(facilitiesFile, &facilities); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for i := range facilities {
+		if err := db.Create(&facilities[i]).Error; err != nil {
+			log.Fatalf("Failed to create facility: %v", err)
+		}
+	}
 	platforms, err := os.ReadFile("test_data/provider_platforms.json")
 	if err != nil {
 		log.Fatalf("Failed to read test data: %v", err)
@@ -135,8 +159,8 @@ func (db *DB) SeedTestData() {
 	if err := json.Unmarshal(platforms, &platform); err != nil {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
-	for _, p := range platform {
-		if err := db.Conn.Create(&p).Error; err != nil {
+	for i := range platform {
+		if err := db.Create(&platform[i]).Error; err != nil {
 			log.Fatalf("Failed to create platform: %v", err)
 		}
 	}
@@ -148,16 +172,16 @@ func (db *DB) SeedTestData() {
 	if err := json.Unmarshal(users, &user); err != nil {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
-	for idx, u := range user {
-		log.Printf("Creating user %s", u.Username)
-		if err := db.Conn.Create(&u).Error; err != nil {
+	for idx := range user {
+		log.Printf("Creating user %s", user[idx].Username)
+		if err := db.Create(&user[idx]).Error; err != nil {
 			log.Fatalf("Failed to create user: %v", err)
 		}
-		for i := 0; i < len(platform); i++ {
+		for i := range platform {
 			mapping := models.ProviderUserMapping{
-				UserID:             u.ID,
+				UserID:             user[idx].ID,
 				ProviderPlatformID: platform[i].ID,
-				ExternalUsername:   u.Username,
+				ExternalUsername:   user[idx].Username,
 				ExternalUserID:     strconv.Itoa(idx),
 			}
 			if err = db.CreateProviderUserMapping(&mapping); err != nil {
@@ -173,8 +197,8 @@ func (db *DB) SeedTestData() {
 	if err := json.Unmarshal(progs, &programs); err != nil {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
-	for _, p := range programs {
-		if err := db.Conn.Create(&p).Error; err != nil {
+	for idx := range programs {
+		if err := db.Create(&programs[idx]).Error; err != nil {
 			log.Fatalf("Failed to create program: %v", err)
 		}
 	}
@@ -186,14 +210,14 @@ func (db *DB) SeedTestData() {
 	if err := json.Unmarshal(mstones, &milestones); err != nil {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
-	for _, m := range milestones {
-		if err := db.Conn.Create(&m).Error; err != nil {
+	for idx := range milestones {
+		if err := db.Create(&milestones[idx]).Error; err != nil {
 			log.Fatalf("Failed to create milestone: %v", err)
 		}
 	}
 	outcomes := []string{"completion", "grade", "certificate", "pathway_completion"}
-	for _, user := range user {
-		for _, prog := range programs {
+	for idx := range user {
+		for jdx := range programs {
 			for i := 0; i < 365; i++ {
 				if rand.Intn(100)%2 == 0 {
 					continue
@@ -204,8 +228,8 @@ func (db *DB) SeedTestData() {
 				yearAgo := time.Now().AddDate(-1, 0, 0)
 				time := yearAgo.AddDate(0, 0, i)
 				activity := models.Activity{
-					UserID:     user.ID,
-					ProgramID:  prog.ID,
+					UserID:     user[idx].ID,
+					ProgramID:  programs[jdx].ID,
 					Type:       "interaction",
 					TotalTime:  uint(startTime + randTime),
 					TimeDelta:  uint(randTime),
@@ -213,15 +237,16 @@ func (db *DB) SeedTestData() {
 					CreatedAt:  time,
 				}
 				startTime += randTime
-				if err := db.Conn.Create(&activity).Error; err != nil {
+				if err := db.Create(&activity).Error; err != nil {
 					log.Fatalf("Failed to create activity: %v", err)
 				}
 			}
 			outcome := models.Outcome{
-				ProgramID: prog.ID,
+				ProgramID: programs[jdx].ID,
+				UserID:    user[idx].ID,
 				Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 			}
-			if err := db.Conn.Create(&outcome).Error; err != nil {
+			if err := db.Create(&outcome).Error; err != nil {
 				log.Fatalf("Failed to create outcome: %v", err)
 			}
 		}

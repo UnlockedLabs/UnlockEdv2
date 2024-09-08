@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/jackc/pgx"
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats.go"
 	client "github.com/ory/kratos-client-go"
 	"github.com/pressly/goose/v3"
 	"gorm.io/driver/postgres"
@@ -54,6 +55,17 @@ func main() {
 }
 
 func MigrateFresh(db *sql.DB) {
+	options := nats.GetDefaultOptions()
+	url := os.Getenv("NATS_URL")
+	if url == "" {
+		url = "nats://localhost:4222"
+	}
+	options.Url = url
+	conn, err := options.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
 	if err := syncOryKratos(); err != nil {
 		log.Fatal("unable to delete identities from kratos instance")
 	}
@@ -61,6 +73,8 @@ func MigrateFresh(db *sql.DB) {
 	if err != nil {
 		log.Fatalf("Failed to open gorm connection: %v", err)
 	}
+
+	flushNats(conn)
 	database.SeedDefaultData(gormDb, false)
 	log.Println("Database successfully migrated from fresh state.")
 	log.Println("\033[31mIf the server is running, you MUST restart it\033[0m")
@@ -104,6 +118,23 @@ func syncOryKratos() error {
 	}
 	log.Println("ory identities deleted successfully")
 	return nil
+}
+
+func flushNats(conn *nats.Conn) {
+	js, err := conn.JetStream()
+	if err != nil {
+		log.Fatal("error initializing JetStream cache")
+	}
+	streamCh := js.Streams()
+
+	var streamList []*nats.StreamInfo
+	for streamInfo := range streamCh {
+		streamList = append(streamList, streamInfo)
+	}
+
+	for _, streamInfo := range streamList {
+		js.DeleteStream(streamInfo.Config.Name)
+	}
 }
 
 const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`

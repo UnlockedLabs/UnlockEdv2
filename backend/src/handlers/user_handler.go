@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
@@ -44,7 +43,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId, order, search)
 	if err != nil {
 		log.Error("IndexUsers Database Error: ", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error getting users from database")
 		return
 	}
 	last := srv.CalculateLast(total, perPage)
@@ -54,11 +53,7 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: page,
 		Total:       total,
 	}
-	response := models.PaginatedResource[models.User]{
-		Data: users,
-		Meta: paginationData,
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writePaginatedResponse(w, http.StatusOK, users, paginationData)
 }
 
 func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string) {
@@ -78,13 +73,7 @@ func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 		CurrentPage: page,
 		Total:       total,
 	}
-	log.Println("users: ", users)
-	response := models.PaginatedResource[models.User]{
-		Data:    users,
-		Meta:    paginationData,
-		Message: "unmapped users returned successfully",
-	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writePaginatedResponse(w, http.StatusOK, users, paginationData)
 }
 
 func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +92,7 @@ func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Reque
 		CurrentPage: page,
 		Total:       total,
 	}
-	response := models.PaginatedResource[database.UserWithLogins]{Data: users, Meta: paginationData, Message: "users with mappings returned successfully"}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writePaginatedResponse(w, http.StatusOK, users, paginationData)
 }
 
 /**
@@ -121,15 +109,13 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request) {
 		srv.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	response := models.Resource[models.User]{}
 	user, err := srv.Db.GetUserByID(uint(id))
 	if err != nil {
 		log.Info("Error: ", err)
-		http.Error(w, "User not found", http.StatusNotFound)
+		srv.ErrorResponse(w, http.StatusNotFound, "user not found")
 		return
 	}
-	response.Data = append(response.Data, *user)
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, user)
 }
 
 type NewUserResponse struct {
@@ -179,13 +165,14 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 			log.Error("Error creating provider user account for provider: ", provider.Name)
 		}
 	}
+	tempPw := newUser.CreateTempPassword()
 	response := NewUserResponse{
 		User:         *newUser,
-		TempPassword: newUser.Password,
+		TempPassword: tempPw,
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
-		if err := srv.HandleCreateUserKratos(newUser.Username, newUser.Password); err != nil {
+		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
 			log.Printf("Error creating user in kratos: %v", err)
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
@@ -193,14 +180,14 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 			log.Error("error getting kolibri instance")
 			// still return 201 because user has been created in kratos,
 			// kolibri might not be set up/available
-			srv.WriteResponse(w, http.StatusCreated, response)
+			writeJsonResponse(w, http.StatusCreated, response)
 			return
 		}
 		if err := srv.CreateUserInKolibri(newUser, kolibri); err != nil {
 			log.Error("error creating user in kolibri")
 		}
 	}
-	srv.WriteResponse(w, http.StatusCreated, response)
+	writeJsonResponse(w, http.StatusCreated, response)
 }
 
 /**
@@ -211,13 +198,13 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "HandleDeleteUser", "user_id": id}
 	if err != nil {
 		log.WithFields(fields).Error("DELETE User handler Error: ", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
 	user, err := srv.Db.GetUserByID(uint(id))
 	if err != nil {
 		log.WithFields(fields).Error("unable to find user to be deleted")
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error deleting user in database")
 		return
 	}
 	if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
@@ -229,7 +216,7 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 		log.WithFields(fields).Errorln("unable to delete user")
 		srv.ErrorResponse(w, http.StatusInternalServerError, "error deleting user in database")
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJsonResponse(w, http.StatusNoContent, "User deleted successfully")
 }
 
 /**
@@ -239,13 +226,13 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Error("UPDATE User handler Error: ", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
 	user := models.User{}
 	err = json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		srv.ErrorResponse(w, http.StatusBadRequest, "invalid form data submited")
 		return
 	}
 	defer r.Body.Close()
@@ -266,12 +253,10 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	updatedUser, err := srv.Db.UpdateUser(toUpdate)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "error updating user")
 		return
 	}
-	response := models.Resource[models.User]{}
-	response.Data = append(response.Data, *updatedUser)
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, updatedUser)
 }
 
 type TempPasswordRequest struct {
@@ -289,38 +274,33 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	}
 	defer r.Body.Close()
 	response := make(map[string]string)
-	newPass, err := srv.Db.AssignTempPasswordToUser(uint(temp.UserID))
-	if err != nil {
-		response["message"] = err.Error()
-		fields["error"] = err.Error()
-		log.WithFields(fields).Errorln("error assigning password to user")
-		srv.WriteResponse(w, http.StatusInternalServerError, response)
-		return
-	}
-	response["temp_password"] = newPass
-	response["message"] = "Temporary password assigned"
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Errorf("Exising user not found, this should never happen: %v", temp.UserID)
-		http.Error(w, "internal server error: existing user not found", http.StatusInternalServerError)
+		srv.ErrorResponse(w, http.StatusInternalServerError, "Error finding existing user")
 		return
 	}
+	newPass := user.CreateTempPassword()
+	response["temp_password"] = newPass
+	response["message"] = "Temporary password assigned"
 	if user.KratosID == "" {
 		err := srv.HandleCreateUserKratos(user.Username, newPass)
 		if err != nil {
 			fields["error"] = err.Error()
 			log.WithFields(fields).Errorf("Error creating user in kratos: %v", err)
-			http.Error(w, "internal server error: error creating user in kratos", http.StatusInternalServerError)
+			srv.ErrorResponse(w, http.StatusInternalServerError, "Error creating user in kratos")
 			return
 		}
 	} else {
-		if err := srv.handleUpdatePasswordKratos(user, newPass); err != nil {
+		claims := claimsFromUser(user)
+		claims.PasswordReset = true
+		if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
 			fields["error"] = err.Error()
 			log.WithFields(fields).Error("Error updating password for new kratos user")
 			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
-	srv.WriteResponse(w, http.StatusOK, response)
+	writeJsonResponse(w, http.StatusOK, response)
 }
