@@ -167,13 +167,9 @@ func (srv *CanvasService) ImportPrograms(db *gorm.DB) error {
 		if !ok {
 			is_pub = false
 		}
-		outcome_types := "grade"
 		if is_pub {
 			progType = "open_enrollment"
-		} else {
-			outcome_types += ", college_credit"
 		}
-
 		unlockedCourse := models.Program{
 			ProviderPlatformID:      srv.ProviderPlatformID,
 			Name:                    course["name"].(string),
@@ -263,51 +259,51 @@ func (srv *CanvasService) getCountAssignmentsForCourse(courseId int) (int, error
 	return getNodesLength(assignments), nil
 }
 
-// external ID
-func (srv *CanvasService) getAssignmentsForCourse(courseId int) ([]interface{}, error) {
-	url := srv.BaseURL + "/api/v1/courses/" + fmt.Sprintf("%d", courseId) + "/assignments"
-	log.Printf("url: %v", url)
-	resp, err := srv.SendRequest(url)
-	if err != nil {
-		log.Printf("Failed to send request: %v", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-	assignments := []interface{}{}
-	err = json.NewDecoder(resp.Body).Decode(&assignments)
-	if err != nil {
-		log.Printf("failed to decode response from assignments %v", err)
-		return nil, err
-	}
-	return assignments, nil
-}
+// // external ID
+// func (srv *CanvasService) getAssignmentsForCourse(courseId int) ([]interface{}, error) {
+// 	url := srv.BaseURL + "/api/v1/courses/" + fmt.Sprintf("%d", courseId) + "/assignments"
+// 	log.Printf("url: %v", url)
+// 	resp, err := srv.SendRequest(url)
+// 	if err != nil {
+// 		log.Printf("Failed to send request: %v", err)
+// 		return nil, err
+// 	}
+// 	defer resp.Body.Close()
+// 	assignments := []interface{}{}
+// 	err = json.NewDecoder(resp.Body).Decode(&assignments)
+// 	if err != nil {
+// 		log.Printf("failed to decode response from assignments %v", err)
+// 		return nil, err
+// 	}
+// 	return assignments, nil
+// }
 
 // all external ids
-func (srv *CanvasService) getUserSubmissionForQuiz(courseId, quizId, userId string, lastRun time.Time) (map[string]interface{}, error) {
-	queryParams := url.Values{}
-	queryParams.Add("submitted_since", lastRun.Format(time.RFC3339))
-	url := srv.BaseURL + "/api/v1/courses/" + courseId + "/quizzes/" + quizId + "/submissions/" + userId
-	url += "?" + queryParams.Encode()
-	resp, err := srv.SendRequest(url)
-	if err != nil {
-		log.Printf("Failed to send request: %v", err)
-		return nil, err
-	}
-	if resp.StatusCode != 200 {
-		log.Errorln("getUserSubmissionForQuiz canvas responded with code: ", resp.Status)
-		return nil, errors.New("canvas responded with code: " + resp.Status)
-	}
-	defer resp.Body.Close()
-	submissions := make(map[string]interface{})
-	err = json.NewDecoder(resp.Body).Decode(&submissions)
-	if err != nil {
-		return nil, err
-	}
-	if submissions == nil {
-		return nil, fmt.Errorf("submission not found")
-	}
-	return submissions, nil
-}
+// func (srv *CanvasService) getUserSubmissionForQuiz(courseId, quizId, userId string, lastRun time.Time) (map[string]interface{}, error) {
+// 	queryParams := url.Values{}
+// 	queryParams.Add("submitted_since", lastRun.Format(time.RFC3339))
+// 	url := srv.BaseURL + "/api/v1/courses/" + courseId + "/quizzes/" + quizId + "/submissions/" + userId
+// 	url += "?" + queryParams.Encode()
+// 	resp, err := srv.SendRequest(url)
+// 	if err != nil {
+// 		log.Printf("Failed to send request: %v", err)
+// 		return nil, err
+// 	}
+// 	if resp.StatusCode != 200 {
+// 		log.Errorln("getUserSubmissionForQuiz canvas responded with code: ", resp.Status)
+// 		return nil, errors.New("canvas responded with code: " + resp.Status)
+// 	}
+// 	defer resp.Body.Close()
+// 	submissions := make(map[string]interface{})
+// 	err = json.NewDecoder(resp.Body).Decode(&submissions)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if submissions == nil {
+// 		return nil, fmt.Errorf("submission not found")
+// 	}
+// 	return submissions, nil
+// }
 
 func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryString url.Values, lastRun time.Time) ([]map[string]interface{}, error) {
 	fields := log.Fields{"handler": "getUserSubmissionForCourse"}
