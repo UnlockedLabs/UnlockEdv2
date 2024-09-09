@@ -29,7 +29,7 @@ export default function MapUserForm({
         data: allUnmappedUsers,
         isLoading: isLoadingUnmapped,
         error: errorUnmappedUsers
-    } = useSWR<ServerResponse<any>>(
+    } = useSWR<ServerResponse<User>>(
         `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
     );
 
@@ -162,7 +162,7 @@ export default function MapUserForm({
                                 choose to do so.
                             </p>
                         )}
-                        {allUnmappedUsers?.data.map((user: User) => {
+                        {allUnmappedUsers.data.map((user: User) => {
                             return (
                                 <UserRadioInput
                                     user={user}

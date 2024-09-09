@@ -77,6 +77,7 @@ export interface PaginationMeta {
 
 export interface ServerResponse<T> {
     [key: string]: any;
+    success: boolean;
     message: string;
     data: Array<T> | T | null;
     pagination?: PaginationMeta;
