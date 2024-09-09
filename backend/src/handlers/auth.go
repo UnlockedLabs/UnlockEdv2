@@ -197,10 +197,14 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, error) {
 				traits := identity["traits"].(map[string]interface{})
 				fields["user"] = user
 				log.WithFields(fields).Info("found user from ory session")
+				facilityId, ok := traits["facility_id"].(float64)
+				if !ok {
+					facilityId = float64(user.FacilityID)
+				}
 				claims := &Claims{
 					Username:      user.Username,
 					UserID:        user.ID,
-					FacilityID:    uint(traits["facility_id"].(float64)),
+					FacilityID:    uint(facilityId),
 					PasswordReset: traits["password_reset"].(bool),
 					KratosID:      kratosID,
 					Role:          user.Role,
