@@ -201,11 +201,15 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, error) {
 				if !ok {
 					facilityId = float64(user.FacilityID)
 				}
+				passReset, ok := traits["password_reset"].(bool)
+				if !ok {
+					passReset = true
+				}
 				claims := &Claims{
 					Username:      user.Username,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
-					PasswordReset: traits["password_reset"].(bool),
+					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
 				}
