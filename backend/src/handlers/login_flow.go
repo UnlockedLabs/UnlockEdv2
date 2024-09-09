@@ -130,7 +130,8 @@ func getKratosRedirect(resp *http.Response) (map[string]string, error) {
 		session := decoded["session"].(map[string]interface{})
 		identity := session["identity"].(map[string]interface{})
 		traits := identity["traits"].(map[string]interface{})
-		if traits["password_reset"].(bool) {
+		reset, ok := traits["password_reset"].(bool)
+		if !ok || reset {
 			respBody["redirect_to"] = "/reset-password"
 		} else {
 			respBody["redirect_to"] = "/dashboard"
