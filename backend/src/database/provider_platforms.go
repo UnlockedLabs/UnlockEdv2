@@ -27,12 +27,15 @@ func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error)
 
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").Find(&platform, "id = ?", id).Error; err != nil {
+	if err := db.Model(models.ProviderPlatform{}).
+		Select("provider_platforms.*, o.id as oidc_id").
+		Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").
+		Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	key, err := platform.DecryptAccessKey()
 	if err != nil {
-		return nil, err
+		return nil, NewDBError(err, "platform not found")
 	}
 	platform.AccessKey = key
 	return &platform, nil
