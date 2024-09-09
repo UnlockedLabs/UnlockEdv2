@@ -1,9 +1,9 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
-echo "checking frontend .........."
+echo "🔎 checking frontend........."
 cd frontend
-echo "running prettier 󰎙 ..."
+echo "🎀 running prettier 🎀 󰎙 ..."
 FILES=$(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
 if [ -z "$FILES" ]; then
   echo "No files to check"
@@ -12,13 +12,13 @@ else
 fi
 echo "running oxlint 󰎙 ..."
 npx oxlint --fix $(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
-echo "checking backend ..............."
+echo " 🔎 checking backend ..............."
 BACKEND_FILES=$(cat .husky/staged-files | grep '^backend/.*\.\(go\)$' | sed 's/^backend\///')
 if [ -z "$BACKEND_FILES" ]; then
-  echo "All checks passed! 🎉"
+  echo "🎉 All checks passed! 🎉"
   exit 0
 else
-  echo "running golangci-lint  ......"
+  echo " 🔎 running golangci-lint 🔎   ......"
   cd ../backend
   golangci-lint run -v
   go mod tidy -v
@@ -28,6 +28,11 @@ else
   # cd tests
   # go test -v
   # cd ../../
-  git add $(cat frontend/.husky/staged-files)
-  echo "All checks passed! 🎉"
+  cd ..
+  FILES=$(cat frontend/.husky/staged-files)
+if not [ -z "$FILES" ]; then
+	echo "Adding changed files to commit 📝..."
+	git add $FILES
+fi
+  echo "🎉 All checks passed! 🎉"
 fi

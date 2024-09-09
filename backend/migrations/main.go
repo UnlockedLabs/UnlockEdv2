@@ -133,8 +133,8 @@ func flushNats(conn *nats.Conn) {
 	}
 
 	for _, streamInfo := range streamList {
-		js.DeleteStream(streamInfo.Config.Name)
+		if err := js.DeleteStream(streamInfo.Config.Name); err != nil {
+			log.Println("error deleting stream", err)
+		}
 	}
 }
-
-const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`

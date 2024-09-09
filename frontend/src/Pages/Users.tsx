@@ -77,8 +77,9 @@ export default function Users() {
             return;
         }
         const response = await API.delete('users/' + targetUser?.id);
-        const toastType =
-            response.success == 204 ? ToastState.success : ToastState.error;
+        const toastType = response.success
+            ? ToastState.success
+            : ToastState.error;
         const message = response.success
             ? 'User deleted successfully'
             : response.statusText;
