@@ -51,7 +51,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 	var total int64
 
 	if providerID == "" {
-		return 0, nil, errors.New("no provider id provided to search unmapped users")
+		return 0, nil, GetUnmappedUsersDBError(errors.New("no provider id provided to search unmapped users"))
 	}
 
 	if len(userSearch) != 0 {
@@ -71,7 +71,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&users).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, GetUnmappedUsersDBError(err)
 	}
 
 	return total, users, nil
@@ -103,7 +103,7 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 	tx = tx.Where(searchCondition)
 
 	if err := tx.Find(&users).Error; err != nil {
-		return nil, err
+		return nil, GetUnmappedUsersDBError(err)
 	}
 
 	fmt.Printf("found %d matches", len(users))

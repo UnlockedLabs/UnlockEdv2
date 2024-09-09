@@ -28,7 +28,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 		Find(&users).
 		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
-		return 0, nil, err
+		return 0, nil, GetUsersDBError(err)
 	}
 	log.Tracef("found %d users", count)
 	return count, users, nil
@@ -48,7 +48,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 		Limit(itemsPerPage).
 		Find(&users).Count(&count).Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
-		return 0, nil, err
+		return 0, nil, GetUsersDBError(err)
 	}
 	if len(users) == 0 {
 		split := strings.Fields(search)
@@ -63,7 +63,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 				Limit(itemsPerPage).
 				Find(&users).Count(&count).Error; err != nil {
 				log.Printf("Error fetching users: %v", err)
-				return 0, nil, err
+				return 0, nil, GetUsersDBError(err)
 			}
 		}
 	}
@@ -75,7 +75,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := db.First(&user, "id = ?", id).Error; err != nil {
-		return nil, err
+		return nil, UserNotFoundDBErr(err)
 	}
 	return &user, nil
 }
@@ -90,13 +90,13 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 	var count int64
 	if err := db.Model(&models.User{}).
 		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, GetUsersWithLoginsDBError(err)
 	}
 	var userWithLogins []UserWithLogins
 	for _, user := range users {
 		var logins []models.ProviderUserMapping
 		if err := db.Model(&models.ProviderUserMapping{}).Find(&logins, "user_id = ?", user.ID).Error; err != nil {
-			return 0, nil, err
+			return 0, nil, GetUsersWithLoginsDBError(err)
 		}
 		userWithLogins = append(userWithLogins, UserWithLogins{User: user, Logins: logins})
 	}
@@ -110,12 +110,12 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 	log.Debug("Creating User: ", user)
 	error := db.Create(&user).Error
 	if error != nil {
-		return nil, error
+		return nil, CreateUserDBError(error)
 	}
 	newUser := &models.User{}
 	if err := db.Find(&newUser, "username = ?", user.Username).Error; err != nil {
 		log.Error("Error getting user we just created: ", err)
-		return nil, err
+		return nil, CreateUserDBError(err)
 	}
 	return newUser, nil
 }
@@ -123,10 +123,10 @@ func (db *DB) CreateUser(user *models.User) (*models.User, error) {
 func (db *DB) DeleteUser(id int) error {
 	result := db.Model(&models.User{}).Where("id = ?", id).Delete(&models.User{})
 	if result.Error != nil {
-		return result.Error
+		return DeleteUserServiceError(result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("user not found")
+		return DeleteUserServiceError(errors.New("user not found"))
 	}
 	return nil
 }
@@ -151,12 +151,12 @@ func (db *DB) UsernameExists(username string) bool {
 
 func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 	if user.ID == 0 {
-		return nil, errors.New("invalid user ID")
+		return nil, UpdateUserDBError(errors.New("invalid user ID"))
 	}
 	log.Printf("User ID: %d, Facility ID: %d", user.ID, user.FacilityID)
 	err := db.Save(&user).Error
 	if err != nil {
-		return nil, err
+		return nil, UpdateUserDBError(err)
 	}
 	return user, nil
 }

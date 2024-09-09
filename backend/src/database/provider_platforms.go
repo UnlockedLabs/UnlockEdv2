@@ -28,11 +28,11 @@ func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error)
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
 	if err := db.Model(models.ProviderPlatform{}).Find(&platform, "id = ?", id).Error; err != nil {
-		return nil, err
+		return nil, NewDBError(err, "platform not found")
 	}
 	key, err := platform.DecryptAccessKey()
 	if err != nil {
-		return nil, err
+		return nil, NewDBError(err, "platform not found")
 	}
 	platform.AccessKey = key
 	return &platform, nil
