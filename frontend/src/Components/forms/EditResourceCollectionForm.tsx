@@ -1,27 +1,34 @@
+// Component form that takes in a category and gives the user the ability to rename it. Calls back onSuccess when the category is renamed.
+
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { TextInput, CloseX, SubmitButton } from '../inputs';
 
 type Inputs = {
-    title: string;
+    collectionName: string;
 };
 
-export default function AddCategoryForm({
+export default function EditResourceCollectionForm({
+    collectionName,
     onSuccess
 }: {
-    onSuccess: (title: string) => void;
+    collectionName: string;
+    onSuccess: (newCollectionName: string) => void;
 }) {
-    const [errorMessage, _] = useState('');
-
+    const [errorMessage, _] = useState();
     const {
         register,
         handleSubmit,
         reset,
         formState: { errors }
-    } = useForm<Inputs>();
+    } = useForm<Inputs>({
+        values: {
+            collectionName: collectionName
+        }
+    });
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        onSuccess(data.title);
+        onSuccess(data.collectionName);
         reset();
     };
 
@@ -30,8 +37,8 @@ export default function AddCategoryForm({
             <CloseX close={() => reset()} />
             <form onSubmit={handleSubmit(onSubmit)}>
                 <TextInput
-                    label="Title"
-                    interfaceRef="title"
+                    label="Collection Name"
+                    interfaceRef="collectionName"
                     required={true}
                     length={25}
                     errors={errors}

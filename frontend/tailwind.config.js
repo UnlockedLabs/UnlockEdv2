@@ -25,7 +25,7 @@ export default {
                     '--inner-background': '#FFFFFF',
                     '--dark-yellow': '#EA9B00',
                     '--primary-yellow': '#FDC601',
-                    '--pale-yellow': '#18ABA0',
+                    '--pale-yellow': '#FFF3D4',
                     '--grey-1': '#ECECEC',
                     '--grey-2': '#CCCCCC',
                     '--grey-3': '#999999',
