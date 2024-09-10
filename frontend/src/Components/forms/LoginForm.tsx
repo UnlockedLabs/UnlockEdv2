@@ -43,14 +43,9 @@ export default function LoginForm() {
             }
             window.location.replace(location);
             return;
-        } else {
-            if (resp.data['redirect_browser_to']) {
-                window.location.replace(resp.data['redirect_browser_to']);
-                return;
-            }
-            setProcessing(false);
-            setErrorMessage('Login failed, please try again');
         }
+        setProcessing(false);
+        setErrorMessage('Login failed, Invalid username or password');
     };
 
     useEffect(() => {
