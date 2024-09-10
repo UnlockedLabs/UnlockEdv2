@@ -41,7 +41,7 @@ class API {
     public static async request<T>(
         method: 'get' | 'post' | 'put' | 'patch' | 'delete',
         url: string,
-        data?: any
+        data?: Record<string, unknown>
     ): Promise<ServerResponse<T>> {
         try {
             const resp = await axios({
@@ -59,15 +59,24 @@ class API {
         return API.request<T>('get', url);
     }
 
-    public static post<T>(url: string, data: any): Promise<ServerResponse<T>> {
+    public static post<T>(
+        url: string,
+        data: Record<string, unknown>
+    ): Promise<ServerResponse<T>> {
         return API.request<T>('post', url, data);
     }
 
-    public static put<T>(url: string, data: any): Promise<ServerResponse<T>> {
+    public static put<T>(
+        url: string,
+        data: Record<string, unknown>
+    ): Promise<ServerResponse<T>> {
         return API.request<T>('put', url, data);
     }
 
-    public static patch<T>(url: string, data: any): Promise<ServerResponse<T>> {
+    public static patch<T>(
+        url: string,
+        data: Record<string, unknown>
+    ): Promise<ServerResponse<T>> {
         return API.request<T>('patch', url, data);
     }
 

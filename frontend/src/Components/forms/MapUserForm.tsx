@@ -69,7 +69,7 @@ export default function MapUserForm({
         externalUser && fetchFuzzyUsers();
     }, [externalUser]);
 
-    const UserRadioInput = ({ user }: { user: any }) => {
+    const UserRadioInput = ({ user }: { user: User }) => {
         return (
             <div key={user.id} className="flex flex-row">
                 <input
@@ -122,7 +122,7 @@ export default function MapUserForm({
                             We have found a potential match to the student you'd
                             like to map:
                         </p>
-                        {fuzzySearchUsers?.map((user: any) => {
+                        {fuzzySearchUsers?.map((user: User) => {
                             return (
                                 <UserRadioInput
                                     user={user}
