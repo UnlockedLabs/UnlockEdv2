@@ -11,6 +11,10 @@ type ActivityMapData = {
     quartile: number;
 };
 
+interface Activities {
+    activities: ActivityMapData[];
+}
+
 /* interface for dynamically generated year options */
 interface ValidYears {
     [year: string]: string;
@@ -49,9 +53,10 @@ export default function UserActivityMap() {
     const [yearEnd, setYearEnd] = useState(new Date());
     const [dropdownValDesc, setDropdownValDesc] = useState('the past year');
 
-    const { data, error, isLoading } = useSWR<ServerResponse<ActivityMapData>>(
+    const { data, error, isLoading } = useSWR<ServerResponse<Activities>>(
         `/api/users/${user.id}/daily-activity${dropdownValDesc !== 'the past year' ? '?year=' + dropdownValDesc.trim() : ''}`
     );
+    const activityData = data?.data ? (data.data as Activities).activities : [];
 
     const generateYearOptions = () => {
         const years: ValidYears = { 'Past year': 'Past year' };
@@ -122,7 +127,7 @@ export default function UserActivityMap() {
                     data && (
                         <div className="mt-2">
                             <ActivityMapTable
-                                data={data.activities}
+                                data={activityData}
                                 end={yearEnd}
                                 error={error}
                                 isLoading={isLoading}

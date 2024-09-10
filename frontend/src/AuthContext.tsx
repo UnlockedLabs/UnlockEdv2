@@ -60,7 +60,7 @@ export const AdminOnly: React.FC<{ children: React.ReactNode }> = ({
         return null;
     }
     if (user.role === 'admin') {
-        return <>{children}</>;
+        return <div>{children}</div>;
     } else {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
