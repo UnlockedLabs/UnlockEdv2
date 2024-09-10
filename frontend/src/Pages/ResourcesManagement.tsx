@@ -199,7 +199,7 @@ export default function ResourcesManagement() {
     function updateLink(
         category: Category,
         linkIndex: number,
-        newLinkPair: any
+        newLinkPair: CategoryLink
     ) {
         categoryList.map((c, _) => {
             if (c == category) {
@@ -237,7 +237,7 @@ export default function ResourcesManagement() {
         setDraggedOverItem(null);
     }
 
-    async function updateFinalState(e: any) {
+    async function updateFinalState(e: React.MouseEvent) {
         setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
         const newCategoryList = categoryList.map((c, i) => {

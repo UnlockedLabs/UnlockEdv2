@@ -4,8 +4,15 @@ import useSWR from 'swr';
 import KolibriImg from '../../public/kolibri-card-cover.png';
 import WikiImg from '../../public/wikipedia.png';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { ReactNode } from 'react';
 
-const ExternalLink = ({ children, url }: { children: any; url: string }) => {
+const ExternalLink = ({
+    children,
+    url
+}: {
+    children: ReactNode;
+    url: string;
+}) => {
     return (
         <a
             className="flex gap-2 body-small text-body-text items-center"

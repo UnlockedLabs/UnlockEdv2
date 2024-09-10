@@ -6,7 +6,8 @@ import {
     Tooltip,
     ResponsiveContainer,
     CartesianGrid,
-    Label
+    Label,
+    YAxisProps
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
@@ -54,7 +55,7 @@ const MilestonesBarChart = ({ data }: { data: ProgramMilestones[] }) => {
         );
     };
 
-    const YAxisTick = (props: any) => {
+    const YAxisTick = (props: YAxisProps) => {
         return <g>{maxYAxisLabel(props)}</g>;
     };
 

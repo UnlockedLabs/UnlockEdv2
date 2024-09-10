@@ -39,7 +39,7 @@ export default function EditUserForm({
         }
     });
 
-    function diffFormData(formData: any, currentUserData: any) {
+    function diffFormData(formData: Inputs, currentUserData: User) {
         const changes: Partial<User> = {};
         Object.keys(formData).forEach((key) => {
             if (

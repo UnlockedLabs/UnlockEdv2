@@ -74,6 +74,7 @@ export default function LoginForm() {
                     return;
                 }
             } catch (error: any) {
+                //Todo: unsure about what to type this as Error or ApiError
                 console.error('No active sessions found for this user');
                 return;
             }

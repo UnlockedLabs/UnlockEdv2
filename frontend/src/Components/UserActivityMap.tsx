@@ -2,7 +2,7 @@ import { useState } from 'react';
 import DropdownControl from './inputs/DropdownControl';
 import useSWR from 'swr';
 import { useAuth } from '@/AuthContext';
-import { ServerResponse } from '@/common';
+import { errorResponse, ServerResponse } from '@/common';
 import convertSeconds from './ConvertSeconds';
 
 type ActivityMapData = {
@@ -179,7 +179,7 @@ function ActivityMapTable({
 }: {
     data: ActivityMapData[];
     end: Date;
-    error: any;
+    error: errorResponse;
     isLoading: boolean;
     range: string;
 }) {

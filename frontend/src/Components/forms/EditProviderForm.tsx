@@ -32,7 +32,7 @@ export default function EditProviderForm({
     onSuccess,
     provider
 }: {
-    onSuccess: Function;
+    onSuccess: Function; //TODO: pass function for type
     provider: ProviderPlatform;
 }) {
     const [errorMessage, setErrorMessage] = useState('');
@@ -76,7 +76,10 @@ export default function EditProviderForm({
         setShowAccessKey(true);
     };
 
-    function diffFormData(formData: any, currentUserData: any) {
+    function diffFormData(
+        formData: ProviderInputs,
+        currentUserData: ProviderPlatform
+    ) {
         const changes: Partial<ProviderPlatform> = {};
         Object.keys(formData).forEach((key) => {
             if (
