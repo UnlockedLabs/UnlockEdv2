@@ -78,6 +78,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		dbField = "p.name"
 	}
 	orderStr := dbField + " " + validOrder(order)
+
 	tx := db.Table("programs p").
 		Select(`p.id, p.thumbnail_url,
     p.name as program_name, pp.name as provider_name, p.external_url,
@@ -93,7 +94,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
     END as course_progress,
     a.total_time`, userId, userId).
 		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.program_id = p.id", userId).
+		Joins("LEFT JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.program_id = p.id", userId).
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
 		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (
@@ -127,7 +128,7 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		}
 	}
 
-	tx.Group("p.id, p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, p.total_progress_milestones, a.total_time")
+	tx.Group("p.id, p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, a.total_time")
 	err := tx.Scan(&programs).Error
 	if err != nil {
 		return nil, 0, 0, err

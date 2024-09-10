@@ -28,7 +28,9 @@ export default function MyProgress() {
     const { data, isLoading, error } = useSWR<ServerResponse<UserProgramsInfo>>(
         `/api/users/${user.id}/programs?${sortPrograms}`
     );
-    const programData = data?.data as UserProgramsInfo;
+    const programData = data?.data
+        ? (data?.data as UserProgramsInfo)
+        : ({} as UserProgramsInfo);
 
     const {
         data: certificates,
@@ -37,7 +39,7 @@ export default function MyProgress() {
     } = useSWR<ServerResponse<Outcome>>(
         `/api/users/${user.id}/outcomes?type=certificate&${sortCertificates}`
     );
-    const certData = certificates?.data as Outcome[];
+    const certData = certificates ? (certificates?.data as Outcome[]) : [];
 
     if (isLoading || loadingOutcomes) return <div>Loading...</div>;
     if (error || outcomesError) return <Error />;
