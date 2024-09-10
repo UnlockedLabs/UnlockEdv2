@@ -61,6 +61,8 @@ func MigrateFresh(db *sql.DB) {
 		url = "nats://localhost:4222"
 	}
 	options.Url = url
+	options.User = os.Getenv("NATS_USER")
+	options.Password = os.Getenv("NATS_PASSWORD")
 	conn, err := options.Connect()
 	if err != nil {
 		log.Fatal(err)
