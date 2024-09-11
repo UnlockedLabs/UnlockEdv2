@@ -18,16 +18,6 @@ func IsValidOrderBy(orderBy string) bool {
 	return ok
 }
 
-func (db *DB) GetMilestonesByProgramID(page, perPage, id int) (int64, []models.Milestone, error) {
-	content := []models.Milestone{}
-	total := int64(0)
-	_ = db.Model(&models.Milestone{}).Where("program_id = ?", id).Count(&total)
-	if err := db.Where("program_id = ?", id).Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "milestones")
-	}
-	return total, content, nil
-}
-
 type MilestoneResponse struct {
 	ProviderPlatformName string `json:"provider_platform_name"`
 	ProgramName          string `json:"program_name"`
