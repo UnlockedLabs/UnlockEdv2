@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 
@@ -10,18 +11,17 @@ import (
 )
 
 func (srv *Server) registerOidcRoutes() {
-	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleGetAllClients))
-	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleRegisterClient))
-	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.handleGetOidcClient))
+	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleGetAllClients)))
+	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleRegisterClient)))
+	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleGetOidcClient)))
 }
 
-func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) error {
 	clients, err := srv.Db.GetAllRegisteredClients()
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, clients)
+	return writeJsonResponse(w, http.StatusOK, clients)
 }
 
 type RegisterClientRequest struct {
@@ -40,54 +40,42 @@ func clientToResponse(client *models.OidcClient) *models.ClientResponse {
 	}
 }
 
-func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "handleGetOidcClient"}
 	id := r.PathValue("id")
 	fields["oidc_id"] = id
-	var client models.OidcClient
-	if err := srv.Db.Find(&client, "id = ?", id).Error; err != nil {
+	client, err := srv.Db.GetOidcClientById(id)
+	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Errorln("error finding oidc client")
-		srv.ErrorResponse(w, http.StatusBadRequest, "OIDC client info not found")
-		return
+		return newDatabaseServiceError(err, fields)
 	}
-	writeJsonResponse(w, http.StatusOK, *clientToResponse(&client))
+
+	return writeJsonResponse(w, http.StatusOK, *clientToResponse(client))
 }
 
-func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) error {
 	request := RegisterClientRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		log.Error("error decoding body: register oidc client", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newJSONReqBodyServiceError(err, nil)
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(request.ProviderPlatformID))
 	if err != nil {
-		log.Error("no provider platform found with that ID", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
 	if provider.OidcID != 0 || provider.ExternalAuthProviderId != "" {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Client already registered")
-		log.Error(r, err)
-		return
+		return newBadRequestServiceError(errors.New("client already registered"), "Client already registered", nil)
 	}
 	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister, srv.Client)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error(r, err)
-		return
+		return newInternalServerServiceError(err, err.Error(), nil)
 	}
 	if err := srv.Db.RegisterClient(client); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
 	provider.OidcID = client.ID
 	provider.ExternalAuthProviderId = externalId
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		log.Error(r, err)
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusCreated, *clientToResponse(client))
+	return writeJsonResponse(w, http.StatusCreated, *clientToResponse(client))
 }

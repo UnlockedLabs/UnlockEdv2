@@ -23,7 +23,7 @@ func (db *DB) GetMilestonesByProgramID(page, perPage, id int) (int64, []models.M
 	total := int64(0)
 	_ = db.Model(&models.Milestone{}).Where("program_id = ?", id).Count(&total)
 	if err := db.Where("program_id = ?", id).Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
 	return total, content, nil
 }
@@ -54,7 +54,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 		query = query.Where("milestones.type ILIKE ?", search).Or("users.username ILIKE ?", search).Or("programs.name ILIKE ?", search).Or("provider_platforms.name ILIKE ?", search)
 	}
 	if err := query.Count(&total).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
 
 	if orderBy != "" && IsValidOrderBy(orderBy) {
@@ -64,7 +64,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 	query = query.Limit(perPage).Offset((page - 1) * perPage)
 
 	if err := query.Find(&content).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
 	return total, content, nil
 }
@@ -83,28 +83,28 @@ func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []Milesto
 		Find(&content).
 		Error
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, NewDBError(err, "error getting milestones for user")
 	}
 	return total, content, nil
 }
 
 func (db *DB) CreateMilestone(content *models.Milestone) (*models.Milestone, error) {
 	if err := db.Create(content).Error; err != nil {
-		return nil, err
+		return nil, newCreateDBError(err, "milestones")
 	}
 	return content, nil
 }
 
 func (db *DB) UpdateMilestone(content *models.Milestone) (*models.Milestone, error) {
 	if err := db.Save(content).Error; err != nil {
-		return nil, err
+		return nil, newUpdateDBrror(err, "milestones")
 	}
 	return content, nil
 }
 
 func (db *DB) DeleteMilestone(id int) error {
 	if err := db.Where("id = ?", id).Delete(&models.Milestone{}).Error; err != nil {
-		return err
+		return newDeleteDBError(err, "milestones")
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func (db *DB) DeleteMilestone(id int) error {
 func (db *DB) GetMilestoneByID(id int) (*models.Milestone, error) {
 	content := &models.Milestone{}
 	if err := db.Where("id = ?", id).First(content).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "milestones")
 	}
 	return content, nil
 }

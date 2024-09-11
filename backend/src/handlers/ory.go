@@ -14,14 +14,14 @@ import (
 )
 
 func (srv *Server) registerOryRoutes() {
-	srv.Mux.Handle("DELETE /api/identities/sync", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleDeleteAllKratosIdentities)))
+	srv.Mux.Handle("DELETE /api/identities/sync", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.handleDeleteAllKratosIdentities))))
 }
 
-func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request) error {
 	if err := srv.deleteAllKratosIdentities(); err != nil {
-		http.Error(w, "error communicating with Ory Kratos", http.StatusInternalServerError)
+		return newInternalServerServiceError(err, "error communicating with Ory Kratos", nil)
 	}
-	writeJsonResponse(w, http.StatusOK, "identities deleted successfully")
+	return writeJsonResponse(w, http.StatusOK, "identities deleted successfully")
 }
 
 func (srv *Server) deleteAllKratosIdentities() error {

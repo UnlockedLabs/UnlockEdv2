@@ -15,8 +15,8 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.HandleGetUsers))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.HandleImportUsers))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.HandleError(srv.HandleGetUsers)))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.HandleError(srv.HandleImportUsers)))
 }
 
 type CachedProviderUsers struct {
@@ -24,28 +24,22 @@ type CachedProviderUsers struct {
 	LastUpdated time.Time
 }
 
-func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "HandleImportUsers", "file": "actions"}
 	service, err := srv.getService(r)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Errorf("Error getting provider service: %v", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, err.Error(), fields)
 	}
 	users, err := service.GetUsers()
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error getting provider service GetUsers action:" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newInternalServerServiceError(err, err.Error(), fields)
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(service.ProviderPlatformID))
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Errorf("Error getting provider platform by id: %v", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newDatabaseServiceError(err, fields)
 	}
 	for _, user := range users {
 		// if this user was parsed improperly (happens randomly, unknown as to why), skip
@@ -82,8 +76,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
 			fields["error"] = err.Error()
 			log.WithFields(fields).Errorf("error creating a mapping between user %v and provider %d", user, provider.ID)
-			srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-			return
+			return newDatabaseServiceError(err, fields)
 		}
 		if provider.OidcID != 0 {
 			// this should never be any other case, as it's triggered by the UI only (if oidc_id != 0). but we still check
@@ -92,7 +85,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	writeJsonResponse(w, http.StatusOK, "Users imported successfully")
+	return writeJsonResponse(w, http.StatusOK, "Users imported successfully")
 }
 
 func paginateUsers(users []models.ImportUser, page, perPage int) (int, []models.ImportUser) {
@@ -122,14 +115,12 @@ func (srv *Server) searchForUser(search string, users []models.ImportUser) []mod
 	return foundUsers
 }
 
-func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) error {
 	kv := srv.buckets[CachedUsers]
 	page, perPage := srv.GetPaginationInfo(r)
 	service, err := srv.getService(r)
 	if err != nil {
-		log.Errorf("Error getting provider service: %v", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, err.Error(), nil)
 	}
 
 	cacheKey := fmt.Sprintf("provider_%d_users", service.ProviderPlatformID)
@@ -152,8 +143,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 				}
 				total, toReturn := paginateUsers(foundUsers, page, perPage)
 				meta := models.NewPaginationInfo(page, perPage, int64(total))
-				writePaginatedResponse(w, http.StatusOK, toReturn, meta)
-				return
+				return writePaginatedResponse(w, http.StatusOK, toReturn, meta)
 			}
 		}
 		if kv.Delete(cacheKey) != nil {
@@ -163,12 +153,10 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 
 	externalUsers, err := service.GetUsers()
 	if err != nil {
-		log.Error("Error getting provider service GetUsers action:" + err.Error())
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		if kv.Delete(cacheKey) != nil {
 			log.Error("Error deleting cache")
 		}
-		return
+		return newInternalServerServiceError(err, err.Error(), nil)
 	}
 	cachedUsers := CachedProviderUsers{
 		Users:       externalUsers,
@@ -188,7 +176,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request) {
 	total, responseUsers := paginateUsers(externalUsers, page, perPage)
 
 	meta := models.NewPaginationInfo(page, perPage, int64(total))
-	writePaginatedResponse(w, http.StatusOK, responseUsers, meta)
+	return writePaginatedResponse(w, http.StatusOK, responseUsers, meta)
 }
 
 func (srv *Server) getService(r *http.Request) (*src.ProviderService, error) {

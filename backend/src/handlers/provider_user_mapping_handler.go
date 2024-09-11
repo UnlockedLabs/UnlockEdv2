@@ -8,55 +8,50 @@ import (
 )
 
 func (srv *Server) registerProviderMappingRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.handleGetMappingsForUser))
-	srv.Mux.Handle("POST /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.handleCreateProviderUserMapping))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.ApplyAdminMiddleware(srv.handleCreateProviderUserAccount))
-	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.ApplyAdminMiddleware(srv.handleDeleteProviderUserMapping))
+	srv.Mux.Handle("GET /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleGetMappingsForUser)))
+	srv.Mux.Handle("POST /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleCreateProviderUserMapping)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleDeleteProviderUserMapping)))
 }
 
-func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user id")
-		return
+		return newInvalidIdServiceError(err, "user ID", nil)
 	}
 	mappings, err := srv.Db.GetAllProviderMappingsForUser(id)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, mappings)
+	return writeJsonResponse(w, http.StatusOK, mappings)
 }
 
-func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *http.Request) error {
 	var mapping models.ProviderUserMapping
 	err := json.NewDecoder(r.Body).Decode(&mapping)
 	defer r.Body.Close()
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid request payload")
-		return
+		return newJSONReqBodyServiceError(err, nil)
 	}
 	err = srv.Db.CreateProviderUserMapping(&mapping)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusCreated, mapping)
+	return writeJsonResponse(w, http.StatusCreated, mapping)
 }
 
-func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteProviderUserMapping(w http.ResponseWriter, r *http.Request) error {
 	userId, err := strconv.Atoi(r.PathValue("userId"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid mapping id")
-		return
+		return newInvalidIdServiceError(err, "user ID", nil)
 	}
 	providerId, err := strconv.Atoi(r.PathValue("providerId"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid mapping id")
+		return newInvalidIdServiceError(err, "provider ID", nil)
 	}
 	err = srv.Db.DeleteProviderUserMappingByUserID(userId, providerId)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusNoContent, "Mapping deleted successfully")
+	return writeJsonResponse(w, http.StatusNoContent, "Mapping deleted successfully")
 }
