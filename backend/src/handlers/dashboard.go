@@ -12,7 +12,7 @@ func (srv *Server) registerDashboardRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.HandleStudentDashboard))
 	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.ApplyAdminMiddleware(srv.HandleAdminDashboard))
 	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.HandleUserCatalogue))
-	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(srv.HandleUserPrograms))
+	srv.Mux.Handle("GET /api/users/{id}/courses", srv.applyMiddleware(srv.HandleUserCourses))
 }
 
 func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +74,7 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request) {
 	writeJsonResponse(w, http.StatusOK, userCatalogue)
 }
 
-func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleUserCourses(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		log.Errorf("Error parsing user ID: %v", err)
@@ -82,7 +82,7 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !srv.canViewUserData(r) {
-		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's programs")
+		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's courses")
 		return
 	}
 	order := r.URL.Query().Get("order")
@@ -91,14 +91,14 @@ func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request) {
 	search = strings.ToLower(search)
 	search = strings.TrimSpace(search)
 	tags := r.URL.Query()["tags"]
-	userPrograms, numCompleted, totalTime, err := srv.Db.GetUserPrograms(uint(userId), order, orderBy, search, tags)
+	userCourses, numCompleted, totalTime, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
 	if err != nil {
-		log.Errorf("Error getting user programs: %v", err)
+		log.Errorf("Error getting user courses: %v", err)
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	response := map[string]interface{}{
-		"programs":      userPrograms,
+		"courses":       userCourses,
 		"num_completed": numCompleted,
 		"total_time":    totalTime,
 	}

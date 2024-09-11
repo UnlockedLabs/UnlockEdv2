@@ -1,14 +1,14 @@
 import { PieChart, Pie, Legend, Cell, ResponsiveContainer } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
-import { ProgramActivity } from '@/common';
+import { CourseActivity } from '@/common';
 
-export default function TopProgPieChart({ data }: { data: ProgramActivity[] }) {
+export default function TopProgPieChart({ data }: { data: CourseActivity[] }) {
     const { theme } = useContext(ThemeContext);
     const safeData =
         data && data.length > 0
             ? data
-            : [{ program_name: '', hours_engaged: 0 }];
+            : [{ course_name: '', hours_engaged: 0 }];
 
     var COLORS = ['#D7F4F1', '#B0DFDA', '#18ABA0', '#005952', '#002E2A'];
     if (theme == 'dark') {
@@ -23,7 +23,7 @@ export default function TopProgPieChart({ data }: { data: ProgramActivity[] }) {
                 <Pie
                     data={safeData}
                     dataKey="hours_engaged"
-                    nameKey="program_name"
+                    nameKey="course_name"
                     cx="50%"
                     cy="50%"
                     outerRadius="80%"

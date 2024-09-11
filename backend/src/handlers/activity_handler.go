@@ -14,7 +14,7 @@ import (
 func (srv *Server) registerActivityRoutes() {
 	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.HandleGetActivityByUserID))
 	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.HandleGetDailyActivityByUserID))
-	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleGetProgramActivity))
+	srv.Mux.Handle("GET /api/courses/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleGetCourseActivity))
 	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleCreateActivity))
 }
 
@@ -84,14 +84,14 @@ func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 	})
 }
 
-func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request) {
-	programID, err := strconv.Atoi(r.PathValue("id"))
+func (srv *Server) HandleGetCourseActivity(w http.ResponseWriter, r *http.Request) {
+	courseID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid program ID")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid course ID")
 		return
 	}
 	page, perPage := srv.GetPaginationInfo(r)
-	count, activities, err := srv.Db.GetActivityByProgramID(page, perPage, programID)
+	count, activities, err := srv.Db.GetActivityByCourseID(page, perPage, courseID)
 	if err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
 		return

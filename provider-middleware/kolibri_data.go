@@ -91,7 +91,7 @@ type KolibriContent struct {
 	TotalResourceCount int    `json:"total_resource_count"`
 }
 
-func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Program {
+func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course {
 	thumbnail := data["thumbnail"].(string)
 	root := data["root_id"].(string)
 	id := data["id"].(string)
@@ -103,7 +103,7 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Progra
 		log.Printf("Failed to upload image %v", err)
 		url = ""
 	}
-	return &models.Program{
+	return &models.Course{
 		ExternalID:              id,
 		Name:                    name,
 		Description:             description,

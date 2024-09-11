@@ -11,7 +11,7 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	var platforms []models.ProviderPlatform
 	var total int64
 	offset := (page - 1) * perPage
-	if err := db.Model(&models.ProviderPlatform{}).Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
+	if err := db.Model(&models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
 		return 0, nil, err
 	}
 	return total, platforms, nil
@@ -19,7 +19,7 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).Find(&platforms, "state = ?", "active").Error; err != nil {
+	if err := db.Model(models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").Find(&platforms, "state = ?", "active").Error; err != nil {
 		return nil, err
 	}
 	return platforms, nil
@@ -27,7 +27,7 @@ func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error)
 
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).Find(&platform, "id = ?", id).Error; err != nil {
+	if err := db.Model(models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	key, err := platform.DecryptAccessKey()

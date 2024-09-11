@@ -90,36 +90,36 @@ func (ks *KolibriService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 * @info - GET /api/content/channel?available=true
 * @return - List of maps, each containing the details of a Content object
 **/
-func (ks *KolibriService) ImportPrograms(db *gorm.DB) error {
-	log.Println("Importing programs from Kolibri")
-	var programs []map[string]interface{}
+func (ks *KolibriService) ImportCourses(db *gorm.DB) error {
+	log.Println("Importing courses from Kolibri")
+	var courses []map[string]interface{}
 	sql := `SELECT id, author, name, description, thumbnail, total_resource_count, public, root_id FROM content_channelmetadata`
-	if err := ks.db.Raw(sql).Find(&programs).Error; err != nil {
-		log.Errorln("error querying kolibri database for programs")
+	if err := ks.db.Raw(sql).Find(&courses).Error; err != nil {
+		log.Errorln("error querying kolibri database for courses")
 		return err
 	}
-	log.Println(programs)
-	for _, program := range programs {
-		id := program["id"].(string)
-		if db.Where("provider_platform_id = ? AND external_id = ?", ks.ProviderPlatformID, id).First(&models.Program{}).Error == nil {
+	log.Println(courses)
+	for _, course := range courses {
+		id := course["id"].(string)
+		if db.Where("provider_platform_id = ? AND external_id = ?", ks.ProviderPlatformID, id).First(&models.Course{}).Error == nil {
 			continue
 		}
 		query := `SELECT COUNT(*) FROM content_contentnode WHERE channel_id = ?`
 		var count int
 		if err := ks.db.Raw(query, id).Find(&count).Error; err != nil {
-			log.Errorln("error querying kolibri database for program content count")
+			log.Errorln("error querying kolibri database for course content count")
 			continue
 		}
-		prog := ks.IntoCourse(program)
+		prog := ks.IntoCourse(course)
 		if err := db.Create(&prog).Error; err != nil {
-			log.Errorln("error creating program in db")
+			log.Errorln("error creating course in db")
 			continue
 		}
 	}
 	return nil
 }
 
-func (ks *KolibriService) ImportMilestones(programPair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
+func (ks *KolibriService) ImportMilestones(coursePair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	// sql := `SELECT id, complete, time_spent FROM logger_attemptlog where user_id = ? AND content_id = ?`
 	return nil
 }
@@ -134,39 +134,39 @@ type KolibriActivity struct {
 	Kind                string `json:"kind"`
 }
 
-func (ks *KolibriService) ImportActivityForProgram(programIdPair map[string]interface{}, db *gorm.DB) error {
-	programId := int(programIdPair["program_id"].(float64))
-	externalId := programIdPair["external_id"].(string)
+func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interface{}, db *gorm.DB) error {
+	courseId := int(courseIdPair["course_id"].(float64))
+	externalId := courseIdPair["external_id"].(string)
 	sql := `SELECT id, user_id, time_spent, completion_timestamp, content_id, progress, kind FROM logger_contentsummarylog WHERE channel_id = ?`
 	var activities []KolibriActivity
 	if err := ks.db.Raw(sql, externalId).Find(&activities).Error; err != nil {
-		log.Errorln("error querying kolibri database for program activities")
+		log.Errorln("error querying kolibri database for course activities")
 		return err
 	}
 	for _, activity := range activities {
 		var user_id uint
 		if err := db.Model(&models.ProviderUserMapping{}).Select("user_id").First(&user_id, "external_user_id = ?", activity.UserId).Error; err != nil {
-			log.Errorln("error finding user by external id in ImportActivityForProgram")
+			log.Errorln("error finding user by external id in ImportActivityForCourse")
 			continue
 		}
 		kinds := map[string]models.ActivityType{
 			"video":    models.ContentInteraction,
-			"exercise": models.ProgramInteraction,
+			"exercise": models.CourseInteraction,
 			"html5":    models.ContentInteraction,
 			"h5p":      models.ContentInteraction,
-			"topic":    models.ProgramInteraction,
+			"topic":    models.CourseInteraction,
 		}
 		time, err := strconv.ParseFloat(activity.TimeSpent, 64)
 		if err != nil {
-			log.Errorln("error parsing time spent in ImportActivityForProgram")
+			log.Errorln("error parsing time spent in ImportActivityForCourse")
 			continue
 		}
 		kind, ok := kinds[activity.Kind]
 		if !ok {
 			kind = models.ContentInteraction
 		}
-		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", user_id, programId, kind, time, activity.ID).Error; err != nil {
-			log.WithFields(log.Fields{"userId": user_id, "program_id": programId, "error": err}).Error("Failed to create activity")
+		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", user_id, courseId, kind, time, activity.ID).Error; err != nil {
+			log.WithFields(log.Fields{"userId": user_id, "course_id": courseId, "error": err}).Error("Failed to create activity")
 			continue
 		}
 	}

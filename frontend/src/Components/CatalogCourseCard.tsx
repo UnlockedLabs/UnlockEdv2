@@ -39,27 +39,26 @@ export default function CatalogCourseCard({
     view?: ViewType;
 }) {
     const coverImage = course.thumbnail_url;
-    const program_type: PillTagType = course.program_type as PillTagType;
+    const course_type: PillTagType = course.course_type as PillTagType;
 
     function updateFavorite(e: MouseEvent) {
         e.preventDefault();
-        API.put(`programs/${course.program_id}/save`, {})
-            .then((response) => {
+        API.put(`courses/${course.course_id}/save`, {})
+            .then((_) => {
                 callMutate();
-                console.log(response);
             })
             .catch((error) => {
                 console.log(error);
             });
     }
 
-    let programPill: JSX.Element;
-    if (program_type == PillTagType.Open)
-        programPill = <LightGreenPill>Open Enrollment</LightGreenPill>;
-    if (program_type == PillTagType.Permission)
-        programPill = <RedPill>Permission Only</RedPill>;
-    if (program_type == PillTagType.SelfPaced)
-        programPill = <YellowPill>Self-Paced</YellowPill>;
+    let coursePill: JSX.Element;
+    if (course_type == PillTagType.Open)
+        coursePill = <LightGreenPill>Open Enrollment</LightGreenPill>;
+    if (course_type == PillTagType.Permission)
+        coursePill = <RedPill>Permission Only</RedPill>;
+    if (course_type == PillTagType.SelfPaced)
+        coursePill = <YellowPill>Self-Paced</YellowPill>;
 
     let bookmark: JSX.Element;
     if (course.is_favorited)
@@ -87,7 +86,7 @@ export default function CatalogCourseCard({
                   ? 'College Credit'
                   : 'no label';
         return (
-            <GreyPill key={'outcome' + course.program_id}>{pillLabel}</GreyPill>
+            <GreyPill key={'outcome' + course.course_id}>{pillLabel}</GreyPill>
         );
     });
     if (view == ViewType.List) {
@@ -100,10 +99,10 @@ export default function CatalogCourseCard({
                 <div className="flex flex-col justify-between gap-3">
                     <div className="flex flex-row gap-3 items-center">
                         <div onClick={(e) => updateFavorite(e)}>{bookmark}</div>
-                        <h2>{course.program_name}</h2>
+                        <h2>{course.course_name}</h2>
                         <p className="body">|</p>
                         <p className="body">{course.provider_name}</p>
-                        {programPill}
+                        {coursePill}
                         {outcomePills}
                     </div>
                     <p className="body-small h-[1rem] line-clamp-2 overflow-hidden">
@@ -139,16 +138,16 @@ export default function CatalogCourseCard({
                         )}
                     </figure>
                     <div className="card-body gap-0.5">
-                        {/* this should be the school or program that offers the course */}
+                        {/* this should be the school or course that offers the course */}
                         <p className="text-xs">{course.provider_name}</p>
                         <h3 className="card-title text-sm">
-                            {course.program_name}
+                            {course.course_name}
                         </h3>
                         <p className="body-small line-clamp-2">
                             {course.description}
                         </p>
                         <div className="flex flex-col sm:flex-row flex-wrap py-1 mt-2 space-y-2 sm:space-y-0 sm:gap-2">
-                            {programPill} {outcomePills}
+                            {coursePill} {outcomePills}
                         </div>
                     </div>
                 </a>

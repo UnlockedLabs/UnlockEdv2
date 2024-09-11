@@ -9,7 +9,7 @@ import (
 type ActivityType string
 
 const (
-	ProgramInteraction ActivityType = "interaction" // watching video, clicking link, etc
+	CourseInteraction  ActivityType = "interaction" // watching video, clicking link, etc
 	ContentInteraction ActivityType = "completion"  // completing submodule, video, etc
 )
 
@@ -18,7 +18,7 @@ type Activity struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-	ProgramID uint           `gorm:"not null" json:"program_id"`
+	CourseID  uint           `gorm:"not null" json:"course_id"`
 	UserID    uint           `gorm:"not null" json:"user_id"`
 	Type      ActivityType   `gorm:"size:255;not null" json:"type"`
 	TotalTime uint           `json:"total_time"`
@@ -27,8 +27,8 @@ type Activity struct {
 	// is this a url perhaps?
 	ExternalID string `gorm:"size:255;not null" json:"external_content_id"`
 
-	User    *User    `gorm:"foreignKey:UserID" json:"-"`
-	Program *Program `gorm:"foreignKey:ProgramID" json:"-"`
+	User   *User   `gorm:"foreignKey:UserID" json:"-"`
+	Course *Course `gorm:"foreignKey:CourseID" json:"-"`
 }
 
 func (Activity) TableName() string {
@@ -36,11 +36,11 @@ func (Activity) TableName() string {
 }
 
 type ImportActivity struct {
-	ExternalUserID    string `json:"external_user_id"`
-	ExternalProgramID string `json:"external_program_id"`
-	Type              string `json:"type"`
-	TotalTime         int    `json:"total_time"`
-	Date              string `json:"date"`
+	ExternalUserID   string `json:"external_user_id"`
+	ExternalCourseID string `json:"external_course_id"`
+	Type             string `json:"type"`
+	TotalTime        int    `json:"total_time"`
+	Date             string `json:"date"`
 }
 
 type DailyActivity struct {

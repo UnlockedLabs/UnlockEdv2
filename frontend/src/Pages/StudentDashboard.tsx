@@ -12,7 +12,7 @@ import {
     ArrowRightIcon,
     BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
-import { RecentProgram, ServerResponse, StudentDashboardJoin } from '@/common';
+import { RecentCourse, ServerResponse, StudentDashboardJoin } from '@/common';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -61,7 +61,7 @@ export default function StudentDashboard() {
                         Popular Courses on UnlockEd
                     </h3>
                     <ul className="space-y-3 mt-3">
-                        {userData.top_programs.map(
+                        {userData.top_courses.map(
                             (name: string, idx: number) => {
                                 return (
                                     <li
@@ -87,10 +87,10 @@ export default function StudentDashboard() {
                 <h2 className="mt-7"> Pick Up Where You Left Off</h2>
                 <div className="mt-3 bg-base-teal p-6 card">
                     <div
-                        className={`gap-5 grid grid-cols-3 ${userData.recent_programs.length < 2 ? '!grid-cols-2' : ''}`}
+                        className={`gap-5 grid grid-cols-3 ${userData.recent_courses.length < 2 ? '!grid-cols-2' : ''}`}
                     >
-                        {userData?.recent_programs.map(
-                            (course: RecentProgram, index: number) => {
+                        {userData?.recent_courses.map(
+                            (course: RecentCourse, index: number) => {
                                 return (
                                     <CourseCard
                                         course={course}
@@ -100,10 +100,10 @@ export default function StudentDashboard() {
                                 );
                             }
                         )}
-                        {userData.recent_programs.length < 3 && (
+                        {userData.recent_courses.length < 3 && (
                             <ExploreCourseCatalogCard />
                         )}
-                        {userData.recent_programs.length < 2 && (
+                        {userData.recent_courses.length < 2 && (
                             <PopularCoursesCard />
                         )}
                     </div>

@@ -10,9 +10,9 @@ import {
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
-import { ProgramMilestones } from '@/common';
+import { CourseMilestones } from '@/common';
 
-const MilestonesBarChart = ({ data }: { data: ProgramMilestones[] }) => {
+const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
     const { theme } = useContext(ThemeContext);
 
     var barColor = theme == 'light' ? '#18ABA0' : '#61BAB2';

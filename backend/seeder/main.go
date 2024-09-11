@@ -93,17 +93,17 @@ func seedTestData(db *gorm.DB) {
 			}
 		}
 	}
-	var programs []models.Program
-	progs, err := os.ReadFile("backend/tests/test_data/programs.json")
+	var courses []models.Course
+	progs, err := os.ReadFile("backend/tests/test_data/courses.json")
 	if err != nil {
 		log.Printf("Failed to read test data: %v", err)
 	}
-	if err := json.Unmarshal(progs, &programs); err != nil {
+	if err := json.Unmarshal(progs, &courses); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	for idx := range programs {
-		if err := db.Create(&programs[idx]).Error; err != nil {
-			log.Printf("Failed to create program: %v", err)
+	for idx := range courses {
+		if err := db.Create(&courses[idx]).Error; err != nil {
+			log.Printf("Failed to create course: %v", err)
 		}
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
@@ -114,10 +114,10 @@ func seedTestData(db *gorm.DB) {
 		return
 	}
 	for _, user := range dbUsers {
-		for _, prog := range programs {
-			// all test programs are open_enrollment
+		for _, prog := range courses {
+			// all test courses are open_enrollment
 			enrollment := models.Milestone{
-				ProgramID:   prog.ID,
+				CourseID:   prog.ID,
 				Type:        models.Enrollment,
 				UserID:      user.ID,
 				IsCompleted: true,
@@ -139,7 +139,7 @@ func seedTestData(db *gorm.DB) {
 				time := yearAgo.AddDate(0, 0, i)
 				activity := models.Activity{
 					UserID:     user.ID,
-					ProgramID:  prog.ID,
+					CourseID:  prog.ID,
 					Type:       "interaction",
 					TotalTime:  uint(startTime + randTime),
 					TimeDelta:  uint(randTime),
@@ -154,7 +154,7 @@ func seedTestData(db *gorm.DB) {
 			if rand.Float32() < 0.4 { // 40% chance to create an outcome
 				outcome := models.Outcome{
 					UserID:    user.ID,
-					ProgramID: prog.ID,
+					CourseID: prog.ID,
 					Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 				}
 				if err := db.Create(&outcome).Error; err != nil {
@@ -162,7 +162,7 @@ func seedTestData(db *gorm.DB) {
 				}
 			} else {
 				newMilestone := models.Milestone{
-					ProgramID:   prog.ID,
+					CourseID:   prog.ID,
 					IsCompleted: false,
 					Type:        milestoneTypes[rand.Intn(len(milestoneTypes))],
 					UserID:      user.ID,

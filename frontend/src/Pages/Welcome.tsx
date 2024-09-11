@@ -160,7 +160,7 @@ export default function Welcome() {
                                 taught themselves how to code without the
                                 internet. They dreamed of a day when they could
                                 create a solution for ways to track
-                                rehabilitation and educational programs on the
+                                rehabilitation and educational courses on the
                                 inside.
                             </div>
                             <hr />
@@ -226,7 +226,7 @@ export default function Welcome() {
                                 </div>
                                 Teaming up with external partners, they
                                 developed UnlockEd, a non-profit, open source
-                                education access and program management system
+                                education access and course management system
                                 providing free education to incarcerated
                                 individuals across the country, fulfilling a
                                 long time dream, and bringing the project full

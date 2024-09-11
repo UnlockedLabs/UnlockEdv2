@@ -26,7 +26,7 @@ services:
       - ./frontend:/app
     networks:
       - intranet
-    restart: on-failure 
+    restart: unless-stopped
 
   rev_proxy:
     image: nginx:1.21.3-alpine
@@ -37,7 +37,7 @@ services:
       - logs:/var/log/nginx/
     networks:
       - intranet
-    restart: on-failure
+    restart: unless-stopped 
     depends_on:
       kratos-migrate:
         condition: service_completed_successfully
@@ -105,7 +105,7 @@ services:
       - intranet
     volumes:
       - logs:/logs
-    restart: on-failure
+    restart: unless-stopped 
     depends_on:
       postgres:
         condition: service_healthy
@@ -144,7 +144,6 @@ services:
       - LOG_LEVEL=debug
       - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer&max_conns=20&max_idle_conns=4
     command: ["migrate", "up", "-y"]
-    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
@@ -159,6 +158,7 @@ services:
       - 8222:8222
       - 4222:4222
     command: --js -c /config/nats-server.conf
+    restart: on-failure
     volumes:
       - config:/config
       - nats_data:/data
@@ -203,7 +203,6 @@ services:
     ports:
       - "4433:4433" # public
       - "4434:4434" # admin
-    restart: unless-stopped
     environment:
       - DSN=postgres://kratos:ChangeMe!@postgres:5432/kratos?sslmode=prefer&max_conns=20&max_idle_conns=4
       - LOG_LEVEL=trace
@@ -234,7 +233,7 @@ services:
       - SERVE_ADMIN_CORS_ENABLED=true
       - SERVE_ADMIN_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
       - DSN=postgres://hydra:ChangeMe!@postgres:5432/hydra?sslmode=prefer&max_conns=20&max_idle_conns=4
-    restart: on-failure 
+    restart: unless-stopped
     depends_on:
       - hydra-migrate
     networks:
@@ -249,7 +248,6 @@ services:
       - type: bind
         source: ./config/hydra
         target: /etc/config/hydra
-    restart: on-failure
     networks:
       - intranet
     depends_on:

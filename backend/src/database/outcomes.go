@@ -41,9 +41,9 @@ func (db *DB) CreateOutcome(outcome *models.Outcome) (*models.Outcome, error) {
 	return outcome, nil
 }
 
-func (db *DB) GetOutcomeByProgramID(id uint) (*models.Outcome, error) {
+func (db *DB) GetOutcomeByCourseID(id uint) (*models.Outcome, error) {
 	var outcome models.Outcome
-	if err := db.Where("program_id = ?", id).First(&outcome).Error; err != nil {
+	if err := db.Where("course_id = ?", id).First(&outcome).Error; err != nil {
 		return nil, err
 	}
 	return &outcome, nil

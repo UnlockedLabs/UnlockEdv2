@@ -6,7 +6,6 @@ import WikiImg from '../../public/wikipedia.png';
 import StaticContentCard from './StaticContentCard';
 import ResourcesCategoryCard from './ResourcesCategoryCard';
 
-// this isnt best practice but this is just a temp solution so will change in future & creat a component if need be
 const KolibriCard = () => {
     return (
         <StaticContentCard
@@ -39,7 +38,7 @@ export default function ResourcesSideBar() {
 
     if (isLoading) return <div>Loading...</div>;
     if (error) return <Error />;
-
+    const categoryData = data?.data as ResourceCategory[];
     return (
         <div className="w-[409px] min-[1400px]:min-w-[409px] bg-background py-4 px-9">
             <div className="p-4 space-y-4">
@@ -50,16 +49,17 @@ export default function ResourcesSideBar() {
             <div className="p-4 space-y-4">
                 <h2>Resources</h2>
                 <div className="flex flex-col gap-4">
-                    {data.data.map(
-                        (category: ResourceCategory, index: number) => {
-                            return (
-                                <ResourcesCategoryCard
-                                    key={category.id + ' ' + index}
-                                    category={category}
-                                />
-                            );
-                        }
-                    )}
+                    {categoryData &&
+                        categoryData.map(
+                            (category: ResourceCategory, index: number) => {
+                                return (
+                                    <ResourcesCategoryCard
+                                        key={category.id + ' ' + index}
+                                        category={category}
+                                    />
+                                );
+                            }
+                        )}
                 </div>
             </div>
         </div>

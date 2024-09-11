@@ -27,7 +27,7 @@ var TableList = []interface{}{
 	&models.UserActivity{},
 	&models.ProviderUserMapping{},
 	&models.LeftMenuLink{},
-	&models.Program{},
+	&models.Course{},
 	&models.Milestone{},
 	&models.Outcome{},
 	&models.Activity{},
@@ -189,17 +189,17 @@ func (db *DB) SeedTestData() {
 			}
 		}
 	}
-	var programs []models.Program
-	progs, err := os.ReadFile("test_data/programs.json")
+	var courses []models.Course
+	progs, err := os.ReadFile("test_data/courses.json")
 	if err != nil {
 		log.Fatalf("Failed to read test data: %v", err)
 	}
-	if err := json.Unmarshal(progs, &programs); err != nil {
+	if err := json.Unmarshal(progs, &courses); err != nil {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
-	for idx := range programs {
-		if err := db.Create(&programs[idx]).Error; err != nil {
-			log.Fatalf("Failed to create program: %v", err)
+	for idx := range courses {
+		if err := db.Create(&courses[idx]).Error; err != nil {
+			log.Fatalf("Failed to create course: %v", err)
 		}
 	}
 	var milestones []models.Milestone
@@ -217,7 +217,7 @@ func (db *DB) SeedTestData() {
 	}
 	outcomes := []string{"completion", "grade", "certificate", "pathway_completion"}
 	for idx := range user {
-		for jdx := range programs {
+		for jdx := range courses {
 			for i := 0; i < 365; i++ {
 				if rand.Intn(100)%2 == 0 {
 					continue
@@ -229,7 +229,7 @@ func (db *DB) SeedTestData() {
 				time := yearAgo.AddDate(0, 0, i)
 				activity := models.Activity{
 					UserID:     user[idx].ID,
-					ProgramID:  programs[jdx].ID,
+					CourseID:   courses[jdx].ID,
 					Type:       "interaction",
 					TotalTime:  uint(startTime + randTime),
 					TimeDelta:  uint(randTime),
@@ -242,9 +242,9 @@ func (db *DB) SeedTestData() {
 				}
 			}
 			outcome := models.Outcome{
-				ProgramID: programs[jdx].ID,
-				UserID:    user[idx].ID,
-				Type:      models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+				CourseID: courses[jdx].ID,
+				UserID:   user[idx].ID,
+				Type:     models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 			}
 			if err := db.Create(&outcome).Error; err != nil {
 				log.Fatalf("Failed to create outcome: %v", err)

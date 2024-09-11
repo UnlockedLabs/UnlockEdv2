@@ -35,7 +35,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerActionsRoutes()
 	srv.registerLeftMenuRoutes()
 	srv.registerImageRoutes()
-	srv.registerProgramsRoutes()
+	srv.registerCoursesRoutes()
 	srv.registerMilestonesRoutes()
 	srv.registerOutcomesRoutes()
 	srv.registerActivityRoutes()

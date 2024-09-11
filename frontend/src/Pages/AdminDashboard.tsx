@@ -52,14 +52,14 @@ export default function AdminDashboard() {
                     <div className="card h-[368px] p-4">
                         <h2>Top Milestone Completion Per Course</h2>
                         <MilestonesBarChart
-                            data={activityData.program_milestones}
+                            data={activityData.course_milestones}
                         />
                     </div>
                 </div>
                 {/* Top course engagement */}
                 <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
                     <h2 className="card-h-padding">Top Course Engagement</h2>
-                    <TopProgPieChart data={activityData.top_program_activity} />
+                    <TopProgPieChart data={activityData.top_course_activity} />
                     <div className="px-4 pb-10">
                         {/* TO DO: caption needs to be added */}
                         <table className="table-2">
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
                                 {!error &&
                                     !isLoading &&
                                     activityData &&
-                                    activityData.top_program_activity.map(
+                                    activityData.top_course_activity.map(
                                         (course: any, index: number) => {
                                             var courseTime: string;
                                             if (course.hours_engaged < 1)
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
                                                         <div
                                                             className={`h-3 w-3 ${legendColor} my-auto`}
                                                         ></div>
-                                                        {course.program_name}
+                                                        {course.course_name}
                                                     </td>
                                                     <td>{courseTime}</td>
                                                 </tr>

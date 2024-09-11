@@ -37,7 +37,7 @@ service := src.GetProviderService(&provider)
 
 service.GetUsers()
 // or
-service.GetActivityForProgram(programId)
+service.GetActivityForCourse(courseId)
 ```
 
 # New Provider Implementation
@@ -65,9 +65,9 @@ type NewProviderService struct {
 ```go
 type ProviderServiceInterface interface {
  GetUsers(db *gorm.DB) ([]models.ImportUser, error)
- ImportPrograms(db *gorm.DB) error
- ImportMilestonesForProgramUser(courseId, userId uint, db *gorm.DB) error
- ImportActivityForProgram(courseId string, db *gorm.DB) error
+ ImportCourses(db *gorm.DB) error
+ ImportMilestonesForCourseUser(courseId, userId uint, db *gorm.DB) error
+ ImportActivityForCourse(courseId string, db *gorm.DB) error
  GetJobParams() *map[string]interface{}
 }
 
@@ -82,11 +82,11 @@ type ProviderServiceInterface interface {
 */
 
 params := *service.GetJobParams()
-programs := params["programs"].([]interface{})
+courses := params["courses"].([]interface{})
 
-for _, program := range programs {
+for _, course := range courses {
   // now we can cast it to our type
-  prog := program.(map[string]interface{})
+  prog := course.(map[string]interface{})
   id, externalId := prog["id"].(int), prog["external_id"].(string)
   // now we can call the necessary methods on the service
  if err := service.ImportSomethingFromProvider(id, externalId); err != nil {
@@ -101,7 +101,6 @@ service.cleanupJob(providerID, jobId, true)
 // this will update the job status in the database
 ```
 
-````
 
 Additionally, you may want to define some helper methods that handle conversion of the types received from external calls, into the types we require.
 It's recommended that you create a `{x_provider}_data.go` along with your `{x_provider}.go` file to define all the relevant data types and helper methods,
@@ -143,7 +142,7 @@ Any other additional data needed for the requests should be sent in the `Data` f
 body := map[string]interface{}{
   "provider_platform_id": 1,
   "last_run": "2024-03-02",
-  "programs": []map[string]interface{}{
+  "courses": []map[string]interface{}{
     map[string]interface{}{
     "id": 2,
     "external_id": "1234",
@@ -166,3 +165,5 @@ This means that the middleware can also expand to cache user data between releva
 often contain more relevant data than what is needed for the particular call, so a provider implementation should be evaluated to determine if
 this may be necessary. Other than in specific cases, cached data should only be valid for a 24 hour period, as the data may change on the provider's end
 and we are making these calls daily.
+
+

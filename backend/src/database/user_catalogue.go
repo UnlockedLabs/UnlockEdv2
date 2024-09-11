@@ -8,12 +8,12 @@ import (
 )
 
 type UserCatalogueJoin struct {
-	ProgramID    uint   `json:"program_id"`
+	CourseID     uint   `json:"course_id"`
 	ThumbnailURL string `json:"thumbnail_url"`
-	ProgramName  string `json:"program_name"`
+	CourseName   string `json:"course_name"`
 	ProviderName string `json:"provider_name"`
 	ExternalURL  string `json:"external_url"`
-	ProgramType  string `json:"program_type"`
+	CourseType   string `json:"course_type"`
 	Description  string `json:"description"`
 	IsFavorited  bool   `json:"is_favorited"`
 	OutcomeTypes string `json:"outcome_types"`
@@ -21,24 +21,24 @@ type UserCatalogueJoin struct {
 
 func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) ([]UserCatalogueJoin, error) {
 	catalogue := []UserCatalogueJoin{}
-	tx := db.Table("programs p").
-		Select("p.id as program_id, p.thumbnail_url, p.name as program_name, pp.name as provider_name, p.external_url, p.type as program_type, p.description, p.outcome_types, f.user_id IS NOT NULL as is_favorited").
-		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
-		Where("p.deleted_at IS NULL").
+	tx := db.Table("courses c").
+		Select("c.id as course_id, c.thumbnail_url, c.name as course_name, pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types, f.user_id IS NOT NULL as is_favorited").
+		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = ?", userId).
+		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 	for i, tag := range tags {
 		if i == 0 {
-			tx.Where("p.outcome_types ILIKE ?", "%"+tag+"%")
+			tx.Where("c.outcome_types ILIKE ?", "%"+tag+"%")
 		} else {
-			tx.Or("p.outcome_types ILIKE ?", "%"+tag+"%")
+			tx.Or("c.outcome_types ILIKE ?", "%"+tag+"%")
 		}
-		tx.Or("p.type ILIKE ?", "%"+tag+"%")
+		tx.Or("c.type ILIKE ?", "%"+tag+"%")
 	}
 	if search != "" {
-		tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
+		tx.Where("LOWER(c.name) LIKE ?", "%"+search+"%")
 	}
-	tx.Order(fmt.Sprintf("p.name %s", validOrder(order)))
+	tx.Order(fmt.Sprintf("c.name %s", validOrder(order)))
 	err := tx.Scan(&catalogue).Error
 	if err != nil {
 		return nil, err
@@ -46,10 +46,10 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 	return catalogue, nil
 }
 
-type UserPrograms struct {
+type UserCourses struct {
 	ID             uint    `json:"id"`
 	ThumbnailURL   string  `json:"thumbnail_url"`
-	ProgramName    string  `json:"program_name"`
+	CourseName     string  `json:"course_name"`
 	ProviderName   string  `json:"provider_platform_name"`
 	ExternalURL    string  `json:"external_url"`
 	CourseProgress float64 `json:"course_progress"`
@@ -64,10 +64,10 @@ func validOrder(str string) string {
 	return "desc"
 }
 
-func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search string, tags []string) ([]UserPrograms, uint, uint, error) {
-	programs := []UserPrograms{}
+func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search string, tags []string) ([]UserCourses, uint, uint, error) {
+	courses := []UserCourses{}
 	fieldMap := map[string]string{
-		"program_name":    "p.name",
+		"course_name":     "c.name",
 		"provider_name":   "pp.name",
 		"course_progress": "course_progress",
 		"is_favorited":    "is_favorited",
@@ -75,41 +75,41 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 	}
 	dbField, ok := fieldMap[orderBy]
 	if !ok {
-		dbField = "p.name"
+		dbField = "c.name"
 	}
 	orderStr := dbField + " " + validOrder(order)
 
-	tx := db.Table("programs p").
-		Select(`p.id, p.thumbnail_url,
-    p.name as program_name, pp.name as provider_name, p.external_url,
+	tx := db.Table("courses c").
+		Select(`c.id, c.thumbnail_url,
+    c.name as course_name, pp.name as provider_name, c.external_url,
     f.user_id IS NOT NULL as is_favorited,
     CASE
-        WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.program_id = p.id AND o.user_id = ?) THEN 100
-        WHEN p.total_progress_milestones = 0 THEN 0
+        WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.course_id = c.id AND o.user_id = ?) THEN 100
+        WHEN c.total_progress_milestones = 0 THEN 0
         ELSE
-           CASE WHEN (SELECT COUNT(m.id) * 100.0 / p.total_progress_milestones
+           CASE WHEN (SELECT COUNT(m.id) * 100.0 / c.total_progress_milestones
               FROM milestones m
-              WHERE m.program_id = p.id AND m.user_id = ?) = 100 THEN 99.999
-          ELSE (SELECT COUNT(m.id) * 100.0 / p.total_progress_milestones) END
+              WHERE m.course_id = c.id AND m.user_id = ?) = 100 THEN 99.999
+          ELSE (SELECT COUNT(m.id) * 100.0 / c.total_progress_milestones) END
     END as course_progress,
     a.total_time`, userId, userId).
-		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("LEFT JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.program_id = p.id", userId).
-		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
-		Joins("LEFT JOIN outcomes o ON o.program_id = p.id AND o.user_id = ?", userId).
+		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("LEFT JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.course_id = c.id", userId).
+		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = ?", userId).
+		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (
         SELECT id FROM activities
-        WHERE program_id = p.id AND user_id = ?
+        WHERE course_id = c.id AND user_id = ?
         ORDER BY created_at DESC
         LIMIT 1
     )`, userId).
-		Where("p.deleted_at IS NULL").
+		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 
 	tx = tx.Order(orderStr)
 
 	if search != "" {
-		tx = tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
+		tx = tx.Where("LOWER(c.name) LIKE ?", "%"+search+"%")
 	}
 	for i, tag := range tags {
 		var query string
@@ -128,8 +128,8 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		}
 	}
 
-	tx.Group("p.id, p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, a.total_time")
-	err := tx.Scan(&programs).Error
+	tx.Group("c.id, c.name, c.thumbnail_url, pp.name, c.external_url, f.user_id, a.total_time")
+	err := tx.Scan(&courses).Error
 	if err != nil {
 		return nil, 0, 0, err
 	}
@@ -139,9 +139,9 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 		return nil, 0, 0, err
 	}
 	var totalTime uint
-	for _, program := range programs {
-		totalTime += program.TotalTime
+	for _, course := range courses {
+		totalTime += course.TotalTime
 	}
 
-	return programs, uint(numCompleted), totalTime, nil
+	return courses, uint(numCompleted), totalTime, nil
 }

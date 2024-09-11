@@ -5,7 +5,7 @@ import { useState } from 'react';
 import ToggleView, { ViewType } from '@/Components/ToggleView';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { ServerResponse, UserPrograms, UserProgramsInfo } from '@/common';
+import { ServerResponse, UserCourses, UserCoursesInfo } from '@/common';
 import useSWR from 'swr';
 
 // TO DO: make sure this lives in the right place
@@ -28,20 +28,20 @@ enum TabType {
 export default function MyCourses() {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [sort, setSort] = useState<string>('order=asc&order_by=program_name');
+    const [sort, setSort] = useState<string>('order=asc&order_by=course_name');
     const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
     const { data, mutate, isLoading, error } = useSWR<
-        ServerResponse<UserProgramsInfo>
+        ServerResponse<UserCoursesInfo>
     >(
-        `/api/users/${user.id}/programs?${
+        `/api/users/${user.id}/courses?${
             sort +
             (activeTab !== TabType.All ? `&tags=${activeTab}` : '') +
             (searchTerm ? `&search=${searchTerm}` : '')
         }`
     );
-    const programData = data?.data as UserProgramsInfo;
+    const courseData = data?.data as UserCoursesInfo;
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error loading courses.</div>;
 
@@ -83,9 +83,8 @@ export default function MyCourses() {
                             label="Sort by"
                             callback={handleDropdownChange}
                             enumType={{
-                                'Name (A-Z)': 'order=asc&order_by=program_name',
-                                'Name (Z-A)':
-                                    'order=desc&order_by=program_name',
+                                'Name (A-Z)': 'order=asc&order_by=course_name',
+                                'Name (Z-A)': 'order=desc&order_by=course_name',
                                 'Progress (ascending)':
                                     'order=asc&order_by=course_progress',
                                 'Progress (descending)':
@@ -102,8 +101,8 @@ export default function MyCourses() {
                 <div
                     className={`grid mt-8 ${activeView == ViewType.Grid ? 'grid-cols-4 gap-6' : 'gap-4'}`}
                 >
-                    {programData.programs.map(
-                        (course: UserPrograms, index: number) => {
+                    {courseData.courses.map(
+                        (course: UserCourses, index: number) => {
                             return (
                                 <EnrolledCourseCard
                                     course={course}

@@ -82,7 +82,6 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) 
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	provider.OidcID = client.ID
 	provider.ExternalAuthProviderId = externalId
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
 		srv.ErrorResponse(w, http.StatusInternalServerError, err.Error())

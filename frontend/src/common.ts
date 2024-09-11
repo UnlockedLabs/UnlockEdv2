@@ -113,7 +113,7 @@ export interface Activity {
     user_name_first: string;
     user_name_last: string;
 }
-export interface Program {
+export interface Course {
     id: number;
     provider_platform_id: number;
     name: string;
@@ -128,19 +128,19 @@ export interface Program {
 export interface Outcome {
     id: number;
     type: string;
-    program_id: number;
+    course_id: number;
     user_id: number;
     value: string;
 }
-export interface UserProgramsInfo {
+export interface UserCoursesInfo {
     num_completed: number;
     total_time: number;
-    programs: UserPrograms[];
+    courses: UserCourses[];
 }
-export interface UserPrograms {
+export interface UserCourses {
     id: number;
     thumbnail_url: string;
-    program_name: string;
+    course_name: string;
     provider_platform_name: string;
     external_url: string;
     course_progress: number;
@@ -151,12 +151,12 @@ export interface UserPrograms {
 
 export interface CourseCatalogue {
     key: [number, string, boolean];
-    program_id: number;
+    course_id: number;
     thumbnail_url: string;
-    program_name: string;
+    course_name: string;
     provider_name: string;
     external_url: string;
-    program_type: string;
+    course_type: string;
     description: string;
     is_favorited: boolean;
     outcome_types: string;
@@ -164,7 +164,7 @@ export interface CourseCatalogue {
 
 export interface Milestone {
     id: number;
-    program_id: number;
+    course_id: number;
     type: string;
     external_url: string;
     description: string;
@@ -204,15 +204,15 @@ export interface AdminDashboardJoin {
     weekly_active_users: number;
     avg_daily_activity: number;
     total_weekly_activity: number;
-    program_milestones: ProgramMilestones[];
-    top_program_activity: ProgramActivity[];
+    course_milestones: CourseMilestones[];
+    top_course_activity: CourseActivity[];
     facility_name: string;
 }
 
 export interface StudentDashboardJoin {
     enrollments: CurrentEnrollment[];
-    recent_programs: RecentProgram[];
-    top_programs: string[];
+    recent_courses: RecentCourse[];
+    top_courses: string[];
     week_activity: RecentActivity[];
 }
 
@@ -223,21 +223,23 @@ export interface CurrentEnrollment {
     external_url: string;
     total_activity_time: number;
 }
-export interface RecentProgram {
-    program_name: string;
+
+export interface RecentCourse {
+    course_name: string;
     course_progress: string;
     alt_name: string;
     thumbnail_url: string;
     provider_platform_name: string;
     external_url: string;
 }
-export interface ProgramMilestones {
+
+export interface CourseMilestones {
     name: string;
     milestones: number;
 }
 
-export interface ProgramActivity {
-    program_name: string;
+export interface CourseActivity {
+    course_name: string;
     hours_engaged: number;
 }
 

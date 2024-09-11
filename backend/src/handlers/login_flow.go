@@ -262,7 +262,12 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	session := form["session"].(map[string]interface{})
+	session, ok := form["session"].(map[string]interface{})
+	if !ok {
+		log.WithFields(fields).Error("Error decoding request body")
+		srv.ErrorResponse(w, http.StatusBadRequest, "Bad Request")
+		return
+	}
 	toSend := map[string]interface{}{
 		"identity_provider_session_id": session["id"].(string),
 		"remember":                     true,
@@ -277,8 +282,9 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	url, err := acceptLoginEndpoint(form)
-	if err == nil {
-		srv.ErrorResponse(w, http.StatusContinue, "invalid request, must include challenge")
+	if err != nil {
+		srv.ErrorResponse(w, http.StatusBadRequest, "invalid request, must include challenge")
+		return
 	}
 	req, err := http.NewRequest(http.MethodPut, *url, bytes.NewReader(jsonBody))
 	if err != nil {

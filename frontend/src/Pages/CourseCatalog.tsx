@@ -64,7 +64,7 @@ export default function CourseCatalog() {
                                     course={course}
                                     callMutate={() => mutate()}
                                     view={activeView}
-                                    key={course.program_id}
+                                    key={course.course_id}
                                 />
                             );
                         })
