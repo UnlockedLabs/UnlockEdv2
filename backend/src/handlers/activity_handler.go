@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,33 +13,30 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.HandleGetActivityByUserID))
-	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.HandleGetDailyActivityByUserID))
-	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleGetProgramActivity))
-	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleCreateActivity))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.HandleError(srv.HandleGetActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.HandleError(srv.HandleGetDailyActivityByUserID)))
+	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleGetProgramActivity)))
+	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleCreateActivity)))
 }
 
-func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request) error {
 	year := r.URL.Query().Get("year")
 	if year == "" {
 		year = fmt.Sprintf("%d", time.Now().Year())
 	}
 	yearInt, err := strconv.Atoi(year)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid year")
-		return
+		return newInvalidQueryParamServiceError(err, "year", nil)
 	}
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
-		return
+		return newInvalidIdServiceError(err, "user ID", nil)
 	}
 	activities, err := srv.Db.GetActivityByUserID(uint(userID), yearInt)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{
+	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
 	})
 }
@@ -47,19 +45,16 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
  * @Query Params:
  * ?year=: year (default last year)
  ****/
-func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "HandleGetDailyActivityByUserID"}
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid user ID")
-		return
+		return newInvalidIdServiceError(err, "user ID", fields)
 	}
 	fields["user_id"] = userID
 	requestingUser := int(srv.GetUserID(r))
 	if requestingUser != userID && !srv.UserIsAdmin(r) {
-		log.WithFields(fields).Error("Non admin requesting to view other student activities")
-		srv.ErrorResponse(w, http.StatusForbidden, "You do not have permission to view this user's activities")
-		return
+		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities", fields)
 	}
 	yearStr := r.URL.Query().Get("year")
 	var year int
@@ -67,50 +62,42 @@ func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 		year, err = strconv.Atoi(yearStr)
 		if err != nil {
 			fields["error"] = err.Error()
-			log.WithFields(fields).Error("Invalid year parameter")
-			srv.ErrorResponse(w, http.StatusBadRequest, "Invalid year parameter")
-			return
+			return newInvalidQueryParamServiceError(err, "year", fields)
 		}
 	}
 	activities, err := srv.Db.GetDailyActivityByUserID(userID, year)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Failed to get activities")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
-		return
+		return newDatabaseServiceError(err, fields)
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{
+	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
 	})
 }
 
-func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request) error {
 	programID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid program ID")
-		return
+		return newInvalidIdServiceError(err, "program ID", nil)
 	}
 	page, perPage := srv.GetPaginationInfo(r)
 	count, activities, err := srv.Db.GetActivityByProgramID(page, perPage, programID)
 	if err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to get activities")
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]interface{}{
+	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"count":      count,
 		"activities": activities,
 	})
 }
 
-func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) error {
 	activity := &models.Activity{}
 	if err := json.NewDecoder(r.Body).Decode(activity); err != nil {
-		srv.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
-		return
+		return newJSONReqBodyServiceError(err, nil)
 	}
 	if err := srv.Db.CreateActivity(activity); err != nil {
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Failed to create activity")
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, activity)
+	return writeJsonResponse(w, http.StatusOK, activity)
 }

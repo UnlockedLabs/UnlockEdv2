@@ -352,15 +352,16 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 
 type HttpFunc func(w http.ResponseWriter, r *http.Request) error
 
-func (svr *Server) HandleError(h HttpFunc) http.HandlerFunc {
+// Wraps a handler function that returns an error so that it can handle the error by writing it to the response and logging it.
+func (svr *Server) HandleError(handler HttpFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := h(w, r); err != nil {
-			if svcErr, ok := err.(ServiceError); ok {
+		if err := handler(w, r); err != nil {
+			if svcErr, ok := err.(serviceError); ok {
 				svr.ErrorResponse(w, svcErr.Status, svcErr.Message)
-				svcErr.Log(r)
-			} else { //fall into any other  errors
+				svcErr.log(r)
+			} else { //capture all other error types
 				svr.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-				log.Error("Error occured on endpoint ", r.Method, " ", r.URL.Path, " Error: ", err.Error())
+				log.Error("Error occurred on endpoint ", r.Method, " ", r.URL.Path, " Error: ", err.Error())
 			}
 		}
 	}
@@ -371,9 +372,7 @@ func writePaginatedResponse[T any](w http.ResponseWriter, status int, data []T, 
 	w.WriteHeader(status)
 	resp := models.PaginatedResource[T]{Message: "", Data: data, Meta: meta}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		//log.Error("Error writing json response", err)
-		//http.Error(w, "error writing response", http.StatusInternalServerError)
-		return ResponseServiceError(err)
+		return newResponseServiceError(err, nil)
 	}
 	return nil
 }
@@ -384,15 +383,12 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 	if str, ok := any(data).(string); ok {
 		resp := models.Resource[struct{}]{Message: str, Data: struct{}{}}
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			//log.Error("error writing response: ", err)
-			return ResponseServiceError(err)
+			return newResponseServiceError(err, nil)
 		}
 	}
 	resp := models.Resource[T]{Message: "Data fetched successfully", Data: data}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		//log.Error("Error writing json response", err)
-		//http.Error(w, "error writing response", http.StatusInternalServerError)
-		return ResponseServiceError(err)
+		return newResponseServiceError(err, nil)
 	}
 	return nil
 }

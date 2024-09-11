@@ -10,12 +10,12 @@ import (
 )
 
 func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleIndexPrograms)))
-	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowProgram)))
-	srv.Mux.Handle("POST /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateProgram)))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteProgram)))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateProgram)))
-	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.HandleFavoriteProgram)))
+	srv.Mux.Handle("GET /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleIndexPrograms))))
+	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleShowProgram))))
+	srv.Mux.Handle("POST /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleCreateProgram))))
+	srv.Mux.Handle("DELETE /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleDeleteProgram))))
+	srv.Mux.Handle("PATCH /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleUpdateProgram))))
+	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleFavoriteProgram))))
 }
 
 /*
@@ -26,14 +26,12 @@ func (srv *Server) registerProgramsRoutes() {
 * ?search=: search
 * ?searchFields=: searchFields
  */
-func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) error {
 	page, perPage := srv.GetPaginationInfo(r)
 	search := r.URL.Query().Get("search")
 	total, programs, err := srv.Db.GetProgram(page, perPage, search)
 	if err != nil {
-		log.Debug("IndexPrograms Database Error: ", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Error fetching programs from database")
-		return
+		return newDatabaseServiceError(err, nil)
 	}
 	last := srv.CalculateLast(total, perPage)
 	paginationData := models.PaginationMeta{
@@ -42,56 +40,45 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request) {
 		CurrentPage: page,
 		Total:       total,
 	}
-	writePaginatedResponse(w, http.StatusOK, programs, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, programs, paginationData)
 }
 
-func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Debug("GET Program handler Error: ", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newInvalidIdServiceError(err, "program ID", nil)
 	}
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
-		log.Debug("GET Program handler Error: ", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, program)
+	return writeJsonResponse(w, http.StatusOK, program)
 }
 
-func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request) error {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {
-		log.Error("CreateProgram Error:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newJSONReqBodyServiceError(err, nil)
 	}
 	_, err = srv.Db.CreateProgram(&program)
 	if err != nil {
-		log.Error("Error creating program:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusCreated, "Program created successfully")
+	return writeJsonResponse(w, http.StatusCreated, "Program created successfully")
 }
 
-func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) error {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {
-		log.Error("UpdateProgram Error:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newJSONReqBodyServiceError(err, nil)
 	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Debug("GET Program handler Error: ", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return newInvalidIdServiceError(err, "program ID", nil)
 	}
 	toUpdate, err := srv.Db.GetProgramByID(id)
 	if err != nil {
@@ -100,54 +87,37 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request) {
 	models.UpdateStruct(&toUpdate, &program)
 	updated, updateErr := srv.Db.UpdateProgram(toUpdate)
 	if updateErr != nil {
-		log.Error("Error updating program:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, updated)
+	return writeJsonResponse(w, http.StatusOK, updated)
 }
 
-func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("DELETE Program handler Error: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newInvalidIdServiceError(err, "program ID", nil)
 	}
 	if err = srv.Db.DeleteProgram(id); err != nil {
-		log.Error("Error deleting program:" + err.Error())
-		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
-		return
+		return newDatabaseServiceError(err, nil)
 	}
 	log.Info("Program deleted")
-	writeJsonResponse(w, http.StatusNoContent, "Program deleted successfully")
+	return writeJsonResponse(w, http.StatusNoContent, "Program deleted successfully")
 }
 
-func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("Favorite Program handler Error: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newInvalidIdServiceError(err, "program ID", nil)
 	}
 
 	user_id := srv.GetUserID(r)
-	var favorite models.UserFavorite
-	if srv.Db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
-		if err = srv.Db.Delete(&favorite).Error; err != nil {
-			log.Error("Error deleting favorite: " + err.Error())
-			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-		return
-	} else {
-		favorite = models.UserFavorite{UserID: user_id, ProgramID: uint(id)}
-		if err = srv.Db.Create(&favorite).Error; err != nil {
-			log.Error("Error creating favorite: " + err.Error())
-			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
+	favoriteRemoved, err := srv.Db.ToggleUserFavorite(user_id, uint(id))
+	if err != nil {
+		return newDatabaseServiceError(err, nil)
 	}
-	writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
+	if favoriteRemoved {
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	}
+	return writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
 }

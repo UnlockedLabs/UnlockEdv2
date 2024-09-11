@@ -7,7 +7,7 @@ import (
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
 	if err := db.First(content, id).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
 }
@@ -24,28 +24,28 @@ func (db *DB) GetProgram(page, perPage int, search string) (int64, []models.Prog
 		_ = db.Model(&models.Program{}).Count(&total)
 	}
 	if err := db.Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "programs")
 	}
 	return total, content, nil
 }
 
 func (db *DB) CreateProgram(content *models.Program) (*models.Program, error) {
 	if err := db.Create(content).Error; err != nil {
-		return nil, err
+		return nil, newCreateDBError(err, "programs")
 	}
 	return content, nil
 }
 
 func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
 	if err := db.Save(content).Error; err != nil {
-		return nil, err
+		return nil, newUpdateDBrror(err, "programs")
 	}
 	return content, nil
 }
 
 func (db *DB) DeleteProgram(id int) error {
 	if err := db.Delete(models.Program{}).Where("id = ?", id).Error; err != nil {
-		return err
+		return newDeleteDBError(err, "programs")
 	}
 	return nil
 }
@@ -53,7 +53,7 @@ func (db *DB) DeleteProgram(id int) error {
 func (db *DB) GetProgramByProviderPlatformID(id int) ([]models.Program, error) {
 	content := []models.Program{}
 	if err := db.Where("provider_platform_id = ?", id).Find(&content).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
 }

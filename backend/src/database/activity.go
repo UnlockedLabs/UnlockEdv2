@@ -10,8 +10,12 @@ import (
 
 func (db *DB) CreateActivity(activity *models.Activity) error {
 	// This function is calling a stored procedure in the database to calculate the delta (src/activity_proc.sql)
-	return db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
-		activity.UserID, activity.ProgramID, activity.Type, activity.TotalTime, activity.ExternalID).Error
+	if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
+		activity.UserID, activity.ProgramID, activity.Type, activity.TotalTime, activity.ExternalID).Error; err != nil {
+		return newCreateDBError(err, "activities")
+	}
+
+	return nil
 }
 
 type DailyActivity struct {
@@ -63,19 +67,19 @@ func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error
 		activity_date;`
 	rows, err := db.Raw(query, userID, year, year).Rows()
 	if err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting activities by user id")
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var dailyActivity DailyActivity
 		if err := rows.Scan(&dailyActivity.Date, &dailyActivity.TotalTime, &dailyActivity.Quartile); err != nil {
-			return nil, err
+			return nil, NewDBError(err, "error getting activities by user id")
 		}
 		dailyActivities = append(dailyActivities, dailyActivity)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting activities by user id")
 	}
 
 	// Fetch all activities for the given user and year
@@ -91,7 +95,7 @@ func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error
 				ELSE DATE_TRUNC('day', MAKE_DATE(?, 1, 1) + INTERVAL '1 year' - INTERVAL '1 second')
 			END
 	`, userID, year, year, year).Find(&activities).Error; err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting activities by user id")
 	}
 
 	for i := range dailyActivities {
@@ -130,7 +134,7 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 	}
 
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
-		return nil, err
+		return nil, newGetRecordsDBError(err, "activities")
 	}
 
 	// Combine activities based on date
@@ -188,7 +192,10 @@ func (db *DB) GetActivityByProgramID(page, perPage, programID int) (int64, []mod
 	var activities []models.Activity
 	var count int64
 	_ = db.Model(&models.Activity{}).Where("program_id = ?", programID).Count(&count)
-	return count, activities, db.Where("program_id = ?", programID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error
+	if err := db.Where("program_id = ?", programID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error; err != nil {
+		return count, nil, newGetRecordsDBError(err, "activities")
+	}
+	return count, activities, nil
 }
 
 func (db *DB) DeleteActivity(activityID int) error {
@@ -269,6 +276,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		recentPrograms = []models.RecentProgram{}
 	}
 
+	dashboard := models.UserDashboardJoin{}
 	// TOP PROGRAMS
 	var topPrograms []string
 	err = db.Table("activities a").
@@ -281,7 +289,8 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		Limit(6).
 		Find(&topPrograms).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting student dashboard info")
 	}
 
 	// then get the users current enrollments
@@ -305,7 +314,8 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		Group("p.id, DATE(a.created_at), pp.name").
 		Find(&results).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting student dashboard info")
 	}
 	enrollments := dashboardHelper(results)
 	if len(enrollments) == 0 {
@@ -321,7 +331,8 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 			Joins(`JOIN provider_platforms pp ON p.provider_platform_id = pp.id`).
 			Joins(`LEFT JOIN milestones m on m.program_id = p.id`).Where(`m.user_id`, userID).Find(&newEnrollments).Error
 		if err != nil {
-			log.Fatalf("Query failed: %v", err)
+			log.Errorf("Query failed: %v", err)
+			return dashboard, NewDBError(err, "error getting student dashboard info")
 		}
 		for idx, enrollment := range newEnrollments {
 			if idx == 7 {
@@ -346,10 +357,14 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		Group("date").
 		Find(&activities).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting student dashboard info")
 	}
-
-	return models.UserDashboardJoin{Enrollments: enrollments, RecentPrograms: recentPrograms, TopPrograms: topPrograms, WeekActivity: activities}, err
+	dashboard.Enrollments = enrollments
+	dashboard.RecentPrograms = recentPrograms
+	dashboard.TopPrograms = topPrograms
+	dashboard.WeekActivity = activities
+	return dashboard, nil
 }
 
 func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin, error) {
@@ -361,7 +376,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Where("f.id = ?", facilityID).
 		Find(&dashboard.FacilityName).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// Monthly Activity
@@ -372,7 +387,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Group("TO_CHAR(a.created_at, 'YYYY-MM-DD')").
 		Find(&dashboard.MonthlyActivity).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// Weekly Active Users, Average Daily Activity, Total Weekly Activity
@@ -391,7 +406,8 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
 		Find(&result).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	dashboard.WeeklyActiveUsers = result.WeeklyActiveUsers
@@ -408,7 +424,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Limit(5).
 		Find(&dashboard.ProgramMilestones).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// Top 5 Programs by Hours Engaged
@@ -422,7 +438,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Limit(5).
 		Find(&dashboard.TopProgramActivity).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	return dashboard, nil

@@ -32,10 +32,10 @@ type (
 )
 
 func (srv *Server) registerAuthRoutes() {
-	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
+	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.HandleError(srv.handleResetPassword)))
 	/* only use auth middleware, user activity bloats the database + results */
-	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleCheckAuth)))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(srv.handleChangeAdminFacility))
+	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.HandleError(srv.handleCheckAuth))))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.handleChangeAdminFacility))))
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -75,19 +75,18 @@ func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 	})
 }
 
-func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		http.Error(w, "couldn't parse id from path", http.StatusBadRequest)
-		return
+		return newInvalidIdServiceError(err, "facility ID", nil)
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	claims.FacilityID = uint(id)
 	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		http.Error(w, "error updating user traits in kratos", http.StatusInternalServerError)
-		return
+		return newInternalServerServiceError(err, "error updating user traits in kratos", nil)
 	}
 	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 func isAuthRoute(r *http.Request) bool {
@@ -125,28 +124,24 @@ func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)
 }
 
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
-func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "handleCheckAuth"}
 	claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 	if !ok {
 		log.WithFields(fields).Error("No claims found in context")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		return newUnauthorizedServiceError(fields)
 	}
 	fields["user.username"] = claims.Username
 	fields["facility_id"] = claims.FacilityID
 	user, err := srv.Db.GetUserByID(claims.UserID)
-	if err != nil {
-		log.WithFields(fields).Error("Error fetching user by ID: ", err)
-		srv.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
-		return
+	if err != nil { //special case here, kept original flow as Unauthorized is referenced in api.ts file)
+		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized", fields)
 	}
 	if claims.Role != models.Admin && claims.FacilityID != user.FacilityID {
 		// user isn't an admin, and has alternate facility_id in the JWT claims
 		fields["claims.facility_id"] = claims.FacilityID
 		log.WithFields(fields).Error("user viewing context for different facility. this should never happen")
-		w.WriteHeader(http.StatusUnauthorized)
-		return
+		return newUnauthorizedServiceError(fields)
 	}
 	traits := claims.getTraits()
 	traits["id"] = user.ID
@@ -154,7 +149,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) {
 	traits["created_at"] = user.CreatedAt
 	traits["name_first"] = user.NameFirst
 	traits["name_last"] = user.NameLast
-	writeJsonResponse(w, http.StatusOK, traits)
+	return writeJsonResponse(w, http.StatusOK, traits)
 }
 
 // we pull the ory session cookie, and send request to kratos to validate the user session
@@ -225,7 +220,7 @@ type ResetPasswordRequest struct {
 	FacilityName string `json:"facility_name"`
 }
 
-func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) error {
 	log.Info("Handling password reset request", r.URL.Path)
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	form := ResetPasswordRequest{}
@@ -234,43 +229,33 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	if form.Password != form.Confirm {
-		http.Error(w, "Passwords do not match", http.StatusBadRequest)
-		return
+		return newBadRequestServiceError(errors.New("passwords do not match"), "passwords do not match", nil)
 	}
 	if !validatePassword(form.Password) {
-		http.Error(w, "Password must be at least 8 characters long and contain a number", http.StatusBadRequest)
-		return
+		return newBadRequestServiceError(errors.New("password not formatted correclty"), "Password must be at least 8 characters long and contain a number", nil)
 	}
 	tx := srv.Db.Begin()
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil {
-		log.Error("Error fetching user by ID: ", err)
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
+		return newDatabaseServiceError(err, nil)
 	}
 	if claims.UserID == 1 && claims.Role == "admin" && form.FacilityName != "" {
 		if _, err := srv.Db.UpdateFacility(form.FacilityName, 1); err != nil {
-			log.Error("Failed to update facility default name: ", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
 			tx.Rollback()
-			return
+			return newDatabaseServiceError(err, nil)
 		}
 	}
 	if !srv.isTesting(r) {
 		claims := claimsFromUser(user)
 		if err := srv.handleUpdatePasswordKratos(claims, form.Password, false); err != nil {
-			log.Errorln("Error updating password in kratos: ", err)
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			tx.Rollback()
-			return
+			return newInternalServerServiceError(err, "error updating password in kratos", nil)
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
-		log.Error("Commit transaction failed: ", err)
-		http.Error(w, "Transaction commit failed", http.StatusInternalServerError)
-		return
+		return newInternalServerServiceError(err, "Transaction commit failed", nil)
 	}
-	writeJsonResponse(w, http.StatusOK, "Password reset successfully")
+	return writeJsonResponse(w, http.StatusOK, "Password reset successfully")
 }
 
 func validatePassword(pass string) bool {

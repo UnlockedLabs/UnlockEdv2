@@ -13,10 +13,10 @@ import (
 )
 
 func (srv *Server) registerOidcFlowRoutes() {
-	srv.Mux.HandleFunc("POST /api/login", srv.handleLogin)
-	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleLogout))
-	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleOidcConsent))
-	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleRefreshAuth))
+	srv.Mux.HandleFunc("POST /api/login", srv.HandleError(srv.handleLogin))
+	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.HandleError(srv.handleLogout)))
+	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.HandleError(srv.handleOidcConsent)))
+	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.HandleError(srv.handleRefreshAuth)))
 }
 
 const (
@@ -34,14 +34,14 @@ type LoginRequest struct {
 	CsrfToken string `json:"csrf_token"`
 }
 
-func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
 	resp := map[string]string{}
 	resp["redirect_to"] = "/self-service/logout/browser"
-	writeJsonResponse(w, http.StatusOK, resp)
+	return writeJsonResponse(w, http.StatusOK, resp)
 }
 
 // (oauth) login flow is semi complicated, so I will do my best to comment
-func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "handleLogin"}
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
@@ -54,9 +54,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
 	if err != nil {
-		log.WithFields(fields).Error("Error marshalling body")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newMarshallingBodyServiceError(err, fields)
 	}
 	url := os.Getenv("KRATOS_PUBLIC_URL") + LoginEndpoint + "?flow=" + form.FlowID
 	if form.Challenge != "" {
@@ -66,26 +64,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error creating request")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newCreateRequestServiceError(err, fields)
 	}
 	resp, err := s.submitKratosLoginRequest(form.CsrfToken, r, req)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error sending request to kratos")
-		s.ErrorResponse(w, http.StatusUnauthorized, "Invalid login, unable to submit flow to kratos")
-		return
+		return newUnauthorizedServiceError(fields)
 	}
 	// set the cookies from kratos to authenticate the client
 	setLoginCookies(resp, w)
 	redirect, err := getKratosRedirect(resp)
 	if err != nil {
-		log.WithFields(fields).Errorln("invalid login with kratos")
-		s.ErrorResponse(w, resp.StatusCode, "Invalid login")
-		return
+		return NewServiceError(err, resp.StatusCode, "Invalid login", fields)
 	}
-	writeJsonResponse(w, http.StatusOK, redirect)
+	return writeJsonResponse(w, http.StatusOK, redirect)
 }
 
 func (srv *Server) submitKratosLoginRequest(token string, client, kratos *http.Request) (*http.Response, error) {
@@ -155,7 +147,7 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 	}
 }
 
-func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "handleOidcConsent"}
 	// decode the request body, the client should have sent us the consent challenge
 	// that they received from hydra along with the user's consent
@@ -163,44 +155,34 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&decoded)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error decoding request body")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newJSONReqBodyServiceError(err, fields)
 	}
 	defer r.Body.Close()
 	// get the user from the database
 	user, err := s.Db.GetUserByID(s.GetUserID(r))
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error getting user from db")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newDatabaseServiceError(err, fields)
 	}
 	consentChallenge := "?consent_challenge=" + decoded["consent_challenge"].(string)
 	// build the consent body to send to hydra with info about the oauth2 identity token
 	jsonBody, err := buildConsentBody(user)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error building consent body")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newMarshallingBodyServiceError(err, fields)
 	}
 	// send the consent request to hydra
 	req, err := http.NewRequest(http.MethodPut, os.Getenv("HYDRA_ADMIN_URL")+ConsentPutEndpoint+consentChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error creating request")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newCreateRequestServiceError(err, fields)
 	}
 	// making sure to add the cookies, and relevant headers. If we don't add accept json
 	// header, hydra will return a redirect automatically as if we were a browser
 	response, err := s.sendAndDecodeOryRequest(r, req)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error sending request to hydra")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return newInternalServerServiceError(err, "Error sending request to hydra", fields)
 	}
 	log.Info("consent response: ", response)
 	// send the client the redirect uri that hydra sent us
@@ -208,7 +190,7 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) {
 	respBody := map[string]string{
 		"redirect_to": redirectURI,
 	}
-	writeJsonResponse(w, http.StatusOK, respBody)
+	return writeJsonResponse(w, http.StatusOK, respBody)
 }
 
 func buildConsentBody(user *models.User) ([]byte, error) {
@@ -251,14 +233,12 @@ func (srv *Server) sendAndDecodeOryRequest(client, req *http.Request) (map[strin
 // oauth2 client login flow. Kratos by default will make the user login again despite
 // acknowledging that the user has a session. So in this case, we skip kratos and accept
 // the hydra login request directly because this endpoint sits behind auth middleware.
-func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "handleRefreshAuth"}
 	var form map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&form)
 	if err != nil {
-		log.WithFields(fields).Error("Error decoding request body")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		return
+		return newJSONReqBodyServiceError(err, fields)
 	}
 	defer r.Body.Close()
 	session := form["session"].(map[string]interface{})
@@ -271,29 +251,23 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) {
 	jsonBody, err := json.Marshal(toSend)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error marshalling body")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		return
+		return newMarshallingBodyServiceError(err, fields)
 	}
 	url, err := acceptLoginEndpoint(form)
-	if err == nil {
-		srv.ErrorResponse(w, http.StatusContinue, "invalid request, must include challenge")
+	if err != nil { ///wait on this one
+		return NewServiceError(err, http.StatusContinue, "invalid request, must include challenge", nil)
 	}
 	req, err := http.NewRequest(http.MethodPut, *url, bytes.NewReader(jsonBody))
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error creating request")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		return
+		return newCreateRequestServiceError(err, fields)
 	}
 	consentResponse, err := srv.sendAndDecodeOryRequest(r, req)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Error creating request")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		return
+		return newCreateRequestServiceError(err, fields)
 	}
-	writeJsonResponse(w, http.StatusOK, map[string]string{
+	return writeJsonResponse(w, http.StatusOK, map[string]string{
 		"redirect_to": consentResponse["redirect_to"].(string),
 	})
 }

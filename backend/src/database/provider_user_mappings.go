@@ -5,16 +5,21 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 func (db *DB) CreateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
-	return db.Create(providerUserMapping).Error
+	if err := db.Create(providerUserMapping).Error; err != nil {
+		return newCreateDBError(err, "provider_user_mappings")
+	}
+	return nil
 }
 
 func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string, providerId uint) (*models.ProviderUserMapping, error) {
 	var providerUserMapping models.ProviderUserMapping
 	if err := db.Where("external_user_id = ? AND provider_platform_id = ?", externalUserID, providerId).First(&providerUserMapping).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "provider_user_mappings")
 	}
 	return &providerUserMapping, nil
 }
@@ -22,7 +27,7 @@ func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string, prov
 func (db *DB) GetUserMappingsForProvider(providerId uint) ([]models.ProviderUserMapping, error) {
 	var users []models.ProviderUserMapping
 	if err := db.Find(&users).Where("provider_platform_id = ?", providerId).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "provider_user_mappings")
 	}
 	return users, nil
 }
@@ -30,7 +35,7 @@ func (db *DB) GetUserMappingsForProvider(providerId uint) ([]models.ProviderUser
 func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUserMapping, error) {
 	var providerUserMapping models.ProviderUserMapping
 	if err := db.Where("user_id = ? AND provider_platform_id = ?", userID, providerID).First(&providerUserMapping).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "provider_user_mappings")
 	}
 	return &providerUserMapping, nil
 }
@@ -38,10 +43,10 @@ func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUs
 func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
 	result := db.Model(&models.ProviderUserMapping{}).Where("id = ?", providerUserMapping.ID).Updates(providerUserMapping)
 	if result.Error != nil {
-		return result.Error
+		return newUpdateDBrror(result.Error, "provider_user_mappings")
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("provider user mapping not found")
+		return newUpdateDBrror(gorm.ErrRecordNotFound, "provider_user_mappings")
 	}
 	return nil
 }
@@ -51,7 +56,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 	var total int64
 
 	if providerID == "" {
-		return 0, nil, GetUnmappedUsersDBError(errors.New("no provider id provided to search unmapped users"))
+		return 0, nil, NewDBError(errors.New("no provider id provided to search unmapped users"), "error getting unmapped users")
 	}
 
 	if len(userSearch) != 0 {
@@ -71,7 +76,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&users).Error; err != nil {
-		return 0, nil, GetUnmappedUsersDBError(err)
+		return 0, nil, NewDBError(err, "error getting unmapped users")
 	}
 
 	return total, users, nil
@@ -103,7 +108,7 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 	tx = tx.Where(searchCondition)
 
 	if err := tx.Find(&users).Error; err != nil {
-		return nil, GetUnmappedUsersDBError(err)
+		return nil, NewDBError(err, "error getting unmapped provider users with search")
 	}
 
 	fmt.Printf("found %d matches", len(users))
@@ -113,7 +118,7 @@ func (db *DB) getUnmappedProviderUsersWithSearch(providerID string, userSearch [
 func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMapping, error) {
 	var providerUserMappings []models.ProviderUserMapping
 	if err := db.Where("user_id = ?", userID).Find(&providerUserMappings).Error; err != nil {
-		return nil, err
+		return nil, newGetRecordsDBError(err, "provider_user_mappings")
 	}
 	return providerUserMappings, nil
 }
@@ -121,10 +126,10 @@ func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMa
 func (db *DB) DeleteProviderUserMappingByUserID(userID, providerID int) error {
 	result := db.Model(&models.ProviderUserMapping{}).Where("user_id = ? AND provider_platform_id = ?", userID, providerID).Delete(&models.ProviderUserMapping{})
 	if result.Error != nil {
-		return result.Error
+		return newDeleteDBError(result.Error, "provider_user_mappings")
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("provider user mapping not found")
+		return newDeleteDBError(gorm.ErrRecordNotFound, "provider_user_mappings")
 	}
 	return nil
 }

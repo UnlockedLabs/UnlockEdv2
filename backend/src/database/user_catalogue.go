@@ -41,7 +41,7 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 	tx.Order(fmt.Sprintf("p.name %s", validOrder(order)))
 	err := tx.Scan(&catalogue).Error
 	if err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting user catalogue info")
 	}
 	return catalogue, nil
 }
@@ -130,12 +130,12 @@ func (db *DB) GetUserPrograms(userId uint, order string, orderBy string, search 
 	tx.Group("p.id, p.name, p.thumbnail_url, pp.name, p.external_url, f.user_id, p.total_progress_milestones, a.total_time")
 	err := tx.Scan(&programs).Error
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, NewDBError(err, "error getting user programs")
 	}
 
 	var numCompleted int64
 	if err := db.Model(&models.Outcome{}).Where("user_id = ?", userId).Count(&numCompleted).Error; err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, NewDBError(err, "error getting user programs")
 	}
 	var totalTime uint
 	for _, program := range programs {
