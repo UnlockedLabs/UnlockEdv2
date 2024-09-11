@@ -34,7 +34,7 @@ func (db *DB) GetAllUserActivity(order string, page, perPage int) (int64, []User
 		Limit(perPage).
 		Find(&userActivities).
 		Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "user_activities")
 	}
 	return count, userActivities, nil
 }
@@ -47,7 +47,7 @@ func (db *DB) SearchUserActivity(search string, order string, page, perPage int)
 		Or("LOWER(users.name_last) LIKE ?", "%"+search+"%").
 		Or("LOWER(users.name_first) LIKE ?", "%"+search+"%").
 		Count(&count).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "user_activities")
 	}
 	if order == "" {
 		order = "user_activities.created_at desc"
@@ -65,7 +65,7 @@ func (db *DB) SearchUserActivity(search string, order string, page, perPage int)
 		Limit(perPage).
 		Find(&userActivities).
 		Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "user_activities")
 	}
 	return count, userActivities, nil
 }
@@ -74,17 +74,17 @@ func (db *DB) GetActivityForUser(userID int, page, perPage int) (int64, []models
 	var userActivities []models.UserActivity
 	var count int64
 	if err := db.Model(&models.UserActivity{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "user_activities")
 	}
 	if err := db.Offset((page-1)*perPage).Limit(perPage).Where("user_id = ?", userID).Find(&userActivities).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "user_activities")
 	}
 	return count, userActivities, nil
 }
 
 func (db *DB) CreateActivityForUser(activity *models.UserActivity) error {
 	if err := db.Create(activity).Error; err != nil {
-		return err
+		return newCreateDBError(err, "user_activities")
 	}
 	return nil
 }

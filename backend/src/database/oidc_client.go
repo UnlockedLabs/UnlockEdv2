@@ -10,10 +10,24 @@ func (db *DB) GetClientForProvider(provID uint) (*models.OidcClient, error) {
 
 func (db *DB) GetAllRegisteredClients() ([]models.OidcClient, error) {
 	var clients []models.OidcClient
-	err := db.Find(&clients).Error
-	return clients, err
+
+	if err := db.Find(&clients).Error; err != nil {
+		return clients, newGetRecordsDBError(err, "oidc_clients")
+	}
+	return clients, nil
 }
 
 func (db *DB) RegisterClient(client *models.OidcClient) error {
-	return db.Create(client).Error
+	if err := db.Create(client).Error; err != nil {
+		return newCreateDBError(err, "oidc_clients")
+	}
+	return nil
+}
+
+func (db *DB) GetOidcClientById(id string) (*models.OidcClient, error) {
+	client := &models.OidcClient{}
+	if err := db.Find(client, "id = ?", id).Error; err != nil {
+		return client, newNotFoundDBError(err, "oidc_clients")
+	}
+	return client, nil
 }

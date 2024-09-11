@@ -10,12 +10,12 @@ import (
 )
 
 func (srv *Server) registerOpenContentRoutes() {
-	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.IndexOpenContent))
-	srv.Mux.Handle("PUT /api/open-content/{id}", srv.ApplyAdminMiddleware(srv.ToggleOpenContent))
-	srv.Mux.Handle("POST /api/open-content", srv.ApplyAdminMiddleware(srv.CreateOpenContent))
+	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.HandleError(srv.IndexOpenContent)))
+	srv.Mux.Handle("PUT /api/open-content/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.ToggleOpenContent)))
+	srv.Mux.Handle("POST /api/open-content", srv.ApplyAdminMiddleware(srv.HandleError(srv.CreateOpenContent)))
 }
 
-func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "IndexOpenContent"}
 	only := r.URL.Query().Get("all")
 	var all bool
@@ -24,27 +24,21 @@ func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request) {
 	}
 	content, err := srv.Db.GetOpenContent(all)
 	if err != nil {
-		log.WithFields(fields).Errorln("unable to fetch open content from DB")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Unable to fetch records from DB")
-		return
+		return newDatabaseServiceError(err, fields)
 	}
-	writeJsonResponse(w, http.StatusOK, content)
+	return writeJsonResponse(w, http.StatusOK, content)
 }
 
-func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "ToggleOpenContent"}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.WithFields(fields).Errorln("unable to parse ID from path")
-		srv.ErrorResponse(w, http.StatusBadRequest, "unable to parse ID from path")
-		return
+		return newInvalidIdServiceError(err, "open content provider ID", fields)
 	}
 	if err := srv.Db.ToggleContentProvider(id); err != nil {
-		log.WithFields(fields).Errorln("unable to find or toggle content provider, please make sure id is correct")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Unable to find records from DB")
-		return
+		return newDatabaseServiceError(err, fields)
 	}
-	writeJsonResponse(w, http.StatusOK, "Content provider toggled successfully")
+	return writeJsonResponse(w, http.StatusOK, "Content provider toggled successfully")
 }
 
 type NewContentRequest struct {
@@ -54,19 +48,15 @@ type NewContentRequest struct {
 	Description  string `json:"description"`
 }
 
-func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request) error {
 	fields := log.Fields{"handler": "CreateOpenContent"}
 	var body NewContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		log.WithFields(fields).Errorln("unable to decode request body")
-		srv.ErrorResponse(w, http.StatusBadRequest, "unable to decode request body")
-		return
+		return newJSONReqBodyServiceError(err, fields)
 	}
 	defer r.Body.Close()
 	if err := srv.Db.CreateContentProvider(body.Url, body.ThumbnailUrl, body.Description, body.LinkedID); err != nil {
-		log.WithFields(fields).Errorln("unable to find or toggle content provider, please make sure id is correct")
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Unable to find records from DB")
-		return
+		return newDatabaseServiceError(err, fields)
 	}
-	writeJsonResponse(w, http.StatusCreated, "Content provider created successfully")
+	return writeJsonResponse(w, http.StatusCreated, "Content provider created successfully")
 }

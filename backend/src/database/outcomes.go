@@ -26,17 +26,17 @@ func (db *DB) GetOutcomesForUser(id uint, page, perPage int, order string, order
 	}
 
 	if err := query.Count(&count).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "outcomes")
 	}
 	if err := query.Order(orderStr).Offset(offset).Limit(perPage).Find(&outcomes).Error; err != nil {
-		return 0, nil, err
+		return 0, nil, newGetRecordsDBError(err, "outcomes")
 	}
 	return count, outcomes, nil
 }
 
 func (db *DB) CreateOutcome(outcome *models.Outcome) (*models.Outcome, error) {
 	if err := db.Create(outcome).Error; err != nil {
-		return nil, err
+		return nil, newCreateDBError(err, "outcomes")
 	}
 	return outcome, nil
 }
@@ -44,7 +44,7 @@ func (db *DB) CreateOutcome(outcome *models.Outcome) (*models.Outcome, error) {
 func (db *DB) GetOutcomeByCourseID(id uint) (*models.Outcome, error) {
 	var outcome models.Outcome
 	if err := db.Where("course_id = ?", id).First(&outcome).Error; err != nil {
-		return nil, err
+		return nil, newNotFoundDBError(err, "outcomes")
 	}
 	return &outcome, nil
 }
@@ -52,18 +52,18 @@ func (db *DB) GetOutcomeByCourseID(id uint) (*models.Outcome, error) {
 func (db *DB) UpdateOutcome(outcome *models.Outcome, id uint) (*models.Outcome, error) {
 	toUpdate := models.Outcome{}
 	if err := db.First(&toUpdate, id).Error; err != nil {
-		return nil, err
+		return nil, newUpdateDBrror(err, "outcomes")
 	}
 	models.UpdateStruct(&toUpdate, outcome)
 	if err := db.Model(&models.Outcome{}).Where("id = ?", id).Updates(&toUpdate).Error; err != nil {
-		return nil, err
+		return nil, newUpdateDBrror(err, "outcomes")
 	}
 	return &toUpdate, nil
 }
 
 func (db *DB) DeleteOutcome(id uint) error {
 	if err := db.Delete(&models.Outcome{}, id).Error; err != nil {
-		return err
+		return newDeleteDBError(err, "outcome")
 	}
 	return nil
 }

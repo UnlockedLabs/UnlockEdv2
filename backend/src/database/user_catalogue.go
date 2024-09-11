@@ -41,7 +41,7 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 	tx.Order(fmt.Sprintf("c.name %s", validOrder(order)))
 	err := tx.Scan(&catalogue).Error
 	if err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting user catalogue info")
 	}
 	return catalogue, nil
 }
@@ -131,12 +131,12 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 	tx.Group("c.id, c.name, c.thumbnail_url, pp.name, c.external_url, f.user_id, a.total_time")
 	err := tx.Scan(&courses).Error
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, NewDBError(err, "error getting user programs")
 	}
 
 	var numCompleted int64
 	if err := db.Model(&models.Outcome{}).Where("user_id = ?", userId).Count(&numCompleted).Error; err != nil {
-		return nil, 0, 0, err
+		return nil, 0, 0, NewDBError(err, "error getting user programs")
 	}
 	var totalTime uint
 	for _, course := range courses {

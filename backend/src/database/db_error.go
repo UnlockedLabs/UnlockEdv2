@@ -1,55 +1,69 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+
+	"gorm.io/gorm"
 )
 
 type DBError struct {
-	Status      int //could add http.Status  here for DBError
+	Status      int
 	Message     string
 	InternalErr error
 }
 
-func NewDBError(err error, msg string) DBError {
-	return DBError{
-		Status:      http.StatusInternalServerError,
-		Message:     msg,
-		InternalErr: err,
-	}
-}
-
+// The Error method below is used for implementation purposes only so that the DBError can be used as an error type. This function is not normally called on the DBError type.
 func (e DBError) Error() string {
 	return fmt.Sprintf("db error: %s", e.InternalErr.Error())
 }
 
-func GetUnmappedUsersDBError(err error) DBError {
-	return NewDBError(err, "error getting unmapped users")
-}
-
-func GetUsersWithLoginsDBError(err error) DBError {
-	return NewDBError(err, "error getting users with logins")
-}
-func GetUsersDBError(err error) DBError {
-	return NewDBError(err, "error getting users from database")
-}
-
-func DeleteUserServiceError(err error) DBError {
-	return NewDBError(err, "error deleting user in database")
-}
-
-func CreateUserDBError(err error) DBError {
-	return NewDBError(err, "error creating user")
-}
-
-func UpdateUserDBError(err error) DBError {
-	return NewDBError(err, "error updating user")
-}
-
-func UserNotFoundDBErr(err error) DBError {
-	return DBError{
-		Status:      http.StatusNotFound,
-		Message:     "user not found",
+func NewDBError(err error, msg string) DBError {
+	dbError := DBError{
+		Message:     msg,
 		InternalErr: err,
 	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		dbError.Status = http.StatusNotFound
+	} else if errors.Is(err, gorm.ErrPrimaryKeyRequired) {
+		dbError.Status = http.StatusUnprocessableEntity
+	} else if errors.Is(err, gorm.ErrForeignKeyViolated) {
+		dbError.Status = http.StatusUnprocessableEntity
+	} else if errors.Is(err, gorm.ErrDuplicatedKey) {
+		dbError.Status = http.StatusUnprocessableEntity
+	} else if errors.Is(err, gorm.ErrCheckConstraintViolated) {
+		dbError.Status = http.StatusUnprocessableEntity
+	} else if errors.Is(err, gorm.ErrInvalidData) {
+		dbError.Status = http.StatusBadRequest
+	} else if errors.Is(err, gorm.ErrEmptySlice) {
+		dbError.Status = http.StatusBadRequest
+	} else if errors.Is(err, gorm.ErrInvalidField) {
+		dbError.Status = http.StatusBadRequest
+	} else if errors.Is(err, gorm.ErrInvalidValueOfLength) {
+		dbError.Status = http.StatusBadRequest
+	} else {
+		dbError.Status = http.StatusInternalServerError
+	}
+	return dbError
+}
+
+func newGetRecordsDBError(err error, table string) DBError {
+	return NewDBError(err, fmt.Sprintf("error getting %s", table))
+}
+
+func newDeleteDBError(err error, table string) DBError {
+	return NewDBError(err, fmt.Sprintf("error deleting %s", table))
+}
+
+func newCreateDBError(err error, table string) DBError {
+	return NewDBError(err, fmt.Sprintf("error creating %s", table))
+}
+
+func newUpdateDBrror(err error, table string) DBError {
+	return NewDBError(err, fmt.Sprintf("error updating %s", table))
+}
+
+func newNotFoundDBError(err error, table string) DBError {
+	return NewDBError(err, fmt.Sprintf("%s not found", table))
 }

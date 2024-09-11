@@ -10,8 +10,11 @@ import (
 
 func (db *DB) CreateActivity(activity *models.Activity) error {
 	// This function is calling a stored procedure in the database to calculate the delta (src/activity_proc.sql)
-	return db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
-		activity.UserID, activity.CourseID, activity.Type, activity.TotalTime, activity.ExternalID).Error
+	if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)",
+		activity.UserID, activity.CourseID, activity.Type, activity.TotalTime, activity.ExternalID).Error; err != nil {
+		return newCreateDBError(err, "activities")
+	}
+	return nil
 }
 
 type DailyActivity struct {
@@ -63,19 +66,19 @@ func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error
 		activity_date;`
 	rows, err := db.Raw(query, userID, year, year).Rows()
 	if err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting activities by user id")
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var dailyActivity DailyActivity
 		if err := rows.Scan(&dailyActivity.Date, &dailyActivity.TotalTime, &dailyActivity.Quartile); err != nil {
-			return nil, err
+			return nil, NewDBError(err, "error getting activities by user id")
 		}
 		dailyActivities = append(dailyActivities, dailyActivity)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting activities by user id")
 	}
 
 	// Fetch all activities for the given user and year
@@ -91,7 +94,7 @@ func (db *DB) GetActivityByUserID(userID uint, year int) ([]DailyActivity, error
 				ELSE DATE_TRUNC('day', MAKE_DATE(?, 1, 1) + INTERVAL '1 year' - INTERVAL '1 second')
 			END
 	`, userID, year, year, year).Find(&activities).Error; err != nil {
-		return nil, err
+		return nil, NewDBError(err, "error getting activities by user id")
 	}
 
 	for i := range dailyActivities {
@@ -130,7 +133,7 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 	}
 
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
-		return nil, err
+		return nil, newGetRecordsDBError(err, "activities")
 	}
 
 	// Combine activities based on date
@@ -187,8 +190,11 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 func (db *DB) GetActivityByCourseID(page, perPage, courseID int) (int64, []models.Activity, error) {
 	var activities []models.Activity
 	var count int64
-	_ = db.Model(&models.Activity{}).Where("course_id = ?", courseID).Count(&count)
-	return count, activities, db.Where("course_id = ?", courseID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error
+	_ = db.Model(&models.Activity{}).Where("program_id = ?", courseID).Count(&count)
+	if err := db.Where("program_id = ?", courseID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error; err != nil {
+		return count, nil, newGetRecordsDBError(err, "activities")
+	}
+	return count, activities, nil
 }
 
 func (db *DB) DeleteActivity(activityID int) error {
@@ -245,22 +251,22 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// get the users 3 most recent courses. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
 	// # of milestones where type = "quiz_submission" && status = "complete" || "graded"
 	// where the user has an entry in the activity table
-	err := db.Table("courses p").Select(`p.name as course_name,
-        p.alt_name,
-        p.thumbnail_url,
-        p.external_url,
+	err := db.Table("courses c").Select(`c.name as course_name,
+        c.alt_name,
+        c.thumbnail_url,
+        c.external_url,
         pp.name as provider_platform_name,
         CASE
             WHEN COUNT(o.type) > 0 THEN 100
-            WHEN COUNT(p.total_progress_milestones) = 0 THEN 0
-            ELSE COUNT(milestones.id) * 100.0 / p.total_progress_milestones
+            WHEN COUNT(c.total_progress_milestones) = 0 THEN 0
+            ELSE COUNT(milestones.id) * 100.0 / c.total_progress_milestones
         END as course_progress`).
-		Joins("LEFT JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("LEFT JOIN milestones ON milestones.course_id = p.id AND milestones.user_id = ?", userID).
-		Joins("LEFT JOIN outcomes o ON o.course_id = p.id AND o.user_id = ?", userID).
-		Where("p.id IN (SELECT course_id FROM activities WHERE user_id = ?)", userID).
+		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("LEFT JOIN milestones ON milestones.course_id = c.id AND milestones.user_id = ?", userID).
+		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userID).
+		Where("c.id IN (SELECT course_id FROM activities WHERE user_id = ?)", userID).
 		Where("o.type IS NULL").
-		Group("p.id, p.name, p.alt_name, p.thumbnail_url, pp.name").
+		Group("c.id, c.name, c.alt_name, c.thumbnail_url, pp.name").
 		Order("MAX(milestones.created_at) DESC").
 		Limit(3).
 		Find(&recentCourses).Error
@@ -269,19 +275,21 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		recentCourses = []models.RecentCourse{}
 	}
 
+	dashboard := models.UserDashboardJoin{}
 	// TOP PROGRAMS
 	var topCourses []string
 	err = db.Table("activities a").
-		Select("p.name as course_name").
-		Joins("JOIN courses p ON a.course_id = p.id").
+		Select("c.name as course_name").
+		Joins("JOIN courses c ON a.course_id = c.id").
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ?", facilityID).
-		Group("p.id").
+		Group("c.id").
 		Order("SUM(a.time_delta) DESC").
 		Limit(6).
 		Find(&topCourses).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting student dashboard info")
 	}
 
 	// then get the users current enrollments
@@ -289,23 +297,24 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// and acitvity.total_activity_time for the last 7 days of activity where activity.user_id = userID and activity.course_id = course.id
 	results := []result{}
 
-	err = db.Table("courses p").
-		Select(`p.id as course_id,
-				p.alt_name,
-				p.name,
+	err = db.Table("courses c").
+		Select(`c.id as course_id,
+				c.alt_name,
+				c.name,
 				pp.name as provider_platform_name,
-				p.external_url,
+				c.external_url,
 				DATE(a.created_at) as date,
 				SUM(a.time_delta) as time_delta`).
-		Joins("JOIN provider_platforms pp ON p.provider_platform_id = pp.id").
-		Joins("JOIN activities a ON a.course_id = p.id").
-		Joins("LEFT JOIN outcomes o ON o.course_id = p.id AND o.user_id = ?", userID).
+		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("JOIN activities a ON a.course_id = c.id").
+		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userID).
 		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
 		Where("o.type IS NULL").
-		Group("p.id, DATE(a.created_at), pp.name").
+		Group("c.id, DATE(a.created_at), pp.name").
 		Find(&results).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting student dashboard info")
 	}
 	enrollments := dashboardHelper(results)
 	if len(enrollments) == 0 {
@@ -317,11 +326,12 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 			ProviderPlatformName string
 			ExternalURL          string
 		}
-		err = db.Table("courses p").Select(`p.id as course_id, p.alt_name, p.name, pp.name as provider_platform_name, p.external_url`).
-			Joins(`JOIN provider_platforms pp ON p.provider_platform_id = pp.id`).
+		err = db.Table("courses c").Select(`c.id as course_id, c.alt_name, c.name, pp.name as provider_platform_name, c.external_url`).
+			Joins(`JOIN provider_platforms pp ON c.provider_platform_id = pp.id`).
 			Joins(`LEFT JOIN milestones m on m.course_id = p.id`).Where(`m.user_id`, userID).Find(&newEnrollments).Error
 		if err != nil {
-			log.Fatalf("Query failed: %v", err)
+			log.Errorf("Query failed: %v", err)
+			return dashboard, NewDBError(err, "error getting student dashboard info")
 		}
 		for idx, enrollment := range newEnrollments {
 			if idx == 7 {
@@ -346,7 +356,8 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		Group("date").
 		Find(&activities).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting student dashboard info")
 	}
 
 	return models.UserDashboardJoin{Enrollments: enrollments, RecentCourses: recentCourses, TopCourses: topCourses, WeekActivity: activities}, err
@@ -361,7 +372,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Where("f.id = ?", facilityID).
 		Find(&dashboard.FacilityName).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// Monthly Activity
@@ -372,7 +383,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Group("TO_CHAR(a.created_at, 'YYYY-MM-DD')").
 		Find(&dashboard.MonthlyActivity).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// Weekly Active Users, Average Daily Activity, Total Weekly Activity
@@ -391,7 +402,8 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
 		Find(&result).Error
 	if err != nil {
-		log.Fatalf("Query failed: %v", err)
+		log.Errorf("Query failed: %v", err)
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	dashboard.WeeklyActiveUsers = result.WeeklyActiveUsers
@@ -408,21 +420,21 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		Limit(5).
 		Find(&dashboard.CourseMilestones).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// Top 5 Courses by Hours Engaged
 	err = db.Table("activities a").
-		Select("p.name as course_name, p.alt_name as alt_name, SUM(a.time_delta) / 3600.0 as hours_engaged").
-		Joins("JOIN courses p ON a.course_id = p.id").
+		Select("c.name as course_name, c.alt_name as alt_name, SUM(a.time_delta) / 3600.0 as hours_engaged").
+		Joins("JOIN courses c ON a.course_id = c.id").
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
-		Group("p.id").
+		Group("c.id").
 		Order("hours_engaged DESC").
 		Limit(5).
 		Find(&dashboard.TopCourseActivity).Error
 	if err != nil {
-		return dashboard, err
+		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	return dashboard, nil
