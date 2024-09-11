@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"strings"
 )
 
 func IsValidOrderBy(orderBy string) bool {
@@ -52,18 +51,13 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 
 	if search != "" {
 		search = "%" + search + "%"
-		if db.Dialector.Name() == "sqlite" {
-			search = strings.ToLower(search)
-			query = query.Where("LOWER(milestones.type) LIKE ?", search).Or("LOWER(users.username) LIKE ?", search).Or("LOWER(courses.name) LIKE ?", search).Or("LOWER(provider_platforms.name) LIKE ?", search)
-		} else {
-			query = query.Where("milestones.type ILIKE ?", search).Or("users.username ILIKE ?", search).Or("courses.name ILIKE ?", search).Or("provider_platforms.name ILIKE ?", search)
-		}
+		query = query.Where("LOWER(milestones.type) LIKE ?", search).Or("LOWER(users.username) LIKE ?", search).Or("LOWER(courses.name) LIKE ?", search).Or("LOWER(provider_platforms.name) LIKE ?", search)
 	}
 	if err := query.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
 	if orderBy != "" && IsValidOrderBy(orderBy) {
-		if orderBy == "name" { //make it unambiguous
+		if orderBy == "name" {
 			orderBy = "courses.name"
 		}
 		query = query.Order(orderBy)

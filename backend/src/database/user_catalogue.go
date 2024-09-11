@@ -27,24 +27,13 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = ?", userId).
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
-	if db.Dialector.Name() == "sqlite" {
-		for i, tag := range tags {
-			if i == 0 {
-				tx.Where("LOWER(c.outcome_types) LIKE ?", "%"+strings.ToLower(tag)+"%")
-			} else {
-				tx.Or("LOWER(c.outcome_types) LIKE ?", "%"+strings.ToLower(tag)+"%")
-			}
-			tx.Or("LOWER(c.type) LIKE ?", "%"+strings.ToLower(tag)+"%")
+	for i, tag := range tags {
+		if i == 0 {
+			tx.Where("LOWER(c.outcome_types) LIKE ?", "%"+strings.ToLower(tag)+"%")
+		} else {
+			tx.Or("LOWER(c.outcome_types) LIKE ?", "%"+strings.ToLower(tag)+"%")
 		}
-	} else {
-		for i, tag := range tags {
-			if i == 0 {
-				tx.Where("c.outcome_types ILIKE ?", "%"+tag+"%")
-			} else {
-				tx.Or("c.outcome_types ILIKE ?", "%"+tag+"%")
-			}
-			tx.Or("c.type ILIKE ?", "%"+tag+"%")
-		}
+		tx.Or("LOWER(c.type) LIKE ?", "%"+strings.ToLower(tag)+"%")
 	}
 	if search != "" {
 		tx.Where("LOWER(c.name) LIKE ?", "%"+search+"%")

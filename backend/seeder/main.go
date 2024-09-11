@@ -131,16 +131,16 @@ func seedTestData(db *gorm.DB) {
 		log.Fatalf("Failed to get events from db")
 	}
 	for _, user := range dbUsers {
-		for _, course := range courses {
+		for _, prog := range courses {
 			// all test courses are open_enrollment
 			enrollment := models.Milestone{
-				CourseID:    course.ID,
+				CourseID:    prog.ID,
 				Type:        models.Enrollment,
 				UserID:      user.ID,
 				IsCompleted: true,
 				ExternalID:  fmt.Sprintf("%d", rand.Intn(1000)),
 			}
-			enrollment.CreatedAt = course.CreatedAt
+			enrollment.CreatedAt = prog.CreatedAt
 			if err := db.Create(&enrollment).Error; err != nil {
 				log.Printf("Failed to create enrollment milestone: %v", err)
 				continue
@@ -156,7 +156,7 @@ func seedTestData(db *gorm.DB) {
 				time := yearAgo.AddDate(0, 0, i)
 				activity := models.Activity{
 					UserID:     user.ID,
-					CourseID:   course.ID,
+					CourseID:   prog.ID,
 					Type:       "interaction",
 					TotalTime:  uint(startTime + randTime),
 					TimeDelta:  uint(randTime),
@@ -171,7 +171,7 @@ func seedTestData(db *gorm.DB) {
 			if rand.Float32() < 0.4 { // 40% chance to create an outcome
 				outcome := models.Outcome{
 					UserID:   user.ID,
-					CourseID: course.ID,
+					CourseID: prog.ID,
 					Type:     models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
 				}
 				if err := db.Create(&outcome).Error; err != nil {
@@ -179,7 +179,7 @@ func seedTestData(db *gorm.DB) {
 				}
 			} else {
 				newMilestone := models.Milestone{
-					CourseID:    course.ID,
+					CourseID:    prog.ID,
 					IsCompleted: false,
 					Type:        milestoneTypes[rand.Intn(len(milestoneTypes))],
 					UserID:      user.ID,

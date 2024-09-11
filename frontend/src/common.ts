@@ -296,14 +296,6 @@ export interface RecentCourse {
     external_url: string;
 }
 
-export interface CurrentEnrollment {
-    alt_name: string;
-    name: string;
-    provider_platform_name: string;
-    external_url: string;
-    total_activity_time: number;
-}
-
 export interface CourseMilestones {
     name: string;
     milestones: number;

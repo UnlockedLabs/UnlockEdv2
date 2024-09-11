@@ -41,6 +41,14 @@ func (db *DB) CreateOutcome(outcome *models.Outcome) (*models.Outcome, error) {
 	return outcome, nil
 }
 
+func (db *DB) GetOutcomeByCourseID(id uint) (*models.Outcome, error) {
+	var outcome models.Outcome
+	if err := db.Where("course_id = ?", id).First(&outcome).Error; err != nil {
+		return nil, err
+	}
+	return &outcome, nil
+}
+
 func (db *DB) UpdateOutcome(outcome *models.Outcome, id uint) (*models.Outcome, error) {
 	toUpdate := models.Outcome{}
 	if err := db.First(&toUpdate, id).Error; err != nil {
