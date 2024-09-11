@@ -16,22 +16,6 @@ func (db *DB) CreateProviderUserMapping(providerUserMapping *models.ProviderUser
 	return nil
 }
 
-func (db *DB) GetProviderUserMappingByExternalUserID(externalUserID string, providerId uint) (*models.ProviderUserMapping, error) {
-	var providerUserMapping models.ProviderUserMapping
-	if err := db.Where("external_user_id = ? AND provider_platform_id = ?", externalUserID, providerId).First(&providerUserMapping).Error; err != nil {
-		return nil, newNotFoundDBError(err, "provider_user_mappings")
-	}
-	return &providerUserMapping, nil
-}
-
-func (db *DB) GetUserMappingsForProvider(providerId uint) ([]models.ProviderUserMapping, error) {
-	var users []models.ProviderUserMapping
-	if err := db.Find(&users).Where("provider_platform_id = ?", providerId).Error; err != nil {
-		return nil, newNotFoundDBError(err, "provider_user_mappings")
-	}
-	return users, nil
-}
-
 func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUserMapping, error) {
 	var providerUserMapping models.ProviderUserMapping
 	if err := db.Where("user_id = ? AND provider_platform_id = ?", userID, providerID).First(&providerUserMapping).Error; err != nil {

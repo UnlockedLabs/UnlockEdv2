@@ -21,7 +21,9 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").Find(&platforms, "state = ?", "active").Error; err != nil {
+	if err := db.Model(models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").
+		Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").
+		Find(&platforms, "state = ?", "active").Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
 	return platforms, nil

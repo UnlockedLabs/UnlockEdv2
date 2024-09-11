@@ -49,11 +49,3 @@ func (db *DB) DeleteProgram(id int) error {
 	}
 	return nil
 }
-
-func (db *DB) GetProgramByProviderPlatformID(id int) ([]models.Program, error) {
-	content := []models.Program{}
-	if err := db.Where("provider_platform_id = ?", id).Find(&content).Error; err != nil {
-		return nil, newNotFoundDBError(err, "programs")
-	}
-	return content, nil
-}
