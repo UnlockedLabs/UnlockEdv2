@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 )
 
@@ -22,19 +23,16 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	paginationData := models.NewPaginationInfo(page, perPage, total)
-	platformsResp := make([]models.ProviderPlatform, 0)
 	only := r.URL.Query().Get("only")
 	if only == "oidc_enabled" {
-		for _, platform := range platforms {
-			if platform.OidcID != 0 {
-				platformsResp = append(platformsResp, platform)
-			}
-		}
-	} else {
-		platformsResp = platforms
+		// this is for offering user creation in enabled providers
+		platforms = slices.DeleteFunc(platforms, func(platform models.ProviderPlatform) bool {
+			// don't return kolibri, as users are automatically created in kolibri
+			return platform.OidcID == 0 && platform.Type == models.Kolibri
+		})
 	}
 	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
-	return writePaginatedResponse(w, http.StatusOK, platformsResp, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, platforms, paginationData)
 }
 
 func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request, log sLog) error {

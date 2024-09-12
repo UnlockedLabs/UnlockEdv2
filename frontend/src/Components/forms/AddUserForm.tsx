@@ -1,4 +1,9 @@
-import { NewUserResponse, ProviderPlatform, UserRole } from '../../common';
+import {
+    NewUserResponse,
+    ProviderPlatform,
+    ProviderPlatformType,
+    UserRole
+} from '../../common';
 import { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { ToastState } from '../Toast';
