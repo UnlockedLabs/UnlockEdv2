@@ -9,8 +9,9 @@ import {
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
+import { RecentActivity } from '@/common.ts';
 
-const ActivityChart = ({ data }: { data: any[] }) => {
+const ActivityChart = ({ data }: { data: RecentActivity[] }) => {
     const { theme } = useContext(ThemeContext);
 
     var lineColor = theme === 'light' ? '#18ABA0' : '#61BAB2';

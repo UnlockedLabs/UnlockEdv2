@@ -41,7 +41,7 @@ class API {
     public static async request<T>(
         method: 'get' | 'post' | 'put' | 'patch' | 'delete',
         url: string,
-        data?: any
+        data?: any // TODO: inquire about the best way to type these api methods
     ): Promise<ServerResponse<T>> {
         try {
             const resp = await axios({

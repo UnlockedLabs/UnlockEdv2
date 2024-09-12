@@ -21,7 +21,7 @@ export default function CategoryItem({
     updateLink
 }: {
     category: Category;
-    deleteLink: Function;
+    deleteLink: Function; //TODO: reType these functions
     addLink: Function;
     moveLink: Function;
     updateLink: Function;

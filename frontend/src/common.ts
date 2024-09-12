@@ -131,6 +131,8 @@ export interface Outcome {
     program_id: number;
     user_id: number;
     value: string;
+    program_name: string;
+    created_at: string;
 }
 export interface UserProgramsInfo {
     num_completed: number;
@@ -207,6 +209,8 @@ export interface AdminDashboardJoin {
     program_milestones: ProgramMilestones[];
     top_program_activity: ProgramActivity[];
     facility_name: string;
+    hours_engaged: number;
+    program_name: string;
 }
 
 export interface StudentDashboardJoin {
@@ -254,4 +258,21 @@ export interface Resource {
     name: string;
     links: Array<Link>;
     rank: number;
+}
+
+export interface Announcement {
+    course_name: string;
+    title: string;
+    message: string;
+    url: string;
+    provider_platform: string;
+    due: Date;
+}
+
+export interface YAxisTickProps {
+    x: number;
+    y: number;
+    payload: {
+        value: string;
+    };
 }

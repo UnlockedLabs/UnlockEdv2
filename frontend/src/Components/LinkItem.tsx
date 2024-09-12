@@ -8,7 +8,7 @@ export default function LinkItem({
 }: {
     linkName: string;
     linkURL: string;
-    callUpdateLink: any;
+    callUpdateLink: (newLinkPair: CategoryLink) => void;
 }) {
     const [name, setName] = useState(linkName);
     const [url, setURL] = useState(linkURL);

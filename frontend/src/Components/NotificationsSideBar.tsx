@@ -1,4 +1,5 @@
 import NotificationCard, { NotificationType } from './NotificationCard';
+import { Announcement } from '@/common.ts';
 
 const date = new Date();
 
@@ -49,7 +50,7 @@ export default function NotificationsSideBar() {
             <div className="mt-4 mx-9 p-4">
                 <h2 className="mb-4">Announcements</h2>
                 <div className="flex flex-col gap-4">
-                    {announcements.map((cardInfo: any) => {
+                    {announcements.map((cardInfo: Announcement) => {
                         return (
                             <NotificationCard
                                 cardInfo={cardInfo}
@@ -63,7 +64,7 @@ export default function NotificationsSideBar() {
             <div className="mt-4 mx-9 p-4">
                 <h2 className="mb-4">To Do</h2>
                 <div className="flex flex-col gap-4">
-                    {toDo.map((cardInfo: any) => {
+                    {toDo.map((cardInfo: Announcement) => {
                         return (
                             <NotificationCard
                                 cardInfo={cardInfo}
