@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	_ "github.com/ncruces/go-sqlite3/embed"
@@ -40,7 +41,7 @@ var TableList = []interface{}{
 	&models.RunnableTask{},
 }
 
-var validate *validator.Validate
+var validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
@@ -81,7 +82,6 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database via GORM")
 	}
-	validate = validator.New(validator.WithRequiredStructEnabled())
 	database := &DB{gormDb}
 	SeedDefaultData(gormDb, isTesting)
 	if isTesting {

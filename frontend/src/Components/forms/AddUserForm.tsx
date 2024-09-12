@@ -46,21 +46,18 @@ export default function AddUserForm({
                         type: 'custom',
                         message: 'Username already exists'
                     });
-                    onSuccess('', 'Failed to create user', ToastState.error);
-                    return;
+                    break;
                 case 'alphanum':
                     setError('username', {
                         type: 'custom',
                         message:
-                            'Username must contain letters and numbers only'
+                            'Name + Username must contain letters and numbers only'
                     });
-                    onSuccess('', 'Failed to create user', ToastState.error);
-                    return;
+                    break;
                 default:
                     setErrorMessage(msg);
-                    onSuccess('', 'Failed to create user', ToastState.error);
-                    return;
             }
+            return;
         }
         reset();
         onSuccess(

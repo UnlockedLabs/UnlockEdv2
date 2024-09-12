@@ -57,20 +57,24 @@ export default function EditUserForm({
         const cleanData = diffFormData(data, user);
         const resp = await API.patch(`users/${user.id}`, cleanData);
         if (!resp.success) {
-            const msg = resp.message;
-            if (msg === 'userexists') {
-                setError('username', {
-                    type: 'custom',
-                    message: 'Username already exists'
-                });
-            } else if (msg === 'alphanum') {
-                setError('username', {
-                    type: 'custom',
-                    message: 'Username must contain letters and numbers only'
-                });
-            } else {
-                setErrorMessage(msg);
+            switch (resp.message) {
+                case 'userexists':
+                    setError('username', {
+                        type: 'custom',
+                        message: 'Username already exists'
+                    });
+                    break;
+                case 'alphanum':
+                    setError('username', {
+                        type: 'custom',
+                        message:
+                            'Name + Username must contain letters and numbers only'
+                    });
+                    break;
+                default:
+                    setErrorMessage(resp.message);
             }
+            return;
         }
         onSuccess();
     };
