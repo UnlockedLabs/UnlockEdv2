@@ -105,10 +105,10 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 }
 
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
-	if user.Email == "" {
-		user.Email = user.Username + "@unlocked.v2"
+	err := validate().Struct(user)
+	if err != nil {
+		return nil, newCreateDBError(err, "users")
 	}
-	log.Debug("Creating User: ", user)
 	error := db.Create(&user).Error
 	if error != nil {
 		return nil, newCreateDBError(error, "users")
@@ -142,7 +142,8 @@ func (db *DB) GetUserByUsername(username string) (*models.User, error) {
 
 func (db *DB) UsernameExists(username string) bool {
 	userExists := false
-	err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", strings.ToLower(username)).
+	email := username + "@unlocked.v2"
+	err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ? OR email = ?)", strings.ToLower(username), email).
 		Scan(&userExists).Error
 	if err != nil {
 		log.Error("Error checking if username exists: ", err)
