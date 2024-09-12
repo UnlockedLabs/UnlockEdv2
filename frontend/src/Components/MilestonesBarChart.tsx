@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
-import { CourseMilestones } from '@/common';
+import { CourseMilestones, YAxisTickProps } from '@/common';
 
 const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
     const { theme } = useContext(ThemeContext);
@@ -54,7 +54,7 @@ const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
         );
     };
 
-    const YAxisTick = (props: any) => {
+    const YAxisTick = (props: YAxisTickProps) => {
         return <g>{maxYAxisLabel(props)}</g>;
     };
 
@@ -75,7 +75,8 @@ const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
                     dataKey={'name'}
                     type="category"
                     width={70}
-                    tick={<YAxisTick />}
+                    tick={YAxisTick}
+                    // tick={<YAxisTick />} //TODO: why is this passed as an element and not a ref
                 />
                 <Tooltip
                     labelClassName="text-body"

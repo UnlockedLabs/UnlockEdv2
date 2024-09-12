@@ -1,3 +1,5 @@
+import { Announcement } from '@/common.ts';
+
 export enum NotificationType {
     Announcement = 'Announcement',
     ToDo = 'ToDo'
@@ -7,7 +9,7 @@ export default function NotificationCard({
     cardInfo,
     type
 }: {
-    cardInfo: any;
+    cardInfo: Announcement;
     type: NotificationType;
 }) {
     return (

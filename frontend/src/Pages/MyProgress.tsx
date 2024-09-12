@@ -205,29 +205,31 @@ export default function MyProgress() {
                                         </tr>
                                     </thead>
                                     <tbody className="flex flex-col gap-4 mt-4">
-                                        {certData?.map((certificate: any) => {
-                                            return (
-                                                <tr
-                                                    className="flex flex-row justify-between body-small items-center"
-                                                    key={Math.random()}
-                                                >
-                                                    <td className="w-1/2">
-                                                        {
-                                                            certificate.course_name
-                                                        }
-                                                    </td>
-                                                    <td className="w-1/5 flex">
-                                                        {new Date(
-                                                            certificate.created_at.split(
-                                                                'T'
-                                                            )[0]
-                                                        ).toLocaleDateString(
-                                                            'en-US'
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
+                                        {certData?.map(
+                                            (certificate: Outcome) => {
+                                                return (
+                                                    <tr
+                                                        className="flex flex-row justify-between body-small items-center"
+                                                        key={certificate.id}
+                                                    >
+                                                        <td className="w-1/2">
+                                                            {
+                                                                certificate.course_name
+                                                            }
+                                                        </td>
+                                                        <td className="w-1/5 flex">
+                                                            {new Date(
+                                                                certificate.created_at.split(
+                                                                    'T'
+                                                                )[0]
+                                                            ).toLocaleDateString(
+                                                                'en-US'
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

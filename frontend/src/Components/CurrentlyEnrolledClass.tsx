@@ -1,6 +1,11 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid';
+import { CurrentEnrollment } from '@/common.ts';
 
-export default function CurrentlyEnrolledClass({ course }: { course: any }) {
+export default function CurrentlyEnrolledClass({
+    course
+}: {
+    course: CurrentEnrollment;
+}) {
     const truncateAltName = (altName: string) => {
         if (altName.length < 15) return altName;
         return altName.slice(0, 15) + '...';

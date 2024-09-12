@@ -3,7 +3,7 @@ import MilestonesBarChart from '@/Components/MilestonesBarChart';
 import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
 import TopProgPieChart from '@/Components/TopProgActivityPieChart';
-import { AdminDashboardJoin, ServerResponse } from '@/common';
+import { AdminDashboardJoin, CourseActivity, ServerResponse } from '@/common';
 import useSWR from 'swr';
 import convertSeconds from '../Components/ConvertSeconds';
 import { useContext } from 'react';
@@ -74,7 +74,10 @@ export default function AdminDashboard() {
                                     !isLoading &&
                                     activityData &&
                                     activityData.top_course_activity.map(
-                                        (course: any, index: number) => {
+                                        (
+                                            course: CourseActivity,
+                                            index: number
+                                        ) => {
                                             var courseTime: string;
                                             if (course.hours_engaged < 1)
                                                 courseTime =

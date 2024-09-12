@@ -184,7 +184,7 @@ function ActivityMapTable({
 }: {
     data: ActivityMapData[];
     end: Date;
-    error: any;
+    error: any; //Todo: unsure about what to type this as Error or ApiError
     isLoading: boolean;
     range: string;
 }) {

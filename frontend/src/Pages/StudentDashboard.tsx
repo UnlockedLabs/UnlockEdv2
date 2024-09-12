@@ -12,7 +12,12 @@ import {
     ArrowRightIcon,
     BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
-import { RecentCourse, ServerResponse, StudentDashboardJoin } from '@/common';
+import {
+    CurrentEnrollment,
+    RecentCourse,
+    ServerResponse,
+    StudentDashboardJoin
+} from '@/common';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -133,7 +138,10 @@ export default function StudentDashboard() {
                                     !isLoading &&
                                     userData.enrollments !== null ? (
                                         userData?.enrollments?.map(
-                                            (course: any, index: number) => {
+                                            (
+                                                course: CurrentEnrollment,
+                                                index: number
+                                            ) => {
                                                 const totalTime =
                                                     convertSeconds(
                                                         course.total_activity_time
@@ -170,14 +178,19 @@ export default function StudentDashboard() {
                     {!error && !isLoading && (
                         <div className="flex flex-col gap-3">
                             {userData.enrollments ? (
-                                userData?.enrollments?.map((course: any) => {
-                                    return (
-                                        <CurrentlyEnrolledClass
-                                            course={course}
-                                            key={Math.random()}
-                                        />
-                                    );
-                                })
+                                userData?.enrollments?.map(
+                                    (
+                                        course: CurrentEnrollment,
+                                        idx: number
+                                    ) => {
+                                        return (
+                                            <CurrentlyEnrolledClass
+                                                course={course}
+                                                key={idx}
+                                            />
+                                        );
+                                    }
+                                )
                             ) : (
                                 <p className="body-small">
                                     You are currently not enrolled in any
