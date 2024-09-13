@@ -8,18 +8,17 @@ import (
 )
 
 func (srv *Server) registerOutcomesRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleGetOutcomes))))
-	srv.Mux.Handle("POST /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleCreateOutcome))))
-	srv.Mux.Handle("PATCH /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleUpdateOutcome))))
-	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.HandleError(srv.HandleDeleteOutcome))))
+	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleGetOutcomes))))
+	srv.Mux.Handle("POST /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleCreateOutcome))))
+	srv.Mux.Handle("PATCH /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleUpdateOutcome))))
+	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleDeleteOutcome))))
 }
 
 /****
  * @Query Params:
  * ?type=: "certificate", "grade", "pathway_completion", "college_credit"
  ****/
-func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleGetOutcomes")
+func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.GetPaginationInfo(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -34,21 +33,20 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request, fie
 
 	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage, order, orderBy, outcomeType)
 	if err != nil {
-		fields.add("UserID", id)
-		fields.add("outcomeType", outcomeType)
+		log.add("userId", id)
+		log.add("outcomeType", outcomeType)
 		return newDatabaseServiceError(err)
 	}
 	meta := models.NewPaginationInfo(page, perPage, total)
 	return writePaginatedResponse(w, http.StatusOK, outcome, meta)
 }
 
-func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleCreateOutcome")
+func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	fields.add("userId", id)
+	log.add("userId", id)
 	outcome := &models.Outcome{}
 	err = json.NewDecoder(r.Body).Decode(&outcome)
 	if err != nil {
@@ -63,18 +61,17 @@ func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request, f
 	return writeJsonResponse(w, http.StatusCreated, *outcome)
 }
 
-func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleUpdateOutcome")
+func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "outcome ID")
 	}
-	fields.add("outcomeId", id)
 	uid, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	fields.add("userId", uid)
+	log.add("outcomeId", id)
+	log.add("userId", uid)
 	outcome := models.Outcome{}
 	err = json.NewDecoder(r.Body).Decode(&outcome)
 	defer r.Body.Close()
@@ -91,14 +88,13 @@ func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request, f
 	return writeJsonResponse(w, http.StatusOK, *updatedOutcome)
 }
 
-func (srv *Server) HandleDeleteOutcome(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleDeleteOutcome")
+func (srv *Server) HandleDeleteOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "outcome ID")
 	}
 	if err = srv.Db.DeleteOutcome(uint(id)); err != nil {
-		fields.add("outcomeId", id)
+		log.add("outcomeId", id)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "Outcome deleted successfully")

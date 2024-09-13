@@ -12,21 +12,20 @@ import (
 
 func (srv *Server) registerProviderUserRoutes() {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleMapProviderUser)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleImportProviderUsers)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleMapProviderUser)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleImportProviderUsers)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.ApplyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,
 // in the request body, and a currently existing user's ID in the path, and create a mapping
 // for that user, as well as create a login for that user in the provider
-func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleMapProviderUser")
+func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
-	fields.add("provider_platform_id", providerId)
+	log.add("provider_platform_id", providerId)
 	defer r.Body.Close()
 	var userBody models.ImportUser
 	err = json.NewDecoder(r.Body).Decode(&userBody)
@@ -37,7 +36,7 @@ func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	fields.add("user_id", userId)
+	log.add("user_id", userId)
 	provider, err := srv.Db.GetProviderPlatformByID(providerId)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -89,15 +88,14 @@ const disallowedChars string = "`; )(|\\\"'"
 // This function takes an array of 1 or more Provider users (that come from the middleware, so they are
 // already in the correct format) and creates a new user in the database for each of them, as well as
 // creating a mapping for each user, and creating a login for each user in the provider
-func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleImportProviderUsers")
+func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facilityId := srv.getFacilityID(r)
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
-	fields.add("facilityId", facilityId)
-	fields.add("providerId", providerId)
+	log.add("facilityId", facilityId)
+	log.add("providerId", providerId)
 	provider, err := srv.Db.GetProviderPlatformByID(providerId)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -126,7 +124,7 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		created, err := srv.Db.CreateUser(&newUser)
 		if err != nil {
-			fields.error("Error creating user in import-provider-users", err)
+			log.error("Error creating user in import-provider-users", err)
 			userResponse.Error = "error creating user, likely a duplicate username"
 			toReturn = append(toReturn, userResponse)
 			continue
@@ -135,19 +133,19 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		userResponse.TempPassword = tempPw
 		if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
-				fields.error("Error deleting user after failed provider user mapping import-provider-users")
+				log.error("Error deleting user after failed provider user mapping import-provider-users")
 			}
-			fields.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
+			log.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
 			userResponse.Error = "error creating authentication for user in kratos, please try again"
 			toReturn = append(toReturn, userResponse)
 			continue
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
 		if err != nil {
-			fields.error("Error getting kolibri instance")
+			log.error("Error getting kolibri instance")
 		}
 		if err = srv.CreateUserInKolibri(created, kolibri); err != nil {
-			fields.error("Error creating kolibri user")
+			log.error("Error creating kolibri user")
 		}
 		mapping := models.ProviderUserMapping{
 			UserID:             created.ID,
@@ -157,7 +155,7 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
 			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
-				fields.error("Error deleting user after failed provider user mapping import-provider-users")
+				log.error("Error deleting user after failed provider user mapping import-provider-users")
 			}
 			userResponse.Error = "user was created in database, but there was an error creating provider user mapping, please try again"
 			toReturn = append(toReturn, userResponse)
@@ -165,7 +163,7 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		if provider.OidcID != 0 {
 			if err = srv.registerProviderLogin(provider, &newUser); err != nil {
-				fields.error("error creating provider login, user has been deleted")
+				log.error("error creating provider login, user has been deleted")
 				userResponse.Error = "user was created in database, but there was an error creating provider login, please try again"
 				toReturn = append(toReturn, userResponse)
 				continue
@@ -188,18 +186,17 @@ func (srv *Server) registerProviderLogin(provider *models.ProviderPlatform, user
 	return nil
 }
 
-func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleCreateProviderUserAccount")
+func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
-	fields.add("provider_platform_id", id)
+	log.add("provider_platform_id", id)
 	user_id_int, err := strconv.Atoi(r.PathValue("user_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	fields.add("user_id", user_id_int)
+	log.add("user_id", user_id_int)
 	provider, err := srv.Db.GetProviderPlatformByID(id)
 	if err != nil {
 		return newDatabaseServiceError(err)

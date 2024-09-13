@@ -32,10 +32,10 @@ type (
 )
 
 func (srv *Server) registerAuthRoutes() {
-	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.HandleError(srv.handleResetPassword)))
+	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleError(srv.handleResetPassword)))
 	/* only use auth middleware, user activity bloats the database + results */
-	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.HandleError(srv.handleCheckAuth))))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.handleChangeAdminFacility))))
+	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleError(srv.handleCheckAuth))))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleChangeAdminFacility))))
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -75,8 +75,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 	})
 }
 
-func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleChangeAdminFacility")
+func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
@@ -84,7 +83,7 @@ func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Requ
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	claims.FacilityID = uint(id)
 	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		fields.add("facilityId", id)
+		log.add("facilityId", id)
 		return newInternalServerServiceError(err, "error updating user traits in kratos")
 	}
 	w.WriteHeader(http.StatusOK)
@@ -126,22 +125,21 @@ func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)
 }
 
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
-func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleCheckAuth")
+func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 	if !ok {
-		fields.error("No claims found in context")
+		log.error("No claims found in context")
 		return newUnauthorizedServiceError()
 	}
-	fields.add("username", claims.Username)
-	fields.add("facility_id", claims.FacilityID)
+	log.add("username", claims.Username)
+	log.add("facility_id", claims.FacilityID)
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil { //special case here, kept original flow as Unauthorized is referenced in api.ts file)
 		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized")
 	}
 	if claims.Role != models.Admin && claims.FacilityID != user.FacilityID {
 		// user isn't an admin, and has alternate facility_id in the JWT claims
-		fields.error("user viewing context for different facility. this should never happen")
+		log.error("user viewing context for different facility. this should never happen")
 		return newUnauthorizedServiceError()
 	}
 	traits := claims.getTraits()
@@ -221,13 +219,12 @@ type ResetPasswordRequest struct {
 	FacilityName string `json:"facility_name"`
 }
 
-func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleResetPassword")
-	log.Info("Handling password reset request", r.URL.Path)
+func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.info("Handling password reset request", r.URL.Path)
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	form := ResetPasswordRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-		fields.error("Parsing form failed, using JSON" + err.Error())
+		log.error("Parsing form failed, using JSON" + err.Error())
 	}
 	defer r.Body.Close()
 	if form.Password != form.Confirm {
@@ -238,7 +235,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, f
 	}
 	tx := srv.Db.Begin()
 	user, err := srv.Db.GetUserByID(claims.UserID)
-	fields.add("userId", claims.UserID)
+	log.add("userId", claims.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

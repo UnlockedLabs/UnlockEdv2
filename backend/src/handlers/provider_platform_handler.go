@@ -8,15 +8,14 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() {
-	srv.Mux.HandleFunc("GET /api/provider-platforms", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleIndexProviders)))
-	srv.Mux.HandleFunc("GET /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleShowProvider)))
-	srv.Mux.HandleFunc("POST /api/provider-platforms", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleCreateProvider)))
-	srv.Mux.HandleFunc("PATCH /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleUpdateProvider)))
-	srv.Mux.HandleFunc("DELETE /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleDeleteProvider)))
+	srv.Mux.HandleFunc("GET /api/provider-platforms", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleIndexProviders)))
+	srv.Mux.HandleFunc("GET /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleShowProvider)))
+	srv.Mux.HandleFunc("POST /api/provider-platforms", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleCreateProvider)))
+	srv.Mux.HandleFunc("PATCH /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleUpdateProvider)))
+	srv.Mux.HandleFunc("DELETE /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleDeleteProvider)))
 }
 
-func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleIndexProviders")
+func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.GetPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
 	if err != nil {
@@ -34,17 +33,16 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request, 
 	} else {
 		platformsResp = platforms
 	}
-	fields.info("Found "+strconv.Itoa(int(total)), " provider platforms")
+	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
 	return writePaginatedResponse(w, http.StatusOK, platformsResp, paginationData)
 }
 
-func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleShowProvider")
+func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
-	fields.add("providerPlatformID", id)
+	log.add("providerPlatformID", id)
 	platform, err := srv.Db.GetProviderPlatformByID(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -52,8 +50,7 @@ func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request, fi
 	return writeJsonResponse(w, http.StatusOK, *platform)
 }
 
-func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleCreateProvider")
+func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var platform models.ProviderPlatform
 	err := json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
@@ -67,13 +64,12 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusCreated, newProv)
 }
 
-func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleUpdateProvider")
+func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
-	fields.add("providerPlatformId", id)
+	log.add("providerPlatformId", id)
 	var platform models.ProviderPlatform
 	err = json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
@@ -87,13 +83,12 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusOK, *updated)
 }
 
-func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleDeleteProvider")
+func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
-	fields.add("providerPlatformId", id)
+	log.add("providerPlatformId", id)
 	if err = srv.Db.DeleteProviderPlatform(id); err != nil {
 		return newDatabaseServiceError(err)
 	}

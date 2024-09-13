@@ -10,14 +10,13 @@ import (
 )
 
 func (srv *Server) registerMilestonesRoutes() {
-	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.HandleError(srv.HandleIndexMilestones)))
-	srv.Mux.Handle("POST /api/milestones", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleCreateMilestone)))
-	srv.Mux.Handle("DELETE /api/milestones", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleDeleteMilestone)))
-	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleUpdateMilestone)))
+	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.handleError(srv.HandleIndexMilestones)))
+	srv.Mux.Handle("POST /api/milestones", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleCreateMilestone)))
+	srv.Mux.Handle("DELETE /api/milestones", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleDeleteMilestone)))
+	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleUpdateMilestone)))
 }
 
-func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleIndexMilestones")
+func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request, log sLog) error {
 	search := r.URL.Query().Get("search")
 	orderBy := r.URL.Query().Get("order_by")
 	page, perPage := srv.GetPaginationInfo(r)
@@ -28,13 +27,13 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request,
 		userId := r.Context().Value(ClaimsKey).(*Claims).UserID
 		total, milestones, err = srv.Db.GetMilestonesForUser(page, perPage, userId)
 		if err != nil {
-			fields.add("userId", userId)
+			log.add("userId", userId)
 			return newDatabaseServiceError(err)
 		}
 	} else {
 		total, milestones, err = srv.Db.GetMilestones(page, perPage, search, orderBy)
 		if err != nil {
-			fields.add("search", search)
+			log.add("search", search)
 			return newDatabaseServiceError(err)
 		}
 	}
@@ -48,8 +47,7 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request,
 	return writePaginatedResponse(w, http.StatusOK, milestones, paginationData)
 }
 
-func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleCreateMilestone")
+func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request, log sLog) error {
 	miles := &models.Milestone{}
 	if err := json.NewDecoder(r.Body).Decode(miles); err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -61,26 +59,24 @@ func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request,
 	return writeJsonResponse(w, http.StatusCreated, miles)
 }
 
-func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleDeleteMilestone")
+func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "milestone ID")
 	}
 	if err := srv.Db.DeleteMilestone(id); err != nil {
-		fields.add("milestoneId", id)
+		log.add("milestoneId", id)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Milestone deleted successfully")
 }
 
-func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleUpdateMilestone")
+func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		fields.info("No ID provided in URL, checking request body json")
+		log.info("No ID provided in URL, checking request body json")
 	}
-	fields.add("milestoneId", id)
+	log.add("milestoneId", id)
 	miles := &models.Milestone{}
 	if err := json.NewDecoder(r.Body).Decode(miles); err != nil {
 		return newJSONReqBodyServiceError(err)

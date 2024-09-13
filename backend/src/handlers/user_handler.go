@@ -8,32 +8,29 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleIndexUsers)))
-	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.HandleError(srv.HandleShowUser)))
-	srv.Mux.Handle("POST /api/users", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleCreateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleDeleteUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleUpdateUser)))
-	srv.Mux.Handle("POST /api/users/student-password", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleResetStudentPassword)))
+	srv.Mux.Handle("GET /api/users", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleIndexUsers)))
+	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.handleError(srv.HandleShowUser)))
+	srv.Mux.Handle("POST /api/users", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleCreateUser)))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleDeleteUser)))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleUpdateUser)))
+	srv.Mux.Handle("POST /api/users/student-password", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleResetStudentPassword)))
 }
 
 /**
 * GET: /api/users
 **/
-func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleIndexUsers")
+func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.GetPaginationInfo(r)
 	include := r.URL.Query()["include"]
 	if slices.Contains(include, "logins") {
-		return srv.HandleGetUsersWithLogins(w, r.WithContext(r.Context()), fields)
+		return srv.HandleGetUsersWithLogins(w, r.WithContext(r.Context()), log)
 	}
 	if slices.Contains(include, "only_unmapped") {
 		providerId := r.URL.Query().Get("provider_id")
-		return srv.HandleGetUnmappedUsers(w, r, providerId, fields)
+		return srv.HandleGetUnmappedUsers(w, r, providerId, log)
 	}
 	order := r.URL.Query().Get("order_by")
 	search := strings.ToLower(r.URL.Query().Get("search"))
@@ -41,8 +38,8 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request, fiel
 	facilityId := srv.getFacilityID(r)
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId, order, search)
 	if err != nil {
-		fields.add("facilityId", facilityId)
-		fields.add("search", search)
+		log.add("facilityId", facilityId)
+		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
 	last := srv.CalculateLast(total, perPage)
@@ -55,15 +52,15 @@ func (srv *Server) HandleIndexUsers(w http.ResponseWriter, r *http.Request, fiel
 	return writePaginatedResponse(w, http.StatusOK, users, paginationData)
 }
 
-func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, fields LogFields) error {
-	fields.add("subhandlerCall", "HandleGetUnmappedUsers")
+func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
+	log.add("subhandlerCall", "HandleGetUnmappedUsers")
 	facilityId := srv.getFacilityID(r)
 	page, perPage := srv.GetPaginationInfo(r)
 	search := r.URL.Query()["search"]
 	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, providerId, search, facilityId)
 	if err != nil {
-		fields.add("providerId", providerId)
-		fields.add("facilityId", facilityId)
+		log.add("providerId", providerId)
+		log.add("facilityId", facilityId)
 		return newDatabaseServiceError(err)
 	}
 	last := srv.CalculateLast(total, perPage)
@@ -76,13 +73,13 @@ func (srv *Server) HandleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 	return writePaginatedResponse(w, http.StatusOK, users, paginationData)
 }
 
-func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("subhandlerCall", "HandleGetUsersWithLogins")
+func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.add("subhandlerCall", "HandleGetUsersWithLogins")
 	facilityId := srv.getFacilityID(r)
 	page, perPage := srv.GetPaginationInfo(r)
 	total, users, err := srv.Db.GetUsersWithLogins(page, perPage, facilityId)
 	if err != nil {
-		fields.add("facilityId", facilityId)
+		log.add("facilityId", facilityId)
 		return newDatabaseServiceError(err)
 	}
 	last := srv.CalculateLast(total, perPage)
@@ -98,8 +95,7 @@ func (srv *Server) HandleGetUsersWithLogins(w http.ResponseWriter, r *http.Reque
 /**
 * GET: /api/users/{id}
 **/
-func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleShowUser")
+func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
@@ -109,7 +105,7 @@ func (srv *Server) HandleShowUser(w http.ResponseWriter, r *http.Request, fields
 	}
 	user, err := srv.Db.GetUserByID(uint(id))
 	if err != nil {
-		fields.add("userId", id)
+		log.add("userId", id)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, user)
@@ -128,8 +124,7 @@ type CreateUserRequest struct {
 /**
 * POST: /api/users
 **/
-func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleCreateUser")
+func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	user := CreateUserRequest{}
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -151,13 +146,13 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request, fiel
 	for _, providerID := range user.Providers {
 		provider, err := srv.Db.GetProviderPlatformByID(providerID)
 		if err != nil {
-			fields.add("providerID", providerID)
-			fields.error("Error getting provider platform by id createProviderUserAccount")
+			log.add("providerID", providerID)
+			log.error("Error getting provider platform by id createProviderUserAccount")
 			return newDatabaseServiceError(err)
 		}
 		if err = srv.createAndRegisterProviderUserAccount(provider, newUser); err != nil {
-			fields.add("providerID", providerID)
-			fields.error("Error creating provider user account for provider: ", provider.Name)
+			log.add("providerID", providerID)
+			log.error("Error creating provider user account for provider: ", provider.Name)
 		}
 	}
 	tempPw := newUser.CreateTempPassword()
@@ -168,19 +163,19 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request, fiel
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
 		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
-			log.Printf("Error creating user in kratos: %v", err)
+			log.printf("Error creating user in kratos: %v", err)
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
 		if err != nil {
-			fields.error("error getting kolibri instance")
+			log.error("error getting kolibri instance")
 			// still return 201 because user has been created in kratos,
 			// kolibri might not be set up/available
 			return writeJsonResponse(w, http.StatusCreated, response)
 
 		}
 		if err := srv.CreateUserInKolibri(newUser, kolibri); err != nil {
-			fields.add("userId", newUser.ID)
-			fields.error("error creating user in kolibri")
+			log.add("userId", newUser.ID)
+			log.error("error creating user in kolibri")
 		}
 	}
 	return writeJsonResponse(w, http.StatusCreated, response)
@@ -189,10 +184,9 @@ func (srv *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request, fiel
 /**
 * DELETE: /api/users/{id}
  */
-func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleDeleteUser")
+func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
-	fields.add("userId", id)
+	log.add("userId", id)
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
@@ -201,7 +195,7 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request, fiel
 		return newDatabaseServiceError(err)
 	}
 	if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
-		fields.add("KratosID", user.KratosID)
+		log.add("KratosID", user.KratosID)
 		return newInternalServerServiceError(err, "error deleting user in kratos")
 	}
 	if err := srv.Db.DeleteUser(id); err != nil {
@@ -213,8 +207,7 @@ func (srv *Server) HandleDeleteUser(w http.ResponseWriter, r *http.Request, fiel
 /**
 * PATCH: /api/users/{id}
 **/
-func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleUpdateUser")
+func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
@@ -226,9 +219,9 @@ func (srv *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request, fiel
 	}
 	defer r.Body.Close()
 	toUpdate, err := srv.Db.GetUserByID(uint(id))
-	fields.add("userId", id)
+	log.add("userId", id)
 	if err != nil {
-		fields.error("Error getting user by ID:" + fmt.Sprintf("%d", id))
+		log.error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		return newDatabaseServiceError(err)
 	}
 	if toUpdate.Username != user.Username && user.Username != "" {
@@ -250,8 +243,7 @@ type TempPasswordRequest struct {
 	UserID uint `json:"user_id"`
 }
 
-func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleResetStudentPassword")
+func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
 	temp := TempPasswordRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -259,7 +251,7 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	defer r.Body.Close()
 	response := make(map[string]string)
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
-	fields.add("temp.UserID", temp.UserID)
+	log.add("temp.UserID", temp.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -275,7 +267,7 @@ func (srv *Server) HandleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		claims := claimsFromUser(user)
 		claims.PasswordReset = true
 		if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
-			fields.add("claims.UserID", claims.UserID)
+			log.add("claims.UserID", claims.UserID)
 			return newInternalServerServiceError(err, err.Error())
 		}
 	}

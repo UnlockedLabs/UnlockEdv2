@@ -8,13 +8,12 @@ import (
 )
 
 func (srv *Server) registerOpenContentRoutes() {
-	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.HandleError(srv.IndexOpenContent)))
-	srv.Mux.Handle("PUT /api/open-content/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.ToggleOpenContent)))
-	srv.Mux.Handle("POST /api/open-content", srv.ApplyAdminMiddleware(srv.HandleError(srv.CreateOpenContent)))
+	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleError(srv.IndexOpenContent)))
+	srv.Mux.Handle("PUT /api/open-content/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.ToggleOpenContent)))
+	srv.Mux.Handle("POST /api/open-content", srv.ApplyAdminMiddleware(srv.handleError(srv.CreateOpenContent)))
 }
 
-func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "IndexOpenContent")
+func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	only := r.URL.Query().Get("all")
 	var all bool
 	if strings.ToLower(strings.TrimSpace(only)) == "true" {
@@ -27,14 +26,13 @@ func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request, fiel
 	return writeJsonResponse(w, http.StatusOK, content)
 }
 
-func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "ToggleOpenContent")
+func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "open content provider ID")
 	}
 	if err := srv.Db.ToggleContentProvider(id); err != nil {
-		fields.add("openContentProviderId", id)
+		log.add("openContentProviderId", id)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Content provider toggled successfully")
@@ -47,8 +45,7 @@ type NewContentRequest struct {
 	Description  string `json:"description"`
 }
 
-func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "CreateOpenContent")
+func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var body NewContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return newJSONReqBodyServiceError(err)

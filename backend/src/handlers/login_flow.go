@@ -13,10 +13,10 @@ import (
 )
 
 func (srv *Server) registerOidcFlowRoutes() {
-	srv.Mux.HandleFunc("POST /api/login", srv.HandleError(srv.handleLogin))
-	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.HandleError(srv.handleLogout)))
-	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.HandleError(srv.handleOidcConsent)))
-	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.HandleError(srv.handleRefreshAuth)))
+	srv.Mux.HandleFunc("POST /api/login", srv.handleError(srv.handleLogin))
+	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleError(srv.handleLogout)))
+	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleError(srv.handleOidcConsent)))
+	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleError(srv.handleRefreshAuth)))
 }
 
 const (
@@ -34,30 +34,28 @@ type LoginRequest struct {
 	CsrfToken string `json:"csrf_token"`
 }
 
-func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleLogout")
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, log sLog) error {
 	resp := map[string]string{}
 	resp["redirect_to"] = "/self-service/logout/browser"
 	return writeJsonResponse(w, http.StatusOK, resp)
 }
 
 // (oauth) login flow is semi complicated, so I will do my best to comment
-func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleLogin")
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
 	defer r.Body.Close()
 	if err != nil {
-		fields.error("Parsing form failed, using urlform")
+		log.error("Parsing form failed, using urlform")
 	}
-	fields.add("form", form)
+	log.add("form", form)
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
 	if err != nil {
 		return newMarshallingBodyServiceError(err)
 	}
 	url := os.Getenv("KRATOS_PUBLIC_URL") + LoginEndpoint + "?flow=" + form.FlowID
-	fields.add("url", url)
+	log.add("url", url)
 	if form.Challenge != "" {
 		// if there was an oauth2 code challenge, we append it to the kratos url
 		url += "&login_challenge=" + form.Challenge
@@ -146,8 +144,7 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 	}
 }
 
-func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleOidcConsent")
+func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	// decode the request body, the client should have sent us the consent challenge
 	// that they received from hydra along with the user's consent
 	var decoded map[string]interface{}
@@ -158,7 +155,7 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, field
 	defer r.Body.Close()
 	// get the user from the database
 	user, err := s.Db.GetUserByID(s.GetUserID(r))
-	fields.add("userId", s.GetUserID(r))
+	log.add("userId", s.GetUserID(r))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -179,7 +176,7 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, field
 	if err != nil {
 		return newInternalServerServiceError(err, "Error sending request to hydra")
 	}
-	fields.info("consent response: ", response)
+	log.info("consent response: ", response)
 	// send the client the redirect uri that hydra sent us
 	redirectURI := response["redirect_to"].(string)
 	respBody := map[string]string{
@@ -228,8 +225,7 @@ func (srv *Server) sendAndDecodeOryRequest(client, req *http.Request) (map[strin
 // oauth2 client login flow. Kratos by default will make the user login again despite
 // acknowledging that the user has a session. So in this case, we skip kratos and accept
 // the hydra login request directly because this endpoint sits behind auth middleware.
-func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleRefreshAuth")
+func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var form map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&form)
 	if err != nil {
@@ -251,7 +247,7 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, fie
 	if err != nil {
 		return NewServiceError(err, http.StatusContinue, "invalid request, must include challenge")
 	}
-	fields.add("url", url)
+	log.add("url", url)
 	req, err := http.NewRequest(http.MethodPut, *url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return newCreateRequestServiceError(err)

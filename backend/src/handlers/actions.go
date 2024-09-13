@@ -15,8 +15,8 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.HandleError(srv.HandleGetUsers)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.HandleError(srv.HandleImportUsers)))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleError(srv.HandleGetUsers)))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleError(srv.HandleImportUsers)))
 }
 
 type CachedProviderUsers struct {
@@ -24,9 +24,8 @@ type CachedProviderUsers struct {
 	LastUpdated time.Time
 }
 
-func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleImportUsers")
-	fields.add("file", "actions")
+func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.add("file", "actions")
 	service, err := srv.getService(r)
 	if err != nil {
 		return newBadRequestServiceError(err, err.Error())
@@ -36,15 +35,15 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, fie
 		return newInternalServerServiceError(err, err.Error())
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(service.ProviderPlatformID))
-	fields.add("ProviderPlatformID", service.ProviderPlatformID)
+	log.add("ProviderPlatformID", service.ProviderPlatformID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	for _, user := range users {
 		// if this user was parsed improperly (happens randomly, unknown as to why), skip
 		if user.Username == "" && user.Email == "" && user.NameLast == "" {
-			fields.add("error", err)
-			fields.debug("received user with null values from provider, skipping")
+			log.add("error", err)
+			log.debug("received user with null values from provider, skipping")
 			continue
 		}
 		newUser := models.User{
@@ -55,14 +54,14 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, fie
 		}
 		created, err := srv.Db.CreateUser(&newUser)
 		if err != nil {
-			fields.error("Error creating user:" + err.Error())
+			log.error("Error creating user:" + err.Error())
 			continue
 		}
 		tempPw := created.CreateTempPassword()
 		if !srv.isTesting(r) {
 			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
-				fields.add("error", err.Error())
-				fields.errorf("Error creating user in kratos: %v", err)
+				log.add("error", err.Error())
+				log.errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity
 			}
 		}
@@ -73,15 +72,15 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, fie
 			ExternalUserID:     user.ExternalUserID,
 		}
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
-			fields.add("created.ID", created.ID)
-			fields.add("ExternalUserID", user.ExternalUserID)
-			fields.errorf("error creating a mapping between user %v and provider %d", user, provider.ID)
+			log.add("created.ID", created.ID)
+			log.add("ExternalUserID", user.ExternalUserID)
+			log.errorf("error creating a mapping between user %v and provider %d", user, provider.ID)
 			return newDatabaseServiceError(err)
 		}
 		if provider.OidcID != 0 {
 			// this should never be any other case, as it's triggered by the UI only (if oidc_id != 0). but we still check
 			if err := srv.registerProviderLogin(provider, &newUser); err != nil {
-				fields.error("Error registering provider login", err)
+				log.error("Error registering provider login", err)
 			}
 		}
 	}
@@ -115,8 +114,7 @@ func (srv *Server) searchForUser(search string, users []models.ImportUser) []mod
 	return foundUsers
 }
 
-func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleGetUsers")
+func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	kv := srv.buckets[CachedUsers]
 	page, perPage := srv.GetPaginationInfo(r)
 	service, err := srv.getService(r)
@@ -125,12 +123,12 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, fields
 	}
 
 	cacheKey := fmt.Sprintf("provider_%d_users", service.ProviderPlatformID)
-	fields.add("cacheKey", cacheKey)
+	log.add("cacheKey", cacheKey)
 	fresh := r.URL.Query().Get("clear_cache")
 	if strings.Compare(fresh, "true") == 0 {
-		fields.debug("clearing cached provider users in JetStream, re-fetching from provider")
+		log.debug("clearing cached provider users in JetStream, re-fetching from provider")
 		if err := kv.Delete(cacheKey); err != nil {
-			fields.errorf("Error clearing cache: %v", err)
+			log.errorf("Error clearing cache: %v", err)
 		}
 	}
 	search := r.URL.Query().Get("search")
@@ -149,14 +147,14 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, fields
 			}
 		}
 		if kv.Delete(cacheKey) != nil {
-			fields.error("Error deleting cache key")
+			log.error("Error deleting cache key")
 		}
 	}
 
 	externalUsers, err := service.GetUsers()
 	if err != nil {
 		if kv.Delete(cacheKey) != nil {
-			fields.error("Error deleting cache")
+			log.error("Error deleting cache")
 		}
 		return newInternalServerServiceError(err, err.Error())
 	}
@@ -168,10 +166,10 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, fields
 	if err == nil {
 		_, err := kv.Put(cacheKey, cacheData)
 		if err != nil {
-			fields.error("Error caching users")
+			log.error("Error caching users")
 		}
 	}
-	log.Printf("Received import users: %v", externalUsers)
+	log.printf("Received import users: %v", externalUsers)
 	if search != "" {
 		externalUsers = srv.searchForUser(search, externalUsers)
 	}
