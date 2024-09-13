@@ -65,12 +65,10 @@ export default function LoginForm() {
                         'auth/refresh',
                         reqBody
                     );
-                    if (resp.status === 200) {
+                    resp.success &&
                         window.location.replace(
                             (resp.data as AuthResponse).redirect_to
                         );
-                        return;
-                    }
                     return;
                 }
             } catch (error: any) {
