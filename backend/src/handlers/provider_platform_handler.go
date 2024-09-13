@@ -9,15 +9,15 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() {
-	srv.Mux.HandleFunc("GET /api/provider-platforms", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleIndexProviders)))
-	srv.Mux.HandleFunc("GET /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleShowProvider)))
-	srv.Mux.HandleFunc("POST /api/provider-platforms", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleCreateProvider)))
-	srv.Mux.HandleFunc("PATCH /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleUpdateProvider)))
-	srv.Mux.HandleFunc("DELETE /api/provider-platforms/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleDeleteProvider)))
+	srv.Mux.HandleFunc("GET /api/provider-platforms", srv.applyAdminMiddleware(srv.handleError(srv.handleIndexProviders)))
+	srv.Mux.HandleFunc("GET /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleShowProvider)))
+	srv.Mux.HandleFunc("POST /api/provider-platforms", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProvider)))
+	srv.Mux.HandleFunc("PATCH /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleUpdateProvider)))
+	srv.Mux.HandleFunc("DELETE /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteProvider)))
 }
 
-func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.GetPaginationInfo(r)
+func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {
+	page, perPage := srv.getPaginationInfo(r)
 	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -28,14 +28,14 @@ func (srv *Server) HandleIndexProviders(w http.ResponseWriter, r *http.Request, 
 		// this is for offering user creation in enabled providers
 		platforms = slices.DeleteFunc(platforms, func(platform models.ProviderPlatform) bool {
 			// don't return kolibri, as users are automatically created in kolibri
-			return platform.OidcID == 0 && platform.Type == models.Kolibri
+			return platform.OidcID == 0 || platform.Type == models.Kolibri
 		})
 	}
 	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
 	return writePaginatedResponse(w, http.StatusOK, platforms, paginationData)
 }
 
-func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleShowProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
@@ -48,7 +48,7 @@ func (srv *Server) HandleShowProvider(w http.ResponseWriter, r *http.Request, lo
 	return writeJsonResponse(w, http.StatusOK, *platform)
 }
 
-func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var platform models.ProviderPlatform
 	err := json.NewDecoder(r.Body).Decode(&platform)
 	if err != nil {
@@ -62,7 +62,7 @@ func (srv *Server) HandleCreateProvider(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusCreated, newProv)
 }
 
-func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
@@ -81,7 +81,7 @@ func (srv *Server) HandleUpdateProvider(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusOK, *updated)
 }
 
-func (srv *Server) HandleDeleteProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleDeleteProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")

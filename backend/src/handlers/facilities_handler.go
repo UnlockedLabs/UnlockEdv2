@@ -8,14 +8,14 @@ import (
 )
 
 func (srv *Server) registerFacilitiesRoutes() {
-	srv.Mux.Handle("GET /api/facilities", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleIndexFacilities))))
-	srv.Mux.Handle("GET /api/facilities/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleShowFacility))))
-	srv.Mux.Handle("POST /api/facilities", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleCreateFacility))))
-	srv.Mux.Handle("DELETE /api/facilities/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleDeleteFacility))))
-	srv.Mux.Handle("PATCH /api/facilities/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleUpdateFacility))))
+	srv.Mux.Handle("GET /api/facilities", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleIndexFacilities))))
+	srv.Mux.Handle("GET /api/facilities/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleShowFacility))))
+	srv.Mux.Handle("POST /api/facilities", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateFacility))))
+	srv.Mux.Handle("DELETE /api/facilities/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteFacility))))
+	srv.Mux.Handle("PATCH /api/facilities/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateFacility))))
 }
 
-func (srv *Server) HandleIndexFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleIndexFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facilities, err := srv.Db.GetAllFacilities()
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -23,7 +23,7 @@ func (srv *Server) HandleIndexFacilities(w http.ResponseWriter, r *http.Request,
 	return writeJsonResponse(w, http.StatusOK, facilities)
 }
 
-func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleShowFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
@@ -37,7 +37,7 @@ func (srv *Server) HandleShowFacility(w http.ResponseWriter, r *http.Request, lo
 	return writeJsonResponse(w, http.StatusOK, facility)
 }
 
-func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var facility models.Facility
 	err := json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
@@ -52,7 +52,7 @@ func (srv *Server) HandleCreateFacility(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusOK, newFacility)
 }
 
-func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
@@ -72,7 +72,7 @@ func (srv *Server) HandleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusOK, *toReturn)
 }
 
-func (srv *Server) HandleDeleteFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")

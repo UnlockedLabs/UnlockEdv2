@@ -34,8 +34,8 @@ type (
 func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleError(srv.handleResetPassword)))
 	/* only use auth middleware, user activity bloats the database + results */
-	srv.Mux.Handle("GET /api/auth", srv.AuthMiddleware(http.HandlerFunc(srv.handleError(srv.handleCheckAuth))))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleChangeAdminFacility))))
+	srv.Mux.Handle("GET /api/auth", srv.authMiddleware(http.HandlerFunc(srv.handleError(srv.handleCheckAuth))))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleChangeAdminFacility))))
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -57,13 +57,13 @@ func claimsFromUser(user *models.User) *Claims {
 	}
 }
 
-func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
+func (s *Server) authMiddleware(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fields := log.Fields{"handler": "AuthMiddleware"}
+		fields := log.Fields{"handler": "authMiddleware"}
 		claims, err := s.validateOrySession(r)
 		if err != nil {
 			log.WithFields(fields).Error("Error validating ory session: ", err)
-			s.ErrorResponse(w, http.StatusUnauthorized, "invalid ory session, please clear your cookies")
+			s.errorResponse(w, http.StatusUnauthorized, "invalid ory session, please clear your cookies")
 			return
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, claims)

@@ -3,7 +3,6 @@ package handlers
 import (
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
-	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -62,7 +61,7 @@ func (srv *Server) ListenAndServe() {
 		port = "8080"
 	}
 	log.Println("Starting server on port: ", port)
-	if err := http.ListenAndServe(":"+port, CorsMiddleware(srv.Mux)); err != nil {
+	if err := http.ListenAndServe(":"+port, corsMiddleware(srv.Mux)); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -149,18 +148,18 @@ func (srv *Server) applyMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(
 		srv.setCsrfTokenMiddleware(
 			srv.rateLimitMiddleware(
-				srv.AuthMiddleware(h))))
+				srv.authMiddleware(h))))
 }
 
-func (srv *Server) ApplyAdminMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func (srv *Server) applyAdminMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
 	return http.HandlerFunc(srv.applyMiddleware(srv.adminMiddleware(h)))
 }
 
-func (srv *Server) ApplyAdminTestingMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return http.HandlerFunc(srv.AuthMiddleware(srv.adminMiddleware(h)))
-}
+// func (srv *Server) applyAdminTestingMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+// 	return http.HandlerFunc(srv.authMiddleware(srv.adminMiddleware(h)))
+// }
 
-func CorsMiddleware(next http.Handler) http.HandlerFunc {
+func corsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
@@ -251,7 +250,7 @@ func (srv *Server) syncKratosAdminDB() error {
 		if err != nil {
 			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
 		}
-		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
+		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
 		}
 		return nil
@@ -284,7 +283,7 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 			// so we create the OIDC client if KOLIBRI_URL is set
 			// then create the default admin in kratos
 			log.Println("kratos id not found")
-			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
+			return srv.handleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}
 	return srv.syncKratosAdminDB()
@@ -292,6 +291,11 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 
 func (srv *Server) getFacilityID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).FacilityID
+}
+
+func (srv *Server) userIdFromRequest(r *http.Request) uint {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	return claims.UserID
 }
 
 type TestClaims string
@@ -302,39 +306,34 @@ func (srv *Server) isTesting(r *http.Request) bool {
 	return r.Context().Value(TestingClaimsKey) != nil
 }
 
-func (srv *Server) TestAsAdmin(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testClaims := &Claims{
-			UserID:        1,
-			PasswordReset: false,
-			Role:          models.Admin,
-			FacilityID:    1,
-		}
-		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
-		h.ServeHTTP(w, r.WithContext(test_ctx))
-	})
-}
+// func (srv *Server) testAsAdmin(h http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		testClaims := &Claims{
+// 			UserID:        1,
+// 			PasswordReset: false,
+// 			Role:          models.Admin,
+// 			FacilityID:    1,
+// 		}
+// 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+// 		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
+// 		h.ServeHTTP(w, r.WithContext(test_ctx))
+// 	})
+// }
+//
+// func (srv *Server) testAsUser(h http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		testClaims := &Claims{
+// 			UserID:        4,
+// 			Role:          models.Student,
+// 			PasswordReset: false,
+// 			FacilityID:    1,
+// 		}
+// 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+// 		h.ServeHTTP(w, r.WithContext(ctx))
+// 	})
+// }
 
-func (srv *Server) GetUserID(r *http.Request) uint {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.UserID
-}
-
-func (srv *Server) TestAsUser(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testClaims := &Claims{
-			UserID:        4,
-			Role:          models.Student,
-			PasswordReset: false,
-			FacilityID:    1,
-		}
-		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-		h.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
+func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 	page := r.URL.Query().Get("page")
 	perPage := r.URL.Query().Get("per_page")
 	if page == "" {
@@ -360,20 +359,24 @@ type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 func (svr *Server) handleError(handler HttpFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log := sLog{f: log.Fields{"HandlerMethodAndPath": fmt.Sprintf("%s %s", r.Method, r.URL.Path)}}
+		handlerName := getHandlerName(handler)
+		if handlerName == "NameNotFound" {
+			log.warn("Handler name not found")
+		}
 		log.add("handler_name", getHandlerName(handler))
 		if err := handler(w, r, log); err != nil {
 			if svcErr, ok := err.(serviceError); ok {
-				svr.ErrorResponse(w, svcErr.Status, svcErr.Message)
+				svr.errorResponse(w, svcErr.Status, svcErr.Message)
 				svcErr.log(log)
 			} else { //capture all other error types
-				svr.ErrorResponse(w, http.StatusInternalServerError, err.Error())
+				svr.errorResponse(w, http.StatusInternalServerError, err.Error())
 				log.error("Error occurred is ", err.Error())
 			}
 		}
 	}
 }
 
-// Uses reflection to get the name of the Handler function using a series of string splits
+// Uses reflection to get the name of the handler function using a series of string splits
 func getHandlerName(handler HttpFunc) string {
 	handlerName := runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
 	hyphenSplit := strings.Split(handlerName, "-")
@@ -413,7 +416,7 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 	return nil
 }
 
-func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message string) {
+func (srv *Server) errorResponse(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	resource := models.Resource[interface{}]{Message: message}
@@ -424,7 +427,7 @@ func (srv *Server) ErrorResponse(w http.ResponseWriter, status int, message stri
 	}
 }
 
-func (srv *Server) CalculateLast(total int64, perPage int) int {
+func (srv *Server) calculateLast(total int64, perPage int) int {
 	if perPage == 0 {
 		return 0
 	}

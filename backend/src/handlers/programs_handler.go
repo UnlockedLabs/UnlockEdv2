@@ -8,12 +8,12 @@ import (
 )
 
 func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleIndexPrograms))))
-	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleShowProgram))))
-	srv.Mux.Handle("POST /api/programs", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleCreateProgram))))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleDeleteProgram))))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.HandleUpdateProgram))))
-	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleFavoriteProgram))))
+	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleIndexPrograms))))
+	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleShowProgram))))
+	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateProgram))))
+	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteProgram))))
+	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateProgram))))
+	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleFavoriteProgram))))
 }
 
 /*
@@ -24,15 +24,15 @@ func (srv *Server) registerProgramsRoutes() {
 * ?search=: search
 * ?searchFields=: searchFields
  */
-func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.GetPaginationInfo(r)
+func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
+	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
 	total, programs, err := srv.Db.GetProgram(page, perPage, search)
 	if err != nil {
 		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
-	last := srv.CalculateLast(total, perPage)
+	last := srv.calculateLast(total, perPage)
 	paginationData := models.PaginationMeta{
 		PerPage:     perPage,
 		LastPage:    int(last),
@@ -42,7 +42,7 @@ func (srv *Server) HandleIndexPrograms(w http.ResponseWriter, r *http.Request, l
 	return writePaginatedResponse(w, http.StatusOK, programs, paginationData)
 }
 
-func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
@@ -55,7 +55,7 @@ func (srv *Server) HandleShowProgram(w http.ResponseWriter, r *http.Request, log
 	return writeJsonResponse(w, http.StatusOK, program)
 }
 
-func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
@@ -69,7 +69,7 @@ func (srv *Server) HandleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusCreated, "Program created successfully")
 }
 
-func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
@@ -93,7 +93,7 @@ func (srv *Server) HandleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusOK, updated)
 }
 
-func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
@@ -106,18 +106,19 @@ func (srv *Server) HandleDeleteProgram(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusNoContent, "Program deleted successfully")
 }
 
-func (srv *Server) HandleFavoriteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	user_id := srv.GetUserID(r)
+	user_id := srv.userIdFromRequest(r)
 	favoriteRemoved, err := srv.Db.ToggleUserFavorite(user_id, uint(id))
 	if err != nil {
 		log.add("programId", id)
 		log.add("userId", user_id)
 		return newDatabaseServiceError(err)
 	}
+	log.debugf("Favorite removed: %v", favoriteRemoved)
 	if favoriteRemoved {
 		w.WriteHeader(http.StatusNoContent)
 		return nil

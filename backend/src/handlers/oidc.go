@@ -9,12 +9,12 @@ import (
 )
 
 func (srv *Server) registerOidcRoutes() {
-	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleGetAllClients)))
-	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleRegisterClient)))
-	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.handleGetOidcClient)))
+	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.applyAdminMiddleware(srv.handleError(srv.handleGetAllClients)))
+	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.applyAdminMiddleware(srv.handleError(srv.handleRegisterClient)))
+	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleGetOidcClient)))
 }
 
-func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetAllClients(w http.ResponseWriter, r *http.Request, log sLog) error {
 	clients, err := srv.Db.GetAllRegisteredClients()
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -48,7 +48,7 @@ func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusOK, *clientToResponse(client))
 }
 
-func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleRegisterClient(w http.ResponseWriter, r *http.Request, log sLog) error {
 	request := RegisterClientRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return newJSONReqBodyServiceError(err)

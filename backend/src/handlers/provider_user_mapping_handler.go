@@ -8,10 +8,10 @@ import (
 )
 
 func (srv *Server) registerProviderMappingRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.handleError(srv.handleGetMappingsForUser)))
-	srv.Mux.Handle("POST /api/users/{id}/logins", srv.ApplyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserMapping)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.ApplyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
-	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.ApplyAdminMiddleware(srv.handleError(srv.handleDeleteProviderUserMapping)))
+	srv.Mux.Handle("GET /api/users/{id}/logins", srv.applyAdminMiddleware(srv.handleError(srv.handleGetMappingsForUser)))
+	srv.Mux.Handle("POST /api/users/{id}/logins", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserMapping)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteProviderUserMapping)))
 }
 
 func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request, log sLog) error {

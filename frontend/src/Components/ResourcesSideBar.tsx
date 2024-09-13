@@ -1,8 +1,6 @@
 import { Category, Link, Resource, ServerResponse } from '@/common';
 import Error from '@/Pages/Error';
 import useSWR from 'swr';
-import KolibriImg from '../../public/kolibri-card-cover.png';
-import WikiImg from '../../public/wikipedia.png';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { ReactNode } from 'react';
 
@@ -31,7 +29,7 @@ const KolibriCard = () => {
     return (
         <div className="card card-compact bg-base-teal overflow-hidden">
             <img
-                src={KolibriImg}
+                src={'kolibri-card-cover.png'}
                 alt="Kolibri logo"
                 className="h-[105px] object-cover"
             />
@@ -54,7 +52,7 @@ const WikiCard = () => {
     return (
         <div className="card card-compact bg-base-teal overflow-hidden">
             <div className="h-[105px] bg-[#D9D9D9] flex content-center justify-center">
-                <img src={WikiImg} alt="Wikipedia logo" />
+                <img src={'wikipedia.png'} alt="Wikipedia logo" />
             </div>
             <div className="card-body gap-2">
                 <h3 className="card-title text-sm">Wikipedia</h3>

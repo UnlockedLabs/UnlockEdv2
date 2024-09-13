@@ -7,13 +7,13 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.handleError(srv.HandleStudentDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleAdminDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.handleError(srv.HandleUserCatalogue)))
-	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(srv.handleError(srv.HandleUserPrograms)))
+	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.handleError(srv.handleStudentDashboard)))
+	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyAdminMiddleware(srv.handleError(srv.handleAdminDashboard)))
+	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.handleError(srv.handleUserCatalogue)))
+	srv.Mux.Handle("GET /api/users/{id}/programs", srv.applyMiddleware(srv.handleError(srv.handleUserPrograms)))
 }
 
-func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleStudentDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
 	faciltiyId := srv.getFacilityID(r)
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -28,7 +28,7 @@ func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request
 	return writeJsonResponse(w, http.StatusOK, studentDashboard)
 }
 
-func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	adminDashboard, err := srv.Db.GetAdminDashboardInfo(claims.FacilityID)
 	if err != nil {
@@ -45,7 +45,7 @@ func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request, 
 * ?tag=some_tag&tag=another_tag
 * provider_id: provider id to filter by
 **/
-func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUserCatalogue(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
@@ -62,7 +62,7 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusOK, userCatalogue)
 }
 
-func (srv *Server) HandleUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
