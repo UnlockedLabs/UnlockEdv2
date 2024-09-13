@@ -6,8 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"os"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerOidcRoutes() {
@@ -16,10 +14,11 @@ func (srv *Server) registerOidcRoutes() {
 	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleGetOidcClient)))
 }
 
-func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleGetAllClients")
 	clients, err := srv.Db.GetAllRegisteredClients()
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, clients)
 }
@@ -40,41 +39,43 @@ func clientToResponse(client *models.OidcClient) *models.ClientResponse {
 	}
 }
 
-func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "handleGetOidcClient"}
+func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleGetOidcClient")
 	id := r.PathValue("id")
-	fields["oidc_id"] = id
+	fields.add("oidc_id", id)
 	client, err := srv.Db.GetOidcClientById(id)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newDatabaseServiceError(err, fields)
+		return newDatabaseServiceError(err)
 	}
-
 	return writeJsonResponse(w, http.StatusOK, *clientToResponse(client))
 }
 
-func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleRegisterClient")
 	request := RegisterClientRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return newJSONReqBodyServiceError(err, nil)
+		return newJSONReqBodyServiceError(err)
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(request.ProviderPlatformID))
+	fields.add("providerPlatformId", request.ProviderPlatformID)
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	if provider.OidcID != 0 || provider.ExternalAuthProviderId != "" {
-		return newBadRequestServiceError(errors.New("client already registered"), "Client already registered", nil)
+		return newBadRequestServiceError(errors.New("client already registered"), "Client already registered")
 	}
 	client, externalId, err := models.OidcClientFromProvider(provider, request.AutoRegister, srv.Client)
 	if err != nil {
-		return newInternalServerServiceError(err, err.Error(), nil)
+		return newInternalServerServiceError(err, err.Error())
 	}
+	fields.add("externalId", externalId)
 	if err := srv.Db.RegisterClient(client); err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	provider.ExternalAuthProviderId = externalId
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
-		return newDatabaseServiceError(err, nil)
+		fields.add("clientId", client.ID)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, *clientToResponse(client))
 }

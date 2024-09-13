@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"os"
@@ -350,18 +351,19 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 	return intPage, intPerPage
 }
 
-type HttpFunc func(w http.ResponseWriter, r *http.Request) error
+type HttpFunc func(w http.ResponseWriter, r *http.Request, fields LogFields) error
 
 // Wraps a handler function that returns an error so that it can handle the error by writing it to the response and logging it.
 func (svr *Server) HandleError(handler HttpFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := handler(w, r); err != nil {
+		fields := LogFields{f: log.Fields{"HandlerMethodAndPath": fmt.Sprintf("%s %s", r.Method, r.URL.Path)}}
+		if err := handler(w, r, fields); err != nil {
 			if svcErr, ok := err.(serviceError); ok {
 				svr.ErrorResponse(w, svcErr.Status, svcErr.Message)
-				svcErr.log(r)
+				svcErr.log(fields)
 			} else { //capture all other error types
 				svr.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-				log.Error("Error occurred on endpoint ", r.Method, " ", r.URL.Path, " Error: ", err.Error())
+				fields.error("Error occurred is ", err.Error())
 			}
 		}
 	}
@@ -372,7 +374,7 @@ func writePaginatedResponse[T any](w http.ResponseWriter, status int, data []T, 
 	w.WriteHeader(status)
 	resp := models.PaginatedResource[T]{Message: "", Data: data, Meta: meta}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		return newResponseServiceError(err, nil)
+		return newResponseServiceError(err)
 	}
 	return nil
 }
@@ -383,12 +385,12 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 	if str, ok := any(data).(string); ok {
 		resp := models.Resource[struct{}]{Message: str, Data: struct{}{}}
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			return newResponseServiceError(err, nil)
+			return newResponseServiceError(err)
 		}
 	}
 	resp := models.Resource[T]{Message: "Data fetched successfully", Data: data}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		return newResponseServiceError(err, nil)
+		return newResponseServiceError(err)
 	}
 	return nil
 }

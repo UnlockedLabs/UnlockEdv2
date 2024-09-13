@@ -80,15 +80,17 @@ func (s *Server) AuthMiddleware(next http.Handler) http.HandlerFunc {
 	})
 }
 
-func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleChangeAdminFacility")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "facility ID", nil)
+		return newInvalidIdServiceError(err, "facility ID")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	claims.FacilityID = uint(id)
 	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		return newInternalServerServiceError(err, "error updating user traits in kratos", nil)
+		fields.add("facilityId", id)
+		return newInternalServerServiceError(err, "error updating user traits in kratos")
 	}
 	w.WriteHeader(http.StatusOK)
 	return nil
@@ -141,24 +143,23 @@ func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)
 }
 
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
-func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "handleCheckAuth"}
+func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleCheckAuth")
 	claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 	if !ok {
-		log.WithFields(fields).Error("No claims found in context")
-		return newUnauthorizedServiceError(fields)
+		fields.error("No claims found in context")
+		return newUnauthorizedServiceError()
 	}
-	fields["user.username"] = claims.Username
-	fields["facility_id"] = claims.FacilityID
+	fields.add("username", claims.Username)
+	fields.add("facility_id", claims.FacilityID)
 	user, err := srv.Db.GetUserByID(claims.UserID)
 	if err != nil { //special case here, kept original flow as Unauthorized is referenced in api.ts file)
-		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized", fields)
+		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized")
 	}
 	if claims.Role != models.Admin && claims.FacilityID != user.FacilityID {
 		// user isn't an admin, and has alternate facility_id in the JWT claims
-		fields["claims.facility_id"] = claims.FacilityID
-		log.WithFields(fields).Error("user viewing context for different facility. this should never happen")
-		return newUnauthorizedServiceError(fields)
+		fields.error("user viewing context for different facility. this should never happen")
+		return newUnauthorizedServiceError()
 	}
 	traits := claims.getTraits()
 	traits["id"] = user.ID
@@ -249,40 +250,42 @@ type ResetPasswordRequest struct {
 	FacilityName string `json:"facility_name"`
 }
 
-func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleResetPassword")
 	log.Info("Handling password reset request", r.URL.Path)
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	form := ResetPasswordRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
-		log.Error("Parsing form failed, using JSON" + err.Error())
+		fields.error("Parsing form failed, using JSON" + err.Error())
 	}
 	defer r.Body.Close()
 	if form.Password != form.Confirm {
-		return newBadRequestServiceError(errors.New("passwords do not match"), "passwords do not match", nil)
+		return newBadRequestServiceError(errors.New("passwords do not match"), "passwords do not match")
 	}
 	if !validatePassword(form.Password) {
-		return newBadRequestServiceError(errors.New("password not formatted correclty"), "Password must be at least 8 characters long and contain a number", nil)
+		return newBadRequestServiceError(errors.New("password not formatted correclty"), "Password must be at least 8 characters long and contain a number")
 	}
 	tx := srv.Db.Begin()
 	user, err := srv.Db.GetUserByID(claims.UserID)
+	fields.add("userId", claims.UserID)
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	if claims.UserID == 1 && claims.Role == "admin" && form.FacilityName != "" {
 		if _, err := srv.Db.UpdateFacility(form.FacilityName, 1); err != nil {
 			tx.Rollback()
-			return newDatabaseServiceError(err, nil)
+			return newDatabaseServiceError(err)
 		}
 	}
 	if !srv.isTesting(r) {
 		claims := claimsFromUser(user)
 		if err := srv.handleUpdatePasswordKratos(claims, form.Password, false); err != nil {
 			tx.Rollback()
-			return newInternalServerServiceError(err, "error updating password in kratos", nil)
+			return newInternalServerServiceError(err, "error updating password in kratos")
 		}
 	}
 	if err := tx.Commit().Error; err != nil {
-		return newInternalServerServiceError(err, "Transaction commit failed", nil)
+		return newInternalServerServiceError(err, "Transaction commit failed")
 	}
 	return writeJsonResponse(w, http.StatusOK, "Password reset successfully")
 }

@@ -13,26 +13,28 @@ func (srv *Server) registerLeftMenuRoutes() {
 	srv.Mux.Handle("PUT /api/left-menu", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleError(srv.handlePostLeftMenuLinks))))
 }
 
-func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleGetLeftMenu")
 	log.Info("GET: /api/left-menu")
 	links, err := srv.Db.GetLeftMenuLinks()
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, links)
 }
 
-func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) handlePostLeftMenuLinks(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handlePostLeftMenuLinks")
 	var links []models.LeftMenuLink
 	err := json.NewDecoder(r.Body).Decode(&links)
 	if err != nil {
-		return newJSONReqBodyServiceError(err, nil)
+		return newJSONReqBodyServiceError(err)
 	}
 	if err = srv.Db.DeleteAllLinks(); err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	if err = srv.Db.CreateFreshLeftMenuLinks(links); err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, links)
 }
