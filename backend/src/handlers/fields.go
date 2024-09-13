@@ -2,7 +2,7 @@ package handlers
 
 import log "github.com/sirupsen/logrus"
 
-// LogFields is a wrapper around the log.Fields map and is implemented by the #HandleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging them more efficient.
+// LogFields is a wrapper around the log.Fields map and is implemented by the HandleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging them more efficient.
 type LogFields struct{ f log.Fields }
 
 func (fields LogFields) info(args ...interface{}) {
