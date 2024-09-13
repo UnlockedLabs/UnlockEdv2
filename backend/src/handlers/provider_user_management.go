@@ -12,15 +12,15 @@ import (
 
 func (srv *Server) registerProviderUserRoutes() {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleMapProviderUser)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleImportProviderUsers)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.ApplyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleMapProviderUser)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleError(srv.handleImportProviderUsers)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,
 // in the request body, and a currently existing user's ID in the path, and create a mapping
 // for that user, as well as create a login for that user in the provider
-func (srv *Server) HandleMapProviderUser(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleMapProviderUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider platform ID")
@@ -88,7 +88,7 @@ const disallowedChars string = "`; )(|\\\"'"
 // This function takes an array of 1 or more Provider users (that come from the middleware, so they are
 // already in the correct format) and creates a new user in the database for each of them, as well as
 // creating a mapping for each user, and creating a login for each user in the provider
-func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facilityId := srv.getFacilityID(r)
 	providerId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -131,7 +131,7 @@ func (srv *Server) HandleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		tempPw := created.CreateTempPassword()
 		userResponse.TempPassword = tempPw
-		if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
+		if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
 			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
 				log.error("Error deleting user after failed provider user mapping import-provider-users")
 			}

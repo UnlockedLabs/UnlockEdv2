@@ -37,14 +37,6 @@ func (slog sLog) errorf(format string, args ...interface{}) {
 	log.WithFields(slog.f).Errorf(format, args...)
 }
 
-func (slog sLog) print(args ...interface{}) {
-	log.WithFields(slog.f).Print(args...)
-}
-
-func (slog sLog) printf(format string, args ...interface{}) {
-	log.WithFields(slog.f).Printf(format, args...)
-}
-
-func (slog sLog) add(key string, value interface{}) {
+func (slog *sLog) add(key string, value interface{}) {
 	slog.f[key] = value
 }

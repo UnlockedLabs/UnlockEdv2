@@ -35,7 +35,7 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 			val, err := bucket.Get(checkExists.Value)
 			if err != nil {
 				log.WithFields(fields).Traceln("CSRF token is invalid")
-				srv.ErrorResponse(w, http.StatusForbidden, "Invalid CSRF token")
+				srv.errorResponse(w, http.StatusForbidden, "Invalid CSRF token")
 				return
 			}
 			log.WithFields(fields).Traceln("CSRF token is valid")
@@ -55,7 +55,7 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 			_, err := bucket.Put(uniqueId, []byte(time.Now().Add(24*time.Hour).String()))
 			if err != nil {
 				log.WithFields(fields).Errorf("Failed to set CSRF token: %v", err)
-				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
+				srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 				return
 			}
 			ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(uniqueId))
@@ -71,7 +71,7 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 		hashedValue, err := getUniqueRequestInfo(r)
 		if err != nil {
 			log.WithFields(fields).Errorf("Failed to get unique request info: %v", err)
-			srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
+			srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 			return
 		}
 		value, err := kv.Get(hashedValue)
@@ -83,7 +83,7 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 			}
 			if err := putRequestInfo(kv, hashedValue, reqInfo); err != nil {
 				log.WithFields(fields).Errorf("Failed to marshal request info: %v", err)
-				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
+				srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -92,7 +92,7 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 			var reqInfo requestInfo
 			if err := json.Unmarshal(value.Value(), &reqInfo); err != nil {
 				log.WithFields(fields).Errorf("Failed to unmarshal request info: %v", err)
-				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to decode request info")
+				srv.errorResponse(w, http.StatusInternalServerError, "failed to decode request info")
 				return
 			}
 			if time.Since(reqInfo.Timestamp) > timeWindow {
@@ -101,13 +101,13 @@ func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
 			} else {
 				reqInfo.Count++
 				if reqInfo.Count > maxRequests {
-					srv.ErrorResponse(w, http.StatusTooManyRequests, "rate limit exceeded")
+					srv.errorResponse(w, http.StatusTooManyRequests, "rate limit exceeded")
 					return
 				}
 			}
 			if err := putRequestInfo(kv, hashedValue, &reqInfo); err != nil {
 				log.WithFields(fields).Errorf("Failed to marshal request info: %v", err)
-				srv.ErrorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
+				srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
 				return
 			}
 			next.ServeHTTP(w, r)

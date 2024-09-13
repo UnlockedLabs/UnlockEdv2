@@ -8,18 +8,18 @@ import (
 )
 
 func (srv *Server) registerOutcomesRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleGetOutcomes))))
-	srv.Mux.Handle("POST /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleCreateOutcome))))
-	srv.Mux.Handle("PATCH /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleUpdateOutcome))))
-	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.HandleDeleteOutcome))))
+	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleGetOutcomes))))
+	srv.Mux.Handle("POST /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateOutcome))))
+	srv.Mux.Handle("PATCH /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateOutcome))))
+	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteOutcome))))
 }
 
 /****
  * @Query Params:
  * ?type=: "certificate", "grade", "pathway_completion", "college_credit"
  ****/
-func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.GetPaginationInfo(r)
+func (srv *Server) handleGetOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
+	page, perPage := srv.getPaginationInfo(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
@@ -41,7 +41,7 @@ func (srv *Server) HandleGetOutcomes(w http.ResponseWriter, r *http.Request, log
 	return writePaginatedResponse(w, http.StatusOK, outcome, meta)
 }
 
-func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleCreateOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
@@ -61,7 +61,7 @@ func (srv *Server) HandleCreateOutcome(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusCreated, *outcome)
 }
 
-func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUpdateOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "outcome ID")
@@ -88,7 +88,7 @@ func (srv *Server) HandleUpdateOutcome(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusOK, *updatedOutcome)
 }
 
-func (srv *Server) HandleDeleteOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleDeleteOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("oid"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "outcome ID")

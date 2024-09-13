@@ -155,8 +155,8 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, log s
 	}
 	defer r.Body.Close()
 	// get the user from the database
-	user, err := s.Db.GetUserByID(s.GetUserID(r))
-	log.add("userId", s.GetUserID(r))
+	user, err := s.Db.GetUserByID(s.userIdFromRequest(r))
+	log.add("userId", s.userIdFromRequest(r))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

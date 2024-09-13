@@ -11,13 +11,13 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.handleError(srv.HandleGetActivityByUserID)))
-	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.handleError(srv.HandleGetDailyActivityByUserID)))
-	srv.Mux.Handle("GET /api/courses/{id}/activity", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleGetCourseActivity)))
-	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleCreateActivity)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.handleError(srv.handleGetActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.handleError(srv.handleGetDailyActivityByUserID)))
+	srv.Mux.Handle("GET /api/courses/{id}/activity", srv.applyAdminMiddleware(srv.handleError(srv.handleGetCourseActivity)))
+	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateActivity)))
 }
 
-func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetActivityByUserID(w http.ResponseWriter, r *http.Request, log sLog) error {
 	year := r.URL.Query().Get("year")
 	if year == "" {
 		year = fmt.Sprintf("%d", time.Now().Year())
@@ -45,13 +45,13 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
  * @Query Params:
  * ?year=: year (default last year)
  ****/
-func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	log.add("userId", userID)
-	requestingUser := int(srv.GetUserID(r))
+	requestingUser := int(srv.userIdFromRequest(r))
 	if requestingUser != userID && !srv.UserIsAdmin(r) {
 		log.add("requestingUser", requestingUser)
 		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
@@ -74,13 +74,13 @@ func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 	})
 }
 
-func (srv *Server) HandleGetCourseActivity(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetCourseActivity(w http.ResponseWriter, r *http.Request, log sLog) error {
 	courseID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "course ID")
 	}
 	log.add("course_id", courseID)
-	page, perPage := srv.GetPaginationInfo(r)
+	page, perPage := srv.getPaginationInfo(r)
 	count, activities, err := srv.Db.GetActivityByCourseID(page, perPage, courseID)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -91,7 +91,7 @@ func (srv *Server) HandleGetCourseActivity(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleCreateActivity(w http.ResponseWriter, r *http.Request, log sLog) error {
 	activity := &models.Activity{}
 	if err := json.NewDecoder(r.Body).Decode(activity); err != nil {
 		return newJSONReqBodyServiceError(err)

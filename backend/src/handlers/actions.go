@@ -15,8 +15,8 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleError(srv.HandleGetUsers)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleError(srv.HandleImportUsers)))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleError(srv.handleGetUsers)))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleError(srv.handleImportUsers)))
 }
 
 type CachedProviderUsers struct {
@@ -24,7 +24,7 @@ type CachedProviderUsers struct {
 	LastUpdated time.Time
 }
 
-func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	log.add("file", "actions")
 	service, err := srv.getService(r)
 	if err != nil {
@@ -43,7 +43,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, log
 		// if this user was parsed improperly (happens randomly, unknown as to why), skip
 		if user.Username == "" && user.Email == "" && user.NameLast == "" {
 			log.add("error", err)
-			log.debug("received user with null values from provider, skipping")
+			log.debugf("received user with null values from provider: %d, skipping", provider.ID)
 			continue
 		}
 		newUser := models.User{
@@ -59,7 +59,7 @@ func (srv *Server) HandleImportUsers(w http.ResponseWriter, r *http.Request, log
 		}
 		tempPw := created.CreateTempPassword()
 		if !srv.isTesting(r) {
-			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
+			if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
 				log.add("error", err.Error())
 				log.errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity
@@ -114,9 +114,9 @@ func (srv *Server) searchForUser(search string, users []models.ImportUser) []mod
 	return foundUsers
 }
 
-func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	kv := srv.buckets[CachedUsers]
-	page, perPage := srv.GetPaginationInfo(r)
+	page, perPage := srv.getPaginationInfo(r)
 	service, err := srv.getService(r)
 	if err != nil {
 		return newBadRequestServiceError(err, err.Error())
@@ -169,7 +169,7 @@ func (srv *Server) HandleGetUsers(w http.ResponseWriter, r *http.Request, log sL
 			log.error("Error caching users")
 		}
 	}
-	log.printf("Received import users: %v", externalUsers)
+	log.infof("Received import users: %v", externalUsers)
 	if search != "" {
 		externalUsers = srv.searchForUser(search, externalUsers)
 	}
