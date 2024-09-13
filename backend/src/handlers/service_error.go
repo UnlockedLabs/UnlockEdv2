@@ -5,20 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type serviceError struct {
-	Status     int    `json:"status"`
-	Message    string `json:"msg"`
-	Err        error  `json:"-"`
-	Fields     log.Fields
-	CustLogMsg string
+	Status  int
+	Message string
+	Err     error
 }
 
 // Can pass a DBError into this, but will only be on rare circumstances used to override status and message
-func NewServiceError(err error, status int, msg string, flds log.Fields) serviceError {
+func NewServiceError(err error, status int, msg string) serviceError {
 	svcErr := serviceError{}
 	if dbErr, ok := err.(database.DBError); ok {
 		svcErr.Err = errors.Join(errors.New(dbErr.Message), dbErr.InternalErr)
@@ -27,7 +23,6 @@ func NewServiceError(err error, status int, msg string, flds log.Fields) service
 	}
 	svcErr.Status = status
 	svcErr.Message = msg
-	svcErr.Fields = flds
 	return svcErr
 }
 
@@ -36,64 +31,51 @@ func (svcErr serviceError) Error() string {
 	return fmt.Sprintf("service error: %s", svcErr.Err.Error())
 }
 
-func (svcErr serviceError) containsFields() bool {
-	return len(svcErr.Fields) > 0
+func (svcErr serviceError) log(fields LogFields) {
+	fields.error("Error occurred is ", svcErr.Err)
 }
 
-func (svcErr serviceError) log(r *http.Request) {
-	if svcErr.containsFields() {
-		log.WithFields(svcErr.Fields).Error("Error occurred on endpoint ", r.Method, " ", r.URL.Path, " Error: ", svcErr.Err)
-	} else {
-		log.Error("Error occurred on endpoint ", r.Method, " ", r.URL.Path, " Error: ", svcErr.Err)
-	}
+func newBadRequestServiceError(err error, msg string) serviceError { //default is BadRequest
+	return NewServiceError(err, http.StatusBadRequest, msg)
 }
 
-func newBadRequestServiceError(err error, msg string, flds log.Fields) serviceError { //default is BadRequest
-	return NewServiceError(err, http.StatusBadRequest, msg, flds)
+func newResponseServiceError(err error) serviceError {
+	return NewServiceError(err, http.StatusInternalServerError, "error writing response")
 }
 
-func newResponseServiceError(err error, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusInternalServerError, "error writing response", flds)
+func newJSONReqBodyServiceError(err error) serviceError {
+	return NewServiceError(err, http.StatusBadRequest, "error reading json request")
 }
 
-func newJSONReqBodyServiceError(err error, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusBadRequest, "error reading json request", flds)
+func newUnauthorizedServiceError() serviceError {
+	return NewServiceError(errors.New("user unauthorized"), http.StatusUnauthorized, "Unauthorized")
 }
 
-func newUnauthorizedServiceError(flds log.Fields) serviceError {
-	return NewServiceError(errors.New("user unauthorized"), http.StatusUnauthorized, "Unauthorized", flds)
+func newInvalidIdServiceError(err error, idName string) serviceError {
+	return NewServiceError(err, http.StatusBadRequest, fmt.Sprintf("invalid %s", idName))
 }
 
-func newInvalidIdServiceError(err error, idName string, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusBadRequest, fmt.Sprintf("invalid %s", idName), flds)
+func newInvalidQueryParamServiceError(err error, paramName string) serviceError {
+	return NewServiceError(err, http.StatusBadRequest, fmt.Sprintf("invalid %s parameter", paramName))
 }
 
-func newInvalidQueryParamServiceError(err error, paramName string, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusBadRequest, fmt.Sprintf("invalid %s parameter", paramName), flds)
+func newForbiddenServiceError(err error, msg string) serviceError {
+	return NewServiceError(err, http.StatusForbidden, msg)
 }
 
-func newForbiddenServiceError(err error, msg string, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusForbidden, msg, flds)
+func newCreateRequestServiceError(err error) serviceError {
+	return NewServiceError(err, http.StatusInternalServerError, "error creating request")
 }
 
-func newCreateRequestServiceError(err error, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusInternalServerError, "error creating request", flds)
+func newMarshallingBodyServiceError(err error) serviceError {
+	return NewServiceError(err, http.StatusInternalServerError, "error marshalling body")
 }
 
-func newMarshallingBodyServiceError(err error, flds log.Fields) serviceError {
-	return NewServiceError(err, http.StatusInternalServerError, "error marshalling body", flds)
+func newInternalServerServiceError(err error, msg string) serviceError {
+	return NewServiceError(err, http.StatusInternalServerError, msg)
 }
 
-func newInternalServerServiceError(err error, msg string, flds log.Fields) serviceError {
-	return serviceError{
-		Message: msg,
-		Status:  http.StatusInternalServerError,
-		Fields:  flds,
-		Err:     err,
-	}
-}
-
-func newDatabaseServiceError(err error, flds log.Fields) serviceError {
+func newDatabaseServiceError(err error) serviceError {
 	svcErr := serviceError{}
 	if dbErr, ok := err.(database.DBError); ok {
 		svcErr.Message = dbErr.Message
@@ -104,6 +86,5 @@ func newDatabaseServiceError(err error, flds log.Fields) serviceError {
 		svcErr.Status = http.StatusInternalServerError
 		svcErr.Err = err
 	}
-	svcErr.Fields = flds
 	return svcErr
 }

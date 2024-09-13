@@ -34,48 +34,47 @@ type LoginRequest struct {
 	CsrfToken string `json:"csrf_token"`
 }
 
-func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleLogout")
 	resp := map[string]string{}
 	resp["redirect_to"] = "/self-service/logout/browser"
 	return writeJsonResponse(w, http.StatusOK, resp)
 }
 
 // (oauth) login flow is semi complicated, so I will do my best to comment
-func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "handleLogin"}
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleLogin")
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
 	defer r.Body.Close()
 	if err != nil {
-		fields["error"] = err.Error()
-		log.WithFields(fields).Error("Parsing form failed, using urlform")
+		fields.error("Parsing form failed, using urlform")
 	}
-	fields["form"] = form
+	fields.add("form", form)
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
 	if err != nil {
-		return newMarshallingBodyServiceError(err, fields)
+		return newMarshallingBodyServiceError(err)
 	}
 	url := os.Getenv("KRATOS_PUBLIC_URL") + LoginEndpoint + "?flow=" + form.FlowID
+	fields.add("url", url)
 	if form.Challenge != "" {
 		// if there was an oauth2 code challenge, we append it to the kratos url
 		url += "&login_challenge=" + form.Challenge
 	}
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
 	if err != nil {
-		fields["error"] = err.Error()
-		return newCreateRequestServiceError(err, fields)
+		return newCreateRequestServiceError(err)
 	}
 	resp, err := s.submitKratosLoginRequest(form.CsrfToken, r, req)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newUnauthorizedServiceError(fields)
+		return newUnauthorizedServiceError()
 	}
 	// set the cookies from kratos to authenticate the client
 	setLoginCookies(resp, w)
 	redirect, err := getKratosRedirect(resp)
 	if err != nil {
-		return NewServiceError(err, resp.StatusCode, "Invalid login", fields)
+		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
 	return writeJsonResponse(w, http.StatusOK, redirect)
 }
@@ -147,44 +146,40 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 	}
 }
 
-func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "handleOidcConsent"}
+func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleOidcConsent")
 	// decode the request body, the client should have sent us the consent challenge
 	// that they received from hydra along with the user's consent
 	var decoded map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&decoded)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newJSONReqBodyServiceError(err, fields)
+		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
 	// get the user from the database
 	user, err := s.Db.GetUserByID(s.GetUserID(r))
+	fields.add("userId", s.GetUserID(r))
 	if err != nil {
-		fields["error"] = err.Error()
-		return newDatabaseServiceError(err, fields)
+		return newDatabaseServiceError(err)
 	}
 	consentChallenge := "?consent_challenge=" + decoded["consent_challenge"].(string)
 	// build the consent body to send to hydra with info about the oauth2 identity token
 	jsonBody, err := buildConsentBody(user)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newMarshallingBodyServiceError(err, fields)
+		return newMarshallingBodyServiceError(err)
 	}
 	// send the consent request to hydra
 	req, err := http.NewRequest(http.MethodPut, os.Getenv("HYDRA_ADMIN_URL")+ConsentPutEndpoint+consentChallenge, bytes.NewReader(jsonBody))
 	if err != nil {
-		fields["error"] = err.Error()
-		return newCreateRequestServiceError(err, fields)
+		return newCreateRequestServiceError(err)
 	}
 	// making sure to add the cookies, and relevant headers. If we don't add accept json
 	// header, hydra will return a redirect automatically as if we were a browser
 	response, err := s.sendAndDecodeOryRequest(r, req)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newInternalServerServiceError(err, "Error sending request to hydra", fields)
+		return newInternalServerServiceError(err, "Error sending request to hydra")
 	}
-	log.Info("consent response: ", response)
+	fields.info("consent response: ", response)
 	// send the client the redirect uri that hydra sent us
 	redirectURI := response["redirect_to"].(string)
 	respBody := map[string]string{
@@ -233,12 +228,12 @@ func (srv *Server) sendAndDecodeOryRequest(client, req *http.Request) (map[strin
 // oauth2 client login flow. Kratos by default will make the user login again despite
 // acknowledging that the user has a session. So in this case, we skip kratos and accept
 // the hydra login request directly because this endpoint sits behind auth middleware.
-func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "handleRefreshAuth"}
+func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "handleRefreshAuth")
 	var form map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&form)
 	if err != nil {
-		return newJSONReqBodyServiceError(err, fields)
+		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
 	session := form["session"].(map[string]interface{})
@@ -250,22 +245,20 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request) err
 	}
 	jsonBody, err := json.Marshal(toSend)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newMarshallingBodyServiceError(err, fields)
+		return newMarshallingBodyServiceError(err)
 	}
 	url, err := acceptLoginEndpoint(form)
-	if err != nil { ///wait on this one
-		return NewServiceError(err, http.StatusContinue, "invalid request, must include challenge", nil)
+	if err != nil {
+		return NewServiceError(err, http.StatusContinue, "invalid request, must include challenge")
 	}
+	fields.add("url", url)
 	req, err := http.NewRequest(http.MethodPut, *url, bytes.NewReader(jsonBody))
 	if err != nil {
-		fields["error"] = err.Error()
-		return newCreateRequestServiceError(err, fields)
+		return newCreateRequestServiceError(err)
 	}
 	consentResponse, err := srv.sendAndDecodeOryRequest(r, req)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newCreateRequestServiceError(err, fields)
+		return newCreateRequestServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, map[string]string{
 		"redirect_to": consentResponse["redirect_to"].(string),

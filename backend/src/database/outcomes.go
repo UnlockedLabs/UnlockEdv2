@@ -55,7 +55,7 @@ func (db *DB) UpdateOutcome(outcome *models.Outcome, id uint) (*models.Outcome, 
 
 func (db *DB) DeleteOutcome(id uint) error {
 	if err := db.Delete(&models.Outcome{}, id).Error; err != nil {
-		return newDeleteDBError(err, "outcome")
+		return newDeleteDBError(err, "outcomes")
 	}
 	return nil
 }

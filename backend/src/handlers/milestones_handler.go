@@ -7,8 +7,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerMilestonesRoutes() {
@@ -18,7 +16,8 @@ func (srv *Server) registerMilestonesRoutes() {
 	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleUpdateMilestone)))
 }
 
-func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleIndexMilestones")
 	search := r.URL.Query().Get("search")
 	orderBy := r.URL.Query().Get("order_by")
 	page, perPage := srv.GetPaginationInfo(r)
@@ -29,12 +28,14 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 		userId := r.Context().Value(ClaimsKey).(*Claims).UserID
 		total, milestones, err = srv.Db.GetMilestonesForUser(page, perPage, userId)
 		if err != nil {
-			return newDatabaseServiceError(err, nil)
+			fields.add("userId", userId)
+			return newDatabaseServiceError(err)
 		}
 	} else {
 		total, milestones, err = srv.Db.GetMilestones(page, perPage, search, orderBy)
 		if err != nil {
-			return newDatabaseServiceError(err, nil)
+			fields.add("search", search)
+			return newDatabaseServiceError(err)
 		}
 	}
 	last := srv.CalculateLast(total, perPage)
@@ -47,37 +48,42 @@ func (srv *Server) HandleIndexMilestones(w http.ResponseWriter, r *http.Request)
 	return writePaginatedResponse(w, http.StatusOK, milestones, paginationData)
 }
 
-func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleCreateMilestone(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleCreateMilestone")
 	miles := &models.Milestone{}
 	if err := json.NewDecoder(r.Body).Decode(miles); err != nil {
-		return newJSONReqBodyServiceError(err, nil)
+		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
 	if _, err := srv.Db.CreateMilestone(miles); err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, miles)
 }
 
-func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleDeleteMilestone(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleDeleteMilestone")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "milestone ID", nil)
+		return newInvalidIdServiceError(err, "milestone ID")
 	}
 	if err := srv.Db.DeleteMilestone(id); err != nil {
-		return newDatabaseServiceError(err, nil)
+		fields.add("milestoneId", id)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Milestone deleted successfully")
 }
 
-func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleUpdateMilestone")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Info("No ID provided in URL, checking request body json")
+		fields.info("No ID provided in URL, checking request body json")
 	}
+	fields.add("milestoneId", id)
 	miles := &models.Milestone{}
 	if err := json.NewDecoder(r.Body).Decode(miles); err != nil {
-		return newJSONReqBodyServiceError(err, nil)
+		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
 	msId := 0
@@ -86,15 +92,15 @@ func (srv *Server) HandleUpdateMilestone(w http.ResponseWriter, r *http.Request)
 	} else if miles.ID != 0 {
 		msId = int(miles.ID)
 	} else {
-		return newBadRequestServiceError(errors.New("no ID provided in URL or request body"), "No ID provided in URL or request body", nil)
+		return newBadRequestServiceError(errors.New("no ID provided in URL or request body"), "No ID provided in URL or request body")
 	}
 	toUpdate, err := srv.Db.GetMilestoneByID(msId)
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	models.UpdateStruct(&toUpdate, &miles)
 	if _, err := srv.Db.UpdateMilestone(toUpdate); err != nil {
-		return newDatabaseServiceError(err, nil)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, toUpdate)
 }

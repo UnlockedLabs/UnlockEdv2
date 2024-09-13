@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerOpenContentRoutes() {
@@ -15,8 +13,8 @@ func (srv *Server) registerOpenContentRoutes() {
 	srv.Mux.Handle("POST /api/open-content", srv.ApplyAdminMiddleware(srv.HandleError(srv.CreateOpenContent)))
 }
 
-func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "IndexOpenContent"}
+func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "IndexOpenContent")
 	only := r.URL.Query().Get("all")
 	var all bool
 	if strings.ToLower(strings.TrimSpace(only)) == "true" {
@@ -24,19 +22,20 @@ func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request) erro
 	}
 	content, err := srv.Db.GetOpenContent(all)
 	if err != nil {
-		return newDatabaseServiceError(err, fields)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, content)
 }
 
-func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "ToggleOpenContent"}
+func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "ToggleOpenContent")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "open content provider ID", fields)
+		return newInvalidIdServiceError(err, "open content provider ID")
 	}
 	if err := srv.Db.ToggleContentProvider(id); err != nil {
-		return newDatabaseServiceError(err, fields)
+		fields.add("openContentProviderId", id)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Content provider toggled successfully")
 }
@@ -48,15 +47,15 @@ type NewContentRequest struct {
 	Description  string `json:"description"`
 }
 
-func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "CreateOpenContent"}
+func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "CreateOpenContent")
 	var body NewContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		return newJSONReqBodyServiceError(err, fields)
+		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
 	if err := srv.Db.CreateContentProvider(body.Url, body.ThumbnailUrl, body.Description, body.LinkedID); err != nil {
-		return newDatabaseServiceError(err, fields)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Content provider created successfully")
 }

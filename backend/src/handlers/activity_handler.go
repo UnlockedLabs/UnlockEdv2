@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerActivityRoutes() {
@@ -19,22 +17,25 @@ func (srv *Server) registerActivityRoutes() {
 	srv.Mux.Handle("POST /api/users/{id}/activity", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleCreateActivity)))
 }
 
-func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleGetActivityByUserID")
 	year := r.URL.Query().Get("year")
 	if year == "" {
 		year = fmt.Sprintf("%d", time.Now().Year())
 	}
 	yearInt, err := strconv.Atoi(year)
 	if err != nil {
-		return newInvalidQueryParamServiceError(err, "year", nil)
+		return newInvalidQueryParamServiceError(err, "year")
 	}
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "user ID", nil)
+		return newInvalidIdServiceError(err, "user ID")
 	}
 	activities, err := srv.Db.GetActivityByUserID(uint(userID), yearInt)
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		fields.add("year", yearInt)
+		fields.add("userId", userID)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
@@ -45,45 +46,47 @@ func (srv *Server) HandleGetActivityByUserID(w http.ResponseWriter, r *http.Requ
  * @Query Params:
  * ?year=: year (default last year)
  ****/
-func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request) error {
-	fields := log.Fields{"handler": "HandleGetDailyActivityByUserID"}
+func (srv *Server) HandleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleGetDailyActivityByUserID")
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "user ID", fields)
+		return newInvalidIdServiceError(err, "user ID")
 	}
-	fields["user_id"] = userID
+	fields.add("userId", userID)
 	requestingUser := int(srv.GetUserID(r))
 	if requestingUser != userID && !srv.UserIsAdmin(r) {
-		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities", fields)
+		fields.add("requestingUser", requestingUser)
+		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
 	}
 	yearStr := r.URL.Query().Get("year")
 	var year int
 	if yearStr != "" {
 		year, err = strconv.Atoi(yearStr)
 		if err != nil {
-			fields["error"] = err.Error()
-			return newInvalidQueryParamServiceError(err, "year", fields)
+			return newInvalidQueryParamServiceError(err, "year")
 		}
 	}
 	activities, err := srv.Db.GetDailyActivityByUserID(userID, year)
 	if err != nil {
-		fields["error"] = err.Error()
-		return newDatabaseServiceError(err, fields)
+		fields.add("year", yearStr)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"activities": activities,
 	})
 }
 
-func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleGetProgramActivity")
 	programID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "program ID", nil)
+		return newInvalidIdServiceError(err, "program ID")
 	}
 	page, perPage := srv.GetPaginationInfo(r)
 	count, activities, err := srv.Db.GetActivityByProgramID(page, perPage, programID)
 	if err != nil {
-		return newDatabaseServiceError(err, nil)
+		fields.add("programID", programID)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
 		"count":      count,
@@ -91,13 +94,15 @@ func (srv *Server) HandleGetProgramActivity(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request) error {
+func (srv *Server) HandleCreateActivity(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+	fields.add("handler", "HandleCreateActivity")
 	activity := &models.Activity{}
 	if err := json.NewDecoder(r.Body).Decode(activity); err != nil {
-		return newJSONReqBodyServiceError(err, nil)
+		return newJSONReqBodyServiceError(err)
 	}
 	if err := srv.Db.CreateActivity(activity); err != nil {
-		return newDatabaseServiceError(err, nil)
+		fields.add("activity.UserID", activity.UserID)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, activity)
 }
