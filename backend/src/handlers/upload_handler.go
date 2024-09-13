@@ -7,18 +7,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerImageRoutes() {
-	srv.Mux.HandleFunc("POST /upload", srv.HandleError(srv.handleUploadHandler))
-	srv.Mux.HandleFunc("GET /photos/{id}", srv.HandleError(srv.handleHostPhotos))
+	srv.Mux.HandleFunc("POST /upload", srv.handleError(srv.handleUploadHandler))
+	srv.Mux.HandleFunc("GET /photos/{id}", srv.handleError(srv.handleHostPhotos))
 }
 
-func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleUploadHandler")
-	log.Info("Uploading file")
+func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.info("Uploading file")
 	if err := r.ParseMultipartForm(10 << 10); err != nil {
 		return newInternalServerServiceError(err, err.Error())
 	}
@@ -29,7 +26,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, f
 	defer file.Close()
 
 	path := filepath.Join(os.Getenv("IMG_FILEPATH"), header.Filename)
-	fields.add("filename", header.Filename)
+	log.add("filename", header.Filename)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return newInternalServerServiceError(err, "Failed to open file")
@@ -43,7 +40,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, f
 	response := map[string]string{"url": url}
 	err = json.NewEncoder(w).Encode(&response)
 	if err != nil {
-		fields.add("url", url)
+		log.add("url", url)
 		return newResponseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
@@ -57,8 +54,7 @@ func getImagePath(r *http.Request) string {
 	return filepath.Join(os.Getenv("IMG_FILEPATH"), img)
 }
 
-func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleHostPhotos")
+func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, log sLog) error {
 	http.ServeFile(w, r, getImagePath(r))
 	return nil
 }

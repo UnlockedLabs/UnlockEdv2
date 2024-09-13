@@ -9,13 +9,12 @@ import (
 )
 
 func (srv *Server) registerOidcRoutes() {
-	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleGetAllClients)))
-	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleRegisterClient)))
-	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.HandleError(srv.handleGetOidcClient)))
+	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleGetAllClients)))
+	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleRegisterClient)))
+	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.ApplyAdminMiddleware(srv.handleError(srv.handleGetOidcClient)))
 }
 
-func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleGetAllClients")
+func (srv *Server) HandleGetAllClients(w http.ResponseWriter, r *http.Request, log sLog) error {
 	clients, err := srv.Db.GetAllRegisteredClients()
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -39,10 +38,9 @@ func clientToResponse(client *models.OidcClient) *models.ClientResponse {
 	}
 }
 
-func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "handleGetOidcClient")
+func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
-	fields.add("oidc_id", id)
+	log.add("oidc_id", id)
 	client, err := srv.Db.GetOidcClientById(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -50,14 +48,13 @@ func (srv *Server) handleGetOidcClient(w http.ResponseWriter, r *http.Request, f
 	return writeJsonResponse(w, http.StatusOK, *clientToResponse(client))
 }
 
-func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleRegisterClient")
+func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request, log sLog) error {
 	request := RegisterClientRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	provider, err := srv.Db.GetProviderPlatformByID(int(request.ProviderPlatformID))
-	fields.add("providerPlatformId", request.ProviderPlatformID)
+	log.add("providerPlatformId", request.ProviderPlatformID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -68,13 +65,13 @@ func (srv *Server) HandleRegisterClient(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newInternalServerServiceError(err, err.Error())
 	}
-	fields.add("externalId", externalId)
+	log.add("externalId", externalId)
 	if err := srv.Db.RegisterClient(client); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	provider.ExternalAuthProviderId = externalId
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
-		fields.add("clientId", client.ID)
+		log.add("clientId", client.ID)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, *clientToResponse(client))

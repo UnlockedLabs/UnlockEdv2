@@ -9,7 +9,10 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"reflect"
+	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
@@ -351,22 +354,37 @@ func (srv *Server) GetPaginationInfo(r *http.Request) (int, int) {
 	return intPage, intPerPage
 }
 
-type HttpFunc func(w http.ResponseWriter, r *http.Request, fields LogFields) error
+type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 
 // Wraps a handler function that returns an error so that it can handle the error by writing it to the response and logging it.
-func (svr *Server) HandleError(handler HttpFunc) http.HandlerFunc {
+func (svr *Server) handleError(handler HttpFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fields := LogFields{f: log.Fields{"HandlerMethodAndPath": fmt.Sprintf("%s %s", r.Method, r.URL.Path)}}
-		if err := handler(w, r, fields); err != nil {
+		log := sLog{f: log.Fields{"HandlerMethodAndPath": fmt.Sprintf("%s %s", r.Method, r.URL.Path)}}
+		log.add("handler_name", getHandlerName(handler))
+		if err := handler(w, r, log); err != nil {
 			if svcErr, ok := err.(serviceError); ok {
 				svr.ErrorResponse(w, svcErr.Status, svcErr.Message)
-				svcErr.log(fields)
+				svcErr.log(log)
 			} else { //capture all other error types
 				svr.ErrorResponse(w, http.StatusInternalServerError, err.Error())
-				fields.error("Error occurred is ", err.Error())
+				log.error("Error occurred is ", err.Error())
 			}
 		}
 	}
+}
+
+// Uses reflection to get the name of the Handler function using a series of string splits
+func getHandlerName(handler HttpFunc) string {
+	handlerName := runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	hyphenSplit := strings.Split(handlerName, "-")
+	if len(hyphenSplit) != 2 {
+		return "NameNotFound"
+	}
+	periodSplit := strings.Split(hyphenSplit[0], ".")
+	if len(periodSplit) != 3 {
+		return "NameNotFound"
+	}
+	return periodSplit[2]
 }
 
 func writePaginatedResponse[T any](w http.ResponseWriter, status int, data []T, meta models.PaginationMeta) error {

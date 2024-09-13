@@ -31,8 +31,8 @@ func (svcErr serviceError) Error() string {
 	return fmt.Sprintf("service error: %s", svcErr.Err.Error())
 }
 
-func (svcErr serviceError) log(fields LogFields) {
-	fields.error("Error occurred is ", svcErr.Err)
+func (svcErr serviceError) log(log sLog) {
+	log.error("Error occurred is ", svcErr.Err)
 }
 
 func newBadRequestServiceError(err error, msg string) serviceError { //default is BadRequest

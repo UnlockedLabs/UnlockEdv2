@@ -7,14 +7,13 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.HandleError(srv.HandleStudentDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.ApplyAdminMiddleware(srv.HandleError(srv.HandleAdminDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.HandleError(srv.HandleUserCatalogue)))
-	srv.Mux.Handle("GET /api/users/{id}/courses", srv.applyMiddleware(srv.HandleError(srv.HandleUserCourses)))
+	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.handleError(srv.HandleStudentDashboard)))
+	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.ApplyAdminMiddleware(srv.handleError(srv.HandleAdminDashboard)))
+	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.handleError(srv.HandleUserCatalogue)))
+	srv.Mux.Handle("GET /api/users/{id}/courses", srv.applyMiddleware(srv.handleError(srv.HandleUserCourses)))
 }
 
-func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleStudentDashboard")
+func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
 	faciltiyId := srv.getFacilityID(r)
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -22,19 +21,18 @@ func (srv *Server) HandleStudentDashboard(w http.ResponseWriter, r *http.Request
 	}
 	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId, faciltiyId)
 	if err != nil {
-		fields.add("faciltiyId", faciltiyId)
-		fields.add("userId", userId)
+		log.add("faciltiyId", faciltiyId)
+		log.add("userId", userId)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, studentDashboard)
 }
 
-func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleAdminDashboard")
+func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	adminDashboard, err := srv.Db.GetAdminDashboardInfo(claims.FacilityID)
 	if err != nil {
-		fields.add("facilityId", claims.FacilityID)
+		log.add("facilityId", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, adminDashboard)
@@ -47,8 +45,7 @@ func (srv *Server) HandleAdminDashboard(w http.ResponseWriter, r *http.Request, 
 * ?tag=some_tag&tag=another_tag
 * provider_id: provider id to filter by
 **/
-func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request, fields LogFields) error {
-	fields.add("handler", "HandleUserCatalogue")
+func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
@@ -58,19 +55,19 @@ func (srv *Server) HandleUserCatalogue(w http.ResponseWriter, r *http.Request, f
 	order := r.URL.Query().Get("order")
 	userCatalogue, err := srv.Db.GetUserCatalogue(userId, tags, search, order)
 	if err != nil {
-		fields.add("userId", userId)
-		fields.add("search", search)
+		log.add("userId", userId)
+		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, userCatalogue)
 }
 
-func (srv *Server) HandleUserCourses(w http.ResponseWriter, r *http.Request, fields LogFields) error {
+func (srv *Server) HandleUserCourses(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	fields.add("user_id", userId)
+	log.add("user_id", userId)
 	if !srv.canViewUserData(r) {
 		return newForbiddenServiceError(err, "You do not have permission to view this user's courses")
 	}
@@ -82,7 +79,7 @@ func (srv *Server) HandleUserCourses(w http.ResponseWriter, r *http.Request, fie
 	tags := r.URL.Query()["tags"]
 	userCourses, numCompleted, totalTime, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
 	if err != nil {
-		fields.add("search", search)
+		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
 	response := map[string]interface{}{
