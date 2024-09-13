@@ -24,25 +24,26 @@ func NewDBError(err error, msg string) DBError {
 		Message:     msg,
 		InternalErr: err,
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	switch {
+	case errors.Is(err, gorm.ErrRecordNotFound):
 		dbError.Status = http.StatusNotFound
-	} else if errors.Is(err, gorm.ErrPrimaryKeyRequired) {
+	case errors.Is(err, gorm.ErrPrimaryKeyRequired):
 		dbError.Status = http.StatusUnprocessableEntity
-	} else if errors.Is(err, gorm.ErrForeignKeyViolated) {
+	case errors.Is(err, gorm.ErrForeignKeyViolated):
 		dbError.Status = http.StatusUnprocessableEntity
-	} else if errors.Is(err, gorm.ErrDuplicatedKey) {
+	case errors.Is(err, gorm.ErrDuplicatedKey):
 		dbError.Status = http.StatusUnprocessableEntity
-	} else if errors.Is(err, gorm.ErrCheckConstraintViolated) {
+	case errors.Is(err, gorm.ErrCheckConstraintViolated):
 		dbError.Status = http.StatusUnprocessableEntity
-	} else if errors.Is(err, gorm.ErrInvalidData) {
+	case errors.Is(err, gorm.ErrInvalidData):
 		dbError.Status = http.StatusBadRequest
-	} else if errors.Is(err, gorm.ErrEmptySlice) {
+	case errors.Is(err, gorm.ErrEmptySlice):
 		dbError.Status = http.StatusBadRequest
-	} else if errors.Is(err, gorm.ErrInvalidField) {
+	case errors.Is(err, gorm.ErrInvalidField):
 		dbError.Status = http.StatusBadRequest
-	} else if errors.Is(err, gorm.ErrInvalidValueOfLength) {
+	case errors.Is(err, gorm.ErrInvalidValueOfLength):
 		dbError.Status = http.StatusBadRequest
-	} else {
+	default:
 		dbError.Status = http.StatusInternalServerError
 	}
 	return dbError
