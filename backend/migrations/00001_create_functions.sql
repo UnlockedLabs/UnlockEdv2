@@ -1,5 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
+set timezone
+= 'UTC'
+;
+
 create function public.check_milestone_completion()
 returns trigger
 language plpgsql

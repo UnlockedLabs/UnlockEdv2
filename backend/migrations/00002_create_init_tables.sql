@@ -11,6 +11,7 @@ CREATE TABLE public.cron_jobs (
 
 CREATE TABLE public.facilities (
     id SERIAL NOT NULL PRIMARY KEY,
+    timezone VARCHAR(56) NOT NULL DEFAULT 'America/New_York'::character varying,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
