@@ -21,11 +21,6 @@ function CalendarComponent() {
         setSelectedEvents(null);
         eventModal.current.close();
     };
-    const handleSelectDate = (event: MouseEvent) => {
-        event.preventDefault();
-        const dateKey = date.toISOString().substring(0, 10);
-        setSelectedEvents(eventsMap[dateKey]);
-    };
 
     useEffect(() => {
         API.get<EventCalendar>(

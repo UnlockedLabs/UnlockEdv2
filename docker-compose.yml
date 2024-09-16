@@ -20,13 +20,13 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: config/Dockerfile
+      context: frontend
+      dockerfile: dev.Dockerfile
     volumes:
       - ./frontend:/app
+      - node_modules:/app/node_modules
     networks:
       - intranet
-    restart: unless-stopped
 
   rev_proxy:
     image: nginx:1.21.3-alpine
@@ -274,3 +274,4 @@ volumes:
       type: none
       o: bind
       device: ./logs
+  node_modules:
