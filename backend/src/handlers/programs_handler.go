@@ -8,12 +8,12 @@ import (
 )
 
 func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleIndexPrograms))))
-	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleShowProgram))))
-	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateProgram))))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteProgram))))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateProgram))))
-	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleFavoriteProgram))))
+	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(srv.handleIndexPrograms))
+	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(srv.handleShowProgram))
+	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(srv.handleCreateProgram))
+	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(srv.handleDeleteProgram))
+	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(srv.handleUpdateProgram))
+	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(srv.handleFavoriteProgram))
 }
 
 /*

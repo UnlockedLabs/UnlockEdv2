@@ -23,7 +23,7 @@ const (
 
 type csrfTokenKey string
 
-func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
+func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "setCsrfTokenMiddleware"}
 		bucket := srv.buckets[CsrfToken]
@@ -64,7 +64,7 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
 	})
 }
 
-func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
+func (srv *Server) rateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "rateLimitMiddleware"}
 		kv := srv.buckets[RateLimit]

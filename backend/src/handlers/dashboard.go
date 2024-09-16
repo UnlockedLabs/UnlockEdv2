@@ -7,10 +7,10 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.handleError(srv.handleStudentDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyAdminMiddleware(srv.handleError(srv.handleAdminDashboard)))
-	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.handleError(srv.handleUserCatalogue)))
-	srv.Mux.Handle("GET /api/users/{id}/courses", srv.applyMiddleware(srv.handleError(srv.handleUserCourses)))
+	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.handleStudentDashboard))
+	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyAdminMiddleware(srv.handleAdminDashboard))
+	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.handleUserCatalogue))
+	srv.Mux.Handle("GET /api/users/{id}/courses", srv.applyMiddleware(srv.handleUserCourses))
 }
 
 func (srv *Server) handleStudentDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {

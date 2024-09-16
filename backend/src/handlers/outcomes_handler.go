@@ -8,10 +8,10 @@ import (
 )
 
 func (srv *Server) registerOutcomesRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleGetOutcomes))))
-	srv.Mux.Handle("POST /api/users/{id}/outcomes", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateOutcome))))
-	srv.Mux.Handle("PATCH /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateOutcome))))
-	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteOutcome))))
+	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(srv.handleGetOutcomes))
+	srv.Mux.Handle("POST /api/users/{id}/outcomes", srv.applyMiddleware(srv.handleCreateOutcome))
+	srv.Mux.Handle("PATCH /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(srv.handleUpdateOutcome))
+	srv.Mux.Handle("DELETE /api/users/{id}/outcomes/{oid}", srv.applyMiddleware(srv.handleDeleteOutcome))
 }
 
 /****

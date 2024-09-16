@@ -15,8 +15,8 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleError(srv.handleGetUsers)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleError(srv.handleImportUsers)))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleGetUsers))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleImportUsers))
 }
 
 type CachedProviderUsers struct {

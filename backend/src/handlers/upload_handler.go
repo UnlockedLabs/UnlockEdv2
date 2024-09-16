@@ -10,8 +10,8 @@ import (
 )
 
 func (srv *Server) registerImageRoutes() {
-	srv.Mux.HandleFunc("POST /upload", srv.handleError(srv.handleUploadHandler))
-	srv.Mux.HandleFunc("GET /photos/{id}", srv.handleError(srv.handleHostPhotos))
+	srv.Mux.Handle("POST /upload", srv.handleError(srv.handleUploadHandler))
+	srv.Mux.Handle("GET /photos/{id}", srv.handleError(srv.handleHostPhotos))
 }
 
 func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, log sLog) error {

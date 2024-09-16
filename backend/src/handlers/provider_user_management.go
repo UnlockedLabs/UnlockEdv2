@@ -12,9 +12,9 @@ import (
 
 func (srv *Server) registerProviderUserRoutes() {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleMapProviderUser)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleError(srv.handleImportProviderUsers)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleMapProviderUser))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleImportProviderUsers))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.applyAdminMiddleware(srv.handleCreateProviderUserAccount))
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,

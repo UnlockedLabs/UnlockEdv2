@@ -14,7 +14,7 @@ import (
 )
 
 func (srv *Server) registerOryRoutes() {
-	srv.Mux.Handle("DELETE /api/identities/sync", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteAllKratosIdentities))))
+	srv.Mux.Handle("DELETE /api/identities/sync", srv.applyAdminMiddleware(srv.handleDeleteAllKratosIdentities))
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {

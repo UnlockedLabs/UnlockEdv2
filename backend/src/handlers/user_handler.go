@@ -13,12 +13,12 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(srv.handleError(srv.handleIndexUsers)))
-	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.handleError(srv.handleShowUser)))
-	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleUpdateUser)))
-	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(srv.handleError(srv.handleResetStudentPassword)))
+	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(srv.handleIndexUsers))
+	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.handleShowUser))
+	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(srv.handleCreateUser))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(srv.handleDeleteUser))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(srv.handleUpdateUser))
+	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(srv.handleResetStudentPassword))
 }
 
 /**
@@ -104,6 +104,7 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	if !srv.canViewUserData(r) {
+		log.warn("Unauthorized access to user data")
 		return newUnauthorizedServiceError()
 	}
 	user, err := srv.Db.GetUserByID(uint(id))

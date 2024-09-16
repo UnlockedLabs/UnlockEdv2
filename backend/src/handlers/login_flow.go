@@ -13,10 +13,10 @@ import (
 )
 
 func (srv *Server) registerOidcFlowRoutes() {
-	srv.Mux.HandleFunc("POST /api/login", srv.handleError(srv.handleLogin))
-	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleError(srv.handleLogout)))
-	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleError(srv.handleOidcConsent)))
-	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleError(srv.handleRefreshAuth)))
+	srv.Mux.Handle("POST /api/login", srv.handleError(srv.handleLogin))
+	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleLogout))
+	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleOidcConsent))
+	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleRefreshAuth))
 }
 
 const (
