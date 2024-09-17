@@ -153,12 +153,12 @@ func (db *DB) UsernameExists(username string) bool {
 
 func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 	if user.ID == 0 {
-		return nil, newUpdateDBrror(errors.New("invalid user ID"), "users")
+		return nil, newUpdateDBError(errors.New("invalid user ID"), "users")
 	}
 	log.Printf("User ID: %d, Facility ID: %d", user.ID, user.FacilityID)
 	err := db.Save(&user).Error
 	if err != nil {
-		return nil, newUpdateDBrror(err, "users")
+		return nil, newUpdateDBError(err, "users")
 	}
 	return user, nil
 }
@@ -166,13 +166,13 @@ func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 func (db *DB) ToggleUserFavorite(user_id uint, id uint) (bool, error) {
 	var favRemoved bool
 	var favorite models.UserFavorite
-	if db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
+	if db.First(&favorite, "user_id = ? AND course_id = ?", user_id, id).Error == nil {
 		if err := db.Delete(&favorite).Error; err != nil {
 			return favRemoved, newDeleteDBError(err, "favorites")
 		}
 		favRemoved = true
 	} else {
-		favorite = models.UserFavorite{UserID: user_id, ProgramID: id}
+		favorite = models.UserFavorite{UserID: user_id, CourseID: id}
 		if err := db.Create(&favorite).Error; err != nil {
 			return favRemoved, newCreateDBError(err, "error creating favorites")
 		}

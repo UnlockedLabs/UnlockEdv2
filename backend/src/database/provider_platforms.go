@@ -79,14 +79,14 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 	log.Printf("Updating provider platform with ID: %d", id)
 	var existingPlatform models.ProviderPlatform
 	if err := db.First(&existingPlatform, id).Error; err != nil {
-		return nil, newUpdateDBrror(err, "provider_platforms")
+		return nil, newUpdateDBError(err, "provider_platforms")
 	}
 	models.UpdateStruct(&existingPlatform, platform)
 	if platform.AccessKey != "" {
 		key, err := platform.EncryptAccessKey()
 		if err != nil {
 			log.Printf("Error encrypting access key: %v", err)
-			return nil, newUpdateDBrror(err, "provider_platforms")
+			return nil, newUpdateDBError(err, "provider_platforms")
 		}
 		existingPlatform.AccessKey = key
 	}
@@ -94,7 +94,7 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 		existingPlatform.State = platform.State
 	}
 	if err := db.Save(&existingPlatform).Error; err != nil {
-		return nil, newUpdateDBrror(err, "provider_platforms")
+		return nil, newUpdateDBError(err, "provider_platforms")
 	}
 	return &existingPlatform, nil
 }

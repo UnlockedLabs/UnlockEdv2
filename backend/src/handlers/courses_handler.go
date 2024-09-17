@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerCoursesRoutes() {
-	srv.Mux.Handle("GET /api/courses", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleIndexCourses)))
-	srv.Mux.Handle("GET /api/courses/{id}", srv.applyMiddleware(http.HandlerFunc(srv.HandleShowCourse)))
-	srv.Mux.Handle("POST /api/courses", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleCreateCourse)))
-	srv.Mux.Handle("DELETE /api/courses/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleDeleteCourse)))
-	srv.Mux.Handle("PATCH /api/courses/{id}", srv.ApplyAdminMiddleware(http.HandlerFunc(srv.HandleUpdateCourse)))
-	srv.Mux.Handle("PUT /api/courses/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.HandleFavoriteCourse)))
+	srv.Mux.Handle("GET /api/courses", srv.applyAdminMiddleware(srv.handleIndexCourses))
+	srv.Mux.Handle("GET /api/courses/{id}", srv.applyMiddleware(srv.handleShowCourse))
+	srv.Mux.Handle("POST /api/courses", srv.applyAdminMiddleware(srv.handleCreateCourse))
+	srv.Mux.Handle("DELETE /api/courses/{id}", srv.applyAdminMiddleware(srv.handleDeleteCourse))
+	srv.Mux.Handle("PATCH /api/courses/{id}", srv.applyAdminMiddleware(srv.handleUpdateCourse))
+	srv.Mux.Handle("PUT /api/courses/{id}/save", srv.applyMiddleware(srv.handleFavoriteCourse))
 }
 
 /*
@@ -26,128 +24,100 @@ func (srv *Server) registerCoursesRoutes() {
 * ?search=: search
 * ?searchFields=: searchFields
  */
-func (srv *Server) HandleIndexCourses(w http.ResponseWriter, r *http.Request) {
-	page, perPage := srv.GetPaginationInfo(r)
+func (srv *Server) handleIndexCourses(w http.ResponseWriter, r *http.Request, log sLog) error {
+	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
 	total, courses, err := srv.Db.GetCourse(page, perPage, search)
 	if err != nil {
-		log.Debug("IndexCourses Database Error: ", err)
-		srv.ErrorResponse(w, http.StatusInternalServerError, "Error fetching courses from database")
-		return
+		return newDatabaseServiceError(err)
 	}
-	last := srv.CalculateLast(total, perPage)
+	last := srv.calculateLast(total, perPage)
 	paginationData := models.PaginationMeta{
 		PerPage:     perPage,
 		LastPage:    int(last),
 		CurrentPage: page,
 		Total:       total,
 	}
-	writePaginatedResponse(w, http.StatusOK, courses, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, courses, paginationData)
 }
 
-func (srv *Server) HandleShowCourse(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleShowCourse(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Debug("GET Course handler Error: ", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, "Invalid course ID")
 	}
 	course, err := srv.Db.GetCourseByID(id)
 	if err != nil {
-		log.Debug("GET Course handler Error: ", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newDatabaseServiceError(err)
 	}
-	writeJsonResponse(w, http.StatusOK, course)
+	return writeJsonResponse(w, http.StatusOK, course)
 }
 
-func (srv *Server) HandleCreateCourse(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleCreateCourse(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var course models.Course
 	err := json.NewDecoder(r.Body).Decode(&course)
 	defer r.Body.Close()
 	if err != nil {
-		log.Error("CreateCourse Error:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, "Invalid course data")
 	}
 	_, err = srv.Db.CreateCourse(&course)
 	if err != nil {
-		log.Error("Error creating course:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, "Error creating course")
 	}
-	writeJsonResponse(w, http.StatusCreated, "Course created successfully")
+	return writeJsonResponse(w, http.StatusCreated, "Course created successfully")
 }
 
-func (srv *Server) HandleUpdateCourse(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleUpdateCourse(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var course models.Course
 	err := json.NewDecoder(r.Body).Decode(&course)
 	defer r.Body.Close()
 	if err != nil {
-		log.Error("UpdateCourse Error:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, "Invalid course data")
 	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Debug("GET Course handler Error: ", err)
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		return newBadRequestServiceError(err, "Invalid course ID")
 	}
 	toUpdate, err := srv.Db.GetCourseByID(id)
 	if err != nil {
-		log.Error("Error getting course:" + err.Error())
+		return newDatabaseServiceError(err)
 	}
 	models.UpdateStruct(&toUpdate, &course)
 	updated, updateErr := srv.Db.UpdateCourse(toUpdate)
 	if updateErr != nil {
-		log.Error("Error updating course:" + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newDatabaseServiceError(updateErr)
 	}
-	writeJsonResponse(w, http.StatusOK, updated)
+	return writeJsonResponse(w, http.StatusOK, updated)
 }
 
-func (srv *Server) HandleDeleteCourse(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleDeleteCourse(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("DELETE Course handler Error: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newBadRequestServiceError(err, "Invalid course ID")
 	}
 	if err = srv.Db.DeleteCourse(id); err != nil {
-		log.Error("Error deleting course:" + err.Error())
-		srv.ErrorResponse(w, http.StatusNotFound, err.Error())
-		return
+		return newDatabaseServiceError(err)
 	}
-	log.Info("Course deleted")
-	writeJsonResponse(w, http.StatusNoContent, "Course deleted successfully")
+	log.info("Course deleted")
+	return writeJsonResponse(w, http.StatusNoContent, "Course deleted successfully")
 }
 
-func (srv *Server) HandleFavoriteCourse(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleFavoriteCourse(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		log.Error("Favorite Course handler Error: " + err.Error())
-		srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-		return
+		return newInvalidIdServiceError(err, "course ID")
 	}
-
-	user_id := srv.GetUserID(r)
-	var favorite models.UserFavorite
-	if srv.Db.First(&favorite, "user_id = ? AND course_id = ?", user_id, id).Error == nil {
-		if err = srv.Db.Delete(&favorite).Error; err != nil {
-			log.Error("Error deleting favorite: " + err.Error())
-			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
+	user_id := srv.userIdFromRequest(r)
+	favoriteRemoved, err := srv.Db.ToggleUserFavorite(user_id, uint(id))
+	if err != nil {
+		log.add("course_id", id)
+		log.add("user_id", user_id)
+		return newDatabaseServiceError(err)
+	}
+	log.debugf("Favorite removed: %v", favoriteRemoved)
+	if favoriteRemoved {
 		w.WriteHeader(http.StatusNoContent)
-		return
-	} else {
-		favorite = models.UserFavorite{UserID: user_id, CourseID: uint(id)}
-		if err = srv.Db.Create(&favorite).Error; err != nil {
-			log.Error("Error creating favorite: " + err.Error())
-			srv.ErrorResponse(w, http.StatusBadRequest, err.Error())
-			return
-		}
+		return nil
 	}
-	writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
+	return writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
 }

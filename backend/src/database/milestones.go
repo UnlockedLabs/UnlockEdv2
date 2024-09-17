@@ -97,7 +97,7 @@ func (db *DB) CreateMilestone(content *models.Milestone) (*models.Milestone, err
 
 func (db *DB) UpdateMilestone(content *models.Milestone) (*models.Milestone, error) {
 	if err := db.Save(content).Error; err != nil {
-		return nil, newUpdateDBrror(err, "milestones")
+		return nil, newUpdateDBError(err, "milestones")
 	}
 	return content, nil
 }

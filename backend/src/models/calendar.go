@@ -1,0 +1,49 @@
+package models
+
+import "time"
+
+const (
+	Onwards string = "onwards"
+	Self    string = "self"
+	All     string = "all"
+)
+
+type Calendar struct {
+	Month Month `json:"month"`
+	Year  int   `json:"year"`
+}
+
+func NewCalendar(year int, month string, events []Day) *Calendar {
+	return &Calendar{
+		Month: Month{
+			Name: month,
+			Days: events,
+		},
+		Year: year,
+	}
+}
+
+type Month struct {
+	Name string `json:"name"`
+	Days []Day  `json:"days"`
+}
+
+type EventInstance struct {
+	EventID     uint      `json:"event_id"`
+	SectionID   uint      `json:"section_id"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	IsCancelled bool      `json:"is_cancelled"`
+}
+
+type Day struct {
+	Date   time.Time       `json:"date"`
+	Events []EventInstance `json:"events"`
+}
+
+type OverrideForm struct {
+	StartTime    string `json:"start_time"`
+	EndTime      string `json:"end_time"`
+	OverrideRule string `json:"override_rule"`
+	IsCancelled  bool   `json:"is_cancelled"`
+}

@@ -4,13 +4,15 @@ package models
 type SectionEvent struct {
 	DatabaseFields
 	SectionID      uint   `json:"section_id" gorm:"not null"`
-	StartTime      string `json:"start_time" gorm:"not null"`
-	EndTime        string `json:"end_time" gorm:"not null"`
-	RecurrenceRule string `json:"recurrence_rule" gorm:"not null"`
+	StartTime      string `json:"start_time" gorm:"not null" validate:"required,datetime"`
+	EndTime        string `json:"end_time" gorm:"not null" validate:"required,datetime"`
+	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" `
+	Location       string `json:"location" gorm:"not null"`
 
 	/* Foreign keys */
 	Section   *ProgramSection          `json:"section" gorm:"foreignKey:SectionID;references:ID"`
 	Attendees []SectionEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
+	Overrides []SectionEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
 }
 
 func (SectionEvent) TableName() string { return "section_events" }

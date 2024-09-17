@@ -27,7 +27,8 @@ func (srv *Server) registerProgramsRoutes() {
 func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
-	total, programs, err := srv.Db.GetProgram(page, perPage, search)
+	tags := r.URL.Query()["tags"]
+	total, programs, err := srv.Db.GetProgram(page, perPage, tags, search)
 	if err != nil {
 		log.add("search", search)
 		return newDatabaseServiceError(err)

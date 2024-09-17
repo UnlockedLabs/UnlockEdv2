@@ -60,6 +60,7 @@ CREATE TABLE public.section_events (
 	start_time timestamp with time zone NOT NULL,
 	end_time timestamp with time zone NOT NULL,
 	recurrance_rule VARCHAR(255) NOT NULL DEFAULT 'NONE'::character varying,
+	location VARCHAR(255) NOT NULL DEFAULT 'TBD'::character varying,
 	created_at timestamp with time zone,
 	updated_at timestamp with time zone,
 	deleted_at timestamp with time zone,

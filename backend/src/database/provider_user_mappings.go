@@ -27,10 +27,10 @@ func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUs
 func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
 	result := db.Model(&models.ProviderUserMapping{}).Where("id = ?", providerUserMapping.ID).Updates(providerUserMapping)
 	if result.Error != nil {
-		return newUpdateDBrror(result.Error, "provider_user_mappings")
+		return newUpdateDBError(result.Error, "provider_user_mappings")
 	}
 	if result.RowsAffected == 0 {
-		return newUpdateDBrror(gorm.ErrRecordNotFound, "provider_user_mappings")
+		return newUpdateDBError(gorm.ErrRecordNotFound, "provider_user_mappings")
 	}
 	return nil
 }

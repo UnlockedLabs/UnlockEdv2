@@ -117,6 +117,7 @@ func (srv *Server) UserIsAdmin(r *http.Request) bool {
 	return claims.Role == models.Admin
 }
 
+/* this method **only** works when the path value is 'id' */
 func (srv *Server) canViewUserData(r *http.Request) bool {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {

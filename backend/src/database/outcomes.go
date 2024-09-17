@@ -44,11 +44,11 @@ func (db *DB) CreateOutcome(outcome *models.Outcome) (*models.Outcome, error) {
 func (db *DB) UpdateOutcome(outcome *models.Outcome, id uint) (*models.Outcome, error) {
 	toUpdate := models.Outcome{}
 	if err := db.First(&toUpdate, id).Error; err != nil {
-		return nil, newUpdateDBrror(err, "outcomes")
+		return nil, newUpdateDBError(err, "outcomes")
 	}
 	models.UpdateStruct(&toUpdate, outcome)
 	if err := db.Model(&models.Outcome{}).Where("id = ?", id).Updates(&toUpdate).Error; err != nil {
-		return nil, newUpdateDBrror(err, "outcomes")
+		return nil, newUpdateDBError(err, "outcomes")
 	}
 	return &toUpdate, nil
 }

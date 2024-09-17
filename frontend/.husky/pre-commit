@@ -14,8 +14,13 @@ echo "running oxlint 󰎙 ..."
 npx oxlint --fix $(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
 echo " 🔎 checking backend ..............."
 BACKEND_FILES=$(cat .husky/staged-files | grep '^backend/.*\.\(go\)$' | sed 's/^backend\///')
+FILES=$(cat .husky/staged-files)
 if [ -z "$BACKEND_FILES" ]; then
   echo "🎉 All checks passed! 🎉"
+  if not [ -z "$FILES" ]; then
+	echo "Adding changed files to commit 📝..."
+	git add $FILES
+	fi
   exit 0
 else
   echo " 🔎 running golangci-lint 🔎   ......"
@@ -29,10 +34,5 @@ else
   # go test -v
   # cd ../../
   cd ..
-  FILES=$(cat frontend/.husky/staged-files)
-if not [ -z "$FILES" ]; then
-	echo "Adding changed files to commit 📝..."
-	git add $FILES
-fi
   echo "🎉 All checks passed! 🎉"
 fi

@@ -61,7 +61,7 @@ func newCreateDBError(err error, table string) DBError {
 	return NewDBError(err, fmt.Sprintf("error creating %s", table))
 }
 
-func newUpdateDBrror(err error, table string) DBError {
+func newUpdateDBError(err error, table string) DBError {
 	return NewDBError(err, fmt.Sprintf("error updating %s", table))
 }
 

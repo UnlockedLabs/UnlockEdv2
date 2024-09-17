@@ -26,7 +26,7 @@ func (db *DB) ToggleContentProvider(id int) error {
 	}
 	provider.CurrentlyEnabled = !provider.CurrentlyEnabled
 	if err := db.Save(&provider).Error; err != nil {
-		return newUpdateDBrror(err, "open_content_providers")
+		return newUpdateDBError(err, "open_content_providers")
 	}
 	return nil
 }
