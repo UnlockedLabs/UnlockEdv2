@@ -179,11 +179,11 @@ export default function StudentDashboard() {
                         <div className="flex flex-col gap-3">
                             {userData.enrollments ? (
                                 userData?.enrollments?.map(
-                                    (course: CurrentEnrollment) => {
+                                    (course: CurrentEnrollment, index) => {
                                         return (
                                             <CurrentlyEnrolledClass
                                                 course={course}
-                                                key={Math.random()}
+                                                key={index}
                                             />
                                         );
                                     }
