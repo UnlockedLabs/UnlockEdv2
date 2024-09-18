@@ -67,7 +67,7 @@ export default function MyCourses() {
                                     : ''
                             }
                             onClick={() => setActiveTab(TabType[key])}
-                            key={Math.random()}
+                            key={key}
                         >
                             {key}
                         </button>

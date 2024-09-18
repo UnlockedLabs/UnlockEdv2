@@ -257,6 +257,7 @@ export interface Link {
 }
 
 export interface Resource {
+    id: number;
     name: string;
     links: Array<Link>;
     rank: number;
