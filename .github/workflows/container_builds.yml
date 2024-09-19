@@ -17,6 +17,7 @@ jobs:
       frontend_changes: ${{ steps.frontend_changes.outputs.changed }}
       backend_changes: ${{ steps.backend_changes.outputs.changed }}
       middleware_changes: ${{ steps.middleware_changes.outputs.changed }}
+      crontasks_changes: ${{ steps.crontasks_changes.outputs.changed }}
 
     steps:
       - name: Checkout code
@@ -34,6 +35,9 @@ jobs:
         run: |
           echo "changed=$(git diff --name-only HEAD~1 | grep '^provider-middleware/' | wc -l)" >> $GITHUB_OUTPUT
 
+      - id: crontasks_changes
+        run: |
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^backend/tasks/' | wc -l)" >> $GITHUB_OUTPUT
       - name: Debug outputs
         run: |
           echo "Frontend changes: ${{ steps.frontend_changes.outputs.changed }}"
@@ -78,6 +82,11 @@ jobs:
         run: |
           docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
 
+      - name: Build and push cron tasks image
+        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }} && github.ref == 'refs/heads/main'
+        run: |
+          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
+
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
         with:
@@ -118,3 +127,8 @@ jobs:
         if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
         run: |
           kubectl rollout restart deployment provider-service
+
+      - name: restart cron tasks
+        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }}
+        run: |
+          kubectl rollout restart deployment cron-tasks

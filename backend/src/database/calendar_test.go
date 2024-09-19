@@ -89,17 +89,32 @@ func TestGenerateEventInstances_CancellationOverride(t *testing.T) {
 }
 
 func TestGenerateEventInstances_ModificationOverride(t *testing.T) {
-	newDuration := 90 * time.Minute // 1 hour and 30 minutes
-
+	newDuration := 90 * time.Minute
+	rule, err := rrule.NewRRule(rrule.ROption{
+		Dtstart:   time.Date(2024, 9, 1, 10, 0, 0, 0, time.UTC),
+		Freq:      rrule.WEEKLY,
+		Count:     4,
+		Byweekday: []rrule.Weekday{rrule.SU},
+	})
+	if err != nil {
+		t.Fatalf("failed to create rrule: %v", err)
+	}
+	overRule, err := rrule.NewRRule(rrule.ROption{
+		Dtstart:   time.Date(2024, 9, 15, 10, 0, 0, 0, time.UTC),
+		Freq:      rrule.WEEKLY,
+		Byweekday: []rrule.Weekday{rrule.SU},
+	})
+	if err != nil {
+		t.Fatalf("failed to create rrule: %v", err)
+	}
 	event := models.SectionEvent{
-		SectionID: 300,
-		Duration:  time.Hour.String(),
-		RecurrenceRule: "DTSTART:20240901T100000Z\n" +
-			"RRULE:FREQ=WEEKLY;COUNT=4;BYDAY=SU",
+		SectionID:      300,
+		Duration:       time.Hour.String(),
+		RecurrenceRule: rule.String(),
 		Overrides: []models.SectionEventOverride{
 			{
 				EventID:       3,
-				OverrideRRule: "DTSTART:20240915T100000Z\nRRULE:FREQ=WEEKLY;BYDAY=SU",
+				OverrideRRule: overRule.String(),
 				IsCancelled:   false,
 				Duration:      newDuration.String(),
 			},
