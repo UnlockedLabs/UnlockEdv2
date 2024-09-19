@@ -6,10 +6,8 @@ export default function ResourcesCategoryCard({
 }: {
     category: ResourceCategory;
 }) {
-    const cardClasses = `card card-compact overflow-hidden`;
-
     return (
-        <div className={cardClasses}>
+        <div className="card card-compact overflow-hidden">
             <div className="card-body gap-2">
                 <h3 className="card-title text-sm">{category.name}</h3>
                 {category.links.map((link: ResourceLink) => {

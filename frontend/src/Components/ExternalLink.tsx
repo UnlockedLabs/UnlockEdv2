@@ -13,6 +13,7 @@ export default function ExternalLink({
             className="flex gap-2 body-small text-body-text items-center"
             href={url}
             target="_blank"
+            rel="noopener noreferrer"
         >
             <ArrowTopRightOnSquareIcon className="w-4" />
             {children}

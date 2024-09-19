@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { TextInput } from '../inputs/TextInput';
@@ -13,8 +12,6 @@ export default function AddLinkForm({
 }: {
     onSuccess: (title: string, url: string) => void;
 }) {
-    const [errorMessage, _] = useState('');
-
     const {
         register,
         handleSubmit,
@@ -47,7 +44,7 @@ export default function AddLinkForm({
                     errors={errors}
                     register={register}
                 />
-                <SubmitButton errorMessage={errorMessage} />
+                <SubmitButton />
             </form>
         </div>
     );

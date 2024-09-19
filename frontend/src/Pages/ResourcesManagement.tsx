@@ -366,6 +366,41 @@ const SortableCollectionList = ({
         setDraggedOverItem(null);
     };
 
+    const dragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault();
+        const source = e.dataTransfer.getData('text/plain');
+        if (source === 'collection-list') {
+            setDraggedOverItem(index);
+        }
+    };
+
+    const dragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setDraggedOverItem(null);
+    };
+
+    const dragDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const source = e.dataTransfer.getData('text/plain');
+        if (source === 'collection-list') {
+            handleSort();
+        }
+    };
+
+    const dragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        draggedItem.current = index;
+        e.dataTransfer.setData('text/plain', 'collection-list');
+    };
+
+    const dragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        if (dragOverItem[0] == null) {
+            setDraggedOverItem(-1);
+        } else {
+            handleSort();
+        }
+    };
+
     return collections.map((collection, index) => {
         return (
             <div
@@ -387,21 +422,11 @@ const SortableCollectionList = ({
                                 ? 'pt-36 flex'
                                 : 'pt-2 flex'
                         }
-                        onDragOver={(e) => {
-                            e.preventDefault(), setDraggedOverItem(index);
-                        }}
-                        onDragLeave={(e) => {
-                            e.preventDefault(), setDraggedOverItem(null);
-                        }}
-                        onDrop={(e) => {
-                            e.preventDefault(), draggedItem.current == null;
-                        }}
-                        onDragStart={() => (draggedItem.current = index)}
-                        onDragEnd={(e) => {
-                            e.preventDefault();
-                            if (dragOverItem[0] == null) setDraggedOverItem(-1);
-                            else handleSort();
-                        }}
+                        onDragOver={(e) => dragOver(e, index)}
+                        onDragLeave={(e) => dragLeave(e)}
+                        onDrop={(e) => dragDrop(e)}
+                        onDragStart={(e) => dragStart(e, index)}
+                        onDragEnd={(e) => dragEnd(e)}
                         draggable
                     >
                         <ResourceCollectionCardWithActions
@@ -446,7 +471,7 @@ const ResourceCollectionCardWithActions = ({
     onResourceCollectionClick: (collection: EditableResourceCollection) => void;
     onDeleteCollectionClick: (collectionId: number) => void;
 }) => {
-    const cardClasses = `card card-compact grow overflow-visible ${collection.isModified ? 'bg-pale-yellow' : ''} ${selected ? 'border border-dark-yellow' : ''}`;
+    const cardClasses = `card card-compact grow overflow-visible ${collection.isModified ? 'bg-pale-yellow' : 'bg-inner-background'} ${selected ? 'border border-dark-yellow' : ''}`;
 
     return (
         <div
@@ -534,6 +559,9 @@ const ResourceCollectionEditor = ({
     const handleSort = () => {
         if (draggedItem === null || draggedOverItem === null) return;
 
+        // Check to see if dragged item stayed in the same position
+        if (draggedItem === draggedOverItem) return;
+
         const newLinks = [...collection.links];
         const draggedLink = newLinks.splice(draggedItem, 1)[0];
         newLinks.splice(draggedOverItem, 0, draggedLink);
@@ -549,7 +577,7 @@ const ResourceCollectionEditor = ({
     };
 
     return (
-        <div className="card">
+        <div className="card bg-inner-background">
             <div className="card-body gap-2">
                 <div className="flex justify-between">
                     <h3 className="card-title text-sm">{collection.name}</h3>
@@ -576,7 +604,7 @@ const ResourceCollectionEditor = ({
                 </div>
                 <table className="table">
                     <thead>
-                        <tr className="border-grey-600">
+                        <tr className="border-grey-3">
                             <th className="w-4"></th>
                             <th>Link Name</th>
                             <th>Link URL</th>
@@ -599,7 +627,7 @@ const ResourceCollectionEditor = ({
                                         onDragEnd={handleSort}
                                         className={
                                             draggedItem === linkIndex
-                                                ? 'bg-gray-200'
+                                                ? 'bg-grey-1'
                                                 : ''
                                         }
                                     >

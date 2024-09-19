@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { TextInput, CloseX, SubmitButton } from '../inputs';
 
@@ -19,7 +18,6 @@ interface AddResourceCollectionFormProps {
 export default function AddResourceCollectionForm({
     onSuccess
 }: AddResourceCollectionFormProps) {
-    const [errorMessage, _] = useState('');
     const {
         register,
         handleSubmit,
@@ -44,7 +42,7 @@ export default function AddResourceCollectionForm({
                     errors={errors}
                     register={register}
                 />
-                <p className="text-sm text-red-500 mt-2">
+                <p className="text-sm text-error mt-2">
                     To add a collection, you must also add an accompanying link.
                 </p>
                 <TextInput
@@ -63,7 +61,7 @@ export default function AddResourceCollectionForm({
                     errors={errors}
                     register={register}
                 />
-                <SubmitButton errorMessage={errorMessage} />
+                <SubmitButton />
             </form>
         </div>
     );
