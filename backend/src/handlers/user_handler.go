@@ -170,7 +170,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
-		if err := srv.handleCreateUserKratos(newUser.Username, tempPw); err != nil {
+		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
 			log.infof("Error creating user in kratos: %v", err)
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
@@ -271,7 +271,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
 	if user.KratosID == "" {
-		err := srv.handleCreateUserKratos(user.Username, newPass)
+		err := srv.HandleCreateUserKratos(user.Username, newPass)
 		if err != nil {
 			return newInternalServerServiceError(err, "Error creating user in kratos")
 		}

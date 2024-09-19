@@ -59,7 +59,7 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 		}
 		tempPw := created.CreateTempPassword()
 		if !srv.isTesting(r) {
-			if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
+			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 				log.add("error", err.Error())
 				log.errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity

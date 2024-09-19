@@ -29,11 +29,11 @@ type Month struct {
 }
 
 type EventInstance struct {
-	EventID     uint      `json:"event_id"`
-	SectionID   uint      `json:"section_id"`
-	StartTime   time.Time `json:"start_time"`
-	EndTime     time.Time `json:"end_time"`
-	IsCancelled bool      `json:"is_cancelled"`
+	EventID     uint          `json:"event_id"`
+	SectionID   uint          `json:"section_id"`
+	StartTime   time.Time     `json:"start_time"`
+	Duration    time.Duration `json:"duration"`
+	IsCancelled bool          `json:"is_cancelled"`
 }
 
 type Day struct {
@@ -43,7 +43,7 @@ type Day struct {
 
 type OverrideForm struct {
 	StartTime    string `json:"start_time"`
-	EndTime      string `json:"end_time"`
+	Duration     string `json:"duration"`
 	OverrideRule string `json:"override_rule"`
 	IsCancelled  bool   `json:"is_cancelled"`
 }

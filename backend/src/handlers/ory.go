@@ -87,7 +87,7 @@ func (srv *Server) validateUserIDKratos(id string) error {
 	return nil
 }
 
-func (srv *Server) handleCreateUserKratos(username, password string) error {
+func (srv *Server) HandleCreateUserKratos(username, password string) error {
 	user, err := srv.Db.GetUserByUsername(username)
 	if err != nil {
 		log.Error("user not found immediately after creation, this should not happen")

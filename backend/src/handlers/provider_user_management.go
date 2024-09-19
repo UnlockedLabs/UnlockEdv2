@@ -131,7 +131,7 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		tempPw := created.CreateTempPassword()
 		userResponse.TempPassword = tempPw
-		if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
+		if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
 				log.error("Error deleting user after failed provider user mapping import-provider-users")
 			}

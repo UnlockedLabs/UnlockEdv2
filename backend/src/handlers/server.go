@@ -52,6 +52,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerSectionsRoutes()
 	srv.registerSectionEventsRoutes()
 	srv.registerSectionEnrollmentsRoutes()
+	srv.registerAttendanceRoutes()
 }
 
 func (srv *Server) ListenAndServe() {
@@ -270,7 +271,7 @@ func (srv *Server) syncKratosAdminDB() error {
 		if err != nil {
 			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
 		}
-		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
+		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
 		}
 		return nil
@@ -303,7 +304,7 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 			// so we create the OIDC client if KOLIBRI_URL is set
 			// then create the default admin in kratos
 			log.Println("kratos id not found")
-			return srv.handleCreateUserKratos(user.Username, "ChangeMe!")
+			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}
 	return srv.syncKratosAdminDB()

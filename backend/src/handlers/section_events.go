@@ -13,7 +13,7 @@ func (srv *Server) registerSectionEventsRoutes() {
 	srv.Mux.Handle("GET /api/admin-calendar", srv.applyAdminMiddleware(srv.handleGetAdminCalendar))
 	srv.Mux.Handle("GET /api/student-calendar", srv.applyMiddleware(srv.handleGetStudentCalendar))
 	srv.Mux.Handle("PUT /api/events/{event_id}", srv.applyAdminMiddleware(srv.handleEventOverride))
-	// srv.Mux.Handle("DELETE /api/events/{event_id}", srv.applyAdminMiddlware(srv.handleDeleteEvent))
+	srv.Mux.Handle("POST /api/program-sections/{id}/events", srv.applyAdminMiddleware(srv.handleCreateEvent))
 }
 
 func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -78,4 +78,20 @@ func (srv *Server) handleEventOverride(w http.ResponseWriter, r *http.Request, l
 	}
 	// should this return the new calendar to populate?
 	return writeJsonResponse(w, http.StatusOK, "Override created successfully")
+}
+
+func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	sectionID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "section_id")
+	}
+	event := &models.SectionEvent{}
+	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	_, err = srv.Db.CreateNewEvent(sectionID, event)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, "Event created successfully")
 }

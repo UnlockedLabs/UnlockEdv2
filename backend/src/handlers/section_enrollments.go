@@ -91,7 +91,11 @@ func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	log.add("section_id", sectionID)
 	userID, err := strconv.Atoi(r.PathValue("user_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
 	log.add("user_id", userID)
+	log.info("enrolling user")
 	err = srv.Db.CreateSectionEnrollment(sectionID, userID)
 	if err != nil {
 		return newDatabaseServiceError(err)

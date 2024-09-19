@@ -57,8 +57,7 @@ CREATE INDEX idx_section_enrollments_deleted_at ON public.section_enrollments US
 CREATE TABLE public.section_events (
     id SERIAL PRIMARY KEY,
 	section_id integer NOT NULL,
-	start_time timestamp with time zone NOT NULL,
-	end_time timestamp with time zone NOT NULL,
+	duration VARCHAR(32) NOT NULL DEFAULT '1h0m0s'::character varying,
 	recurrance_rule VARCHAR(255) NOT NULL DEFAULT 'NONE'::character varying,
 	location VARCHAR(255) NOT NULL DEFAULT 'TBD'::character varying,
 	created_at timestamp with time zone,
@@ -68,16 +67,14 @@ CREATE TABLE public.section_events (
 );
 CREATE INDEX idx_section_events_section_id ON public.section_events USING btree (section_id);
 CREATE INDEX idx_section_events_deleted_at ON public.section_events USING btree (deleted_at);
-CREATE INDEX idx_section_events_start_time ON public.section_events USING btree (start_time);
-CREATE INDEX idx_section_events_end_time ON public.section_events USING btree (end_time);
+CREATE INDEX idx_section_events_duration ON public.section_events USING btree (duration);
 
 
 CREATE TABLE public.section_event_overrides (
     id SERIAL PRIMARY KEY,
 	event_id integer NOT NULL,
-	start_time timestamp with time zone,
-	end_time timestamp with time zone,
-	override_rule VARCHAR(128) NOT NULL DEFAULT 'NONE'::character varying,
+	duration VARCHAR(32),
+	override_rrule VARCHAR(128) NOT NULL,
 	is_cancelled boolean NOT NULL DEFAULT false,
 	created_at timestamp with time zone,
 	updated_at timestamp with time zone,
@@ -86,8 +83,7 @@ CREATE TABLE public.section_event_overrides (
 );
 CREATE INDEX index_section_event_overrides_event_id ON public.section_event_overrides USING btree (event_id);
 CREATE INDEX idx_section_event_overrides_event_id ON public.section_event_overrides USING btree (event_id);
-CREATE INDEX idx_section_event_overrides_start_time ON public.section_event_overrides USING btree (start_time);
-CREATE INDEX idx_section_event_overrides_end_time ON public.section_event_overrides USING btree (end_time);
+CREATE INDEX idx_section_event_overrides_duration ON public.section_event_overrides USING btree (duration);
 CREATE INDEX idx_section_event_overrides_deleted_at ON public.section_event_overrides USING btree (deleted_at);
 CREATE INDEX idx_section_event_overrides_is_cancelled ON public.section_event_overrides USING btree (is_cancelled);
 
@@ -96,16 +92,17 @@ CREATE TABLE public.section_event_attendance (
     id SERIAL PRIMARY KEY,
 	event_id integer NOT NULL,
 	user_id integer NOT NULL,
+	date VARCHAR(32) NOT NULL,
 	created_at timestamp with time zone,
 	updated_at timestamp with time zone,
 	deleted_at timestamp with time zone,
 	FOREIGN KEY (event_id) REFERENCES section_events(id) ON UPDATE CASCADE,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE
 );
-CREATE INDEX idx_attendance_event_id ON public.attendance USING btree (event_id);
-CREATE INDEX idx_attendance_user_id ON public.attendance USING btree (user_id);
-CREATE INDEX idx_attendance_date ON public.attendance USING btree (date);
-CREATE INDEX idx_attendance_deleted_at ON public.attendance USING btree (deleted_at);
+CREATE INDEX idx_attendance_event_id ON public.section_event_attendance USING btree (event_id);
+CREATE INDEX idx_attendance_user_id ON public.section_event_attendance USING btree (user_id);
+CREATE INDEX idx_attendance_date ON public.section_event_attendance USING btree (date);
+CREATE INDEX idx_attendance_deleted_at ON public.section_event_attendance USING btree (deleted_at);
 
 -- +goose StatementEnd
 -- +goose Down
@@ -116,7 +113,7 @@ DROP TABLE public.program_sections CASCADE;
 DROP TABLE public.section_enrollments CASCADE;
 DROP TABLE public.section_events CASCADE;
 DROP TABLE public.section_event_overrides CASCADE;
-DROP TABLE public.attendance CASCADE;
+DROP TABLE public.section_event_attendance CASCADE;
 
 -- +goose StatementEnd
 
