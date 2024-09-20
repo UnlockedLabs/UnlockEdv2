@@ -2,7 +2,7 @@ import { CloseX } from '../inputs';
 import { Event } from '@/common';
 
 export interface SectionEventProps {
-    events: Event[];
+    events?: Event[];
     onClose: () => void;
 }
 
@@ -16,7 +16,7 @@ export default function ShowEventsForDateModal({
         return `${hours}h ${minutes}m`;
     };
 
-    if (events.length === 0) return null;
+    if (!events) return null;
 
     return (
         <div>

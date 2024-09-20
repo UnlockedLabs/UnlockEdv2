@@ -1,4 +1,4 @@
-import { PieChart, Pie, Legend, Cell, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
 import { CourseActivity } from '@/common';
@@ -18,28 +18,25 @@ export default function TopProgPieChart({ data }: { data: CourseActivity[] }) {
     console.log(data);
 
     return (
-        <ResponsiveContainer width="100%" height={400}>
-            <PieChart>
-                <Pie
-                    data={safeData}
-                    dataKey="hours_engaged"
-                    nameKey="course_name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius="80%"
-                    innerRadius="50%"
-                    fill="#8884d8"
-                    label={false}
-                >
-                    {data.map((_, index) => (
-                        <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                        />
-                    ))}
-                </Pie>
-                <Legend layout="horizontal" />
-            </PieChart>
-        </ResponsiveContainer>
+        <PieChart width={300} height={300} className="my-auto">
+            <Pie
+                data={safeData}
+                dataKey="hours_engaged"
+                nameKey="course_name"
+                cx="50%"
+                cy="50%"
+                outerRadius="80%"
+                innerRadius="50%"
+                fill="#8884d8"
+                label={false}
+            >
+                {data.map((_, index) => (
+                    <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                    />
+                ))}
+            </Pie>
+        </PieChart>
     );
 }

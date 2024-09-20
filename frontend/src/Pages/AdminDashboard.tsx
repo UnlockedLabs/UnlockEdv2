@@ -56,80 +56,96 @@ export default function AdminDashboard() {
                             data={activityData.course_milestones}
                         />
                     </div>
+                    <div className="card h-100 justify-between overflow-auto">
+                        <h2 className="card-h-padding">
+                            Top Course Engagement
+                        </h2>
+                        <div className="flex flex-row">
+                            <TopProgPieChart
+                                data={activityData.top_course_activity}
+                            />
+                            <div className="p-4 my-auto w-[60%]">
+                                {/* TO DO: caption needs to be added */}
+                                <table className="table-2">
+                                    <thead>
+                                        <tr>
+                                            <th>Course Name</th>
+                                            <th>Time Spent</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="!gap-6">
+                                        {!error &&
+                                            !isLoading &&
+                                            activityData &&
+                                            activityData.top_course_activity.map(
+                                                (
+                                                    course: CourseActivity,
+                                                    index: number
+                                                ) => {
+                                                    var courseTime: string;
+                                                    if (
+                                                        course.hours_engaged < 1
+                                                    )
+                                                        courseTime =
+                                                            Math.round(
+                                                                course.hours_engaged *
+                                                                    60
+                                                            ) + ' min';
+                                                    else {
+                                                        const hours =
+                                                            Math.floor(
+                                                                course.hours_engaged
+                                                            );
+                                                        const leftoverMins =
+                                                            Math.round(
+                                                                course.hours_engaged *
+                                                                    60
+                                                            ) % 60;
+                                                        if (leftoverMins == 0)
+                                                            courseTime =
+                                                                hours + ' hrs';
+                                                        else
+                                                            courseTime =
+                                                                hours +
+                                                                ' hr ' +
+                                                                leftoverMins +
+                                                                ' min';
+                                                    }
+                                                    var legendColor =
+                                                        'bg-teal-' +
+                                                        (index + 1).toString();
+                                                    // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
+                                                    if (index == 4)
+                                                        legendColor =
+                                                            theme == 'light'
+                                                                ? 'bg-[#002E2A]'
+                                                                : 'bg-[#B0DFDA]';
+                                                    return (
+                                                        <tr key={index}>
+                                                            <td className="flex flex-row gap-2">
+                                                                <div
+                                                                    className={`h-3 w-3 ${legendColor} my-auto`}
+                                                                ></div>
+                                                                {
+                                                                    course.course_name
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                {courseTime}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {/* Top course engagement */}
-                <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
-                    <h2 className="card-h-padding">Top Course Engagement</h2>
-                    <TopProgPieChart data={activityData.top_course_activity} />
+                <div className="flex flex-col w-[35%] gap-6">
                     <CalendarComponent />
-                    <div className="px-4 pb-10">
-                        {/* TO DO: caption needs to be added */}
-                        <table className="table-2">
-                            <thead>
-                                <tr>
-                                    <th>Course Name</th>
-                                    <th>Time Spent</th>
-                                </tr>
-                            </thead>
-                            <tbody className="!gap-6">
-                                {!error &&
-                                    !isLoading &&
-                                    activityData &&
-                                    activityData.top_course_activity.map(
-                                        (
-                                            course: CourseActivity,
-                                            index: number
-                                        ) => {
-                                            var courseTime: string;
-                                            if (course.hours_engaged < 1)
-                                                courseTime =
-                                                    Math.round(
-                                                        course.hours_engaged *
-                                                            60
-                                                    ) + ' min';
-                                            else {
-                                                const hours = Math.floor(
-                                                    course.hours_engaged
-                                                );
-                                                const leftoverMins =
-                                                    Math.round(
-                                                        course.hours_engaged *
-                                                            60
-                                                    ) % 60;
-                                                if (leftoverMins == 0)
-                                                    courseTime = hours + ' hrs';
-                                                else
-                                                    courseTime =
-                                                        hours +
-                                                        ' hr ' +
-                                                        leftoverMins +
-                                                        ' min';
-                                            }
-                                            var legendColor =
-                                                'bg-teal-' +
-                                                (index + 1).toString();
-                                            // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
-                                            if (index == 4)
-                                                legendColor =
-                                                    theme == 'light'
-                                                        ? 'bg-[#002E2A]'
-                                                        : 'bg-[#B0DFDA]';
-                                            return (
-                                                <tr key={index}>
-                                                    <td className="flex flex-row gap-2">
-                                                        <div
-                                                            className={`h-3 w-3 ${legendColor} my-auto`}
-                                                        ></div>
-                                                        {course.course_name}
-                                                    </td>
-                                                    <td>{courseTime}</td>
-                                                </tr>
-                                            );
-                                        }
-                                    )}
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>

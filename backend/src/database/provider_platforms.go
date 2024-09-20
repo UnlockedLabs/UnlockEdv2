@@ -34,7 +34,7 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 	if err := db.Model(models.ProviderPlatform{}).
 		Select("provider_platforms.*, o.id as oidc_id").
 		Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").
-		Find(&platform, "id = ?", id).Error; err != nil {
+		Find(&platform, "provider_platforms.id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "provider_platforms")
 	}
 	key, err := platform.DecryptAccessKey()
