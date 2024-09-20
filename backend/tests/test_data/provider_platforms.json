@@ -2,109 +2,85 @@
   {
     "type": "canvas_oss",
     "name": "CanvasLMS",
-    "description": "Staging instance of canvas",
-    "icon_url": "https:\/\/www.instructure.com\/sites\/default\/files\/image\/2022-09\/White-Canvas-Logo-No-Inst-png.png",
     "account_id": "1",
-    "base_url": "https:\/\/staging.canvas.unlockedlabs.xyz",
+    "base_url": "https://staging.canvas.unlockedlabs.xyz",
     "state": "enabled"
   },
   {
     "type": "canvas_oss",
     "name": "Claude Anderson",
-    "description": "Enim quam.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/0000dd?text=aut",
     "account_id": "917041156",
-    "base_url": "https:\/\/www.purdy.info\/dolorum-ipsa-accusantium-qui-odit-illum-ratione",
+    "base_url": "https://www.purdy.info/dolorum-ipsa-accusantium-qui-odit-illum-ratione",
     "state": "disabled"
   },
   {
     "type": "canvas_oss",
     "name": "Prof. Rodrick Will",
-    "description": "Est laudantium et.",
-    "icon_url": null,
     "account_id": "436116420",
-    "base_url": "https:\/\/kunde.com\/dolor-repudiandae-tempora-voluptatem-ea-dolorum-unde-illo-sunt.html",
+    "base_url": "https://kunde.com/dolor-repudiandae-tempora-voluptatem-ea-dolorum-unde-illo-sunt.html",
     "state": "enabled"
   },
   {
     "type": "canvas_cloud",
     "name": "Brayan Carter",
-    "description": "Aut et et aut.",
-    "icon_url": null,
     "account_id": "818359091",
-    "base_url": "http:\/\/www.jenkins.com\/impedit-quasi-esse-eum-temporibus-autem.html",
+    "base_url": "http://www.jenkins.com/impedit-quasi-esse-eum-temporibus-autem.html",
     "state": "enabled"
   },
   {
     "type": "canvas_cloud",
     "name": "Miss Iva Feil Sr.",
-    "description": "Incidunt eius ut facere.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/0022bb?text=voluptatem",
     "account_id": "116903505",
-    "base_url": "http:\/\/anderson.com\/quia-id-libero-iure-nisi",
+    "base_url": "http://anderson.com/quia-id-libero-iure-nisi",
     "state": "archived"
   },
   {
     "type": "canvas_cloud",
     "name": "Daphne Goyette V",
-    "description": "Molestiae distinctio quas.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/007755?text=itaque",
     "account_id": "81151374",
-    "base_url": "http:\/\/thiel.com\/quasi-quia-pariatur-non.html",
+    "base_url": "http://thiel.com/quasi-quia-pariatur-non.html",
     "state": "archived"
   },
   {
     "type": "canvas_cloud",
     "name": "Adell Pacocha",
-    "description": "Voluptatem suscipit voluptatem quaerat.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/003333?text=quis",
     "account_id": "131201652",
-    "base_url": "http:\/\/goodwin.com\/facere-dolorem-eum-impedit-voluptatem-eaque-et.html",
+    "base_url": "http://goodwin.com/facere-dolorem-eum-impedit-voluptatem-eaque-et.html",
     "state": "disabled"
   },
   {
     "type": "canvas_cloud",
     "name": "Rosa Carroll",
-    "description": "Quas voluptatibus unde.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/006611?text=quo",
     "account_id": "605317581",
-    "base_url": "http:\/\/www.mills.net\/quis-asperiores-corporis-similique-ab-similique-sapiente-ipsum",
+    "base_url": "http://www.mills.net/quis-asperiores-corporis-similique-ab-similique-sapiente-ipsum",
     "state": "disabled"
   },
   {
     "type": "canvas_cloud",
     "name": "Itzel Williamson",
-    "description": "Accusamus aperiam corrupti.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/00dd66?text=ab",
     "account_id": "823415670",
-    "base_url": "http:\/\/www.leffler.info\/distinctio-cum-quibusdam-optio-ea-dicta-itaque",
+    "base_url": "http://www.leffler.info/distinctio-cum-quibusdam-optio-ea-dicta-itaque",
     "state": "disabled"
   },
   {
     "type": "canvas_cloud",
     "name": "King Denesik I",
-    "description": "Est magnam quia quam.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/0099bb?text=eius",
     "account_id": "425270111",
-    "base_url": "https:\/\/dibbert.com\/voluptas-consequatur-placeat-amet-odio-omnis-itaque.html",
+    "base_url": "https://dibbert.com/voluptas-consequatur-placeat-amet-odio-omnis-itaque.html",
     "state": "enabled"
   },
   {
     "type": "canvas_cloud",
     "name": "Cullen Kuphal",
-    "description": "Facilis voluptatum neque.",
-    "icon_url": null,
     "account_id": "265829857",
-    "base_url": "http:\/\/www.bode.com\/sapiente-ullam-velit-numquam-sunt",
+    "base_url": "http://www.bode.com/sapiente-ullam-velit-numquam-sunt",
     "state": "enabled"
   },
   {
     "type": "canvas_cloud",
     "name": "Alessandra Kirlin",
-    "description": "Ab repellendus omnis dolorum.",
-    "icon_url": "https:\/\/via.placeholder.com\/640x480.png\/00aaff?text=dolor",
     "account_id": "104070083",
-    "base_url": "http:\/\/www.kuvalis.com\/voluptatem-et-illum-maiores-sint-sequi",
+    "base_url": "http://www.kuvalis.com/voluptatem-et-illum-maiores-sint-sequi",
     "state": "enabled"
   }
 ]

@@ -179,8 +179,6 @@ export interface ProviderPlatform {
     access_key: string;
     account_id: string;
     base_url: string;
-    description: string;
-    icon_url: string;
     id: number;
     name: string;
     state: ProviderPlatformState;

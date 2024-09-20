@@ -38,7 +38,10 @@ func main() {
 	}
 	log.Println("Connected to the PostgreSQL database")
 	goose.SetVerbose(true)
-	goose.SetDialect("postgres")
+	err = goose.SetDialect("postgres")
+	if err != nil {
+		log.Fatal(err)
+	}
 	goose.SetTableName("public.goose_db_version")
 	if *fresh {
 		log.Println("Running fresh migrations...")

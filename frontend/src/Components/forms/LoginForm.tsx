@@ -35,12 +35,14 @@ export default function LoginForm() {
         const reqBody = { ...data, ...attributes };
         setErrorMessage('');
         setProcessing(true);
+        const params = new URLSearchParams(window.location.search);
         const resp = await API.post<AuthResponse>('login', reqBody);
         if (resp.success) {
-            let location = (resp.data as AuthResponse).redirect_to;
-            if (!location) {
-                location = resp.data['redirect_browser_to'];
-            }
+            let location =
+                (resp.data as AuthResponse).redirect_to ||
+                resp.data['redirect_browser_to'] ||
+                (params.get('return_to') as string) ||
+                '/dashboard';
             window.location.replace(location);
             return;
         }

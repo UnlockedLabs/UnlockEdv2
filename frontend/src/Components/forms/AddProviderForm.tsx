@@ -1,24 +1,16 @@
 import { ProviderPlatformState, ProviderPlatformType } from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import {
-    CloseX,
-    DropdownInput,
-    SubmitButton,
-    TextAreaInput,
-    TextInput
-} from '../inputs';
+import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import { ToastState } from '../Toast';
 import API from '@/api/api';
 
 type ProviderInputs = {
     name: string;
     type: ProviderPlatformType;
-    description: string;
     base_url: string;
     account_id: string;
     access_key: string;
-    icon_url: string;
     state: ProviderPlatformState;
 };
 
@@ -62,14 +54,6 @@ export default function AddProviderForm({
                     length={25}
                     errors={errors}
                 />
-                <TextAreaInput
-                    label="Description"
-                    register={register}
-                    interfaceRef="description"
-                    required={true}
-                    length={255}
-                    errors={errors}
-                />
                 <DropdownInput
                     label="Type"
                     register={register}
@@ -107,14 +91,6 @@ export default function AddProviderForm({
                     register={register}
                     interfaceRef="access_key"
                     required={true}
-                    length={null}
-                    errors={errors}
-                />
-                <TextInput
-                    label="Icon URL"
-                    register={register}
-                    interfaceRef="icon_url"
-                    required={false}
                     length={null}
                     errors={errors}
                 />

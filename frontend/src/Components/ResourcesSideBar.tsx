@@ -1,8 +1,6 @@
 import { ResourceCategory, ServerResponse } from '@/common';
 import Error from '@/Pages/Error';
 import useSWR from 'swr';
-import KolibriImg from '../../public/kolibri-card-cover.png';
-import WikiImg from '../../public/wikipedia.png';
 import StaticContentCard from './StaticContentCard';
 import ResourcesCategoryCard from './ResourcesCategoryCard';
 
@@ -11,7 +9,7 @@ const KolibriCard = () => {
         <StaticContentCard
             title="Kolibri"
             description="Kolibri provides an extensive library of educational content suitable for all learning levels."
-            imgSrc={KolibriImg}
+            imgSrc="kolibri-card-cover.png"
             altText="Kolibri logo"
             linkUrl="https://kolibri.v2.unlockedlabs.xyz/oidcauthenticate/"
             linkText="Explore Kolibri's Content"
@@ -24,7 +22,7 @@ const WikiCard = () => {
         <StaticContentCard
             title="Wikipedia"
             description="Wikipedia offers a vast collection of articles covering a wide range of topics across various academic disciplines."
-            imgSrc={WikiImg}
+            imgSrc="wikipedia.png"
             altText="Wikipedia logo"
             linkUrl="https://kiwix.v2.unlockedlabs.xyz/viewer#wikipedia/A/User%3AThe_other_Kiwix_guy/Landing"
             linkText="Explore Wikipedia's Content"
