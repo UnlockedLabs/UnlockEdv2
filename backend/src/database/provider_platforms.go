@@ -59,10 +59,10 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 	if platform.Type == models.Kolibri {
 		contentProv := models.OpenContentProvider{
 			Url:                platform.BaseUrl,
-			Thumbnail:          platform.IconUrl,
 			ProviderPlatformID: platform.ID,
 			CurrentlyEnabled:   true,
 			Description:        models.KolibriDescription,
+			Thumbnail:          "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
 		}
 		if err := db.Create(&contentProv).Error; err != nil {
 			log.Errorln("unable to create relevant content provider for new kolibri instance")

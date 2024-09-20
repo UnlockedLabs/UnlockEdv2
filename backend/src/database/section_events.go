@@ -9,42 +9,41 @@ import (
 	"github.com/teambition/rrule-go"
 )
 
-func (db *DB) GetSectionEvents(page, perPage, sectionId int) (int64, []models.SectionEvent, error) {
-	content := []models.SectionEvent{}
+func (db *DB) GetSectionEvents(page, perPage, sectionId int) (int64, []models.ProgramSectionEvent, error) {
+	content := []models.ProgramSectionEvent{}
 	total := int64(0)
-	if err := db.Model(&models.SectionEvent{}).Preload("Overrides").Find(&content).Count(&total).
+	if err := db.Model(&models.ProgramSectionEvent{}).Preload("Overrides").Find(&content).Count(&total).
 		Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "section_events")
+		return 0, nil, newGetRecordsDBError(err, "program_section_events")
 	}
 	return total, content, nil
 }
 
-func (db *DB) CreateNewEvent(sectionId int, form *models.SectionEvent) (*models.SectionEvent, error) {
+func (db *DB) CreateNewEvent(sectionId int, form *models.ProgramSectionEvent) (*models.ProgramSectionEvent, error) {
 	err := validate().Struct(form)
 	if err != nil {
-		return nil, newCreateDBError(err, "section_event")
+		return nil, newCreateDBError(err, "program_section_event")
 	}
 	if err := db.Create(form).Error; err != nil {
-		return nil, newCreateDBError(err, "section_event")
+		return nil, newCreateDBError(err, "program_section_event")
 	}
 	return form, nil
 }
 
-func (db *DB) NewEventOverride(eventId int, form *models.OverrideForm) (*models.SectionEventOverride, error) {
-	override := models.SectionEventOverride{
+func (db *DB) NewEventOverride(eventId int, form *models.OverrideForm) (*models.ProgramSectionEventOverride, error) {
+	override := models.ProgramSectionEventOverride{
 		EventID:       uint(eventId),
-		StartTime:     form.StartTime,
 		Duration:      form.Duration,
 		OverrideRRule: form.OverrideRule,
 		IsCancelled:   form.IsCancelled,
 	}
 	if err := db.Create(&override).Error; err != nil {
-		return nil, newCreateDBError(err, "section_event_override")
+		return nil, newCreateDBError(err, "program_section_event_override")
 	}
 	return &override, nil
 }
 
-func (db *DB) getCalendarFromEvents(events []models.SectionEvent, month time.Month, year int, tz string) (*models.Calendar, error) {
+func (db *DB) getCalendarFromEvents(events []models.ProgramSectionEvent, month time.Month, year int, tz string) (*models.Calendar, error) {
 	daysMap := make(map[string]*models.Day)
 	firstOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.FixedZone(tz, 0))
 	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
@@ -62,17 +61,11 @@ func (db *DB) getCalendarFromEvents(events []models.SectionEvent, month time.Mon
 	for _, event := range events {
 		rruleStr := event.RecurrenceRule
 		rruleSet := rrule.Set{}
-		dtstart, err := time.Parse(time.RFC3339, event.StartTime)
-		if err != nil {
-			return nil, err
-		}
 		rruleOptions, err := rrule.StrToROption(rruleStr)
 		if err != nil {
 			logrus.Errorf("Error parsing rrule: %s", err)
 			return nil, err
 		}
-		rruleOptions.Dtstart = dtstart
-
 		r, err := rrule.NewRRule(*rruleOptions)
 		if err != nil {
 			return nil, err
@@ -92,6 +85,8 @@ func (db *DB) getCalendarFromEvents(events []models.SectionEvent, month time.Mon
 				}
 				daysMap[dateStr] = day
 			}
+			instance.Location = event.Location
+			instance.ProgramName = event.Section.Program.Name
 			day.Events = append(day.Events, instance)
 		}
 	}
@@ -106,32 +101,33 @@ func (db *DB) getCalendarFromEvents(events []models.SectionEvent, month time.Mon
 }
 
 func (db *DB) GetCalendar(month time.Month, year int, facilityId uint, userId *uint) (*models.Calendar, error) {
-	content := []models.SectionEvent{}
+	content := []models.ProgramSectionEvent{}
 
 	var tz string
 	if err := db.Table("facilities f").Select("timezone").Where("id = ?", facilityId).Row().Scan(&tz); err != nil {
 		return nil, newGetRecordsDBError(err, "calendar")
 	}
 	if userId != nil {
-		// only get events which the user has a SectionEnrollment for
-		if err := db.Model(&models.SectionEvent{}).
-			Preload("Overrides").
-			Joins("JOIN section_enrollments se ON se.section_id = section_events.section_id").
+		// only get events which the user has a ProgramSectionEnrollments for
+		if err := db.Model(&models.ProgramSectionEvent{}).
+			Preload("Overrides").Preload("Section.Program").
+			Joins("JOIN program_section_enrollments se ON se.section_id = program_section_events.section_id").
 			Where("se.user_id = ?", userId).
 			Find(&content).Error; err != nil {
 			return nil, newGetRecordsDBError(err, "calendar")
 		}
 	} else {
-		if err := db.Model(&models.SectionEvent{}).
-			Preload("Overrides").
-			Find(&content).Error; err != nil {
+		if err := db.Model(&models.ProgramSectionEvent{}).
+			Preload("Overrides").Preload("Section.Program").
+			Joins("JOIN program_sections ps ON ps.id = program_section_events.section_id").
+			Find(&content, "ps.facility_id = ? ", facilityId).Error; err != nil {
 			return nil, newGetRecordsDBError(err, "calendar")
 		}
 	}
 	return db.getCalendarFromEvents(content, month, year, tz)
 }
 
-func applyOverrides(event models.SectionEvent, start, end time.Time) []models.EventInstance {
+func applyOverrides(event models.ProgramSectionEvent, start, end time.Time) []models.EventInstance {
 	var instances []models.EventInstance
 	mainSet := rrule.Set{}
 
@@ -211,7 +207,7 @@ func applyOverrides(event models.SectionEvent, start, end time.Time) []models.Ev
 	return instances
 }
 
-func generateEventInstances(event models.SectionEvent, startDate, endDate time.Time) []models.EventInstance {
+func generateEventInstances(event models.ProgramSectionEvent, startDate, endDate time.Time) []models.EventInstance {
 	eventInstances := applyOverrides(event, startDate, endDate)
 	return eventInstances
 }

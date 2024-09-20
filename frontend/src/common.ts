@@ -220,6 +220,29 @@ export interface StudentDashboardJoin {
     week_activity: RecentActivity[];
 }
 
+export interface EventCalendar {
+    month: Month;
+    year: number;
+}
+
+export interface Month {
+    name: string;
+    days: Day[];
+}
+export interface Day {
+    date: string;
+    events: Event[];
+}
+export interface Event {
+    event_id: number;
+    section_id: number;
+    start_time: string;
+    duration: number;
+    is_cancelled: boolean;
+    location: string;
+    program_name: string;
+}
+
 export interface CurrentEnrollment {
     alt_name: string;
     name: string;

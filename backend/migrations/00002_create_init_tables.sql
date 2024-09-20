@@ -55,8 +55,6 @@ CREATE TABLE public.provider_platforms (
     deleted_at timestamp with time zone,
     type character varying(100),
     name character varying(255),
-    description character varying(1024),
-    icon_url character varying(255),
     account_id character varying(64),
     access_key character varying(255),
     base_url character varying(255),

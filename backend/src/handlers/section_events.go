@@ -85,7 +85,7 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "section_id")
 	}
-	event := &models.SectionEvent{}
+	event := &models.ProgramSectionEvent{}
 	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}

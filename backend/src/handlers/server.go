@@ -51,7 +51,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerProgramsRoutes()
 	srv.registerSectionsRoutes()
 	srv.registerSectionEventsRoutes()
-	srv.registerSectionEnrollmentsRoutes()
+	srv.registerProgramSectionEnrollmentssRoutes()
 	srv.registerAttendanceRoutes()
 }
 
@@ -242,7 +242,6 @@ func (srv *Server) generateKolibriOidcClient() error {
 			AccessKey: os.Getenv("KOLIBRI_USERNAME") + ":" + os.Getenv("KOLIBRI_PASSWORD"),
 			AccountID: "TODO", // kolibri wont be running yet. This will be updated the first time a user is added
 			State:     models.Enabled,
-			IconUrl:   "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
 		}
 		provider, err = srv.Db.CreateProviderPlatform(provider)
 		if err != nil {

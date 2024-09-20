@@ -5,7 +5,7 @@ import "UnlockEdv2/src/models"
 func (db *DB) GetSectionsForProgram(id, page, perPage int) (int64, []models.ProgramSection, error) {
 	content := []models.ProgramSection{}
 	var total int64
-	if err := db.Find(&content, "program_id = ?").Count(&total).Error; err != nil {
+	if err := db.Find(&content, "program_id = ?", id).Preload("Events").Count(&total).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "programs")
 	}
 	return total, content, nil

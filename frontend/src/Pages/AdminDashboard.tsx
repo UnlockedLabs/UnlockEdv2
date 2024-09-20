@@ -8,6 +8,7 @@ import useSWR from 'swr';
 import convertSeconds from '../Components/ConvertSeconds';
 import { useContext } from 'react';
 import { ThemeContext } from '@/Components/ThemeContext';
+import CalendarComponent from '@/Components/Calendar';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
                 <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
                     <h2 className="card-h-padding">Top Course Engagement</h2>
                     <TopProgPieChart data={activityData.top_course_activity} />
+                    <CalendarComponent />
                     <div className="px-4 pb-10">
                         {/* TO DO: caption needs to be added */}
                         <table className="table-2">

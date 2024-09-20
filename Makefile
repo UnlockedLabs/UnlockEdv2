@@ -1,7 +1,6 @@
 DOCKER_COMPOSE=docker-compose.yml
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
-MIGRATION_DIR=-dir backend/migrations
-MIGRATE_MAIN=backend/migrations/main.go $(MIGRATION_DIR)
+MIGRATE_MAIN=backend/migrations/main.go -dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
 SEED_MAIN=backend/seeder/main.go
 BINARY_NAME=server
@@ -70,5 +69,5 @@ migration: ascii_art
 		exit 1; \
 	fi
 	@echo "Creating migration with name $(NAME)..."
-	goose $(MIGRATION_DIR) create $(NAME) sql
-	goose $(MIGRATION_DIR) fix
+	goose -dir backend/migrations create $(NAME) sql
+	goose -dir backend/migrations fix

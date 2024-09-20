@@ -77,3 +77,107 @@
         scrollbar-color: var(--grey-2) transparent;
     }
 }
+
+.react-calendar {
+    width: 100%;
+    max-width: 100%;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+
+.react-calendar__month-view__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    justify-items: center;
+    background: #f9fafb;
+    font-weight: bold;
+    color: #1f2937;
+    border-bottom: 1px solid #e2e8f0;
+}
+.has-events {
+    background-color: #f1f5f9;
+}
+
+.react-calendar__tile {
+    position: relative;
+    overflow: visible;
+    text-align: center;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    transition: background-color 0.2s;
+}
+
+.react-calendar__tile:hover {
+    background-color: #e0f7fa;
+}
+.react-calendar__month-view__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    padding: 0;
+}
+
+.react-calendar__tile {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+    background-color: white;
+    transition: background-color 0.3s ease;
+}
+
+.react-calendar__tile:hover {
+    background-color: #f1f5f9;
+}
+
+.react-calendar__tile--now {
+    background: #3b82f6;
+    color: white;
+    font-weight: bold;
+}
+
+.react-calendar__tile--active {
+    background-color: #4ade80;
+    color: white;
+}
+
+.react-calendar__month-view__days {
+    display: grid;
+    gap: 1px;
+}
+
+.react-calendar__tile--hasActive {
+    border-color: #4ade80;
+}
+
+.tooltip-content {
+    padding: 8px;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.tooltip-content {
+    position: absolute;
+    top: -50px;
+    left: 0;
+    white-space: pre-line;
+    max-width: 250px;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    z-index: 100;
+}
+
+.tooltip-indicator {
+    position: relative;
+    z-index: 10;
+}

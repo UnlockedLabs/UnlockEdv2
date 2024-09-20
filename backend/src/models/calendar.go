@@ -31,8 +31,10 @@ type Month struct {
 type EventInstance struct {
 	EventID     uint          `json:"event_id"`
 	SectionID   uint          `json:"section_id"`
+	ProgramName string        `json:"program_name"`
 	StartTime   time.Time     `json:"start_time"`
 	Duration    time.Duration `json:"duration"`
+	Location    string        `json:"location"`
 	IsCancelled bool          `json:"is_cancelled"`
 }
 

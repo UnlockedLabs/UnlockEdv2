@@ -36,7 +36,10 @@ func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.Provider
 		log.Errorf("Failed to create cron job %s: %v", cj.Name, err)
 		return "", err
 	}
-	jr.checkFirstRun(prov)
+	err := jr.checkFirstRun(prov)
+	if err != nil {
+		return "", err
+	}
 	return cj.ID, nil
 }
 
@@ -85,7 +88,12 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 			log.Errorf("failed to subscribe to completion subject: %v", err)
 			return err
 		}
-		defer sub.Unsubscribe()
+		defer func() {
+			err := sub.Unsubscribe()
+			if err != nil {
+				log.Errorf("failed to unsubscribe from completion subject: %v", err)
+			}
+		}()
 
 		params["job_id"] = courseJob.ID
 		body, err := json.Marshal(&params)
@@ -95,7 +103,11 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 		}
 		msg := nats.NewMsg("tasks.get_courses")
 		msg.Data = body
-		jr.nats.PublishMsg(msg)
+		err = jr.nats.PublishMsg(msg)
+		if err != nil {
+			log.Errorf("failed to publish message to get courses: %v", err)
+			return err
+		}
 		log.Info("published message to get courses")
 
 		select {
