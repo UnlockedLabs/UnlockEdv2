@@ -36,7 +36,7 @@ help: ascii_art
 
 
 reset: ascii_art
-	docker-compose down --volumes
+	docker compose down --volumes
 
 init: ascii_art
 	@echo 'Installing dependencies...'
@@ -45,7 +45,7 @@ init: ascii_art
 	docker compose up $(BUILD_RECREATE)
 
 dev: ascii_art
-	docker-compose up $(BUILD_RECREATE)
+	docker compose up $(BUILD_RECREATE)
 
 install-dep: ascii_art
 	@if [ -z "$(NAME)" ]; then \
@@ -60,7 +60,7 @@ migrate: ascii_art
 	go run $(MIGRATE_MAIN)
 
 kolibri: ascii_art
-	docker-compose -f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE) up $(BUILD_RECREATE)
+	docker compose -f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE) up $(BUILD_RECREATE)
 
 seed: ascii_art
 	go run $(SEED_MAIN)
