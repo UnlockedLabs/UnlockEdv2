@@ -164,10 +164,42 @@ func (db *DB) SeedTestData() {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 	for i := range platform {
+		if i%2 == 0 {
+			platform[i].OidcID = 1
+		}
 		if err := db.Create(&platform[i]).Error; err != nil {
 			log.Fatalf("Failed to create platform: %v", err)
 		}
 	}
+	openContent, err := os.ReadFile("test_data/open_content.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var openContentProviders []models.OpenContentProvider
+	if err := json.Unmarshal(openContent, &openContentProviders); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for i := range openContentProviders {
+		openContentProviders[i].ProviderPlatformID = platform[rand.Intn(len(platform))].ID
+		if err := db.Create(&openContentProviders[i]).Error; err != nil {
+			log.Fatalf("Failed to create open content provider: %v", err)
+		}
+	}
+	oidcFile, err := os.ReadFile("test_data/oidc_client.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var oidcClients []models.OidcClient
+	if err := json.Unmarshal(oidcFile, &oidcClients); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for i := range oidcClients {
+		oidcClients[i].ProviderPlatformID = 3
+		if err := db.Create(&oidcClients[i]).Error; err != nil {
+			log.Fatalf("Failed to create oidc: %v", err)
+		}
+	}
+
 	users, err := os.ReadFile("test_data/users.json")
 	if err != nil {
 		log.Fatalf("Failed to read test data: %v", err)
@@ -180,6 +212,10 @@ func (db *DB) SeedTestData() {
 		log.Printf("Creating user %s", user[idx].Username)
 		if err := db.Create(&user[idx]).Error; err != nil {
 			log.Fatalf("Failed to create user: %v", err)
+		}
+		//skip last user to be added for any mapping for testing a scenario
+		if idx == len(user)-2 {
+			continue
 		}
 		for i := range platform {
 			mapping := models.ProviderUserMapping{

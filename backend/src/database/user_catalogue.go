@@ -27,15 +27,27 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 		Joins("LEFT JOIN favorites f ON f.program_id = p.id AND f.user_id = ?", userId).
 		Where("p.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
-	for i, tag := range tags {
-		if i == 0 {
-			tx.Where("p.outcome_types ILIKE ?", "%"+tag+"%")
-		} else {
-			tx.Or("p.outcome_types ILIKE ?", "%"+tag+"%")
+
+	if db.Dialector.Name() == "sqlite" {
+		for i, tag := range tags {
+			if i == 0 {
+				tx.Where("LOWER(p.outcome_types) LIKE ?", "%"+strings.ToLower(tag)+"%")
+			} else {
+				tx.Or("LOWER(p.outcome_types) LIKE ?", "%"+strings.ToLower(tag)+"%")
+			}
+			tx.Or("LOWER(p.type) LIKE ?", "%"+strings.ToLower(tag)+"%")
 		}
-		tx.Or("p.type ILIKE ?", "%"+tag+"%")
+	} else {
+		for i, tag := range tags {
+			if i == 0 {
+				tx.Where("p.outcome_types ILIKE ?", "%"+tag+"%")
+			} else {
+				tx.Or("p.outcome_types ILIKE ?", "%"+tag+"%")
+			}
+			tx.Or("p.type ILIKE ?", "%"+tag+"%")
+		}
 	}
-	if search != "" {
+	if search != "" { //Questionable??? if search is not lowercase then will it find a match?
 		tx.Where("LOWER(p.name) LIKE ?", "%"+search+"%")
 	}
 	tx.Order(fmt.Sprintf("p.name %s", validOrder(order)))

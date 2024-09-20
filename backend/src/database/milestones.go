@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"strings"
 )
 
 func IsValidOrderBy(orderBy string) bool {
@@ -41,13 +42,26 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 
 	if search != "" {
 		search = "%" + search + "%"
-		query = query.Where("milestones.type ILIKE ?", search).Or("users.username ILIKE ?", search).Or("programs.name ILIKE ?", search).Or("provider_platforms.name ILIKE ?", search)
+		if db.Dialector.Name() == "sqlite" {
+			search = strings.ToLower(search)
+			query = query.Where("LOWER(milestones.type) LIKE ?", search).Or("LOWER(users.username) LIKE ?", search).Or("LOWER(programs.name) LIKE ?", search).Or("LOWER(provider_platforms.name) LIKE ?", search)
+		} else {
+			query = query.Where("milestones.type ILIKE ?", search).Or("users.username ILIKE ?", search).Or("programs.name ILIKE ?", search).Or("provider_platforms.name ILIKE ?", search)
+		}
 	}
 	if err := query.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
-
+	//name column within more than one table
+	//description column within more than one table
 	if orderBy != "" && IsValidOrderBy(orderBy) {
+		fieldMap := map[string]string{ //ambiguous names
+			"name":        "programs.name",
+			"description": "programs.description",
+		}
+		if oBy, ok := fieldMap[orderBy]; ok {
+			orderBy = oBy
+		}
 		query = query.Order(orderBy)
 	}
 

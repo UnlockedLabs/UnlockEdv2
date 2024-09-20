@@ -18,8 +18,10 @@ func (srv *Server) registerOryRoutes() {
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if err := srv.deleteAllKratosIdentities(); err != nil {
-		return newInternalServerServiceError(err, "error communicating with Ory Kratos")
+	if !srv.isTesting(r) { //if not testing then reach out
+		if err := srv.deleteAllKratosIdentities(); err != nil {
+			return newInternalServerServiceError(err, "error communicating with Ory Kratos")
+		}
 	}
 	return writeJsonResponse(w, http.StatusOK, "identities deleted successfully")
 }
@@ -85,6 +87,10 @@ func (srv *Server) validateUserIDKratos(id string) error {
 		return errors.New("identity not found in kratos instance")
 	}
 	return nil
+}
+
+func (srv *Server) CallCreateUserKratos(username, password string) error {
+	return srv.handleCreateUserKratos(username, password)
 }
 
 func (srv *Server) handleCreateUserKratos(username, password string) error {

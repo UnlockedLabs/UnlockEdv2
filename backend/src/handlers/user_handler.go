@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -139,11 +140,11 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	invalidUser := validateUsername(user.User)
 	if invalidUser != "" {
-		return newBadRequestServiceError(err, invalidUser)
+		return newBadRequestServiceError(errors.New("validation failed on user name"), invalidUser)
 	}
 	userNameExists := srv.Db.UsernameExists(user.User.Username)
 	if userNameExists {
-		return newBadRequestServiceError(err, "userexists")
+		return newBadRequestServiceError(errors.New("user name exists"), "userexists")
 	}
 	user.User.Username = removeChars(user.User.Username, disallowedChars)
 	newUser, err := srv.Db.CreateUser(&user.User)
@@ -201,9 +202,12 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
-		log.add("KratosID", user.KratosID)
-		return newInternalServerServiceError(err, "error deleting user in kratos")
+	// if we aren't in a testing environment, delete the user's Identity within Kratos
+	if !srv.isTesting(r) {
+		if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
+			log.add("KratosID", user.KratosID)
+			return newInternalServerServiceError(err, "error deleting user in kratos")
+		}
 	}
 	if err := srv.Db.DeleteUser(id); err != nil {
 		return newDatabaseServiceError(err)
@@ -234,12 +238,12 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if toUpdate.Username != user.Username && user.Username != "" {
 		userNameExists := srv.Db.UsernameExists(user.Username)
 		if userNameExists {
-			return newBadRequestServiceError(err, "userexists")
+			return newBadRequestServiceError(errors.New("user name exists"), "userexists")
 		}
 	}
 	invalidUser := validateUsername(user)
 	if invalidUser != "" {
-		return newBadRequestServiceError(err, invalidUser)
+		return newBadRequestServiceError(errors.New("validation failed on user name"), invalidUser)
 	}
 	models.UpdateStruct(&toUpdate, &user)
 
@@ -269,17 +273,21 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	newPass := user.CreateTempPassword()
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
-	if user.KratosID == "" {
-		err := srv.handleCreateUserKratos(user.Username, newPass)
-		if err != nil {
-			return newInternalServerServiceError(err, "Error creating user in kratos")
-		}
-	} else {
-		claims := claimsFromUser(user)
-		claims.PasswordReset = true
-		if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
-			log.add("claims.UserID", claims.UserID)
-			return newInternalServerServiceError(err, err.Error())
+
+	// if we aren't in a testing environment, create/update user's Identity within Kratos
+	if !srv.isTesting(r) {
+		if user.KratosID == "" {
+			err := srv.handleCreateUserKratos(user.Username, newPass)
+			if err != nil {
+				return newInternalServerServiceError(err, "Error creating user in kratos")
+			}
+		} else {
+			claims := claimsFromUser(user)
+			claims.PasswordReset = true
+			if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
+				log.add("claims.UserID", claims.UserID)
+				return newInternalServerServiceError(err, err.Error())
+			}
 		}
 	}
 	return writeJsonResponse(w, http.StatusOK, response)

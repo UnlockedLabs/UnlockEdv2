@@ -8,12 +8,12 @@ import (
 )
 
 func (srv *Server) registerOpenContentRoutes() {
-	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleError(srv.IndexOpenContent)))
-	srv.Mux.Handle("PUT /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleError(srv.ToggleOpenContent)))
-	srv.Mux.Handle("POST /api/open-content", srv.applyAdminMiddleware(srv.handleError(srv.CreateOpenContent)))
+	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleError(srv.handleIndexOpenContent)))
+	srv.Mux.Handle("PUT /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleToggleOpenContent)))
+	srv.Mux.Handle("POST /api/open-content", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateOpenContent)))
 }
 
-func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	only := r.URL.Query().Get("all")
 	var all bool
 	if strings.ToLower(strings.TrimSpace(only)) == "true" {
@@ -26,7 +26,7 @@ func (srv *Server) IndexOpenContent(w http.ResponseWriter, r *http.Request, log 
 	return writeJsonResponse(w, http.StatusOK, content)
 }
 
-func (srv *Server) ToggleOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleToggleOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "open content provider ID")
@@ -45,7 +45,7 @@ type NewContentRequest struct {
 	Description  string `json:"description"`
 }
 
-func (srv *Server) CreateOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleCreateOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var body NewContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return newJSONReqBodyServiceError(err)

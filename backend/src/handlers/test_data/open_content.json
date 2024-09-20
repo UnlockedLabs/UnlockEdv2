@@ -1,0 +1,14 @@
+[
+    {
+        "url": "https:\/\/www.unlockedlabs.org\/sites\/kolibri.html",
+        "thumbnail_url": "https:\/\/www.instructure.com\/sites\/default\/files\/image\/2022-09\/Kolibri-No-Inst-png.png",
+        "currently_enabled": true,
+        "description": "Kolibri provides an extensive library of educational content suitable for all learning levels."
+    },
+    {
+        "url": "https:\/\/www.unlockedlabs.org\/sites\/wikipedia.html",
+        "thumbnail_url": "https:\/\/www.instructure.com\/sites\/default\/files\/image\/2022-09\/wikipedia-No-Inst-png.png",
+        "currently_enabled": false,
+        "description": "Wikipedia offers a vast collection of articles covering a wide range of topics across various academic disciplines."
+      }
+]

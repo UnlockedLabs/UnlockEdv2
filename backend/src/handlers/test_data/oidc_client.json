@@ -1,0 +1,10 @@
+[
+    {
+      "client_id": "randomrandome",
+      "client_name": "Test Client 1",
+      "client_secret": "SecretPassphrase",
+      "redirect_uris": "https:\/\/www.instructure.com\/sites\/default\/files\/image\/2022-09\/White-Canvas-Logo-No-Inst-png.png",
+      "scope": "not sure yet"
+    }
+  ]
+  

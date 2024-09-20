@@ -11,7 +11,7 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	var platforms []models.ProviderPlatform
 	var total int64
 	offset := (page - 1) * perPage
-	if err := db.Model(&models.ProviderPlatform{}).Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
+	if err := db.Model(&models.ProviderPlatform{}).Offset(offset).Limit(perPage).Count(&total).Find(&platforms).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "provider_platforms")
 	}
 	return total, platforms, nil

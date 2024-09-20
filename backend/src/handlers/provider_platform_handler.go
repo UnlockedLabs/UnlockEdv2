@@ -30,8 +30,9 @@ func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, 
 			// don't return kolibri, as users are automatically created in kolibri
 			return platform.OidcID == 0 || platform.Type == models.Kolibri
 		})
+		paginationData.Total = int64(len(platforms)) //need to reset total to this length
 	}
-	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
+	log.info("Found "+strconv.Itoa(int(paginationData.Total)), " provider platforms")
 	return writePaginatedResponse(w, http.StatusOK, platforms, paginationData)
 }
 

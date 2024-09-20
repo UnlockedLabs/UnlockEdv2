@@ -86,11 +86,30 @@ type UserWithLogins struct {
 	Logins []models.ProviderUserMapping `json:"logins"`
 }
 
+//bad query
+// func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []UserWithLogins, error) {
+// 	var users []models.User
+// 	var count int64
+// 	if err := db.Model(&models.User{}).//this runs two different queries (1) select count(*) from users where deleted_at is null LIMIT 10; (2) select * from users where facility_id = 1 and deleted_at is null LIMIT 10
+// 		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
+// 		return 0, nil, newGetRecordsDBError(err, "users")
+// 	}
+// 	var userWithLogins []UserWithLogins
+// 	for _, user := range users {
+// 		var logins []models.ProviderUserMapping
+// 		if err := db.Model(&models.ProviderUserMapping{}).Find(&logins, "user_id = ?", user.ID).Error; err != nil {
+// 			return 0, nil, newGetRecordsDBError(err, "provider_user_mappings")
+// 		}
+// 		userWithLogins = append(userWithLogins, UserWithLogins{User: user, Logins: logins})
+// 	}
+// 	return count, userWithLogins, nil
+// }
+
 func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []UserWithLogins, error) {
 	var users []models.User
 	var count int64
-	if err := db.Model(&models.User{}).
-		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
+	if err := db.Model(&models.User{}).Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
+		Offset((page - 1) * per_page).Limit(per_page).Count(&count).Find(&users).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
 	var userWithLogins []UserWithLogins
@@ -156,7 +175,7 @@ func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 		return nil, newUpdateDBrror(errors.New("invalid user ID"), "users")
 	}
 	log.Printf("User ID: %d, Facility ID: %d", user.ID, user.FacilityID)
-	err := db.Save(&user).Error
+	err := db.Debug().Save(&user).Error
 	if err != nil {
 		return nil, newUpdateDBrror(err, "users")
 	}

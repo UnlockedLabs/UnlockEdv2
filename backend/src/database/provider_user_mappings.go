@@ -51,12 +51,19 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 		}
 		return int64(len(users)), users, nil
 	}
-
 	if err := db.Table("users").Select("*").
 		Where("users.role = ?", "student").
 		Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
-		Count(&total).
+		Where("users.deleted_at IS NULL ").
+		Offset((page - 1) * perPage).
+		Limit(perPage).Count(&total).Error; err != nil {
+		return 0, nil, NewDBError(err, "error counting unmapped users")
+	}
+	if err := db.Table("users").Select("*").
+		Where("users.role = ?", "student").
+		Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
+		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
 		Offset((page - 1) * perPage).
 		Limit(perPage).
 		Find(&users).Error; err != nil {

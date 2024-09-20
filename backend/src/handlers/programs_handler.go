@@ -70,7 +70,7 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var program models.Program
+	program := models.Program{}
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {

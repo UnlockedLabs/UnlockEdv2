@@ -69,7 +69,7 @@ func (srv *Server) ListenAndServe() {
 func NewServer(isTesting bool) *Server {
 	if isTesting {
 		db := database.InitDB(true)
-		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil, Client: nil}
+		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil, Client: &http.Client{}}
 	} else {
 		configuration := ory.Configuration{
 			Servers: ory.ServerConfigurations{
@@ -408,6 +408,7 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			return newResponseServiceError(err)
 		}
+		return nil
 	}
 	resp := models.Resource[T]{Message: "Data fetched successfully", Data: data}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

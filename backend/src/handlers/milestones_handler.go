@@ -12,7 +12,7 @@ import (
 func (srv *Server) registerMilestonesRoutes() {
 	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.handleError(srv.handleIndexMilestones)))
 	srv.Mux.Handle("POST /api/milestones", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateMilestone)))
-	srv.Mux.Handle("DELETE /api/milestones", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteMilestone)))
+	srv.Mux.Handle("DELETE /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteMilestone)))
 	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleUpdateMilestone)))
 }
 

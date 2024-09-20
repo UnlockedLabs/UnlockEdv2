@@ -11,10 +11,10 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.handleError(srv.handleGetActivityByUserID)))
+	srv.Mux.Handle("GET /api/users/{id}/activity", srv.applyMiddleware(srv.handleError(srv.handleGetActivityByUserID))) //putting this one on hold...query broken
 	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.handleError(srv.handleGetDailyActivityByUserID)))
 	srv.Mux.Handle("GET /api/programs/{id}/activity", srv.applyAdminMiddleware(srv.handleError(srv.handleGetProgramActivity)))
-	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateActivity)))
+	srv.Mux.Handle("POST /api/users/{id}/activity", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateActivity))) //putting this one on hold...query function
 }
 
 func (srv *Server) handleGetActivityByUserID(w http.ResponseWriter, r *http.Request, log sLog) error {

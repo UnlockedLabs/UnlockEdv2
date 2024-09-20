@@ -14,7 +14,7 @@ func (srv *Server) registerProviderUserRoutes() {
 	// these are not 'actions' routes because they do not directly interact with the middleware
 	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleMapProviderUser)))
 	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleError(srv.handleImportProviderUsers)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,
@@ -118,6 +118,7 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			NameFirst:  user.NameFirst,
 			NameLast:   user.NameLast,
 			FacilityID: facilityId,
+			Role:       models.Student, //added this temporarily
 		}
 		userResponse := ImportUserResponse{
 			Username: newUser.Username,
@@ -131,21 +132,23 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		tempPw := created.CreateTempPassword()
 		userResponse.TempPassword = tempPw
-		if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
-			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
-				log.error("Error deleting user after failed provider user mapping import-provider-users")
+		if !srv.isTesting(r) { //if not testing then reach out
+			if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
+				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
+					log.error("Error deleting user after failed provider user mapping import-provider-users")
+				}
+				log.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
+				userResponse.Error = "error creating authentication for user in kratos, please try again"
+				toReturn = append(toReturn, userResponse)
+				continue
 			}
-			log.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
-			userResponse.Error = "error creating authentication for user in kratos, please try again"
-			toReturn = append(toReturn, userResponse)
-			continue
-		}
-		kolibri, err := srv.Db.FindKolibriInstance()
-		if err != nil {
-			log.error("Error getting kolibri instance")
-		}
-		if err = srv.CreateUserInKolibri(created, kolibri); err != nil {
-			log.error("Error creating kolibri user")
+			kolibri, err := srv.Db.FindKolibriInstance()
+			if err != nil {
+				log.error("Error getting kolibri instance")
+			}
+			if err = srv.CreateUserInKolibri(created, kolibri); err != nil {
+				log.error("Error creating kolibri user")
+			}
 		}
 		mapping := models.ProviderUserMapping{
 			UserID:             created.ID,
@@ -161,7 +164,7 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			toReturn = append(toReturn, userResponse)
 			continue
 		}
-		if provider.OidcID != 0 {
+		if provider.OidcID != 0 && !srv.isTesting(r) {
 			if err = srv.registerProviderLogin(provider, &newUser); err != nil {
 				log.error("error creating provider login, user has been deleted")
 				userResponse.Error = "user was created in database, but there was an error creating provider login, please try again"
@@ -205,14 +208,18 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if err = srv.createAndRegisterProviderUserAccount(provider, user); err != nil {
-		return newInternalServerServiceError(err, err.Error())
+	// if we aren't in a testing environment, register the user with Canvas or Kolibri
+	if !srv.isTesting(r) {
+		if err = srv.createAndRegisterProviderUserAccount(provider, user); err != nil {
+			return newInternalServerServiceError(err, err.Error())
+		}
 	}
 	return writeJsonResponse(w, http.StatusCreated, "User created successfully")
 }
 
 func (srv *Server) createAndRegisterProviderUserAccount(provider *models.ProviderPlatform, user *models.User) error {
 	fields := log.Fields{"func": "createAndRegisterCanvasUserAccount"}
+
 	if provider.Type == models.CanvasCloud || provider.Type == models.CanvasOSS {
 		return srv.createAndRegisterCanvasUserAccount(provider, user)
 	} else {

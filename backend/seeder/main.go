@@ -78,7 +78,7 @@ func seedTestData(db *gorm.DB) {
 		if err := db.Create(&users[idx]).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)
 		}
-		if err := testServer.HandleCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
+		if err := testServer.CallCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
 			log.Fatalf("unable to create test user in kratos")
 		}
 		for i := 0; i < len(newPlatforms); i++ {

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -16,6 +16,7 @@ func (srv *Server) registerImageRoutes() {
 
 func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, log sLog) error {
 	log.info("Uploading file")
+	fmt.Println(r.ContentLength)
 	if err := r.ParseMultipartForm(10 << 10); err != nil {
 		return newInternalServerServiceError(err, err.Error())
 	}
@@ -38,11 +39,11 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 	}
 	url := os.Getenv("APP_URL") + "/photos/" + header.Filename
 	response := map[string]string{"url": url}
-	err = json.NewEncoder(w).Encode(&response)
-	if err != nil {
-		log.add("url", url)
-		return newResponseServiceError(err)
-	}
+	//err = json.NewEncoder(w).Encode(&response)
+	// if err != nil {
+	// 	log.add("url", url)
+	// 	return newResponseServiceError(err)
+	// }
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
