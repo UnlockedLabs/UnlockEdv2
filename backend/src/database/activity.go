@@ -328,7 +328,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 		}
 		err = db.Table("courses c").Select(`c.id as course_id, c.alt_name, c.name, pp.name as provider_platform_name, c.external_url`).
 			Joins(`JOIN provider_platforms pp ON c.provider_platform_id = pp.id`).
-			Joins(`LEFT JOIN milestones m on m.course_id = p.id`).Where(`m.user_id`, userID).Find(&newEnrollments).Error
+			Joins(`LEFT JOIN milestones m on m.course_id = c.id`).Where(`m.user_id`, userID).Find(&newEnrollments).Error
 		if err != nil {
 			log.Errorf("Query failed: %v", err)
 			return dashboard, NewDBError(err, "error getting student dashboard info")
@@ -411,11 +411,11 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	dashboard.TotalWeeklyActivity = result.TotalWeeklyActivity
 
 	// Course Milestones
-	err = db.Table("courses p").
-		Select("p.name as name, COALESCE(COUNT(m.id), 0) as milestones").
-		Joins("LEFT JOIN milestones m ON m.course_id = p.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
+	err = db.Table("courses c").
+		Select("c.name as name, COALESCE(COUNT(m.id), 0) as milestones").
+		Joins("LEFT JOIN milestones m ON m.course_id = c.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
 		Joins("LEFT JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
-		Group("p.name").
+		Group("c.name").
 		Order("milestones DESC").
 		Limit(5).
 		Find(&dashboard.CourseMilestones).Error
