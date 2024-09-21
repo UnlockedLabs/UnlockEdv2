@@ -175,7 +175,7 @@ func seedTestData(db *gorm.DB) {
 					IsCompleted: false,
 					Type:        milestoneTypes[rand.Intn(len(milestoneTypes))],
 					UserID:      user.ID,
-					ExternalID:  strconv.Itoa(rand.Intn(1000)),
+					ExternalID:  strconv.Itoa(rand.Intn(9999)),
 				}
 				if err := db.Create(&newMilestone).Error; err != nil {
 					log.Printf("Failed to create milestone: %v", err)

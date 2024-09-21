@@ -39,11 +39,12 @@ func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.Handler {
 					log.WithFields(fields).Traceln("CSRF token is invalid, redirecting user")
 					return
 				}
+			} else {
+				log.WithFields(fields).Traceln("CSRF token is valid")
+				ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(val.Value()))
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
 			}
-			log.WithFields(fields).Traceln("CSRF token is valid")
-			ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(val.Value()))
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
 		}
 		uniqueId := uuid.NewString()
 		http.SetCookie(w, &http.Cookie{
