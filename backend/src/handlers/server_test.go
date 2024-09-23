@@ -30,8 +30,7 @@ func TestMain(m *testing.M) {
 }
 
 func (srv *Server) applyAdminTestingMiddleware(h http.Handler) http.Handler {
-	return srv.adminMiddleware(h) //without ory kratos
-	//return http.HandlerFunc(srv.authMiddleware(srv.adminMiddleware(h)))//with kratos...
+	return srv.adminMiddleware(h)
 }
 
 func executeRequest(t *testing.T, req *http.Request, handler http.Handler, test httpTest) *httptest.ResponseRecorder {

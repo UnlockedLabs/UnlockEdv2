@@ -176,10 +176,6 @@ func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
 					srv.handleError(h)))))
 }
 
-// func (srv *Server) applyAdminTestingMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-// 	return http.HandlerFunc(srv.authMiddleware(srv.adminMiddleware(h)))
-// }
-
 func corsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
@@ -325,33 +321,6 @@ const TestingClaimsKey TestClaims = "test_claims"
 func (srv *Server) isTesting(r *http.Request) bool {
 	return r.Context().Value(TestingClaimsKey) != nil
 }
-
-// func (srv *Server) testAsAdmin(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		testClaims := &Claims{
-// 			UserID:        1,
-// 			PasswordReset: false,
-// 			Role:          models.Admin,
-// 			FacilityID:    1,
-// 		}
-// 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-// 		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
-// 		h.ServeHTTP(w, r.WithContext(test_ctx))
-// 	})
-// }
-//
-// func (srv *Server) testAsUser(h http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		testClaims := &Claims{
-// 			UserID:        4,
-// 			Role:          models.Student,
-// 			PasswordReset: false,
-// 			FacilityID:    1,
-// 		}
-// 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-// 		h.ServeHTTP(w, r.WithContext(ctx))
-// 	})
-// }
 
 func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 	page := r.URL.Query().Get("page")
