@@ -8,7 +8,7 @@ import TealPill from '@/Components/pill-labels/TealPill';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
-    Outcome,
+    ProgramAttendanceData,
     ServerResponse,
     UserCourses,
     UserCoursesInfo
@@ -18,9 +18,6 @@ import Error from './Error';
 
 export default function MyProgress() {
     const [sortCourses, setSortCourses] = useState<string>(
-        'order=asc&order_by=course_name'
-    );
-    const [sortCertificates, setSortCertificates] = useState<string>(
         'order=asc&order_by=course_name'
     );
     const [filterCourses, setFilterCourses] = useState<number>(0);
@@ -33,16 +30,18 @@ export default function MyProgress() {
         : ({} as UserCoursesInfo);
 
     const {
-        data: certificates,
-        isLoading: loadingOutcomes,
-        error: outcomesError
-    } = useSWR<ServerResponse<Outcome>>(
-        `/api/users/${user.id}/outcomes?type=certificate&${sortCertificates}`
+        data: progData,
+        isLoading: loadingProgramData,
+        error: programDataError
+    } = useSWR<ServerResponse<ProgramAttendanceData>>(
+        `/api/student-attendance`
     );
-    const certData = certificates ? (certificates?.data as Outcome[]) : [];
+    const userProgData = progData
+        ? (progData?.data as ProgramAttendanceData[])
+        : [];
 
-    if (isLoading || loadingOutcomes) return <div>Loading...</div>;
-    if (error || outcomesError) return <Error />;
+    if (isLoading || loadingProgramData) return <div>Loading...</div>;
+    if (error || programDataError) return <Error />;
 
     function handleSortCourses(value: string) {
         const defaultSort = 'order=asc&order_by=course_name';
@@ -58,9 +57,9 @@ export default function MyProgress() {
         }
     }
 
-    function handleSortCertificates(value: string) {
-        setSortCertificates(value);
-    }
+    //function handleSortCertificates(value: string) {
+    //    setSortCertificates(value);
+    //}
 
     return (
         <AuthenticatedLayout title="My Progress" path={['My Progress']}>
@@ -178,57 +177,47 @@ export default function MyProgress() {
                             <div className="card bg-base-teal h-[531px] w-[40%] p-4 overflow-y-auto">
                                 <div className="flex flex-row gap-x-4">
                                     <h2 className="mt-2">
-                                        Certificates Earned
+                                        Program Attendance Records
                                     </h2>
-                                    <DropdownControl
-                                        label="Sort by"
-                                        callback={handleSortCertificates}
-                                        enumType={{
-                                            'Name (A-Z)':
-                                                'order=asc&order_by=course_name',
-                                            'Name (Z-A)':
-                                                'order=desc&order_by=course_name',
-                                            Newest: 'order=desc&order_by=created_at',
-                                            Oldest: 'order=asc&order_by=created_at'
-                                        }}
-                                    />
                                 </div>
-                                <table className="w-full mt-4">
+                                <table className="w-auto mt-4">
                                     <thead>
-                                        <tr className="flex flex-row justify-between border border-x-0 border-t-0">
+                                        <tr className="border border-x-0 border-t-0">
                                             <th className="body text-grey-4">
-                                                Certificate
+                                                Program Name
                                             </th>
                                             <th className="body text-grey-4">
-                                                Date Recieved
+                                                Percentage Complete
+                                            </th>
+                                            <th className="body text-grey-4">
+                                                Attended Events
+                                            </th>
+                                            <th className="body text-grey-4">
+                                                Events Left
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="flex flex-col gap-4 mt-4">
-                                        {certData?.map(
-                                            (certificate: Outcome) => {
-                                                return (
-                                                    <tr
-                                                        className="flex flex-row justify-between body-small items-center"
-                                                        key={certificate.id}
-                                                    >
-                                                        <td className="w-1/2">
-                                                            {
-                                                                certificate.course_name
-                                                            }
-                                                        </td>
-                                                        <td className="w-1/5 flex">
-                                                            {new Date(
-                                                                certificate.created_at.split(
-                                                                    'T'
-                                                                )[0]
-                                                            ).toLocaleDateString(
-                                                                'en-US'
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }
+                                    <tbody className="mt-4">
+                                        {userProgData?.map(
+                                            (prog: ProgramAttendanceData) => (
+                                                <tr key={prog.program_name}>
+                                                    <td className="w-1/2">
+                                                        {prog.program_name}
+                                                    </td>
+                                                    <td className="w-1/5">
+                                                        {prog.percentage_complete.toFixed(
+                                                            2
+                                                        )}
+                                                        %
+                                                    </td>
+                                                    <td className="w-1/5">
+                                                        {prog.attended_events}
+                                                    </td>
+                                                    <td className="w-1/5">
+                                                        {prog.events_left}
+                                                    </td>
+                                                </tr>
+                                            )
                                         )}
                                     </tbody>
                                 </table>

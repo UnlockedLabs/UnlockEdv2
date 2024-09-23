@@ -423,6 +423,7 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			return newResponseServiceError(err)
 		}
+		return nil
 	}
 	resp := models.Resource[T]{Message: "Data fetched successfully", Data: data}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

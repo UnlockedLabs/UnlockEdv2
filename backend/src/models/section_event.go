@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/teambition/rrule-go"
@@ -41,13 +42,35 @@ func (secEvent *ProgramSectionEvent) BeforeCreate(tx *gorm.DB) (err error) {
 
 func (ProgramSectionEvent) TableName() string { return "program_section_events" }
 
+func (e *ProgramSectionEvent) GetRRule() (*rrule.RRule, error) {
+	rruleOptions, err := rrule.StrToROption(e.RecurrenceRule)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse event recurrence rule: %w", err)
+	}
+	rruleOptions.Dtstart = rruleOptions.Dtstart.In(time.UTC)
+	rule, err := rrule.NewRRule(*rruleOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create event recurrence rule: %w", err)
+	}
+	return rule, nil
+}
+
+func (event *ProgramSectionEvent) RRuleUntil() (time.Time, error) {
+	rrule, err := event.GetRRule()
+	if err != nil {
+		return time.Time{}, err
+	}
+	return rrule.GetUntil(), nil
+}
+
 /** Overrides are used to cancel or reschedule events **/
 type ProgramSectionEventOverride struct {
 	DatabaseFields
 	EventID       uint   `json:"event_id" gorm:"not null"`
 	Duration      string `json:"duration" gorm:"not null"`
-	OverrideRRule string `json:"override_rrule" gorm:"not null"`
-	IsCancelled   bool   `json:"is_cancelled" gorm:"not null"`
+	OverrideRrule string `json:"override_rrule" gorm:"not null"`
+	IsCancelled   bool   `json:"is_cancelled"`
+	Location      string `json:"location"`
 
 	/* Foreign keys */
 	Event *ProgramSectionEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`

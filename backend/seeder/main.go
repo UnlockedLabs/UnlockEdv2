@@ -17,6 +17,16 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	DaysInPast     = 90
+	MonthsInFuture = 6
+)
+
+var (
+	startDate = time.Now().AddDate(0, 0, -DaysInPast)
+	endDate   = time.Now().AddDate(0, MonthsInFuture, 0)
+)
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -49,22 +59,26 @@ func seedTestData(db *gorm.DB) {
 			log.Printf("Failed to create facility: %v", err)
 		}
 	}
-	platforms, err := os.ReadFile("backend/tests/test_data/provider_platforms.json")
-	if err != nil {
-		log.Printf("Failed to read test data: %v", err)
-	}
-	var platform []models.ProviderPlatform
-	if err := json.Unmarshal(platforms, &platform); err != nil {
-		log.Printf("Failed to unmarshal test data: %v", err)
-	}
-	for idx := range platform {
-		if err := db.Create(&platform[idx]).Error; err != nil {
+	platforms := []models.ProviderPlatform{
+		{
+			Name:      "Canvas",
+			BaseUrl:   "https://canvas.staging.unlockedlabs.xyz",
+			AccountID: "1",
+			Type:      models.CanvasOSS,
+			State:     models.Enabled,
+			AccessKey: "testing_key_replace_me",
+		}, {
+			Name:      "kolibri_testing",
+			BaseUrl:   "https://kolibri.staging.unlockedlabs.xyz",
+			AccountID: "1234567890",
+			Type:      models.Kolibri,
+			State:     models.Enabled,
+			AccessKey: "testing_key_replace_me",
+		}}
+	for idx := range platforms {
+		if err := db.Create(&platforms[idx]).Error; err != nil {
 			log.Printf("Failed to create platform: %v", err)
 		}
-	}
-	var newPlatforms []models.ProviderPlatform
-	if err := db.Find(&newPlatforms).Error; err != nil {
-		log.Fatal("Failed to get platforms from db")
 	}
 	userFile, err := os.ReadFile("backend/tests/test_data/users.json")
 	if err != nil {
@@ -86,10 +100,10 @@ func seedTestData(db *gorm.DB) {
 		if err := testServer.HandleCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
 			log.Fatalf("unable to create test user in kratos")
 		}
-		for i := 0; i < len(newPlatforms); i++ {
+		for i := 0; i < len(platforms); i++ {
 			mapping := models.ProviderUserMapping{
 				UserID:             users[idx].ID,
-				ProviderPlatformID: newPlatforms[i].ID,
+				ProviderPlatformID: platforms[i].ID,
 				ExternalUsername:   users[idx].Username,
 				ExternalUserID:     strconv.Itoa(idx),
 			}
@@ -195,14 +209,33 @@ func seedTestData(db *gorm.DB) {
 				log.Printf("Creating program enrollment for user %s", user.Username)
 			}
 		}
-		for idx := range events {
-			attendance := models.ProgramSectionEventAttendance{
-				EventID: events[idx].ID,
-				UserID:  user.ID,
-				Date:    time.Now().String(),
+		startDate := time.Now().AddDate(0, 0, -90)
+		endDate := time.Now()
+		for _, event := range events {
+			rule, err := rrule.StrToRRule(event.RecurrenceRule)
+			if err != nil {
+				log.Printf("Failed to parse rrule for event %d: %v", event.ID, err)
+				continue
 			}
-			if err := db.Create(&attendance).Error; err != nil {
-				log.Printf("Failed to create attendance for user: %v", err)
+
+			occurrences := rule.Between(startDate, endDate, true)
+
+			for _, occ := range occurrences {
+				attendanceDate := occ.Format("2006-01-02")
+				attendance := models.ProgramSectionEventAttendance{
+					EventID: event.ID,
+					UserID:  user.ID,
+					Date:    attendanceDate,
+				}
+
+				result := db.Where(attendance).FirstOrCreate(&attendance)
+				if result.Error != nil {
+					log.Printf("Failed to create attendance for user %d on %s: %v", user.ID, attendance.Date, result.Error)
+				} else if result.RowsAffected == 0 {
+					log.Printf("Attendance already exists for user %d on %s for event %d. Skipping.", user.ID, attendanceDate, event.ID)
+				} else {
+					log.Printf("Created attendance for user %s at event: %d on %s", user.Username, event.SectionID, attendanceDate)
+				}
 			}
 		}
 	}
@@ -210,41 +243,54 @@ func seedTestData(db *gorm.DB) {
 
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 	facilities := []models.Facility{}
+	randNames := []string{"Anger Management", "Substance Abuse Treatment", "AA/NA", "Thinking for a Change", "A New Freedom", "Dog Training", "A New Path", "GED/Hi-SET", "Parenting", "Employment", "Life Skills", "Health and Wellness", "Financial Literacy", "Computer Skills", "Parenting", "Employment", "Life Skills"}
 	if err := db.Find(&facilities).Error; err != nil {
 		return nil, err
 	}
 	toReturn := make([]models.ProgramSection, 0)
 	for idx := range facilities {
-		prog := models.Program{
-			Name:        "Program for facility: " + facilities[idx].Name,
-			Description: "Testing program",
+		prog := []models.Program{
+			{
+				Name:        randNames[rand.Intn(len(randNames))],
+				Description: "Testing program",
+			},
+			{
+				Name:        randNames[rand.Intn(len(randNames))],
+				Description: "Testing program",
+			},
+			{
+				Name:        randNames[rand.Intn(len(randNames))],
+				Description: "Testing program",
+			},
+			{
+				Name:        randNames[rand.Intn(len(randNames))],
+				Description: "Testing program",
+			},
 		}
-		if err := db.Create(&prog).Error; err != nil {
-			log.Fatalf("Failed to create program: %v", err)
-		}
-		for i := 0; i < 5; i++ {
+		for i := range prog {
+			if err := db.Create(&prog[i]).Error; err != nil {
+				log.Fatalf("Failed to create program: %v", err)
+			}
 			section := models.ProgramSection{
 				FacilityID: facilities[idx].ID,
-				ProgramID:  prog.ID,
+				ProgramID:  prog[i].ID,
 			}
 			if err := db.Create(&section).Error; err != nil {
 				log.Fatalf("Failed to create program section: %v", err)
 			}
 			log.Println("Creating program section ", section.ID)
 			toReturn = append(toReturn, section)
-			daysMap := make(map[int]rrule.Weekday)
-			daysMap[0] = rrule.TU
-			daysMap[1] = rrule.WE
-			daysMap[2] = rrule.TH
-			daysMap[3] = rrule.FR
-			daysMap[4] = rrule.SA
-			daysMap[5] = rrule.SU
-			daysMap[6] = rrule.MO
+
+			randDays := []rrule.Weekday{}
+			days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
+			for i := 0; i < rand.Intn(3); i++ {
+				randDays = append(randDays, days[rand.Intn(len(days))])
+			}
 			rule, err := rrule.NewRRule(rrule.ROption{
 				Freq:      rrule.WEEKLY,
-				Dtstart:   time.Now().Add(time.Duration(time.Month(i))),
-				Count:     100,
-				Byweekday: []rrule.Weekday{daysMap[rand.Intn(7)]},
+				Dtstart:   startDate,
+				Until:     endDate,
+				Byweekday: randDays,
 			})
 			if err != nil {
 				log.Fatalf("Failed to create rrule: %v", err)
@@ -252,7 +298,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 			event := models.ProgramSectionEvent{
 				SectionID:      section.ID,
 				RecurrenceRule: rule.String(),
-				Location:       "TBD",
+				Location:       "Classroom #" + strconv.Itoa(rand.Intn(10)),
 				Duration:       "1h0m0s",
 			}
 			if err := db.Create(&event).Error; err != nil {

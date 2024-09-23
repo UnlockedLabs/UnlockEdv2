@@ -44,8 +44,16 @@ type Day struct {
 }
 
 type OverrideForm struct {
+	Location     string `json:"location"`
+	Date         string `json:"date"`
 	StartTime    string `json:"start_time"`
 	Duration     string `json:"duration"`
-	OverrideRule string `json:"override_rule"`
 	IsCancelled  bool   `json:"is_cancelled"`
+	OverrideType string `json:"override_type"`
 }
+
+const (
+	OverrideAll      string = "all"
+	OverrideForwards string = "forwards"
+	OverrideSelf     string = "self"
+)

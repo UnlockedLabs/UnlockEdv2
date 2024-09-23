@@ -15,8 +15,6 @@ export default function TopProgPieChart({ data }: { data: CourseActivity[] }) {
         COLORS = ['#11554E', '#13746C', '#14958A', '#61BAB2', '#B0DFDA'];
     }
 
-    console.log(data);
-
     return (
         <PieChart width={300} height={300} className="my-auto">
             <Pie

@@ -12,6 +12,7 @@ import (
 func (srv *Server) registerSectionEventsRoutes() {
 	srv.Mux.Handle("GET /api/admin-calendar", srv.applyAdminMiddleware(srv.handleGetAdminCalendar))
 	srv.Mux.Handle("GET /api/student-calendar", srv.applyMiddleware(srv.handleGetStudentCalendar))
+	srv.Mux.Handle("GET /api/student-attendance", srv.applyMiddleware(srv.handleGetStudentAttendanceData))
 	srv.Mux.Handle("PUT /api/events/{event_id}", srv.applyAdminMiddleware(srv.handleEventOverride))
 	srv.Mux.Handle("POST /api/program-sections/{id}/events", srv.applyAdminMiddleware(srv.handleCreateEvent))
 }
@@ -94,4 +95,13 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Event created successfully")
+}
+
+func (srv *Server) handleGetStudentAttendanceData(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userId := r.Context().Value(ClaimsKey).(*Claims).UserID
+	programData, err := srv.Db.GetStudentProgramAttendanceData(userId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, programData)
 }

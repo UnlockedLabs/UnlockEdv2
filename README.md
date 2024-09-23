@@ -59,6 +59,15 @@ You will be prompted immediately to set a new password and name for the default 
 will be redirected to the dashboard.
 
 
+**Installing front-end dependencies when developing**
+Because `vite` runs in a docker container when developing, there is a docker volume with the `node_modules` mounted to the container. Installing the package in the frontend directory will not allow the changes to reflect when developing. The easiest way to do this is to run `make install-dep NAME=some_library` and it will take care of it for you.
+If this does not work because your directory is named something different, you can do the following:
+
+- bring down your containers (docker compose down)
+- delete the node_modules volume `docker volume rm unlockedv2_node_modules` (will be called something different based on what your root directory is called)
+- install the package with yarn in the frontend directory (`cd frontend && yarn add {pkg}`)
+- bring the containers back up `make dev`
+
 **Integrations:**
 
 - _Kolibri_:

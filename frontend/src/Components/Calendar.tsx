@@ -1,28 +1,39 @@
 import Calendar from 'react-calendar';
 import API from '@/api/api.ts';
-import { MouseEvent, useEffect, useState } from 'react';
-import { Event, EventCalendar } from '@/common';
-import { Value } from 'node_modules/react-calendar/dist/esm/shared/types';
+import { MouseEvent, useEffect, useRef, useState } from 'react';
+import { Event, EventCalendar, parseDuration } from '@/common';
 import '@/css/app.css';
+import { OnArgs } from 'node_modules/react-calendar/dist/cjs';
+import Modal, { ModalType } from './Modal';
+import EditEventForm from './forms/EditEventForm.tsx';
+import { useAuth } from '@/AuthContext.tsx';
 
 function CalendarComponent() {
-    const [eventsMap, setEventsMap] = useState({});
+    const user = useAuth().user;
+    const editModal = useRef<HTMLDialogElement | null>(null);
+    const [eventsMap, setEventsMap] = useState<Map<string, Event[]>>(new Map());
     const [date, setDate] = useState(new Date());
-    const [selectedEvents, setSelectedEvents] = useState<Event[]>(null);
+    const [selectedEvents, setSelectedEvents] = useState<Event[] | null>(null);
+    const [eventToEdit, setEventToEdit] = useState<Event>(null);
 
-    const onChange = (value: Value, event: MouseEvent) => {
-        event.preventDefault();
-        setDate(value as Date);
+    const onMonthChange = ({ activeStartDate }: OnArgs) => {
+        setDate(activeStartDate as Date);
+    };
+
+    const getSelectedDate = (event: string): string => {
+        const eventDate = new Date(event);
+        return eventDate.toISOString().substring(0, 10);
     };
 
     useEffect(() => {
+        const url =
+            user.role === 'admin' ? 'admin-calendar' : 'student-calendar';
         API.get<EventCalendar>(
-            `admin-calendar?month=${date.getMonth() + 1}&year=${date.getFullYear()}`
+            `${url}?month=${date.getMonth() + 1}&year=${date.getFullYear()}`
         )
             .then((response) => {
-                console.log(response);
                 const data = response.data as EventCalendar;
-                const eventsByDate = {};
+                const eventsByDate = new Map();
                 data.month.days.forEach((day) => {
                     const dateKey = day.date.substring(0, 10);
                     eventsByDate[dateKey] = day.events;
@@ -51,10 +62,15 @@ function CalendarComponent() {
         return null;
     };
 
-    const parseDuration = (duration: number): string => {
-        const hours = Math.floor(duration / 3.6e12);
-        const minutes = Math.floor((duration % 3.6e12) / 6e10);
-        return `${hours}h ${minutes}m`;
+    const openEditModal = (e: MouseEvent, event: Event) => {
+        e.preventDefault();
+        setEventToEdit(event);
+        editModal.current?.showModal();
+    };
+
+    const handleCloseModal = () => {
+        setEventToEdit(null);
+        editModal.current?.close();
     };
 
     return (
@@ -63,7 +79,7 @@ function CalendarComponent() {
                 <h2 className="card-h-padding">Calendar</h2>
                 <Calendar
                     value={date}
-                    onChange={onChange}
+                    onActiveStartDateChange={onMonthChange}
                     onClickDay={onClickDay}
                     tileClassName={tileClassName}
                     className="react-calendar p-4"
@@ -72,7 +88,10 @@ function CalendarComponent() {
             </div>
             <div className="card h-full">
                 <h2 className="card-h-padding">
-                    Scheduled Events for {`${date.toDateString()}`}
+                    Scheduled Events for{' '}
+                    {selectedEvents
+                        ? `${getSelectedDate(selectedEvents[0].start_time)}`
+                        : `${date.toISOString().substring(0, 10)}`}
                 </h2>
                 <div className="p-4">
                     {selectedEvents ? (
@@ -110,6 +129,16 @@ function CalendarComponent() {
                                         <strong>Duration:</strong>{' '}
                                         {parseDuration(event.duration)}
                                     </p>
+                                    {user.role === 'admin' && (
+                                        <button
+                                            onClick={(e) =>
+                                                openEditModal(e, event)
+                                            }
+                                            className="btn btn-xs btn-primary mt-2"
+                                        >
+                                            Edit Event
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -120,6 +149,19 @@ function CalendarComponent() {
                     )}
                 </div>
             </div>
+            {eventToEdit && (
+                <Modal
+                    ref={editModal}
+                    type={ModalType.Edit}
+                    item="Event"
+                    form={
+                        <EditEventForm
+                            event={eventToEdit}
+                            onClose={handleCloseModal}
+                        />
+                    }
+                />
+            )}
         </div>
     );
 }

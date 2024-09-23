@@ -58,7 +58,7 @@ func TestGenerateEventInstances_CancellationOverride(t *testing.T) {
 		Overrides: []models.ProgramSectionEventOverride{
 			{
 				EventID:       2,
-				OverrideRRule: "DTSTART:20240904T090000Z\nRRULE:FREQ=DAILY;COUNT=1",
+				OverrideRrule: "DTSTART:20240904T090000Z\nRRULE:FREQ=DAILY;COUNT=1",
 				IsCancelled:   true,
 			},
 		},
@@ -114,7 +114,7 @@ func TestGenerateEventInstances_ModificationOverride(t *testing.T) {
 		Overrides: []models.ProgramSectionEventOverride{
 			{
 				EventID:       3,
-				OverrideRRule: overRule.String(),
+				OverrideRrule: overRule.String(),
 				IsCancelled:   false,
 				Duration:      newDuration.String(),
 			},
@@ -185,7 +185,7 @@ func TestGenerateEventInstances_MultipleOverrides(t *testing.T) {
 	}
 	override1 := models.ProgramSectionEventOverride{
 		EventID:       4,
-		OverrideRRule: rule1.String(),
+		OverrideRrule: rule1.String(),
 		IsCancelled:   true,
 	}
 
@@ -201,7 +201,7 @@ func TestGenerateEventInstances_MultipleOverrides(t *testing.T) {
 		EventID:       4,
 		IsCancelled:   false,
 		Duration:      newDuration.String(),
-		OverrideRRule: rule2.String(),
+		OverrideRrule: rule2.String(),
 	}
 	event := models.ProgramSectionEvent{
 		SectionID:      400,

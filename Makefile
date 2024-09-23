@@ -29,6 +29,7 @@ help: ascii_art
 	@echo "   migrate			  Apply the migrations"
 	@echo "   migrate-fresh	  Drop the tables in the main application and to reset the database to a fresh state"
 	@echo "   migration NAME=x	  Create a new migration with the provided name"
+	@echo " 󱗆  install-dep NAME=x Install a dependency on the front-end while the containers are running"
 	@echo " 󱘤  seed				  Run the seeder script"
 	@echo "   build			  Build Go binaries for different platforms"
 	@echo " 󰑙  reset			  Drop all volumes and reset all data in the database"
@@ -46,6 +47,12 @@ init: ascii_art
 dev: ascii_art
 	docker compose up $(BUILD_RECREATE)
 
+install-dep: ascii_art
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME is not set, please provide package name (make install-dep NAME=some_pkg)"; \
+		exit 1; \
+	fi
+	docker compose down && docker volume rm -f unlockedv2_node_modules && cd frontend && yarn add $(NAME) && cd .. && docker compose up $(BUILD_RECREATE)
 migrate-fresh: ascii_art
 	go run $(MIGRATE_MAIN) --fresh
 

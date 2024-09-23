@@ -1,12 +1,19 @@
 FROM golang:1.23.0-alpine as builder
-WORKDIR /app/
+
+WORKDIR /app
 COPY ./backend/go.mod ./backend/go.sum ./
-COPY ./backend/. .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o backend ./cmd/main.go
+RUN go mod download
+
+COPY ./backend/ ./
+
+RUN CGO_ENABLED=0 GOOS=linux GOFLAGS=-mod=readonly go build -trimpath -o backend ./cmd/main.go
 
 FROM scratch
-COPY --from=builder /app/backend ./
-COPY --from=builder /app/migrations migrations
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+COPY --from=builder /app/backend /backend
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+COPY --from=builder /app/migrations /migrations
+
 EXPOSE 8080
-ENTRYPOINT ["./backend"]
+ENTRYPOINT ["/backend"]

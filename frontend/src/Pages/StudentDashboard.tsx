@@ -18,6 +18,7 @@ import {
     ServerResponse,
     StudentDashboardJoin
 } from '@/common';
+import CalendarComponent from '@/Components/Calendar';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -86,8 +87,8 @@ export default function StudentDashboard() {
     };
 
     return (
-        <div className="flex">
-            <div className="px-8 py-4">
+        <div className="flex w-full">
+            <div className="px-8 py-4 w-3/5">
                 <h1 className="text-5xl">Hi, {user.name_first}!</h1>
                 <h2 className="mt-7"> Pick Up Where You Left Off</h2>
                 <div className="mt-3 bg-base-teal p-6 card">
@@ -121,7 +122,6 @@ export default function StudentDashboard() {
                     <div className="w-1/2 h-[254px] bg-base-teal card">
                         <h2 className="mt-4 ml-4">Learning Time</h2>
                         <div className="px-4">
-                            {/* TO DO: caption needs to be added */}
                             <table className="w-full">
                                 <thead>
                                     <tr className="flex flex-row justify-between border border-x-0 border-t-0 mt-2">
@@ -179,14 +179,12 @@ export default function StudentDashboard() {
                         <div className="flex flex-col gap-3">
                             {userData.enrollments ? (
                                 userData?.enrollments?.map(
-                                    (course: CurrentEnrollment, index) => {
-                                        return (
-                                            <CurrentlyEnrolledClass
-                                                course={course}
-                                                key={index}
-                                            />
-                                        );
-                                    }
+                                    (course: CurrentEnrollment, index) => (
+                                        <CurrentlyEnrolledClass
+                                            course={course}
+                                            key={index}
+                                        />
+                                    )
                                 )
                             ) : (
                                 <p className="body-small">
@@ -198,8 +196,16 @@ export default function StudentDashboard() {
                     )}
                 </div>
             </div>
-            <div className="min-w-px bg-grey-1"></div>
-            <ResourcesSideBar />
+            <div className="flex flex-col w-2/5">
+                <div className="flex w-full h-full">
+                    <div className="w-1/2 border-r border-gray-300">
+                        <CalendarComponent />
+                    </div>
+                    <div className="w-1/2">
+                        <ResourcesSideBar />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

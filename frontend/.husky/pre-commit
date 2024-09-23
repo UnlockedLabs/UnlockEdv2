@@ -1,5 +1,3 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
 echo "🔎 checking frontend........."
 cd frontend

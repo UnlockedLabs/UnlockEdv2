@@ -241,6 +241,44 @@ export interface Event {
     program_name: string;
 }
 
+export interface OverrideForm {
+    program_name?: string;
+    location?: string;
+    override_rule?: string;
+    is_cancelled?: boolean;
+    duration?: string;
+}
+export const parseDuration = (duration: number): string => {
+    const hours = Math.floor(duration / 3.6e12);
+    const minutes = Math.floor((duration % 3.6e12) / 6e10);
+    return `${hours}h ${minutes}m`;
+};
+
+export interface RecurrenceForm {
+    start_date: string;
+    end_date?: string;
+    frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+    interval: number;
+    count?: number;
+    days_of_week?: string[];
+}
+export interface ProgramAttendanceData {
+    program_id: number;
+    program_name: string;
+    section_id: number;
+    total_events: number;
+    attended_events: number;
+    percentage_complete: number;
+    events_left: number;
+    attendance_records: EventAttendance[];
+}
+
+export interface EventAttendance {
+    event_id: number;
+    user_id: number;
+    date: string;
+}
+
 export interface CurrentEnrollment {
     alt_name: string;
     name: string;
