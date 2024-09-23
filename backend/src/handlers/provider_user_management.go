@@ -118,6 +118,7 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			NameFirst:  user.NameFirst,
 			NameLast:   user.NameLast,
 			FacilityID: facilityId,
+			Role:       models.Student,
 		}
 		userResponse := ImportUserResponse{
 			Username: newUser.Username,

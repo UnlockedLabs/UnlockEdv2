@@ -105,6 +105,9 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 }
 
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
+	if user.Role == "" {
+		user.Role = models.Student
+	}
 	err := validate().Struct(user)
 	if err != nil {
 		return nil, newCreateDBError(err, "users")
