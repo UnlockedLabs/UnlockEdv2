@@ -83,7 +83,7 @@ func removeChars(str string, toStrip string) string {
 	}, str)
 }
 
-const disallowedChars string = "`; )(|\\\"'"
+const disallowedChars string = "`; *#@!^&)(|\\\"'"
 
 // This function takes an array of 1 or more Provider users (that come from the middleware, so they are
 // already in the correct format) and creates a new user in the database for each of them, as well as
@@ -111,12 +111,11 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 	}
 	toReturn := make([]ImportUserResponse, 0)
 	for _, user := range users.Users {
-		username := removeChars(user.Username, disallowedChars)
 		newUser := models.User{
-			Username:   username,
+			Username:   removeChars(user.Username, disallowedChars),
 			Email:      user.Email,
-			NameFirst:  user.NameFirst,
-			NameLast:   user.NameLast,
+			NameFirst:  removeChars(user.NameFirst, disallowedChars),
+			NameLast:   removeChars(user.NameLast, disallowedChars),
 			FacilityID: facilityId,
 			Role:       models.Student,
 		}

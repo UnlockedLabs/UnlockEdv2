@@ -56,11 +56,12 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 		return nil, newNotFoundDBError(err, "provider_platforms")
 	}
 	key, err := platform.DecryptAccessKey()
-	if err != nil {
-		return nil, newNotFoundDBError(err, "provider_platforms")
+	if err == nil {
+		platform.AccessKey = key
 	}
-	platform.OidcID = platform.OidcClient.ID
-	platform.AccessKey = key
+	if platform.OidcClient != nil {
+		platform.OidcID = platform.OidcClient.ID
+	}
 	return &platform, nil
 }
 
