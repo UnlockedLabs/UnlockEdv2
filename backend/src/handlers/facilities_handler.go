@@ -8,11 +8,11 @@ import (
 )
 
 func (srv *Server) registerFacilitiesRoutes() {
-	srv.Mux.Handle("GET /api/facilities", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleIndexFacilities))))
-	srv.Mux.Handle("GET /api/facilities/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleShowFacility))))
-	srv.Mux.Handle("POST /api/facilities", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateFacility))))
-	srv.Mux.Handle("DELETE /api/facilities/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteFacility))))
-	srv.Mux.Handle("PATCH /api/facilities/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateFacility))))
+	srv.Mux.Handle("GET /api/facilities", srv.applyAdminMiddleware(srv.handleIndexFacilities))
+	srv.Mux.Handle("GET /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleShowFacility))
+	srv.Mux.Handle("POST /api/facilities", srv.applyAdminMiddleware(srv.handleCreateFacility))
+	srv.Mux.Handle("DELETE /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleDeleteFacility))
+	srv.Mux.Handle("PATCH /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleUpdateFacility))
 }
 
 func (srv *Server) handleIndexFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -49,7 +49,7 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 		log.add("facility.Name", facility.Name)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, newFacility)
+	return writeJsonResponse(w, http.StatusCreated, newFacility)
 }
 
 func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -7,8 +7,8 @@ import (
 )
 
 func (srv *Server) registerLeftMenuRoutes() {
-	srv.Mux.Handle("GET /api/left-menu", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleGetLeftMenu))))
-	srv.Mux.Handle("PUT /api/left-menu", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handlePostLeftMenuLinks))))
+	srv.Mux.Handle("GET /api/left-menu", srv.applyMiddleware(srv.handleGetLeftMenu))
+	srv.Mux.Handle("PUT /api/left-menu", srv.applyAdminMiddleware(srv.handlePostLeftMenuLinks))
 }
 
 func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -6,14 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 )
-
-func (srv *ServiceHandler) applyMiddleware(h http.Handler) http.Handler {
-	return srv.authMiddleware(h)
-}
 
 func (sh *ServiceHandler) initServiceFromRequest(r *http.Request) (ProviderServiceInterface, error) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
@@ -79,16 +76,17 @@ func (sh *ServiceHandler) authMiddleware(next http.Handler) http.Handler {
 }
 
 func (sh *ServiceHandler) cleanupJob(provId int, jobId string, success bool) {
-	log.Println("handling job failure")
+	log.Println(fmt.Sprintf("job %s succeeded: %v \n cleaning up task", jobId, success))
 	var task models.RunnableTask
 	if err := sh.db.Model(models.RunnableTask{}).Find(&task, "provider_platform_id = ? AND job_id = ?", provId, jobId).Error; err != nil {
 		log.Errorf("failed to fetch task: %v", err)
 		return
 	}
-	// set the task status back to pending but we don't
-	// update the last run time so that the next run can include the
-	// relevant data from the failed run
+
 	task.Status = models.StatusPending
+	if success {
+		task.LastRun = time.Now()
+	}
 	if err := sh.db.Save(&task).Error; err != nil {
 		log.Errorf("failed to update task: %v", err)
 		return

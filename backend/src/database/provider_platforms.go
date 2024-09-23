@@ -11,22 +11,57 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	var platforms []models.ProviderPlatform
 	var total int64
 	offset := (page - 1) * perPage
-	if err := db.Model(&models.ProviderPlatform{}).Offset(offset).Limit(perPage).Count(&total).Find(&platforms).Error; err != nil {
+	if err := db.Model(&models.ProviderPlatform{}).Preload("OidcClient").
+		Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "provider_platforms")
 	}
-	return total, platforms, nil
+
+	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
+		if prov.OidcClient != nil {
+			prov.OidcID = prov.OidcClient.ID
+		}
+		return prov
+	}, platforms)
+
+	return total, toReturn, nil
+}
+func iterMap[T any](f func(T) T, arr []T) []T {
+	ret := []T{}
+	for _, a := range arr {
+		ret = append(ret, f(a))
+	}
+	return ret
+}
+
+func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
+	var platforms []models.ProviderPlatform
+	if err := db.Model(models.ProviderPlatform{}).Preload("OidcClient").
+		Find(&platforms, "state = ?", "active").Error; err != nil {
+		return nil, newGetRecordsDBError(err, "provider_platforms")
+	}
+
+	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
+		if prov.OidcClient != nil {
+			prov.OidcID = prov.OidcClient.ID
+		}
+		return prov
+	}, platforms)
+	return toReturn, nil
 }
 
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).Find(&platform, "id = ?", id).Error; err != nil {
+	if err := db.Model(models.ProviderPlatform{}).Preload("OidcClient").
+		Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "provider_platforms")
 	}
 	key, err := platform.DecryptAccessKey()
-	if err != nil {
-		return nil, newNotFoundDBError(err, "provider_platforms")
+	if err == nil {
+		platform.AccessKey = key
 	}
-	platform.AccessKey = key
+	if platform.OidcClient != nil {
+		platform.OidcID = platform.OidcClient.ID
+	}
 	return &platform, nil
 }
 
@@ -44,10 +79,10 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 	if platform.Type == models.Kolibri {
 		contentProv := models.OpenContentProvider{
 			Url:                platform.BaseUrl,
-			Thumbnail:          platform.IconUrl,
 			ProviderPlatformID: platform.ID,
 			CurrentlyEnabled:   true,
 			Description:        models.KolibriDescription,
+			Thumbnail:          "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
 		}
 		if err := db.Create(&contentProv).Error; err != nil {
 			log.Errorln("unable to create relevant content provider for new kolibri instance")
@@ -64,14 +99,14 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 	log.Printf("Updating provider platform with ID: %d", id)
 	var existingPlatform models.ProviderPlatform
 	if err := db.First(&existingPlatform, id).Error; err != nil {
-		return nil, newUpdateDBrror(err, "provider_platforms")
+		return nil, newUpdateDBError(err, "provider_platforms")
 	}
 	models.UpdateStruct(&existingPlatform, platform)
 	if platform.AccessKey != "" {
 		key, err := platform.EncryptAccessKey()
 		if err != nil {
 			log.Printf("Error encrypting access key: %v", err)
-			return nil, newUpdateDBrror(err, "provider_platforms")
+			return nil, newUpdateDBError(err, "provider_platforms")
 		}
 		existingPlatform.AccessKey = key
 	}
@@ -79,7 +114,7 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 		existingPlatform.State = platform.State
 	}
 	if err := db.Save(&existingPlatform).Error; err != nil {
-		return nil, newUpdateDBrror(err, "provider_platforms")
+		return nil, newUpdateDBError(err, "provider_platforms")
 	}
 	return &existingPlatform, nil
 }

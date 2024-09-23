@@ -22,21 +22,20 @@ func TestHandleIndexFacilities(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/facilities", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleIndexFacilities, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				facilities, err := server.Db.GetAllFacilities()
 				if err != nil {
-					t.Errorf("failed to retrieve facilities, error is %v", err)
+					t.Fatalf("unable to retrieve facilities, error is %v", err)
 				}
 				data := models.Resource[[]models.Facility]{}
 				received := rr.Body.String()
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				//loop through entire...list of facilities
 				for _, facility := range facilities {
 					if !slices.ContainsFunc(data.Data, func(fac models.Facility) bool {
 						return fac.ID == facility.ID
@@ -58,7 +57,7 @@ func TestHandleShowFacility(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/facilities/", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			//can remove this out
@@ -69,15 +68,14 @@ func TestHandleShowFacility(t *testing.T) {
 				id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
 				facility, err := server.Db.GetFacilityByID(id)
 				if err != nil {
-					t.Fatal(err)
-					return
+					t.Fatalf("unable to get facility from db, error is %v", err)
 				}
 				received := rr.Body.String()
-				unmarshaled := models.Resource[models.Facility]{}
-				if err := json.Unmarshal([]byte(received), &unmarshaled); err != nil {
-					t.Errorf("failed to unmarshal user")
+				resource := models.Resource[models.Facility]{}
+				if err := json.Unmarshal([]byte(received), &resource); err != nil {
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(facility, &unmarshaled.Data); diff != "" {
+				if diff := cmp.Diff(facility, &resource.Data); diff != "" {
 					t.Errorf("handler returned unexpected response body: %v", diff)
 				}
 			}
@@ -85,38 +83,37 @@ func TestHandleShowFacility(t *testing.T) {
 	}
 }
 
-// // NOTE: found possible bug with the database maybe??? need to make sure that users are being inserted with tolowercase
 func TestHandleCreateFacility(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestAdminCanCreateFacility", "admin", map[string]any{"name": "Ozark Correctional Center"}, http.StatusOK, ""},
+		{"TestAdminCanCreateFacility", "admin", map[string]any{"name": "Ozark Correctional Center"}, http.StatusCreated, ""},
 		{"TestUserCannotCreateFacility", "student", nil, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			jsonForm, err := json.Marshal(test.mapKeyValues)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPost, "/api/facilities", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleCreateFacility, test.role)
 			rr := executeRequest(t, req, handler, test)
-			if test.expectedStatusCode == http.StatusOK {
+			if test.expectedStatusCode == http.StatusCreated {
 				received := rr.Body.String()
 				data := models.Resource[models.Facility]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal user")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				facility, err := server.Db.GetFacilityByID(int(data.Data.ID))
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("unable to get facility from db, error is %v", err)
 				}
 				t.Cleanup(func() {
 					err := server.Db.DeleteFacility(int(facility.ID))
 					if err != nil {
-						fmt.Println(err)
+						fmt.Printf("unable to cleanup/delete facility from db, error is %v", err)
 					}
 				})
 				if diff := cmp.Diff(facility, &data.Data); diff != "" {
@@ -138,7 +135,7 @@ func TestHandleUpdateFacility(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 				facility, err := server.Db.CreateFacility("Ozark Correct. Cent.")
 				if err != nil {
-					t.Errorf("failed to create user")
+					t.Fatalf("unable to create facility, error is %v", err)
 				}
 				id = facility.ID
 				t.Cleanup(func() {
@@ -151,11 +148,11 @@ func TestHandleUpdateFacility(t *testing.T) {
 			}
 			jsonForm, err := json.Marshal(test.mapKeyValues)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPatch, "/api/facilities/", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleUpdateFacility, test.role)
@@ -163,12 +160,12 @@ func TestHandleUpdateFacility(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 				facility, err := server.Db.GetFacilityByID(int(id))
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("unable to get facility from db, error is %v", err)
 				}
 				received := rr.Body.String()
 				data := models.Resource[models.Facility]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal user")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if diff := cmp.Diff(facility, &data.Data); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
@@ -178,7 +175,6 @@ func TestHandleUpdateFacility(t *testing.T) {
 	}
 }
 
-// // // added if !srv.isTesting(r) {} around kratos calls
 func TestHandleDeleteFacility(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestUserCannotDeleteFacility", "student", nil, http.StatusUnauthorized, ""},
@@ -198,7 +194,7 @@ func TestHandleDeleteFacility(t *testing.T) {
 			}
 			req, err := http.NewRequest(http.MethodDelete, "/api/facilities/", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleDeleteFacility, test.role)
@@ -207,7 +203,7 @@ func TestHandleDeleteFacility(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal user")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])

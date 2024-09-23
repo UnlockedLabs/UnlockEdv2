@@ -14,12 +14,12 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(srv.handleError(srv.handleIndexUsers)))
-	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.handleError(srv.handleShowUser)))
-	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateUser)))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteUser)))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleUpdateUser)))
-	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(srv.handleError(srv.handleResetStudentPassword)))
+	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(srv.handleIndexUsers))
+	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.handleShowUser))
+	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(srv.handleCreateUser))
+	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(srv.handleDeleteUser))
+	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(srv.handleUpdateUser))
+	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(srv.handleResetStudentPassword))
 }
 
 /**
@@ -105,6 +105,7 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	if !srv.canViewUserData(r) {
+		log.warn("Unauthorized access to user data")
 		return newUnauthorizedServiceError()
 	}
 	user, err := srv.Db.GetUserByID(uint(id))
@@ -170,7 +171,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
-		if err := srv.handleCreateUserKratos(newUser.Username, tempPw); err != nil {
+		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
 			log.infof("Error creating user in kratos: %v", err)
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
@@ -277,7 +278,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	// if we aren't in a testing environment, create/update user's Identity within Kratos
 	if !srv.isTesting(r) {
 		if user.KratosID == "" {
-			err := srv.handleCreateUserKratos(user.Username, newPass)
+			err := srv.HandleCreateUserKratos(user.Username, newPass)
 			if err != nil {
 				return newInternalServerServiceError(err, "Error creating user in kratos")
 			}

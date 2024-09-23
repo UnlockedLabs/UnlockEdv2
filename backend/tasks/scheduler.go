@@ -18,7 +18,7 @@ type JobRunner struct {
 	db   *gorm.DB
 }
 
-var getRunner = sync.OnceValue[*JobRunner](func() *JobRunner { return newJobRunner() })
+var getRunner = sync.OnceValue(func() *JobRunner { return newJobRunner() })
 
 func newJobRunner() *JobRunner {
 	db := initDB()
@@ -63,7 +63,7 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 			log.Debugf("generated task: %v", task)
 			tasksToRun = append(tasksToRun, *task)
 		}
-		log.Debugf("Generated %d tasks for provider: ", len(tasksToRun), provider.Name)
+		log.Debugf("Generated %d tasks for provider: %s", len(tasksToRun), provider.Name)
 	}
 	log.Infof("Generated %d tasks", len(tasksToRun))
 	return tasksToRun, nil
@@ -119,7 +119,7 @@ func (jr *JobRunner) runTask(task *models.RunnableTask) error {
 		log.Errorf("failed to publish job: %v", err)
 		return err
 	}
-	log.Info("Published job: ", jobType, " with params: ", string(params))
+	log.Info("Published job: ", jobType)
 	return nil
 }
 

@@ -15,8 +15,8 @@ import (
 
 func (srv *Server) registerActionsRoutes() {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleError(srv.handleGetUsers)))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleError(srv.handleImportUsers)))
+	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleGetUsers))
+	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleImportUsers))
 }
 
 type CachedProviderUsers struct {
@@ -59,7 +59,7 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 		}
 		tempPw := created.CreateTempPassword()
 		if !srv.isTesting(r) {
-			if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
+			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 				log.add("error", err.Error())
 				log.errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity

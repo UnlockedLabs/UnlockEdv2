@@ -8,9 +8,9 @@ import (
 )
 
 func (srv *Server) registerOpenContentRoutes() {
-	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleError(srv.handleIndexOpenContent)))
-	srv.Mux.Handle("PUT /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleToggleOpenContent)))
-	srv.Mux.Handle("POST /api/open-content", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateOpenContent)))
+	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleIndexOpenContent))
+	srv.Mux.Handle("PUT /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleToggleOpenContent))
+	srv.Mux.Handle("POST /api/open-content", srv.applyAdminMiddleware(srv.handleCreateOpenContent))
 }
 
 func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {

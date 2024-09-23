@@ -27,14 +27,12 @@ func TestHandleMapProviderUser(t *testing.T) {
 			}
 			jsonForm, err := json.Marshal(importUserMap)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPost, "/api/provider-platforms/{id}/map-user/{user_id}", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			fmt.Println(importUserMap["id"])
-			fmt.Println(importUserMap["user_id"])
 			req.SetPathValue("id", fmt.Sprintf("%d", importUserMap["id"]))
 			req.SetPathValue("user_id", fmt.Sprintf("%d", importUserMap["user_id"]))
 			handler := getHandlerByRoleWithMiddleware(server.handleMapProviderUser, test.role)
@@ -43,7 +41,7 @@ func TestHandleMapProviderUser(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[models.ProviderUserMapping]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				userMapping := &models.ProviderUserMapping{}
 				if err := server.Db.First(userMapping, data.Data.ID).Error; err != nil {
@@ -52,7 +50,7 @@ func TestHandleMapProviderUser(t *testing.T) {
 				t.Cleanup(func() {
 					err := server.Db.Delete(&models.ProviderUserMapping{}, data.Data.ID).Error
 					if err != nil {
-						fmt.Println("error running clean for provider user mapping that was created, error is ", err)
+						fmt.Println("unable to cleanup/delete provider user mapping, error is ", err)
 					}
 				})
 				if diff := cmp.Diff(userMapping, &data.Data); diff != "" {
@@ -72,15 +70,15 @@ func TestHandleImportProviderUsers(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			importUsersMap := test.mapKeyValues
 			if importUsersMap["err"] != nil {
-				t.Fatal("unable to import users form, error is ", importUsersMap["err"])
+				t.Fatalf("unable to import users form, error is %v", importUsersMap["err"])
 			}
 			jsonForm, err := json.Marshal(importUsersMap)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPost, "/api/provider-platforms/{id}/users/import", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", importUsersMap["id"]))
 			handler := getHandlerByRoleWithMiddleware(server.handleImportProviderUsers, test.role)
@@ -89,7 +87,7 @@ func TestHandleImportProviderUsers(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[[]ImportUserResponse]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				for _, importUser := range importUsersMap["users"].([]models.ImportUser) {
 					if !slices.ContainsFunc(data.Data, func(userResponse ImportUserResponse) bool {
@@ -98,12 +96,11 @@ func TestHandleImportProviderUsers(t *testing.T) {
 						t.Error("import users responses not found, out of sync")
 					}
 				}
-				//clean up records
 				var user models.User
 				var mapping models.ProviderUserMapping
 				for _, importUser := range importUsersMap["users"].([]models.ImportUser) {
 					err := server.Db.Model(models.User{}).Where("users.username = ?", importUser.ExternalUsername).Find(&user).Error
-					if err != nil {
+					if err != nil { //just cleanup not an error so just logging messages to console
 						fmt.Println("unable to get users that were created for clean up, error is ", err)
 					}
 					err = server.Db.Model(models.ProviderUserMapping{}).Where("external_username = ?", importUser.ExternalUsername).Find(&mapping).Error
@@ -131,7 +128,7 @@ func TestHandleCreateProviderUserAccountUserMgmt(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, "/api/provider-platforms/{id}/create-user/{user_id}", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", test.mapKeyValues["id"].(uint)))
 			req.SetPathValue("user_id", fmt.Sprintf("%d", test.mapKeyValues["user_id"].(uint)))
@@ -141,7 +138,7 @@ func TestHandleCreateProviderUserAccountUserMgmt(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != "User created successfully" {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, "User created successfully")

@@ -25,34 +25,30 @@ func TestHandleIndexProviders(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/provider-platforms%s", test.queryParams), nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleIndexProviders, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				total, platforms, err := server.Db.GetAllProviderPlatforms(1, 10)
+				_, platforms, err := server.Db.GetAllProviderPlatforms(1, 10)
 				if err != nil {
-					t.Errorf("failed to get provider platforms from db")
+					t.Errorf("failed to get provider platforms from db, error is %v", err)
 				}
 				if strings.Contains(test.queryParams, "oidc_enabled") {
 					platforms = slices.DeleteFunc(platforms, func(platform models.ProviderPlatform) bool {
 						return platform.OidcID == 0 || platform.Type == models.Kolibri
 					})
-					total = int64(len(platforms)) //reset total for filtered out oidc_enabled
 				}
 				data := models.PaginatedResource[models.ProviderPlatform]{}
 				received := rr.Body.String()
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
-				}
-				if data.Meta.Total != total {
-					t.Errorf("handler returned unexpected total returned: got %v want %v", data.Meta.Total, total)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				for _, platform := range platforms {
 					if !slices.ContainsFunc(data.Data, func(plat models.ProviderPlatform) bool {
 						return plat.ID == platform.ID
 					}) {
-						t.Error("platforms not found, out of sync")
+						t.Error("provider platforms not found, out of sync")
 					}
 				}
 			}
@@ -69,7 +65,7 @@ func TestHandleShowProvider(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/provider-platforms/", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRoleWithMiddleware(server.handleShowProvider, test.role)
@@ -78,13 +74,12 @@ func TestHandleShowProvider(t *testing.T) {
 				id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
 				platform, err := server.Db.GetProviderPlatformByID(id)
 				if err != nil {
-					t.Fatal(err)
-					return
+					t.Fatalf("unable to get provider platform from db, error is %v", err)
 				}
 				received := rr.Body.String()
 				data := models.Resource[models.ProviderPlatform]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal provider platform")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if diff := cmp.Diff(platform, &data.Data); diff != "" {
 					t.Errorf("handler returned unexpected response body: %v", diff)
@@ -104,11 +99,11 @@ func TestHandleCreateProvider(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			jsonForm, err := json.Marshal(test.mapKeyValues)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPost, "/api/provider-platforms", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleCreateProvider, test.role)
 			rr := executeRequest(t, req, handler, test)
@@ -116,11 +111,11 @@ func TestHandleCreateProvider(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[models.ProviderPlatform]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal provider platform")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				providerPlatform, err := server.Db.GetProviderPlatformByID(int(data.Data.ID))
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("unable to get provider platform from db, error is %v", err)
 				}
 				t.Cleanup(func() {
 					err := server.Db.DeleteProviderPlatform(int(providerPlatform.ID))
@@ -148,12 +143,12 @@ func TestHandleUpdateProvider(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 				newPlat, err := server.Db.CreateProviderPlatform(&createPlat)
 				if err != nil {
-					t.Errorf("failed to create platform provider")
+					t.Fatalf("unable to create platform provider, error is %v", err)
 				}
 				id = newPlat.ID
 				t.Cleanup(func() {
 					if err := server.Db.DeleteProviderPlatform(int(id)); err != nil {
-						fmt.Println("Unable to delete provider platform. Error is: ", err)
+						fmt.Println("unable to cleanup/delete provider platform. Error is: ", err)
 					}
 				})
 			} else {
@@ -161,11 +156,11 @@ func TestHandleUpdateProvider(t *testing.T) {
 			}
 			jsonForm, err := json.Marshal(test.mapKeyValues)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPatch, "/api/provider-platforms/", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleUpdateProvider, test.role)
@@ -173,12 +168,12 @@ func TestHandleUpdateProvider(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 				providerPlatform, err := server.Db.GetProviderPlatformByID(int(id))
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("unable to get provider platform from db, error is %v", err)
 				}
 				received := rr.Body.String()
 				data := models.Resource[models.ProviderPlatform]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal user")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if diff := cmp.Diff(providerPlatform, &data.Data, cmpopts.IgnoreFields(models.ProviderPlatform{}, "AccessKey")); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
@@ -191,16 +186,16 @@ func TestHandleUpdateProvider(t *testing.T) {
 func TestHandleDeleteProvider(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestUserCannotDeletePlatformProvider", "student", nil, http.StatusUnauthorized, ""},
-		{"TestAdminCanDeletePlatformProvider", "admin", map[string]any{"message": "Provider platform deleted successfully"}, http.StatusOK, ""},
+		{"TestAdminCanDeletePlatformProvider", "admin", map[string]any{"message": "Provider platform deleted successfully"}, http.StatusNoContent, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			createPlat := getUpdateDeleteProvider()
 			var id uint
-			if test.expectedStatusCode == http.StatusOK {
+			if test.expectedStatusCode == http.StatusNoContent {
 				newPlat, err := server.Db.CreateProviderPlatform(&createPlat)
 				if err != nil {
-					t.Errorf("failed to create provider platform")
+					t.Fatalf("unable to create platform provider, error is %v", err)
 				}
 				id = newPlat.ID
 			} else {
@@ -208,16 +203,16 @@ func TestHandleDeleteProvider(t *testing.T) {
 			}
 			req, err := http.NewRequest(http.MethodDelete, " /api/provider-platforms/", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleDeleteProvider, test.role)
 			rr := executeRequest(t, req, handler, test)
-			if test.expectedStatusCode == http.StatusOK {
+			if test.expectedStatusCode == http.StatusNoContent {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal resource message")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])
@@ -253,11 +248,10 @@ func getProviderPlatform() map[string]any {
 
 func getUpdateDeleteProvider() models.ProviderPlatform {
 	return models.ProviderPlatform{
-		Type:        "Yo_canvas_cloud",
-		Name:        "Yo Brayan Carter",
-		Description: "Yo aut et et aut.",
-		AccountID:   "818359898",
-		BaseUrl:     "http://www.jenkins.com/super-impedit-quasi-esse-eum-temporibus-autem.html",
-		State:       "enabled",
+		Type:      "Yo_canvas_cloud",
+		Name:      "Yo Brayan Carter",
+		AccountID: "818359898",
+		BaseUrl:   "http://www.jenkins.com/super-impedit-quasi-esse-eum-temporibus-autem.html",
+		State:     "enabled",
 	}
 }

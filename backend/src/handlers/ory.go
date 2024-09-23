@@ -14,7 +14,7 @@ import (
 )
 
 func (srv *Server) registerOryRoutes() {
-	srv.Mux.Handle("DELETE /api/identities/sync", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteAllKratosIdentities))))
+	srv.Mux.Handle("DELETE /api/identities/sync", srv.applyAdminMiddleware(srv.handleDeleteAllKratosIdentities))
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -23,7 +23,7 @@ func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *htt
 			return newInternalServerServiceError(err, "error communicating with Ory Kratos")
 		}
 	}
-	return writeJsonResponse(w, http.StatusOK, "identities deleted successfully")
+	return writeJsonResponse(w, http.StatusNoContent, "identities deleted successfully")
 }
 
 func (srv *Server) deleteAllKratosIdentities() error {
@@ -89,11 +89,7 @@ func (srv *Server) validateUserIDKratos(id string) error {
 	return nil
 }
 
-func (srv *Server) CallCreateUserKratos(username, password string) error {
-	return srv.handleCreateUserKratos(username, password)
-}
-
-func (srv *Server) handleCreateUserKratos(username, password string) error {
+func (srv *Server) HandleCreateUserKratos(username, password string) error {
 	user, err := srv.Db.GetUserByUsername(username)
 	if err != nil {
 		log.Error("user not found immediately after creation, this should not happen")

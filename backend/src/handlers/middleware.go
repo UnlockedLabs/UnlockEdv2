@@ -23,48 +23,50 @@ const (
 
 type csrfTokenKey string
 
-func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.HandlerFunc {
+func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "setCsrfTokenMiddleware"}
 		bucket := srv.buckets[CsrfToken]
 		checkExists, err := r.Cookie("unlocked_csrf_token")
 		if err == nil {
 			fields["csrf_token"] = checkExists.Value
-			log.WithFields(fields).Traceln("CSRF token already set")
-			// now we check if the token is valid
+			// now we check if the token is validjA
 			val, err := bucket.Get(checkExists.Value)
 			if err != nil {
-				log.WithFields(fields).Traceln("CSRF token is invalid")
-				srv.errorResponse(w, http.StatusForbidden, "Invalid CSRF token")
+				srv.clearKratosCookies(w, r)
+				if !isAuthRoute(r) {
+					http.Redirect(w, r, fmt.Sprintf("%s/browser?return_to=%s", LoginEndpoint, r.URL.Path), http.StatusSeeOther)
+					log.WithFields(fields).Traceln("CSRF token is invalid, redirecting user")
+					return
+				}
+			} else {
+				log.WithFields(fields).Traceln("CSRF token is valid")
+				ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(val.Value()))
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
-			log.WithFields(fields).Traceln("CSRF token is valid")
-			ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(val.Value()))
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		} else {
-			uniqueId := uuid.NewString()
-			http.SetCookie(w, &http.Cookie{
-				Name:     "unlocked_csrf_token",
-				Value:    uniqueId,
-				Expires:  time.Now().Add(24 * time.Hour),
-				HttpOnly: true,
-				Secure:   true,
-				Path:     "/",
-			})
-			_, err := bucket.Put(uniqueId, []byte(time.Now().Add(24*time.Hour).String()))
-			if err != nil {
-				log.WithFields(fields).Errorf("Failed to set CSRF token: %v", err)
-				srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
-				return
-			}
-			ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(uniqueId))
-			next.ServeHTTP(w, r.WithContext(ctx))
 		}
+		uniqueId := uuid.NewString()
+		http.SetCookie(w, &http.Cookie{
+			Name:     "unlocked_csrf_token",
+			Value:    uniqueId,
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			Secure:   true,
+			Path:     "/",
+		})
+		_, err = bucket.Put(uniqueId, []byte(time.Now().Add(24*time.Hour).String()))
+		if err != nil {
+			log.WithFields(fields).Errorf("Failed to set CSRF token: %v", err)
+			srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
+			return
+		}
+		ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(uniqueId))
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (srv *Server) rateLimitMiddleware(next http.Handler) http.HandlerFunc {
+func (srv *Server) rateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "rateLimitMiddleware"}
 		kv := srv.buckets[RateLimit]

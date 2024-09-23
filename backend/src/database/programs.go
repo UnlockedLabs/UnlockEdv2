@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"strings"
 )
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
@@ -13,48 +12,44 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) GetProgram(page, perPage int, search string) (int64, []models.Program, error) {
+func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64, []models.Program, error) {
 	content := []models.Program{}
 	total := int64(0)
-	if search != "" { //count block
-		// search by program name, alt name or provider platform name (provider_platforms.id = programs.provider_platform_id)--just counts records
-		search = "%" + strings.ToLower(search) + "%"
-		if db.Dialector.Name() == "sqlite" {
-			_ = db.Model(&models.Program{}).Where("LOWER(programs.name) LIKE ?", search).Or("LOWER(programs.alt_name) LIKE ?", search).
-				Or("LOWER(provider_platforms.name) LIKE ?", search).Joins("LEFT JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").Count(&total)
-		} else {
-			_ = db.Model(&models.Program{}).Where("programs.name ILIKE ?", search).Or("programs.alt_name ILIKE ?", search).
-				Or("provider_platforms.name ILIKE ?", search).Joins("LEFT JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").Count(&total)
+	if len(tags) > 0 {
+		// look in program_tags for programs matching this tag
+		query := db.Model(&models.ProgramTag{}).Select("program_id")
+		for idx, tag := range tags {
+			if idx == 0 {
+				query.Where("value = ?", tag)
+			} else {
+				query.Or("value = ?", tag)
+			}
 		}
-	} else {
-		_ = db.Model(&models.Program{}).Count(&total)
-	}
 
-	var err error
-	if search != "" { //retieve block
-		if db.Dialector.Name() == "sqlite" {
-			err = db.Limit(perPage).Offset((page-1)*perPage).Model(&models.Program{}).
-				Where("LOWER(programs.name) LIKE ?", search).Or("LOWER(programs.alt_name) LIKE ?", search).
-				Or("LOWER(provider_platforms.name) LIKE ?", search).
-				Joins("LEFT JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
-				Find(&content).Error
-		} else {
-			err = db.Model(&models.Program{}).
-				Where("programs.name ILIKE ?", search).Or("programs.alt_name ILIKE ?", search).
-				Or("provider_platforms.name ILIKE ?", search).
-				Joins("LEFT JOIN provider_platforms ON programs.provider_platform_id = provider_platforms.id").
-				Find(&content).Error
+		tx := db.Model(&models.Program{}).Preload("Tags").Find(&content, "id IN (?)", query).Count(&total)
+		if search != "" {
+			tx = tx.Where("name LIKE ?", "%"+search+"%")
+		}
+		if err := tx.Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
+			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 	} else {
-		err = db.Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error
-	}
-	if err != nil {
-		return 0, nil, newGetRecordsDBError(err, "programs")
+		tx := db.Model(&models.Program{}).Preload("Tags")
+		if search != "" {
+			tx = tx.Where("name LIKE ?", "%"+search+"%").Count(&total)
+		}
+		if err := tx.Find(&content).Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
+			return 0, nil, newGetRecordsDBError(err, "programs")
+		}
 	}
 	return total, content, nil
 }
 
 func (db *DB) CreateProgram(content *models.Program) (*models.Program, error) {
+	err := validate().Struct(content)
+	if err != nil {
+		return nil, newCreateDBError(err, "create programs validation error")
+	}
 	if err := db.Create(content).Error; err != nil {
 		return nil, newCreateDBError(err, "programs")
 	}
@@ -63,14 +58,36 @@ func (db *DB) CreateProgram(content *models.Program) (*models.Program, error) {
 
 func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
 	if err := db.Save(content).Error; err != nil {
-		return nil, newUpdateDBrror(err, "programs")
+		return nil, newUpdateDBError(err, "programs")
 	}
 	return content, nil
 }
 
 func (db *DB) DeleteProgram(id int) error {
-	if err := db.Delete(&models.Program{}, id).Error; err != nil {
+	if err := db.Debug().Delete(&models.Program{}, id).Error; err != nil {
 		return newDeleteDBError(err, "programs")
+	}
+	return nil
+}
+
+func (db *DB) TagProgram(id int, tag string) error {
+	program := &models.Program{}
+	if err := db.First(program, id).Error; err != nil {
+		return newNotFoundDBError(err, "programs")
+	}
+	if err := db.Create(&models.ProgramTag{ProgramID: uint(id), Value: tag}).Error; err != nil {
+		return newCreateDBError(err, "program tags")
+	}
+	return nil
+}
+
+func (db *DB) UntagProgram(id int, tag string) error {
+	program := &models.Program{}
+	if err := db.First(program, id).Error; err != nil {
+		return newNotFoundDBError(err, "programs")
+	}
+	if err := db.Delete(&models.ProgramTag{ProgramID: uint(id), Value: tag}).Error; err != nil {
+		return newDeleteDBError(err, "program tags")
 	}
 	return nil
 }

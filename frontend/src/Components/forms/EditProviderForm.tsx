@@ -6,13 +6,7 @@ import {
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import {
-    CloseX,
-    TextInput,
-    TextAreaInput,
-    DropdownInput,
-    SubmitButton
-} from '../inputs';
+import { CloseX, TextInput, DropdownInput, SubmitButton } from '../inputs';
 import { ToastState } from '../Toast';
 import API from '@/api/api';
 
@@ -20,11 +14,9 @@ type ProviderInputs = {
     id: number;
     name: string;
     type: ProviderPlatformType;
-    description: string;
     base_url: string;
     account_id: string;
     access_key: string;
-    icon_url: string;
     state: ProviderPlatformState;
 };
 
@@ -47,11 +39,9 @@ export default function EditProviderForm({
     } = useForm<ProviderInputs>({
         defaultValues: {
             name: provider.name,
-            description: provider.description,
             type: provider.type,
             base_url: provider.base_url,
             account_id: provider.account_id,
-            icon_url: provider.icon_url,
             state: provider.state
         }
     });
@@ -122,14 +112,6 @@ export default function EditProviderForm({
                     interfaceRef="name"
                     required={true}
                     length={25}
-                    errors={errors}
-                />
-                <TextAreaInput
-                    label="Description"
-                    register={register}
-                    interfaceRef="description"
-                    required={true}
-                    length={255}
                     errors={errors}
                 />
                 <DropdownInput
@@ -224,14 +206,6 @@ export default function EditProviderForm({
                             {errors.access_key && errors.access_key?.message}
                         </div>
                     </label>
-                    <TextInput
-                        label="Icon URL"
-                        register={register}
-                        interfaceRef="icon_url"
-                        required={false}
-                        length={null}
-                        errors={errors}
-                    />
                 </div>
                 <SubmitButton errorMessage={errorMessage} />
             </form>

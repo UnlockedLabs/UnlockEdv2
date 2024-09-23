@@ -13,10 +13,10 @@ import (
 )
 
 func (srv *Server) registerOidcFlowRoutes() {
-	srv.Mux.HandleFunc("POST /api/login", srv.handleError(srv.handleLogin))
-	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleError(srv.handleLogout)))
-	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleError(srv.handleOidcConsent)))
-	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleError(srv.handleRefreshAuth)))
+	srv.Mux.Handle("POST /api/login", srv.handleError(srv.handleLogin))
+	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleLogout))
+	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleOidcConsent))
+	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleRefreshAuth))
 }
 
 const (
@@ -233,7 +233,10 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	session := form["session"].(map[string]interface{})
+	session, ok := form["session"].(map[string]interface{})
+	if !ok {
+		return newBadRequestServiceError(errors.New("no session found in form"), "Bad Request")
+	}
 	toSend := map[string]interface{}{
 		"identity_provider_session_id": session["id"].(string),
 		"remember":                     true,
@@ -246,7 +249,7 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log
 	}
 	url, err := acceptLoginEndpoint(form)
 	if err != nil {
-		return NewServiceError(err, http.StatusContinue, "invalid request, must include challenge")
+		return NewServiceError(err, http.StatusBadRequest, "invalid request, must include challenge")
 	}
 	log.add("url", url)
 	req, err := http.NewRequest(http.MethodPut, *url, bytes.NewReader(jsonBody))

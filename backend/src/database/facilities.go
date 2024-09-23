@@ -40,11 +40,11 @@ func (db *DB) CreateFacility(name string) (*models.Facility, error) {
 func (db *DB) UpdateFacility(name string, id uint) (*models.Facility, error) {
 	if err := db.Model(models.Facility{}).Where("id = ?", fmt.Sprintf("%d", id)).Update("name", name).Error; err != nil {
 		log.WithField("facility_id", id).Error("error updating facility name database/UpdateFacility")
-		return nil, newUpdateDBrror(err, "facilities")
+		return nil, newUpdateDBError(err, "facilities")
 	}
 	facility := &models.Facility{}
 	if err := db.Model(models.Facility{}).Find(facility, "id = ?", fmt.Sprintf("%d", id)).Error; err != nil {
-		return nil, newUpdateDBrror(err, "facilities")
+		return nil, newUpdateDBError(err, "facilities")
 	}
 	return facility, nil
 }

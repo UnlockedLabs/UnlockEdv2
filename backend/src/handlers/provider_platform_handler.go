@@ -9,11 +9,11 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() {
-	srv.Mux.HandleFunc("GET /api/provider-platforms", srv.applyAdminMiddleware(srv.handleError(srv.handleIndexProviders)))
-	srv.Mux.HandleFunc("GET /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleShowProvider)))
-	srv.Mux.HandleFunc("POST /api/provider-platforms", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProvider)))
-	srv.Mux.HandleFunc("PATCH /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleUpdateProvider)))
-	srv.Mux.HandleFunc("DELETE /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteProvider)))
+	srv.Mux.Handle("GET /api/provider-platforms", srv.applyAdminMiddleware(srv.handleIndexProviders))
+	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleShowProvider))
+	srv.Mux.Handle("POST /api/provider-platforms", srv.applyAdminMiddleware(srv.handleCreateProvider))
+	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleUpdateProvider))
+	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleDeleteProvider))
 }
 
 func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -30,9 +30,8 @@ func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, 
 			// don't return kolibri, as users are automatically created in kolibri
 			return platform.OidcID == 0 || platform.Type == models.Kolibri
 		})
-		paginationData.Total = int64(len(platforms)) //need to reset total to this length
 	}
-	log.info("Found "+strconv.Itoa(int(paginationData.Total)), " provider platforms")
+	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
 	return writePaginatedResponse(w, http.StatusOK, platforms, paginationData)
 }
 
@@ -91,5 +90,5 @@ func (srv *Server) handleDeleteProvider(w http.ResponseWriter, r *http.Request, 
 	if err = srv.Db.DeleteProviderPlatform(id); err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, "Provider platform deleted successfully")
+	return writeJsonResponse(w, http.StatusNoContent, "Provider platform deleted successfully")
 }

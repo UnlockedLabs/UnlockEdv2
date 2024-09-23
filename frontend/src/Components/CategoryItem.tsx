@@ -1,4 +1,4 @@
-import { Category, CategoryLink } from '@/common';
+import { ResourceCategory, ResourceLink } from '@/common';
 import { useRef, useState } from 'react';
 import LinkItem from './LinkItem';
 import AddLinkForm from '@/Components/forms/AddLinkForm';
@@ -20,14 +20,14 @@ export default function CategoryItem({
     moveLink,
     updateLink
 }: {
-    category: Category;
-    deleteLink: Function; //TODO: reType these functions
+    category: ResourceCategory;
+    deleteLink: Function;
     addLink: Function;
     moveLink: Function;
     updateLink: Function;
 }) {
     const [activeLinkToDelete, setActiveLinkToDelete] =
-        useState<CategoryLink | null>(null);
+        useState<ResourceLink | null>(null);
     const [open, setOpen] = useState(true);
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const addLinkModal = useRef<null | HTMLDialogElement>(null);
@@ -52,7 +52,7 @@ export default function CategoryItem({
                     <h3 className="w-1/3">Title</h3>
                     <h3 className="w-2/3">URL</h3>
                 </div>
-                {category.links.map((linkPair: CategoryLink, index) => {
+                {category.links.map((linkPair: ResourceLink, index) => {
                     const key = Object.keys(linkPair)[0];
                     return (
                         <div
@@ -62,7 +62,7 @@ export default function CategoryItem({
                             <LinkItem
                                 linkName={key}
                                 linkURL={linkPair[key]}
-                                callUpdateLink={(newLinkPair: CategoryLink) =>
+                                callUpdateLink={(newLinkPair: ResourceLink) =>
                                     updateLink(category, index, newLinkPair)
                                 }
                             />

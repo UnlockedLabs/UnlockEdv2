@@ -18,13 +18,13 @@ func TestHandleGetLeftMenu(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/left-menu", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRole(server.handleGetLeftMenu, test.role)
 			rr := executeRequest(t, req, handler, test)
 			menuLinks, err := server.Db.GetLeftMenuLinks()
 			if err != nil {
-				t.Errorf("failed to retrieve menu links, error is %v", err)
+				t.Fatalf("unable to retrieve menu links, error is %v", err)
 			}
 			data := models.Resource[[]models.LeftMenuLink]{}
 			received := rr.Body.String()
@@ -55,11 +55,11 @@ func TestHandlePostLeftMenuLinks(t *testing.T) {
 			}
 			jsonForm, err := json.Marshal(form["menuLinks"])
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPut, "/api/left-menu", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handlePostLeftMenuLinks, test.role)
 			rr := executeRequest(t, req, handler, test)
@@ -71,7 +71,7 @@ func TestHandlePostLeftMenuLinks(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[[]models.LeftMenuLink]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal user")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				for _, link := range menuLinks {
 					if !slices.ContainsFunc(data.Data, func(menu models.LeftMenuLink) bool {

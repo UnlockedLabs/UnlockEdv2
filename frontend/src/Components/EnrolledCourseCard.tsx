@@ -33,7 +33,7 @@ export default function EnrolledCourseCard({
 
     function updateFavorite(e: React.MouseEvent) {
         e.preventDefault();
-        API.put(`programs/${course.id}/save`, {})
+        API.put(`courses/${course.id}/save`, {})
             .then((response) => {
                 callMutate();
                 console.log(response);
@@ -59,7 +59,7 @@ export default function EnrolledCourseCard({
                                 <StarIconOutline className="h-5 text-header-text"></StarIconOutline>
                             ))}
                     </div>
-                    <h2>{course.program_name}</h2>
+                    <h2>{course.course_name}</h2>
                     <p className="body">|</p>
                     <p className="body">{course.provider_platform_name}</p>
                 </div>
@@ -115,7 +115,7 @@ export default function EnrolledCourseCard({
                         </p>
                         <h3 className="card-title text-sm h-10 line-clamp-2">
                             {course.alt_name && course.alt_name + ' - '}
-                            {course.program_name}
+                            {course.course_name}
                         </h3>
                         <div className="mt-3 justify-end">
                             {status == CourseStatus.Completed ? (

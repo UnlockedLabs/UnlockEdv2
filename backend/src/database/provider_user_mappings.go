@@ -27,10 +27,10 @@ func (db *DB) GetProviderUserMapping(userID, providerID int) (*models.ProviderUs
 func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUserMapping) error {
 	result := db.Model(&models.ProviderUserMapping{}).Where("id = ?", providerUserMapping.ID).Updates(providerUserMapping)
 	if result.Error != nil {
-		return newUpdateDBrror(result.Error, "provider_user_mappings")
+		return newUpdateDBError(result.Error, "provider_user_mappings")
 	}
 	if result.RowsAffected == 0 {
-		return newUpdateDBrror(gorm.ErrRecordNotFound, "provider_user_mappings")
+		return newUpdateDBError(gorm.ErrRecordNotFound, "provider_user_mappings")
 	}
 	return nil
 }
@@ -51,7 +51,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 		}
 		return int64(len(users)), users, nil
 	}
-	if err := db.Table("users").Select("*").
+	if err := db.Debug().Table("users").Select("*").
 		Where("users.role = ?", "student").
 		Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
@@ -60,7 +60,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID string, userSearch 
 		Limit(perPage).Count(&total).Error; err != nil {
 		return 0, nil, NewDBError(err, "error counting unmapped users")
 	}
-	if err := db.Table("users").Select("*").
+	if err := db.Debug().Table("users").Select("*").
 		Where("users.role = ?", "student").
 		Where("users.id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", providerID).
 		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).

@@ -86,25 +86,6 @@ type UserWithLogins struct {
 	Logins []models.ProviderUserMapping `json:"logins"`
 }
 
-//bad query
-// func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []UserWithLogins, error) {
-// 	var users []models.User
-// 	var count int64
-// 	if err := db.Model(&models.User{}).//this runs two different queries (1) select count(*) from users where deleted_at is null LIMIT 10; (2) select * from users where facility_id = 1 and deleted_at is null LIMIT 10
-// 		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
-// 		return 0, nil, newGetRecordsDBError(err, "users")
-// 	}
-// 	var userWithLogins []UserWithLogins
-// 	for _, user := range users {
-// 		var logins []models.ProviderUserMapping
-// 		if err := db.Model(&models.ProviderUserMapping{}).Find(&logins, "user_id = ?", user.ID).Error; err != nil {
-// 			return 0, nil, newGetRecordsDBError(err, "provider_user_mappings")
-// 		}
-// 		userWithLogins = append(userWithLogins, UserWithLogins{User: user, Logins: logins})
-// 	}
-// 	return count, userWithLogins, nil
-// }
-
 func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []UserWithLogins, error) {
 	var users []models.User
 	var count int64
@@ -124,6 +105,9 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 }
 
 func (db *DB) CreateUser(user *models.User) (*models.User, error) {
+	if user.Role == "" {
+		user.Role = models.Student
+	}
 	err := validate().Struct(user)
 	if err != nil {
 		return nil, newCreateDBError(err, "users")
@@ -172,12 +156,12 @@ func (db *DB) UsernameExists(username string) bool {
 
 func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 	if user.ID == 0 {
-		return nil, newUpdateDBrror(errors.New("invalid user ID"), "users")
+		return nil, newUpdateDBError(errors.New("invalid user ID"), "users")
 	}
 	log.Printf("User ID: %d, Facility ID: %d", user.ID, user.FacilityID)
-	err := db.Debug().Save(&user).Error
+	err := db.Save(&user).Error
 	if err != nil {
-		return nil, newUpdateDBrror(err, "users")
+		return nil, newUpdateDBError(err, "users")
 	}
 	return user, nil
 }
@@ -185,13 +169,13 @@ func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
 func (db *DB) ToggleUserFavorite(user_id uint, id uint) (bool, error) {
 	var favRemoved bool
 	var favorite models.UserFavorite
-	if db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
+	if db.First(&favorite, "user_id = ? AND course_id = ?", user_id, id).Error == nil {
 		if err := db.Delete(&favorite).Error; err != nil {
 			return favRemoved, newDeleteDBError(err, "favorites")
 		}
 		favRemoved = true
 	} else {
-		favorite = models.UserFavorite{UserID: user_id, ProgramID: id}
+		favorite = models.UserFavorite{UserID: user_id, CourseID: id}
 		if err := db.Create(&favorite).Error; err != nil {
 			return favRemoved, newCreateDBError(err, "error creating favorites")
 		}

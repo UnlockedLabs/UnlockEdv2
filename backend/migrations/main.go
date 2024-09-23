@@ -37,6 +37,12 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 	log.Println("Connected to the PostgreSQL database")
+	goose.SetVerbose(true)
+	err = goose.SetDialect("postgres")
+	if err != nil {
+		log.Fatal(err)
+	}
+	goose.SetTableName("public.goose_db_version")
 	if *fresh {
 		log.Println("Running fresh migrations...")
 		if err := goose.Reset(db, migrationDir, goose.WithAllowMissing()); err != nil {

@@ -36,48 +36,51 @@ func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.Provider
 		log.Errorf("Failed to create cron job %s: %v", cj.Name, err)
 		return "", err
 	}
-	jr.checkFirstRun(prov)
+	err := jr.checkFirstRun(prov)
+	if err != nil {
+		return "", err
+	}
 	return cj.ID, nil
 }
 
 func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
-	var programs []models.Program
-	if err := jr.db.Find(&programs, "provider_platform_id = ?", prov.ID).Error; err != nil {
-		log.Errorf("failed to fetch programs: %v", err)
+	var courses []models.Course
+	if err := jr.db.Find(&courses, "provider_platform_id = ?", prov.ID).Error; err != nil {
+		log.Errorf("failed to fetch courses: %v", err)
 		return err
 	}
-	if len(programs) == 0 {
+	if len(courses) == 0 {
 		done := make(chan bool)
 
 		params := map[string]interface{}{
 			"provider_platform_id": prov.ID,
 		}
 		jobs := prov.GetDefaultCronJobs()
-		var programJob *models.CronJob
+		var courseJob *models.CronJob
 		for _, job := range jobs {
-			if job.Name == string(models.GetProgramsJob) {
-				programJob = job
+			if job.Name == string(models.GetCoursesJob) {
+				courseJob = job
 				break
 			}
 		}
 
 		if err := jr.db.Create(&models.RunnableTask{
-			JobID:      programJob.ID,
+			JobID:      courseJob.ID,
 			Parameters: params,
 			Status:     models.StatusPending,
-			Schedule:   programJob.Schedule,
+			Schedule:   courseJob.Schedule,
 		}).Error; err != nil {
 			log.Errorf("failed to create task: %v", err)
 			return err
 		}
 
-		sub, err := jr.nats.Subscribe("tasks.get_programs.completed", func(msg *nats.Msg) {
+		sub, err := jr.nats.Subscribe("tasks.get_courses.completed", func(msg *nats.Msg) {
 			var completedParams map[string]interface{}
 			if err := json.Unmarshal(msg.Data, &completedParams); err != nil {
 				log.Errorf("failed to unmarshal completion message: %v", err)
 				return
 			}
-			if completedParams["job_id"] == programJob.ID {
+			if completedParams["job_id"] == courseJob.ID {
 				done <- true
 			}
 		})
@@ -85,25 +88,34 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 			log.Errorf("failed to subscribe to completion subject: %v", err)
 			return err
 		}
-		defer sub.Unsubscribe()
+		defer func() {
+			err := sub.Unsubscribe()
+			if err != nil {
+				log.Errorf("failed to unsubscribe from completion subject: %v", err)
+			}
+		}()
 
-		params["job_id"] = programJob.ID
+		params["job_id"] = courseJob.ID
 		body, err := json.Marshal(&params)
 		if err != nil {
 			log.Errorf("failed to marshal params: %v", err)
 			return err
 		}
-		msg := nats.NewMsg("tasks.get_programs")
+		msg := nats.NewMsg("tasks.get_courses")
 		msg.Data = body
-		jr.nats.PublishMsg(msg)
-		log.Info("published message to get programs")
+		err = jr.nats.PublishMsg(msg)
+		if err != nil {
+			log.Errorf("failed to publish message to get courses: %v", err)
+			return err
+		}
+		log.Info("published message to get courses")
 
 		select {
 		case <-done:
-			log.Info("Program fetching job completed. Continuing with the rest of the jobs...")
+			log.Info("Course fetching job completed. Continuing with the rest of the jobs...")
 		case <-time.After(3 * time.Minute):
-			log.Error("Timeout waiting for program fetching job to complete")
-			return fmt.Errorf("timeout waiting for program fetching job to complete")
+			log.Error("Timeout waiting for course fetching job to complete")
+			return fmt.Errorf("timeout waiting for course fetching job to complete")
 		}
 	}
 	return nil

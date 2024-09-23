@@ -10,10 +10,10 @@ import (
 )
 
 func (srv *Server) registerMilestonesRoutes() {
-	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.handleError(srv.handleIndexMilestones)))
-	srv.Mux.Handle("POST /api/milestones", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateMilestone)))
-	srv.Mux.Handle("DELETE /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleDeleteMilestone)))
-	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleUpdateMilestone)))
+	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.handleIndexMilestones))
+	srv.Mux.Handle("POST /api/milestones", srv.applyAdminMiddleware(srv.handleCreateMilestone))
+	srv.Mux.Handle("DELETE /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleDeleteMilestone))
+	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleUpdateMilestone))
 }
 
 func (srv *Server) handleIndexMilestones(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -68,7 +68,7 @@ func (srv *Server) handleDeleteMilestone(w http.ResponseWriter, r *http.Request,
 		log.add("milestoneId", id)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, "Milestone deleted successfully")
+	return writeJsonResponse(w, http.StatusNoContent, "Milestone deleted successfully")
 }
 
 func (srv *Server) handleUpdateMilestone(w http.ResponseWriter, r *http.Request, log sLog) error {

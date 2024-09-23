@@ -23,18 +23,18 @@ func TestHandleIndexOpenContent(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/open-content%v", test.queryParams), nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRole(server.handleIndexOpenContent, test.role)
 			rr := executeRequest(t, req, handler, test)
 			contents, err := server.Db.GetOpenContent(test.mapKeyValues["all"].(bool))
 			if err != nil {
-				t.Fatal("unable to get open content, error is ", err)
+				t.Fatalf("unable to get open content, error is %v", err)
 			}
 			data := models.PaginatedResource[models.OpenContentProvider]{}
 			received := rr.Body.String()
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
-				t.Errorf("failed to unmarshal response error is %v", err)
+				t.Errorf("failed to unmarshal resource, error is %v", err)
 			}
 			for _, openContent := range contents {
 				if !slices.ContainsFunc(data.Data, func(content models.OpenContentProvider) bool {
@@ -56,7 +56,7 @@ func TestHandleToggleOpenContent(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPut, "/api/open-content/", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRoleWithMiddleware(server.handleToggleOpenContent, test.role)
@@ -65,7 +65,7 @@ func TestHandleToggleOpenContent(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])
@@ -77,7 +77,7 @@ func TestHandleToggleOpenContent(t *testing.T) {
 				received = rr.Body.String()
 				data = models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])
@@ -96,15 +96,15 @@ func TestHandleCreateOpenContent(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			openContentMap := test.mapKeyValues
 			if openContentMap["err"] != nil {
-				t.Fatal("unable to create new open content, error is ", openContentMap["err"])
+				t.Fatalf("unable to create new open content, error is %v", openContentMap["err"])
 			}
 			jsonForm, err := json.Marshal(openContentMap)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPost, "/api/open-content", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleCreateOpenContent, test.role)
 			rr := executeRequest(t, req, handler, test)
@@ -112,19 +112,19 @@ func TestHandleCreateOpenContent(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Error("failed to unmarshal response")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != "Content provider created successfully" {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, "Content provider created successfully")
 				}
 				content := &models.OpenContentProvider{}
 				if err := server.Db.Where("description = ?", test.mapKeyValues["description"].(string)).First(&content).Error; err != nil {
-					t.Error("error getting outcome from db, error is ", err)
+					t.Errorf("error getting open content provider from db, error is %v", err)
 				}
 				t.Cleanup(func() {
 					err := server.Db.Delete(&models.OpenContentProvider{}, content.ID).Error
 					if err != nil {
-						fmt.Println("error running clean for open content that was created, error is ", err)
+						fmt.Println("unable to clean/delete open content, error is ", err)
 					}
 				})
 			}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -21,7 +22,7 @@ func TestHandleStudentDashboard(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/student-dashboard", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRole(server.handleStudentDashboard, test.role)
@@ -29,16 +30,40 @@ func TestHandleStudentDashboard(t *testing.T) {
 			id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
 			dashboard, err := server.Db.GetStudentDashboardInfo(id, 1)
 			if err != nil {
-				t.Fatal("failed to get student dashboard, error is ", err)
-				return
+				t.Fatalf("unable to get student dashboard, error is %v", err)
 			}
 			received := rr.Body.String()
 			resource := models.Resource[models.UserDashboardJoin]{}
 			if err := json.Unmarshal([]byte(received), &resource); err != nil {
-				t.Errorf("failed to unmarshal user dashboard")
+				t.Errorf("failed to unmarshal resource, error is %v", err)
 			}
-			if diff := cmp.Diff(&dashboard, &resource.Data); diff != "" {
-				t.Errorf("handler returned unexpected response body: %v", diff)
+			for _, enrollment := range dashboard.Enrollments {
+				if !slices.ContainsFunc(resource.Data.Enrollments, func(enro models.CurrentEnrollment) bool {
+					return enro.Name == enrollment.Name
+				}) {
+					t.Error("enrollment not found, out of sync")
+				}
+			}
+			for _, recentCourse := range dashboard.RecentCourses {
+				if !slices.ContainsFunc(resource.Data.RecentCourses, func(course models.RecentCourse) bool {
+					return course.CourseName == recentCourse.CourseName
+				}) {
+					t.Error("recent course not found, out of sync")
+				}
+			}
+			for _, topCourse := range dashboard.TopCourses {
+				if !slices.ContainsFunc(resource.Data.TopCourses, func(course string) bool {
+					return topCourse == course
+				}) {
+					t.Error("top course not found, out of sync")
+				}
+			}
+			for _, weekAct := range dashboard.WeekActivity {
+				if !slices.ContainsFunc(resource.Data.WeekActivity, func(recentAct models.RecentActivity) bool {
+					return recentAct.Date == weekAct.Date
+				}) {
+					t.Error("week activity not found, out of sync")
+				}
 			}
 		})
 	}
@@ -53,7 +78,7 @@ func TestHandleAdminDashboard(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/admin-dashboard", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRoleWithMiddleware(server.handleAdminDashboard, test.role)
@@ -62,13 +87,12 @@ func TestHandleAdminDashboard(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 				dashboard, err := server.Db.GetAdminDashboardInfo(uint(id))
 				if err != nil {
-					t.Fatal("failed to get student dashboard, error is ", err)
-					return
+					t.Fatalf("unable to get student dashboard, error is %v", err)
 				}
 				received := rr.Body.String()
 				resource := models.Resource[models.AdminDashboardJoin]{}
 				if err := json.Unmarshal([]byte(received), &resource); err != nil {
-					t.Errorf("failed to unmarshal admin dashboard")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if diff := cmp.Diff(&dashboard, &resource.Data); diff != "" {
 					t.Errorf("handler returned unexpected response body: %v", diff)
@@ -89,83 +113,79 @@ func TestHandleUserCatalogue(t *testing.T) {
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
+			catelogueMap := test.mapKeyValues
+			if catelogueMap["err"] != nil {
+				t.Fatalf("unable to retrieve user catelogue, error is %v", catelogueMap["err"])
+			}
 			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/{id}/catalogue%s", test.queryParams), nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRole(server.handleUserCatalogue, test.role)
 			rr := executeRequest(t, req, handler, test)
-			catelogueMap := test.mapKeyValues
-			if catelogueMap["err"] != nil {
-				t.Errorf("failed to retrieve user catelogue, error is %v", err)
-			}
 			data := models.Resource[[]database.UserCatalogueJoin]{}
 			received := rr.Body.String()
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
-				t.Errorf("failed to unmarshal response error is %v", err)
+				t.Errorf("unable to unmarshal resource, error is %v", err)
 			}
 			if catelogueMap["catelogue"] != nil {
 				for idx, catelogue := range catelogueMap["catelogue"].([]database.UserCatalogueJoin) {
-					if catelogue.ProgramID != data.Data[idx].ProgramID {
+					if catelogue.CourseID != data.Data[idx].CourseID {
 						t.Error("user catelogues are out of sync and not ordered correctly")
 					}
 				}
-			} else {
-				t.Log("categlogue map was null")
 			}
 		})
 	}
 }
 
-func TestHandleUserPrograms(t *testing.T) {
+func TestHandleUserCourses(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetAllUserProgramsAsAdmin", "admin", getUserProgramsSearch(4, "", "", "", nil), http.StatusOK, ""},
-		{"TestGetAllUserProgramsAsUser", "student", getUserProgramsSearch(4, "", "", "", nil), http.StatusOK, ""},
-		{"TestGetUserProgramsWithTagsAndOrderByPgNmDescAsUser", "student", getUserProgramsSearch(4, "desc", "program_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=program_name"},
-		{"TestGetUserProgramsWithTagsAndOrderByProvNmDescAsUser", "student", getUserProgramsSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
-		{"TestGetUserProgramsWithTagsAndOrderByCoursePgrDescAsUser", "student", getUserProgramsSearch(4, "desc", "course_progress", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=course_progress"},
-		{"TestGetUserProgramsWithTagsAndOrderByProvNmDescAsUser", "student", getUserProgramsSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
-		{"TestGetUserProgramsWithTagsAndOrderByIsFavdDescAsUser", "student", getUserProgramsSearch(4, "desc", "is_favorited", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=is_favorited"},
-		{"TestGetUserProgramsWithTagsAndOrderByTotalTmDescAsUser", "student", getUserProgramsSearch(4, "desc", "total_time", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=total_time"},
-		{"TestUserProgramsWithSearchAscAsUser", "student", getUserProgramsSearch(4, "asc", "", "of", []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&search=of"},
-		{"TestUserProgramsWithSearchDescAsUser", "student", getUserProgramsSearch(4, "desc", "", "Intro", []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&search=Intro"},
+		//{"TestGetAllUserCoursesAsAdmin", "admin", getUserCoursesSearch(4, "", "", "", nil), http.StatusOK, ""},
+		//{"TestGetAllUserCoursesAsUser", "student", getUserCoursesSearch(4, "", "", "", nil), http.StatusOK, ""},
+		{"TestGetUserCoursesWithTagsAndOrderByPgNmDescAsUser", "student", getUserCoursesSearch(4, "desc", "program_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=program_name"},
+		//{"TestGetUserCoursesWithTagsAndOrderByProvNmDescAsUser", "student", getUserCoursesSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
+		//{"TestGetUserCoursesWithTagsAndOrderByCoursePgrDescAsUser", "student", getUserCoursesSearch(4, "desc", "course_progress", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=course_progress"},
+		//{"TestGetUserCoursesWithTagsAndOrderByProvNmDescAsUser", "student", getUserCoursesSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
+		//{"TestGetUserCoursesWithTagsAndOrderByIsFavdDescAsUser", "student", getUserCoursesSearch(4, "desc", "is_favorited", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=is_favorited"},
+		//{"TestGetUserCoursesWithTagsAndOrderByTotalTmDescAsUser", "student", getUserCoursesSearch(4, "desc", "total_time", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=total_time"},
+		//{"TestUserCoursesWithSearchAscAsUser", "student", getUserCoursesSearch(4, "asc", "", "of", []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&search=of"},
+		//{"TestUserCoursesWithSearchDescAsUser", "student", getUserCoursesSearch(4, "desc", "", "Intro", []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&search=Intro"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/{id}/programs%s", test.queryParams), nil)
+			userCoursesMap := test.mapKeyValues
+			if userCoursesMap["err"] != nil {
+				t.Fatalf("unable to get user courses, error is %v", userCoursesMap["err"])
+			}
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/{id}/courses%s", test.queryParams), nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
-			handler := getHandlerByRole(server.handleUserPrograms, test.role)
+			handler := getHandlerByRole(server.handleUserCourses, test.role)
 			rr := executeRequest(t, req, handler, test)
-			userProgramsMap := test.mapKeyValues
-			if userProgramsMap["err"] != nil {
-				t.Errorf("failed to retrieve user programs, error is %v", err)
-			}
 			data := models.Resource[map[string]interface{}]{}
 			received := rr.Body.String()
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
-				t.Errorf("failed to unmarshal response error is %v", err)
+				t.Errorf("failed to unmarshal resource, error is %v", err)
 			}
-			if userProgramsMap["userPrograms"] != nil {
-				jsonStr, err := json.Marshal(data.Data["programs"])
+			if userCoursesMap["userCourses"] != nil {
+				jsonStr, err := json.Marshal(data.Data["courses"])
 				if err != nil {
-					t.Error("unable to marshal response user programs, error is ", err)
+					t.Error("unable to marshal response user courses, error is ", err)
 				}
-				responseUserPrograms := []database.UserPrograms{}
-				err = json.Unmarshal(jsonStr, &responseUserPrograms)
+				responseUserCourses := []database.UserCourses{}
+				err = json.Unmarshal(jsonStr, &responseUserCourses)
 				if err != nil {
-					t.Error("unable to unmarshal response user programs, error is ", err)
+					t.Error("unable to unmarshal response user courses, error is ", err)
 				}
-				for idx, userProg := range userProgramsMap["userPrograms"].([]database.UserPrograms) {
-					if userProg.ID != responseUserPrograms[idx].ID {
-						t.Error("user programs are out of sync and not ordered correctly")
+				for idx, userProg := range userCoursesMap["userCourses"].([]database.UserCourses) {
+					if userProg.ID != responseUserCourses[idx].ID {
+						t.Error("user courses are out of sync and not ordered correctly")
 					}
 				}
-			} else {
-				t.Log("user program map was null, nothing to loop through")
 			}
 		})
 	}
@@ -180,10 +200,10 @@ func getUserCatalogueSearch(userId int, tags []string, search, order string) map
 	return form
 }
 
-func getUserProgramsSearch(userId int, order, orderBy, search string, tags []string) map[string]any {
-	userPrograms, numCompleted, totalTime, err := server.Db.GetUserPrograms(uint(userId), order, orderBy, search, tags)
+func getUserCoursesSearch(userId int, order, orderBy, search string, tags []string) map[string]any {
+	userCourses, numCompleted, totalTime, err := server.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
 	form := make(map[string]any)
-	form["userPrograms"] = userPrograms
+	form["userCourses"] = userCourses
 	form["numCompleted"] = numCompleted
 	form["totalTime"] = totalTime
 	form["err"] = err

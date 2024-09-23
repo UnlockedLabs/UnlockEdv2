@@ -36,12 +36,13 @@ type RunnableTask struct {
 }
 
 const (
-	GetMilestonesJob JobType   = "get_milestones"
-	GetProgramsJob   JobType   = "get_programs"
-	GetActivityJob   JobType   = "get_activity"
-	GetOutcomesJob   JobType   = "get_outcomes"
-	StatusPending    JobStatus = "pending"
-	StatusRunning    JobStatus = "running"
+	GetMilestonesJob JobType = "get_milestones"
+	GetCoursesJob    JobType = "get_courses"
+	GetActivityJob   JobType = "get_activity"
+	GetOutcomesJob   JobType = "get_outcomes"
+
+	StatusPending JobStatus = "pending"
+	StatusRunning JobStatus = "running"
 )
 
 func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, error) {
@@ -51,52 +52,52 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, e
 		log.Errorf("failed to fetch users: %v", err)
 		skip = true
 	}
-	programs := []map[string]interface{}{}
-	if err := db.Model(Program{}).Select("id as program_id, external_id").Find(&programs, "provider_platform_id = ?", provId).Error; err != nil {
-		log.Errorf("failed to fetch programs: %v", err)
+	courses := []map[string]interface{}{}
+	if err := db.Model(Course{}).Select("id as course_id, external_id").Find(&courses, "provider_platform_id = ?", provId).Error; err != nil {
+		log.Errorf("failed to fetch courses: %v", err)
 		skip = true
 	}
 	switch jt {
 	case GetMilestonesJob:
 		if skip {
-			return nil, errors.New("no users or programs found for provider platform")
+			return nil, errors.New("no users or courses found for provider platform")
 		}
 		return map[string]interface{}{
 			"user_mappings":        users,
-			"programs":             programs,
+			"courses":              courses,
 			"provider_platform_id": provId,
 			"job_type":             jt,
 		}, nil
-	case GetProgramsJob:
+	case GetCoursesJob:
 		return map[string]interface{}{
 			"provider_platform_id": provId,
 			"job_type":             jt,
 		}, nil
 	case GetActivityJob:
 		if skip {
-			return nil, errors.New("no users or programs found for provider platform")
+			return nil, errors.New("no users or courses found for provider platform")
 		}
 		return map[string]interface{}{
 			"provider_platform_id": provId,
-			"programs":             programs,
+			"courses":              courses,
 			"user_mappings":        users,
 			"job_type":             jt,
 		}, nil
 	case GetOutcomesJob:
 		if skip {
-			return nil, errors.New("no users or programs found for provider platform")
+			return nil, errors.New("no users or courses found for provider platform")
 		}
 		return map[string]interface{}{
 			"provider_platform_id": provId,
 			"user_mappings":        users,
-			"programs":             programs,
+			"courses":              courses,
 			"job_type":             jt,
 		}, nil
 	}
 	return nil, nil
 }
 
-var AllDefaultJobs = []JobType{GetMilestonesJob, GetProgramsJob, GetActivityJob /* GetOutcomesJob */}
+var AllDefaultJobs = []JobType{GetMilestonesJob, GetCoursesJob, GetActivityJob /* GetOutcomesJob */}
 
 func NewCronJob(name JobType) *CronJob {
 	return &CronJob{

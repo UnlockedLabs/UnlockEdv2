@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -21,19 +20,19 @@ func TestHandleGetAllClients(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/oidc/clients", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleGetAllClients, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				clients, err := server.Db.GetAllRegisteredClients()
 				if err != nil {
-					t.Errorf("failed to retrieve registered oidc clients, error is %v", err)
+					t.Fatalf("unable to get registered oidc clients, error is %v", err)
 				}
 				data := models.Resource[[]models.OidcClient]{}
 				received := rr.Body.String()
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				for _, client := range clients {
 					if !slices.ContainsFunc(data.Data, func(cli models.OidcClient) bool {
@@ -59,43 +58,43 @@ func getRegisterClientRequest() map[string]any {
 }
 
 // FIXME Unable to test this function due to it reaching out to hydra...wrote the test logic, will come back to it
-func TestHandleRegisterClient(t *testing.T) {
-	httpTests := []httpTest{
-		//{"TestAdminCanRegisterClient", "admin", getRegisterClientRequest(), http.StatusCreated, ""},
-		{"TestAdminCanRegisterClient", "admin", getRegisterClientRequest(), http.StatusInternalServerError, ""},
-		{"TestUserCannotRegisterClient", "student", getRegisterClientRequest(), http.StatusUnauthorized, ""},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			jsonForm, err := json.Marshal(test.mapKeyValues["clientRequest"])
-			if err != nil {
-				t.Errorf("failed to marshal form")
-			}
-			req, err := http.NewRequest(http.MethodPost, "/api/oidc/clients", bytes.NewBuffer(jsonForm))
-			if err != nil {
-				t.Fatal(err)
-			}
-			handler := getHandlerByRoleWithMiddleware(server.handleRegisterClient, test.role)
-			rr := executeRequest(t, req, handler, test)
-			if test.expectedStatusCode == http.StatusOK {
-				received := rr.Body.String()
-				data := models.Resource[models.ClientResponse]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal user")
-				} //client_id
-				client := models.OidcClient{}
-				err := server.Db.Where("client_id = ?", data.Data.ClientID).First(&client).Error //just checking for now if record exists
-				if err != nil {
-					t.Error("unable to find oidc client by client id, error is ", err)
-				}
-				clientRequest := test.mapKeyValues["clientRequest"].(RegisterClientRequest)
-				if client.ProviderPlatformID != clientRequest.ProviderPlatformID {
-					t.Errorf("handler returned unexpected response, wanted %v got %v", client.ProviderPlatformID, clientRequest.ProviderPlatformID)
-				}
-			}
-		})
-	}
-}
+// func TestHandleRegisterClient(t *testing.T) {
+// 	httpTests := []httpTest{
+// 		//{"TestAdminCanRegisterClient", "admin", getRegisterClientRequest(), http.StatusCreated, ""},
+// 		{"TestAdminCanRegisterClient", "admin", getRegisterClientRequest(), http.StatusInternalServerError, ""},
+// 		{"TestUserCannotRegisterClient", "student", getRegisterClientRequest(), http.StatusUnauthorized, ""},
+// 	}
+// 	for _, test := range httpTests {
+// 		t.Run(test.testName, func(t *testing.T) {
+// 			jsonForm, err := json.Marshal(test.mapKeyValues["clientRequest"])
+// 			if err != nil {
+// 				t.Fatalf("unable to marshal form, error is %v", err)
+// 			}
+// 			req, err := http.NewRequest(http.MethodPost, "/api/oidc/clients", bytes.NewBuffer(jsonForm))
+// 			if err != nil {
+// 				t.Fatalf("unable to create new request, error is %v", err)
+// 			}
+// 			handler := getHandlerByRoleWithMiddleware(server.handleRegisterClient, test.role)
+// 			rr := executeRequest(t, req, handler, test)
+// 			if test.expectedStatusCode == http.StatusOK {
+// 				received := rr.Body.String()
+// 				data := models.Resource[models.ClientResponse]{}
+// 				if err := json.Unmarshal([]byte(received), &data); err != nil {
+// 					t.Errorf("failed to unmarshal resource, error is %v", err)
+// 				} //client_id
+// 				client := models.OidcClient{}
+// 				err := server.Db.Where("client_id = ?", data.Data.ClientID).First(&client).Error //just checking for now if record exists
+// 				if err != nil {
+// 					t.Error("unable to find oidc client by client id, error is ", err)
+// 				}
+// 				clientRequest := test.mapKeyValues["clientRequest"].(RegisterClientRequest)
+// 				if client.ProviderPlatformID != clientRequest.ProviderPlatformID {
+// 					t.Errorf("handler returned unexpected response, wanted %v got %v", client.ProviderPlatformID, clientRequest.ProviderPlatformID)
+// 				}
+// 			}
+// 		})
+// 	}
+// }
 
 func TestHandleGetOidcClient(t *testing.T) {
 	httpTests := []httpTest{
@@ -106,7 +105,7 @@ func TestHandleGetOidcClient(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/oidc/clients/{id}", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			//can remove this out
@@ -115,6 +114,9 @@ func TestHandleGetOidcClient(t *testing.T) {
 			//can remove this out all these are the same
 			if test.expectedStatusCode == http.StatusOK {
 				client, err := server.Db.GetOidcClientById(test.mapKeyValues["id"].(string))
+				if err != nil {
+					t.Fatalf("unable to get oidc client from db, error is %v", err)
+				}
 				clientResponseTest := &models.ClientResponse{
 					ClientID:      client.ClientID,
 					ClientSecret:  client.ClientSecret,
@@ -122,14 +124,10 @@ func TestHandleGetOidcClient(t *testing.T) {
 					TokenEndpoint: os.Getenv("APP_URL") + "/oauth2/token",
 					Scopes:        client.Scopes,
 				}
-				if err != nil {
-					t.Fatal(err)
-					return
-				}
 				received := rr.Body.String()
 				data := models.Resource[models.ClientResponse]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal client response")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if diff := cmp.Diff(clientResponseTest, &data.Data); diff != "" {
 					t.Errorf("handler returned unexpected response body: %v", diff)

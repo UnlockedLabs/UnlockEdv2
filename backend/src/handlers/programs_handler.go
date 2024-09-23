@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleIndexPrograms))))
-	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleShowProgram))))
-	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleCreateProgram))))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleDeleteProgram))))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleUpdateProgram))))
-	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(http.HandlerFunc(srv.handleError(srv.handleFavoriteProgram))))
+	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(srv.handleIndexPrograms))
+	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(srv.handleShowProgram))
+	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(srv.handleCreateProgram))
+	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(srv.handleDeleteProgram))
+	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(srv.handleUpdateProgram))
+	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(srv.handleFavoriteProgram))
 }
 
 /*
@@ -27,7 +28,12 @@ func (srv *Server) registerProgramsRoutes() {
 func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
-	total, programs, err := srv.Db.GetProgram(page, perPage, search)
+	tags := r.URL.Query()["tags"]
+	var tagsSplit []string
+	if len(tags) > 0 {
+		tagsSplit = strings.Split(tags[0], ",")
+	}
+	total, programs, err := srv.Db.GetProgram(page, perPage, tagsSplit, search)
 	if err != nil {
 		log.add("search", search)
 		return newDatabaseServiceError(err)
@@ -70,7 +76,7 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	program := models.Program{}
+	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {

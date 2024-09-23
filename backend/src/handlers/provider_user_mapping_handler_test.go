@@ -23,7 +23,7 @@ func TestHandleGetMappingsForUser(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/logins", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRoleWithMiddleware(server.handleGetMappingsForUser, test.role)
@@ -37,14 +37,13 @@ func TestHandleGetMappingsForUser(t *testing.T) {
 				data := models.Resource[[]models.ProviderUserMapping]{}
 				received := rr.Body.String()
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				//loop through entire...list of mappings
 				for _, mapping := range mappings {
 					if !slices.ContainsFunc(data.Data, func(prMap models.ProviderUserMapping) bool {
 						return prMap.ID == mapping.ID
 					}) {
-						t.Error("user mappings not found, out of sync")
+						t.Error("provider user mappings not found, out of sync")
 					}
 				}
 			}
@@ -61,39 +60,39 @@ func TestHandleCreateProviderUserMapping(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			form, err := getProviderUserMapping()
 			if err != nil {
-				t.Fatal("Unable to initialize user mapping form, error is ", err)
+				t.Fatalf("unable to initialize user mapping form, error is %v", err)
 			}
 			jsonForm, err := json.Marshal(form)
 			if err != nil {
-				t.Errorf("failed to marshal form")
+				t.Fatalf("unable to marshal form, error is %v", err)
 			}
 			req, err := http.NewRequest(http.MethodPost, "/api/users/{id}/logins", bytes.NewBuffer(jsonForm))
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			t.Cleanup(func() {
 				err := server.Db.DeleteUser(int(form["user_id"].(uint)))
 				if err != nil {
-					fmt.Println("Error cleaning up user from TestHandleCreateProviderUserMapping, error is ", err)
+					fmt.Println("error during cleanup/delete of user, error is ", err)
 				}
 			})
-			req.SetPathValue("id", strconv.Itoa(int(form["user_id"].(uint))))
+			req.SetPathValue("id", fmt.Sprintf("%d", int(form["user_id"].(uint))))
 			handler := getHandlerByRoleWithMiddleware(server.handleCreateProviderUserMapping, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusCreated {
 				received := rr.Body.String()
 				data := models.Resource[models.ProviderUserMapping]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal provider user mapping")
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				userMapping, err := server.Db.GetProviderUserMapping(int(data.Data.UserID), int(data.Data.ProviderPlatformID))
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("unable to get provider user mapping from db, error is %v", err)
 				}
 				t.Cleanup(func() {
 					err := server.Db.DeleteProviderUserMappingByUserID(int(data.Data.UserID), int(data.Data.ProviderPlatformID))
 					if err != nil {
-						fmt.Println("Error cleaning up provider user mapping from TestHandleCreateProviderUserMapping, error is ", err)
+						fmt.Println("unable to cleanup/delete provider user mapping, error is ", err)
 					}
 				})
 				if diff := cmp.Diff(userMapping, &data.Data); diff != "" {
@@ -104,7 +103,6 @@ func TestHandleCreateProviderUserMapping(t *testing.T) {
 	}
 }
 
-// NOTE: does not test create user within dependency app canvas/kolibri, it does test its surrounding logic
 func TestHandleCreateProviderUserAccount(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestUserCannotCreateProviderUserAccount", "student", map[string]any{"id": "2", "user_id": "4"}, http.StatusUnauthorized, ""},
@@ -112,9 +110,9 @@ func TestHandleCreateProviderUserAccount(t *testing.T) {
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPost, " /api/provider-platforms/{id}/user-accounts/{user_id}", nil)
+			req, err := http.NewRequest(http.MethodPost, "/api/provider-platforms/{id}/user-accounts/{user_id}", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			req.SetPathValue("user_id", test.mapKeyValues["user_id"].(string))
@@ -124,7 +122,7 @@ func TestHandleCreateProviderUserAccount(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])
@@ -146,7 +144,7 @@ func TestHandleDeleteProviderUserMapping(t *testing.T) {
 			if test.expectedStatusCode == http.StatusNoContent {
 				mapping, err := createProviderUserMapping()
 				if err != nil {
-					t.Errorf("failed to create provider user mapping")
+					t.Fatalf("unable to create provider user mapping, error is %v", err)
 				}
 				userId = mapping.UserID
 				providerId = mapping.ProviderPlatformID
@@ -156,7 +154,7 @@ func TestHandleDeleteProviderUserMapping(t *testing.T) {
 			}
 			req, err := http.NewRequest(http.MethodDelete, "/api/users/{userId}/logins/{providerId}", nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("userId", fmt.Sprintf("%d", userId))
 			req.SetPathValue("providerId", fmt.Sprintf("%d", providerId))
@@ -166,7 +164,7 @@ func TestHandleDeleteProviderUserMapping(t *testing.T) {
 				received := rr.Body.String()
 				data := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
+					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
 				if data.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])

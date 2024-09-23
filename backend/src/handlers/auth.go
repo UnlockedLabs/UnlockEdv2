@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -32,10 +33,10 @@ type (
 )
 
 func (srv *Server) registerAuthRoutes() {
-	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleError(srv.handleResetPassword)))
+	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
 	/* only use auth middleware, user activity bloats the database + results */
-	srv.Mux.Handle("GET /api/auth", srv.authMiddleware(http.HandlerFunc(srv.handleError(srv.handleCheckAuth))))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(http.HandlerFunc(srv.handleError(srv.handleChangeAdminFacility))))
+	srv.Mux.Handle("GET /api/auth", srv.applyMiddleware(srv.handleCheckAuth))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -57,11 +58,15 @@ func claimsFromUser(user *models.User) *Claims {
 	}
 }
 
-func (s *Server) authMiddleware(next http.Handler) http.HandlerFunc {
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "authMiddleware"}
-		claims, err := s.validateOrySession(r)
+		claims, hasCookie, err := s.validateOrySession(r)
 		if err != nil {
+			if hasCookie {
+				// if the user has a cookie, but the session is invalid, clear the cookie for them
+				s.clearKratosCookies(w, r)
+			}
 			log.WithFields(fields).Error("Error validating ory session: ", err)
 			s.errorResponse(w, http.StatusUnauthorized, "invalid ory session, please clear your cookies")
 			return
@@ -90,6 +95,18 @@ func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+func (s *Server) clearKratosCookies(w http.ResponseWriter, r *http.Request) {
+	cookies := r.Cookies()
+	for _, cookie := range cookies {
+		http.SetCookie(w, &http.Cookie{
+			Name:    cookie.Name,
+			Value:   "",
+			Expires: time.Now().Add(-1 * time.Hour),
+			Path:    "/",
+		})
+	}
+}
+
 func isAuthRoute(r *http.Request) bool {
 	paths := []string{"/api/login", "/api/logout", "/api/reset-password", "/api/auth", "/api/consent/accept", "/api/facilities/1"}
 	return slices.Contains(paths, r.URL.Path)
@@ -100,6 +117,7 @@ func (srv *Server) UserIsAdmin(r *http.Request) bool {
 	return claims.Role == models.Admin
 }
 
+/* this method **only** works when the path value is 'id' */
 func (srv *Server) canViewUserData(r *http.Request) bool {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -109,7 +127,7 @@ func (srv *Server) canViewUserData(r *http.Request) bool {
 	return claims.Role == models.Admin || claims.UserID == uint(id)
 }
 
-func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
+func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 		if !ok {
@@ -120,7 +138,7 @@ func (srv *Server) adminMiddleware(next func(http.ResponseWriter, *http.Request)
 			http.Error(w, "Unauthorized - not admin", http.StatusUnauthorized)
 			return
 		}
-		http.HandlerFunc(next).ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -152,31 +170,35 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 }
 
 // we pull the ory session cookie, and send request to kratos to validate the user session
-func (srv *Server) validateOrySession(r *http.Request) (*Claims, error) {
+func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 	fields := log.Fields{"handler": "validateOrySession"}
 	request, err := http.NewRequest("GET", os.Getenv("KRATOS_PUBLIC_URL")+"/sessions/whoami", nil)
 	if err != nil {
 		log.WithFields(fields).Error("Error creating request to ory: ", err)
-		return nil, err
+		return nil, false, err
 	}
+	var hasCookie bool
 	cookie := r.Header.Get("Cookie")
+	if strings.Contains(cookie, "ory_kratos_session") {
+		hasCookie = true
+	}
 	request.Header.Add("Cookie", cookie)
 	response, err := srv.Client.Do(request)
 	if err != nil {
 		log.WithFields(fields).Error("Error sending equest to ory: ", err)
-		return nil, err
+		return nil, hasCookie, err
 	}
 	if response.StatusCode == 200 {
 		oryResp := map[string]interface{}{}
 		if err := json.NewDecoder(response.Body).Decode(&oryResp); err != nil {
 			log.WithFields(fields).Errorln("error decoding body from ory response")
-			return nil, err
+			return nil, hasCookie, err
 		}
 		defer response.Body.Close()
 		active, ok := oryResp["active"].(bool)
 		if !ok {
 			log.WithFields(fields).Errorln("error decoding active session from ory response")
-			return nil, err
+			return nil, hasCookie, err
 		}
 		if active {
 			log.WithFields(fields).Info("Got active  session from ory")
@@ -185,14 +207,14 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, error) {
 				kratosID, ok := identity["id"].(string)
 				if !ok {
 					log.WithFields(fields).Errorln("error parsing ID from ory response")
-					return nil, err
+					return nil, hasCookie, err
 				}
 				var user models.User
 				if err := srv.Db.Find(&user, "kratos_id = ?", kratosID).Error; err != nil {
 					fields["error"] = err.Error()
 					fields["kratos_id"] = kratosID
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")
-					return nil, err
+					return nil, hasCookie, err
 				}
 				traits := identity["traits"].(map[string]interface{})
 				fields["user"] = user
@@ -213,12 +235,12 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, error) {
 					KratosID:      kratosID,
 					Role:          user.Role,
 				}
-				return claims, nil
+				return claims, hasCookie, nil
 			}
 		}
 	}
 	log.WithFields(fields).Error("Ory session not active")
-	return nil, errors.New("ory session not active")
+	return nil, hasCookie, errors.New("ory session not active")
 }
 
 type ResetPasswordRequest struct {

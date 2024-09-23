@@ -28,7 +28,6 @@ func main() {
 	}
 	scheduler.Start()
 
-	newJob.RunNow()
 	log.Infof("Scheduler started, running %s", newJob.ID())
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)

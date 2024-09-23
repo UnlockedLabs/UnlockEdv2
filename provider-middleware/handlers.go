@@ -10,29 +10,29 @@ import (
 )
 
 func (sh *ServiceHandler) registerRoutes() {
-	sh.Mux.Handle("/", sh.applyMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	sh.Mux.Handle("/", sh.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})))
-	sh.Mux.Handle("GET /api/users", sh.applyMiddleware(http.HandlerFunc(sh.handleUsers)))
+	sh.Mux.Handle("GET /api/users", sh.authMiddleware(http.HandlerFunc(sh.handleUsers)))
 }
 
 func (sh *ServiceHandler) initSubscription() error {
-	_, err := sh.nats.Subscribe("tasks.get_programs", func(msg *nats.Msg) {
-		go sh.handlePrograms(msg)
+	_, err := sh.nats.Subscribe("tasks.get_courses", func(msg *nats.Msg) {
+		go sh.handleCourses(msg)
 	})
 	if err != nil {
 		log.Fatalf("Error subscribing to NATS topic: %v", err)
 		return err
 	}
 	_, err = sh.nats.Subscribe("tasks.get_milestones", func(msg *nats.Msg) {
-		go sh.handleMilestonesForProgramUser(msg)
+		go sh.handleMilestonesForCourseUser(msg)
 	})
 	if err != nil {
 		log.Fatalf("Error subscribing to NATS topic: %v", err)
 		return err
 	}
 	_, err = sh.nats.Subscribe("tasks.get_activity", func(msg *nats.Msg) {
-		go sh.handleAcitivityForProgram(msg)
+		go sh.handleAcitivityForCourse(msg)
 	})
 	if err != nil {
 		log.Fatalf("Error subscribing to NATS topic: %v", err)
@@ -46,7 +46,7 @@ func (sh *ServiceHandler) initSubscription() error {
 * This handler will be responsible for importing courses from Providers
 * to the UnlockEd platform, mapping their Content objects to our Course object
  */
-func (sh *ServiceHandler) handlePrograms(msg *nats.Msg) {
+func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
 	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
@@ -55,13 +55,13 @@ func (sh *ServiceHandler) handlePrograms(msg *nats.Msg) {
 	params := *service.GetJobParams()
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	err = service.ImportPrograms(sh.db)
+	err = service.ImportCourses(sh.db)
 	if err != nil {
 		sh.cleanupJob(providerPlatformId, jobId, false)
 		log.Println("error fetching provider service from msg parameters", err)
 		return
 	}
-	finished := nats.NewMsg("tasks.get_programs.completed")
+	finished := nats.NewMsg("tasks.get_courses.completed")
 	finished.Data = []byte(`{"job_id": "` + jobId + `"}`)
 	err = sh.nats.PublishMsg(finished)
 	if err != nil {
@@ -103,16 +103,16 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
+func (sh *ServiceHandler) handleMilestonesForCourseUser(msg *nats.Msg) {
 	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 		return
 	}
-	log.Println("initiating GetMilestonesForProgramUser milestones")
+	log.Println("initiating GetMilestonesForCourseUser milestones")
 	params := *service.GetJobParams()
 	log.Traceln("params for milestones job: ", params)
-	programs := extractArrayMap(params, "programs")
+	courses := extractArrayMap(params, "courses")
 	users := extractArrayMap(params, "user_mappings")
 	jobId := params["job_id"].(string)
 	lastRunStr := params["last_run"].(string)
@@ -122,8 +122,8 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 		sh.cleanupJob(providerPlatformId, jobId, false)
 		return
 	}
-	for _, program := range programs {
-		err = service.ImportMilestones(program, users, sh.db, lastRun)
+	for _, course := range courses {
+		err = service.ImportMilestones(course, users, sh.db, lastRun)
 		time.Sleep(1 * time.Second) // to avoid rate limiting with the provider
 		if err != nil {
 			log.Errorf("Failed to retrieve milestones: %v", err)
@@ -133,7 +133,7 @@ func (sh *ServiceHandler) handleMilestonesForProgramUser(msg *nats.Msg) {
 	sh.cleanupJob(providerPlatformId, jobId, true)
 }
 
-func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
+func (sh *ServiceHandler) handleAcitivityForCourse(msg *nats.Msg) {
 	service, err := sh.initService(msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
@@ -141,14 +141,14 @@ func (sh *ServiceHandler) handleAcitivityForProgram(msg *nats.Msg) {
 	}
 	params := *service.GetJobParams()
 	log.Println("params for activity job: ", params)
-	programs := extractArrayMap(params, "programs")
+	courses := extractArrayMap(params, "courses")
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	for _, program := range programs {
-		err = service.ImportActivityForProgram(program, sh.db)
+	for _, course := range courses {
+		err = service.ImportActivityForCourse(course, sh.db)
 		if err != nil {
 			sh.cleanupJob(providerPlatformId, jobId, false)
-			log.Errorf("failed to get program activity: %v", err)
+			log.Errorf("failed to get course activity: %v", err)
 			continue
 		}
 	}

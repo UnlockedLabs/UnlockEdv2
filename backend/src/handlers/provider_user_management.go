@@ -12,9 +12,9 @@ import (
 
 func (srv *Server) registerProviderUserRoutes() {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleMapProviderUser)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleError(srv.handleImportProviderUsers)))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.applyAdminMiddleware(srv.handleError(srv.handleCreateProviderUserAccount)))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleMapProviderUser))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleImportProviderUsers))
+	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.applyAdminMiddleware(srv.handleCreateProviderUserAccount))
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,
@@ -83,7 +83,7 @@ func removeChars(str string, toStrip string) string {
 	}, str)
 }
 
-const disallowedChars string = "`; )(|\\\"'"
+const disallowedChars string = "`; *#@!^&)(|\\\"'"
 
 // This function takes an array of 1 or more Provider users (that come from the middleware, so they are
 // already in the correct format) and creates a new user in the database for each of them, as well as
@@ -111,14 +111,13 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 	}
 	toReturn := make([]ImportUserResponse, 0)
 	for _, user := range users.Users {
-		username := removeChars(user.Username, disallowedChars)
 		newUser := models.User{
-			Username:   username,
+			Username:   removeChars(user.Username, disallowedChars),
 			Email:      user.Email,
-			NameFirst:  user.NameFirst,
-			NameLast:   user.NameLast,
+			NameFirst:  removeChars(user.NameFirst, disallowedChars),
+			NameLast:   removeChars(user.NameLast, disallowedChars),
 			FacilityID: facilityId,
-			Role:       models.Student, //added this temporarily
+			Role:       models.Student,
 		}
 		userResponse := ImportUserResponse{
 			Username: newUser.Username,
@@ -133,7 +132,7 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		tempPw := created.CreateTempPassword()
 		userResponse.TempPassword = tempPw
 		if !srv.isTesting(r) { //if not testing then reach out
-			if err := srv.handleCreateUserKratos(created.Username, tempPw); err != nil {
+			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
 				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
 					log.error("Error deleting user after failed provider user mapping import-provider-users")
 				}
@@ -219,7 +218,6 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 
 func (srv *Server) createAndRegisterProviderUserAccount(provider *models.ProviderPlatform, user *models.User) error {
 	fields := log.Fields{"func": "createAndRegisterCanvasUserAccount"}
-
 	if provider.Type == models.CanvasCloud || provider.Type == models.CanvasOSS {
 		return srv.createAndRegisterCanvasUserAccount(provider, user)
 	} else {

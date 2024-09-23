@@ -3,7 +3,7 @@
     "created_at": "2024-05-24T20:39:01.654448Z",
     "updated_at": "2024-05-24T20:39:01.654448Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "838",
     "type": "assignment_submission",
     "is_completed": true
@@ -12,7 +12,7 @@
     "created_at": "2024-05-24T20:39:01.656141Z",
     "updated_at": "2024-05-24T20:39:01.656141Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "847",
     "type": "assignment_submission",
     "is_completed": true
@@ -21,7 +21,7 @@
     "created_at": "2024-05-24T20:39:01.659777Z",
     "updated_at": "2024-05-24T20:39:01.659777Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "856",
     "type": "assignment_submission",
     "is_completed": true
@@ -30,7 +30,7 @@
     "created_at": "2024-05-24T20:39:01.66346Z",
     "updated_at": "2024-05-24T20:39:01.66346Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "865",
     "type": "assignment_submission",
     "is_completed": true
@@ -39,7 +39,7 @@
     "created_at": "2024-05-24T20:39:01.664468Z",
     "updated_at": "2024-05-24T20:39:01.664468Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "874",
     "type": "assignment_submission",
     "is_completed": true
@@ -48,7 +48,7 @@
     "created_at": "2024-05-24T20:39:01.665256Z",
     "updated_at": "2024-05-24T20:39:01.665256Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "883",
     "type": "assignment_submission",
     "is_completed": true
@@ -57,7 +57,7 @@
     "created_at": "2024-05-24T20:39:01.666065Z",
     "updated_at": "2024-05-24T20:39:01.666065Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "892",
     "type": "assignment_submission",
     "is_completed": false
@@ -66,7 +66,7 @@
     "created_at": "2024-05-24T20:39:01.666639Z",
     "updated_at": "2024-05-24T20:39:01.666639Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "903",
     "type": "assignment_submission",
     "is_completed": false
@@ -75,7 +75,7 @@
     "created_at": "2024-05-24T20:39:01.667177Z",
     "updated_at": "2024-05-24T20:39:01.667177Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "912",
     "type": "assignment_submission",
     "is_completed": false
@@ -83,7 +83,7 @@
   {
     "updated_at": "2024-05-24T20:39:01.667624Z",
     "user_id": 3,
-    "program_id": 1,
+    "course_id": 1,
     "external_id": "920",
     "type": "assignment_submission",
     "is_completed": false

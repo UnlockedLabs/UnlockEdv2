@@ -4,7 +4,6 @@ import (
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"os"
@@ -38,7 +37,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerActionsRoutes()
 	srv.registerLeftMenuRoutes()
 	srv.registerImageRoutes()
-	srv.registerProgramsRoutes()
+	srv.registerCoursesRoutes()
 	srv.registerMilestonesRoutes()
 	srv.registerOutcomesRoutes()
 	srv.registerActivityRoutes()
@@ -49,10 +48,11 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOryRoutes()
 	srv.registerFacilitiesRoutes()
 	srv.registerOpenContentRoutes()
-}
-
-func ServerWithDBHandle(db *database.DB) *Server {
-	return &Server{Db: db, Mux: http.NewServeMux()}
+	srv.registerProgramsRoutes()
+	srv.registerSectionsRoutes()
+	srv.registerSectionEventsRoutes()
+	srv.registerProgramSectionEnrollmentssRoutes()
+	srv.registerAttendanceRoutes()
 }
 
 func (srv *Server) ListenAndServe() {
@@ -68,37 +68,40 @@ func (srv *Server) ListenAndServe() {
 
 func NewServer(isTesting bool) *Server {
 	if isTesting {
-		db := database.InitDB(true)
-		return &Server{Db: db, Mux: http.NewServeMux(), OryClient: nil, Client: &http.Client{}}
-	} else {
-		configuration := ory.Configuration{
-			Servers: ory.ServerConfigurations{
-				{
-					URL: os.Getenv("KRATOS_ADMIN_URL"),
-				},
-				{
-					URL: os.Getenv("KRATOS_PUBLIC_URL"),
-				},
-			},
-			DefaultHeader: map[string]string{"Authorization": "Bearer " + os.Getenv("KRATOS_TOKEN")},
-		}
-		apiClient := ory.NewAPIClient(&configuration)
-		db := database.InitDB(false)
-		mux := http.NewServeMux()
-		conn, err := setupNats()
-		if err != nil {
-			log.Errorf("Failed to connect to NATS: %v", err)
-		}
-		server := Server{Db: db, Mux: mux, OryClient: apiClient, Client: &http.Client{}, nats: conn}
-		err = server.setupBucket()
-		if err != nil {
-			log.Errorf("Failed to setup JetStream KV store: %v", err)
-		}
-		server.RegisterRoutes()
-		if err := server.setupDefaultAdminInKratos(); err != nil {
-			log.Fatal("Error setting up default admin in Kratos")
-		}
-		return &server
+		return newTestingServer()
+	}
+	return newServer()
+}
+
+func newServer() *Server {
+	conn, err := setupNats()
+	if err != nil {
+		log.Errorf("Failed to connect to NATS: %v", err)
+	}
+	server := Server{
+		Db:        database.InitDB(false),
+		Mux:       http.NewServeMux(),
+		OryClient: ory.NewAPIClient(oryConfig()),
+		Client:    &http.Client{},
+		nats:      conn,
+	}
+	err = server.setupBucket()
+	if err != nil {
+		log.Errorf("Failed to setup JetStream KV store: %v", err)
+	}
+	server.RegisterRoutes()
+	if err := server.setupDefaultAdminInKratos(); err != nil {
+		log.Fatal("Error setting up default admin in Kratos")
+	}
+	return &server
+}
+
+func newTestingServer() *Server {
+	db := database.InitDB(true)
+	return &Server{Db: db,
+		Mux:       http.NewServeMux(),
+		OryClient: nil,
+		Client:    nil,
 	}
 }
 
@@ -112,6 +115,20 @@ func setupNats() (*nats.Conn, error) {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
 	return conn, nil
+}
+
+func oryConfig() *ory.Configuration {
+	return &ory.Configuration{
+		Servers: ory.ServerConfigurations{
+			{
+				URL: os.Getenv("KRATOS_ADMIN_URL"),
+			},
+			{
+				URL: os.Getenv("KRATOS_PUBLIC_URL"),
+			},
+		},
+		DefaultHeader: map[string]string{"Authorization": "Bearer " + os.Getenv("KRATOS_TOKEN")},
+	}
 }
 
 const (
@@ -144,15 +161,19 @@ func (srv *Server) setupBucket() error {
 	return nil
 }
 
-func (srv *Server) applyMiddleware(h http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(
-		srv.setCsrfTokenMiddleware(
-			srv.rateLimitMiddleware(
-				srv.authMiddleware(h))))
+func (srv *Server) applyMiddleware(h HttpFunc) http.Handler {
+	return srv.setCsrfTokenMiddleware(
+		srv.rateLimitMiddleware(
+			srv.authMiddleware(
+				srv.handleError(h))))
 }
 
-func (srv *Server) applyAdminMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return http.HandlerFunc(srv.applyMiddleware(srv.adminMiddleware(h)))
+func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
+	return srv.setCsrfTokenMiddleware(
+		srv.rateLimitMiddleware(
+			srv.authMiddleware(
+				srv.adminMiddleware(
+					srv.handleError(h)))))
 }
 
 // func (srv *Server) applyAdminTestingMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
@@ -221,7 +242,6 @@ func (srv *Server) generateKolibriOidcClient() error {
 			AccessKey: os.Getenv("KOLIBRI_USERNAME") + ":" + os.Getenv("KOLIBRI_PASSWORD"),
 			AccountID: "TODO", // kolibri wont be running yet. This will be updated the first time a user is added
 			State:     models.Enabled,
-			IconUrl:   "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
 		}
 		provider, err = srv.Db.CreateProviderPlatform(provider)
 		if err != nil {
@@ -250,7 +270,7 @@ func (srv *Server) syncKratosAdminDB() error {
 		if err != nil {
 			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
 		}
-		if err := srv.handleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
+		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
 		}
 		return nil
@@ -283,7 +303,7 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 			// so we create the OIDC client if KOLIBRI_URL is set
 			// then create the default admin in kratos
 			log.Println("kratos id not found")
-			return srv.handleCreateUserKratos(user.Username, "ChangeMe!")
+			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}
 	return srv.syncKratosAdminDB()
@@ -300,7 +320,7 @@ func (srv *Server) userIdFromRequest(r *http.Request) uint {
 
 type TestClaims string
 
-const TestingClaimsKey = TestClaims("test_claims")
+const TestingClaimsKey TestClaims = "test_claims"
 
 func (srv *Server) isTesting(r *http.Request) bool {
 	return r.Context().Value(TestingClaimsKey) != nil
@@ -356,24 +376,19 @@ func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 
 // Wraps a handler function that returns an error so that it can handle the error by writing it to the response and logging it.
-func (svr *Server) handleError(handler HttpFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log := sLog{f: log.Fields{"HandlerMethodAndPath": fmt.Sprintf("%s %s", r.Method, r.URL.Path)}}
-		handlerName := getHandlerName(handler)
-		if handlerName == "NameNotFound" {
-			log.warn("Handler name not found")
-		}
-		log.add("handler_name", getHandlerName(handler))
+func (svr *Server) handleError(handler HttpFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := sLog{f: log.Fields{"handler": getHandlerName(handler), "method": r.Method, "path": r.URL.Path}}
 		if err := handler(w, r, log); err != nil {
 			if svcErr, ok := err.(serviceError); ok {
 				svr.errorResponse(w, svcErr.Status, svcErr.Message)
-				svcErr.log(log)
+				log.error("Error occurred is ", svcErr.Err)
 			} else { //capture all other error types
 				svr.errorResponse(w, http.StatusInternalServerError, err.Error())
 				log.error("Error occurred is ", err.Error())
 			}
 		}
-	}
+	})
 }
 
 // Uses reflection to get the name of the handler function using a series of string splits

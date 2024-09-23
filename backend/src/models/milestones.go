@@ -13,21 +13,21 @@ const (
 type Milestone struct {
 	DatabaseFields               // ID, CreatedAt, UpdatedAt, DeletedAt
 	UserID         uint          `gorm:"not null" json:"user_id"`
-	ProgramID      uint          `gorm:"not null" json:"program_id"`
+	CourseID       uint          `gorm:"not null" json:"course_id"`
 	ExternalID     string        `gorm:"size:255;not null;unique" json:"external_id"`
 	Type           MilestoneType `gorm:"size:255;not null" json:"type"`
 	IsCompleted    bool          `gorm:"default:false" json:"is_completed"`
 
-	User    *User    `gorm:"foreignKey:UserID" json:"-"`
-	Program *Program `gorm:"foreignKey:ProgramID" json:"-"`
+	User   *User   `gorm:"foreignKey:UserID" json:"-"`
+	Course *Course `gorm:"foreignKey:CourseID" json:"-"`
 }
 
 type ImportMilestone struct {
-	UserID            int    `json:"user_id"`
-	ExternalProgramID string `json:"external_program_id"`
-	ExternalID        string `json:"external_id"`
-	Type              string `json:"type"`
-	IsCompleted       bool   `json:"is_completed"`
+	UserID           int    `json:"user_id"`
+	ExternalCourseID string `json:"external_course_id"`
+	ExternalID       string `json:"external_id"`
+	Type             string `json:"type"`
+	IsCompleted      bool   `json:"is_completed"`
 }
 
 func (Milestone) TableName() string {

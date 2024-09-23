@@ -2,92 +2,20 @@ package models
 
 type Program struct {
 	DatabaseFields
-	ProviderPlatformID      uint              `gorm:"not null" json:"provider_platform_id"`
-	Name                    string            `gorm:"size:60" json:"name"`
-	Description             string            `gorm:"size:510" json:"description"`
-	ExternalID              string            `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
-	ThumbnailURL            string            `gorm:"size:255" json:"thumbnail_url"`
-	Type                    ProgramType       `gorm:"size:255" json:"type"`
-	OutcomeTypes            string            `gorm:"size:255" json:"outcome_types"`
-	ExternalURL             string            `gorm:"size:255" json:"external_url"`
-	AltName                 string            `gorm:"size:255" json:"alt_name"`
-	TotalProgressMilestones uint              `json:"total_progress_milestones"`
-	ProviderPlatform        *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
-	Milestones              []Milestone       `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
-	Outcomes                []Outcome         `gorm:"foreignKey:ProgramID;constraint:OnDelete SET NULL" json:"-"`
+	Name        string `json:"name" gorm:"not null;unique" validate:"required,max=255"`
+	Description string `json:"description" gorm:"not null" validate:"required,max=255"`
+
+	Tags []ProgramTag `json:"tags" gorm:"foreignKey:ProgramID;references:ID"`
 }
 
-type ProgramType string
+func (Program) TableName() string { return "programs" }
 
-const (
-	OpenEnrollment  ProgramType = "open_enrollment"
-	OpenContent     ProgramType = "open_content"
-	FixedEnrollment ProgramType = "fixed_enrollment"
-)
+type ProgramTag struct {
+	DatabaseFields
+	ProgramID uint   `json:"program_id" gorm:"not null" validate:"required"`
+	Value     string `json:"value" gorm:"not null" validate:"required"`
 
-func (Program) TableName() string {
-	return "programs"
+	Program *Program `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 }
 
-type RecentActivity struct {
-	Date  string  `json:"date"`
-	Delta float32 `json:"delta"`
-}
-
-type CurrentEnrollment struct {
-	AltName              string `json:"alt_name"`
-	Name                 string `json:"name"`
-	ProviderPlatformName string `json:"provider_platform_name"`
-	ExternalURL          string `json:"external_url"`
-	TotalTime            uint   `json:"total_activity_time"`
-}
-
-type RecentProgram struct {
-	ProgramName          string `json:"program_name"`
-	CourseProgress       string `json:"course_progress"`
-	AltName              string `json:"alt_name"`
-	ThumbnailUrl         string `json:"thumbnail_url"`
-	ProviderPlatformName string `json:"provider_platform_name"`
-	ExternalUrl          string `json:"external_url"`
-}
-
-type UserDashboardJoin struct {
-	Enrollments    []CurrentEnrollment `json:"enrollments"`
-	RecentPrograms []RecentProgram     `json:"recent_programs"`
-	TopPrograms    []string            `json:"top_programs"`
-	WeekActivity   []RecentActivity    `json:"week_activity"`
-}
-
-type ImportProgram struct {
-	ProviderPlatformID      int      `json:"provider_platform_id"`
-	Name                    string   `json:"name"`
-	Description             string   `json:"description"`
-	ExternalID              string   `json:"external_id"`
-	ThumbnailURL            string   `json:"thumbnail_url"`
-	Type                    string   `json:"type"`
-	OutcomeTypes            []string `json:"outcome_types"`
-	ExternalURL             string   `json:"external_url"`
-	TotalProgressMilestones int      `json:"total_progress_milestones"`
-}
-
-// ADMIN STRUCTS
-type AdminDashboardJoin struct {
-	FacilityName        string              `json:"facility_name"`
-	MonthlyActivity     []RecentActivity    `json:"monthly_activity"`
-	WeeklyActiveUsers   uint                `json:"weekly_active_users"`
-	AvgDailyActivity    uint                `json:"avg_daily_activity"`
-	TotalWeeklyActivity uint                `json:"total_weekly_activity"`
-	ProgramMilestones   []ProgramMilestones `json:"program_milestones"`
-	TopProgramActivity  []ProgramActivity   `json:"top_program_activity"`
-}
-
-type ProgramMilestones struct {
-	Name       string `json:"name"`
-	Milestones int    `json:"milestones"`
-}
-
-type ProgramActivity struct {
-	ProgramName  string  `json:"program_name"`
-	AltName      string  `json:"alt_name"`
-	HoursEngaged float32 `json:"hours_engaged"`
-}
+func (ProgramTag) TableName() string { return "program_tags" }

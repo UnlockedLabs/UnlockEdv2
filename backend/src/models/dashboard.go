@@ -22,9 +22,9 @@ func (LeftMenuLink) TableName() string {
 }
 
 type UserFavorite struct {
-	ID        uint `gorm:"primaryKey" json:"-"`
-	UserID    uint `json:"user_id"`
-	ProgramID uint `json:"program_id"`
+	ID       uint `gorm:"primaryKey" json:"-"`
+	UserID   uint `json:"user_id"`
+	CourseID uint `json:"course_id"`
 }
 
 func (UserFavorite) TableName() string {

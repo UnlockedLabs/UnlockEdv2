@@ -9,9 +9,9 @@ import (
 )
 
 func (srv *Server) registerOidcRoutes() {
-	srv.Mux.HandleFunc("GET /api/oidc/clients", srv.applyAdminMiddleware(srv.handleError(srv.handleGetAllClients)))
-	srv.Mux.HandleFunc("POST /api/oidc/clients", srv.applyAdminMiddleware(srv.handleError(srv.handleRegisterClient)))
-	srv.Mux.HandleFunc("GET /api/oidc/clients/{id}", srv.applyAdminMiddleware(srv.handleError(srv.handleGetOidcClient)))
+	srv.Mux.Handle("GET /api/oidc/clients", srv.applyAdminMiddleware(srv.handleGetAllClients))
+	srv.Mux.Handle("POST /api/oidc/clients", srv.applyAdminMiddleware(srv.handleRegisterClient))
+	srv.Mux.Handle("GET /api/oidc/clients/{id}", srv.applyAdminMiddleware(srv.handleGetOidcClient))
 }
 
 func (srv *Server) handleGetAllClients(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -69,7 +69,6 @@ func (srv *Server) handleRegisterClient(w http.ResponseWriter, r *http.Request, 
 	if err := srv.Db.RegisterClient(client); err != nil {
 		return newDatabaseServiceError(err)
 	}
-	provider.OidcID = client.ID
 	provider.ExternalAuthProviderId = externalId
 	if _, err := srv.Db.UpdateProviderPlatform(provider, provider.ID); err != nil {
 		log.add("clientId", client.ID)

@@ -29,8 +29,8 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func (srv *Server) applyAdminTestingMiddleware(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
-	return http.HandlerFunc(srv.adminMiddleware(h)) //without ory kratos
+func (srv *Server) applyAdminTestingMiddleware(h http.Handler) http.Handler {
+	return srv.adminMiddleware(h) //without ory kratos
 	//return http.HandlerFunc(srv.authMiddleware(srv.adminMiddleware(h)))//with kratos...
 }
 
@@ -72,7 +72,8 @@ func (srv *Server) TestAsUser(handler HttpFunc) http.HandlerFunc {
 			FacilityID:    1,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
-		h.ServeHTTP(w, r.WithContext(ctx))
+		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
+		h.ServeHTTP(w, r.WithContext(test_ctx))
 	}
 }
 

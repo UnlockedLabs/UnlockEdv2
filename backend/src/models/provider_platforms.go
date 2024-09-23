@@ -33,16 +33,15 @@ type ProviderPlatform struct {
 	DatabaseFields
 	Type                   ProviderPlatformType  `gorm:"size:100"  json:"type"`
 	Name                   string                `gorm:"size:255"  json:"name"`
-	Description            string                `gorm:"size:1024" json:"description"`
-	IconUrl                string                `gorm:"size:255"  json:"icon_url"`
 	AccountID              string                `gorm:"size:64"   json:"account_id"`
 	AccessKey              string                `gorm:"size:255"  json:"access_key"`
 	BaseUrl                string                `gorm:"size:255"  json:"base_url"`
 	State                  ProviderPlatformState `gorm:"size:100"  json:"state"`
 	ExternalAuthProviderId string                `gorm:"size:128"  json:"external_auth_provider_id"`
-	OidcID                 uint                  `json:"oidc_id"`
+	/* this field needs to be fetched by joining oidc_clients when querying the provider_platforms */
+	OidcID uint `gorm:"-"         json:"oidc_id"`
 
-	Programs             []Program             `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
+	Courses              []Course              `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 	ProviderUserMappings []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 	OidcClient           *OidcClient           `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 }
@@ -94,6 +93,7 @@ func (provider *ProviderPlatform) GetDefaultRedirectURI() []string {
 	switch provider.Type {
 	case CanvasOSS, CanvasCloud:
 		return []string{provider.BaseUrl + "/login/oauth2/callback"}
+
 	case Kolibri:
 		defaultUri := provider.BaseUrl + "/oidccallback/"
 		stripped := strings.Replace(defaultUri, "https", "http", 1)

@@ -39,13 +39,13 @@ export default function AuthenticatedLayout({
                 className={`drawer drawer-mobile  ${isNavPinned ? 'lg:drawer-open' : ''} `}
             >
                 <div className="drawer-content flex flex-col border-l border-grey-1">
-                    <main className="w-full min-h-screen bg-background">
+                    <main className="w-full min-h-screen bg-background flex flex-col">
                         <PageNav
                             path={path}
                             showOpenMenu={!isNavPinned}
                             onShowNav={showNav}
                         />
-                        {children}
+                        <div className="grow">{children}</div>
                     </main>
                 </div>
                 <input
