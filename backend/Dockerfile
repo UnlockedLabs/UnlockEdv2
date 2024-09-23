@@ -12,7 +12,9 @@ FROM scratch
 
 COPY --from=builder /app/backend /backend
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /usr/local/go/lib/time/zoneinfo.zip /
 
+ENV ZONEINFO=/zoneinfo.zip
 COPY --from=builder /app/migrations /migrations
 
 EXPOSE 8080

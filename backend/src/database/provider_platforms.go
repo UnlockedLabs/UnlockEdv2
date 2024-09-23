@@ -11,36 +11,55 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 	var platforms []models.ProviderPlatform
 	var total int64
 	offset := (page - 1) * perPage
-	if err := db.Model(&models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").
-		Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").
+	if err := db.Model(&models.ProviderPlatform{}).Preload("OidcClient").
 		Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "provider_platforms")
 	}
-	return total, platforms, nil
+
+	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
+		if prov.OidcClient != nil {
+			prov.OidcID = prov.OidcClient.ID
+		}
+		return prov
+	}, platforms)
+
+	return total, toReturn, nil
+}
+func iterMap[T any](f func(T) T, arr []T) []T {
+	ret := []T{}
+	for _, a := range arr {
+		ret = append(ret, f(a))
+	}
+	return ret
 }
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).Select("provider_platforms.*, o.id as oidc_id").
-		Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").
+	if err := db.Model(models.ProviderPlatform{}).Preload("OidcClient").
 		Find(&platforms, "state = ?", "active").Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
-	return platforms, nil
+
+	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
+		if prov.OidcClient != nil {
+			prov.OidcID = prov.OidcClient.ID
+		}
+		return prov
+	}, platforms)
+	return toReturn, nil
 }
 
 func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) {
 	var platform models.ProviderPlatform
-	if err := db.Model(models.ProviderPlatform{}).
-		Select("provider_platforms.*, o.id as oidc_id").
-		Joins("LEFT JOIN oidc_clients o ON o.provider_platform_id = provider_platforms.id").
-		Find(&platform, "provider_platforms.id = ?", id).Error; err != nil {
+	if err := db.Model(models.ProviderPlatform{}).Preload("OidcClient").
+		Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "provider_platforms")
 	}
 	key, err := platform.DecryptAccessKey()
 	if err != nil {
 		return nil, newNotFoundDBError(err, "provider_platforms")
 	}
+	platform.OidcID = platform.OidcClient.ID
 	platform.AccessKey = key
 	return &platform, nil
 }
