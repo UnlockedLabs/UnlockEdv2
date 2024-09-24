@@ -17,6 +17,7 @@ jobs:
       frontend_changes: ${{ steps.frontend_changes.outputs.changed }}
       backend_changes: ${{ steps.backend_changes.outputs.changed }}
       middleware_changes: ${{ steps.middleware_changes.outputs.changed }}
+      crontasks_changes: ${{ steps.crontasks_changes.outputs.changed }}
 
     steps:
       - name: Checkout code
@@ -33,12 +34,18 @@ jobs:
       - id: middleware_changes
         run: |
           echo "changed=$(git diff --name-only HEAD~1 | grep '^provider-middleware/' | wc -l)" >> $GITHUB_OUTPUT
+      - id: crontasks_changes
+        run: |
+          echo "changed=$(git diff --name-only HEAD~1 | grep '^backend/tasks' | wc -l)" >> $GITHUB_OUTPUT
 
       - name: Debug outputs
         run: |
           echo "Frontend changes: ${{ steps.frontend_changes.outputs.changed }}"
           echo "Backend changes: ${{ steps.backend_changes.outputs.changed }}"
+
+
           echo "Middleware changes: ${{ steps.middleware_changes.outputs.changed }}"
+          echo "Crontasks changes: ${{ steps.crontasks_changes.outputs.changed }}"
 
   build-and-push:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
@@ -77,6 +84,11 @@ jobs:
         if: ${{ needs.setup-env.outputs.middleware_changes != '0' }} && github.ref == 'refs/heads/main'
         run: |
           docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
+
+      - name: Build and push crontasks image
+        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }} && github.ref == 'refs/heads/main'
+        run: |
+          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
@@ -118,3 +130,8 @@ jobs:
         if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
         run: |
           kubectl rollout restart deployment provider-service
+
+      - name: restart cron_tasks 
+        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }}
+        run: |
+          kubectl rollout restart deployment cron-tasks

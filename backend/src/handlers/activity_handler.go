@@ -50,7 +50,7 @@ func (srv *Server) handleGetCourseActivity(w http.ResponseWriter, r *http.Reques
 		return newInvalidIdServiceError(err, "course ID")
 	}
 	log.add("course_id", courseID)
-	page, perPage := srv.GetPaginationInfo(r)
+	page, perPage := srv.getPaginationInfo(r)
 	count, activities, err := srv.Db.GetActivityByCourseID(page, perPage, courseID)
 	if err != nil {
 		return newDatabaseServiceError(err)

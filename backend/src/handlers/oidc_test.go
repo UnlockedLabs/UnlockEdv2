@@ -46,17 +46,17 @@ func TestHandleGetAllClients(t *testing.T) {
 	}
 }
 
-func getRegisterClientRequest() map[string]any {
-	form := make(map[string]any)
-	clientRequest := RegisterClientRequest{
-		RedirectURI:        "https://www.urltosomewhere.com",
-		ProviderPlatformID: 4,
-		AutoRegister:       true,
-	}
-	form["clientRequest"] = clientRequest
-	return form
-}
-
+// func getRegisterClientRequest() map[string]any {
+// 	form := make(map[string]any)
+// 	clientRequest := RegisterClientRequest{
+// 		RedirectURI:        "https://www.urltosomewhere.com",
+// 		ProviderPlatformID: 4,
+// 		AutoRegister:       true,
+// 	}
+// 	form["clientRequest"] = clientRequest
+// 	return form
+// }
+//
 // FIXME Unable to test this function due to it reaching out to hydra...wrote the test logic, will come back to it
 // func TestHandleRegisterClient(t *testing.T) {
 // 	httpTests := []httpTest{

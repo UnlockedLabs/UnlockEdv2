@@ -10,17 +10,20 @@ import {
 import TealPill from './pill-labels/TealPill';
 import YellowPill from './pill-labels/YellowPill';
 import OutcomePill from './pill-labels/GreyPill';
+import { XMarkIcon } from '@heroicons/react/24/solid';
 
 export default function ProviderCard({
     provider,
     openEditProvider,
     oidcClient,
-    showAuthorizationInfo
+    showAuthorizationInfo,
+    archiveProvider
 }: {
     provider: ProviderPlatform;
     openEditProvider: Function;
     oidcClient: Function;
     showAuthorizationInfo: Function;
+    archiveProvider: Function;
 }) {
     const navigate = useNavigate();
     return (
@@ -46,7 +49,7 @@ export default function ProviderCard({
                 )}
             </td>
             <td className="flex flex-row gap-3 justify-self-end">
-                {provider.state !== ProviderPlatformState.ARCHIVED && (
+                {provider.state !== ProviderPlatformState.ARCHIVED ? (
                     <>
                         {provider.oidc_id !== 0 ? (
                             <>
@@ -89,7 +92,23 @@ export default function ProviderCard({
                                 onClick={() => openEditProvider(provider)}
                             />
                         </div>
+                        <div
+                            className="tooltip"
+                            data-tip="Disable/Archive Provider"
+                        >
+                            <XMarkIcon
+                                className="w-4"
+                                onClick={() => archiveProvider(provider)}
+                            />
+                        </div>
                     </>
+                ) : (
+                    <div className="tooltip" data-tip="Enable Provider">
+                        <CheckCircleIcon
+                            className="w-4"
+                            onClick={() => archiveProvider(provider)}
+                        />
+                    </div>
                 )}
             </td>
         </tr>

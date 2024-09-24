@@ -17,7 +17,7 @@ ascii_art:
 	@echo '             \/                 \/     \/    \/     \/              \/'
 
 
-.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset migration
+.PHONY: help prod dev migrate-fresh seed build-binaries init kolibri migrate reset migration install-dep
 
 
 help: ascii_art

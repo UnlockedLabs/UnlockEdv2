@@ -273,13 +273,22 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	}
 
 	// Monthly Activity
-	err = db.Table("activities a").
-		Select("STRFTIME('%Y-%m-%d', a.created_at) as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
-		Joins("JOIN users u ON a.user_id = u.id").
-		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
-		Group("STRFTIME('%Y-%m-%d', 'YYYY-MM-DD')").
-		Find(&dashboard.MonthlyActivity).Error
+	if db.Dialector.Name() == "sqlite" {
+		err = db.Table("activities a").
+			Select("STRFTIME('%Y-%m-%d', a.created_at) as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
+			Joins("JOIN users u ON a.user_id = u.id").
+			Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
+			Group("STRFTIME('%Y-%m-%d', 'YYYY-MM-DD')").
+			Find(&dashboard.MonthlyActivity).Error
 
+	} else {
+		err = db.Table("activities a").
+			Select("TO_CHAR(a.created_at, 'YYYY-MM-DD') as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
+			Joins("JOIN users u ON a.user_id = u.id").
+			Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
+			Group("TO_CHAR(a.created_at, 'YYYY-MM-DD')").
+			Find(&dashboard.MonthlyActivity).Error
+	}
 	if err != nil {
 		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}

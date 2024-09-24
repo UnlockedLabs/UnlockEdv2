@@ -54,12 +54,8 @@ services:
     volumes:
       - ./:/app
     environment:
+      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked?log_duration=true&log_min_duration_statement=100
       - APP_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=unlocked
-      - DB_PASSWORD=dev
-      - DB_NAME=unlocked
       - LOG_LEVEL=debug
       - APP_URL=http://127.0.0.1
       - PROVIDER_SERVICE_KEY=NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=

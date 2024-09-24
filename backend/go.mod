@@ -4,6 +4,7 @@ go 1.22.2
 
 require (
 	github.com/go-playground/validator/v10 v10.22.0
+	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.37.0
@@ -15,6 +16,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/teambition/rrule-go v1.8.2
 	golang.org/x/crypto v0.26.0
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
 	gorm.io/datatypes v1.2.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.11

@@ -36,7 +36,7 @@ func NewKolibriService(provider *models.ProviderPlatform, params *map[string]int
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	password := os.Getenv("KOLIBRI_DB_PASSWORD")
-	dsn := fmt.Sprintf("host=%s user=kolibri password=%s dbname=kolibri port=%s sslmode=prefer TimeZone=America/New_York", host, password, port)
+	dsn := fmt.Sprintf("host=%s user=kolibri password=%s dbname=kolibri port=%s sslmode=prefer TimeZone=UTC", host, password, port)
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Errorln("error connecting to db in NewKolibriService")
@@ -94,7 +94,7 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error {
 	log.Println("Importing courses from Kolibri")
 	var courses []map[string]interface{}
 	sql := `SELECT id, author, name, description, thumbnail, total_resource_count, public, root_id FROM content_channelmetadata`
-	if err := ks.db.Raw(sql).Find(&courses).Error; err != nil {
+	if err := ks.db.Raw(sql).Scan(&courses).Error; err != nil {
 		log.Errorln("error querying kolibri database for courses")
 		return err
 	}
@@ -102,12 +102,6 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error {
 	for _, course := range courses {
 		id := course["id"].(string)
 		if db.Where("provider_platform_id = ? AND external_id = ?", ks.ProviderPlatformID, id).First(&models.Course{}).Error == nil {
-			continue
-		}
-		query := `SELECT COUNT(*) FROM content_contentnode WHERE channel_id = ?`
-		var count int
-		if err := ks.db.Raw(query, id).Find(&count).Error; err != nil {
-			log.Errorln("error querying kolibri database for course content count")
 			continue
 		}
 		prog := ks.IntoCourse(course)
@@ -120,9 +114,66 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error {
 }
 
 func (ks *KolibriService) ImportMilestones(coursePair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
-	// sql := `SELECT id, complete, time_spent FROM logger_attemptlog where user_id = ? AND content_id = ?`
 	return nil
 }
+
+//  courseId := coursePair["external_course_id"].(string)
+//
+// 	for user := range mapping {
+// 	sql := `WITH resource_progress AS (
+//     SELECT
+//         channel_id,
+//         content_id,
+//         CASE
+//             WHEN SUM(progress) > 1.0 THEN 1.0
+//             ELSE SUM(progress)
+//         END AS total_progress
+//     FROM
+//         logger_contentsessionlog
+// 	WHERE user_id = ? AND channel_id = ?
+//     GROUP BY
+//         channel_id, content_id
+// ),
+// channel_progress AS (
+//     SELECT
+//         rp.channel_id,
+//         SUM(CASE WHEN rp.total_progress >= 1 THEN 1 ELSE 0 END) AS finished,
+//         SUM(CASE WHEN rp.total_progress < 1 THEN 1 ELSE 0 END) AS in_progress,
+//         SUM(rp.total_progress) AS total_progress_sum
+//     FROM
+//         resource_progress AS rp
+//     GROUP BY
+//         rp.channel_id
+// )
+// SELECT
+//     channel.name AS channel_name,
+//     channel.total_resource_count,
+//     cp.finished,
+//     cp.in_progress,
+//     cp.channel_id,
+//     (channel.total_resource_count - (cp.finished + cp.in_progress)) AS not_started,
+//     cp.total_progress_sum,
+//     (cp.total_progress_sum / channel.total_resource_count) * 100 AS percent_complete
+// FROM
+//     content_channelmetadata AS channel
+// JOIN
+//     channel_progress AS cp
+// ON
+//     channel.id = cp.channel_id
+// WHERE
+//     cp.channel_id = ? AND cp.finished > 0 OR cp.in_progress > 0
+// ORDER BY
+//     channel.name;`
+//
+// 		data := make(map[string]interface{})
+// 	if err := ks.db.Raw(sql, user["external_user_id"].(string), courseId, courseId).Scan(&data).Error; err != nil {
+// 		return nil
+// 	}
+// 		existing := models.Milestone{}
+// 		if err := db.Model(&models.Milestone{}).Where("course_id = ? AND user_id = ?", coursePair["course_id"], user["user_id"]).First(&existing).Error; err != nil {
+//
+//
+//}
 
 type KolibriActivity struct {
 	ID                  string `json:"id"`
@@ -136,7 +187,7 @@ type KolibriActivity struct {
 
 func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interface{}, db *gorm.DB) error {
 	courseId := int(courseIdPair["course_id"].(float64))
-	externalId := courseIdPair["external_id"].(string)
+	externalId := courseIdPair["external_course_id"].(string)
 	sql := `SELECT id, user_id, time_spent, completion_timestamp, content_id, progress, kind FROM logger_contentsummarylog WHERE channel_id = ?`
 	var activities []KolibriActivity
 	if err := ks.db.Raw(sql, externalId).Find(&activities).Error; err != nil {

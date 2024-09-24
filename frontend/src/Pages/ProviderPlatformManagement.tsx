@@ -40,32 +40,6 @@ export default function ProviderPlatformManagement() {
     const providerData = providers?.data
         ? (providers.data as ProviderPlatform[])
         : [];
-    // TO DO: SORT THIS IN THE BACKEND AND RETURN SORTED
-    providerData.sort(function (
-        providerA: ProviderPlatform,
-        providerB: ProviderPlatform
-    ) {
-        if (providerA.state === 'enabled' && providerB.state !== 'enabled') {
-            return -1;
-        } else if (
-            providerA.state !== 'enabled' &&
-            providerB.state === 'enabled'
-        ) {
-            return 1;
-        } else if (
-            providerA.state === 'archived' &&
-            providerB.state !== 'archived'
-        ) {
-            return 1;
-        } else if (
-            providerA.state !== 'archived' &&
-            providerB.state === 'archived'
-        ) {
-            return -1;
-        } else {
-            return 0;
-        }
-    });
 
     function resetModal() {
         setTimeout(() => {
@@ -125,6 +99,19 @@ export default function ProviderPlatformManagement() {
                 message: response.message
             });
     };
+    const handleToggleArchiveProvider = (provider: ProviderPlatform) => {
+        const state = provider.state === 'archived' ? 'enabled' : 'archived';
+        API.patch(`provider-platforms/${provider.id}`, {
+            state: state
+        }).then((resp) => {
+            resp.success &&
+                setToast({
+                    state: ToastState.success,
+                    message: `Provider platform ${provider.name} has been ${state}.`
+                });
+            mutate();
+        });
+    };
 
     const showAuthorizationInfo = async (provider: ProviderPlatform) => {
         const resp = await API.get<OidcClient>(
@@ -180,6 +167,11 @@ export default function ProviderPlatformManagement() {
                                         }
                                         showAuthorizationInfo={() =>
                                             showAuthorizationInfo(provider)
+                                        }
+                                        archiveProvider={() =>
+                                            handleToggleArchiveProvider(
+                                                provider
+                                            )
                                         }
                                     />
                                 );

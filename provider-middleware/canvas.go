@@ -78,6 +78,10 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 	log.Printf("Request sent to canvas Users: %v", users)
 	unlockedUsers := make([]models.ImportUser, 0)
 	for _, user := range users {
+		loginId, ok := user["login_id"].(string)
+		if !ok {
+			continue
+		}
 		name := strings.Split(user["name"].(string), " ")
 		sortable := user["sortable_name"].(string)
 		sortableName := strings.Split(sortable, ",")
@@ -106,10 +110,10 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 		}
 		unlockedUser := models.ImportUser{
 			ExternalUserID:   fmt.Sprintf("%d", int(userId)),
-			ExternalUsername: user["login_id"].(string),
+			ExternalUsername: loginId,
 			NameFirst:        nameFirst,
 			NameLast:         nameLast,
-			Email:            user["login_id"].(string),
+			Email:            loginId,
 			Username:         nameLast + nameFirst,
 		}
 		log.Printf("Unlocked User: %v", unlockedUser)
@@ -344,7 +348,7 @@ func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryStr
 * */
 func (srv *CanvasService) ImportMilestones(courseIdPair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	courseId := int(courseIdPair["course_id"].(float64))
-	externalCourseId := courseIdPair["external_id"].(string)
+	externalCourseId := courseIdPair["external_course_id"].(string)
 	values := url.Values{}
 	reversed := make(map[string]int)
 	for _, userMap := range mapping {
@@ -363,7 +367,7 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]interface{}, 
 		milestone := models.Milestone{
 			UserID:      uint(reversed[externalUserID]),
 			ExternalID:  fmt.Sprintf("%d", int(submission["id"].(float64))),
-			CourseID:   uint(courseId),
+			CourseID:    uint(courseId),
 			Type:        "assignment_submission",
 			IsCompleted: submission["workflow_state"] == "complete" || submission["workflow_state"] == "graded",
 		}
@@ -378,7 +382,7 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]interface{}, 
 		if checkTimespanOfSubmission(lastRun, submission) {
 			anonId := submission["anonymous_id"].(string)
 			gradeReceived := models.Milestone{
-				CourseID:   uint(courseId),
+				CourseID:    uint(courseId),
 				UserID:      uint(reversed[externalUserID]),
 				ExternalID:  anonId,
 				Type:        "grade_received",
@@ -440,7 +444,7 @@ func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string
 
 func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]interface{}, db *gorm.DB) error {
 	courseId := int(coursePair["course_id"].(float64))
-	externalId := coursePair["external_id"].(string)
+	externalId := coursePair["external_course_id"].(string)
 	enrollments, err := srv.getEnrollmentsForCourse(externalId)
 	if err != nil {
 		log.Printf("Failed to get enrollments for course: %v", err)
@@ -466,7 +470,7 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]interfac
 
 // func (srv *CanvasService) ImportOutcomesForCourse(coursePair map[string]interface{}, userMappings []map[string]interface{}) error {
 // 	courseId := int(coursePair["course_id"].(float64))
-// 	externalId := coursePair["external_id"].(string)
+// 	externalId := coursePair["external_course_id"].(string)
 // 	fields := log.Fields{"task": "ImportOutcomesForCourse", "course_id": courseId, "external_id": externalId}
 // 	for _, mapping := range userMappings {
 // 		userId := int(mapping["user_id"].(float64))

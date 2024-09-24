@@ -31,6 +31,20 @@ func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, 
 			return platform.OidcID == 0 || platform.Type == models.Kolibri
 		})
 	}
+	slices.SortFunc(platforms, func(i, j models.ProviderPlatform) int {
+		if i.State == models.Enabled && j.State != models.Enabled {
+			return -1
+		} else if i.State != models.Enabled && j.State == models.Enabled {
+			return 1
+		} else if i.State == models.Archived && j.State != models.Archived {
+			return 1
+		} else if i.State != models.Archived && j.State == models.Archived {
+			return -1
+		} else {
+			return 0
+		}
+	})
+
 	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
 	return writePaginatedResponse(w, http.StatusOK, platforms, paginationData)
 }

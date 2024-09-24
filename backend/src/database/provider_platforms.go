@@ -25,12 +25,13 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 
 	return total, toReturn, nil
 }
-func iterMap[T any](f func(T) T, arr []T) []T {
-	ret := []T{}
-	for _, a := range arr {
-		ret = append(ret, f(a))
+
+func iterMap[T any](fun func(T) T, arr []T) []T {
+	applied := []T{}
+	for _, item := range arr {
+		applied = append(applied, fun(item))
 	}
-	return ret
+	return applied
 }
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {

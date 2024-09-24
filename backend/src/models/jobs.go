@@ -39,7 +39,7 @@ const (
 	GetMilestonesJob JobType = "get_milestones"
 	GetCoursesJob    JobType = "get_courses"
 	GetActivityJob   JobType = "get_activity"
-	GetOutcomesJob   JobType = "get_outcomes"
+	// GetOutcomesJob   JobType = "get_outcomes"
 
 	StatusPending JobStatus = "pending"
 	StatusRunning JobStatus = "running"
@@ -53,7 +53,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, e
 		skip = true
 	}
 	courses := []map[string]interface{}{}
-	if err := db.Model(Course{}).Select("id as course_id, external_id").Find(&courses, "provider_platform_id = ?", provId).Error; err != nil {
+	if err := db.Model(Course{}).Select("id as course_id, external_id as external_course_id").Find(&courses, "provider_platform_id = ?", provId).Error; err != nil {
 		log.Errorf("failed to fetch courses: %v", err)
 		skip = true
 	}
@@ -83,16 +83,16 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint) (map[string]interface{}, e
 			"user_mappings":        users,
 			"job_type":             jt,
 		}, nil
-	case GetOutcomesJob:
-		if skip {
-			return nil, errors.New("no users or courses found for provider platform")
-		}
-		return map[string]interface{}{
-			"provider_platform_id": provId,
-			"user_mappings":        users,
-			"courses":              courses,
-			"job_type":             jt,
-		}, nil
+		// case GetOutcomesJob:
+		// 	if skip {
+		// 		return nil, errors.New("no users or courses found for provider platform")
+		// 	}
+		// 	return map[string]interface{}{
+		// 		"provider_platform_id": provId,
+		// 		"user_mappings":        users,
+		// 		"courses":              courses,
+		// 		"job_type":             jt,
+		// 	}, nil
 	}
 	return nil, nil
 }
