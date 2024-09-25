@@ -30,7 +30,6 @@ type RunnableTask struct {
 	LastRun            time.Time              `json:"last_run"`
 	ProviderPlatformID uint                   `json:"provider_platform_id"`
 	Status             JobStatus              `json:"status"`
-	Schedule           string                 `json:"schedule"`
 	*ProviderPlatform  `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 	*CronJob           `gorm:"foreignKey:JobID;references:ID" json:"-"`
 }

@@ -79,8 +79,7 @@ func (jr *JobRunner) intoTask(prov *models.ProviderPlatform, cj *models.CronJob)
 			JobID:              cj.ID,
 			Status:             models.StatusPending,
 			// on first run, we fetch all the data a course would have
-			LastRun:  time.Now().AddDate(0, -6, 0),
-			Schedule: cj.Schedule,
+			LastRun: time.Now().AddDate(0, -6, 0),
 		}
 	}
 	if err := jr.db.Save(&task).Error; err != nil {

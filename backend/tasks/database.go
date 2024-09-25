@@ -68,7 +68,6 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 			JobID:      courseJob.ID,
 			Parameters: params,
 			Status:     models.StatusPending,
-			Schedule:   courseJob.Schedule,
 		}).Error; err != nil {
 			log.Errorf("failed to create task: %v", err)
 			return err
