@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.0.1] - 2024-05-23
+## [0.0.2] - 2024-09-25
 
 ### Bug Fixes
 
@@ -46,10 +46,134 @@ All notable changes to this project will be documented in this file.
 - Tls error for deployment
 - Oidc informatiion returned to the client
 - Tls issue in scratch container
+- Dashboard sql
+- Add missing user dashboard field, dont return resource
+- Remove debugging delay and non-headless mode
+- If recent courses is empty, still keeps the correct sizing of cards
+- Remove favorites field from milestones
+- Fixes pulled time back to seconds, removes extra lines of code
+- Adds id to catalog return
+- Removes soft deletes from user favorites
+- Add return after nil check for user pointer
+- Add proxy and redirect if no login flow is started
+- Removes unused variables
+- Fixes login issues, adds week activity to dashboard api
+- Removes unused code on dashboard api
+- Fixes lint errors on latest push
+- Adds files for build dev to work
+- Activity errors, ci issues
+- Docker compose file duplicate entry
+- Actions caching and deduping users
+- Auth issue where running in containers
+- Work on middleware fixes
+- Correct user importation behavior from providers
+- Add warning to reset server if migrate fresh
+- Logout issue with kratos redirect
+- User activity page link, add tests, random fixes from PR
+- Test action to build container and push
+- Conditional builds for gh action
+- Diff algo to determine cond. build
+- Diff refs/remotes/main to fix conditional output
+- Add some logging and retry github actions for ecr push
+- This github action better work this time so help me god
+- Github action test, will have to rebase + squash these commits
+- For sure squashing these commits
+- Finally fix the github action
+- Conditional builds for gh action
+- Correct github action behavior
+- Finally fix the github action
+- Finally fix the github action
+- Kubectl config for staging deployments
+- Condenses convertSeconds & rounds on admin dash
+- Add ecr secret creation to k8s workflow, prettier formatting
+- Updates pills to take in text
+- Fixes grid color in dark mode
+- Add fields to oidc client info
+- Fix search, remove chevrons in activity and users pages
+- Merges main to resolve merge conflicts
+- Actually merges in branch :)
+- Remove open content unused import
+- Kolibri username OOB error
+- Corrects recent activities course_progress on student dash
+- Kolibri user importation
+- Remove yarnrc and other bloat
+- Providerusermgmt keep users selected when page turns
+- Prevent importing duplicate users providerusermgmt
+- Is_public cast to bool when canvas can return nil
+- Empty recent programs for user-dashboard
+- Changes activity col
+- Updates left menu to resources
+- Homepage recent courses cards UI fixed
+- Adds inner background css
+- Colors on login with theme
+- Adds provider platform name on prov user management
+- Updates top milestones graph on admin dash
+- Fixes stats card spacing & card overflow
+- Adds content on no enrollments to student dash
+- Student dash enrolled courses truncates alt name
+- Filter by facility id when getting top programs for dash
+- Small UI fixes for staging
+- Returns overflow auto to cards & implementes overflow hidden on others
+- Stop from refreshing page when incorrect psw
+- Removes alt names from admin dash charts
+- Fixes grid cols on student dash:
+- Hardcodes facility name
+- Fixes pagination not working on later pages on Users page
+- Externally links to courses in list view
+- Adds real kolibri link to resources
+- Adds wiki deployment
+- Fixes top courses final box on admin dash
+- Adds warning message on reset password
+- Resources page id's for proper deletion
+- Ensures all modal buttons are submit not submit query
+- Fixes import users modal on dark mode
+- Order by even when not sorting catalogue
+- Adjust npx husky command
+- Fixes all linting warnings
+- Submit button value
+- Replace redirect to kratos when no flow is found in /login
+- Fixes entire page re-render for course catalog, adds error rendering
+- Validation error when creating preexisting username
+- Remove unused import to fix container build
+- Fixes mapping modal, updates pagination, updates seeder
+- Changes seeder back
+- Switch to justfiy-between for my progress css class
+- Golangci-lint version to work with go 1.23
+- Adjust provider readme for queue impl and fix env
+- Return consistent kv pairs of users/programs in job params
+- Correct incorrect check for nil error on a db.tx value
+- Link to kolibri oidcauthenticate to oauth user automatically
+- Unused imports
+- Unused imports
+- Frontend types, lints and seeder issue + update makefile
+- Issue with consent page/oauth, seeder, retain build info
+- Remove unused database methods
+- Change else if's to switch
+- Modify comment
+- Correct activity page for failing ci despite unused
+- Dockerfile to match new main.go location
+- Attempt to migrate to new kratos schema in staging
+- Force pass reset if traits are missing in kratos to recreate
+- Correct login hanging on invalid credentials, refactor API class
+- Fresh migrations nats authentication
+- UseSWR hooks data undefined + optimize sql query, add env example
+- Prevent kolibri from being returned to UI for user creation in pp
+- Make login refresh trigger by changing return type of API call
+- Code review modifications
+- Frontend types, lints and seeder issue + update makefile
+- Change docker-compose to docker compose in makefile
+- Disallow kolibri user management
+- Remove unused schedule field from task struct
+- Tasks foreign key mixup
+- Add provider id to runnable task insert in scheduler
 
 ### Documentation
 
 - Update readme to reflect build
+- Add first changelog
+- Add instuction for seeder in readme
+- Add common issues to readme, fix provider middleware readme
+- Add readme info about kolibri dockerization and development
 
 ### Features
 
@@ -112,13 +236,120 @@ All notable changes to this project will be documented in this file.
 - Serve frontend in nginx container
 - Prepare build script and compose files for many environments
 - Move provider middleware into scratch container, in-memory sqlite db
+- Add seeder, courseCatalogue endpoint, user favorites
+- Dashboard endpoint and fix seeder
+- Add Puppeteer student discussion posts to Canvas
+- Finish dashboard + catalogue issues
+- Uses dashboard api and updates some variable names to match import
+- Add ory keto, refactoring, oidc work
+- Add kratos identity mgmt to docker setup, endpoint for ui
+- Organize config files and docker configuration
+- Ory configuration mgmt
+- Adds daily user activity api and integrates with frontend
+- More ory kratos configuration work
+- Updates entire my progress page and relevant backend requests, updates seeder for outcomes
+- Initial draft of our UI login to kratos, identity creation
+- Finish ory auth + login with our UI
+- Adds description, modifies activity for dashboard, updates seeder for realistic words
+- Adds outcome pills to catalog, filters dashboard, updates time
+- Ui for provider user mangement
+- Backend impl for provider user management
+- Clean up middleware, remove bloat
+- Adds outline of admin dashboard, separates admin/student dash
+- Make backend aware of client ory sess, fix auth route and cache sessions
+- Work on user management UI, auth fixes
+- Adds facilities table & admin dashboard backend
+- Prov user mgmt, fix session/auth issues
+- Implement modal to view imported provider users
+- Adds facilities table & admin dashboard backend
+- Implement filtering users by facility_id, and admin context switching
+- Add tests for user endpoints and facility contexts
+- Add gh action to build + push containers to ecr
+- Add gh action to build + push containers to ecr
+- Adds admin dashboard UI & connects to backend
+- Create a general component for search
+- Adds password ui validation
+- Backend impl user search
+- Add fetching singular oidc client info for ui
+- Create a general component for search
+- Backend impl user search
+- Add fetching singular oidc client info for ui
+- Adds authorization info to revisit
+- Adds activity graph on student dash
+- Backend impl user search
+- Adds resources to right side bar
+- Adds wikipedia card to open content
+- Add demo ci/cd github action
+- Add search and sort to My Courses
+- Add open content, fix outstanding issues with courses
+- Add db function to create outcome for progress milestones
+- Catalogue search, search fixes, makefile
+- Adds confirm bulk import modal, fixes modal types
+- Add facility name form to init psw reset
+- Finish openid connect implementation
+- Prevent kratos from prompting user again for oauth2 login
+- Kolibri sql integration and dockerization
+- Kolibri integration work
+- Prep kolibri for oidc. auto create users in sync'd instance
+- Finish kolibri OIDC implementation
+- Add rev proxy routing to other oauth2 routes
+- User-activity page removal (#357)
+- Add unauthorized page and protect routes
+- Add sort to MyProgress.tsx
+- Add nats to base docker compose setup
+- Add cron-tasks binary to publish jobs + refactor middleware to sub to MQ
+- Add adjustible cron schedule env var and fix scheduling
+- Add provider user search
+- Switch to goose from gorm automigrate
+- Add air and frontend container for hot reloading in docker
+- Add collapsible navigation component
+- Add unauthorized page and protect routes
+- Updated course catalog pills w resp. design
+- Impl api class to frontend to simplify components
+- Simplify backend responses, remove in-house auth, fixes
+- Add custom error type with method to handle error type
+- Initial commit of custom error type with method to handle error type
+- Initial commit of log fields struct wrapper with internal logging methods to use with HandleError method
+- Add reflection to get handler name and change LogFields type to sLog type
+- Backend validation for frontend forms
+- Add more fields to user validation and fix client err display
+- Work in progress
+- Merge preston main branch, implement tests for backend api, correct bug issues
+- Cleanup code
+- Removed unused files
+- Removed unused files and uncomment out HTTP test scenario code
+- New resources management ux
+- Add custom error type with method to handle error type
+- Add healthcheck endpoint, toggle provider active
 
 ### Miscellaneous Tasks
 
 - Fix working directory of go lint
+- Merge folder canvas-discussion-bot into canvas-seeder
+- Remove canvas-discussion-bot
+- Adds prettier formatting file and formats all frontend files
+- Add pull request template
 
 ### Refactor
 
 - Runs prettier on previously committed frontend files
+- Move initLogging out of main, set log level
+- Formatting and prettier
+- Pull out error handling from server response
+- Provider plaforms UI updated, pill change WIP
+- Reduces code
+- Prettier config file to prevent overlapping changes
+- Removed commented code
+- Replace anys with correct types
+- Make server methods + handlers priv access
+- Refactored resource cards & types
+
+### Styling
+
+- Dropped new facility name below form input and trimmed whitespace upon submit
+
+### Testing
+
+- Temporarily rm backend tests till refactor is over
 
 <!-- generated by git-cliff -->
