@@ -16,6 +16,8 @@ type (
 		Name      string    `gorm:"size 60" json:"name"`
 		Schedule  string    `gorm:"size 60" json:"schedule"`
 		CreatedAt time.Time `json:"created_at"`
+
+		Tasks []*RunnableTask `gorm:"foreignKey:JobID;references:ID" json:"-"`
 	}
 	JobType   string
 	JobStatus string
@@ -30,9 +32,12 @@ type RunnableTask struct {
 	LastRun            time.Time              `json:"last_run"`
 	ProviderPlatformID uint                   `json:"provider_platform_id"`
 	Status             JobStatus              `json:"status"`
-	*ProviderPlatform  `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
-	*CronJob           `gorm:"foreignKey:JobID;references:ID" json:"-"`
+
+	Provider *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
+	Job      *CronJob          `gorm:"foreignKey:JobID" json:"-"`
 }
+
+func (RunnableTask) TableName() string { return "runnable_tasks" }
 
 const (
 	GetMilestonesJob JobType = "get_milestones"

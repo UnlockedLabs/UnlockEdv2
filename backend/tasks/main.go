@@ -27,7 +27,10 @@ func main() {
 		log.Fatalf("Failed to create job: %v", err)
 	}
 	scheduler.Start()
-
+	err = newJob.RunNow()
+	if err != nil {
+		log.Errorln("Failed to run job now: ", err)
+	}
 	log.Infof("Scheduler started, running %s", newJob.ID())
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)

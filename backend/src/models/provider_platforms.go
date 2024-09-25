@@ -44,6 +44,7 @@ type ProviderPlatform struct {
 	Courses              []Course              `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 	ProviderUserMappings []ProviderUserMapping `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 	OidcClient           *OidcClient           `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
+	Tasks                []RunnableTask        `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
 }
 
 func (ProviderPlatform) TableName() string {
