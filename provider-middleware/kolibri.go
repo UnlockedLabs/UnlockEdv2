@@ -62,9 +62,9 @@ func (ks *KolibriService) GetJobParams() *map[string]interface{} {
 **/
 func (ks *KolibriService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 	// query kolibri database directly for users
-	query := `SELECT full_name, username, id FROM kolibriauth_facilityuser`
+	query := `SELECT full_name, username, id FROM kolibriauth_facilityuser WHERE facility_id = ?`
 	var users []map[string]string
-	if err := ks.db.Raw(query, ks.AccountID).Find(&users).Error; err != nil {
+	if err := ks.db.Raw(query, ks.AccountID).Scan(&users).Error; err != nil {
 		log.Errorln("error querying kolibri database for users")
 		return nil, err
 	}

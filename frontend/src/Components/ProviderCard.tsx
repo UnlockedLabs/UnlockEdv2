@@ -61,19 +61,21 @@ export default function ProviderCard({
                                         }
                                     />
                                 </div>
-                                <div
-                                    className="tooltip"
-                                    data-tip="Manage Users"
-                                >
-                                    <UserGroupIcon
-                                        className="w-4"
-                                        onClick={() =>
-                                            navigate(
-                                                `/provider-users/${provider.id}`
-                                            )
-                                        }
-                                    />
-                                </div>
+                                {provider.type !== 'kolibri' && (
+                                    <div
+                                        className="tooltip"
+                                        data-tip="Manage Users"
+                                    >
+                                        <UserGroupIcon
+                                            className="w-4"
+                                            onClick={() =>
+                                                navigate(
+                                                    `/provider-users/${provider.id}`
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                )}
                             </>
                         ) : (
                             <div
