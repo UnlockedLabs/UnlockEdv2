@@ -65,9 +65,10 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 		}
 
 		if err := jr.db.Create(&models.RunnableTask{
-			JobID:      courseJob.ID,
-			Parameters: params,
-			Status:     models.StatusPending,
+			JobID:              courseJob.ID,
+			Parameters:         params,
+			Status:             models.StatusPending,
+			ProviderPlatformID: prov.ID,
 		}).Error; err != nil {
 			log.Errorf("failed to create task: %v", err)
 			return err
