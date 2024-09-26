@@ -1,4 +1,4 @@
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import { useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import UserActivityMap from '@/Components/UserActivityMap';

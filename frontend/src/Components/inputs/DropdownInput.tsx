@@ -4,8 +4,8 @@ interface DropdownProps {
     label: string;
     interfaceRef: string;
     required: boolean;
-    errors: FieldErrors<any>;
-    register: Function;
+    errors: FieldErrors<any>; // eslint-disable-line
+    register: Function; // eslint-disable-line
     enumType: Record<string, string>;
 }
 

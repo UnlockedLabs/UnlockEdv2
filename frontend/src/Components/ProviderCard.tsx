@@ -20,10 +20,10 @@ export default function ProviderCard({
     archiveProvider
 }: {
     provider: ProviderPlatform;
-    openEditProvider: Function;
-    oidcClient: Function;
-    showAuthorizationInfo: Function;
-    archiveProvider: Function;
+    openEditProvider: (prov: ProviderPlatform) => void;
+    oidcClient: (prov: ProviderPlatform) => void;
+    showAuthorizationInfo: (prov: ProviderPlatform) => void;
+    archiveProvider: (prov: ProviderPlatform) => void;
 }) {
     const navigate = useNavigate();
     return (
@@ -41,7 +41,7 @@ export default function ProviderCard({
                 {provider.state == ProviderPlatformState.ENABLED ? (
                     <TealPill>enabled</TealPill>
                 ) : provider.state == ProviderPlatformState.DISABLED ? (
-                    <OutcomePill outcome={null}>disabled</OutcomePill>
+                    <OutcomePill outcome={undefined}>disabled</OutcomePill>
                 ) : provider.state == ProviderPlatformState.ARCHIVED ? (
                     <YellowPill>archived</YellowPill>
                 ) : (

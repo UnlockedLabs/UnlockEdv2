@@ -1,20 +1,19 @@
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import EnrolledCourseCard from '@/Components/EnrolledCourseCard';
 import { useState } from 'react';
-import ToggleView, { ViewType } from '@/Components/ToggleView';
+import ToggleView from '@/Components/ToggleView';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { ServerResponse, UserCourses, UserCoursesInfo } from '@/common';
+import {
+    ServerResponse,
+    ViewType,
+    UserCourses,
+    UserCoursesInfo
+} from '@/common';
 import useSWR from 'swr';
 
 // TO DO: make sure this lives in the right place
-export enum CourseStatus {
-    Current = 'Current',
-    Completed = 'Completed',
-    Pending = 'Pending',
-    Recent = 'Recent'
-}
 
 enum TabType {
     Current = 'in_progress',

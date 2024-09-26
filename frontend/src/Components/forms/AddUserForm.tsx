@@ -1,19 +1,23 @@
-import { NewUserResponse, ProviderPlatform, UserRole } from '../../common';
+import {
+    NewUserResponse,
+    ToastState,
+    ProviderPlatform,
+    UserRole
+} from '../../common';
 import { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { ToastState } from '../Toast';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import API from '@/api/api';
 
-type Inputs = {
+interface Inputs {
     name_first: string;
     name_last: string;
     username: string;
     role: UserRole;
-};
+}
 
 export default function AddUserForm({
     onSuccess
@@ -41,21 +45,24 @@ export default function AddUserForm({
         if (!response.success) {
             const msg = response.message.trim();
             switch (msg) {
-                case 'userexists':
+                case 'userexists': {
                     setError('username', {
                         type: 'custom',
                         message: 'Username already exists'
                     });
                     break;
-                case 'alphanum':
+                }
+                case 'alphanum': {
                     setError('username', {
                         type: 'custom',
                         message:
                             'Name + Username must contain letters and numbers only'
                     });
                     break;
-                default:
+                }
+                default: {
                     setErrorMessage(msg);
+                }
             }
             return;
         }

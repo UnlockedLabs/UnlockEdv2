@@ -12,7 +12,7 @@ import {
     TrophyIcon,
     UsersIcon
 } from '@heroicons/react/24/solid';
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 
 export default function Navbar({
     isPinned,

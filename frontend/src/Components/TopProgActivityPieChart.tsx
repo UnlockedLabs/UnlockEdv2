@@ -10,7 +10,7 @@ export default function TopProgPieChart({ data }: { data: CourseActivity[] }) {
             ? data
             : [{ course_name: '', hours_engaged: 0 }];
 
-    var COLORS = ['#D7F4F1', '#B0DFDA', '#18ABA0', '#005952', '#002E2A'];
+    let COLORS = ['#D7F4F1', '#B0DFDA', '#18ABA0', '#005952', '#002E2A'];
     if (theme == 'dark') {
         COLORS = ['#11554E', '#13746C', '#14958A', '#61BAB2', '#B0DFDA'];
     }

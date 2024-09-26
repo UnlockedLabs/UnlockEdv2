@@ -15,8 +15,8 @@ import { CourseMilestones, YAxisTickProps } from '@/common';
 const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
     const { theme } = useContext(ThemeContext);
 
-    var barColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
-    var backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
+    const barColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
+    const backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
 
     const maxYAxisLabel = (props) => {
         const { x, y, payload } = props;

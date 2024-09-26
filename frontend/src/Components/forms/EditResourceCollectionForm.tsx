@@ -3,9 +3,9 @@
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { TextInput, CloseX, SubmitButton } from '../inputs';
 
-type Inputs = {
+interface Inputs {
     collectionName: string;
-};
+}
 
 export default function EditResourceCollectionForm({
     collectionName,

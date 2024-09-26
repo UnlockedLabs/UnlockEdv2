@@ -1,20 +1,22 @@
 import Calendar from 'react-calendar';
 import API from '@/api/api.ts';
 import { MouseEvent, useEffect, useRef, useState } from 'react';
-import { Event, EventCalendar, parseDuration } from '@/common';
+import { Event, ModalType, EventCalendar, parseDuration } from '@/common';
 import '@/css/app.css';
 import { OnArgs } from 'node_modules/react-calendar/dist/cjs';
-import Modal, { ModalType } from './Modal';
+import Modal from './Modal';
 import EditEventForm from './forms/EditEventForm.tsx';
-import { useAuth } from '@/AuthContext.tsx';
+import { useAuth } from '@/useAuth';
 
 function CalendarComponent() {
     const user = useAuth().user;
     const editModal = useRef<HTMLDialogElement | null>(null);
     const [eventsMap, setEventsMap] = useState<Map<string, Event[]>>(new Map());
     const [date, setDate] = useState(new Date());
-    const [selectedEvents, setSelectedEvents] = useState<Event[] | null>(null);
-    const [eventToEdit, setEventToEdit] = useState<Event>(null);
+    const [selectedEvents, setSelectedEvents] = useState<Event[] | null>(
+        undefined
+    );
+    const [eventToEdit, setEventToEdit] = useState<Event>(undefined);
 
     const onMonthChange = ({ activeStartDate }: OnArgs) => {
         setDate(activeStartDate as Date);
@@ -43,14 +45,14 @@ function CalendarComponent() {
             .catch((error) => {
                 console.error('Error fetching calendar data:', error);
             });
-    }, [date]);
+    }, [date, user.role]);
 
     const onClickDay = (clickedDate: Date) => {
         const dateKey = clickedDate.toISOString().substring(0, 10);
         const events = eventsMap[dateKey];
         if (events && events.length > 0) {
             setSelectedEvents(events);
-        } else setSelectedEvents(null);
+        } else setSelectedEvents(undefined);
     };
     const tileClassName = ({ date, view }) => {
         if (view === 'month') {
@@ -59,7 +61,7 @@ function CalendarComponent() {
                 return '!bg-teal-1';
             }
         }
-        return null;
+        return;
     };
 
     const openEditModal = (e: MouseEvent, event: Event) => {
@@ -69,7 +71,7 @@ function CalendarComponent() {
     };
 
     const handleCloseModal = () => {
-        setEventToEdit(null);
+        setEventToEdit(undefined);
         editModal.current?.close();
     };
 

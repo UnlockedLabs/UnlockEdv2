@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
-import Modal, { ModalType } from '../Components/Modal';
-import Toast, { ToastState } from '../Components/Toast';
+import Modal from '../Components/Modal';
+import Toast from '../Components/Toast';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import AddResourceCollectionForm from '../Components/forms/AddResourceCollectionForm';
 import EditResourceCollectionForm from '../Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
-import { ResourceCategory, ResourceLink } from '../common';
+import {
+    ResourceCategory,
+    ModalType,
+    ToastState,
+    ResourceLink
+} from '../common';
 import { PlusCircleIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { PlusIcon, Bars3Icon } from '@heroicons/react/24/solid';
@@ -30,11 +35,11 @@ export default function ResourcesManagement() {
 
     const [collectionList, setCollectionList] = useState([]);
     const [collectionToDelete, setCollectionToDelete] = useState<number | null>(
-        null
+        undefined
     );
     const [selectedCollectionIndex, setSelectedCollectionIndex] = useState<
         number | null
-    >(null);
+    >(undefined);
     const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
@@ -45,7 +50,7 @@ export default function ResourcesManagement() {
     const deleteCollectionModal = useRef<null | HTMLDialogElement>(null);
 
     useEffect(() => {
-        if (data !== undefined) {
+        if (data) {
             const updatedData = data.data.map(
                 (collection: EditableResourceCollection) => ({
                     ...collection,
@@ -55,7 +60,7 @@ export default function ResourcesManagement() {
             );
 
             setHasDeletedCollection(false);
-            setSelectedCollectionIndex(null);
+            setSelectedCollectionIndex(undefined);
             setCollectionList(updatedData);
         }
     }, [data]);
@@ -75,7 +80,7 @@ export default function ResourcesManagement() {
         updatedCollectionList: EditableResourceCollection[]
     ) => {
         // Retain selected collection (even if it was reordered)
-        if (selectedCollectionIndex !== null) {
+        if (selectedCollectionIndex) {
             const newSelectedCollectionIndex = updatedCollectionList.findIndex(
                 (c) => c.id === collectionList[selectedCollectionIndex].id
             );
@@ -89,7 +94,7 @@ export default function ResourcesManagement() {
         linkIndex: number,
         updatedResourceLink: ResourceLink
     ) => {
-        if (selectedCollectionIndex !== null) {
+        if (selectedCollectionIndex) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex].links[linkIndex] =
                 updatedResourceLink;
@@ -131,17 +136,17 @@ export default function ResourcesManagement() {
 
     const deleteCollection = (id: number | null) => {
         if (
-            selectedCollectionIndex !== null &&
+            selectedCollectionIndex &&
             collectionList[selectedCollectionIndex].id === id
         ) {
-            setSelectedCollectionIndex(null);
+            setSelectedCollectionIndex(undefined);
         }
         const newCollections = collectionList.filter((c) => c.id !== id);
         setHasDeletedCollection(true);
         setCollectionList(newCollections);
     };
-
-    const updateFinalState = async (e: any) => {
+    // eslint-disable-next-line
+    const updateFinalState = async (e: React.MouseEvent) => {
         setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
         const newCollectionList = collectionList.map((c, i) => {
@@ -169,6 +174,7 @@ export default function ResourcesManagement() {
                     message: 'Collections Saved!'
                 });
             }
+            // eslint-disable-next-line
         } catch (err: any) {
             console.log(err);
             if (err.response.status == 422) {
@@ -251,7 +257,7 @@ export default function ResourcesManagement() {
                     {' '}
                     {/* Right pane */}
                     <h3>Modify Collection</h3>
-                    {selectedCollectionIndex !== null && (
+                    {selectedCollectionIndex && (
                         <ResourceCollectionEditor
                             collection={collectionList[selectedCollectionIndex]}
                             onCollectionChange={handleResourceCollectionChange}
@@ -281,7 +287,7 @@ export default function ResourcesManagement() {
                 form={
                     <DeleteForm
                         item="Collection"
-                        onCancel={() => setCollectionToDelete(null)}
+                        onCancel={() => setCollectionToDelete(undefined)}
                         onSuccess={() => {
                             deleteCollection(collectionToDelete),
                                 deleteCollectionModal.current?.close();
@@ -318,11 +324,14 @@ const SortableCollectionList = ({
     onUpdateCollectionList: (newList: EditableResourceCollection[]) => void;
 }) => {
     const draggedItem = useRef<null | number>(null);
-    const [draggedOverItem, setDraggedOverItem] = useState<null | number>(null);
+    const [draggedOverItem, setDraggedOverItem] = useState<null | number>(
+        undefined
+    );
     const dragOverItem = useDebounceValue(draggedOverItem, 100);
 
     const handleSort = () => {
-        if (draggedItem.current == null || dragOverItem == null) return;
+        if (draggedItem.current == undefined || dragOverItem == undefined)
+            return;
 
         const insertAtIndex = dragOverItem;
 
@@ -362,8 +371,8 @@ const SortableCollectionList = ({
         //update the actual array
         onUpdateCollectionList(updatedCollectionList);
 
-        draggedItem.current = null;
-        setDraggedOverItem(null);
+        draggedItem.current = undefined;
+        setDraggedOverItem(undefined);
     };
 
     const dragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -376,7 +385,7 @@ const SortableCollectionList = ({
 
     const dragLeave = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        setDraggedOverItem(null);
+        setDraggedOverItem(undefined);
     };
 
     const dragDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -394,7 +403,7 @@ const SortableCollectionList = ({
 
     const dragEnd = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        if (dragOverItem[0] == null) {
+        if (dragOverItem[0] == undefined) {
             setDraggedOverItem(-1);
         } else {
             handleSort();
@@ -404,7 +413,7 @@ const SortableCollectionList = ({
     return collections.map((collection, index) => {
         return (
             <div
-                key={collection.name.concat(index.toString())}
+                key={index}
                 className={`flex flex-col ${index === collections.length - 1 ? 'grow' : ''}`}
             >
                 <div
@@ -448,13 +457,14 @@ const SortableCollectionList = ({
                             e.preventDefault(), setDraggedOverItem(index + 1);
                         }}
                         onDragLeave={(e) => {
-                            e.preventDefault(), setDraggedOverItem(null);
+                            e.preventDefault(), setDraggedOverItem(undefined);
                         }}
                         onDrop={(e) => {
-                            e.preventDefault(), draggedItem.current == null;
+                            e.preventDefault(),
+                                draggedItem.current == undefined;
                         }}
                     ></div>
-                ) : null}
+                ) : undefined}
             </div>
         );
     });
@@ -480,7 +490,9 @@ const ResourceCollectionCardWithActions = ({
         >
             <div className="card-body gap-2">
                 <div className="flex justify-between">
-                    <h3 className="card-title text-sm">{collection.name}</h3>
+                    <h3 className="card-title text-sm">
+                        {collection.name ?? ''}
+                    </h3>
                     <div className="tooltip" data-tip="Delete Collection">
                         <TrashIcon
                             className="w-4 h-4 self-start cursor-pointer"
@@ -519,11 +531,13 @@ const ResourceCollectionEditor = ({
     const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
     const editResourceCollectionModal = useRef<null | HTMLDialogElement>(null);
     const [activeLinkToDelete, setActiveLinkToDelete] = useState<number | null>(
-        null
+        undefined
     );
 
-    const [draggedItem, setDraggedItem] = useState<number | null>(null);
-    const [draggedOverItem, setDraggedOverItem] = useState<number | null>(null);
+    const [draggedItem, setDraggedItem] = useState<number | null>(undefined);
+    const [draggedOverItem, setDraggedOverItem] = useState<number | null>(
+        undefined
+    );
 
     const editCollectionTitle = (newtitle: string) => {
         onCollectionChange({
@@ -557,7 +571,7 @@ const ResourceCollectionEditor = ({
     };
 
     const handleSort = () => {
-        if (draggedItem === null || draggedOverItem === null) return;
+        if (!draggedItem || !draggedOverItem) return;
 
         // Check to see if dragged item stayed in the same position
         if (draggedItem === draggedOverItem) return;
@@ -572,8 +586,8 @@ const ResourceCollectionEditor = ({
             isModified: true
         });
 
-        setDraggedItem(null);
-        setDraggedOverItem(null);
+        setDraggedItem(undefined);
+        setDraggedOverItem(undefined);
     };
 
     return (
@@ -713,7 +727,7 @@ const ResourceCollectionEditor = ({
                 form={
                     <DeleteForm
                         item="Link"
-                        onCancel={() => setActiveLinkToDelete(null)}
+                        onCancel={() => setActiveLinkToDelete(undefined)}
                         onSuccess={() =>
                             deleteLink(collection, activeLinkToDelete)
                         }

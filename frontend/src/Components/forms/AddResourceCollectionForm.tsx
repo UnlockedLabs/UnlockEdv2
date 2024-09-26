@@ -1,11 +1,11 @@
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { TextInput, CloseX, SubmitButton } from '../inputs';
 
-type Inputs = {
+interface Inputs {
     collectionName: string;
     linkName: string;
     linkUrl: string;
-};
+}
 
 interface AddResourceCollectionFormProps {
     onSuccess: (
@@ -57,7 +57,7 @@ export default function AddResourceCollectionForm({
                     label="Link URL"
                     interfaceRef="linkUrl"
                     required={true}
-                    length={null}
+                    length={undefined}
                     errors={errors}
                     register={register}
                 />

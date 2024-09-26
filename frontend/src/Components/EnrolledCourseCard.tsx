@@ -5,16 +5,15 @@ import {
 } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import ProgressBar from './ProgressBar';
-import { CourseStatus } from '@/Pages/MyCourses';
-import { ViewType } from './ToggleView';
 import React from 'react';
 import API from '@/api/api';
+import { CourseStatus, ViewType, UserCourses, RecentCourse } from '@/common';
 
 // this might also want to live within courses, as the type of course it is (ie currently enrolled, completed, favorited, pending)
 // recent would probably be a boolean, which would only need to be accessed on the homepage
 
 export interface CourseCard {
-    course: any; // TO DO: will change to be specific
+    course: UserCourses | RecentCourse;
     recent?: boolean;
     view?: ViewType;
     callMutate?: () => void;
@@ -27,7 +26,7 @@ export default function EnrolledCourseCard({
     callMutate
 }: CourseCard) {
     const coverImage = course.thumbnail_url;
-    let url = course.external_url;
+    const url = course.external_url;
     let status: CourseStatus;
     if (course.course_progress == 100) status = CourseStatus.Completed;
 
@@ -74,7 +73,9 @@ export default function EnrolledCourseCard({
                 ) : (
                     <div className="w-1/3">
                         <ProgressBar
-                            percent={Math.floor(course.course_progress)}
+                            percent={Math.floor(
+                                course.course_progress as number
+                            )}
                         />
                     </div>
                 )}

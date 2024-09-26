@@ -12,5 +12,5 @@ export default function InputError({
         >
             {message}
         </div>
-    ) : null;
+    ) : undefined;
 }
