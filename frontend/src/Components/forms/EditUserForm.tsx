@@ -7,13 +7,13 @@ import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
-type Inputs = {
+interface Inputs {
     name_first: string;
     name_last: string;
     username: string;
     role: UserRole;
     email: string;
-};
+}
 
 export default function EditUserForm({
     onSuccess,
@@ -58,21 +58,20 @@ export default function EditUserForm({
         const resp = await API.patch(`users/${user.id}`, cleanData);
         if (!resp.success) {
             switch (resp.message) {
-                case 'userexists':
-                    setError('username', {
-                        type: 'custom',
-                        message: 'Username already exists'
-                    });
-                    break;
-                case 'alphanum':
-                    setError('username', {
-                        type: 'custom',
-                        message:
-                            'Name + Username must contain letters and numbers only'
-                    });
-                    break;
-                default:
-                    setErrorMessage(resp.message);
+                case 'userexists': {setError('username', {
+	type:'custom',
+	message:'Username already exists'
+});
+break;
+}
+                case 'alphanum': {setError('username', {
+	type:'custom',
+	message:'Name + Username must contain letters and numbers only'
+});
+break;
+}
+                default: {setErrorMessage(resp.message);
+}
             }
             return;
         }

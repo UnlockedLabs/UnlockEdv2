@@ -3,31 +3,15 @@ import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline
 import LightGreenPill from './pill-labels/LightGreenPill';
 import RedPill from './pill-labels/RedPill';
 import YellowPill from './pill-labels/YellowPill';
-import { ViewType } from './ToggleView';
 import GreyPill from './pill-labels/GreyPill';
 import { MouseEvent } from 'react';
-import { CourseCatalogue } from '@/common';
+import {
+    CourseCatalogue,
+    OutcomePillType,
+    ViewType,
+    PillTagType
+} from '@/common';
 import API from '@/api/api';
-
-export interface CatalogCourseCard {
-    name: string;
-    img_url: string;
-    url: string;
-    provider_platform_name: string;
-    tags: Array<PillTagType>;
-    saved: boolean;
-}
-
-export enum PillTagType {
-    Open = 'open_enrollment',
-    Permission = 'fixed_enrollment',
-    SelfPaced = 'open_content'
-}
-
-export enum OutcomePillType {
-    Certificate = 'certificate',
-    CollegeCredit = 'college_credit'
-}
 
 export default function CatalogCourseCard({
     course,
@@ -44,7 +28,7 @@ export default function CatalogCourseCard({
     function updateFavorite(e: MouseEvent) {
         e.preventDefault();
         API.put(`courses/${course.course_id}/save`, {})
-            .then((_) => {
+            .then(() => {
                 callMutate();
             })
             .catch((error) => {

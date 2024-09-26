@@ -8,11 +8,18 @@ import {
     TrashIcon,
     UserPlusIcon
 } from '@heroicons/react/20/solid';
-import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
+import {
+    DEFAULT_ADMIN_ID,
+    ToastState,
+    ModalType,
+    ServerResponse,
+    User,
+    PaginationMeta
+} from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
-import Toast, { ToastState } from '../Components/Toast';
-import Modal, { ModalType } from '../Components/Modal';
+import Toast from '../Components/Toast';
+import Modal from '../Components/Modal';
 import DeleteForm from '../Components/DeleteForm';
 import ResetPasswordForm from '../Components/forms/ResetPasswordForm';
 import ShowTempPasswordForm from '../Components/forms/ShowTempPasswordForm';
@@ -28,7 +35,7 @@ export default function Users() {
     const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
     const deleteUserModal = useRef<null | HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
-    const [targetUser, setTargetUser] = useState<null | User>(null);
+    const [targetUser, setTargetUser] = useState<null | User>(undefined);
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<null | HTMLDialogElement>(null);
     const [toast, setToast] = useState({
@@ -64,7 +71,7 @@ export default function Users() {
 
     function resetModal() {
         setTimeout(() => {
-            setTargetUser(null);
+            setTargetUser(undefined);
         }, 200);
     }
 
@@ -82,7 +89,7 @@ export default function Users() {
             : ToastState.error;
         const message = response.success
             ? 'User deleted successfully'
-            : response.statusText;
+            : (response.statusText as string);
         deleteUserModal.current?.close();
         showToast(message, toastType);
         resetModal();
@@ -184,7 +191,9 @@ export default function Users() {
                         {!isLoading &&
                             !error &&
                             userData.map((user: User) => {
-                                const updatedAt = new Date(user.updated_at);
+                                const updatedAt = new Date(
+                                    user.updated_at as string
+                                );
                                 return (
                                     <tr
                                         key={user.id}
@@ -259,15 +268,18 @@ export default function Users() {
                             })}
                     </tbody>
                 </table>
-                {!isLoading && !error && userData.length != 0 && (
-                    <Pagination meta={data.meta} setPage={setPageQuery} />
+                {!isLoading && !error && userData.length > 0 && (
+                    <Pagination
+                        meta={data.meta as PaginationMeta}
+                        setPage={setPageQuery}
+                    />
                 )}
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && userData.length == 0 && (
+                {!isLoading && !error && userData.length === 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>
@@ -327,7 +339,7 @@ export default function Users() {
                         userName={
                             targetUser
                                 ? `${targetUser.name_first} ${targetUser.name_last}`
-                                : null
+                                : undefined
                         }
                         onClose={handleShowPasswordClose}
                     />

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import DropdownControl from './inputs/DropdownControl';
 import useSWR from 'swr';
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import { ServerResponse } from '@/common';
 import convertSeconds from './ConvertSeconds';
 
-type ActivityMapData = {
+interface ActivityMapData {
     date: string;
     total_time: string;
     quartile: number;
-};
+}
 
 interface Activities {
     activities: ActivityMapData[];
@@ -48,7 +48,7 @@ const gapSizes: string = 'p-0 ml-px mt-px md:m-0 md:p-px';
 export default function UserActivityMap() {
     const { user } = useAuth();
 
-    const createdAtYear = parseInt(user?.created_at.substr(0, 4));
+    const createdAtYear = parseInt(user.created_at.split('-')[0]);
 
     const [yearEnd, setYearEnd] = useState(new Date());
     const [dropdownValDesc, setDropdownValDesc] = useState('the past year');
@@ -71,7 +71,7 @@ export default function UserActivityMap() {
     };
 
     const dropdownChange = (val: string) => {
-        let date;
+        let date: Date;
         if (val == 'Past year') {
             date = new Date();
             setYearEnd(date);
@@ -184,18 +184,18 @@ function ActivityMapTable({
 }: {
     data: ActivityMapData[];
     end: Date;
-    error: any; //Todo: unsure about what to type this as Error or ApiError
+    error: any; // eslint-disable-line
     isLoading: boolean;
     range: string;
 }) {
     /* array that holds cells for the table */
     const tableData: JSX.Element[] = [];
     const tableMonths: string[] = [];
-    let i;
+    let i: number;
     const len = data?.length;
     //  const now = new Date();
     let aggregateActivityTime = 0;
-    let oldMonth, newMonth;
+    let oldMonth: number, newMonth: number;
 
     const getAggregateActivityTime = (time: number) => {
         if (error) {
@@ -366,7 +366,7 @@ function ActivityMapTable({
             </table>
             <div className="block text-xs md:text-sm font-bold text-center mt-4">
                 {isLoading || error
-                    ? null
+                    ? undefined
                     : getAggregateActivityTime(
                           Math.floor(aggregateActivityTime / 3600)
                       ) +

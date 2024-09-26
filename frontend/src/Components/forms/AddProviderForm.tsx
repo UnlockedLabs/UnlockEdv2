@@ -1,23 +1,26 @@
-import { ProviderPlatformState, ProviderPlatformType } from '@/common';
+import {
+    ProviderPlatformState,
+    ToastState,
+    ProviderPlatformType
+} from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
-import { ToastState } from '../Toast';
 import API from '@/api/api';
 
-type ProviderInputs = {
+interface ProviderInputs {
     name: string;
     type: ProviderPlatformType;
     base_url: string;
     account_id: string;
     access_key: string;
     state: ProviderPlatformState;
-};
+}
 
 export default function AddProviderForm({
     onSuccess
 }: {
-    onSuccess: Function;
+    onSuccess: (state: ToastState, message: string) => void;
 }) {
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -75,7 +78,7 @@ export default function AddProviderForm({
                     register={register}
                     interfaceRef="base_url"
                     required={true}
-                    length={null}
+                    length={undefined}
                     errors={errors}
                 />
                 <TextInput
@@ -83,7 +86,7 @@ export default function AddProviderForm({
                     register={register}
                     interfaceRef="account_id"
                     required={true}
-                    length={null}
+                    length={undefined}
                     errors={errors}
                 />
                 <TextInput
@@ -91,7 +94,7 @@ export default function AddProviderForm({
                     register={register}
                     interfaceRef="access_key"
                     required={true}
-                    length={null}
+                    length={undefined}
                     errors={errors}
                 />
                 <SubmitButton errorMessage={errorMessage} />

@@ -1,6 +1,6 @@
 import { UserRole } from '../common';
 import { useEffect, useRef } from 'react';
-import { useAuth } from '../AuthContext';
+import { useAuth, handleLogout } from '@/useAuth';
 import {
     ArrowRightEndOnRectangleIcon,
     HomeIcon,
@@ -10,14 +10,13 @@ import {
     ArchiveBoxIcon
 } from '@heroicons/react/24/solid';
 import ThemeToggle from './ThemeToggle';
-import { handleLogout } from '../AuthContext';
 
 export default function PageNav({
     path,
     showOpenMenu,
     onShowNav
 }: {
-    path: Array<string>;
+    path: string[];
     showOpenMenu: boolean;
     onShowNav?: () => void;
 }) {

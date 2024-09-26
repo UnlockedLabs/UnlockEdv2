@@ -1,13 +1,19 @@
 import ProviderCard from '@/Components/ProviderCard';
 import AddProviderForm from '@/Components/forms/AddProviderForm';
 import EditProviderForm from '@/Components/forms/EditProviderForm';
-import Modal, { ModalType } from '@/Components/Modal';
+import Modal from '@/Components/Modal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { OidcClient, ProviderPlatform, ServerResponse } from '@/common';
+import {
+    OidcClient,
+    ToastState,
+    ModalType,
+    ProviderPlatform,
+    ServerResponse
+} from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-import Toast, { ToastState } from '@/Components/Toast';
+import Toast from '@/Components/Toast';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
@@ -21,11 +27,11 @@ export default function ProviderPlatformManagement() {
     const addProviderModal = useRef<null | HTMLDialogElement>(null);
     const editProviderModal = useRef<null | HTMLDialogElement>(null);
     const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
-        null
+        undefined
     );
     const openOidcClientModal = useRef<null | HTMLDialogElement>(null);
     const openOidcRegistrationModal = useRef<null | HTMLDialogElement>(null);
-    const [oidcClient, setOidcClient] = useState<OidcClient | null>(null);
+    const [oidcClient, setOidcClient] = useState<OidcClient | null>(undefined);
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
@@ -43,7 +49,7 @@ export default function ProviderPlatformManagement() {
 
     function resetModal() {
         setTimeout(() => {
-            setEditProvider(null);
+            setEditProvider(undefined);
         }, 200);
     }
 
@@ -75,7 +81,7 @@ export default function ProviderPlatformManagement() {
         state: ToastState
     ) => {
         openOidcClientModal.current?.close();
-        setEditProvider(null);
+        setEditProvider(undefined);
         if (!response && state == ToastState.success) {
             setToast({
                 state: state,

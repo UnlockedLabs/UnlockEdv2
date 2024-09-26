@@ -4,14 +4,14 @@ import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import API from '@/api/api';
 import { Facility } from '@/common';
-type Inputs = {
+interface Inputs {
     password: string;
     confirm: string;
     facility_name: string;
-};
+}
 
 export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
@@ -55,7 +55,7 @@ export default function ChangePasswordForm() {
             }
         };
         checkFacilityName();
-    }, []);
+    }, [auth.user.role]);
 
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);

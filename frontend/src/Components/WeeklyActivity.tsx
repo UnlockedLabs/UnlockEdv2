@@ -13,18 +13,18 @@ import { RecentActivity } from '@/common';
 
 const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
     const { theme } = useContext(ThemeContext);
-    var lineColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
-    var gridColor = theme == 'light' ? '#ECECEC' : '#737373';
-    var backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
+    const lineColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
+    const gridColor = theme == 'light' ? '#ECECEC' : '#737373';
+    const backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
 
     const result: RecentActivity[] = Array.from(
         { length: 7 },
         () => ({}) as RecentActivity
     );
-    let currentDate = new Date();
+    const currentDate = new Date();
 
     for (let i = 6; i >= 0; i--) {
-        let date = new Date(currentDate);
+        const date = new Date(currentDate);
         date.setDate(date.getDate() - i);
         const dateString = date.toISOString().split('T')[0];
         let entry = data.find(

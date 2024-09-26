@@ -5,8 +5,8 @@ interface TextAreaProps {
     interfaceRef: string;
     required: boolean;
     length: number | null;
-    errors: FieldErrors<any>;
-    register: Function;
+    errors: FieldErrors<any>; // eslint-disable-line
+    register: Function; // eslint-disable-line
 }
 
 export function TextAreaInput({

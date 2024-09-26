@@ -1,5 +1,5 @@
-import NotificationCard, { NotificationType } from './NotificationCard';
-import { Announcement } from '@/common.ts';
+import NotificationCard from './NotificationCard';
+import { Announcement, NotificationType } from '@/common.ts';
 
 const date = new Date();
 

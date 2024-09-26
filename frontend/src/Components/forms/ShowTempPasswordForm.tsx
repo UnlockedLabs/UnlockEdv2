@@ -13,7 +13,7 @@ export default function ShowTempPasswordForm({
     return (
         <div>
             <CloseX close={() => onClose()} />
-            {userName == null ? (
+            {userName == undefined ? (
                 <p className="py-4">
                     You have successfully created a new user.
                 </p>
