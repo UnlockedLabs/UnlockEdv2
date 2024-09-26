@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import Checkbox from '../../Components/inputs/Checkbox';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
@@ -140,7 +139,7 @@ export default function LoginForm() {
                     <InputError message={errorMessage} className="pt-2" />
                 </div>
             )}
-            {user ? (
+            {user && (
                 <div className="text-sm text-body-text text-center mt-2">
                     <button
                         className="btn pr-3 btn-sm btn-ghost"
@@ -149,16 +148,6 @@ export default function LoginForm() {
                     >
                         Not You? Log out
                     </button>
-                </div>
-            ) : (
-                <div className="block mt-4 ml-2">
-                    <label className="flex items-center">
-                        <Checkbox
-                            label={'Remember me'}
-                            interfaceRef={'remember'}
-                            register={register}
-                        />
-                    </label>
                 </div>
             )}
             <div className="flex items-center justify-end mt-4">
