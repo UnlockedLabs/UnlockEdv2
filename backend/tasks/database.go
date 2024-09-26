@@ -27,20 +27,13 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) (string, error) {
-	existing := models.CronJob{}
-	if err := jr.db.Model(models.CronJob{}).First(&existing, "name = ?", cj.Name).Error; err == nil {
-		return existing.ID, nil
+func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) error {
+	if err := jr.db.Where("name = ?", cj.Name).FirstOrCreate(cj).Error; err != nil {
+		log.Errorf("failed to find or create job: %v", err)
+		return err
 	}
-	if err := jr.db.Create(cj).Error; err != nil {
-		log.Errorf("Failed to create cron job %s: %v", cj.Name, err)
-		return "", err
-	}
-	err := jr.checkFirstRun(prov)
-	if err != nil {
-		return "", err
-	}
-	return cj.ID, nil
+	log.Infof("CronJob %s has ID: %s", cj.Name, cj.ID)
+	return nil
 }
 
 func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
@@ -63,6 +56,14 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 				break
 			}
 		}
+		if courseJob == nil {
+			return fmt.Errorf("GetCoursesJob not found in default jobs")
+		}
+		if err := jr.createIfNotExists(courseJob, prov); err != nil {
+			log.Errorf("Failed to create or find CronJob: %v", err)
+			return err
+		}
+		params["job_id"] = courseJob.ID
 
 		if err := jr.db.Create(&models.RunnableTask{
 			JobID:              courseJob.ID,

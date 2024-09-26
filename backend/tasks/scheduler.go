@@ -47,15 +47,13 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 	for _, provider := range providers {
 		provJobs := provider.GetDefaultCronJobs()
 		log.Debug("provJobs: ", provJobs)
-		for _, job := range provJobs {
-			log.Infof("Checking job: %v", job)
-			jobId, err := jr.createIfNotExists(job, &provider)
-			if err != nil {
+		for idx := range provJobs {
+			log.Infof("Checking job: %v", provJobs[idx])
+			if err := jr.createIfNotExists(provJobs[idx], &provider); err != nil {
 				log.Errorf("failed to create job: %v", err)
 				return nil, err
 			}
-			job.ID = jobId // dedupe
-			task, err := jr.intoTask(&provider, job)
+			task, err := jr.intoTask(&provider, provJobs[idx])
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
 				return nil, err
@@ -71,20 +69,19 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 
 func (jr *JobRunner) intoTask(prov *models.ProviderPlatform, cj *models.CronJob) (*models.RunnableTask, error) {
 	task := models.RunnableTask{}
-	if err := jr.db.Model(models.RunnableTask{}).First(&task, "provider_platform_id = ? AND job_id = ?", prov.ID, cj.ID).Error; err != nil {
-		log.Errorf("failed to fetch existing task: %v", err)
-		// this is the first run
+	err := jr.db.Model(&models.RunnableTask{}).First(&task, "provider_platform_id = ? AND job_id = ?", prov.ID, cj.ID).Error
+	if err != nil {
+		// Record not found, create a new task
 		task = models.RunnableTask{
 			ProviderPlatformID: prov.ID,
 			JobID:              cj.ID,
 			Status:             models.StatusPending,
-			// on first run, we fetch all the data a course would have
-			LastRun: time.Now().AddDate(0, -6, 0),
+			LastRun:            time.Now().AddDate(0, -6, 0),
 		}
-	}
-	if err := jr.db.Save(&task).Error; err != nil {
-		log.Errorf("failed to save task: %v", err)
-		return nil, err
+		if err := jr.db.Create(&task).Error; err != nil {
+			log.Errorf("failed to create task: %v", err)
+			return nil, err
+		}
 	}
 	params, err := models.JobType(cj.Name).GetParams(jr.db, prov.ID)
 	if err != nil {

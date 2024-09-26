@@ -180,7 +180,6 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			// still return 201 because user has been created in kratos,
 			// kolibri might not be set up/available
 			return writeJsonResponse(w, http.StatusCreated, response)
-
 		}
 		if err := srv.CreateUserInKolibri(newUser, kolibri); err != nil {
 			log.add("userId", newUser.ID)
