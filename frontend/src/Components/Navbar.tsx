@@ -2,6 +2,7 @@ import { UserRole } from '@/common';
 import Brand from './Brand';
 import {
     ArchiveBoxIcon,
+    AcademicCapIcon,
     BookOpenIcon,
     BuildingStorefrontIcon,
     HomeIcon,
@@ -61,9 +62,15 @@ export default function Navbar({
                             </a>
                         </li>
                         <li>
-                            <a href="/users">
+                            <a href="/student-management">
+                                <AcademicCapIcon className="h-4" />
+                                Students
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/admin-management">
                                 <UsersIcon className="h-4" />
-                                Users
+                                Admins
                             </a>
                         </li>
                         <li>
