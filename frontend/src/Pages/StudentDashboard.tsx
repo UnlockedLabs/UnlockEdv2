@@ -88,7 +88,7 @@ export default function StudentDashboard() {
 
     return (
         <div className="flex w-full">
-            <div className="px-8 py-4 w-3/5">
+            <div className="px-8 py-4">
                 <h1 className="text-5xl">Hi, {user.name_first}!</h1>
                 <h2 className="mt-7"> Pick Up Where You Left Off</h2>
                 <div className="mt-3 bg-base-teal p-6 card">
@@ -196,16 +196,8 @@ export default function StudentDashboard() {
                     )}
                 </div>
             </div>
-            <div className="flex flex-col w-2/5">
-                <div className="flex w-full h-full">
-                    <div className="w-1/2 border-r border-gray-300">
-                        <CalendarComponent />
-                    </div>
-                    <div className="w-1/2">
-                        <ResourcesSideBar />
-                    </div>
-                </div>
-            </div>
+            <div className="min-w-px bg-grey-1"></div>
+            <ResourcesSideBar />
         </div>
     );
 }
