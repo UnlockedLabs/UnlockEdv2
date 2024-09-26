@@ -4,7 +4,6 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import Welcome from '@/Pages/Welcome';
 import Dashboard from '@/Pages/Dashboard';
 import Login from '@/Pages/Auth/Login';
-import Users from '@/Pages/Users';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import ProviderPlatformManagement from './Pages/ProviderPlatformManagement';
 import { AdminOnly, AuthProvider } from './AuthContext';
@@ -16,6 +15,8 @@ import ProviderUserManagement from './Pages/ProviderUserManagement';
 import Error from './Pages/Error';
 import ResourcesManagement from './Pages/ResourcesManagement';
 import UnauthorizedNotFound from './Pages/Unauthorized';
+import AdminManagement from '@/Pages/AdminManagement.tsx';
+import StudentManagement from '@/Pages/StudentManagement.tsx';
 
 function WithAuth({ children }) {
     return <AuthProvider>{children}</AuthProvider>;
@@ -47,8 +48,13 @@ export default function App() {
             errorElement: <Error />
         },
         {
-            path: '/users',
-            element: WithAdmin({ children: <Users /> }),
+            path: '/student-management',
+            element: WithAdmin({ children: <StudentManagement /> }),
+            errorElement: <Error />
+        },
+        {
+            path: '/admin-management',
+            element: WithAdmin({ children: <AdminManagement /> }),
             errorElement: <Error />
         },
         {
