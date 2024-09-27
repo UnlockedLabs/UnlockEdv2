@@ -38,7 +38,8 @@ func (db *DB) CreateContentProvider(url, thumbnail, description string, id int) 
 		Description: description,
 	}
 	if id != 0 {
-		provider.ProviderPlatformID = uint(id)
+		providerId := uint(id)
+		provider.ProviderPlatformID = &providerId
 	}
 	if err := db.Create(&provider).Error; err != nil {
 		return newCreateDBError(err, "open_content_providers")

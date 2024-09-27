@@ -83,7 +83,7 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 	if platform.Type == models.Kolibri {
 		contentProv := models.OpenContentProvider{
 			Url:                platform.BaseUrl,
-			ProviderPlatformID: platform.ID,
+			ProviderPlatformID: &platform.ID,
 			CurrentlyEnabled:   true,
 			Description:        models.KolibriDescription,
 			Thumbnail:          "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
