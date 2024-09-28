@@ -234,7 +234,7 @@ func getNewMilestoneForm() map[string]any {
 	if err != nil {
 		form["err"] = err
 	}
-	_, users, err := server.Db.GetCurrentUsers(1, 10, 1, "", "")
+	_, users, err := server.Db.GetCurrentUsers(1, 10, 1, "", "", "")
 	if err != nil {
 		form["err"] = err
 	}
