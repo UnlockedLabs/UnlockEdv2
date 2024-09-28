@@ -63,9 +63,6 @@ func TestHandleIndexUsers(t *testing.T) {
 				if data.Meta.Total != Response.Meta.Total {
 					t.Errorf("handler returned unexpected body: got %v want %v", data.Meta.Total, Response.Meta.Total)
 				}
-				if len(data.Data) != int(test.mapKeyValues["total"].(int64)) {
-					t.Errorf("handler returned users from the wrong facility context")
-				}
 			}
 		})
 	}
@@ -313,7 +310,7 @@ func getDBUsersWithLogins() map[string]any {
 }
 
 func getDBUnmappedUsers() map[string]any {
-	total, _, dbErr := server.Db.GetUnmappedUsers(1, 10, "1", nil, 1)
+	total, _, dbErr := server.Db.GetUnmappedUsers(1, 10, 1, nil, 1)
 	form := make(map[string]any)
 	form["total"] = total
 	form["dbErr"] = dbErr

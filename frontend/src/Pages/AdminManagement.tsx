@@ -42,7 +42,7 @@ export default function AdminManagement() {
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { data, mutate, error, isLoading } = useSWR<ServerResponse<User>>(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=student`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=admin`
     );
     const userData = data?.data as User[] | [];
     const showToast = (message: string, state: ToastState) => {
@@ -139,9 +139,9 @@ export default function AdminManagement() {
     };
 
     return (
-        <AuthenticatedLayout title="Student Management" path={['Users']}>
+        <AuthenticatedLayout title="Admin Management" path={['Users']}>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
-                <h1>Student Management</h1>
+                <h1>Admin Management</h1>
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
                         <SearchBar
@@ -246,13 +246,18 @@ export default function AdminManagement() {
                                                     className="tooltip"
                                                     data-tip="Delete User"
                                                 >
-                                                    <TrashIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            deleteUserModal.current?.showModal();
-                                                        }}
-                                                    />
+                                                    {user.id !==
+                                                        DEFAULT_ADMIN_ID && (
+                                                        <TrashIcon
+                                                            className="h-4"
+                                                            onClick={() => {
+                                                                setTargetUser(
+                                                                    user
+                                                                );
+                                                                deleteUserModal.current?.showModal();
+                                                            }}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
