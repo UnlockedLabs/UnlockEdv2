@@ -60,7 +60,11 @@ func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 	facilityId := srv.getFacilityID(r)
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query()["search"]
-	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, providerId, search, facilityId)
+	provID, err := strconv.Atoi(providerId)
+	if err != nil {
+		return newInvalidIdServiceError(err, "provider ID")
+	}
+	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, provID, search, facilityId)
 	if err != nil {
 		log.add("providerId", providerId)
 		log.add("facilityId", facilityId)
@@ -202,9 +206,11 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
-		log.add("KratosID", user.KratosID)
-		return newInternalServerServiceError(err, "error deleting user in kratos")
+	if !srv.isTesting(r) {
+		if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
+			log.add("KratosID", user.KratosID)
+			return newInternalServerServiceError(err, "error deleting user in kratos")
+		}
 	}
 	if err := srv.Db.DeleteUser(id); err != nil {
 		return newDatabaseServiceError(err)
@@ -270,7 +276,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	newPass := user.CreateTempPassword()
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
-	if user.KratosID == "" {
+	if user.KratosID == "" && !srv.isTesting(r) {
 		err := srv.HandleCreateUserKratos(user.Username, newPass)
 		if err != nil {
 			return newInternalServerServiceError(err, "Error creating user in kratos")
@@ -278,9 +284,11 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	} else {
 		claims := claimsFromUser(user)
 		claims.PasswordReset = true
-		if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
-			log.add("claims.UserID", claims.UserID)
-			return newInternalServerServiceError(err, err.Error())
+		if !srv.isTesting(r) {
+			if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
+				log.add("claims.UserID", claims.UserID)
+				return newInternalServerServiceError(err, err.Error())
+			}
 		}
 	}
 	return writeJsonResponse(w, http.StatusOK, response)

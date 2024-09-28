@@ -3,7 +3,6 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"errors"
-	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -17,24 +16,24 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	if search != "" {
 		return db.SearchCurrentUsers(page, itemsPerPage, facilityId, order, search, role)
 	}
-
 	offset := (page - 1) * itemsPerPage
 	var count int64
 	var users []models.User
-	tx := db.Model(&models.User{}).
-		Where("facility_id = ?", facilityId)
+	if err := db.Model(&models.User{}).Where("facility_id = ?", facilityId).Count(&count).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "users")
+	}
+	tx := db.Model(&models.User{})
 	switch role {
 	case "admin":
 		tx = tx.Where("role = 'admin'")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
-	if err := tx.
-		Count(&count).
+	if err := tx.Find(&users, "facility_id = ?", facilityId).
+		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
-		Order(order).
-		Find(&users).Error; err != nil {
+		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
@@ -47,21 +46,23 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 	var count int64
 	offset := (page - 1) * itemsPerPage
 	search = strings.TrimSpace(search)
-	likeSearch := "%" + search + "%"
-	tx := db.Model(&models.User{}).
-		Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
-		Where("name_first ILIKE ? OR username ILIKE ? OR name_last ILIKE ?", likeSearch, likeSearch, likeSearch)
+	likeSearch := "%" + strings.ToLower(search) + "%"
+	tx := db.Model(&models.User{})
 	switch role {
 	case "admin":
 		tx = tx.Where("role = 'admin'")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
+	if err := tx.Count(&count).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "users")
+	}
 	if err := tx.
+		Find(&users, "facility_id = ? AND (name_first LIKE ? OR username LIKE ? OR name_last LIKE ?)", facilityId, likeSearch, likeSearch, likeSearch).
 		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
-		Find(&users).Count(&count).Error; err != nil {
+		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
@@ -71,18 +72,17 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 			first := "%" + split[0] + "%"
 			last := "%" + split[1] + "%"
 			if err := db.Model(&models.User{}).
-				Where("facility_id = ?", fmt.Sprintf("%d", facilityId)).
-				Where("(name_first ILIKE ? AND name_last ILIKE ?) OR (name_first ILIKE ? AND name_last ILIKE ?)", first, last, last, first).
+				Where("facility_id = ?", facilityId).
+				Where("(name_first LIKE ? AND name_last LIKE ?) OR (name_first LIKE ? AND name_last LIKE ?)", first, last, last, first).
 				Order(order).
 				Offset(offset).
 				Limit(itemsPerPage).
-				Find(&users).Count(&count).Error; err != nil {
+				Find(&users).Error; err != nil {
 				log.Printf("Error fetching users: %v", err)
 				return 0, nil, newGetRecordsDBError(err, "users")
 			}
 		}
 	}
-
 	log.Printf("found %d users", count)
 	return count, users, nil
 }
@@ -104,7 +104,7 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 	var users []models.User
 	var count int64
 	if err := db.Model(&models.User{}).
-		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", fmt.Sprintf("%d", facilityId)).Error; err != nil {
+		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", facilityId).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
 	var userWithLogins []UserWithLogins

@@ -5,7 +5,12 @@ import "UnlockEdv2/src/models"
 func (db *DB) GetProgramSectionEnrollmentsForUser(userID, page, perPage int) (int64, []models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
 	var total int64
-	if err := db.Find(&content, "user_id = ?", userID).Count(&total).Error; err != nil {
+	tx := db.Model(&models.ProgramSectionEnrollment{}).Where("user_id = ?", userID)
+
+	if err := tx.Count(&total).Error; err != nil {
+		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+	}
+	if err := tx.Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
 	return total, content, nil
@@ -22,7 +27,11 @@ func (db *DB) GetProgramSectionEnrollmentsByID(id int) (*models.ProgramSectionEn
 func (db *DB) GetEnrollmentsForSection(page, perPage, sectionId int) (int64, []models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
 	var total int64
-	if err := db.Find(&content, "section_id = ?", sectionId).Count(&total).Limit(page).Offset((page - 1) * perPage).Error; err != nil {
+	tx := db.Model(&models.ProgramSectionEnrollment{}).Where("section_id = ?", sectionId)
+	if err := tx.Count(&total).Error; err != nil {
+		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+	}
+	if err := tx.Find(&content).Limit(page).Offset((page - 1) * perPage).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
 	return total, content, nil
@@ -31,19 +40,13 @@ func (db *DB) GetEnrollmentsForSection(page, perPage, sectionId int) (int64, []m
 func (db *DB) GetProgramSectionEnrollmentsForFacility(page, perPage int, facilityID uint) (int64, []models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
 	var total int64 //count
-	if err := db.Table("program_section_enrollments pse").
-		Select("*").
-		Joins("JOIN program_sections ps ON pse.section_id = ps.id and ps.deleted_at IS NULL").
-		Where("ps.facility_id = ?", facilityID).
-		Where("pse.deleted_at IS NULL").
-		Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
-	}
-	if err := db.Table("program_section_enrollments pse").
-		Select("pse.*").
-		Joins("JOIN program_sections ps ON pse.section_id = ps.id and ps.deleted_at IS NULL").
-		Where("ps.facility_id = ?", facilityID).
-		Limit(perPage).
+	tx := db.Model(&models.ProgramSectionEnrollment{}).
+		Joins("JOIN program_sections ps ON program_section_enrollments.section_id = ps.id and ps.deleted_at IS NULL").
+		Where("ps.facility_id = ?", facilityID)
+
+	_ = tx.Count(&total)
+
+	if err := tx.Limit(perPage).
 		Offset((page - 1) * perPage).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
@@ -84,21 +87,15 @@ func (db *DB) UpdateProgramSectionEnrollments(content *models.ProgramSectionEnro
 func (db *DB) GetProgramSectionEnrollmentssForProgram(page, perPage, facilityID, programID int) (int64, []models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
 	var total int64
-	if err := db.Table("program_section_enrollments pse").
-		Select("*").
-		Joins("JOIN program_sections ps ON pse.section_id = ps.id and ps.deleted_at IS NULL").
+	tx := db.Model(&models.ProgramSectionEnrollment{}).
+		Joins("JOIN program_sections ps ON program_section_enrollments.section_id = ps.id and ps.deleted_at IS NULL").
 		Where("ps.facility_id = ?", facilityID).
-		Where("ps.program_id = ?", programID).
-		Where("pse.deleted_at IS NULL").
-		Count(&total).Error; err != nil {
+		Where("ps.program_id = ?", programID)
+
+	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	if err := db.Table("program_section_enrollments pse").
-		Select("pse.*").
-		Joins("JOIN program_sections ps ON pse.section_id = ps.id and ps.deleted_at IS NULL").
-		Where("ps.facility_id = ?", facilityID).
-		Where("ps.program_id = ?", programID).
-		Limit(perPage).
+	if err := tx.Limit(perPage).
 		Offset((page - 1) * perPage).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
@@ -109,23 +106,18 @@ func (db *DB) GetProgramSectionEnrollmentssForProgram(page, perPage, facilityID,
 func (db *DB) GetProgramSectionEnrollmentsAttendance(page, perPage, id int) (int64, []models.ProgramSectionEventAttendance, error) {
 	content := []models.ProgramSectionEventAttendance{}
 	var total int64
-	if err := db.Table("program_section_event_attendance att").
+	tx := db.Table("program_section_event_attendance att").
 		Select("*").
 		Joins("JOIN program_section_events evt ON att.event_id = evt.id and evt.deleted_at IS NULL").
 		Joins("JOIN program_sections ps ON evt.section_id = ps.id and ps.deleted_at IS NULL").
 		Joins("JOIN program_section_enrollments pse ON ps.id = pse.section_id and pse.deleted_at IS NULL").
 		Where("pse.id = ?", id).
-		Where("att.deleted_at IS NULL").
-		Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "section event attendance")
+		Where("att.deleted_at IS NULL")
+
+	if err := tx.Count(&total).Error; err != nil {
+		return 0, nil, newNotFoundDBError(err, "section event")
 	}
-	if err := db.Table("program_section_event_attendance att").
-		Select("att.*").
-		Joins("JOIN program_section_events evt ON att.event_id = evt.id and evt.deleted_at IS NULL").
-		Joins("JOIN program_sections ps ON evt.section_id = ps.id and ps.deleted_at IS NULL").
-		Joins("JOIN program_section_enrollments pse ON ps.id = pse.section_id and pse.deleted_at IS NULL").
-		Where("pse.id = ?", id).
-		Limit(perPage).
+	if err := tx.Limit(perPage).
 		Offset((page - 1) * perPage).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "section event attendance")
