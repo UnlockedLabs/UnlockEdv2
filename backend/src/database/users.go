@@ -58,7 +58,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
 	if err := tx.
-		Find(&users, "facility_id = ? AND (name_first LIKE ? OR username LIKE ? OR name_last LIKE ?)", facilityId, likeSearch, likeSearch, likeSearch).
+		Find(&users, "facility_id = ? AND (LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?)", facilityId, likeSearch, likeSearch, likeSearch).
 		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
@@ -73,7 +73,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 			last := "%" + split[1] + "%"
 			if err := db.Model(&models.User{}).
 				Where("facility_id = ?", facilityId).
-				Where("(name_first LIKE ? AND name_last LIKE ?) OR (name_first LIKE ? AND name_last LIKE ?)", first, last, last, first).
+				Where("(LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?)", first, last, last, first).
 				Order(order).
 				Offset(offset).
 				Limit(itemsPerPage).

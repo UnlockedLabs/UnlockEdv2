@@ -139,7 +139,10 @@ export default function AdminManagement() {
     };
 
     return (
-        <AuthenticatedLayout title="Admin Management" path={['Users']}>
+        <AuthenticatedLayout
+            title="Admin Management"
+            path={['Admin Management']}
+        >
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <h1>Admin Management</h1>
                 <div className="flex justify-between">
@@ -162,7 +165,7 @@ export default function AdminManagement() {
 
                     <div
                         className="tooltip tooltip-left"
-                        data-tip="Add Student"
+                        data-tip="Add Administrator"
                     >
                         <button
                             className="btn btn-primary btn-sm"
@@ -200,7 +203,7 @@ export default function AdminManagement() {
                                         <td>
                                             <div
                                                 className="tooltip"
-                                                data-tip="User Activity"
+                                                data-tip="Activity"
                                             >
                                                 <a className="flex justify-start cursor-pointer">
                                                     <span>
@@ -220,7 +223,7 @@ export default function AdminManagement() {
                                             <div className="flex space-x-2 text-accent cursor-pointer">
                                                 <div
                                                     className="tooltip"
-                                                    data-tip="Edit User"
+                                                    data-tip="Edit Admin"
                                                 >
                                                     <PencilIcon
                                                         className="h-4"
@@ -244,7 +247,7 @@ export default function AdminManagement() {
                                                 </div>
                                                 <div
                                                     className="tooltip"
-                                                    data-tip="Delete User"
+                                                    data-tip="Delete Admin"
                                                 >
                                                     {user.id !==
                                                         DEFAULT_ADMIN_ID && (
@@ -288,7 +291,7 @@ export default function AdminManagement() {
             <Modal
                 ref={editUserModal}
                 type={ModalType.Edit}
-                item="User"
+                item="Admin"
                 form={
                     targetUser ? (
                         <EditUserForm
@@ -303,7 +306,7 @@ export default function AdminManagement() {
             <Modal
                 ref={deleteUserModal}
                 type={ModalType.Confirm}
-                item="Delete User"
+                item="Delete Admin"
                 form={
                     <DeleteForm
                         item="User"
