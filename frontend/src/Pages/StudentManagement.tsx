@@ -139,7 +139,10 @@ export default function StudentManagement() {
     };
 
     return (
-        <AuthenticatedLayout title="Student Management" path={['Users']}>
+        <AuthenticatedLayout
+            title="Student Management"
+            path={['Student Management']}
+        >
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <h1>Student Management</h1>
                 <div className="flex justify-between">
@@ -220,7 +223,7 @@ export default function StudentManagement() {
                                             <div className="flex space-x-2 text-accent cursor-pointer">
                                                 <div
                                                     className="tooltip"
-                                                    data-tip="Edit User"
+                                                    data-tip="Edit Student"
                                                 >
                                                     <PencilIcon
                                                         className="h-4"
@@ -244,7 +247,7 @@ export default function StudentManagement() {
                                                 </div>
                                                 <div
                                                     className="tooltip"
-                                                    data-tip="Delete User"
+                                                    data-tip="Delete Student"
                                                 >
                                                     <TrashIcon
                                                         className="h-4"
@@ -277,13 +280,13 @@ export default function StudentManagement() {
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
-                item="User"
+                item="Student"
                 form={<AddUserForm onSuccess={onAddUserSuccess} />}
             />
             <Modal
                 ref={editUserModal}
                 type={ModalType.Edit}
-                item="User"
+                item="Student"
                 form={
                     targetUser ? (
                         <EditUserForm
@@ -298,7 +301,7 @@ export default function StudentManagement() {
             <Modal
                 ref={deleteUserModal}
                 type={ModalType.Confirm}
-                item="Delete User"
+                item="Delete Student"
                 form={
                     <DeleteForm
                         item="User"
