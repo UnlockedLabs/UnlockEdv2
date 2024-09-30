@@ -1,0 +1,33 @@
+[
+    {
+      "open_content_provider_id": 3,
+      "external_id": "urn:uuid:67440563-a62b-fabe-415c-4c3ee4546f78",
+      "name": "TED ted connects",
+      "language": "eng,spa,ara",
+      "description": "A collection of TED videos about ted connects",
+      "url": "/content/ted_mul_ted-connects_2024-08",
+      "image_url": "/catalog/v2/illustration/67440563-a62b-fabe-415c-4c3ee4546f78/?size=48",
+      "visibility_status": true
+    },
+    {
+      "open_content_provider_id": 3,
+      "external_id": "urn:uuid:84812c13-fa65-feb7-c206-4f22cc2e0f9a",
+      "name": "Python Documentation",
+      "language": "eng",
+      "description": "All documentation for Python",
+      "url": "/content/docs.python.org_en_2024-09",
+      "image_url": "/catalog/v2/illustration/84812c13-fa65-feb7-c206-4f22cc2e0f9a/?size=48",
+      "visibility_status": true
+    },
+    {
+      "open_content_provider_id": 3,
+      "external_id": "urn:uuid:19e6fe12-09a9-0a38-5be4-71c0eba0a72d",
+      "name": "Finiki",
+      "language": "eng",
+      "description": "The Canadian financial wiki",
+      "url": "/content/finiki_en_all_maxi_2024-06",
+      "image_url": "/catalog/v2/illustration/19e6fe12-09a9-0a38-5be4-71c0eba0a72d/?size=48",
+      "visibility_status": false
+    }
+  ]
+  

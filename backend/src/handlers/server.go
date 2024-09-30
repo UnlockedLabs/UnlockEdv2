@@ -50,6 +50,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerOryRoutes()
 	srv.registerFacilitiesRoutes()
 	srv.registerOpenContentRoutes()
+	srv.registerLibraryRoutes()
 	srv.registerProgramsRoutes()
 	srv.registerSectionsRoutes()
 	srv.registerSectionEventsRoutes()
