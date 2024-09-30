@@ -47,6 +47,7 @@ var TableList = []interface{}{
 	&models.OpenContentProvider{},
 	&models.CronJob{},
 	&models.RunnableTask{},
+	&models.Library{},
 }
 
 var validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
@@ -191,6 +192,19 @@ func (db *DB) SeedTestData() {
 		openContentProviders[i].ProviderPlatformID = &platform[rand.Intn(len(platform))].ID
 		if err := db.Create(&openContentProviders[i]).Error; err != nil {
 			log.Fatalf("Failed to create open content provider: %v", err)
+		}
+	}
+	libraries, err := os.ReadFile("test_data/libraries.json")
+	if err != nil {
+		log.Fatalf("Failed to read test data: %v", err)
+	}
+	var library []models.Library
+	if err := json.Unmarshal(libraries, &library); err != nil {
+		log.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	for i := range library {
+		if err := db.Create(&library[i]).Error; err != nil {
+			log.Fatalf("Failed to create library: %v", err)
 		}
 	}
 	oidcFile, err := os.ReadFile("test_data/oidc_client.json")
