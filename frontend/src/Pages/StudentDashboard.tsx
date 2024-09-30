@@ -18,7 +18,6 @@ import {
     ServerResponse,
     StudentDashboardJoin
 } from '@/common';
-import CalendarComponent from '@/Components/Calendar';
 
 export default function StudentDashboard() {
     const { user } = useAuth();

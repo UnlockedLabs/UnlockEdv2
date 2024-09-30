@@ -46,7 +46,9 @@ func (db *DB) GetCourse(page, perPage int, search string) (int64, []models.Cours
 			}
 		}
 	} else {
-		_ = db.Model(&models.Course{}).Count(&total)
+		if err := db.Model(&models.Course{}).Count(&total).Error; err != nil {
+			return 0, nil, newNotFoundDBError(err, "courses")
+		}
 		if err := db.Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
 			return 0, nil, err
 		}
@@ -77,7 +79,7 @@ func (db *DB) DeleteCourse(id int) error {
 
 func (db *DB) GetCourseByProviderPlatformID(id int) ([]models.Course, error) {
 	content := []models.Course{}
-	if err := db.Where("provider_platform_id = ?", id).Find(&content).Error; err != nil {
+	if err := db.Model(&models.Course{}).Find(&content, "provider_platform_id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return content, nil

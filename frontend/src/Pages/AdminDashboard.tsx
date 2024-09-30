@@ -8,7 +8,6 @@ import useSWR from 'swr';
 import convertSeconds from '../Components/ConvertSeconds';
 import { useContext } from 'react';
 import { ThemeContext } from '@/Components/ThemeContext';
-import CalendarComponent from '@/Components/Calendar';
 
 export default function AdminDashboard() {
     const { user } = useAuth();

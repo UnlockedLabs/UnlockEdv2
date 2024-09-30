@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 func TestHandleIndexMilestones(t *testing.T) {
@@ -51,10 +51,12 @@ func TestHandleIndexMilestones(t *testing.T) {
 			received := rr.Body.String()
 			if err = json.Unmarshal([]byte(received), &resource); err != nil {
 				t.Errorf("unable to unmarshal resource, error is %v", err)
+				return
 			}
 			for idx, outcome := range milestones {
 				if outcome.ID != resource.Data[idx].ID {
 					t.Error("milestones are out of sync and not ordered correctly")
+					return
 				}
 			}
 
@@ -88,19 +90,23 @@ func TestHandleCreateMilestone(t *testing.T) {
 				data := models.Resource[models.Milestone]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
+					return
 				}
 				milestone, err := server.Db.GetMilestoneByID(int(data.Data.ID))
 				if err != nil {
 					t.Errorf("unable to get milestone from db, error is %v", err)
+					return
 				}
 				t.Cleanup(func() {
 					err := server.Db.DeleteMilestone(int(milestone.ID))
 					if err != nil {
 						fmt.Println("error running clean for milestone that was created, error is ", err)
+						return
 					}
 				})
 				if diff := cmp.Diff(milestone, &data.Data); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
+					return
 				}
 			}
 		})
@@ -140,9 +146,11 @@ func TestHandleDeleteMilestone(t *testing.T) {
 				resource := models.Resource[struct{}]{}
 				if err := json.Unmarshal([]byte(received), &resource); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
+					return
 				}
 				if resource.Message != test.mapKeyValues["message"] {
 					t.Errorf("handler returned wrong body: got %v want %v", resource.Message, test.mapKeyValues["message"])
+					return
 				}
 			}
 		})
@@ -170,6 +178,7 @@ func TestHandleUpdateMilestone(t *testing.T) {
 				t.Cleanup(func() {
 					if err := server.Db.DeleteMilestone(int(id)); err != nil {
 						fmt.Println("error running clean for milestone that was created, error is ", err)
+						return
 					}
 				})
 			} else {
@@ -196,9 +205,11 @@ func TestHandleUpdateMilestone(t *testing.T) {
 				data := models.Resource[models.Milestone]{}
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
+					return
 				}
 				if diff := cmp.Diff(updatedMilestone, &data.Data); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
+					return
 				}
 			}
 		})
@@ -234,13 +245,13 @@ func getNewMilestoneForm() map[string]any {
 	if err != nil {
 		form["err"] = err
 	}
-	_, users, err := server.Db.GetCurrentUsers(1, 10, 1, "", "")
+	_, users, err := server.Db.GetCurrentUsers(1, 10, 1, "", "", "")
 	if err != nil {
 		form["err"] = err
 	}
 	form["user_id"] = users[rand.Intn(len(users))].ID
 	form["course_id"] = courses[rand.Intn(len(courses))].ID
-	form["external_id"] = strconv.Itoa(rand.Intn(10000))
+	form["external_id"] = uuid.NewString()
 	form["type"] = "assignment_submission"
 	form["is_completed"] = true
 	return form

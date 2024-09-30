@@ -363,8 +363,8 @@ func getProgramSectionEnrollmentWithAttendance(facilityId uint) map[string]any {
 	if err := server.Db.Table("program_section_enrollments pse").
 		Select("pse.*").
 		Joins("JOIN program_sections ps ON pse.section_id = ps.id and ps.deleted_at IS NULL").
-		Joins("join program_section_events evt ON ps.id = evt.section_id and evt.deleted_at IS NULL").
-		Joins("join program_section_event_attendance att ON evt.id = att.event_id and att.deleted_at IS NULL").
+		Joins("JOIN program_section_events evt ON ps.id = evt.section_id and evt.deleted_at IS NULL").
+		Joins("JOIN program_section_event_attendance att ON evt.id = att.event_id and att.deleted_at IS NULL").
 		Where("ps.facility_id = ?", facilityId).
 		Find(&programSectionEnrollments).Error; err != nil {
 		form["err"] = err
