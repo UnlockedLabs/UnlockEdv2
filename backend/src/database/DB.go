@@ -27,7 +27,6 @@ type DB struct{ *gorm.DB }
 var TableList = []interface{}{
 	&models.User{},
 	&models.ProviderPlatform{},
-	&models.UserActivity{},
 	&models.ProviderUserMapping{},
 	&models.LeftMenuLink{},
 	&models.Course{},

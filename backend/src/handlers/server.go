@@ -14,6 +14,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -59,6 +61,14 @@ func (srv *Server) RegisterRoutes() {
 			return
 		}
 	})
+	srv.Mux.Handle("/api/metrics", promhttp.Handler())
+}
+
+func init() {
+	prometheus.MustRegister(requestCount)
+	prometheus.MustRegister(requestDuration)
+	prometheus.MustRegister(requestSize)
+	prometheus.MustRegister(responseSize)
 }
 
 func (srv *Server) ListenAndServe() {
@@ -165,39 +175,6 @@ func (srv *Server) setupBucket() error {
 	}
 	srv.buckets = buckets
 	return nil
-}
-
-func (srv *Server) applyMiddleware(h HttpFunc) http.Handler {
-	return srv.setCsrfTokenMiddleware(
-		srv.rateLimitMiddleware(
-			srv.authMiddleware(
-				srv.handleError(h))))
-}
-
-func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
-	return srv.setCsrfTokenMiddleware(
-		srv.rateLimitMiddleware(
-			srv.authMiddleware(
-				srv.adminMiddleware(
-					srv.handleError(h)))))
-}
-
-func corsMiddleware(next http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r.WithContext(r.Context()))
-	}
 }
 
 func (srv *Server) checkForAdminInKratos() (string, error) {
