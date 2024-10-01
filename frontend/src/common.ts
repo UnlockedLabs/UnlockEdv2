@@ -17,6 +17,7 @@ export interface User {
     email: string;
     password_reset?: boolean;
     created_at: string;
+    updated_at: string;
     [key: string]: number | string | boolean;
 }
 

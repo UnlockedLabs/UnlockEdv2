@@ -8,11 +8,18 @@ import {
     TrashIcon,
     UserPlusIcon
 } from '@heroicons/react/20/solid';
-import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
+import {
+    DEFAULT_ADMIN_ID,
+    ServerResponse,
+    User,
+    ToastState,
+    ModalType,
+    PaginationMeta
+} from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
-import Toast, { ToastState } from '../Components/Toast';
-import Modal, { ModalType } from '../Components/Modal';
+import Toast from '../Components/Toast';
+import Modal from '../Components/Modal';
 import DeleteForm from '../Components/DeleteForm';
 import ResetPasswordForm from '../Components/forms/ResetPasswordForm';
 import ShowTempPasswordForm from '../Components/forms/ShowTempPasswordForm';
@@ -45,6 +52,7 @@ export default function AdminManagement() {
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=admin`
     );
     const userData = data?.data as User[] | [];
+    const meta = data?.meta as PaginationMeta;
     const showToast = (message: string, state: ToastState) => {
         setToast({
             state,
@@ -82,7 +90,7 @@ export default function AdminManagement() {
             : ToastState.error;
         const message = response.success
             ? 'User deleted successfully'
-            : response.statusText;
+            : response.message;
         deleteUserModal.current?.close();
         showToast(message, toastType);
         resetModal();
@@ -270,7 +278,7 @@ export default function AdminManagement() {
                     </tbody>
                 </table>
                 {!isLoading && !error && userData.length != 0 && (
-                    <Pagination meta={data.meta} setPage={setPageQuery} />
+                    <Pagination meta={meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">
