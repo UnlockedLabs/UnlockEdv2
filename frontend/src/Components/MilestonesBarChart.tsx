@@ -1,12 +1,12 @@
 import {
-    BarChart,
     Bar,
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
+    BarChart,
     CartesianGrid,
-    Label
+    Label,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';

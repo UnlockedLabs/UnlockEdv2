@@ -1,7 +1,7 @@
 // Component form that takes in a category and gives the user the ability to rename it. Calls back onSuccess when the category is renamed.
 
-import { useForm, SubmitHandler } from 'react-hook-form';
-import { TextInput, CloseX, SubmitButton } from '../inputs';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { CloseX, SubmitButton, TextInput } from '../inputs';
 
 interface Inputs {
     collectionName: string;
@@ -37,7 +37,7 @@ export default function EditResourceCollectionForm({
                 <TextInput
                     label="Collection Name"
                     interfaceRef="collectionName"
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}

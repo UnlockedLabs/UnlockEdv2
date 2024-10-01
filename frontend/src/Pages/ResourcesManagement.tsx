@@ -8,14 +8,14 @@ import AddResourceCollectionForm from '../Components/forms/AddResourceCollection
 import EditResourceCollectionForm from '../Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
 import {
-    ResourceCategory,
     ModalType,
-    ToastState,
-    ResourceLink
+    ResourceCategory,
+    ResourceLink,
+    ToastState
 } from '../common';
-import { PlusCircleIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { PlusIcon, Bars3Icon } from '@heroicons/react/24/solid';
+import { Bars3Icon, PlusIcon } from '@heroicons/react/24/solid';
 import { CloudArrowUpIcon } from '@heroicons/react/16/solid';
 import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
@@ -34,20 +34,20 @@ export default function ResourcesManagement() {
     const { data, error, mutate, isLoading } = useSWR('/api/left-menu');
 
     const [collectionList, setCollectionList] = useState([]);
-    const [collectionToDelete, setCollectionToDelete] = useState<number | null>(
-        undefined
-    );
+    const [collectionToDelete, setCollectionToDelete] = useState<
+        number | undefined
+    >();
     const [selectedCollectionIndex, setSelectedCollectionIndex] = useState<
-        number | null
-    >(undefined);
+        number | undefined
+    >();
     const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
     });
 
-    const addCollectionModal = useRef<null | HTMLDialogElement>(null);
-    const deleteCollectionModal = useRef<null | HTMLDialogElement>(null);
+    const addCollectionModal = useRef<undefined | HTMLDialogElement>();
+    const deleteCollectionModal = useRef<undefined | HTMLDialogElement>();
 
     useEffect(() => {
         if (data) {
@@ -106,7 +106,7 @@ export default function ResourcesManagement() {
     const handleResourceCollectionChange = (
         updatedResourceCollection: EditableResourceCollection
     ) => {
-        if (selectedCollectionIndex !== null) {
+        if (selectedCollectionIndex) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex] =
                 updatedResourceCollection;
@@ -134,7 +134,7 @@ export default function ResourcesManagement() {
         addCollectionModal.current?.close();
     };
 
-    const deleteCollection = (id: number | null) => {
+    const deleteCollection = (id: number | undefined) => {
         if (
             selectedCollectionIndex &&
             collectionList[selectedCollectionIndex].id === id
@@ -318,15 +318,15 @@ const SortableCollectionList = ({
     onUpdateCollectionList
 }: {
     collections: EditableResourceCollection[];
-    selectedCollectionIndex: number | null;
+    selectedCollectionIndex: number | undefined;
     onResourceCollectionClick: (collection: EditableResourceCollection) => void;
     onDeleteCollectionClick: (collectionId: number) => void;
     onUpdateCollectionList: (newList: EditableResourceCollection[]) => void;
 }) => {
-    const draggedItem = useRef<null | number>(null);
-    const [draggedOverItem, setDraggedOverItem] = useState<null | number>(
-        undefined
-    );
+    const draggedItem = useRef<undefined | number>();
+    const [draggedOverItem, setDraggedOverItem] = useState<
+        undefined | number
+    >();
     const dragOverItem = useDebounceValue(draggedOverItem, 100);
 
     const handleSort = () => {
@@ -527,17 +527,19 @@ const ResourceCollectionEditor = ({
         updatedResourceLink: ResourceLink
     ) => void;
 }) => {
-    const addLinkModal = useRef<null | HTMLDialogElement>(null);
-    const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
-    const editResourceCollectionModal = useRef<null | HTMLDialogElement>(null);
-    const [activeLinkToDelete, setActiveLinkToDelete] = useState<number | null>(
-        undefined
+    const addLinkModal = useRef<undefined | HTMLDialogElement>();
+    const deleteLinkModal = useRef<undefined | HTMLDialogElement>();
+    const editResourceCollectionModal = useRef<undefined | HTMLDialogElement>(
+        null
     );
+    const [activeLinkToDelete, setActiveLinkToDelete] = useState<
+        number | undefined
+    >();
 
-    const [draggedItem, setDraggedItem] = useState<number | null>(undefined);
-    const [draggedOverItem, setDraggedOverItem] = useState<number | null>(
-        undefined
-    );
+    const [draggedItem, setDraggedItem] = useState<number | undefined>();
+    const [draggedOverItem, setDraggedOverItem] = useState<
+        number | undefined
+    >();
 
     const editCollectionTitle = (newtitle: string) => {
         onCollectionChange({

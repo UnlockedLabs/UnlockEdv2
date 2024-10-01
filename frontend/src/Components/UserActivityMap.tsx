@@ -10,6 +10,8 @@ interface ActivityMapData {
     total_time: string;
     quartile: number;
 }
+const SECONDS_IN_HOUR = 3600;
+const DAYS_IN_WEEK = 7;
 
 interface Activities {
     activities: ActivityMapData[];
@@ -259,7 +261,7 @@ function ActivityMapTable({
             newMonth = dateCount.getUTCMonth();
             if (
                 newMonth != oldMonth &&
-                dateCount.getUTCDate() < 8 &&
+                dateCount.getUTCDate() <= DAYS_IN_WEEK &&
                 tableMonths[tableMonths.length - 1] == ''
             ) {
                 insertMonthHeader(dateCount);
@@ -299,9 +301,9 @@ function ActivityMapTable({
     }
 
     /* add empty cells for days of week after activity range */
-    for (i = dateCount.getUTCDay(); i < 7; i++) {
+    for (i = dateCount.getUTCDay(); i < DAYS_IN_WEEK; i++) {
         tableData.push(
-            <td className={'block ' + gapSizes} key={i + 7}>
+            <td className={'block ' + gapSizes} key={i + DAYS_IN_WEEK}>
                 <div className={`${nodeSizes}`}></div>
             </td>
         );
@@ -350,11 +352,11 @@ function ActivityMapTable({
                         </td>
                     </tr>
                     {tableData.map((_, index) => {
-                        if (index % 7 == 0) {
+                        if (index % DAYS_IN_WEEK == 0) {
                             return (
                                 <tr className="inline-block" key={index}>
                                     {tableData
-                                        .slice(index, index + 7)
+                                        .slice(index, index + DAYS_IN_WEEK)
                                         .map((node) => {
                                             return node;
                                         })}
@@ -368,7 +370,7 @@ function ActivityMapTable({
                 {isLoading || error
                     ? undefined
                     : getAggregateActivityTime(
-                          Math.floor(aggregateActivityTime / 3600)
+                          Math.floor(aggregateActivityTime / SECONDS_IN_HOUR)
                       ) +
                       ' in ' +
                       range +

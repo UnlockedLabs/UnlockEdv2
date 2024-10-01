@@ -86,11 +86,11 @@ export interface ServerResponse<T> {
         | boolean
         | Array<T>
         | T
-        | null
+        | undefined
         | PaginationMeta;
     success: boolean;
     message: string;
-    data: Array<T> | T | null;
+    data: Array<T> | T | undefined;
     pagination?: PaginationMeta;
 }
 
@@ -374,7 +374,7 @@ export enum PillTagType {
 export interface ModalProps {
     type: ModalType | string;
     item: string;
-    form: ReactNode | null;
+    form: ReactNode | undefined;
 }
 
 export enum ModalType {

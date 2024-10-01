@@ -1,11 +1,11 @@
 import {
     NewUserResponse,
-    ToastState,
     ProviderPlatform,
+    ToastState,
     UserRole
 } from '../../common';
 import { useEffect, useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
@@ -103,7 +103,7 @@ export default function AddUserForm({
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -111,7 +111,7 @@ export default function AddUserForm({
                 <TextInput
                     label={'Last Name'}
                     interfaceRef={'name_last'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -119,7 +119,7 @@ export default function AddUserForm({
                 <TextInput
                     label={'Username'}
                     interfaceRef={'username'}
-                    required={true}
+                    required
                     length={50}
                     errors={errors}
                     register={register}
@@ -127,7 +127,7 @@ export default function AddUserForm({
                 <DropdownInput
                     label={'Role'}
                     interfaceRef={'role'}
-                    required={true}
+                    required
                     errors={errors}
                     register={register}
                     enumType={UserRole}

@@ -7,9 +7,9 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
     ServerResponse,
-    ViewType,
     UserCourses,
-    UserCoursesInfo
+    UserCoursesInfo,
+    ViewType
 } from '@/common';
 import useSWR from 'swr';
 

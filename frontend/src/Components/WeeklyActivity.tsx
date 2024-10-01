@@ -1,11 +1,11 @@
 import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
     CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
     Tooltip,
-    ResponsiveContainer
+    XAxis,
+    YAxis
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';

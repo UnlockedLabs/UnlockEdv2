@@ -7,7 +7,7 @@ import { AuthContext } from '@/useAuth';
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children
 }) => {
-    const [user, setUser] = useState<User | null>(undefined);
+    const [user, setUser] = useState<User | undefined>();
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const fetchUser = async () => {

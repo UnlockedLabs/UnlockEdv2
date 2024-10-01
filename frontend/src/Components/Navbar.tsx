@@ -1,14 +1,14 @@
 import { UserRole } from '@/common';
 import Brand from './Brand';
 import {
-    ArchiveBoxIcon,
     AcademicCapIcon,
+    ArchiveBoxIcon,
     BookOpenIcon,
     BuildingStorefrontIcon,
-    HomeIcon,
-    RectangleStackIcon,
     ChevronDoubleLeftIcon,
     ChevronDoubleRightIcon,
+    HomeIcon,
+    RectangleStackIcon,
     TrophyIcon,
     UsersIcon
 } from '@heroicons/react/24/solid';

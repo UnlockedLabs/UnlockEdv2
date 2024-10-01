@@ -4,8 +4,8 @@ import API from './api/api';
 import axios from 'axios';
 
 interface AuthContextType {
-    user: User | null;
-    setUser: Dispatch<SetStateAction<User | null>>;
+    user: User | undefined;
+    setUser: Dispatch<SetStateAction<User | undefined>>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(

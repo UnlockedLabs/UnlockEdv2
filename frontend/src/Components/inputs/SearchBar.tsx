@@ -17,7 +17,7 @@ export default function SearchBar({
                     className="input input-bordered w-full max-w-xs"
                     value={searchTerm}
                     onChange={(e) => changeCallback(e.target.value)}
-                    autoFocus={true}
+                    autoFocus
                 />
             </div>
         </label>

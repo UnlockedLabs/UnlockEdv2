@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
+    PaginationMeta,
+    ProviderUser,
     ServerResponse,
     ToastState,
-    User,
-    ProviderUser,
-    PaginationMeta
+    User
 } from '@/common';
 import { CloseX } from '../inputs/CloseX';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
@@ -28,7 +28,7 @@ export default function MapUserForm({
     const [errorMessage, setErrorMessage] = useState('');
     const [fuzzySearchUsers, setFuzzySearchUsers] = useState<User[]>();
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedUser, setSelectedUser] = useState(undefined);
+    const [selectedUser, setSelectedUser] = useState<undefined | number>();
     const [seeAllUsers, setSeeAllUsers] = useState(false);
     const {
         data: allUnmappedUsers,

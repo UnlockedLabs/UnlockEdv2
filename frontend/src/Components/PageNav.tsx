@@ -1,13 +1,13 @@
 import { UserRole } from '../common';
 import { useEffect, useRef } from 'react';
-import { useAuth, handleLogout } from '@/useAuth';
+import { handleLogout, useAuth } from '@/useAuth';
 import {
+    ArchiveBoxIcon,
     ArrowRightEndOnRectangleIcon,
-    HomeIcon,
-    UsersIcon,
-    RectangleStackIcon,
     Bars3Icon,
-    ArchiveBoxIcon
+    HomeIcon,
+    RectangleStackIcon,
+    UsersIcon
 } from '@heroicons/react/24/solid';
 import ThemeToggle from './ThemeToggle';
 
@@ -21,7 +21,7 @@ export default function PageNav({
     onShowNav?: () => void;
 }) {
     const { user } = useAuth();
-    const detailsRef = useRef<HTMLDetailsElement>(null);
+    const detailsRef = useRef<HTMLDetailsElement>();
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (

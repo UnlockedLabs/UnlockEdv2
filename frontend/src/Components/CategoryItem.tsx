@@ -6,9 +6,9 @@ import { ModalType } from '@/common';
 import {
     ChevronDownIcon,
     ChevronRightIcon,
-    TrashIcon,
+    ChevronUpIcon,
     PlusIcon,
-    ChevronUpIcon
+    TrashIcon
 } from '@heroicons/react/24/solid';
 import Modal from './Modal';
 import DeleteForm from './forms/DeleteForm';
@@ -34,11 +34,12 @@ export default function CategoryItem({
         newLinkPair: ResourceLink
     ) => void;
 }) {
-    const [activeLinkToDelete, setActiveLinkToDelete] =
-        useState<ResourceLink | null>(undefined);
+    const [activeLinkToDelete, setActiveLinkToDelete] = useState<
+        ResourceLink | undefined
+    >();
     const [open, setOpen] = useState(true);
-    const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
-    const addLinkModal = useRef<null | HTMLDialogElement>(null);
+    const deleteLinkModal = useRef<undefined | HTMLDialogElement>();
+    const addLinkModal = useRef<undefined | HTMLDialogElement>();
 
     return (
         <details open>

@@ -10,11 +10,11 @@ import {
 } from '@heroicons/react/20/solid';
 import {
     DEFAULT_ADMIN_ID,
-    ToastState,
     ModalType,
+    PaginationMeta,
     ServerResponse,
-    User,
-    PaginationMeta
+    ToastState,
+    User
 } from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
@@ -30,14 +30,14 @@ import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 
 export default function Users() {
-    const addUserModal = useRef<null | HTMLDialogElement>(null);
-    const editUserModal = useRef<null | HTMLDialogElement>(null);
-    const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
-    const deleteUserModal = useRef<null | HTMLDialogElement>(null);
+    const addUserModal = useRef<undefined | HTMLDialogElement>();
+    const editUserModal = useRef<undefined | HTMLDialogElement>();
+    const resetUserPasswordModal = useRef<undefined | HTMLDialogElement>();
+    const deleteUserModal = useRef<undefined | HTMLDialogElement>();
     const [displayToast, setDisplayToast] = useState(false);
-    const [targetUser, setTargetUser] = useState<null | User>(undefined);
+    const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
-    const showUserPassword = useRef<null | HTMLDialogElement>(null);
+    const showUserPassword = useRef<undefined | HTMLDialogElement>();
     const [toast, setToast] = useState({
         state: ToastState.null,
         message: '',

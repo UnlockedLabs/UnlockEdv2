@@ -1,7 +1,7 @@
 import {
     ProviderPlatformState,
-    ToastState,
-    ProviderPlatformType
+    ProviderPlatformType,
+    ToastState
 } from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
@@ -53,7 +53,7 @@ export default function AddProviderForm({
                     label="Name"
                     register={register}
                     interfaceRef="name"
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                 />
@@ -62,7 +62,7 @@ export default function AddProviderForm({
                     register={register}
                     enumType={ProviderPlatformType}
                     interfaceRef="type"
-                    required={true}
+                    required
                     errors={errors}
                 />
                 <DropdownInput
@@ -70,14 +70,14 @@ export default function AddProviderForm({
                     register={register}
                     enumType={ProviderPlatformState}
                     interfaceRef="state"
-                    required={true}
+                    required
                     errors={errors}
                 />
                 <TextInput
                     label="Base URL"
                     register={register}
                     interfaceRef="base_url"
-                    required={true}
+                    required
                     length={undefined}
                     errors={errors}
                 />
@@ -85,7 +85,7 @@ export default function AddProviderForm({
                     label="Account Id"
                     register={register}
                     interfaceRef="account_id"
-                    required={true}
+                    required
                     length={undefined}
                     errors={errors}
                 />
@@ -93,7 +93,7 @@ export default function AddProviderForm({
                     label="Access Key"
                     register={register}
                     interfaceRef="access_key"
-                    required={true}
+                    required
                     length={undefined}
                     errors={errors}
                 />
