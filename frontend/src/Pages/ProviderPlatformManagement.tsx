@@ -4,11 +4,11 @@ import EditProviderForm from '@/Components/forms/EditProviderForm';
 import Modal from '@/Components/Modal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
-    OidcClient,
-    ToastState,
     ModalType,
+    OidcClient,
     ProviderPlatform,
-    ServerResponse
+    ServerResponse,
+    ToastState
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
@@ -24,14 +24,14 @@ interface ToastProps {
 }
 
 export default function ProviderPlatformManagement() {
-    const addProviderModal = useRef<null | HTMLDialogElement>(null);
-    const editProviderModal = useRef<null | HTMLDialogElement>(null);
-    const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
-        undefined
-    );
-    const openOidcClientModal = useRef<null | HTMLDialogElement>(null);
-    const openOidcRegistrationModal = useRef<null | HTMLDialogElement>(null);
-    const [oidcClient, setOidcClient] = useState<OidcClient | null>(undefined);
+    const addProviderModal = useRef<undefined | HTMLDialogElement>();
+    const editProviderModal = useRef<undefined | HTMLDialogElement>();
+    const [editProvider, setEditProvider] = useState<
+        ProviderPlatform | undefined
+    >();
+    const openOidcClientModal = useRef<undefined | HTMLDialogElement>();
+    const openOidcRegistrationModal = useRef<undefined | HTMLDialogElement>();
+    const [oidcClient, setOidcClient] = useState<OidcClient | undefined>();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''

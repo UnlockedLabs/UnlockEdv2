@@ -7,7 +7,7 @@ import {
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { CloseX, TextInput, DropdownInput, SubmitButton } from '../inputs';
+import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
 
 interface ProviderInputs {
@@ -110,7 +110,7 @@ export default function EditProviderForm({
                     label="Name"
                     register={register}
                     interfaceRef="name"
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                 />
@@ -119,7 +119,7 @@ export default function EditProviderForm({
                     register={register}
                     enumType={ProviderPlatformType}
                     interfaceRef="type"
-                    required={true}
+                    required
                     errors={errors}
                 />
                 <DropdownInput
@@ -127,7 +127,7 @@ export default function EditProviderForm({
                     register={register}
                     enumType={ProviderPlatformState}
                     interfaceRef="state"
-                    required={true}
+                    required
                     errors={errors}
                 />
 
@@ -149,7 +149,7 @@ export default function EditProviderForm({
                         label="Base URL"
                         register={register}
                         interfaceRef="base_url"
-                        required={true}
+                        required
                         length={undefined}
                         errors={errors}
                     />
@@ -157,7 +157,7 @@ export default function EditProviderForm({
                         label="Account Id"
                         register={register}
                         interfaceRef="account_id"
-                        required={true}
+                        required
                         length={undefined}
                         errors={errors}
                     />

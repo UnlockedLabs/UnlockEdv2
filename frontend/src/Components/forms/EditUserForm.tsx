@@ -1,6 +1,6 @@
 import { User, UserRole } from '../../common';
 import { useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
@@ -58,20 +58,24 @@ export default function EditUserForm({
         const resp = await API.patch(`users/${user.id}`, cleanData);
         if (!resp.success) {
             switch (resp.message) {
-                case 'userexists': {setError('username', {
-	type:'custom',
-	message:'Username already exists'
-});
-break;
-}
-                case 'alphanum': {setError('username', {
-	type:'custom',
-	message:'Name + Username must contain letters and numbers only'
-});
-break;
-}
-                default: {setErrorMessage(resp.message);
-}
+                case 'userexists': {
+                    setError('username', {
+                        type: 'custom',
+                        message: 'Username already exists'
+                    });
+                    break;
+                }
+                case 'alphanum': {
+                    setError('username', {
+                        type: 'custom',
+                        message:
+                            'Name + Username must contain letters and numbers only'
+                    });
+                    break;
+                }
+                default: {
+                    setErrorMessage(resp.message);
+                }
             }
             return;
         }
@@ -85,7 +89,7 @@ break;
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -93,7 +97,7 @@ break;
                 <TextInput
                     label={'Last Name'}
                     interfaceRef={'name_last'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -101,7 +105,7 @@ break;
                 <TextInput
                     label={'Username'}
                     interfaceRef={'username'}
-                    required={true}
+                    required
                     length={50}
                     errors={errors}
                     register={register}
@@ -117,7 +121,7 @@ break;
                 <DropdownInput
                     label={'Role'}
                     interfaceRef={'role'}
-                    required={true}
+                    required
                     errors={errors}
                     register={register}
                     enumType={UserRole}

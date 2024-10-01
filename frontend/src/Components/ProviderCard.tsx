@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { ProviderPlatform, ProviderPlatformState } from '@/common';
 import {
-    PencilSquareIcon,
     CheckCircleIcon,
+    InformationCircleIcon,
     LinkIcon,
-    UserGroupIcon,
-    InformationCircleIcon
+    PencilSquareIcon,
+    UserGroupIcon
 } from '@heroicons/react/24/outline';
 import TealPill from './pill-labels/TealPill';
 import YellowPill from './pill-labels/YellowPill';

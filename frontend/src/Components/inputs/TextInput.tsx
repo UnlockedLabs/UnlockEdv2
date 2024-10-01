@@ -4,7 +4,7 @@ interface TextProps {
     label: string;
     interfaceRef: string;
     required: boolean;
-    length: number | null;
+    length: number | undefined;
     errors: FieldErrors<any>; // eslint-disable-line
     register: Function; // eslint-disable-line
     password?: boolean;

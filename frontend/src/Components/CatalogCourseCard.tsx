@@ -8,8 +8,8 @@ import { MouseEvent } from 'react';
 import {
     CourseCatalogue,
     OutcomePillType,
-    ViewType,
-    PillTagType
+    PillTagType,
+    ViewType
 } from '@/common';
 import API from '@/api/api';
 

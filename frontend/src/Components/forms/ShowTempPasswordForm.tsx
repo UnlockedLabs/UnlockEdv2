@@ -2,7 +2,7 @@ import { CloseX } from '../inputs';
 
 export interface TempPasswordProps {
     tempPassword: string;
-    userName: string | null;
+    userName: string | undefined;
     onClose: () => void;
 }
 export default function ShowTempPasswordForm({

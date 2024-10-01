@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useParams } from 'react-router-dom';
 import {
-    ServerResponse,
+    ModalType,
     PaginationMeta,
     ProviderPlatform,
     ProviderUser,
-    UserImports,
+    ServerResponse,
     ToastState,
-    ModalType
+    UserImports
 } from '../common';
 import Toast from '../Components/Toast';
 import Modal from '../Components/Modal';
@@ -23,12 +23,12 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 
 export default function ProviderUserManagement() {
-    const mapUserModal = useRef<null | HTMLDialogElement>(null);
-    const importedUsersModal = useRef<null | HTMLDialogElement>(null);
-    const importAllUsersModal = useRef<null | HTMLDialogElement>(null);
+    const mapUserModal = useRef<undefined | HTMLDialogElement>();
+    const importedUsersModal = useRef<undefined | HTMLDialogElement>();
+    const importAllUsersModal = useRef<undefined | HTMLDialogElement>();
     const [displayToast, setDisplayToast] = useState(false);
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
-    const [userToMap, setUserToMap] = useState<null | ProviderUser>(undefined);
+    const [userToMap, setUserToMap] = useState<undefined | ProviderUser>();
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const { providerId } = useParams();
@@ -40,9 +40,7 @@ export default function ProviderUserManagement() {
     });
     const [search, setSearch] = useState('');
     const searchQuery = useDebounceValue(search, 400);
-    const [provider, setProvider] = useState<ProviderPlatform | null>(
-        undefined
-    );
+    const [provider, setProvider] = useState<ProviderPlatform | undefined>();
     const [importedUsers, setImportedUsers] = useState<UserImports[]>([]);
     const [cache, setCache] = useState(false);
     const [isLoading, setIsLoading] = useState(true);

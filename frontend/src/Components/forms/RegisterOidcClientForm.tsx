@@ -1,11 +1,11 @@
 import {
     OidcClient,
-    ToastState,
     ProviderPlatform,
-    ServerResponse
+    ServerResponse,
+    ToastState
 } from '../../common';
 import { useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';

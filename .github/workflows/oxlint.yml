@@ -9,5 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-         npx --yes oxlint@latest
-         npm run lint-staged
+         cd frontend && \
+         npm install && \
+         npm run lint-staged && \
+         npm run build

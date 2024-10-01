@@ -1,7 +1,7 @@
 interface DropdownControlProps {
     label?: string;
     callback: Function; // eslint-disable-line
-    enumType: Record<string, string>;
+    enumType: { [key: string]: string };
 }
 
 /* a dropdown that executes a callback function on change */

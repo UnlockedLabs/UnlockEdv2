@@ -99,7 +99,7 @@ export default function StudentDashboard() {
                                 return (
                                     <CourseCard
                                         course={course}
-                                        recent={true}
+                                        recent
                                         key={index}
                                     />
                                 );

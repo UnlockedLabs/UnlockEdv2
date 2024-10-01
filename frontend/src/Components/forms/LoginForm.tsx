@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
@@ -19,7 +19,7 @@ interface Inputs {
 export default function LoginForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
-    const [user, setUser] = useState<string | null>(undefined);
+    const [user, setUser] = useState<string | undefined>();
     const {
         register,
         handleSubmit,
@@ -118,7 +118,7 @@ export default function LoginForm() {
                 <TextInput
                     label={'Username'}
                     interfaceRef={'identifier'}
-                    required={true}
+                    required
                     length={50}
                     errors={errors}
                     register={register}
@@ -128,11 +128,11 @@ export default function LoginForm() {
             <TextInput
                 label={'Password'}
                 interfaceRef={'password'}
-                required={true}
+                required
                 length={50}
                 errors={errors}
                 register={register}
-                password={true}
+                password
             />
 
             {errorMessage && (
@@ -154,7 +154,7 @@ export default function LoginForm() {
             <div className="flex items-center justify-end mt-4">
                 <PrimaryButton
                     className="ms-4 w-24 h-10"
-                    autoFocus={true}
+                    autoFocus
                     disabled={processing}
                 >
                     {processing ? (

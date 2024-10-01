@@ -4,7 +4,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useState } from 'react';
 import CatalogCourseCard from '@/Components/CatalogCourseCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { CourseCatalogue, ViewType, ServerResponse } from '@/common';
+import { CourseCatalogue, ServerResponse, ViewType } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 

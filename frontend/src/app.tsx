@@ -26,7 +26,7 @@ function WithAuth({ children }) {
 const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
     if (!user) {
-        return null;
+        return;
     }
     if (user.role === 'admin') {
         return <div>{children}</div>;
