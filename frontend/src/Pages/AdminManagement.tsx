@@ -338,7 +338,6 @@ export default function AdminManagement() {
                     />
                 }
             />
-            {/* Toasts */}
             {displayToast && <Toast {...toast} />}
         </AuthenticatedLayout>
     );

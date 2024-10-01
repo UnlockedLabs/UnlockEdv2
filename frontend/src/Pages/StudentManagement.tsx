@@ -331,7 +331,6 @@ export default function StudentManagement() {
                     />
                 }
             />
-            {/* Toasts */}
             {displayToast && <Toast {...toast} />}
         </AuthenticatedLayout>
     );
