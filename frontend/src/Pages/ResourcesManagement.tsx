@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import Modal, { ModalType } from '../Components/Modal';
@@ -15,6 +15,7 @@ import { CloudArrowUpIcon } from '@heroicons/react/16/solid';
 import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
 import ExternalLink from '@/Components/ExternalLink';
+import ULIComponent from '@/Components/ULIComponent.tsx';
 
 interface ToastProps {
     state: ToastState;
@@ -141,7 +142,7 @@ export default function ResourcesManagement() {
         setCollectionList(newCollections);
     };
 
-    const updateFinalState = async (e: any) => {
+    const updateFinalState = async (e: React.MouseEvent) => {
         setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
         const newCollectionList = collectionList.map((c, i) => {
@@ -481,14 +482,12 @@ const ResourceCollectionCardWithActions = ({
             <div className="card-body gap-2">
                 <div className="flex justify-between">
                     <h3 className="card-title text-sm">{collection.name}</h3>
-                    <div className="tooltip" data-tip="Delete Collection">
-                        <TrashIcon
-                            className="w-4 h-4 self-start cursor-pointer"
-                            onClick={() =>
-                                onDeleteCollectionClick(collection.id)
-                            }
-                        />
-                    </div>
+                    <ULIComponent
+                        className={'w-4 h-4 self-start cursor-pointer'}
+                        tooltip={'Delete Collection'}
+                        onClick={() => onDeleteCollectionClick(collection.id)}
+                        icon={TrashIcon}
+                    />
                 </div>
                 {collection.links.map((link: ResourceLink, index: number) => {
                     const [title, url] = Object.entries(link)[0];
