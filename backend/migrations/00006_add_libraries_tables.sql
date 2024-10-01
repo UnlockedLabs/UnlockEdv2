@@ -17,6 +17,8 @@ CREATE TABLE public.libraries (
 );
 CREATE INDEX idx_libraries_deleted_at ON public.libraries USING btree (id);
 CREATE INDEX idx_libraries_open_content_provider_id ON public.libraries USING btree (open_content_provider_id);
+CREATE INDEX idx_libraries_external_id ON public.libraries USING btree (external_id);
+CREATE INDEX idx_libraries_url ON public.libraries USING btree (url);
 
 -- +goose StatementEnd
 
