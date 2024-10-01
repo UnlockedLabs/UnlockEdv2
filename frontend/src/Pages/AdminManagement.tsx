@@ -6,7 +6,7 @@ import {
     ArrowPathRoundedSquareIcon,
     PencilIcon,
     TrashIcon,
-    UserPlusIcon
+    PlusIcon
 } from '@heroicons/react/20/solid';
 import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
@@ -168,107 +168,102 @@ export default function AdminManagement() {
                         data-tip="Add Administrator"
                     >
                         <button
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-primary btn-sm text-white" // Makes the text white
                             onClick={() => addUserModal.current?.showModal()}
                         >
-                            <UserPlusIcon className="h-4" />
+                            <PlusIcon className="h-4 border border-white rounded-full p-1 mr-2" />{' '}
+                            {/* Circular border around PlusIcon */}
+                            Add Admin
                         </button>
                     </div>
                 </div>
-                <table className="table">
-                    <thead>
-                        <tr className="border-gray-600">
-                            <th className="flex">
-                                <span>Name</span>
-                            </th>
-                            <th>Username</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {!isLoading &&
-                            !error &&
-                            userData.map((user: User) => {
-                                const updatedAt = new Date(user.updated_at);
-                                return (
-                                    <tr
-                                        key={user.id}
-                                        className="border-gray-600"
-                                    >
-                                        <td>
-                                            {user.name_first} {user.name_last}
-                                        </td>
-                                        <td>{user.username}</td>
-                                        <td>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="Activity"
-                                            >
-                                                <a className="flex justify-start cursor-pointer">
-                                                    <span>
-                                                        {updatedAt.toLocaleDateString(
-                                                            'en-US',
-                                                            {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            }
-                                                        )}
-                                                    </span>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex space-x-2 text-accent cursor-pointer">
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Edit Admin"
-                                                >
-                                                    <PencilIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            editUserModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Reset Password"
-                                                >
-                                                    <ArrowPathRoundedSquareIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            resetUserPasswordModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Delete Admin"
-                                                >
-                                                    {user.id !==
-                                                        DEFAULT_ADMIN_ID && (
-                                                        <TrashIcon
-                                                            className="h-4"
-                                                            onClick={() => {
-                                                                setTargetUser(
-                                                                    user
-                                                                );
-                                                                deleteUserModal.current?.showModal();
-                                                            }}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                    </tbody>
-                </table>
+                <div className="w-full space-y-4">
+                    <div className="relative">
+                        <div className="grid grid-cols-4 px-6 mb-2 text-sm font-medium text-gray-500">
+                            <div>Name</div>
+                            <div>Username</div>
+                            <div>Last Active</div>
+                            <div>Actions</div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 h-px bg-black"></div>
+                    </div>
+
+                    {!isLoading &&
+                        !error &&
+                        userData.map((user) => {
+                            const updatedAt = new Date(user.updated_at);
+                            return (
+                                <div
+                                    key={user.id}
+                                    className="grid grid-cols-4 items-center px-6 py-4 bg-white rounded-lg shadow-sm border border-gray-200"
+                                >
+                                    <div className="text-sm text-gray-900">
+                                        {user.name_first} {user.name_last}
+                                    </div>
+                                    <div className="text-sm text-gray-900">
+                                        {user.username}
+                                    </div>
+                                    <div>
+                                        <div
+                                            className="tooltip"
+                                            data-tip="Activity"
+                                        >
+                                            <span className="text-sm text-gray-900 cursor-pointer">
+                                                {updatedAt.toLocaleDateString(
+                                                    'en-US',
+                                                    {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    }
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex space-x-4 text-accent">
+                                        <div
+                                            className="tooltip"
+                                            data-tip="Edit Admin"
+                                        >
+                                            <PencilIcon
+                                                className="h-4 w-4 cursor-pointer"
+                                                onClick={() => {
+                                                    setTargetUser(user);
+                                                    editUserModal.current?.showModal();
+                                                }}
+                                            />
+                                        </div>
+                                        <div
+                                            className="tooltip"
+                                            data-tip="Reset Password"
+                                        >
+                                            <ArrowPathRoundedSquareIcon
+                                                className="h-4 w-4 cursor-pointer"
+                                                onClick={() => {
+                                                    setTargetUser(user);
+                                                    resetUserPasswordModal.current?.showModal();
+                                                }}
+                                            />
+                                        </div>
+                                        <div
+                                            className="tooltip"
+                                            data-tip="Delete Admin"
+                                        >
+                                            {user.id !== DEFAULT_ADMIN_ID && (
+                                                <TrashIcon
+                                                    className="h-4 w-4 cursor-pointer"
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        deleteUserModal.current?.showModal();
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                </div>
                 {!isLoading && !error && userData.length != 0 && (
                     <Pagination meta={data.meta} setPage={setPageQuery} />
                 )}
