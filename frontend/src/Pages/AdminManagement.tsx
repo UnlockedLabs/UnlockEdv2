@@ -185,7 +185,7 @@ export default function AdminManagement() {
                             <div>Last Active</div>
                             <div>Actions</div>
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 h-px bg-black"></div>
+                        <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200"></div>
                     </div>
 
                     {!isLoading &&
@@ -220,13 +220,13 @@ export default function AdminManagement() {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="flex space-x-4 text-accent">
+                                    <div className="flex space-x-4">
                                         <div
                                             className="tooltip"
                                             data-tip="Edit Admin"
                                         >
                                             <PencilIcon
-                                                className="h-4 w-4 cursor-pointer"
+                                                className="h-4 w-4 text-gray-500 hover:text-gray-700 cursor-pointer"
                                                 onClick={() => {
                                                     setTargetUser(user);
                                                     editUserModal.current?.showModal();
@@ -238,27 +238,27 @@ export default function AdminManagement() {
                                             data-tip="Reset Password"
                                         >
                                             <ArrowPathRoundedSquareIcon
-                                                className="h-4 w-4 cursor-pointer"
+                                                className="h-4 w-4 text-gray-500 hover:text-gray-700 cursor-pointer"
                                                 onClick={() => {
                                                     setTargetUser(user);
                                                     resetUserPasswordModal.current?.showModal();
                                                 }}
                                             />
                                         </div>
-                                        <div
-                                            className="tooltip"
-                                            data-tip="Delete Admin"
-                                        >
-                                            {user.id !== DEFAULT_ADMIN_ID && (
+                                        {user.id !== DEFAULT_ADMIN_ID && (
+                                            <div
+                                                className="tooltip"
+                                                data-tip="Delete Admin"
+                                            >
                                                 <TrashIcon
-                                                    className="h-4 w-4 cursor-pointer"
+                                                    className="h-4 w-4 text-gray-500 hover:text-gray-700 cursor-pointer"
                                                     onClick={() => {
                                                         setTargetUser(user);
                                                         deleteUserModal.current?.showModal();
                                                     }}
                                                 />
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
