@@ -78,6 +78,11 @@ func seedTestData(db *gorm.DB) {
 			AccessKey: "testing_key_replace_me",
 		}}
 	for idx := range platforms {
+		accessKey, err := platforms[idx].EncryptAccessKey()
+		platforms[idx].AccessKey = accessKey
+		if err != nil {
+			log.Printf("Failed to create access key")
+		}
 		if err := db.Create(&platforms[idx]).Error; err != nil {
 			log.Printf("Failed to create platform: %v", err)
 		}
