@@ -69,6 +69,8 @@ func init() {
 	prometheus.MustRegister(requestDuration)
 	prometheus.MustRegister(requestSize)
 	prometheus.MustRegister(responseSize)
+	prometheus.MustRegister(responseStatus)
+	prometheus.MustRegister(errorCount)
 }
 
 func (srv *Server) ListenAndServe() {

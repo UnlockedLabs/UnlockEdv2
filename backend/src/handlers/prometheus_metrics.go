@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -66,17 +67,37 @@ var (
 		},
 		[]string{"path"},
 	)
+	responseStatus = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_response_status_total",
+			Help: "Count of HTTP responses by status code, method, and path",
+		},
+		[]string{"path", "method", "status_code"},
+	)
+	errorCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_errors_total",
+			Help: "Number of HTTP errors",
+		},
+		[]string{"route", "method", "status_code"},
+	)
 )
 
 func (srv *Server) prometheusMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		timer := prometheus.NewTimer(requestDuration.WithLabelValues(r.URL.Path, r.Method))
 		defer timer.ObserveDuration()
-
 		requestSize.WithLabelValues(r.URL.Path).Observe(float64(r.ContentLength))
+
 		rw := newResponseWriter(w)
 		next.ServeHTTP(rw, r)
 
 		responseSize.WithLabelValues(r.URL.Path).Observe(float64(rw.size))
+		requestCount.WithLabelValues(r.URL.Path).Inc()
+		statusCode := strconv.Itoa(rw.statusCode)
+		if rw.statusCode >= 400 {
+			errorCount.WithLabelValues(r.URL.Path, r.Method, statusCode).Inc()
+		}
+		responseStatus.WithLabelValues(r.URL.Path, r.Method, statusCode).Inc()
 	}
 }
