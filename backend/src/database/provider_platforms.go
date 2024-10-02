@@ -63,9 +63,6 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 	if platform.OidcClient != nil {
 		platform.OidcID = platform.OidcClient.ID
 	}
-	if err != nil {
-		return nil, NewDBError(err, "platform not found")
-	}
 	return &platform, nil
 }
 
@@ -83,7 +80,7 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 	if platform.Type == models.Kolibri {
 		contentProv := models.OpenContentProvider{
 			Url:                platform.BaseUrl,
-			ProviderPlatformID: platform.ID,
+			ProviderPlatformID: &platform.ID,
 			CurrentlyEnabled:   true,
 			Description:        models.KolibriDescription,
 			Thumbnail:          "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg",
