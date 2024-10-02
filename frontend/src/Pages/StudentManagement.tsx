@@ -7,7 +7,7 @@ import {
     PencilIcon,
     TrashIcon,
     PlusIcon
-} from '@heroicons/react/20/solid';
+} from '@heroicons/react/24/outline';
 import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
@@ -165,98 +165,114 @@ export default function StudentManagement() {
 
                     <div className="tooltip tooltip-left" data-tip="Add User">
                         <button
-                            className="btn btn-primary btn-sm text-white" // Makes the text white
+                            className="btn btn-primary btn-sm text-white"
                             onClick={() => addUserModal.current?.showModal()}
                         >
                             <PlusIcon className="h-4 border border-white rounded-full p-1 mr-2" />{' '}
-                            {/* Circular border around PlusIcon */}
                             Add Student
                         </button>
                     </div>
                 </div>
-                <div className="w-full space-y-4">
-                    <div className="relative">
-                        <div className="grid grid-cols-4 px-6 mb-2 text-sm font-medium text-gray-500">
-                            <div>Name</div>
-                            <div>Username</div>
-                            <div>Last Active</div>
-                            <div>Actions</div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 h-px bg-black"></div>
-                    </div>
-
-                    {!isLoading &&
-                        !error &&
-                        userData.map((user) => {
-                            const updatedAt = new Date(user.updated_at);
-                            return (
-                                <div
-                                    key={user.id}
-                                    className="grid grid-cols-4 items-center px-6 py-4 bg-white rounded-lg shadow-sm border border-gray-200"
-                                >
-                                    <div className="text-sm text-gray-900">
-                                        {user.name_first} {user.name_last}
-                                    </div>
-                                    <div className="text-sm text-gray-900">
-                                        {user.username}
-                                    </div>
-                                    <div
-                                        className="tooltip"
-                                        data-tip="User Activity"
+                <table className="table-2 w-full border-separate border-spacing-y-4">
+                    <thead>
+                        <tr>
+                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
+                                Name
+                            </th>
+                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
+                                Username
+                            </th>
+                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
+                                Last Active
+                            </th>
+                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {!isLoading &&
+                            !error &&
+                            userData.map((user) => {
+                                const updatedAt = new Date(user.updated_at);
+                                return (
+                                    <tr
+                                        key={user.id}
+                                        className="bg-white shadow-sm"
                                     >
-                                        <span className="text-sm text-gray-900">
-                                            {updatedAt.toLocaleDateString(
-                                                'en-US',
-                                                {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric'
-                                                }
-                                            )}
-                                        </span>
-                                    </div>
-                                    <div className="flex space-x-4">
-                                        <div
-                                            className="tooltip"
-                                            data-tip="Edit Student"
-                                        >
-                                            <PencilIcon
-                                                className="h-5 w-5 text-gray-500 hover:text-gray-700 cursor-pointer"
-                                                onClick={() => {
-                                                    setTargetUser(user);
-                                                    editUserModal.current?.showModal();
-                                                }}
-                                            />
-                                        </div>
-                                        <div
-                                            className="tooltip"
-                                            data-tip="Reset Password"
-                                        >
-                                            <ArrowPathRoundedSquareIcon
-                                                className="h-5 w-5 text-gray-500 hover:text-gray-700 cursor-pointer"
-                                                onClick={() => {
-                                                    setTargetUser(user);
-                                                    resetUserPasswordModal.current?.showModal();
-                                                }}
-                                            />
-                                        </div>
-                                        <div
-                                            className="tooltip"
-                                            data-tip="Delete Student"
-                                        >
-                                            <TrashIcon
-                                                className="h-5 w-5 text-gray-500 hover:text-gray-700 cursor-pointer"
-                                                onClick={() => {
-                                                    setTargetUser(user);
-                                                    deleteUserModal.current?.showModal();
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                </div>
+                                        <td className="first:rounded-l-lg px-6 py-4">
+                                            <div className="text-sm text-gray-1">
+                                                {user.name_first}{' '}
+                                                {user.name_last}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-1">
+                                                {user.username}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div
+                                                className="tooltip"
+                                                data-tip="User Activity"
+                                            >
+                                                <span className="text-sm text-gray-1">
+                                                    {updatedAt.toLocaleDateString(
+                                                        'en-US',
+                                                        {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        }
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="last:rounded-r-lg px-6 py-4">
+                                            <div className="flex space-x-4">
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Edit Student"
+                                                >
+                                                    <PencilIcon
+                                                        className="h-5 w-5 text-black hover:text-black cursor-pointer"
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            editUserModal.current?.showModal();
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Reset Password"
+                                                >
+                                                    <ArrowPathRoundedSquareIcon
+                                                        className="h-5 w-5 text-black hover:text-black cursor-pointer"
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            resetUserPasswordModal.current?.showModal();
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Delete Student"
+                                                >
+                                                    <TrashIcon
+                                                        className="h-5 w-5 text-black hover:text-black cursor-pointer"
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            deleteUserModal.current?.showModal();
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                    </tbody>
+                </table>
                 {!isLoading && !error && userData.length != 0 && (
                     <Pagination meta={data.meta} setPage={setPageQuery} />
                 )}
