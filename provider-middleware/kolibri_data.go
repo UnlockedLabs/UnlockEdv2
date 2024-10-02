@@ -28,12 +28,6 @@ func (srv *ServiceHandler) LookupProvider(id int) (*models.ProviderPlatform, err
 		log.Println("Failed to find provider")
 		return nil, err
 	}
-	key, err := provider.DecryptAccessKey()
-	if err != nil {
-		log.Println("Failed to decrypt access key")
-		return nil, err
-	}
-	provider.AccessKey = key
 	return &provider, nil
 }
 
@@ -92,27 +86,36 @@ type KolibriContent struct {
 }
 
 func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course {
+	courseType := data["course_type"].(string)
 	thumbnail := data["thumbnail"].(string)
 	root := data["root_id"].(string)
 	id := data["id"].(string)
 	name := data["name"].(string)
 	description := data["description"].(string)
-	totalResourceCount := data["total_resource_count"].(int)
-	url, err := UploadImage(thumbnail, root, id)
-	if err != nil {
-		log.Printf("Failed to upload image %v", err)
-		url = ""
-	}
-	return &models.Course{
+	totalResourceCount := data["total_resource_count"].(int64)
+	course := models.Course{
+		ProviderPlatformID:      kc.ProviderPlatformID,
 		ExternalID:              id,
 		Name:                    name,
-		Description:             description,
-		ThumbnailURL:            url,
 		Type:                    "open_content",
 		OutcomeTypes:            "completion",
 		TotalProgressMilestones: uint(totalResourceCount),
-		ExternalURL:             kc.BaseURL + "en/learn/#/topics/t/" + id + "/folders?last=HOME",
 	}
+
+	if courseType == "channel" {
+		url, err := UploadImage(thumbnail, root, id)
+		if err != nil {
+			log.Printf("Failed to upload image %v", err)
+			url = ""
+		}
+		course.Description = description
+		course.ThumbnailURL = url
+		course.ExternalURL = kc.BaseURL + "en/learn/#/topics/t/" + id + "/folders?last=HOME"
+	} else {
+		course.Description = "Kolibri managed course"
+		course.ExternalURL = kc.BaseURL + "en/learn/#/home/classes/" + id
+	}
+	return &course
 }
 
 func decodeImg(thumbnail string) []byte {

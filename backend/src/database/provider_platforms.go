@@ -63,9 +63,6 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 	if platform.OidcClient != nil {
 		platform.OidcID = platform.OidcClient.ID
 	}
-	if err != nil {
-		return nil, NewDBError(err, "platform not found")
-	}
 	return &platform, nil
 }
 
