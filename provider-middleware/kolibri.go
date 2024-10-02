@@ -27,11 +27,6 @@ type KolibriService struct {
 	JobParams          *map[string]interface{}
 }
 
-func IsNumber(u string) bool {
-	_, err := strconv.Atoi(u)
-	return err == nil
-}
-
 /**
 * Initializes a new KolibriService struct with the base URL of the Kolibri server
 * Pulls the login info from ENV variables. In production, these should be set
@@ -81,7 +76,7 @@ func (ks *KolibriService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 		split := strings.Split(user["full_name"].(string), " ")
 		var first string
 		var last string
-		if len(split) > 1 {//make sure before separation
+		if len(split) > 1 { //make sure before separation
 			first, last = split[0], split[1]
 		} else {
 			first, last = split[0], ""
@@ -161,9 +156,15 @@ func (ks *KolibriService) ImportMilestones(course map[string]interface{}, users 
 		usersMap:        usersMap,
 		externalUserIds: externalUserIds,
 	}
-	importEnrollmentMilestones(ks, paramObj, db)
-	importAssignmentQuizGradeMilestones(ks, paramObj, db)
-	return nil
+	err := importEnrollmentMilestones(ks, paramObj, db)
+	if err != nil {
+		log.Errorln("error importing enrollment milestones, error is ", err)
+	}
+	err = importAssignmentQuizGradeMilestones(ks, paramObj, db)
+	if err != nil {
+		log.Errorln("error importing enrollment milestones, error is ", err)
+	}
+	return err
 }
 
 func importEnrollmentMilestones(ks *KolibriService, paramObj milestonePO, db *gorm.DB) error {
@@ -330,4 +331,9 @@ func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interf
 		}
 	}
 	return nil
+}
+
+func IsNumber(u string) bool {
+	_, err := strconv.Atoi(u)
+	return err == nil
 }
