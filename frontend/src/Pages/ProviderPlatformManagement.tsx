@@ -82,19 +82,18 @@ export default function ProviderPlatformManagement() {
     ) => {
         openOidcClientModal.current?.close();
         setEditProvider(undefined);
-        if (!response && state == ToastState.success) {
+        if (!response && state === ToastState.success) {
             setToast({
                 state: state,
                 message: 'OIDC client registered successfully.'
             });
-        } else if (!response && state == ToastState.error) {
+        } else if (!response && state === ToastState.error) {
             setToast({
                 state: state,
                 message: 'Failed to register OIDC client.'
             });
         } else {
-            console.log(response.data[0]);
-            setOidcClient(response.data[0] as OidcClient);
+            setOidcClient(response.data as OidcClient);
             openOidcRegistrationModal.current?.showModal();
         }
         mutate();
