@@ -34,6 +34,9 @@ func (sh *ServiceHandler) initSubscription() error {
 	_, err = sh.nats.Subscribe("tasks.get_activity", func(msg *nats.Msg) {
 		go sh.handleAcitivityForCourse(msg)
 	})
+	_, err = sh.nats.Subscribe("tasks.scrape_kiwix", func(msg *nats.Msg) {
+		go sh.handleScrapeLibraries(msg)
+	})
 	if err != nil {
 		log.Fatalf("Error subscribing to NATS topic: %v", err)
 		return err
@@ -68,6 +71,20 @@ func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
 		log.Errorln("Failed to publish message to NATS")
 	}
 	sh.cleanupJob(providerPlatformId, jobId, true)
+}
+
+// GET /api/libraries
+// This handler will import the libraries from open content providers
+func (sh *ServiceHandler) handleScrapeLibraries(msg *nats.Msg) {
+	// call init service, which will parse through which of the ocp we are dealing with
+	service := NewKiwixService()
+	err := service.ImportLibraries(sh.db)
+	if err != nil {
+		log.Errorf("error importing libraries from msg %v", err)
+	}
+	// tell nats that we have completed the task
+	// publish the message that we have finished
+	// clean up the job
 }
 
 /**
