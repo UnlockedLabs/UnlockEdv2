@@ -483,8 +483,8 @@ const ResourceCollectionCardWithActions = ({
                 <div className="flex justify-between">
                     <h3 className="card-title text-sm">{collection.name}</h3>
                     <ULIComponent
-                        className={'w-4 h-4 self-start cursor-pointer'}
-                        tooltip={'Delete Collection'}
+                        dataTip={'Delete Collection'}
+                        innerDivClassName={'self-start cursor-pointer'}
                         onClick={() => onDeleteCollectionClick(collection.id)}
                         icon={TrashIcon}
                     />
@@ -580,26 +580,22 @@ const ResourceCollectionEditor = ({
             <div className="card-body gap-2">
                 <div className="flex justify-between">
                     <h3 className="card-title text-sm">{collection.name}</h3>
-                    <div
-                        className="tooltip ml-auto mr-2"
-                        data-tip="Edit Collection"
-                    >
-                        <PencilSquareIcon
-                            className="w-4 h-4 cursor-pointer"
-                            onClick={() =>
-                                editResourceCollectionModal.current?.showModal()
-                            }
-                        />
-                    </div>
-                    <div
-                        className="tooltip self-start mr-2"
-                        data-tip="New Link"
-                    >
-                        <PlusCircleIcon
-                            className="w-4 h-4 cursor-pointer"
-                            onClick={() => addLinkModal.current?.showModal()}
-                        />
-                    </div>
+                    <ULIComponent
+                        innerDivClassName={'self-start cursor-pointer'}
+                        dataTip={'Edit Collection'}
+                        onClick={() =>
+                            editResourceCollectionModal.current?.showModal()
+                        }
+                        icon={PencilSquareIcon}
+                    />
+
+                    <ULIComponent
+                        innerDivClassName={'self-start cursor-pointer'}
+                        outerDivClassName={'self-start mr-2'}
+                        dataTip={'New Link'}
+                        onClick={() => addLinkModal.current?.showModal()}
+                        icon={PlusCircleIcon}
+                    />
                 </div>
                 <table className="table">
                     <thead>
@@ -631,11 +627,11 @@ const ResourceCollectionEditor = ({
                                         }
                                     >
                                         <td>
-                                            <Bars3Icon
-                                                className="w-4 h-4"
+                                            <ULIComponent
                                                 onMouseDown={() =>
                                                     setDraggedItem(linkIndex)
                                                 }
+                                                icon={Bars3Icon}
                                             />
                                         </td>
                                         <td>
@@ -671,20 +667,19 @@ const ResourceCollectionEditor = ({
                                             />
                                         </td>
                                         <td>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="Delete Link"
-                                            >
-                                                <TrashIcon
-                                                    className="w-4 h-4 cursor-pointer"
-                                                    onClick={() => {
-                                                        setActiveLinkToDelete(
-                                                            linkIndex
-                                                        );
-                                                        deleteLinkModal.current?.showModal();
-                                                    }}
-                                                />
-                                            </div>
+                                            <ULIComponent
+                                                innerDivClassName={
+                                                    'self-start cursor-pointer'
+                                                }
+                                                dataTip={'Delete Link'}
+                                                onClick={() => {
+                                                    setActiveLinkToDelete(
+                                                        linkIndex
+                                                    );
+                                                    deleteLinkModal.current?.showModal();
+                                                }}
+                                                icon={TrashIcon}
+                                            />
                                         </td>
                                     </tr>
                                 );
