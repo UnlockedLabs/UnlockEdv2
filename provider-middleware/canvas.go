@@ -28,6 +28,9 @@ type CanvasService struct {
 
 func newCanvasService(provider *models.ProviderPlatform, params *map[string]interface{}) *CanvasService {
 	headers := make(map[string]string)
+	if key, err := provider.DecryptAccessKey(); err == nil {
+		provider.AccessKey = key
+	}
 	headers["Authorization"] = "Bearer " + provider.AccessKey
 	headers["Accept"] = "application/json"
 	return &CanvasService{
@@ -71,8 +74,10 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 	}
 	defer resp.Body.Close()
 	users := make([]map[string]interface{}, 0)
+	log.Printf("Request sent to canvas Users: %v", resp.Body)
 	err = json.NewDecoder(resp.Body).Decode(&users)
 	if err != nil {
+		log.Errorf("Failed to decode response: %v", err)
 		return nil, err
 	}
 	log.Printf("Request sent to canvas Users: %v", users)
@@ -116,10 +121,9 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 			Email:            loginId,
 			Username:         nameLast + nameFirst,
 		}
-		log.Printf("Unlocked User: %v", unlockedUser)
 		unlockedUsers = append(unlockedUsers, unlockedUser)
 	}
-	log.Println("returning Unlocked Users")
+	log.Printf("returning %d Unlocked Users", len(unlockedUsers))
 	return unlockedUsers, nil
 }
 
