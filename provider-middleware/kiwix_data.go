@@ -42,10 +42,10 @@ type Link struct {
 	Type string `xml:"type"`
 }
 
-func IntoLibrary(entry Entry) *models.Library {
+func IntoLibrary(entry Entry, providerId uint) *models.Library {
 	url, thumbnailURL := ParseUrls(entry.Links)
 	return &models.Library{
-		OpenContentProviderID: 0,
+		OpenContentProviderID: providerId,
 		ExternalID:            models.StringPtr(entry.ID),
 		Name:                  entry.Title,
 		Language:              models.StringPtr(entry.Language),

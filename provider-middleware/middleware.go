@@ -63,6 +63,28 @@ func (sh *ServiceHandler) initService(msg *nats.Msg) (ProviderServiceInterface, 
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
 
+func (sh *ServiceHandler) initContentProviderService(msg *nats.Msg) (OpenContentProviderServiceInterface, error) {
+	var body map[string]interface{}
+	if err := json.Unmarshal(msg.Data, &body); err != nil {
+		log.Errorf("failed to unmarshal message: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal message: %v", err)
+	}
+	providerId, ok := body["open_content_provider_id"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse open_content_provider_id: %v", body["open_content_provider_id"])
+	}
+	openContentProvider, err := sh.LookupOpenContentProvider(int(providerId))
+	if err != nil {
+		log.Printf("Error: %v", err)
+		return nil, fmt.Errorf("failed to find open content provider: %v", err)
+	}
+	// temporary solution, when we add more open content providers, we should switch according to type
+	if openContentProvider.Name == "Kiwix" {
+		return NewKiwixService(openContentProvider), nil
+	}
+	return nil, fmt.Errorf("unsupported open content provider type: %s", openContentProvider.Name)
+}
+
 func (sh *ServiceHandler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		checkHeader := r.Header.Get("Authorization")

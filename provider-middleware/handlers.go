@@ -34,6 +34,10 @@ func (sh *ServiceHandler) initSubscription() error {
 	_, err = sh.nats.Subscribe("tasks.get_activity", func(msg *nats.Msg) {
 		go sh.handleAcitivityForCourse(msg)
 	})
+	if err != nil {
+		log.Fatalf("Error subscribing to NATS topic: %v", err)
+		return err
+	}
 	_, err = sh.nats.Subscribe("tasks.scrape_kiwix", func(msg *nats.Msg) {
 		go sh.handleScrapeLibraries(msg)
 	})
@@ -73,12 +77,14 @@ func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
 	sh.cleanupJob(providerPlatformId, jobId, true)
 }
 
-// GET /api/libraries
-// This handler will import the libraries from open content providers
+/**
+* GET: /api/libraries
+* This handler will be responsible for importing libraries from Open Content Providers
+* to the UnlockEd platform with the proper fields for Library objects
+**/
 func (sh *ServiceHandler) handleScrapeLibraries(msg *nats.Msg) {
-	// call init service, which will parse through which of the ocp we are dealing with
-	service := NewKiwixService()
-	err := service.ImportLibraries(sh.db)
+	service, err := sh.initContentProviderService(msg)
+	err = service.ImportLibraries(sh.db)
 	if err != nil {
 		log.Errorf("error importing libraries from msg %v", err)
 	}
