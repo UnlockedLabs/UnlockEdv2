@@ -43,16 +43,7 @@ type Link struct {
 }
 
 func IntoLibrary(entry Entry) *models.Library {
-	var url string
-	var thumbnailURL string
-	for _, link := range entry.Links {
-		if link.Type == "text/html" {
-			url = link.Href
-		}
-		if strings.Split(link.Type, "/")[0] == "image" {
-			thumbnailURL = link.Href
-		}
-	}
+	url, thumbnailURL := ParseUrls(entry.Links)
 	return &models.Library{
 		OpenContentProviderID: 0,
 		ExternalID:            models.StringPtr(entry.ID),
@@ -63,4 +54,18 @@ func IntoLibrary(entry Entry) *models.Library {
 		ImageUrl:              models.StringPtr(thumbnailURL),
 		VisibilityStatus:      false,
 	}
+}
+
+func ParseUrls(links []Link) (string, string) {
+	var url string
+	var thumbnailURL string
+	for _, link := range links {
+		if link.Type == "text/html" {
+			url = link.Href
+		}
+		if strings.Split(link.Type, "/")[0] == "image" {
+			thumbnailURL = link.Href
+		}
+	}
+	return url, thumbnailURL
 }
