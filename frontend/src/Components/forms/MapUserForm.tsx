@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ToastState } from '../Toast';
-import { ServerResponse, User, ProviderUser } from '@/common';
+import {
+    PaginationMeta,
+    ProviderUser,
+    ServerResponse,
+    ToastState,
+    User
+} from '@/common';
 import { CloseX } from '../inputs/CloseX';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '../Pagination';
@@ -23,7 +28,7 @@ export default function MapUserForm({
     const [errorMessage, setErrorMessage] = useState('');
     const [fuzzySearchUsers, setFuzzySearchUsers] = useState<User[]>();
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUser, setSelectedUser] = useState<undefined | number>();
     const [seeAllUsers, setSeeAllUsers] = useState(false);
     const {
         data: allUnmappedUsers,
@@ -32,9 +37,10 @@ export default function MapUserForm({
     } = useSWR<ServerResponse<User>>(
         `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
     );
-
+    const unmappedUsers = allUnmappedUsers?.data as User[];
+    const meta = allUnmappedUsers?.meta as PaginationMeta;
     function cancel() {
-        setSelectedUser(null);
+        setSelectedUser(undefined);
         setCurrentPage(1);
         setSeeAllUsers(false);
         setErrorMessage('');
@@ -67,7 +73,7 @@ export default function MapUserForm({
             setFuzzySearchUsers(response.data as User[]);
         }
         externalUser && fetchFuzzyUsers();
-    }, [externalUser]);
+    }, [externalUser, providerId]);
 
     const UserRadioInput = ({ user }: { user: User }) => {
         return (
@@ -135,7 +141,8 @@ export default function MapUserForm({
                             <button
                                 className="text-teal-3 underline"
                                 onClick={() => {
-                                    setSeeAllUsers(true), setSelectedUser(null);
+                                    setSeeAllUsers(true),
+                                        setSelectedUser(undefined);
                                 }}
                             >
                                 See all users
@@ -149,7 +156,7 @@ export default function MapUserForm({
                                 className="body-small text-teal-3 underline text-left mb-2"
                                 onClick={() => {
                                     setSeeAllUsers(false),
-                                        setSelectedUser(null);
+                                        setSelectedUser(undefined);
                                 }}
                             >
                                 Go back to potential matches
@@ -162,7 +169,7 @@ export default function MapUserForm({
                                 choose to do so.
                             </p>
                         )}
-                        {allUnmappedUsers.data.map((user: User) => {
+                        {unmappedUsers.map((user: User) => {
                             return (
                                 <UserRadioInput
                                     user={user}
@@ -170,10 +177,7 @@ export default function MapUserForm({
                                 />
                             );
                         })}
-                        <Pagination
-                            meta={allUnmappedUsers?.meta}
-                            setPage={setCurrentPage}
-                        />
+                        <Pagination meta={meta} setPage={setCurrentPage} />
                     </>
                 )}
             </div>

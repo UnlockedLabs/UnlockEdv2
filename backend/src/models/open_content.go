@@ -8,8 +8,9 @@ import (
 
 type OpenContentProvider struct {
 	DatabaseFields
+	Name               string            `gorm:"size:255"  json:"name"`
 	Url                string            `gorm:"size:255;not null;unique" json:"url"`
-	ProviderPlatformID uint              `json:"provider_platform_id"`
+	ProviderPlatformID *uint             `json:"provider_platform_id"`
 	Thumbnail          string            `json:"thumbnail_url"`
 	CurrentlyEnabled   bool              `json:"currently_enabled"`
 	Description        string            `json:"description"`
@@ -17,8 +18,7 @@ type OpenContentProvider struct {
 }
 
 const (
-	KolibriDescription   string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
-	WikipediaDescription string = "Wikipedia offers a vast collection of articles covering a wide range of topics across various academic disciplines."
+	KolibriDescription string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
 )
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {

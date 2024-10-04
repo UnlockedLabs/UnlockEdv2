@@ -1,16 +1,16 @@
 import {
     ProviderPlatform,
     ProviderPlatformState,
-    ProviderPlatformType
+    ProviderPlatformType,
+    ToastState
 } from '@/common';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { CloseX, TextInput, DropdownInput, SubmitButton } from '../inputs';
-import { ToastState } from '../Toast';
+import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
 
-type ProviderInputs = {
+interface ProviderInputs {
     id: number;
     name: string;
     type: ProviderPlatformType;
@@ -18,13 +18,13 @@ type ProviderInputs = {
     account_id: string;
     access_key: string;
     state: ProviderPlatformState;
-};
+}
 
 export default function EditProviderForm({
     onSuccess,
     provider
 }: {
-    onSuccess: Function; //TODO: pass function for type
+    onSuccess: (state: ToastState, message: string) => void;
     provider: ProviderPlatform;
 }) {
     const [errorMessage, setErrorMessage] = useState('');
@@ -98,7 +98,7 @@ export default function EditProviderForm({
     };
 
     function closeAndReset() {
-        onSuccess();
+        onSuccess(ToastState.null, '');
         reset();
     }
 
@@ -110,7 +110,7 @@ export default function EditProviderForm({
                     label="Name"
                     register={register}
                     interfaceRef="name"
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                 />
@@ -119,7 +119,7 @@ export default function EditProviderForm({
                     register={register}
                     enumType={ProviderPlatformType}
                     interfaceRef="type"
-                    required={true}
+                    required
                     errors={errors}
                 />
                 <DropdownInput
@@ -127,7 +127,7 @@ export default function EditProviderForm({
                     register={register}
                     enumType={ProviderPlatformState}
                     interfaceRef="state"
-                    required={true}
+                    required
                     errors={errors}
                 />
 
@@ -149,16 +149,16 @@ export default function EditProviderForm({
                         label="Base URL"
                         register={register}
                         interfaceRef="base_url"
-                        required={true}
-                        length={null}
+                        required
+                        length={undefined}
                         errors={errors}
                     />
                     <TextInput
                         label="Account Id"
                         register={register}
                         interfaceRef="account_id"
-                        required={true}
-                        length={null}
+                        required
+                        length={undefined}
                         errors={errors}
                     />
                     <label className="form-control">

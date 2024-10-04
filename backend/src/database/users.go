@@ -9,10 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order string, search string, role string) (int64, []models.User, error) {
-	if order == "" {
+func getValidOrder(order string) string {
+	validMap := map[string]bool{
+		"created_at asc":  true,
+		"created_at desc": true,
+		"name_last asc":   true,
+		"name_last desc":  true,
+	}
+	_, ok := validMap[order]
+	if !ok {
 		order = "created_at desc"
 	}
+	return order
+}
+func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order string, search string, role string) (int64, []models.User, error) {
 	if search != "" {
 		return db.SearchCurrentUsers(page, itemsPerPage, facilityId, order, search, role)
 	}
@@ -29,8 +39,8 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
+	tx = tx.Order(getValidOrder(order))
 	if err := tx.Find(&users, "facility_id = ?", facilityId).
-		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Error; err != nil {
@@ -57,9 +67,8 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
-	if err := tx.
+	if err := tx.Order(getValidOrder(order)).
 		Find(&users, "facility_id = ? AND (LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?)", facilityId, likeSearch, likeSearch, likeSearch).
-		Order(order).
 		Offset(offset).
 		Limit(itemsPerPage).
 		Error; err != nil {

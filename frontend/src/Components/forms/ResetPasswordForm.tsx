@@ -5,7 +5,7 @@ import API from '@/api/api';
 interface ResetPasswordFormProps {
     onCancel: (message: string, is_err: boolean) => void;
     onSuccess: (psw: string) => void;
-    user: User | null;
+    user: User | undefined;
 }
 
 export default function ResetPasswordForm({

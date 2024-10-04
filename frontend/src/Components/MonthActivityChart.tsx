@@ -1,11 +1,11 @@
 import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
     CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
     Tooltip,
-    ResponsiveContainer
+    XAxis,
+    YAxis
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
@@ -14,9 +14,9 @@ import { RecentActivity } from '@/common.ts';
 const ActivityChart = ({ data }: { data: RecentActivity[] }) => {
     const { theme } = useContext(ThemeContext);
 
-    var lineColor = theme === 'light' ? '#18ABA0' : '#61BAB2';
-    var gridColor = theme === 'light' ? '#ECECEC' : '#737373';
-    var backgroundColor = theme === 'light' ? '#FFFFFF' : '#0F2926';
+    const lineColor = theme === 'light' ? '#18ABA0' : '#61BAB2';
+    const gridColor = theme === 'light' ? '#ECECEC' : '#737373';
+    const backgroundColor = theme === 'light' ? '#FFFFFF' : '#0F2926';
 
     const safeData = data && data.length > 0 ? data : [{ date: '', delta: 0 }];
 

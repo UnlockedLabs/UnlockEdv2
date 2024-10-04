@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useParams } from 'react-router-dom';
 import {
-    ServerResponse,
+    ModalType,
     PaginationMeta,
     ProviderPlatform,
     ProviderUser,
+    ServerResponse,
+    ToastState,
     UserImports
 } from '../common';
-import Toast, { ToastState } from '../Components/Toast';
-import Modal, { ModalType } from '../Components/Modal';
+import Toast from '../Components/Toast';
+import Modal from '../Components/Modal';
 import MapUserForm from '@/Components/forms/MapUserForm';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ShowImportedUsers from '@/Components/forms/ShowImportedUsers';
@@ -21,12 +23,12 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 
 export default function ProviderUserManagement() {
-    const mapUserModal = useRef<null | HTMLDialogElement>(null);
-    const importedUsersModal = useRef<null | HTMLDialogElement>(null);
-    const importAllUsersModal = useRef<null | HTMLDialogElement>(null);
+    const mapUserModal = useRef<undefined | HTMLDialogElement>();
+    const importedUsersModal = useRef<undefined | HTMLDialogElement>();
+    const importAllUsersModal = useRef<undefined | HTMLDialogElement>();
     const [displayToast, setDisplayToast] = useState(false);
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
-    const [userToMap, setUserToMap] = useState<null | ProviderUser>(null);
+    const [userToMap, setUserToMap] = useState<undefined | ProviderUser>();
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const { providerId } = useParams();
@@ -38,7 +40,7 @@ export default function ProviderUserManagement() {
     });
     const [search, setSearch] = useState('');
     const searchQuery = useDebounceValue(search, 400);
-    const [provider, setProvider] = useState<ProviderPlatform | null>(null);
+    const [provider, setProvider] = useState<ProviderPlatform | undefined>();
     const [importedUsers, setImportedUsers] = useState<UserImports[]>([]);
     const [cache, setCache] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +92,7 @@ export default function ProviderUserManagement() {
     };
 
     async function handleImportAllUsers() {
-        let res = await API.post(
+        const res = await API.post(
             `actions/provider-platforms/${providerId}/import-users`,
             {}
         );
@@ -109,7 +111,7 @@ export default function ProviderUserManagement() {
     }
 
     async function handleImportSelectedUsers() {
-        let res = await API.post<UserImports>(
+        const res = await API.post<UserImports>(
             `provider-platforms/${providerId}/users/import`,
             { users: usersToImport }
         );
@@ -143,7 +145,7 @@ export default function ProviderUserManagement() {
 
     function handleCloseMapUser() {
         mapUserModal.current?.close();
-        setUserToMap(null);
+        setUserToMap(undefined);
     }
 
     async function handleMapUser(user: ProviderUser) {
@@ -166,7 +168,7 @@ export default function ProviderUserManagement() {
 
     useEffect(() => {
         if (data) {
-            setMeta(data.meta);
+            setMeta(data.meta as PaginationMeta);
             setCache(false);
         }
     }, [data]);
@@ -319,9 +321,14 @@ export default function ProviderUserManagement() {
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && data && data.meta.total === 0 && (
-                    <span className="text-center text-warning">No results</span>
-                )}
+                {!isLoading &&
+                    !error &&
+                    data &&
+                    (data.meta as PaginationMeta).total === 0 && (
+                        <span className="text-center text-warning">
+                            No results
+                        </span>
+                    )}
             </div>
             {provider && (
                 <Modal

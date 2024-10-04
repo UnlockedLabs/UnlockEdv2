@@ -1,17 +1,21 @@
-import { OidcClient, ProviderPlatform, ServerResponse } from '../../common';
+import {
+    OidcClient,
+    ProviderPlatform,
+    ServerResponse,
+    ToastState
+} from '../../common';
 import { useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';
-import { ToastState } from '../Toast';
 import API from '@/api/api';
 
-type Inputs = {
+interface Inputs {
     redirect_url: string;
     provider_platform_id: number;
     auto_register: boolean;
-};
+}
 
 export default function RegisterOidcClientForm({
     onSuccess,

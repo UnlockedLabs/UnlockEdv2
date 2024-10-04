@@ -78,8 +78,64 @@ func seedTestData(db *gorm.DB) {
 			AccessKey: "testing_key_replace_me",
 		}}
 	for idx := range platforms {
+		accessKey, err := platforms[idx].EncryptAccessKey()
+		platforms[idx].AccessKey = accessKey
+		if err != nil {
+			log.Printf("Failed to create access key")
+		}
 		if err := db.Create(&platforms[idx]).Error; err != nil {
 			log.Printf("Failed to create platform: %v", err)
+		}
+	}
+	kiwix := models.OpenContentProvider{
+		Url:              "unlockedlabs.org",
+		Name:             "Kiwix",
+		Thumbnail:        "https://images.fineartamerica.com/images/artworkimages/mediumlarge/3/llamas-wearing-party-hats-in-a-circle-looking-down-john-daniels.jpg",
+		CurrentlyEnabled: true,
+		Description:      "Kiwix open content provider",
+	}
+	log.Printf("Creating Open Content Provider %s", kiwix.Url)
+	if err := db.Create(&kiwix).Error; err != nil {
+		log.Printf("Failed to create open content provider: %v", err)
+	}
+	kiwixLibraries := []models.Library{
+		{
+			OpenContentProviderID: kiwix.ID,
+			ExternalID:            models.StringPtr("urn:uuid:67440563-a62b-fabe-415c-4c3ee4546f78"),
+			Name:                  "TED ted connects",
+			Language:              models.StringPtr("eng,spa,ara"),
+			Description:           models.StringPtr("A collection of TED videos about ted connects"),
+			Url:                   "/content/ted_mul_ted-connects_2024-08",
+			ImageUrl:              models.StringPtr("/catalog/v2/illustration/67440563-a62b-fabe-415c-4c3ee4546f78/?size=48"),
+			VisibilityStatus:      true,
+			OpenContentProvider:   &kiwix,
+		},
+		{
+			OpenContentProviderID: kiwix.ID,
+			ExternalID:            models.StringPtr("urn:uuid:84812c13-fa65-feb7-c206-4f22cc2e0f9a"),
+			Name:                  "Python Documentation",
+			Language:              models.StringPtr("eng"),
+			Description:           models.StringPtr("All documentation for Python"),
+			Url:                   "/content/docs.python.org_en_2024-09",
+			ImageUrl:              models.StringPtr("/catalog/v2/illustration/84812c13-fa65-feb7-c206-4f22cc2e0f9a/?size=48"),
+			VisibilityStatus:      true,
+			OpenContentProvider:   &kiwix,
+		},
+		{
+			OpenContentProviderID: kiwix.ID,
+			ExternalID:            models.StringPtr("urn:uuid:19e6fe12-09a9-0a38-5be4-71c0eba0a72d"),
+			Name:                  "Finiki",
+			Language:              models.StringPtr("eng"),
+			Description:           models.StringPtr("The Canadian financial wiki"),
+			Url:                   "/content/finiki_en_all_maxi_2024-06",
+			ImageUrl:              models.StringPtr("/catalog/v2/illustration/19e6fe12-09a9-0a38-5be4-71c0eba0a72d/?size=48"),
+			VisibilityStatus:      true,
+			OpenContentProvider:   &kiwix,
+		}}
+	for idx := range kiwixLibraries {
+		log.Printf("Creating library %s", kiwixLibraries[idx].Name)
+		if err := db.Create(&kiwixLibraries[idx]).Error; err != nil {
+			log.Printf("Failed to create library: %v", err)
 		}
 	}
 	var users []models.User

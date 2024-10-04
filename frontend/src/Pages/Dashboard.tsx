@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import { UserRole } from '@/common';
 import StudentDashboard from './StudentDashboard';
 import AdminDashboard from './AdminDashboard';
