@@ -1,7 +1,7 @@
 interface CheckboxProps {
     label: string;
     interfaceRef: string;
-    register: Function;
+    register: Function; // eslint-disable-line
 }
 
 export default function Checkbox({

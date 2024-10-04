@@ -6,7 +6,7 @@ export default function AuthenticatedLayout({
     title,
     path,
     children
-}: PropsWithChildren<{ title: string; path?: Array<string> }>) {
+}: PropsWithChildren<{ title: string; path?: string[] }>) {
     // We have three states we need to factor for.
     // 1. If the nav is open & pinned (Large screens only & uses lg:drawer-open)
     // 2. If the nav is open & not pinned (Large screens only)

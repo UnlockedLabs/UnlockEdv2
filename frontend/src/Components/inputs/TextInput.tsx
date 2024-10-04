@@ -4,9 +4,9 @@ interface TextProps {
     label: string;
     interfaceRef: string;
     required: boolean;
-    length: number | null;
-    errors: FieldErrors<any>;
-    register: Function;
+    length: number | undefined;
+    errors: FieldErrors<any>; // eslint-disable-line
+    register: Function; // eslint-disable-line
     password?: boolean;
     isFocused?: boolean;
     autoComplete?: string;
@@ -28,7 +28,7 @@ export function TextInput({
             value: required,
             message: `${label} is required`
         },
-        ...(length !== null && {
+        ...(length && {
             maxLength: {
                 value: length,
                 message: `${label} should be ${length} characters or less`

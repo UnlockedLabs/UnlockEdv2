@@ -132,6 +132,7 @@ type CreateUserRequest struct {
 
 /**
 * POST: /api/users
+* TODO: transactional
 **/
 func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	user := CreateUserRequest{}

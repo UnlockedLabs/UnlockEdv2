@@ -1,19 +1,19 @@
 import { User, UserRole } from '../../common';
 import { useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
-type Inputs = {
+interface Inputs {
     name_first: string;
     name_last: string;
     username: string;
     role: UserRole;
     email: string;
-};
+}
 
 export default function EditUserForm({
     onSuccess,
@@ -58,21 +58,24 @@ export default function EditUserForm({
         const resp = await API.patch(`users/${user.id}`, cleanData);
         if (!resp.success) {
             switch (resp.message) {
-                case 'userexists':
+                case 'userexists': {
                     setError('username', {
                         type: 'custom',
                         message: 'Username already exists'
                     });
                     break;
-                case 'alphanum':
+                }
+                case 'alphanum': {
                     setError('username', {
                         type: 'custom',
                         message:
                             'Name + Username must contain letters and numbers only'
                     });
                     break;
-                default:
+                }
+                default: {
                     setErrorMessage(resp.message);
+                }
             }
             return;
         }
@@ -86,7 +89,7 @@ export default function EditUserForm({
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -94,7 +97,7 @@ export default function EditUserForm({
                 <TextInput
                     label={'Last Name'}
                     interfaceRef={'name_last'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -102,7 +105,7 @@ export default function EditUserForm({
                 <TextInput
                     label={'Username'}
                     interfaceRef={'username'}
-                    required={true}
+                    required
                     length={50}
                     errors={errors}
                     register={register}
@@ -118,7 +121,7 @@ export default function EditUserForm({
                 <DropdownInput
                     label={'Role'}
                     interfaceRef={'role'}
-                    required={true}
+                    required
                     errors={errors}
                     register={register}
                     enumType={UserRole}

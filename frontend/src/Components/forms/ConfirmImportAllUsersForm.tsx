@@ -4,8 +4,8 @@ export default function ConfirmImportAllUsersForm({
     onCancel,
     onSuccess
 }: {
-    onCancel: Function;
-    onSuccess: Function;
+    onCancel: () => void;
+    onSuccess: () => void;
 }) {
     return (
         <div>

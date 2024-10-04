@@ -1,28 +1,28 @@
 import Calendar from 'react-calendar';
 import API from '@/api/api.ts';
 import { MouseEvent, useEffect, useRef, useState } from 'react';
-import { Event, EventCalendar, parseDuration } from '@/common';
+import { Event, EventCalendar, ModalType, parseDuration } from '@/common';
 import '@/css/app.css';
 import { OnArgs } from 'node_modules/react-calendar/dist/cjs';
-import Modal, { ModalType } from './Modal';
+import Modal from './Modal';
 import EditEventForm from './forms/EditEventForm.tsx';
-import { useAuth } from '@/AuthContext.tsx';
+import { useAuth } from '@/useAuth';
 
 function CalendarComponent() {
     const user = useAuth().user;
-    const editModal = useRef<HTMLDialogElement | null>(null);
+    const editModal = useRef<HTMLDialogElement | undefined>();
     const [eventsMap, setEventsMap] = useState<Map<string, Event[]>>(new Map());
     const [date, setDate] = useState(new Date());
-    const [selectedEvents, setSelectedEvents] = useState<Event[] | null>(null);
-    const [eventToEdit, setEventToEdit] = useState<Event>(null);
-
+    const [selectedEvents, setSelectedEvents] = useState<Event[] | undefined>();
+    const [eventToEdit, setEventToEdit] = useState<Event>();
+    const YEAR_IDX = 10;
     const onMonthChange = ({ activeStartDate }: OnArgs) => {
         setDate(activeStartDate as Date);
     };
 
     const getSelectedDate = (event: string): string => {
         const eventDate = new Date(event);
-        return eventDate.toISOString().substring(0, 10);
+        return eventDate.toISOString().slice(0, YEAR_IDX);
     };
 
     useEffect(() => {
@@ -35,7 +35,7 @@ function CalendarComponent() {
                 const data = response.data as EventCalendar;
                 const eventsByDate = new Map();
                 data.month.days.forEach((day) => {
-                    const dateKey = day.date.substring(0, 10);
+                    const dateKey = day.date.slice(0, YEAR_IDX);
                     eventsByDate[dateKey] = day.events;
                 });
                 setEventsMap(eventsByDate);
@@ -43,23 +43,23 @@ function CalendarComponent() {
             .catch((error) => {
                 console.error('Error fetching calendar data:', error);
             });
-    }, [date]);
+    }, [date, user.role]);
 
     const onClickDay = (clickedDate: Date) => {
-        const dateKey = clickedDate.toISOString().substring(0, 10);
+        const dateKey = clickedDate.toISOString().slice(0, YEAR_IDX);
         const events = eventsMap[dateKey];
         if (events && events.length > 0) {
             setSelectedEvents(events);
-        } else setSelectedEvents(null);
+        } else setSelectedEvents(undefined);
     };
     const tileClassName = ({ date, view }) => {
         if (view === 'month') {
-            const dateKey = date.toISOString().substring(0, 10);
+            const dateKey = date.toISOString().slice(0, YEAR_IDX);
             if (eventsMap[dateKey] && eventsMap[dateKey].length > 0) {
                 return '!bg-teal-1';
             }
         }
-        return null;
+        return;
     };
 
     const openEditModal = (e: MouseEvent, event: Event) => {
@@ -69,7 +69,7 @@ function CalendarComponent() {
     };
 
     const handleCloseModal = () => {
-        setEventToEdit(null);
+        setEventToEdit(undefined);
         editModal.current?.close();
     };
 
@@ -91,7 +91,7 @@ function CalendarComponent() {
                     Scheduled Events for{' '}
                     {selectedEvents
                         ? `${getSelectedDate(selectedEvents[0].start_time)}`
-                        : `${date.toISOString().substring(0, 10)}`}
+                        : `${date.toISOString().slice(0, YEAR_IDX)}`}
                 </h2>
                 <div className="p-4">
                     {selectedEvents ? (

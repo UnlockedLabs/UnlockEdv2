@@ -27,7 +27,6 @@ type DB struct{ *gorm.DB }
 var TableList = []interface{}{
 	&models.User{},
 	&models.ProviderPlatform{},
-	&models.UserActivity{},
 	&models.ProviderUserMapping{},
 	&models.LeftMenuLink{},
 	&models.Course{},
@@ -188,7 +187,7 @@ func (db *DB) SeedTestData() {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 	for i := range openContentProviders {
-		openContentProviders[i].ProviderPlatformID = platform[rand.Intn(len(platform))].ID
+		openContentProviders[i].ProviderPlatformID = &platform[rand.Intn(len(platform))].ID
 		if err := db.Create(&openContentProviders[i]).Error; err != nil {
 			log.Fatalf("Failed to create open content provider: %v", err)
 		}

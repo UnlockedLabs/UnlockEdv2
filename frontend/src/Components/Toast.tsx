@@ -1,3 +1,4 @@
+import { ToastState } from '@/common';
 import {
     CheckCircleIcon,
     ExclamationCircleIcon
@@ -9,12 +10,6 @@ interface ToastProps {
     state: ToastState;
     message: string;
     reset: () => void;
-}
-
-export enum ToastState {
-    success = 'success',
-    error = 'error',
-    null = ''
 }
 
 export default function Toast({ state, message, reset }: ToastProps) {

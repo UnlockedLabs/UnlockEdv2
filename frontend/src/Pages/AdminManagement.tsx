@@ -9,10 +9,20 @@ import {
     PlusIcon
 } from '@heroicons/react/24/outline';
 import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
+    UserPlusIcon
+} from '@heroicons/react/20/solid';
+import {
+    DEFAULT_ADMIN_ID,
+    ModalType,
+    PaginationMeta,
+    ServerResponse,
+    ToastState,
+    User
+} from '../common';
 import AddUserForm from '../Components/forms/AddUserForm';
 import EditUserForm from '../Components/forms/EditUserForm';
-import Toast, { ToastState } from '../Components/Toast';
-import Modal, { ModalType } from '../Components/Modal';
+import Toast from '../Components/Toast';
+import Modal from '../Components/Modal';
 import DeleteForm from '../Components/DeleteForm';
 import ResetPasswordForm from '../Components/forms/ResetPasswordForm';
 import ShowTempPasswordForm from '../Components/forms/ShowTempPasswordForm';
@@ -23,14 +33,14 @@ import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 
 export default function AdminManagement() {
-    const addUserModal = useRef<null | HTMLDialogElement>(null);
-    const editUserModal = useRef<null | HTMLDialogElement>(null);
-    const resetUserPasswordModal = useRef<null | HTMLDialogElement>(null);
-    const deleteUserModal = useRef<null | HTMLDialogElement>(null);
+    const addUserModal = useRef<undefined | HTMLDialogElement>();
+    const editUserModal = useRef<undefined | HTMLDialogElement>();
+    const resetUserPasswordModal = useRef<undefined | HTMLDialogElement>();
+    const deleteUserModal = useRef<undefined | HTMLDialogElement>();
     const [displayToast, setDisplayToast] = useState(false);
-    const [targetUser, setTargetUser] = useState<null | User>(null);
+    const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
-    const showUserPassword = useRef<null | HTMLDialogElement>(null);
+    const showUserPassword = useRef<undefined | HTMLDialogElement>();
     const [toast, setToast] = useState({
         state: ToastState.null,
         message: '',
@@ -45,6 +55,7 @@ export default function AdminManagement() {
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=admin`
     );
     const userData = data?.data as User[] | [];
+    const meta = data?.meta as PaginationMeta;
     const showToast = (message: string, state: ToastState) => {
         setToast({
             state,
@@ -64,7 +75,7 @@ export default function AdminManagement() {
 
     function resetModal() {
         setTimeout(() => {
-            setTargetUser(null);
+            setTargetUser(undefined);
         }, 200);
     }
 
@@ -82,7 +93,7 @@ export default function AdminManagement() {
             : ToastState.error;
         const message = response.success
             ? 'User deleted successfully'
-            : response.statusText;
+            : response.message;
         deleteUserModal.current?.close();
         showToast(message, toastType);
         resetModal();
@@ -282,15 +293,15 @@ export default function AdminManagement() {
                             })}
                     </tbody>
                 </table>
-                {!isLoading && !error && userData.length != 0 && (
-                    <Pagination meta={data.meta} setPage={setPageQuery} />
+                {!isLoading && !error && userData.length > 0 && (
+                    <Pagination meta={meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && userData.length == 0 && (
+                {!isLoading && !error && userData.length === 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>
@@ -350,7 +361,7 @@ export default function AdminManagement() {
                         userName={
                             targetUser
                                 ? `${targetUser.name_first} ${targetUser.name_last}`
-                                : null
+                                : undefined
                         }
                         onClose={handleShowPasswordClose}
                     />

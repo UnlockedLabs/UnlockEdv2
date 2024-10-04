@@ -1,19 +1,23 @@
-import { NewUserResponse, ProviderPlatform, UserRole } from '../../common';
+import {
+    NewUserResponse,
+    ProviderPlatform,
+    ToastState,
+    UserRole
+} from '../../common';
 import { useEffect, useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
-import { ToastState } from '../Toast';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
 import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import API from '@/api/api';
 
-type Inputs = {
+interface Inputs {
     name_first: string;
     name_last: string;
     username: string;
     role: UserRole;
-};
+}
 
 export default function AddUserForm({
     onSuccess
@@ -41,21 +45,24 @@ export default function AddUserForm({
         if (!response.success) {
             const msg = response.message.trim();
             switch (msg) {
-                case 'userexists':
+                case 'userexists': {
                     setError('username', {
                         type: 'custom',
                         message: 'Username already exists'
                     });
                     break;
-                case 'alphanum':
+                }
+                case 'alphanum': {
                     setError('username', {
                         type: 'custom',
                         message:
                             'Name + Username must contain letters and numbers only'
                     });
                     break;
-                default:
+                }
+                default: {
                     setErrorMessage(msg);
+                }
             }
             return;
         }
@@ -96,7 +103,7 @@ export default function AddUserForm({
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -104,7 +111,7 @@ export default function AddUserForm({
                 <TextInput
                     label={'Last Name'}
                     interfaceRef={'name_last'}
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -112,7 +119,7 @@ export default function AddUserForm({
                 <TextInput
                     label={'Username'}
                     interfaceRef={'username'}
-                    required={true}
+                    required
                     length={50}
                     errors={errors}
                     register={register}
@@ -120,7 +127,7 @@ export default function AddUserForm({
                 <DropdownInput
                     label={'Role'}
                     interfaceRef={'role'}
-                    required={true}
+                    required
                     errors={errors}
                     register={register}
                     enumType={UserRole}

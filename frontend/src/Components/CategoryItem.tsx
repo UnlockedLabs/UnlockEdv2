@@ -2,15 +2,15 @@ import { ResourceCategory, ResourceLink } from '@/common';
 import { useRef, useState } from 'react';
 import LinkItem from './LinkItem';
 import AddLinkForm from '@/Components/forms/AddLinkForm';
-
+import { ModalType } from '@/common';
 import {
     ChevronDownIcon,
     ChevronRightIcon,
-    TrashIcon,
+    ChevronUpIcon,
     PlusIcon,
-    ChevronUpIcon
+    TrashIcon
 } from '@heroicons/react/24/solid';
-import Modal, { ModalType } from './Modal';
+import Modal from './Modal';
 import DeleteForm from './forms/DeleteForm';
 
 export default function CategoryItem({
@@ -21,16 +21,25 @@ export default function CategoryItem({
     updateLink
 }: {
     category: ResourceCategory;
-    deleteLink: Function;
-    addLink: Function;
-    moveLink: Function;
-    updateLink: Function;
+    deleteLink: (link: ResourceCategory, linkPair: ResourceLink) => void;
+    addLink: (category: ResourceCategory, title: string, url: string) => void;
+    moveLink: (
+        category: ResourceCategory,
+        index: number,
+        direction: string
+    ) => void;
+    updateLink: (
+        category: ResourceCategory,
+        index: number,
+        newLinkPair: ResourceLink
+    ) => void;
 }) {
-    const [activeLinkToDelete, setActiveLinkToDelete] =
-        useState<ResourceLink | null>(null);
+    const [activeLinkToDelete, setActiveLinkToDelete] = useState<
+        ResourceLink | undefined
+    >();
     const [open, setOpen] = useState(true);
-    const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
-    const addLinkModal = useRef<null | HTMLDialogElement>(null);
+    const deleteLinkModal = useRef<undefined | HTMLDialogElement>();
+    const addLinkModal = useRef<undefined | HTMLDialogElement>();
 
     return (
         <details open>
@@ -117,7 +126,7 @@ export default function CategoryItem({
                 form={
                     <DeleteForm
                         item="Link"
-                        onCancel={() => setActiveLinkToDelete(null)}
+                        onCancel={() => setActiveLinkToDelete(undefined)}
                         onSuccess={() =>
                             deleteLink(category, activeLinkToDelete)
                         }

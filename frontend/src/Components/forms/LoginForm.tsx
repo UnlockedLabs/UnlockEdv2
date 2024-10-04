@@ -1,25 +1,25 @@
 import { useEffect, useState } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import axios from 'axios';
-import { handleLogout } from '@/AuthContext';
+import { handleLogout } from '@/useAuth';
 import { AuthResponse, BROWSER_URL } from '@/common';
 import API from '@/api/api';
 
-type Inputs = {
+interface Inputs {
     identifier: string;
     password: string;
     flow_id: string;
     challenge: string;
     csrf_token: string;
-};
+}
 
 export default function LoginForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
-    const [user, setUser] = useState<string | null>(null);
+    const [user, setUser] = useState<string | undefined>();
     const {
         register,
         handleSubmit,
@@ -37,7 +37,7 @@ export default function LoginForm() {
         const params = new URLSearchParams(window.location.search);
         const resp = await API.post<AuthResponse>('login', reqBody);
         if (resp.success) {
-            let location =
+            const location =
                 (resp.data as AuthResponse).redirect_to ||
                 resp.data['redirect_browser_to'] ||
                 (params.get('return_to') as string) ||
@@ -72,6 +72,7 @@ export default function LoginForm() {
                         );
                     return;
                 }
+                // eslint-disable-next-line
             } catch (error: any) {
                 //Todo: unsure about what to type this as Error or ApiError
                 console.error('No active sessions found for this user');
@@ -88,7 +89,7 @@ export default function LoginForm() {
             window.location.replace(BROWSER_URL);
             return;
         }
-        let url = kratosUrl + queryParams.get('flow');
+        const url = kratosUrl + queryParams.get('flow');
         const resp = await axios.get(url);
         if (resp.status !== 200) {
             console.error('Error initializing login flow');
@@ -117,7 +118,7 @@ export default function LoginForm() {
                 <TextInput
                     label={'Username'}
                     interfaceRef={'identifier'}
-                    required={true}
+                    required
                     length={50}
                     errors={errors}
                     register={register}
@@ -127,11 +128,11 @@ export default function LoginForm() {
             <TextInput
                 label={'Password'}
                 interfaceRef={'password'}
-                required={true}
+                required
                 length={50}
                 errors={errors}
                 register={register}
-                password={true}
+                password
             />
 
             {errorMessage && (
@@ -153,7 +154,7 @@ export default function LoginForm() {
             <div className="flex items-center justify-end mt-4">
                 <PrimaryButton
                     className="ms-4 w-24 h-10"
-                    autoFocus={true}
+                    autoFocus
                     disabled={processing}
                 >
                     {processing ? (

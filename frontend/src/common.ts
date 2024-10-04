@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 export enum UserRole {
     Admin = 'admin',
     Student = 'student'
@@ -14,12 +16,14 @@ export interface User {
     role: string;
     email: string;
     password_reset?: boolean;
-    [key: string]: any;
+    created_at: string;
+    updated_at: string;
+    [key: string]: number | string | boolean;
 }
 
 export interface UserWithMappings {
     User: User;
-    logins: Array<ProviderMapping>;
+    logins: ProviderMapping[];
 }
 
 export interface AuthResponse {
@@ -76,17 +80,24 @@ export interface PaginationMeta {
 }
 
 export interface ServerResponse<T> {
-    [key: string]: any;
+    [key: string]:
+        | number
+        | string
+        | boolean
+        | Array<T>
+        | T
+        | undefined
+        | PaginationMeta;
     success: boolean;
     message: string;
-    data: Array<T> | T | null;
+    data: Array<T> | T | undefined;
     pagination?: PaginationMeta;
 }
 
 export interface ResourceCategory {
     id: number;
     name: string;
-    links: Array<ResourceLink>;
+    links: ResourceLink[];
     rank: number;
 }
 
@@ -149,6 +160,7 @@ export interface UserCourses {
     is_favorited: boolean;
     total_time: number;
     grade?: string;
+    alt_name?: string;
 }
 
 export interface CourseCatalogue {
@@ -184,7 +196,9 @@ export interface ProviderPlatform {
     state: ProviderPlatformState;
     type: ProviderPlatformType;
     oidc_id: number;
-    [key: string | ProviderPlatformState | ProviderPlatformType]: any;
+    [key: string | ProviderPlatformState | ProviderPlatformType]:
+        | string
+        | number;
 }
 
 export enum ProviderPlatformState {
@@ -249,8 +263,8 @@ export interface OverrideForm {
     duration?: string;
 }
 export const parseDuration = (duration: number): string => {
-    const hours = Math.floor(duration / 3.6e12);
-    const minutes = Math.floor((duration % 3.6e12) / 6e10);
+    const hours = Math.floor(duration / 3.612);
+    const minutes = Math.floor((duration % 3.612) / 6e10);
     return `${hours}h ${minutes}m`;
 };
 
@@ -289,11 +303,14 @@ export interface CurrentEnrollment {
 
 export interface RecentCourse {
     course_name: string;
-    course_progress: string;
+    course_progress: number;
     alt_name: string;
     thumbnail_url: string;
     provider_platform_name: string;
     external_url: string;
+    id?: number;
+    is_favorited?: boolean;
+    total_time?: number;
 }
 
 export interface CourseMilestones {
@@ -318,7 +335,7 @@ export interface Link {
 export interface Resource {
     id: number;
     name: string;
-    links: Array<Link>;
+    links: Link[];
     rank: number;
 }
 
@@ -337,4 +354,62 @@ export interface YAxisTickProps {
     payload: {
         value: string;
     };
+}
+
+export interface CatalogCourseCard {
+    name: string;
+    img_url: string;
+    url: string;
+    provider_platform_name: string;
+    tags: PillTagType[];
+    saved: boolean;
+}
+
+export enum PillTagType {
+    Open = 'open_enrollment',
+    Permission = 'fixed_enrollment',
+    SelfPaced = 'open_content'
+}
+
+export interface ModalProps {
+    type: ModalType | string;
+    item: string;
+    form: ReactNode | undefined;
+}
+
+export enum ModalType {
+    Edit = 'Edit',
+    Add = 'Add',
+    Show = 'Show',
+    Associate = 'Associate',
+    Confirm = 'Confirm',
+    Register = 'Register',
+    Blank = ''
+}
+
+export enum OutcomePillType {
+    Certificate = 'certificate',
+    CollegeCredit = 'college_credit'
+}
+
+export enum NotificationType {
+    Announcement = 'Announcement',
+    ToDo = 'ToDo'
+}
+
+export enum ToastState {
+    success = 'success',
+    error = 'error',
+    null = ''
+}
+
+export enum CourseStatus {
+    Current = 'Current',
+    Completed = 'Completed',
+    Pending = 'Pending',
+    Recent = 'Recent'
+}
+export enum ViewType {
+    Grid = 'Grid',
+    List = 'List'
 }
