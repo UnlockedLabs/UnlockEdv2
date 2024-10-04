@@ -56,11 +56,6 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 		Find(&platform, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "provider_platforms")
 	}
-	if key, err := platform.DecryptAccessKey(); err == nil {
-		platform.AccessKey = key
-	} else {
-		platform.AccessKey = "error, please update key"
-	}
 	if platform.OidcClient != nil {
 		platform.OidcID = platform.OidcClient.ID
 	}
@@ -68,13 +63,6 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 }
 
 func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models.ProviderPlatform, error) {
-	key, err := platform.EncryptAccessKey()
-	if err != nil {
-		log.Printf("Error encrypting access key: %v", err)
-		return nil, newCreateDBError(err, "provider_platforms")
-	}
-	platform.AccessKey = key
-	log.Printf("Creating provider platform: %v", platform)
 	if err := db.Create(&platform).Error; err != nil {
 		return nil, newCreateDBError(err, "provider_platforms")
 	}
@@ -104,17 +92,6 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 		return nil, newUpdateDBError(err, "provider_platforms")
 	}
 	models.UpdateStruct(&existingPlatform, platform)
-	if platform.AccessKey != "" {
-		key, err := platform.EncryptAccessKey()
-		if err != nil {
-			log.Printf("Error encrypting access key: %v", err)
-			return nil, newUpdateDBError(err, "provider_platforms")
-		}
-		existingPlatform.AccessKey = key
-	}
-	if platform.State != "" {
-		existingPlatform.State = platform.State
-	}
 	if err := db.Save(&existingPlatform).Error; err != nil {
 		return nil, newUpdateDBError(err, "provider_platforms")
 	}

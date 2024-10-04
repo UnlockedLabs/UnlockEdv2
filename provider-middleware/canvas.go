@@ -28,9 +28,6 @@ type CanvasService struct {
 
 func newCanvasService(provider *models.ProviderPlatform, params *map[string]interface{}) *CanvasService {
 	headers := make(map[string]string)
-	if key, err := provider.DecryptAccessKey(); err == nil {
-		provider.AccessKey = key
-	}
 	headers["Authorization"] = "Bearer " + provider.AccessKey
 	headers["Accept"] = "application/json"
 	return &CanvasService{
