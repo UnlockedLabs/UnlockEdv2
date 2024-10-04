@@ -8,9 +8,7 @@ import {
     TrashIcon,
     PlusIcon
 } from '@heroicons/react/24/outline';
-import { DEFAULT_ADMIN_ID, ServerResponse, User } from '../common';
-    UserPlusIcon
-} from '@heroicons/react/20/solid';
+
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
