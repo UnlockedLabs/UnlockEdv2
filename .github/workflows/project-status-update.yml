@@ -1,0 +1,46 @@
+# File: .github/workflows/project-status-update.yml
+name: Update Project Status to "In Review" on PR
+
+on:
+  pull_request:
+    types: [opened, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  update-project-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Set project item to "In Review"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO_NAME=${{ github.repository }}
+          
+          echo "Fetching the project items associated with PR #${PR_NUMBER} in repository ${REPO_NAME}."
+
+          # Retrieve associated project item using GitHub API
+          ITEM_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO_NAME/issues/$PR_NUMBER/timeline" \
+            | jq -r '.[] | select(.project_card != null) | .project_card.project_url' | head -n 1)
+
+          if [ -z "$ITEM_ID" ]; then
+            echo "No associated project found for this PR."
+            exit 0
+          fi
+
+          echo "Found associated project item: $ITEM_ID"
+
+          # Update the status of the item to "In Review"
+          curl -s -X PATCH -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -d '{"status":"In Review"}' \
+            "$ITEM_ID"
+
+          echo "The status has been updated to 'In Review'."
