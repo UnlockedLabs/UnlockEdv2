@@ -5,7 +5,8 @@ import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
     TrashIcon,
-    PlusCircleIcon
+    PlusCircleIcon,
+    PencilSquareIcon
 } from '@heroicons/react/24/outline';
 
 import {
@@ -28,7 +29,6 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
-import { PencilSquareIcon } from '@heroicons/react/24/solid';
 export default function AdminManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
     const editUserModal = useRef<undefined | HTMLDialogElement>();

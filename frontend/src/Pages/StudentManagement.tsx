@@ -5,7 +5,8 @@ import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
     TrashIcon,
-    PlusCircleIcon
+    PlusCircleIcon,
+    PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
@@ -28,7 +29,6 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
-import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 export default function StudentManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
