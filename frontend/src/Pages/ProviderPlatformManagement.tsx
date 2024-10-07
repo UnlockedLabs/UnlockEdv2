@@ -1,13 +1,19 @@
 import ProviderCard from '@/Components/ProviderCard';
 import AddProviderForm from '@/Components/forms/AddProviderForm';
 import EditProviderForm from '@/Components/forms/EditProviderForm';
-import Modal, { ModalType } from '@/Components/Modal';
+import Modal from '@/Components/Modal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { OidcClient, ProviderPlatform, ServerResponse } from '@/common';
+import {
+    ModalType,
+    OidcClient,
+    ProviderPlatform,
+    ServerResponse,
+    ToastState
+} from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-import Toast, { ToastState } from '@/Components/Toast';
+import Toast from '@/Components/Toast';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
@@ -18,14 +24,14 @@ interface ToastProps {
 }
 
 export default function ProviderPlatformManagement() {
-    const addProviderModal = useRef<null | HTMLDialogElement>(null);
-    const editProviderModal = useRef<null | HTMLDialogElement>(null);
-    const [editProvider, setEditProvider] = useState<ProviderPlatform | null>(
-        null
-    );
-    const openOidcClientModal = useRef<null | HTMLDialogElement>(null);
-    const openOidcRegistrationModal = useRef<null | HTMLDialogElement>(null);
-    const [oidcClient, setOidcClient] = useState<OidcClient | null>(null);
+    const addProviderModal = useRef<undefined | HTMLDialogElement>();
+    const editProviderModal = useRef<undefined | HTMLDialogElement>();
+    const [editProvider, setEditProvider] = useState<
+        ProviderPlatform | undefined
+    >();
+    const openOidcClientModal = useRef<undefined | HTMLDialogElement>();
+    const openOidcRegistrationModal = useRef<undefined | HTMLDialogElement>();
+    const [oidcClient, setOidcClient] = useState<OidcClient | undefined>();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
@@ -43,7 +49,7 @@ export default function ProviderPlatformManagement() {
 
     function resetModal() {
         setTimeout(() => {
-            setEditProvider(null);
+            setEditProvider(undefined);
         }, 200);
     }
 
@@ -75,20 +81,19 @@ export default function ProviderPlatformManagement() {
         state: ToastState
     ) => {
         openOidcClientModal.current?.close();
-        setEditProvider(null);
-        if (!response && state == ToastState.success) {
+        setEditProvider(undefined);
+        if (!response && state === ToastState.success) {
             setToast({
                 state: state,
                 message: 'OIDC client registered successfully.'
             });
-        } else if (!response && state == ToastState.error) {
+        } else if (!response && state === ToastState.error) {
             setToast({
                 state: state,
                 message: 'Failed to register OIDC client.'
             });
         } else {
-            console.log(response.data[0]);
-            setOidcClient(response.data[0] as OidcClient);
+            setOidcClient(response.data as OidcClient);
             openOidcRegistrationModal.current?.showModal();
         }
         mutate();

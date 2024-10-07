@@ -1,16 +1,13 @@
 import { ListBulletIcon, Squares2X2Icon } from '@heroicons/react/24/solid';
-
-export enum ViewType {
-    Grid = 'Grid',
-    List = 'List'
-}
+import { SetStateAction } from 'react';
+import { ViewType } from '@/common';
 
 export default function ToggleView({
     activeView,
     setActiveView
 }: {
     activeView: ViewType;
-    setActiveView: Function;
+    setActiveView: (state: SetStateAction<ViewType>) => void;
 }) {
     return (
         <div className="flex flex-row items-center gap-2 body-small">

@@ -1,4 +1,4 @@
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import MilestonesBarChart from '@/Components/MilestonesBarChart';
 import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
                                                 course: CourseActivity,
                                                 index: number
                                             ) => {
-                                                var courseTime: string;
+                                                let courseTime: string;
                                                 if (course.hours_engaged < 1)
                                                     courseTime =
                                                         Math.round(
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
                                                             leftoverMins +
                                                             ' min';
                                                 }
-                                                var legendColor =
+                                                let legendColor =
                                                     'bg-teal-' +
                                                     (index + 1).toString();
                                                 // TO DO: temporary fix... figure out why teal-5 doesnt render immediately

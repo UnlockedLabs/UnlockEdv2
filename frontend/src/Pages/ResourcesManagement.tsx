@@ -1,16 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
-import Modal, { ModalType } from '../Components/Modal';
-import Toast, { ToastState } from '../Components/Toast';
+import Modal from '../Components/Modal';
+import Toast from '../Components/Toast';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import AddResourceCollectionForm from '../Components/forms/AddResourceCollectionForm';
 import EditResourceCollectionForm from '../Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
-import { ResourceCategory, ResourceLink } from '../common';
-import { PlusCircleIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import {
+    ModalType,
+    ResourceCategory,
+    ResourceLink,
+    ToastState
+} from '../common';
+import { PencilSquareIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { PlusIcon, Bars3Icon } from '@heroicons/react/24/solid';
+import { Bars3Icon, PlusIcon } from '@heroicons/react/24/solid';
 import { CloudArrowUpIcon } from '@heroicons/react/16/solid';
 import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
@@ -30,23 +35,23 @@ export default function ResourcesManagement() {
     const { data, error, mutate, isLoading } = useSWR('/api/left-menu');
 
     const [collectionList, setCollectionList] = useState([]);
-    const [collectionToDelete, setCollectionToDelete] = useState<number | null>(
-        null
-    );
+    const [collectionToDelete, setCollectionToDelete] = useState<
+        number | undefined
+    >();
     const [selectedCollectionIndex, setSelectedCollectionIndex] = useState<
-        number | null
-    >(null);
+        number | undefined
+    >();
     const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
     });
 
-    const addCollectionModal = useRef<null | HTMLDialogElement>(null);
-    const deleteCollectionModal = useRef<null | HTMLDialogElement>(null);
+    const addCollectionModal = useRef<undefined | HTMLDialogElement>();
+    const deleteCollectionModal = useRef<undefined | HTMLDialogElement>();
 
     useEffect(() => {
-        if (data !== undefined) {
+        if (data) {
             const updatedData = data.data.map(
                 (collection: EditableResourceCollection) => ({
                     ...collection,
@@ -56,7 +61,7 @@ export default function ResourcesManagement() {
             );
 
             setHasDeletedCollection(false);
-            setSelectedCollectionIndex(null);
+            setSelectedCollectionIndex(undefined);
             setCollectionList(updatedData);
         }
     }, [data]);
@@ -76,7 +81,7 @@ export default function ResourcesManagement() {
         updatedCollectionList: EditableResourceCollection[]
     ) => {
         // Retain selected collection (even if it was reordered)
-        if (selectedCollectionIndex !== null) {
+        if (selectedCollectionIndex) {
             const newSelectedCollectionIndex = updatedCollectionList.findIndex(
                 (c) => c.id === collectionList[selectedCollectionIndex].id
             );
@@ -90,7 +95,7 @@ export default function ResourcesManagement() {
         linkIndex: number,
         updatedResourceLink: ResourceLink
     ) => {
-        if (selectedCollectionIndex !== null) {
+        if (selectedCollectionIndex) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex].links[linkIndex] =
                 updatedResourceLink;
@@ -102,7 +107,7 @@ export default function ResourcesManagement() {
     const handleResourceCollectionChange = (
         updatedResourceCollection: EditableResourceCollection
     ) => {
-        if (selectedCollectionIndex !== null) {
+        if (selectedCollectionIndex) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex] =
                 updatedResourceCollection;
@@ -130,18 +135,18 @@ export default function ResourcesManagement() {
         addCollectionModal.current?.close();
     };
 
-    const deleteCollection = (id: number | null) => {
+    const deleteCollection = (id: number | undefined) => {
         if (
-            selectedCollectionIndex !== null &&
+            selectedCollectionIndex &&
             collectionList[selectedCollectionIndex].id === id
         ) {
-            setSelectedCollectionIndex(null);
+            setSelectedCollectionIndex(undefined);
         }
         const newCollections = collectionList.filter((c) => c.id !== id);
         setHasDeletedCollection(true);
         setCollectionList(newCollections);
     };
-
+    // eslint-disable-next-line
     const updateFinalState = async (e: React.MouseEvent) => {
         setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
@@ -170,6 +175,7 @@ export default function ResourcesManagement() {
                     message: 'Collections Saved!'
                 });
             }
+            // eslint-disable-next-line
         } catch (err: any) {
             console.log(err);
             if (err.response.status == 422) {
@@ -252,7 +258,7 @@ export default function ResourcesManagement() {
                     {' '}
                     {/* Right pane */}
                     <h3>Modify Collection</h3>
-                    {selectedCollectionIndex !== null && (
+                    {selectedCollectionIndex && (
                         <ResourceCollectionEditor
                             collection={collectionList[selectedCollectionIndex]}
                             onCollectionChange={handleResourceCollectionChange}
@@ -282,7 +288,7 @@ export default function ResourcesManagement() {
                 form={
                     <DeleteForm
                         item="Collection"
-                        onCancel={() => setCollectionToDelete(null)}
+                        onCancel={() => setCollectionToDelete(undefined)}
                         onSuccess={() => {
                             deleteCollection(collectionToDelete),
                                 deleteCollectionModal.current?.close();
@@ -313,17 +319,20 @@ const SortableCollectionList = ({
     onUpdateCollectionList
 }: {
     collections: EditableResourceCollection[];
-    selectedCollectionIndex: number | null;
+    selectedCollectionIndex: number | undefined;
     onResourceCollectionClick: (collection: EditableResourceCollection) => void;
     onDeleteCollectionClick: (collectionId: number) => void;
     onUpdateCollectionList: (newList: EditableResourceCollection[]) => void;
 }) => {
-    const draggedItem = useRef<null | number>(null);
-    const [draggedOverItem, setDraggedOverItem] = useState<null | number>(null);
+    const draggedItem = useRef<undefined | number>();
+    const [draggedOverItem, setDraggedOverItem] = useState<
+        undefined | number
+    >();
     const dragOverItem = useDebounceValue(draggedOverItem, 100);
 
     const handleSort = () => {
-        if (draggedItem.current == null || dragOverItem == null) return;
+        if (draggedItem.current == undefined || dragOverItem == undefined)
+            return;
 
         const insertAtIndex = dragOverItem;
 
@@ -363,8 +372,8 @@ const SortableCollectionList = ({
         //update the actual array
         onUpdateCollectionList(updatedCollectionList);
 
-        draggedItem.current = null;
-        setDraggedOverItem(null);
+        draggedItem.current = undefined;
+        setDraggedOverItem(undefined);
     };
 
     const dragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -377,7 +386,7 @@ const SortableCollectionList = ({
 
     const dragLeave = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        setDraggedOverItem(null);
+        setDraggedOverItem(undefined);
     };
 
     const dragDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -395,7 +404,7 @@ const SortableCollectionList = ({
 
     const dragEnd = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        if (dragOverItem[0] == null) {
+        if (dragOverItem[0] == undefined) {
             setDraggedOverItem(-1);
         } else {
             handleSort();
@@ -405,7 +414,7 @@ const SortableCollectionList = ({
     return collections.map((collection, index) => {
         return (
             <div
-                key={collection.name.concat(index.toString())}
+                key={index}
                 className={`flex flex-col ${index === collections.length - 1 ? 'grow' : ''}`}
             >
                 <div
@@ -449,13 +458,14 @@ const SortableCollectionList = ({
                             e.preventDefault(), setDraggedOverItem(index + 1);
                         }}
                         onDragLeave={(e) => {
-                            e.preventDefault(), setDraggedOverItem(null);
+                            e.preventDefault(), setDraggedOverItem(undefined);
                         }}
                         onDrop={(e) => {
-                            e.preventDefault(), draggedItem.current == null;
+                            e.preventDefault(),
+                                draggedItem.current == undefined;
                         }}
                     ></div>
-                ) : null}
+                ) : undefined}
             </div>
         );
     });
@@ -514,15 +524,19 @@ const ResourceCollectionEditor = ({
         updatedResourceLink: ResourceLink
     ) => void;
 }) => {
-    const addLinkModal = useRef<null | HTMLDialogElement>(null);
-    const deleteLinkModal = useRef<null | HTMLDialogElement>(null);
-    const editResourceCollectionModal = useRef<null | HTMLDialogElement>(null);
-    const [activeLinkToDelete, setActiveLinkToDelete] = useState<number | null>(
+    const addLinkModal = useRef<undefined | HTMLDialogElement>();
+    const deleteLinkModal = useRef<undefined | HTMLDialogElement>();
+    const editResourceCollectionModal = useRef<undefined | HTMLDialogElement>(
         null
     );
+    const [activeLinkToDelete, setActiveLinkToDelete] = useState<
+        number | undefined
+    >();
 
-    const [draggedItem, setDraggedItem] = useState<number | null>(null);
-    const [draggedOverItem, setDraggedOverItem] = useState<number | null>(null);
+    const [draggedItem, setDraggedItem] = useState<number | undefined>();
+    const [draggedOverItem, setDraggedOverItem] = useState<
+        number | undefined
+    >();
 
     const editCollectionTitle = (newtitle: string) => {
         onCollectionChange({
@@ -556,7 +570,7 @@ const ResourceCollectionEditor = ({
     };
 
     const handleSort = () => {
-        if (draggedItem === null || draggedOverItem === null) return;
+        if (!draggedItem || !draggedOverItem) return;
 
         // Check to see if dragged item stayed in the same position
         if (draggedItem === draggedOverItem) return;
@@ -571,8 +585,8 @@ const ResourceCollectionEditor = ({
             isModified: true
         });
 
-        setDraggedItem(null);
-        setDraggedOverItem(null);
+        setDraggedItem(undefined);
+        setDraggedOverItem(undefined);
     };
 
     return (
@@ -707,7 +721,7 @@ const ResourceCollectionEditor = ({
                 form={
                     <DeleteForm
                         item="Link"
-                        onCancel={() => setActiveLinkToDelete(null)}
+                        onCancel={() => setActiveLinkToDelete(undefined)}
                         onSuccess={() =>
                             deleteLink(collection, activeLinkToDelete)
                         }

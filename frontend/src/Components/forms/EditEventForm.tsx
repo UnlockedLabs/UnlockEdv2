@@ -51,7 +51,7 @@ function EditEventForm({ event, onClose }: SectionEventProps) {
     };
 
     const diffForm = (form: EditEventForm, event: Event): OverrideForm => {
-        let toUpdate = {} as OverrideForm;
+        const toUpdate = {} as OverrideForm;
         if (form['start_time'] != event.start_time) {
             toUpdate['start_time'] = form['start_time'];
         }
@@ -69,7 +69,7 @@ function EditEventForm({ event, onClose }: SectionEventProps) {
     };
 
     const handleSubmit = async (apply: string) => {
-        let diffed = diffForm(form, event);
+        const diffed = diffForm(form, event);
         diffed['override_type'] = apply;
         const response = await API.put(`events/${event.event_id}`, diffed);
         if (response.success) {

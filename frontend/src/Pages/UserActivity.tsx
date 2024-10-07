@@ -2,7 +2,7 @@ import Pagination from '../Components/Pagination';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '../Components/inputs/SearchBar';
-import { Activity, ServerResponse } from '../common';
+import { Activity, PaginationMeta, ServerResponse } from '../common';
 import { useState } from 'react';
 import useSWR from 'swr';
 // import { useDebounceValue } from "usehooks-ts";
@@ -112,15 +112,18 @@ export default function UserActivity() {
                             })}
                     </tbody>
                 </table>
-                {!isLoading && !error && userActivityData.length != 0 && (
-                    <Pagination meta={data.meta} setPage={setPageQuery} />
+                {!isLoading && !error && userActivityData.length > 0 && (
+                    <Pagination
+                        meta={data.meta as PaginationMeta}
+                        setPage={setPageQuery}
+                    />
                 )}
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && userActivityData.length == 0 && (
+                {!isLoading && !error && userActivityData.length === 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>

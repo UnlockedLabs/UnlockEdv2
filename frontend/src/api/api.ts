@@ -6,9 +6,9 @@ axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common['Accept'] = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-const unauthorized: ServerResponse<null> = {
+const unauthorized: ServerResponse<undefined> = {
     success: false,
-    data: null,
+    data: undefined,
     message: 'Unauthorized'
 };
 
@@ -22,7 +22,7 @@ axios.interceptors.response.use(
         return Promise.reject({
             success: false,
             message: error?.response?.data?.message ?? 'An error occurred',
-            data: null
+            data: undefined
         });
     }
 );
@@ -41,7 +41,7 @@ class API {
     public static async request<T>(
         method: 'get' | 'post' | 'put' | 'patch' | 'delete',
         url: string,
-        data?: any // TODO: inquire about the best way to type these api methods
+        data?: any // eslint-disable-line
     ): Promise<ServerResponse<T>> {
         try {
             const resp = await axios({
@@ -59,15 +59,24 @@ class API {
         return API.request<T>('get', url);
     }
 
-    public static post<T>(url: string, data: any): Promise<ServerResponse<T>> {
+    public static post<T>(
+        url: string,
+        data: any // eslint-disable-line
+    ): Promise<ServerResponse<T>> {
         return API.request<T>('post', url, data);
     }
 
-    public static put<T>(url: string, data: any): Promise<ServerResponse<T>> {
+    public static put<T>(
+        url: string,
+        data: any // eslint-disable-line
+    ): Promise<ServerResponse<T>> {
         return API.request<T>('put', url, data);
     }
 
-    public static patch<T>(url: string, data: any): Promise<ServerResponse<T>> {
+    public static patch<T>(
+        url: string,
+        data: any // eslint-disable-line
+    ): Promise<ServerResponse<T>> {
         return API.request<T>('patch', url, data);
     }
 

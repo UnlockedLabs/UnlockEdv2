@@ -1,23 +1,26 @@
-import { ProviderPlatformState, ProviderPlatformType } from '@/common';
+import {
+    ProviderPlatformState,
+    ProviderPlatformType,
+    ToastState
+} from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
-import { ToastState } from '../Toast';
 import API from '@/api/api';
 
-type ProviderInputs = {
+interface ProviderInputs {
     name: string;
     type: ProviderPlatformType;
     base_url: string;
     account_id: string;
     access_key: string;
     state: ProviderPlatformState;
-};
+}
 
 export default function AddProviderForm({
     onSuccess
 }: {
-    onSuccess: Function;
+    onSuccess: (state: ToastState, message: string) => void;
 }) {
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -50,7 +53,7 @@ export default function AddProviderForm({
                     label="Name"
                     register={register}
                     interfaceRef="name"
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                 />
@@ -59,7 +62,7 @@ export default function AddProviderForm({
                     register={register}
                     enumType={ProviderPlatformType}
                     interfaceRef="type"
-                    required={true}
+                    required
                     errors={errors}
                 />
                 <DropdownInput
@@ -67,31 +70,31 @@ export default function AddProviderForm({
                     register={register}
                     enumType={ProviderPlatformState}
                     interfaceRef="state"
-                    required={true}
+                    required
                     errors={errors}
                 />
                 <TextInput
                     label="Base URL"
                     register={register}
                     interfaceRef="base_url"
-                    required={true}
-                    length={null}
+                    required
+                    length={undefined}
                     errors={errors}
                 />
                 <TextInput
                     label="Account Id"
                     register={register}
                     interfaceRef="account_id"
-                    required={true}
-                    length={null}
+                    required
+                    length={undefined}
                     errors={errors}
                 />
                 <TextInput
                     label="Access Key"
                     register={register}
                     interfaceRef="access_key"
-                    required={true}
-                    length={null}
+                    required
+                    length={undefined}
                     errors={errors}
                 />
                 <SubmitButton errorMessage={errorMessage} />

@@ -1,4 +1,4 @@
-import { ResourceLink, ResourceCategory } from '@/common';
+import { ResourceCategory, ResourceLink } from '@/common';
 import ExternalLink from './ExternalLink';
 
 export default function ResourcesCategoryCard({

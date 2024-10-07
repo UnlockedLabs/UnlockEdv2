@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useForm, useWatch, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import API from '@/api/api';
 import { Facility } from '@/common';
-type Inputs = {
+interface Inputs {
     password: string;
     confirm: string;
     facility_name: string;
-};
+}
 
 export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
@@ -55,7 +55,7 @@ export default function ChangePasswordForm() {
             }
         };
         checkFacilityName();
-    }, []);
+    }, [auth.user.role]);
 
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);
@@ -88,12 +88,12 @@ export default function ChangePasswordForm() {
                 label={'New password'}
                 interfaceRef={'password'}
                 length={50}
-                required={true}
+                required
                 errors={errors}
                 register={register}
-                password={true}
+                password
                 autoComplete="new-password"
-                isFocused={true}
+                isFocused
             />
 
             <div className="mt-2 text-sm">
@@ -123,10 +123,10 @@ export default function ChangePasswordForm() {
                 label={'Confirm password'}
                 interfaceRef={'confirm'}
                 length={50}
-                required={true}
+                required
                 errors={errors}
                 register={register}
-                password={true}
+                password
                 autoComplete="new-password"
             />
 
@@ -155,7 +155,7 @@ export default function ChangePasswordForm() {
                         label={'New default facility name'}
                         interfaceRef={'facility_name'}
                         length={50}
-                        required={true}
+                        required
                         errors={errors}
                         register={register}
                         password={false}

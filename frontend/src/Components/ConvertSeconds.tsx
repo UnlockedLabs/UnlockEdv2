@@ -5,9 +5,9 @@ const convertSeconds = (secs: number) => {
 
     return hours
         ? { number: hours, label: `hr${hours === 1 ? '' : 's'}` }
-        : minutes
+        : (minutes
           ? { number: minutes, label: `min${minutes === 1 ? '' : 's'}` }
-          : { number: seconds, label: `sec${seconds === 1 ? '' : 's'}` };
+          : { number: seconds, label: `sec${seconds === 1 ? '' : 's'}` });
 };
 
 export default convertSeconds;

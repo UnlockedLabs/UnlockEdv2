@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import DropdownControl from './inputs/DropdownControl';
 import useSWR from 'swr';
-import { useAuth } from '@/AuthContext';
+import { useAuth } from '@/useAuth';
 import { ServerResponse } from '@/common';
 import convertSeconds from './ConvertSeconds';
 
-type ActivityMapData = {
+interface ActivityMapData {
     date: string;
     total_time: string;
     quartile: number;
-};
+}
+const SECONDS_IN_HOUR = 3600;
+const DAYS_IN_WEEK = 7;
 
 interface Activities {
     activities: ActivityMapData[];
@@ -48,7 +50,7 @@ const gapSizes: string = 'p-0 ml-px mt-px md:m-0 md:p-px';
 export default function UserActivityMap() {
     const { user } = useAuth();
 
-    const createdAtYear = parseInt(user?.created_at.substr(0, 4));
+    const createdAtYear = parseInt(user.created_at.split('-')[0]);
 
     const [yearEnd, setYearEnd] = useState(new Date());
     const [dropdownValDesc, setDropdownValDesc] = useState('the past year');
@@ -71,7 +73,7 @@ export default function UserActivityMap() {
     };
 
     const dropdownChange = (val: string) => {
-        let date;
+        let date: Date;
         if (val == 'Past year') {
             date = new Date();
             setYearEnd(date);
@@ -184,18 +186,18 @@ function ActivityMapTable({
 }: {
     data: ActivityMapData[];
     end: Date;
-    error: any; //Todo: unsure about what to type this as Error or ApiError
+    error: any; // eslint-disable-line
     isLoading: boolean;
     range: string;
 }) {
     /* array that holds cells for the table */
     const tableData: JSX.Element[] = [];
     const tableMonths: string[] = [];
-    let i;
+    let i: number;
     const len = data?.length;
     //  const now = new Date();
     let aggregateActivityTime = 0;
-    let oldMonth, newMonth;
+    let oldMonth: number, newMonth: number;
 
     const getAggregateActivityTime = (time: number) => {
         if (error) {
@@ -259,7 +261,7 @@ function ActivityMapTable({
             newMonth = dateCount.getUTCMonth();
             if (
                 newMonth != oldMonth &&
-                dateCount.getUTCDate() < 8 &&
+                dateCount.getUTCDate() <= DAYS_IN_WEEK &&
                 tableMonths[tableMonths.length - 1] == ''
             ) {
                 insertMonthHeader(dateCount);
@@ -299,9 +301,9 @@ function ActivityMapTable({
     }
 
     /* add empty cells for days of week after activity range */
-    for (i = dateCount.getUTCDay(); i < 7; i++) {
+    for (i = dateCount.getUTCDay(); i < DAYS_IN_WEEK; i++) {
         tableData.push(
-            <td className={'block ' + gapSizes} key={i + 7}>
+            <td className={'block ' + gapSizes} key={i + DAYS_IN_WEEK}>
                 <div className={`${nodeSizes}`}></div>
             </td>
         );
@@ -350,11 +352,11 @@ function ActivityMapTable({
                         </td>
                     </tr>
                     {tableData.map((_, index) => {
-                        if (index % 7 == 0) {
+                        if (index % DAYS_IN_WEEK == 0) {
                             return (
                                 <tr className="inline-block" key={index}>
                                     {tableData
-                                        .slice(index, index + 7)
+                                        .slice(index, index + DAYS_IN_WEEK)
                                         .map((node) => {
                                             return node;
                                         })}
@@ -366,9 +368,9 @@ function ActivityMapTable({
             </table>
             <div className="block text-xs md:text-sm font-bold text-center mt-4">
                 {isLoading || error
-                    ? null
+                    ? undefined
                     : getAggregateActivityTime(
-                          Math.floor(aggregateActivityTime / 3600)
+                          Math.floor(aggregateActivityTime / SECONDS_IN_HOUR)
                       ) +
                       ' in ' +
                       range +

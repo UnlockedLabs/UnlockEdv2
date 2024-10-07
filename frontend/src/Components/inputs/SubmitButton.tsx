@@ -7,7 +7,7 @@ export function SubmitButton({ errorMessage }: { errorMessage?: string }) {
                 <div className="text-error text-center pt-2">
                     {errorMessage}
                 </div>
-            ) : null}
+            ) : undefined}
         </label>
     );
 }

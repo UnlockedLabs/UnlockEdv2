@@ -10,9 +10,10 @@ else
   npx prettier -w $FRONTEND_FILES
 fi
 
-echo "running oxlint 󰎙 ..."
+echo "running front-end linters 󰎙 ..."
+yarn lint-staged
 
-npx oxlint --fix $FRONTEND_FILES
+yarn build
 
 git add $FRONTEND_FILES
 

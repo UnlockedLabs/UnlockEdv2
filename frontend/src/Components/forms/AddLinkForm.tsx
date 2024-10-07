@@ -1,11 +1,11 @@
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { SubmitButton } from '../inputs/SubmitButton';
 import { TextInput } from '../inputs/TextInput';
 import { CloseX } from '../inputs/CloseX';
-type Inputs = {
+interface Inputs {
     title: string;
     url: string;
-};
+}
 
 export default function AddLinkForm({
     onSuccess
@@ -31,7 +31,7 @@ export default function AddLinkForm({
                 <TextInput
                     label="Title"
                     interfaceRef="title"
-                    required={true}
+                    required
                     length={25}
                     errors={errors}
                     register={register}
@@ -39,8 +39,8 @@ export default function AddLinkForm({
                 <TextInput
                     label="URL"
                     interfaceRef="url"
-                    required={true}
-                    length={null}
+                    required
+                    length={undefined}
                     errors={errors}
                     register={register}
                 />

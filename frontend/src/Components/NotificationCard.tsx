@@ -1,10 +1,5 @@
-import { Announcement } from '@/common.ts';
+import { Announcement, NotificationType } from '@/common.ts';
 
-export enum NotificationType {
-    Announcement = 'Announcement',
-    ToDo = 'ToDo'
-}
-// TO DO: specify cardInfo type
 export default function NotificationCard({
     cardInfo,
     type
