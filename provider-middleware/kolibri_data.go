@@ -92,6 +92,9 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 	id := data["id"].(string)
 	name := data["name"].(string)
 	description := data["description"].(string)
+	if len(description) > 255 {
+		description = description[:255]
+	}
 	totalResourceCount := data["total_resource_count"].(int64)
 	course := models.Course{
 		ProviderPlatformID:      kc.ProviderPlatformID,
