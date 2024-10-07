@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -36,62 +35,60 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 	return nil
 }
 
-func (db *DB) GetUnmappedUsers(page, perPage int, providerID int, userSearch []string, facilityId uint) (int64, []models.User, error) {
+func (db *DB) GetUnmappedUsers(page, perPage int, providerID int, userSearch []string, facilityID uint) (int64, []models.User, error) {
 	var users []models.User
 	var total int64
+	tx := db.Model(&models.User{}).
+		Where("facility_id = ? AND role = ? AND id NOT IN (?)",
+			facilityID,
+			"student",
+			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
+		)
 
-	if len(userSearch) != 0 {
-		fmt.Println("getting unmapped users, searching for ", userSearch)
-		users, err := db.getUnmappedProviderUsersWithSearch(providerID, userSearch, facilityId)
-		if err != nil {
-			return 0, nil, err
-		}
-		return int64(len(users)), users, nil
+	if len(userSearch) > 0 {
+		tx = applyUserSearchConditions(tx, userSearch)
 	}
-	if err := db.Model(&models.User{}).
-		Where("facility_id = ? AND role = ? AND id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", facilityId, "student", providerID).
-		Count(&total).Error; err != nil {
+	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, NewDBError(err, "error counting unmapped users")
 	}
-	if err := db.Model(&models.User{}).
-		Find(&users, "facility_id = ? AND role = ? AND id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", facilityId, "student", providerID).
-		Offset((page - 1) * perPage).
-		Limit(perPage).
-		Find(&users).Error; err != nil {
+	if err := tx.Offset((page - 1) * perPage).Limit(perPage).Find(&users).Error; err != nil {
 		return 0, nil, NewDBError(err, "error getting unmapped users")
 	}
 	return total, users, nil
 }
 
-func (db *DB) getUnmappedProviderUsersWithSearch(providerID int, userSearch []string, facilityId uint) ([]models.User, error) {
-	var users []models.User
-	tx := db.Model(&models.User{}).
-		Where("facility_id = ? AND role = ? AND id NOT IN (SELECT user_id FROM provider_user_mappings WHERE provider_platform_id = ?)", facilityId, "student", providerID)
+func applyUserSearchConditions(tx *gorm.DB, userSearch []string) *gorm.DB {
+	var conditions []string
+	var args []interface{}
 
-	searchCondition := db.DB
 	for _, search := range userSearch {
-		split := strings.Split(search, " ")
-		if len(split) > 1 {
-			first := "%" + strings.TrimSpace(strings.ToLower(split[0])) + "%"
-			last := "%" + strings.TrimSpace(strings.ToLower(split[1])) + "%"
-			searchCondition = searchCondition.Or(db.Where("name_first LIKE ? OR name_last LIKE ?", first, first).Or("name_first LIKE ? OR name_last LIKE ?", last, last))
+		search = strings.TrimSpace(search)
+		if search == "" {
 			continue
 		}
-		search = "%" + strings.TrimSpace(strings.ToLower(search)) + "%"
+		searchTerm := "%" + strings.ToLower(search) + "%"
+
 		if strings.Contains(search, "@") {
-			searchCondition = searchCondition.Or("email LIKE ?", search)
-			continue
+			conditions = append(conditions, "LOWER(email) LIKE ?")
+			args = append(args, searchTerm)
+		} else if strings.Contains(search, " ") {
+			splitNames := strings.Fields(search)
+			for _, namePart := range splitNames {
+				nameTerm := "%" + strings.ToLower(namePart) + "%"
+				conditions = append(conditions, "(LOWER(name_first) LIKE ? OR LOWER(name_last) LIKE ?)")
+				args = append(args, nameTerm, nameTerm)
+			}
+		} else {
+			conditions = append(conditions, "(LOWER(name_first) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(username) LIKE ?)")
+			args = append(args, searchTerm, searchTerm, searchTerm)
 		}
-		searchCondition = searchCondition.Or("name_first LIKE ?", search).Or("name_last LIKE ?", search).Or("username LIKE ?", search)
-	}
-	tx = tx.Where(searchCondition)
-
-	if err := tx.Find(&users).Error; err != nil {
-		return nil, NewDBError(err, "error getting unmapped provider users with search")
 	}
 
-	fmt.Printf("found %d matches", len(users))
-	return users, nil
+	if len(conditions) > 0 {
+		combinedCondition := "(" + strings.Join(conditions, " OR ") + ")"
+		tx = tx.Where(combinedCondition, args...)
+	}
+	return tx
 }
 
 func (db *DB) GetAllProviderMappingsForUser(userID int) ([]models.ProviderUserMapping, error) {
