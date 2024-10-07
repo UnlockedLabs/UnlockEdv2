@@ -413,3 +413,45 @@ export enum ViewType {
     Grid = 'Grid',
     List = 'List'
 }
+
+export interface Tab {
+    name: string;
+    value: string | number;
+}
+
+export interface Library {
+    description: string | null;
+    external_id: string | null;
+    id: number;
+    image_url: string | null;
+    language: string | null;
+    name: string;
+    open_content_provider_id: number;
+    updated_at: string;
+    url: string;
+    visibility_status: boolean;
+    open_content_provider: OpenContentProvider;
+}
+
+export interface OpenContentProvider {
+    name: string;
+    url: string;
+    provider_platform_id: number | null;
+    thumbnail_url: string | null;
+    currently_enabled: boolean;
+    description: string | null;
+}
+
+export interface ToastProps {
+    state: ToastState;
+    message: string;
+}
+
+export enum FilterLibraries {
+    'All Libraries' = 'all'
+}
+export enum FilterLibrariesAdmin {
+    'All Libraries' = 'all',
+    'Visible' = '&visibility=visible',
+    'Hidden' = '&visibility=hidden'
+}

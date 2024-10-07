@@ -13,6 +13,7 @@ import {
     UsersIcon
 } from '@heroicons/react/24/solid';
 import { useAuth } from '@/useAuth';
+import ULIComponent from './ULIComponent';
 
 export default function Navbar({
     isPinned,
@@ -58,30 +59,36 @@ export default function Navbar({
                         {/* admin view */}
                         <li className="mt-16">
                             <a href="/dashboard">
-                                <HomeIcon className="w-4" /> Dashboard
+                                <ULIComponent icon={HomeIcon} /> Dashboard
                             </a>
                         </li>
                         <li>
                             <a href="/student-management">
-                                <AcademicCapIcon className="h-4" />
+                                <ULIComponent icon={AcademicCapIcon} />
                                 Students
                             </a>
                         </li>
                         <li>
                             <a href="/admin-management">
-                                <UsersIcon className="h-4" />
+                                <ULIComponent icon={UsersIcon} />
                                 Admins
                             </a>
                         </li>
                         <li>
+                            <a href="/open-content-management">
+                                <ULIComponent icon={BookOpenIcon} />
+                                Open Content
+                            </a>
+                        </li>
+                        <li>
                             <a href="/resources-management">
-                                <ArchiveBoxIcon className="h-4" />
+                                <ULIComponent icon={ArchiveBoxIcon} />
                                 Resources
                             </a>
                         </li>
                         <li>
                             <a href="/provider-platform-management">
-                                <RectangleStackIcon className="h-4" />
+                                <ULIComponent icon={RectangleStackIcon} />
                                 Platforms
                             </a>
                         </li>
@@ -91,38 +98,34 @@ export default function Navbar({
                         {/* student view */}
                         <li className="mt-16">
                             <a href="/dashboard">
-                                <HomeIcon className="w-4" /> Dashboard
+                                <ULIComponent icon={HomeIcon} /> Dashboard
                             </a>
                         </li>
                         <li className="">
                             <a href="/my-courses">
-                                <BookOpenIcon className="w-4" /> My Courses
+                                <ULIComponent icon={BookOpenIcon} /> My Courses
                             </a>
                         </li>
                         <li className="">
                             <a href="/my-progress">
-                                <TrophyIcon className="w-4" /> My Progress
+                                <ULIComponent icon={TrophyIcon} /> My Progress
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/open-content">
+                                <ULIComponent icon={BookOpenIcon} />
+                                Open Content
                             </a>
                         </li>
                         <li className="">
                             <a href="/course-catalog">
-                                <BuildingStorefrontIcon className="w-4" />{' '}
+                                <ULIComponent icon={BuildingStorefrontIcon} />
                                 Course Catalog
                             </a>
                         </li>
                     </>
                 )}
             </ul>
-            {/* <div className="">
-                <ul className="menu mb-5">
-                    <li>
-                        <button onClick={() => handleLogout()}>
-                            <ArrowRightEndOnRectangleIcon className="h-4" />
-                            Logout
-                        </button>
-                    </li>
-                </ul>
-            </div> */}
         </div>
     );
 }
