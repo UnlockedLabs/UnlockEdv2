@@ -13,14 +13,14 @@ func (db *DB) GetAllLibraries(page, perPage int, showHidden bool, search string,
 	offset := (page - 1) * perPage
 	tx := db.Model(&models.Library{})
 	if !showHidden {
-		tx.Where("visibility_status = true")
+		tx = tx.Where("visibility_status = true")
 	}
 	if search != "" {
 		search = "%" + strings.ToLower(search) + "%"
-		tx.Where("name LIKE ?", search)
+		tx = tx.Where("name LIKE ?", search)
 	}
 	if providerId != 0 {
-		tx.Where("open_content_provider_id = ?", providerId)
+		tx = tx.Where("open_content_provider_id = ?", providerId)
 	}
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")
