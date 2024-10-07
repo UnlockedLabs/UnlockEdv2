@@ -18,9 +18,12 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		providerId = 0
 	}
-	showHidden := false
+	showHidden := "visible"
+	if !srv.UserIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
+		return newUnauthorizedServiceError()
+	}
 	if srv.UserIsAdmin(r) {
-		showHidden = r.URL.Query().Get("show_hidden") == "true"
+		showHidden = r.URL.Query().Get("visibility")
 	}
 	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, showHidden, search, providerId)
 	if err != nil {
