@@ -4,11 +4,9 @@ import useSWR from 'swr';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
-    PencilIcon,
     TrashIcon,
-    PlusIcon
+    PlusCircleIcon
 } from '@heroicons/react/24/outline';
-
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
@@ -30,6 +28,7 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
+import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 export default function StudentManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
@@ -154,7 +153,7 @@ export default function StudentManagement() {
             path={['Student Management']}
         >
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
-                <h1>Student Management</h1>
+                <h1 className="text-header-text">Student Management</h1>
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
                         <SearchBar
@@ -173,31 +172,26 @@ export default function StudentManagement() {
                         />
                     </div>
 
-                    <div className="tooltip tooltip-left" data-tip="Add User">
+                    <div
+                        className="tooltip tooltip-left"
+                        data-tip="Add Student"
+                    >
                         <button
-                            className="btn btn-primary btn-sm text-white"
+                            className="btn btn-primary btn-sm text-base-teal"
                             onClick={() => addUserModal.current?.showModal()}
                         >
-                            <PlusIcon className="h-4 border border-white rounded-full p-1 mr-2" />{' '}
+                            <PlusCircleIcon className="w-4 my-auto" />
                             Add Student
                         </button>
                     </div>
                 </div>
-                <table className="table-2 w-full border-separate border-spacing-y-4">
+                <table className="table-2">
                     <thead>
-                        <tr>
-                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
-                                Name
-                            </th>
-                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
-                                Username
-                            </th>
-                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
-                                Last Active
-                            </th>
-                            <th className="px-6 pb-2 text-left text-sm font-medium text-gray-1">
-                                Actions
-                            </th>
+                        <tr className="grid-cols-4 px-4">
+                            <th className="justify-self-start">Name</th>
+                            <th>Username</th>
+                            <th>Last Active</th>
+                            <th className="justify-self-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -208,25 +202,18 @@ export default function StudentManagement() {
                                 return (
                                     <tr
                                         key={user.id}
-                                        className="bg-white shadow-sm"
+                                        className="card p-4 w-full grid-cols-4 justify-items-center"
                                     >
-                                        <td className="first:rounded-l-lg px-6 py-4">
-                                            <div className="text-sm text-gray-1">
-                                                {user.name_first}{' '}
-                                                {user.name_last}
-                                            </div>
+                                        <td className="justify-self-start">
+                                            {user.name_first} {user.name_last}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-1">
-                                                {user.username}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
+                                        <td>{user.username}</td>
+                                        <td>
                                             <div
                                                 className="tooltip"
                                                 data-tip="User Activity"
                                             >
-                                                <span className="text-sm text-gray-1">
+                                                <span className="cursor-pointer">
                                                     {updatedAt.toLocaleDateString(
                                                         'en-US',
                                                         {
@@ -238,14 +225,14 @@ export default function StudentManagement() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="last:rounded-r-lg px-6 py-4">
+                                        <td className="justify-self-end">
                                             <div className="flex space-x-4">
                                                 <div
                                                     className="tooltip"
                                                     data-tip="Edit Student"
                                                 >
-                                                    <PencilIcon
-                                                        className="h-5 w-5 text-black hover:text-black cursor-pointer"
+                                                    <PencilSquareIcon
+                                                        className="h-5 w-5 text-grey-3 hover:text-primary cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             editUserModal.current?.showModal();
@@ -257,7 +244,7 @@ export default function StudentManagement() {
                                                     data-tip="Reset Password"
                                                 >
                                                     <ArrowPathRoundedSquareIcon
-                                                        className="h-5 w-5 text-black hover:text-black cursor-pointer"
+                                                        className="h-5 w-5 text-grey-3 hover:text-primary cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             resetUserPasswordModal.current?.showModal();
@@ -269,7 +256,7 @@ export default function StudentManagement() {
                                                     data-tip="Delete Student"
                                                 >
                                                     <TrashIcon
-                                                        className="h-5 w-5 text-black hover:text-black cursor-pointer"
+                                                        className="h-5 w-5 text-grey-3 hover:text-error cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             deleteUserModal.current?.showModal();
@@ -296,6 +283,7 @@ export default function StudentManagement() {
                 )}
             </div>
 
+            {/* Modals */}
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
