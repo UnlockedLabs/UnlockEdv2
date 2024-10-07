@@ -8,6 +8,7 @@ import {
     OidcClient,
     ProviderPlatform,
     ServerResponse,
+    ToastProps,
     ToastState
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -17,11 +18,6 @@ import Toast from '@/Components/Toast';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
-
-interface ToastProps {
-    state: ToastState;
-    message: string;
-}
 
 export default function ProviderPlatformManagement() {
     const addProviderModal = useRef<undefined | HTMLDialogElement>();

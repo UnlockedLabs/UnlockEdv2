@@ -5,6 +5,7 @@ import { useState } from 'react';
 import ToggleView from '@/Components/ToggleView';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
+import { Tab } from '@/common';
 import {
     ServerResponse,
     UserCourses,
@@ -12,23 +13,20 @@ import {
     ViewType
 } from '@/common';
 import useSWR from 'swr';
-
-// TO DO: make sure this lives in the right place
-
-enum TabType {
-    Current = 'in_progress',
-    Completed = 'completed',
-    Favorited = 'is_favorited',
-    All = 'all'
-}
-
-// TO DO: go back and fix all "key" values that are mapped and make them intentional
+import TabView from '@/Components/TabView';
 
 export default function MyCourses() {
+    const tabs: Tab[] = [
+        { name: 'Current', value: 'in_progress' },
+        { name: 'Completed', value: 'completed' },
+        { name: 'Favorited', value: 'is_favorited' },
+        { name: 'All', value: 'all' }
+    ];
+
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [sort, setSort] = useState<string>('order=asc&order_by=course_name');
-    const [activeTab, setActiveTab] = useState<TabType>(TabType.Current);
+    const [activeTab, setActiveTab] = useState<Tab>(tabs[0]);
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
     const { data, mutate, isLoading, error } = useSWR<
@@ -36,7 +34,7 @@ export default function MyCourses() {
     >(
         `/api/users/${user.id}/courses?${
             sort +
-            (activeTab !== TabType.All ? `&tags=${activeTab}` : '') +
+            (activeTab.value !== 'all' ? `&tags=${activeTab.value}` : '') +
             (searchTerm ? `&search=${searchTerm}` : '')
         }`
     );
@@ -57,21 +55,11 @@ export default function MyCourses() {
         <AuthenticatedLayout title="My Courses" path={['My Courses']}>
             <div className="px-8 py-4">
                 <h1>My Courses</h1>
-                <div className="flex flex-row gap-16 w-100 border-b-2 border-grey-2 py-3">
-                    {Object.entries(TabType).map(([key]) => (
-                        <button
-                            className={
-                                activeTab == TabType[key]
-                                    ? 'text-teal-4 font-bold'
-                                    : ''
-                            }
-                            onClick={() => setActiveTab(TabType[key])}
-                            key={key}
-                        >
-                            {key}
-                        </button>
-                    ))}
-                </div>
+                <TabView
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                />
                 <div className="flex flex-row items-center mt-4 justify-between">
                     <div className="flex flex-row gap-x-2">
                         <SearchBar
