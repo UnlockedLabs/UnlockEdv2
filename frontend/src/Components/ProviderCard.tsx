@@ -87,7 +87,7 @@ export default function ProviderCard({
                             onClick={() => openEditProvider(provider)}
                         />
                         <ULIComponent
-                            data-tip={'Disable/Archive Provider'}
+                            dataTip={'Disable/Archive Provider'}
                             icon={XMarkIcon}
                             onClick={() => archiveProvider(provider)}
                         />

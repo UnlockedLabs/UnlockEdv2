@@ -1,8 +1,8 @@
 import * as React from 'react';
 
 type ULIComponentProps = {
-    outerDivClassName?: string; //for applying classes other than 'tooltip'
-    innerDivClassName?: string; //for applying classes other than 'w-4 h-4'
+    tooltipClassName?: string; //for applying classes other than 'tooltip'
+    iconClassName?: string; //for applying classes other than 'w-4 h-4'
     dataTip?: string;
     onClick?: () => void;
     onMouseDown?: () => void;
@@ -15,18 +15,17 @@ type ULIComponentProps = {
 };
 
 export default function ULIComponent(props: ULIComponentProps) {
-    // TODO:
-    // Case 1: a icon with outerDivClassName 'w-4 h-4 self-start cursor-pointer'
+    // Case 1: a icon with tooltipClassName 'w-4 h-4 self-start cursor-pointer'
     // Case 2: an icon that needs the default width overridden with a prop value: this will be applied to the className as well
     // Case 3: an icon without 'self-start cursor-pointer'
 
     return (
         <div
-            className={`tooltip ${props.outerDivClassName}`}
+            className={`tooltip ${props.tooltipClassName}`}
             data-tip={props.dataTip}
         >
             <props.icon
-                className={`w-4 h-4 ${props.innerDivClassName}`}
+                className={`w-4 h-4 ${props.iconClassName}`}
                 onClick={props.onClick}
                 onMouseDown={props.onMouseDown}
             />

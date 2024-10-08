@@ -494,7 +494,7 @@ const ResourceCollectionCardWithActions = ({
                     <h3 className="card-title text-sm">{collection.name}</h3>
                     <ULIComponent
                         dataTip={'Delete Collection'}
-                        innerDivClassName={'self-start cursor-pointer'}
+                        iconClassName={'self-start cursor-pointer'}
                         onClick={() => onDeleteCollectionClick(collection.id)}
                         icon={TrashIcon}
                     />
@@ -594,22 +594,24 @@ const ResourceCollectionEditor = ({
             <div className="card-body gap-2">
                 <div className="flex justify-between">
                     <h3 className="card-title text-sm">{collection.name}</h3>
-                    <ULIComponent
-                        innerDivClassName={'self-start cursor-pointer'}
-                        dataTip={'Edit Collection'}
-                        onClick={() =>
-                            editResourceCollectionModal.current?.showModal()
-                        }
-                        icon={PencilSquareIcon}
-                    />
+                    <div className={'space-x-2'}>
+                        <ULIComponent
+                            iconClassName={'self-start cursor-pointer'}
+                            dataTip={'Edit Collection'}
+                            onClick={() =>
+                                editResourceCollectionModal.current?.showModal()
+                            }
+                            icon={PencilSquareIcon}
+                        />
 
-                    <ULIComponent
-                        innerDivClassName={'self-start cursor-pointer'}
-                        outerDivClassName={'self-start mr-2'}
-                        dataTip={'New Link'}
-                        onClick={() => addLinkModal.current?.showModal()}
-                        icon={PlusCircleIcon}
-                    />
+                        <ULIComponent
+                            iconClassName={'self-start cursor-pointer'}
+                            tooltipClassName={'self-start mr-2'}
+                            dataTip={'New Link'}
+                            onClick={() => addLinkModal.current?.showModal()}
+                            icon={PlusCircleIcon}
+                        />
+                    </div>
                 </div>
                 <table className="table">
                     <thead>
@@ -682,7 +684,7 @@ const ResourceCollectionEditor = ({
                                         </td>
                                         <td>
                                             <ULIComponent
-                                                innerDivClassName={
+                                                iconClassName={
                                                     'self-start cursor-pointer'
                                                 }
                                                 dataTip={'Delete Link'}
