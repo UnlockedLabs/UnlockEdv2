@@ -34,8 +34,10 @@ export default function Toast({ state, message, reset }: ToastProps) {
                 isVisible ? 'opacity-100' : 'opacity-0'
             }`}
         >
-            <div className={`alert alert-${state}`}>
-                {state == 'success' ? (
+            <div
+                className={`alert text-white ${state == ToastState.success ? 'bg-success' : 'bg-error'}`}
+            >
+                {state == ToastState.success ? (
                     <CheckCircleIcon className="h-6" />
                 ) : (
                     <ExclamationCircleIcon className="h-6" />
