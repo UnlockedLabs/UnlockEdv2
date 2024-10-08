@@ -37,7 +37,7 @@ export default function Toast({ state, message, reset }: ToastProps) {
             <div
                 className={`alert text-white ${state == ToastState.success ? 'bg-success' : 'bg-error'}`}
             >
-                {state == ToastState.success ? (
+                {state === ToastState.success ? (
                     <CheckCircleIcon className="h-6" />
                 ) : (
                     <ExclamationCircleIcon className="h-6" />
