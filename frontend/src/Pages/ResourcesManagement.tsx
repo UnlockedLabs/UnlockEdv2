@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import Modal from '../Components/Modal';
@@ -20,6 +20,7 @@ import { CloudArrowUpIcon } from '@heroicons/react/16/solid';
 import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
 import ExternalLink from '@/Components/ExternalLink';
+import ULIComponent from '@/Components/ULIComponent.tsx';
 
 interface ToastProps {
     state: ToastState;
@@ -490,17 +491,13 @@ const ResourceCollectionCardWithActions = ({
         >
             <div className="card-body gap-2">
                 <div className="flex justify-between">
-                    <h3 className="card-title text-sm">
-                        {collection.name ?? ''}
-                    </h3>
-                    <div className="tooltip" data-tip="Delete Collection">
-                        <TrashIcon
-                            className="w-4 h-4 self-start cursor-pointer"
-                            onClick={() =>
-                                onDeleteCollectionClick(collection.id)
-                            }
-                        />
-                    </div>
+                    <h3 className="card-title text-sm">{collection.name}</h3>
+                    <ULIComponent
+                        dataTip={'Delete Collection'}
+                        iconClassName={'self-start cursor-pointer'}
+                        onClick={() => onDeleteCollectionClick(collection.id)}
+                        icon={TrashIcon}
+                    />
                 </div>
                 {collection.links.map((link: ResourceLink, index: number) => {
                     const [title, url] = Object.entries(link)[0];
@@ -597,24 +594,22 @@ const ResourceCollectionEditor = ({
             <div className="card-body gap-2">
                 <div className="flex justify-between">
                     <h3 className="card-title text-sm">{collection.name}</h3>
-                    <div
-                        className="tooltip ml-auto mr-2"
-                        data-tip="Edit Collection"
-                    >
-                        <PencilSquareIcon
-                            className="w-4 h-4 cursor-pointer"
+                    <div className={'space-x-2'}>
+                        <ULIComponent
+                            iconClassName={'self-start cursor-pointer'}
+                            dataTip={'Edit Collection'}
                             onClick={() =>
                                 editResourceCollectionModal.current?.showModal()
                             }
+                            icon={PencilSquareIcon}
                         />
-                    </div>
-                    <div
-                        className="tooltip self-start mr-2"
-                        data-tip="New Link"
-                    >
-                        <PlusCircleIcon
-                            className="w-4 h-4 cursor-pointer"
+
+                        <ULIComponent
+                            iconClassName={'self-start cursor-pointer'}
+                            tooltipClassName={'self-start mr-2'}
+                            dataTip={'New Link'}
                             onClick={() => addLinkModal.current?.showModal()}
+                            icon={PlusCircleIcon}
                         />
                     </div>
                 </div>
@@ -648,11 +643,11 @@ const ResourceCollectionEditor = ({
                                         }
                                     >
                                         <td>
-                                            <Bars3Icon
-                                                className="w-4 h-4"
+                                            <ULIComponent
                                                 onMouseDown={() =>
                                                     setDraggedItem(linkIndex)
                                                 }
+                                                icon={Bars3Icon}
                                             />
                                         </td>
                                         <td>
@@ -688,20 +683,19 @@ const ResourceCollectionEditor = ({
                                             />
                                         </td>
                                         <td>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="Delete Link"
-                                            >
-                                                <TrashIcon
-                                                    className="w-4 h-4 cursor-pointer"
-                                                    onClick={() => {
-                                                        setActiveLinkToDelete(
-                                                            linkIndex
-                                                        );
-                                                        deleteLinkModal.current?.showModal();
-                                                    }}
-                                                />
-                                            </div>
+                                            <ULIComponent
+                                                iconClassName={
+                                                    'self-start cursor-pointer'
+                                                }
+                                                dataTip={'Delete Link'}
+                                                onClick={() => {
+                                                    setActiveLinkToDelete(
+                                                        linkIndex
+                                                    );
+                                                    deleteLinkModal.current?.showModal();
+                                                }}
+                                                icon={TrashIcon}
+                                            />
                                         </td>
                                     </tr>
                                 );

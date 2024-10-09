@@ -11,6 +11,7 @@ import TealPill from './pill-labels/TealPill';
 import YellowPill from './pill-labels/YellowPill';
 import OutcomePill from './pill-labels/GreyPill';
 import { XMarkIcon } from '@heroicons/react/24/solid';
+import ULIComponent from '@/Components/ULIComponent.tsx';
 
 export default function ProviderCard({
     provider,
@@ -53,64 +54,50 @@ export default function ProviderCard({
                     <>
                         {provider.oidc_id !== 0 ? (
                             <>
-                                <div className="tooltip" data-tip="Auth Info">
-                                    <InformationCircleIcon
-                                        className="w-4"
+                                <ULIComponent
+                                    dataTip={'Auth Info'}
+                                    icon={InformationCircleIcon}
+                                    onClick={() =>
+                                        showAuthorizationInfo(provider)
+                                    }
+                                />
+
+                                {provider.type !== 'kolibri' && (
+                                    <ULIComponent
+                                        dataTip={'Manage Users'}
+                                        icon={UserGroupIcon}
                                         onClick={() =>
-                                            showAuthorizationInfo(provider)
+                                            navigate(
+                                                `/provider-users/${provider.id}`
+                                            )
                                         }
                                     />
-                                </div>
-                                {provider.type !== 'kolibri' && (
-                                    <div
-                                        className="tooltip"
-                                        data-tip="Manage Users"
-                                    >
-                                        <UserGroupIcon
-                                            className="w-4"
-                                            onClick={() =>
-                                                navigate(
-                                                    `/provider-users/${provider.id}`
-                                                )
-                                            }
-                                        />
-                                    </div>
                                 )}
                             </>
                         ) : (
-                            <div
-                                className="tooltip"
-                                data-tip="Register Provider"
-                            >
-                                <LinkIcon
-                                    className="w-4 "
-                                    onClick={() => oidcClient(provider)}
-                                />
-                            </div>
+                            <ULIComponent
+                                dataTip={'Register Provider'}
+                                icon={LinkIcon}
+                                onClick={() => oidcClient(provider)}
+                            />
                         )}
-                        <div className="tooltip" data-tip="Edit Provider">
-                            <PencilSquareIcon
-                                className="w-4"
-                                onClick={() => openEditProvider(provider)}
-                            />
-                        </div>
-                        <div
-                            className="tooltip"
-                            data-tip="Disable/Archive Provider"
-                        >
-                            <XMarkIcon
-                                className="w-4"
-                                onClick={() => archiveProvider(provider)}
-                            />
-                        </div>
-                    </>
-                ) : (
-                    <div className="tooltip" data-tip="Enable Provider">
-                        <CheckCircleIcon
-                            className="w-4"
+                        <ULIComponent
+                            dataTip={'Edit Provider'}
+                            icon={PencilSquareIcon}
+                            onClick={() => openEditProvider(provider)}
+                        />
+                        <ULIComponent
+                            dataTip={'Disable'}
+                            icon={XMarkIcon}
                             onClick={() => archiveProvider(provider)}
                         />
-                    </div>
+                    </>
+                ) : (
+                    <ULIComponent
+                        dataTip={'Enable Provider'}
+                        icon={CheckCircleIcon}
+                        onClick={() => archiveProvider(provider)}
+                    />
                 )}
             </td>
         </tr>

@@ -28,6 +28,7 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
+import ULIComponent from '@/Components/ULIComponent.tsx';
 
 export default function AdminManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
@@ -229,47 +230,32 @@ export default function AdminManagement() {
                                         </td>
                                         <td>
                                             <div className="flex space-x-2 text-accent cursor-pointer">
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Edit Admin"
-                                                >
-                                                    <PencilIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            editUserModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Reset Password"
-                                                >
-                                                    <ArrowPathRoundedSquareIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            resetUserPasswordModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Delete Admin"
-                                                >
-                                                    {user.id !==
-                                                        DEFAULT_ADMIN_ID && (
-                                                        <TrashIcon
-                                                            className="h-4"
-                                                            onClick={() => {
-                                                                setTargetUser(
-                                                                    user
-                                                                );
-                                                                deleteUserModal.current?.showModal();
-                                                            }}
-                                                        />
-                                                    )}
-                                                </div>
+                                                <ULIComponent
+                                                    dataTip={'Edit Admin'}
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        editUserModal.current?.showModal();
+                                                    }}
+                                                    icon={PencilIcon}
+                                                />
+                                                <ULIComponent
+                                                    dataTip={'Edit Admin'}
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        resetUserPasswordModal.current?.showModal();
+                                                    }}
+                                                    icon={
+                                                        ArrowPathRoundedSquareIcon
+                                                    }
+                                                />
+                                                <ULIComponent
+                                                    dataTip={'Delete Admin'}
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        deleteUserModal.current?.showModal();
+                                                    }}
+                                                    icon={TrashIcon}
+                                                />
                                             </div>
                                         </td>
                                     </tr>

@@ -28,6 +28,7 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
+import ULIComponent from '@/Components/ULIComponent.tsx';
 
 export default function StudentManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
@@ -229,42 +230,34 @@ export default function StudentManagement() {
                                         </td>
                                         <td>
                                             <div className="flex space-x-2 text-accent cursor-pointer">
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Edit Student"
-                                                >
-                                                    <PencilIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            editUserModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Reset Password"
-                                                >
-                                                    <ArrowPathRoundedSquareIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            resetUserPasswordModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div
-                                                    className="tooltip"
-                                                    data-tip="Delete Student"
-                                                >
-                                                    <TrashIcon
-                                                        className="h-4"
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            deleteUserModal.current?.showModal();
-                                                        }}
-                                                    />
-                                                </div>
+                                                <ULIComponent
+                                                    dataTip={'Edit Student'}
+                                                    icon={PencilIcon}
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        editUserModal.current?.showModal();
+                                                    }}
+                                                />
+
+                                                <ULIComponent
+                                                    dataTip={'Reset Password'}
+                                                    icon={
+                                                        ArrowPathRoundedSquareIcon
+                                                    }
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        resetUserPasswordModal.current?.showModal();
+                                                    }}
+                                                />
+
+                                                <ULIComponent
+                                                    dataTip={'Delete Student'}
+                                                    icon={TrashIcon}
+                                                    onClick={() => {
+                                                        setTargetUser(user);
+                                                        deleteUserModal.current?.showModal();
+                                                    }}
+                                                />
                                             </div>
                                         </td>
                                     </tr>
