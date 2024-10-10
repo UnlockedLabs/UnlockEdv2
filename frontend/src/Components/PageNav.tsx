@@ -2,6 +2,7 @@ import { UserRole } from '../common';
 import { useEffect, useRef } from 'react';
 import { handleLogout, useAuth } from '@/useAuth';
 import {
+    AcademicCapIcon,
     ArchiveBoxIcon,
     ArrowRightEndOnRectangleIcon,
     Bars3Icon,
@@ -113,9 +114,15 @@ export default function PageNav({
                                 ) : (
                                     <>
                                         <li>
-                                            <a href="/users">
+                                            <a href="/student-management">
+                                                <AcademicCapIcon className="h-4" />
+                                                Students
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="/admin-management">
                                                 <UsersIcon className="h-4" />
-                                                Users
+                                                Admins
                                             </a>
                                         </li>
                                         <li>
