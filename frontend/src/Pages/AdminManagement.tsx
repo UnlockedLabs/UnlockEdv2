@@ -7,7 +7,7 @@ import {
     TrashIcon,
     PencilSquareIcon,
     PlusCircleIcon
-} from '@heroicons/react/20/solid';
+} from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
@@ -185,83 +185,86 @@ export default function AdminManagement() {
                         </button>
                     </div>
                 </div>
-                <table className="table-2">
-                    <thead>
-                        <tr className="grid-cols-4 px-4">
-                            <th className="justify-self-start">Name</th>
-                            <th>Username</th>
-                            <th>Last Active</th>
-                            <th className="justify-self-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {!isLoading &&
-                            !error &&
-                            userData.map((user: User) => {
-                                const updatedAt = new Date(user.updated_at);
-                                return (
-                                    <tr
-                                        key={user.id}
-                                        className="card p-4 w-full grid-cols-4 justify-items-center"
-                                    >
-                                        <td className="justify-self-start">
-                                            {user.name_first} {user.name_last}
-                                        </td>
-                                        <td>{user.username}</td>
-                                        <td>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="Activity"
-                                            >
-                                                <a className="flex justify-start cursor-pointer">
-                                                    <span>
-                                                        {updatedAt.toLocaleDateString(
-                                                            'en-US',
-                                                            {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            }
-                                                        )}
-                                                    </span>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td className="justify-self-end">
-                                            <div className="flex space-x-4">
-                                                <ULIComponent
-                                                    dataTip={'Edit Admin'}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        editUserModal.current?.showModal();
-                                                    }}
-                                                    icon={PencilSquareIcon}
-                                                />
-                                                <ULIComponent
-                                                    dataTip={'Edit Admin'}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        resetUserPasswordModal.current?.showModal();
-                                                    }}
-                                                    icon={
-                                                        ArrowPathRoundedSquareIcon
-                                                    }
-                                                />
-                                                <ULIComponent
-                                                    dataTip={'Delete Admin'}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        deleteUserModal.current?.showModal();
-                                                    }}
-                                                    icon={TrashIcon}
-                                                />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                    </tbody>
-                </table>
+                <div className="relative w-full" style={{ overflowX: 'clip' }}>
+                    <table className="table-2">
+                        <thead>
+                            <tr className="grid-cols-4 px-4">
+                                <th className="justify-self-start">Name</th>
+                                <th>Username</th>
+                                <th>Last Updated</th>
+                                <th className="justify-self-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {!isLoading &&
+                                !error &&
+                                userData.map((user: User) => {
+                                    const updatedAt = new Date(user.updated_at);
+                                    return (
+                                        <tr
+                                            key={user.id}
+                                            className="card p-4 w-full grid-cols-4 justify-items-center"
+                                        >
+                                            <td className="justify-self-start">
+                                                {user.name_first}{' '}
+                                                {user.name_last}
+                                            </td>
+                                            <td>{user.username}</td>
+                                            <td>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Activity"
+                                                >
+                                                    <a className="flex justify-start cursor-pointer">
+                                                        <span>
+                                                            {updatedAt.toLocaleDateString(
+                                                                'en-US',
+                                                                {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                }
+                                                            )}
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td className="justify-self-end">
+                                                <div className="flex space-x-4">
+                                                    <ULIComponent
+                                                        dataTip={'Edit Admin'}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            editUserModal.current?.showModal();
+                                                        }}
+                                                        icon={PencilSquareIcon}
+                                                    />
+                                                    <ULIComponent
+                                                        dataTip={'Edit Admin'}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            resetUserPasswordModal.current?.showModal();
+                                                        }}
+                                                        icon={
+                                                            ArrowPathRoundedSquareIcon
+                                                        }
+                                                    />
+                                                    <ULIComponent
+                                                        dataTip={'Delete Admin'}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            deleteUserModal.current?.showModal();
+                                                        }}
+                                                        icon={TrashIcon}
+                                                    />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                </div>
                 {!isLoading && !error && userData.length > 0 && (
                     <Pagination meta={meta} setPage={setPageQuery} />
                 )}
