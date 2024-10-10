@@ -4,9 +4,7 @@ import useSWR from 'swr';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
-    PencilIcon,
-    TrashIcon,
-    UserPlusIcon
+    TrashIcon
 } from '@heroicons/react/20/solid';
 import {
     DEFAULT_ADMIN_ID,
@@ -29,6 +27,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
+import { PencilSquareIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 
 export default function StudentManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
@@ -177,22 +176,21 @@ export default function StudentManagement() {
                         data-tip="Add Student"
                     >
                         <button
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-primary btn-sm text-base-teal"
                             onClick={() => addUserModal.current?.showModal()}
                         >
-                            <UserPlusIcon className="h-4" />
+                            <PlusCircleIcon className="w-4 my-auto" />
+                            Add Student
                         </button>
                     </div>
                 </div>
-                <table className="table">
+                <table className="table-2">
                     <thead>
-                        <tr className="border-gray-600">
-                            <th className="flex">
-                                <span>Name</span>
-                            </th>
+                        <tr className="grid-cols-4 px-4">
+                            <th className="justify-self-start">Name</th>
                             <th>Username</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
+                            <th>Last Active</th>
+                            <th className="justify-self-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,9 +201,9 @@ export default function StudentManagement() {
                                 return (
                                     <tr
                                         key={user.id}
-                                        className="border-gray-600"
+                                        className="card p-4 w-full grid-cols-4 justify-items-center"
                                     >
-                                        <td>
+                                        <td className="justify-self-start">
                                             {user.name_first} {user.name_last}
                                         </td>
                                         <td>{user.username}</td>
@@ -228,11 +226,11 @@ export default function StudentManagement() {
                                                 </a>
                                             </div>
                                         </td>
-                                        <td>
-                                            <div className="flex space-x-2 text-accent cursor-pointer">
+                                        <td className="justify-self-end">
+                                            <div className="flex space-x-4">
                                                 <ULIComponent
                                                     dataTip={'Edit Student'}
-                                                    icon={PencilIcon}
+                                                    icon={PencilSquareIcon}
                                                     onClick={() => {
                                                         setTargetUser(user);
                                                         editUserModal.current?.showModal();
