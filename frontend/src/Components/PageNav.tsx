@@ -75,13 +75,16 @@ export default function PageNav({
             <div className="navbar-end">
                 <ul className="menu menu-horizontal px-1">
                     <li>
-                        <details ref={detailsRef}>
+                        <details
+                            className="dropdown dropdown-end"
+                            ref={detailsRef}
+                        >
                             <summary>
-                                <span className="font-semibold text-right">
+                                <span className="font-semibold">
                                     {user.name_first} {user.name_last}
                                 </span>
                             </summary>
-                            <ul className="bg-base-300 z-[1]">
+                            <ul className="dropdown-content bg-grey-2 z-[1]">
                                 <li>
                                     <label className="flex cursor-pointer gap-2">
                                         <ULIComponent
