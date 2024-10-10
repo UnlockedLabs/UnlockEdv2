@@ -15,7 +15,6 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 		Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "provider_platforms")
 	}
-
 	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
 		if prov.OidcClient != nil {
 			prov.OidcID = prov.OidcClient.ID

@@ -8,13 +8,15 @@ import (
 
 type OpenContentProvider struct {
 	DatabaseFields
-	Name               string            `gorm:"size:255"  json:"name"`
-	Url                string            `gorm:"size:255;not null;unique" json:"url"`
-	ProviderPlatformID *uint             `json:"provider_platform_id"`
-	Thumbnail          string            `json:"thumbnail_url"`
-	CurrentlyEnabled   bool              `json:"currently_enabled"`
-	Description        string            `json:"description"`
-	ProviderPlatform   *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
+	Name               string `gorm:"size:255"  json:"name"`
+	Url                string `gorm:"size:255;not null;unique" json:"url"`
+	ProviderPlatformID *uint  `json:"provider_platform_id"`
+	Thumbnail          string `json:"thumbnail_url"`
+	CurrentlyEnabled   bool   `json:"currently_enabled"`
+	Description        string `json:"description"`
+
+	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
+	Tasks            []RunnableTask    `gorm:"foreignKey:OpenContentProviderID" json:"-"`
 }
 
 const (

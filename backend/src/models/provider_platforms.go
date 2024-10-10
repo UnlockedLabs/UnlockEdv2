@@ -125,7 +125,7 @@ func (provider *ProviderPlatform) GetDefaultRedirectURI() []string {
 func (prov *ProviderPlatform) GetDefaultCronJobs() []*CronJob {
 	// this is only here because at some point this may be different per provider.Type
 	jobs := []*CronJob{}
-	for _, job := range AllDefaultJobs {
+	for _, job := range AllDefaultProviderJobs {
 		jobs = append(jobs, NewCronJob(job))
 		log.WithFields(log.Fields{"job": job, "provider": prov.Name}).Info("Job added for provider")
 	}

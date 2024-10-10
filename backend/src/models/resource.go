@@ -1,6 +1,8 @@
 package models
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type PaginatedResource[T any] struct {
 	Message string         `json:"message"`

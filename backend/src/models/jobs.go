@@ -36,15 +36,17 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 }
 
 type RunnableTask struct {
-	ID                 uint                   `gorm:"primaryKey" json:"id"`
-	JobID              string                 `gorm:"size 50" json:"job_id"`
-	Parameters         map[string]interface{} `gorm:"-" json:"parameters"`
-	LastRun            time.Time              `json:"last_run"`
-	ProviderPlatformID uint                   `json:"provider_platform_id"`
-	Status             JobStatus              `json:"status"`
+	ID                    uint                   `gorm:"primaryKey" json:"id"`
+	JobID                 string                 `gorm:"size 50" json:"job_id"`
+	Parameters            map[string]interface{} `gorm:"-" json:"parameters"`
+	LastRun               time.Time              `json:"last_run"`
+	ProviderPlatformID    *uint                  `json:"provider_platform_id"`
+	OpenContentProviderID *uint                  `json:"open_content_provider_id"`
+	Status                JobStatus              `json:"status"`
 
-	Provider *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID" json:"-"`
-	Job      *CronJob          `gorm:"foreignKey:JobID" json:"-"`
+	Provider        *ProviderPlatform    `gorm:"foreignKey:ProviderPlatformID" json:"-"`
+	ContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID" json:"-"`
+	Job             *CronJob             `gorm:"foreignKey:JobID" json:"-"`
 }
 
 func (RunnableTask) TableName() string { return "runnable_tasks" }
@@ -61,12 +63,21 @@ const (
 	StatusRunning JobStatus = "running"
 )
 
-func (jt JobType) IsProviderJob() bool {
+func (jt JobType) IsOpenContentProviderJob() bool {
 	switch jt {
 	case ScrapeKiwixJob:
-		return false
-	default:
 		return true
+	default:
+		return false
+	}
+}
+
+func (jt JobType) IsProviderPlatformJob() bool {
+	switch jt {
+	case GetMilestonesJob, GetCoursesJob, GetActivityJob:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -129,7 +140,8 @@ func (jt JobType) GetParams(db *gorm.DB, provId *uint) (map[string]interface{}, 
 	return nil, nil
 }
 
-var AllDefaultJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob /* GetOutcomesJob */}
+var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob /* GetOutcomesJob */}
+var AllOtherJobs = []JobType{ScrapeKiwixJob}
 
 func NewCronJob(name JobType) *CronJob {
 	return &CronJob{
