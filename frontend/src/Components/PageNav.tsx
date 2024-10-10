@@ -77,7 +77,7 @@ export default function PageNav({
                     <li>
                         <details ref={detailsRef}>
                             <summary>
-                                <span className="font-semibold text-left">
+                                <span className="font-semibold text-right">
                                     {user.name_first} {user.name_last}
                                 </span>
                             </summary>
