@@ -74,6 +74,12 @@ export default function Navbar({
                             </a>
                         </li>
                         <li>
+                            <a href="/open-content-management">
+                                <BookOpenIcon className="h-4" />
+                                Open Content
+                            </a>
+                        </li>
+                        <li>
                             <a href="/resources-management">
                                 <ArchiveBoxIcon className="h-4" />
                                 Resources
@@ -102,6 +108,12 @@ export default function Navbar({
                         <li className="">
                             <a href="/my-progress">
                                 <TrophyIcon className="w-4" /> My Progress
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/open-content">
+                                <BookOpenIcon className="h-4" />
+                                Open Content
                             </a>
                         </li>
                         <li className="">

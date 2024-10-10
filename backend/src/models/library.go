@@ -11,7 +11,7 @@ type Library struct {
 	ImageUrl              *string `json:"image_url"`
 	VisibilityStatus      bool    `gorm:"default:false;not null" json:"visibility_status"`
 
-	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
+	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
 }
 
 func (Library) TableName() string { return "libraries" }

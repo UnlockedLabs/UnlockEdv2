@@ -18,6 +18,8 @@ import UnauthorizedNotFound from './Pages/Unauthorized';
 import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
 import { useAuth } from './useAuth';
+import OpenContentManagement from './Pages/OpenContentManagement';
+import OpenContent from './Pages/OpenContent';
 
 function WithAuth({ children }) {
     return <AuthProvider>{children}</AuthProvider>;
@@ -71,6 +73,11 @@ export default function App() {
             errorElement: <Error />
         },
         {
+            path: '/open-content-management',
+            element: WithAdmin({ children: <OpenContentManagement /> }),
+            errorElement: <Error />
+        },
+        {
             path: '/resources-management',
             element: WithAdmin({ children: <ResourcesManagement /> }),
             errorElement: <Error />
@@ -105,6 +112,11 @@ export default function App() {
         {
             path: '/course-catalog',
             element: WithAuth({ children: <CourseCatalog /> }),
+            errorElement: <Error />
+        },
+        {
+            path: '/open-content',
+            element: WithAuth({ children: <OpenContent /> }),
             errorElement: <Error />
         },
         {
