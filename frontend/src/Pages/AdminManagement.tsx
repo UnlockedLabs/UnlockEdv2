@@ -4,9 +4,9 @@ import useSWR from 'swr';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
-    PencilIcon,
     TrashIcon,
-    UserPlusIcon
+    PencilSquareIcon,
+    PlusCircleIcon
 } from '@heroicons/react/20/solid';
 import {
     DEFAULT_ADMIN_ID,
@@ -177,22 +177,21 @@ export default function AdminManagement() {
                         data-tip="Add Administrator"
                     >
                         <button
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-primary btn-sm text-base-teal"
                             onClick={() => addUserModal.current?.showModal()}
                         >
-                            <UserPlusIcon className="h-4" />
+                            <PlusCircleIcon className="w-4 my-auto" />
+                            Add Admin
                         </button>
                     </div>
                 </div>
-                <table className="table">
+                <table className="table-2">
                     <thead>
-                        <tr className="border-gray-600">
-                            <th className="flex">
-                                <span>Name</span>
-                            </th>
+                        <tr className="grid-cols-4 px-4">
+                            <th className="justify-self-start">Name</th>
                             <th>Username</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
+                            <th>Last Active</th>
+                            <th className="justify-self-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,9 +202,9 @@ export default function AdminManagement() {
                                 return (
                                     <tr
                                         key={user.id}
-                                        className="border-gray-600"
+                                        className="card p-4 w-full grid-cols-4 justify-items-center"
                                     >
-                                        <td>
+                                        <td className="justify-self-start">
                                             {user.name_first} {user.name_last}
                                         </td>
                                         <td>{user.username}</td>
@@ -228,15 +227,15 @@ export default function AdminManagement() {
                                                 </a>
                                             </div>
                                         </td>
-                                        <td>
-                                            <div className="flex space-x-2 text-accent cursor-pointer">
+                                        <td className="justify-self-end">
+                                            <div className="flex space-x-4">
                                                 <ULIComponent
                                                     dataTip={'Edit Admin'}
                                                     onClick={() => {
                                                         setTargetUser(user);
                                                         editUserModal.current?.showModal();
                                                     }}
-                                                    icon={PencilIcon}
+                                                    icon={PencilSquareIcon}
                                                 />
                                                 <ULIComponent
                                                     dataTip={'Edit Admin'}
