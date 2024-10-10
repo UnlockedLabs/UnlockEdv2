@@ -47,6 +47,7 @@ func NewKolibriService(provider *models.ProviderPlatform, params *map[string]int
 		ProviderPlatformID: provider.ID,
 		AccountID:          provider.AccountID,
 		db:                 conn,
+		BaseURL:            provider.BaseUrl,
 		JobParams:          params,
 	}
 }

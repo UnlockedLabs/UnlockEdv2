@@ -54,7 +54,7 @@ services:
     volumes:
       - ./:/app
     environment:
-      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked?log_duration=true&log_min_duration_statement=100
+      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
       - APP_ENV=production
       - LOG_LEVEL=debug
       - APP_URL=http://127.0.0.1
