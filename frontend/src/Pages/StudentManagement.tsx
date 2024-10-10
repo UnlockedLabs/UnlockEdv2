@@ -4,8 +4,10 @@ import useSWR from 'swr';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
-    TrashIcon
-} from '@heroicons/react/20/solid';
+    TrashIcon,
+    PencilSquareIcon,
+    PlusCircleIcon
+} from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
@@ -27,7 +29,6 @@ import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { PencilSquareIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 
 export default function StudentManagement() {
     const addUserModal = useRef<undefined | HTMLDialogElement>();
@@ -184,85 +185,92 @@ export default function StudentManagement() {
                         </button>
                     </div>
                 </div>
-                <table className="table-2">
-                    <thead>
-                        <tr className="grid-cols-4 px-4">
-                            <th className="justify-self-start">Name</th>
-                            <th>Username</th>
-                            <th>Last Active</th>
-                            <th className="justify-self-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {!isLoading &&
-                            !error &&
-                            userData.map((user: User) => {
-                                const updatedAt = new Date(user.updated_at);
-                                return (
-                                    <tr
-                                        key={user.id}
-                                        className="card p-4 w-full grid-cols-4 justify-items-center"
-                                    >
-                                        <td className="justify-self-start">
-                                            {user.name_first} {user.name_last}
-                                        </td>
-                                        <td>{user.username}</td>
-                                        <td>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="User Activity"
-                                            >
-                                                <a className="flex justify-start cursor-pointer">
-                                                    <span>
-                                                        {updatedAt.toLocaleDateString(
-                                                            'en-US',
-                                                            {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            }
-                                                        )}
-                                                    </span>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td className="justify-self-end">
-                                            <div className="flex space-x-4">
-                                                <ULIComponent
-                                                    dataTip={'Edit Student'}
-                                                    icon={PencilSquareIcon}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        editUserModal.current?.showModal();
-                                                    }}
-                                                />
+                <div className="relative w-full" style={{ overflowX: 'clip' }}>
+                    <table className="table-2">
+                        <thead>
+                            <tr className="grid-cols-4 px-4">
+                                <th className="justify-self-start">Name</th>
+                                <th>Username</th>
+                                <th>Last Updated</th>
+                                <th className="justify-self-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {!isLoading &&
+                                !error &&
+                                userData.map((user: User) => {
+                                    const updatedAt = new Date(user.updated_at);
+                                    return (
+                                        <tr
+                                            key={user.id}
+                                            className="card p-4 w-full grid-cols-4 justify-items-center"
+                                        >
+                                            <td className="justify-self-start">
+                                                {user.name_first}{' '}
+                                                {user.name_last}
+                                            </td>
+                                            <td>{user.username}</td>
+                                            <td>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="User Activity"
+                                                >
+                                                    <a className="flex justify-start cursor-pointer">
+                                                        <span>
+                                                            {updatedAt.toLocaleDateString(
+                                                                'en-US',
+                                                                {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                }
+                                                            )}
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td className="justify-self-end">
+                                                <div className="flex space-x-4">
+                                                    <ULIComponent
+                                                        dataTip={'Edit Student'}
+                                                        icon={PencilSquareIcon}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            editUserModal.current?.showModal();
+                                                        }}
+                                                    />
 
-                                                <ULIComponent
-                                                    dataTip={'Reset Password'}
-                                                    icon={
-                                                        ArrowPathRoundedSquareIcon
-                                                    }
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        resetUserPasswordModal.current?.showModal();
-                                                    }}
-                                                />
+                                                    <ULIComponent
+                                                        dataTip={
+                                                            'Reset Password'
+                                                        }
+                                                        icon={
+                                                            ArrowPathRoundedSquareIcon
+                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            resetUserPasswordModal.current?.showModal();
+                                                        }}
+                                                    />
 
-                                                <ULIComponent
-                                                    dataTip={'Delete Student'}
-                                                    icon={TrashIcon}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        deleteUserModal.current?.showModal();
-                                                    }}
-                                                />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                    </tbody>
-                </table>
+                                                    <ULIComponent
+                                                        dataTip={
+                                                            'Delete Student'
+                                                        }
+                                                        icon={TrashIcon}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            deleteUserModal.current?.showModal();
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                </div>
                 {!isLoading && !error && userData.length > 0 && (
                     <Pagination meta={meta} setPage={setPageQuery} />
                 )}
