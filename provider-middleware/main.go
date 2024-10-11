@@ -2,6 +2,7 @@ package main
 
 import (
 	"UnlockEdv2/src/models"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -29,7 +30,8 @@ type ProviderServiceInterface interface {
 }
 
 type OpenContentProviderServiceInterface interface {
-	ImportLibraries(db *gorm.DB) error
+	ImportLibraries(ctx context.Context, db *gorm.DB) error
+	GetJobParams() *map[string]interface{}
 }
 
 /**
@@ -38,10 +40,12 @@ type OpenContentProviderServiceInterface interface {
 * It will have a refernce to the KolibriService struct
 **/
 type ServiceHandler struct {
-	nats  *nats.Conn
-	Mux   *http.ServeMux
-	token string
-	db    *gorm.DB
+	nats   *nats.Conn
+	Mux    *http.ServeMux
+	token  string
+	db     *gorm.DB
+	cancel context.CancelFunc
+	ctx    context.Context
 }
 
 func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
@@ -57,11 +61,14 @@ func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
 	log.Println("Connected to NATS at ", options.Url)
+	ctx, cancel := context.WithCancel(context.Background())
 	return &ServiceHandler{
-		token: token,
-		db:    db,
-		nats:  conn,
-		Mux:   http.NewServeMux(),
+		token:  token,
+		db:     db,
+		nats:   conn,
+		Mux:    http.NewServeMux(),
+		cancel: cancel,
+		ctx:    ctx,
 	}
 }
 
@@ -80,7 +87,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
-	log.Println("Connected to the PostgreSQL database")
 
 	token := os.Getenv("PROVIDER_SERVICE_KEY")
 	handler := newServiceHandler(token, db)
@@ -88,12 +94,13 @@ func main() {
 	handler.registerRoutes()
 	err = handler.initSubscription()
 	if err != nil {
+		handler.cancel()
 		log.Fatalf("Failed to subscribe to NATS: %v", err)
 	}
-	log.Println("Routes registered")
 	initLogging()
 	err = http.ListenAndServe(":8081", handler.Mux)
 	if err != nil {
+		handler.cancel()
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

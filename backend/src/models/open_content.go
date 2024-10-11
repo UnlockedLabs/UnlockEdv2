@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -9,7 +10,7 @@ import (
 type OpenContentProvider struct {
 	DatabaseFields
 	Name               string `gorm:"size:255"  json:"name"`
-	Url                string `gorm:"size:255;not null;unique" json:"url"`
+	BaseUrl            string `gorm:"size:255;not null;unique" json:"url"`
 	ProviderPlatformID *uint  `json:"provider_platform_id"`
 	Thumbnail          string `json:"thumbnail_url"`
 	CurrentlyEnabled   bool   `json:"currently_enabled"`
@@ -20,12 +21,14 @@ type OpenContentProvider struct {
 }
 
 const (
-	KolibriDescription string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
+	KolibriThumbnailUrl string = "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg"
+	Kiwix               string = "kiwix"
+	KolibriDescription  string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
 )
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
-	if !strings.HasPrefix(cp.Url, "http") {
-		cp.Url = "https://" + cp.Url
+	if !strings.HasPrefix(cp.BaseUrl, "http") {
+		cp.BaseUrl = fmt.Sprintf("https://%s", cp.BaseUrl)
 	}
 	return nil
 }

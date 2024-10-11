@@ -50,7 +50,7 @@ func IntoLibrary(entry Entry, providerId uint) *models.Library {
 		Name:                  entry.Title,
 		Language:              models.StringPtr(entry.Language),
 		Description:           models.StringPtr(entry.Summary),
-		Url:                   url,
+		Path:                  url,
 		ImageUrl:              models.StringPtr(thumbnailURL),
 		VisibilityStatus:      false,
 	}

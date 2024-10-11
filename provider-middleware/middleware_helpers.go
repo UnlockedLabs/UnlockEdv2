@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const TIMEOUT_WAIT = 5
+
 func (sh *ServiceHandler) LookupOpenContentProvider(id int) (*models.OpenContentProvider, error) {
 	var provider models.OpenContentProvider
 	if err := sh.db.Model(models.OpenContentProvider{}).Find(&provider, id).Error; err != nil {

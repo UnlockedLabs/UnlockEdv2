@@ -27,7 +27,7 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) error {
+func (jr *JobRunner) createIfNotExists(cj *models.CronJob) error {
 	if err := jr.db.Where("name = ?", cj.Name).FirstOrCreate(cj).Error; err != nil {
 		log.Errorf("failed to find or create job: %v", err)
 		return err
@@ -59,7 +59,7 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 		if courseJob == nil {
 			return fmt.Errorf("GetCoursesJob not found in default jobs")
 		}
-		if err := jr.createIfNotExists(courseJob, prov); err != nil {
+		if err := jr.createIfNotExists(courseJob); err != nil {
 			log.Errorf("Failed to create or find CronJob: %v", err)
 			return err
 		}
@@ -69,7 +69,7 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 			JobID:              courseJob.ID,
 			Parameters:         params,
 			Status:             models.StatusPending,
-			ProviderPlatformID: prov.ID,
+			ProviderPlatformID: &prov.ID,
 		}).Error; err != nil {
 			log.Errorf("failed to create task: %v", err)
 			return err

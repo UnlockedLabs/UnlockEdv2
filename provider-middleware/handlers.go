@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -10,41 +11,35 @@ import (
 )
 
 func (sh *ServiceHandler) registerRoutes() {
-	sh.Mux.Handle("/", sh.authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	sh.Mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})))
-	sh.Mux.Handle("GET /api/users", sh.authMiddleware(http.HandlerFunc(sh.handleUsers)))
+	})
+	sh.Mux.HandleFunc("GET /api/users", sh.handleUsers)
 }
 
+const CANCEL_TIMEOUT = 30 * time.Minute
+
 func (sh *ServiceHandler) initSubscription() error {
-	_, err := sh.nats.Subscribe("tasks.get_courses", func(msg *nats.Msg) {
-		go sh.handleCourses(msg)
-	})
-	if err != nil {
-		log.Fatalf("Error subscribing to NATS topic: %v", err)
-		return err
+	subscriptions := []struct {
+		topic string
+		fn    func(ctx context.Context, msg *nats.Msg)
+	}{
+		{"tasks.get_courses", sh.handleCourses},
+		{"tasks.get_milestones", sh.handleMilestonesForCourseUser},
+		{"tasks.get_activity", sh.handleAcitivityForCourse},
+		{"tasks.scrape_kiwix", sh.handleScrapeLibraries},
 	}
-	_, err = sh.nats.Subscribe("tasks.get_milestones", func(msg *nats.Msg) {
-		go sh.handleMilestonesForCourseUser(msg)
-	})
-	if err != nil {
-		log.Fatalf("Error subscribing to NATS topic: %v", err)
-		return err
+
+	for _, sub := range subscriptions {
+		_, err := sh.nats.Subscribe(sub.topic, func(msg *nats.Msg) {
+			go sub.fn(sh.ctx, msg)
+		})
+		if err != nil {
+			log.Fatalf("Error subscribing to NATS topic %s: %v", sub.topic, err)
+			return err
+		}
 	}
-	_, err = sh.nats.Subscribe("tasks.get_activity", func(msg *nats.Msg) {
-		go sh.handleAcitivityForCourse(msg)
-	})
-	if err != nil {
-		log.Fatalf("Error subscribing to NATS topic: %v", err)
-		return err
-	}
-	_, err = sh.nats.Subscribe("tasks.scrape_kiwix", func(msg *nats.Msg) {
-		go sh.handleScrapeLibraries(msg)
-	})
-	if err != nil {
-		log.Fatalf("Error subscribing to NATS topic: %v", err)
-		return err
-	}
+
 	return nil
 }
 
@@ -53,8 +48,10 @@ func (sh *ServiceHandler) initSubscription() error {
 * This handler will be responsible for importing courses from Providers
 * to the UnlockEd platform, mapping their Content objects to our Course object
  */
-func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
-	service, err := sh.initService(msg)
+func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	service, err := sh.initProviderPlatformService(contxt, msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 		return
@@ -64,7 +61,7 @@ func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	err = service.ImportCourses(sh.db)
 	if err != nil {
-		sh.cleanupJob(providerPlatformId, jobId, false)
+		sh.cleanupJob(contxt, providerPlatformId, jobId, false)
 		log.Println("error fetching provider service from msg parameters", err)
 		return
 	}
@@ -74,7 +71,7 @@ func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
 	if err != nil {
 		log.Errorln("Failed to publish message to NATS")
 	}
-	sh.cleanupJob(providerPlatformId, jobId, true)
+	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
 }
 
 /**
@@ -82,15 +79,25 @@ func (sh *ServiceHandler) handleCourses(msg *nats.Msg) {
 * This handler will be responsible for importing libraries from Open Content Providers
 * to the UnlockEd platform with the proper fields for Library objects
 **/
-func (sh *ServiceHandler) handleScrapeLibraries(msg *nats.Msg) {
+func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.Msg) {
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
 	service, err := sh.initContentProviderService(msg)
-	err = service.ImportLibraries(sh.db)
+	if err != nil {
+		log.Errorf("error fetching provider service from msg parameters %v", err)
+		return
+	}
+	params := *service.GetJobParams()
+	provId := int(params["open_content_provider_id"].(float64))
+	jobId := params["job_id"].(string)
+	err = service.ImportLibraries(contxt, sh.db)
 	if err != nil {
 		log.Errorf("error importing libraries from msg %v", err)
+		sh.cleanupJob(contxt, provId, jobId, false)
+		return
 	}
-	// tell nats that we have completed the task
-	// publish the message that we have finished
-	// clean up the job
+
+	sh.cleanupJob(contxt, provId, jobId, true)
 }
 
 /**
@@ -101,7 +108,7 @@ func (sh *ServiceHandler) handleScrapeLibraries(msg *nats.Msg) {
 **/
 func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	fields := log.Fields{"handler": "handleUsers"}
-	service, err := sh.initServiceFromRequest(r)
+	service, err := sh.initServiceFromRequest(sh.ctx, r)
 	if err != nil {
 		fields["error"] = err.Error()
 		log.WithFields(fields).Error("Failed to initialize service")
@@ -126,8 +133,10 @@ func (sh *ServiceHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (sh *ServiceHandler) handleMilestonesForCourseUser(msg *nats.Msg) {
-	service, err := sh.initService(msg)
+func (sh *ServiceHandler) handleMilestonesForCourseUser(ctx context.Context, msg *nats.Msg) {
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	service, err := sh.initProviderPlatformService(contxt, msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 		return
@@ -142,22 +151,30 @@ func (sh *ServiceHandler) handleMilestonesForCourseUser(msg *nats.Msg) {
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	lastRun, err := time.Parse(time.RFC3339, lastRunStr)
 	if err != nil {
-		sh.cleanupJob(providerPlatformId, jobId, false)
+		sh.cleanupJob(contxt, providerPlatformId, jobId, false)
 		return
 	}
 	for _, course := range courses {
-		err = service.ImportMilestones(course, users, sh.db, lastRun)
-		time.Sleep(1 * time.Second) // to avoid rate limiting with the provider
-		if err != nil {
-			log.Errorf("Failed to retrieve milestones: %v", err)
-			continue
+		select {
+		case <-contxt.Done():
+			log.Println("context cancelled for getMilestones")
+			return
+		default:
+			err = service.ImportMilestones(course, users, sh.db, lastRun)
+			time.Sleep(TIMEOUT_WAIT * time.Second) // to avoid rate limiting with the provider
+			if err != nil {
+				log.Errorf("Failed to retrieve milestones: %v", err)
+				continue
+			}
 		}
 	}
-	sh.cleanupJob(providerPlatformId, jobId, true)
+	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
 }
 
-func (sh *ServiceHandler) handleAcitivityForCourse(msg *nats.Msg) {
-	service, err := sh.initService(msg)
+func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nats.Msg) {
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	service, err := sh.initProviderPlatformService(contxt, msg)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to initialize service")
 		return
@@ -168,14 +185,20 @@ func (sh *ServiceHandler) handleAcitivityForCourse(msg *nats.Msg) {
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	for _, course := range courses {
-		err = service.ImportActivityForCourse(course, sh.db)
-		if err != nil {
-			sh.cleanupJob(providerPlatformId, jobId, false)
-			log.Errorf("failed to get course activity: %v", err)
-			continue
+		select {
+		case <-contxt.Done():
+			log.Println("context cancelled for getActivity")
+			return
+		default:
+			err = service.ImportActivityForCourse(course, sh.db)
+			if err != nil {
+				sh.cleanupJob(contxt, providerPlatformId, jobId, false)
+				log.Errorf("failed to get course activity: %v", err)
+				continue
+			}
 		}
 	}
-	sh.cleanupJob(providerPlatformId, jobId, true)
+	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
 }
 
 func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {

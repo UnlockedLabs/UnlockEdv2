@@ -33,7 +33,7 @@ func (db *DB) ToggleContentProvider(id int) error {
 
 func (db *DB) CreateContentProvider(url, thumbnail, description string, id int) error {
 	provider := models.OpenContentProvider{
-		Url:         url,
+		BaseUrl:     url,
 		Thumbnail:   thumbnail,
 		Description: description,
 	}

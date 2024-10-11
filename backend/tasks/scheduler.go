@@ -94,7 +94,7 @@ func (jr *JobRunner) generateProviderTasks() ([]models.RunnableTask, error) {
 		provJobs := provider.GetDefaultCronJobs()
 		for idx := range provJobs {
 			log.Infof("Checking job: %v", provJobs[idx])
-			if err := jr.createIfNotExists(provJobs[idx], &provider); err != nil {
+			if err := jr.createIfNotExists(provJobs[idx]); err != nil {
 				log.Errorf("failed to create job: %v", err)
 				return nil, err
 			}
@@ -158,7 +158,7 @@ func (jr *JobRunner) intoOpenContentTask(cj *models.CronJob, provId *uint, task 
 		log.Errorln("failed to create non-provider task from cronjob")
 		return err
 	}
-	params, err := models.JobType(cj.Name).GetParams(jr.db, nil)
+	params, err := models.JobType(cj.Name).GetParams(jr.db, provId)
 	if err != nil {
 		log.Errorln("failed to get params for non-provider job")
 		return err

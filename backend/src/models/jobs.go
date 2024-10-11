@@ -86,7 +86,6 @@ func (jt JobType) GetParams(db *gorm.DB, provId *uint) (map[string]interface{}, 
 	var skip bool
 	if jt == ScrapeKiwixJob {
 		return map[string]interface{}{
-			"url":                      os.Getenv("KIWIX_URL"),
 			"open_content_provider_id": *provId,
 		}, nil
 	}
