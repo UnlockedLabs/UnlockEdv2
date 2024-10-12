@@ -63,30 +63,13 @@ const (
 	StatusRunning JobStatus = "running"
 )
 
-func (jt JobType) IsOpenContentProviderJob() bool {
-	switch jt {
-	case ScrapeKiwixJob:
-		return true
-	default:
-		return false
-	}
-}
-
-func (jt JobType) IsProviderPlatformJob() bool {
-	switch jt {
-	case GetMilestonesJob, GetCoursesJob, GetActivityJob:
-		return true
-	default:
-		return false
-	}
-}
-
 // provider id can be nil pointer
-func (jt JobType) GetParams(db *gorm.DB, provId *uint) (map[string]interface{}, error) {
+func (jt JobType) GetParams(db *gorm.DB, provId *uint, jobId string) (map[string]interface{}, error) {
 	var skip bool
 	if jt == ScrapeKiwixJob {
 		return map[string]interface{}{
 			"open_content_provider_id": *provId,
+			"job_id":                   jobId,
 		}, nil
 	}
 	users := []map[string]interface{}{}
@@ -109,11 +92,13 @@ func (jt JobType) GetParams(db *gorm.DB, provId *uint) (map[string]interface{}, 
 			"courses":              courses,
 			"provider_platform_id": *provId,
 			"job_type":             jt,
+			"job_id":               jobId,
 		}, nil
 	case GetCoursesJob:
 		return map[string]interface{}{
 			"provider_platform_id": provId,
 			"job_type":             jt,
+			"job_id":               jobId,
 		}, nil
 	case GetActivityJob:
 		if skip {
@@ -124,6 +109,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId *uint) (map[string]interface{}, 
 			"courses":              courses,
 			"user_mappings":        users,
 			"job_type":             jt,
+			"job_id":               jobId,
 		}, nil
 		// case GetOutcomesJob:
 		// 	if skip {
@@ -136,7 +122,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId *uint) (map[string]interface{}, 
 		// 		"job_type":             jt,
 		// 	}, nil
 	}
-	return nil, nil
+	return nil, errors.New("job type not found")
 }
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob /* GetOutcomesJob */}

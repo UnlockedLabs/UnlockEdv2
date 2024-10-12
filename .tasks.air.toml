@@ -6,7 +6,7 @@ cmd = "go build -o ./bin/cron_tasks ./backend/tasks/."
 bin = "bin/cron_tasks"
 include_dir = ["backend"]
 include_file = []
-exclude_dir = ["frontend", "provider_middleware"]
+exclude_dir = ["frontend", "provider-middleware"]
 exclude_regex = ["_test\\.go"]
 exclude_unchanged = true
 

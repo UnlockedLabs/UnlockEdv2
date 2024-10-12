@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -37,47 +36,43 @@ func newJobRunner() *JobRunner {
 
 func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 	allTasks := make([]models.RunnableTask, 0)
-	if otherTasks, err := jr.generateOtherTasks(); err == nil {
+	if otherTasks, err := jr.generateOpenContentProviderTasks(); err == nil {
 		allTasks = append(allTasks, otherTasks...)
 	} else {
 		log.Println("Failed to generate other tasks")
 	}
-	providerTasks, err := jr.generateProviderTasks()
-	if err == nil {
+	if providerTasks, err := jr.generateProviderTasks(); err == nil {
 		allTasks = append(allTasks, providerTasks...)
 	} else {
 		log.Println("Failed to generate provider tasks")
 	}
-
 	return allTasks, nil
 }
 
-func (jr *JobRunner) generateOtherTasks() ([]models.RunnableTask, error) {
+func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, error) {
 	otherTasks := make([]models.RunnableTask, 0)
 	var id *uint
-	for _, task := range models.AllOtherJobs {
-		job := models.CronJob{}
-		switch task {
+	for _, jobType := range models.AllOtherJobs {
+		job := models.CronJob{Name: string(jobType)}
+		switch jobType {
 		case models.ScrapeKiwixJob:
-			{
-				if err := jr.db.Model(&models.OpenContentProvider{}).Select("id").Where("name = ?", "kiwix").Scan(&id).Error; err != nil {
-					log.Errorf("failed to fetch kiwix provider: %v", err)
-					continue
-				}
-				if err := jr.db.Model(&models.CronJob{}).Where("name = ?", task).FirstOrCreate(&job).Error; err != nil {
-					log.Errorf("failed to create job: %v", err)
-					continue
-				}
+			if err := jr.db.Model(&models.OpenContentProvider{}).Select("id").Where("name = ?", models.Kiwix).Scan(&id).Error; err != nil {
+				log.Errorf("failed to fetch kiwix provider: %v", err)
+				continue
+			}
+			if err := jr.db.Model(&models.CronJob{}).Where("name = ?", string(job.Name)).FirstOrCreate(&job).Error; err != nil {
+				log.Errorf("failed to create job: %v", err)
+				continue
 			}
 		default:
 			continue
 		}
-		task, err := jr.intoTask(id, &job)
-		if err != nil {
+		task := models.RunnableTask{OpenContentProviderID: id, JobID: job.ID}
+		if err := jr.intoOpenContentTask(&job, id, &task); err != nil {
 			log.Errorf("failed to create task: %v", err)
-			continue
+			return nil, err
 		}
-		otherTasks = append(otherTasks, *task)
+		otherTasks = append(otherTasks, task)
 	}
 	return otherTasks, nil
 }
@@ -89,81 +84,53 @@ func (jr *JobRunner) generateProviderTasks() ([]models.RunnableTask, error) {
 		return nil, err
 	}
 	log.Infof("Found %d active providers", len(providers))
-	var tasksToRun []models.RunnableTask
+	tasksToRun := make([]models.RunnableTask, 0)
 	for _, provider := range providers {
 		provJobs := provider.GetDefaultCronJobs()
 		for idx := range provJobs {
 			log.Infof("Checking job: %v", provJobs[idx])
-			if err := jr.createIfNotExists(provJobs[idx]); err != nil {
+			created, err := jr.createIfNotExists(models.JobType(provJobs[idx]))
+			if err != nil {
 				log.Errorf("failed to create job: %v", err)
 				return nil, err
 			}
-			task, err := jr.intoTask(&provider.ID, provJobs[idx])
+			newTask := models.RunnableTask{JobID: created.ID, ProviderPlatformID: &provider.ID, Status: models.StatusPending}
+			err = jr.intoProviderPlatformTask(created, &provider.ID, &newTask)
 			if err != nil {
 				log.Errorf("failed to create task: %v", err)
 				return nil, err
 			}
-			log.Debugf("generated task: %v", task)
-			tasksToRun = append(tasksToRun, *task)
+			tasksToRun = append(tasksToRun, newTask)
 		}
 	}
 	log.Infof("Generated %d total tasks for %d providers", len(tasksToRun), len(providers))
 	return tasksToRun, nil
 }
 
-func (jr *JobRunner) intoTask(provId *uint, cj *models.CronJob) (*models.RunnableTask, error) {
-	task := models.RunnableTask{}
-	if models.JobType(cj.Name).IsOpenContentProviderJob() {
-		if err := jr.intoOpenContentTask(cj, provId, &task); err != nil {
-			log.Errorf("failed to create task: %v", err)
-			return nil, err
-		}
-		return &task, nil
-	} else if models.JobType(cj.Name).IsProviderPlatformJob() {
-		if err := jr.intoProviderPlatformTask(cj, provId, &task); err != nil {
-			log.Errorf("failed to create task: %v", err)
-			return nil, err
-		}
-		return &task, nil
-	}
-	return nil, fmt.Errorf("invalid job type: %v", cj.Name)
-}
-
 func (jr *JobRunner) intoProviderPlatformTask(cj *models.CronJob, provId *uint, task *models.RunnableTask) error {
-	err := jr.db.Model(&models.RunnableTask{}).First(&task, "provider_platform_id = ? AND job_id = ?", provId, cj.ID).Error
-	if err != nil {
-		task = &models.RunnableTask{
-			ProviderPlatformID: provId,
-			JobID:              cj.ID,
-			Status:             models.StatusPending,
-			LastRun:            time.Now().AddDate(0, -6, 0),
-		}
-		if err := jr.db.Create(&task).Error; err != nil {
-			log.Errorf("failed to create task: %v", err)
-			return err
-		}
+	if err := jr.db.Model(&models.RunnableTask{}).Preload("Job").Where(models.RunnableTask{ProviderPlatformID: provId, JobID: cj.ID}).FirstOrCreate(&task).Error; err != nil {
+		log.Errorf("failed to create task for job: %v. error: %v", cj.Name, err)
+		return err
 	}
-	params, err := models.JobType(cj.Name).GetParams(jr.db, provId)
+	params, err := models.JobType(cj.Name).GetParams(jr.db, provId, cj.ID)
 	if err != nil {
 		log.Errorf("failed to get params for job: %v", err)
 		return err
 	}
-	params["job_id"] = cj.ID
 	task.Parameters = params
 	return nil
 }
 
 func (jr *JobRunner) intoOpenContentTask(cj *models.CronJob, provId *uint, task *models.RunnableTask) error {
-	if err := jr.db.Model(&models.RunnableTask{}).Where("job_id = ? AND open_content_provider_id = ?", cj.ID, provId).FirstOrCreate(&task).Error; err != nil {
+	if err := jr.db.Model(&models.RunnableTask{}).Preload("Job").Where("job_id = ? AND open_content_provider_id = ?", cj.ID, provId).FirstOrCreate(&task).Error; err != nil {
 		log.Errorln("failed to create non-provider task from cronjob")
 		return err
 	}
-	params, err := models.JobType(cj.Name).GetParams(jr.db, provId)
+	params, err := models.JobType(cj.Name).GetParams(jr.db, provId, cj.ID)
 	if err != nil {
 		log.Errorln("failed to get params for non-provider job")
 		return err
 	}
-	params["job_id"] = cj.ID
 	task.Parameters = params
 	return nil
 }

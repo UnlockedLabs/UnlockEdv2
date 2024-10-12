@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	KiwixCatalogUrl = "catalog/v2/entries?lang=eng&start=1&count="
+	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=1&count="
 	MaxLibraries    = 1000
 )
 
@@ -52,7 +52,6 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 		log.Errorf("error reading data: %v", err)
 		return err
 	}
-
 	var feed Feed
 	err = xml.Unmarshal(body, &feed)
 	if err != nil {

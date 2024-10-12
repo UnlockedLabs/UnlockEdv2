@@ -22,19 +22,21 @@ func main() {
 		log.Fatalf("Failed to create scheduler: %v", err)
 		return
 	}
-	newJob, err := scheduler.NewJob(gocron.CronJob(os.Getenv("MIDDLEWARE_CRON_SCHEDULE"), false), gocron.NewTask(runner.execute))
+	tasks, err := runner.generateTasks()
 	if err != nil {
-		log.Fatalf("Failed to create job: %v", err)
+		log.Fatalf("failed to generate tasks: %v", err)
+		return
+	}
+	for _, task := range tasks {
+		_, err := scheduler.NewJob(gocron.CronJob(task.Job.Schedule, false), gocron.NewTask(runner.runTask, task))
+		if err != nil {
+			log.Errorf("Failed to create job: %v", err)
+			continue
+		}
 	}
 	scheduler.Start()
-	err = newJob.RunNow()
-	if err != nil {
-		log.Errorln("Failed to run job now: ", err)
-	}
-	log.Infof("Scheduler started, running %s", newJob.ID())
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
 	<-shutdown
 }
 
