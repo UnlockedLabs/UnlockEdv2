@@ -18,7 +18,7 @@ const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
     const barColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
     const backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
 
-    const maxYAxisLabel = (props) => {
+    const maxYAxisLabel = (props: YAxisTickProps) => {
         const { x, y, payload } = props;
         const name = payload.value;
         if (name.length > 10) {

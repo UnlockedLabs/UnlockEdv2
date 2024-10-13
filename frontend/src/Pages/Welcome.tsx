@@ -1,24 +1,27 @@
 import { useEffect, useState } from 'react';
 import Brand from '../Components/Brand';
-import { BROWSER_URL, User } from '@/common';
+import { BROWSER_URL, ServerResponse, User } from '@/common';
 import API from '@/api/api';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv1Sm.webp');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const checkLoggedIn = async () => {
-        const user = await API.get<User>(`auth`);
-        if (user.success) {
-            setIsLoggedIn(true);
-        }
-    };
+
     useEffect(() => {
+        API.get<User>(`auth`)
+            .then((user: ServerResponse<User>) => {
+                if (user.success) {
+                    setIsLoggedIn(true);
+                }
+            })
+            .catch(() => {
+                return;
+            });
         const img = new Image();
         img.src = 'unlockedv1.png';
         img.onload = () => {
             setImgSrc('unlockedv1.png');
         };
-        checkLoggedIn();
     }, []);
 
     return (

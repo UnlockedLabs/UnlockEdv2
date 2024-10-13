@@ -6,7 +6,7 @@ interface DropdownProps {
     required: boolean;
     errors: FieldErrors<any>; // eslint-disable-line
     register: Function; // eslint-disable-line
-    enumType: { [key: string]: string };
+    enumType: Record<string, string>;
 }
 
 export function DropdownInput({

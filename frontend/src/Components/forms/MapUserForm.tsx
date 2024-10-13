@@ -11,9 +11,9 @@ import { UserCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '../Pagination';
 import useSWR from 'swr';
 import API from '@/api/api';
-
+import { AxiosError } from 'axios';
 interface Props {
-    externalUser: ProviderUser;
+    externalUser?: ProviderUser;
     providerId: number;
     onSubmit: (msg: string, err: ToastState) => void;
     onCancel: () => void;
@@ -25,6 +25,9 @@ export default function MapUserForm({
     onSubmit,
     onCancel
 }: Props) {
+    if (!externalUser) {
+        return;
+    }
     const [errorMessage, setErrorMessage] = useState('');
     const [fuzzySearchUsers, setFuzzySearchUsers] = useState<User[]>();
     const [currentPage, setCurrentPage] = useState(1);
@@ -34,7 +37,7 @@ export default function MapUserForm({
         data: allUnmappedUsers,
         isLoading: isLoadingUnmapped,
         error: errorUnmappedUsers
-    } = useSWR<ServerResponse<User>>(
+    } = useSWR<ServerResponse<User>, AxiosError>(
         `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
     );
     const unmappedUsers = allUnmappedUsers?.data as User[];
@@ -44,7 +47,7 @@ export default function MapUserForm({
         setCurrentPage(1);
         setSeeAllUsers(false);
         setErrorMessage('');
-        onCancel;
+        onCancel();
     }
 
     const handleSubmit = async (userId: number) => {
@@ -72,7 +75,7 @@ export default function MapUserForm({
             }
             setFuzzySearchUsers(response.data as User[]);
         }
-        externalUser && fetchFuzzyUsers();
+        void fetchFuzzyUsers();
     }, [externalUser, providerId]);
 
     const UserRadioInput = ({ user }: { user: User }) => {

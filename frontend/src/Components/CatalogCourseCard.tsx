@@ -36,7 +36,7 @@ export default function CatalogCourseCard({
             });
     }
 
-    let coursePill: JSX.Element;
+    let coursePill: JSX.Element = <RedPill>Permission Only</RedPill>;
     if (course_type == PillTagType.Open)
         coursePill = <LightGreenPill>Open Enrollment</LightGreenPill>;
     if (course_type == PillTagType.Permission)
@@ -57,9 +57,7 @@ export default function CatalogCourseCard({
     const outcomeTypes: OutcomePillType[] = course.outcome_types
         .split(',')
         .map((outcome) => outcome as OutcomePillType)
-        .filter((type) =>
-            Object.values(OutcomePillType).includes(type as OutcomePillType)
-        );
+        .filter((type) => Object.values(OutcomePillType).includes(type));
     const outcomePills = outcomeTypes.map((outcomeString: string) => {
         const outcome = outcomeString as OutcomePillType;
         console.log(outcome);

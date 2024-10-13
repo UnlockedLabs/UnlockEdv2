@@ -7,17 +7,21 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import { CourseCatalogue, ServerResponse, ViewType } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-
+import { AxiosError } from 'axios';
 // TO DO: make it paginated
 
 export default function CourseCatalog() {
     const { user } = useAuth();
+    if (!user) {
+        return;
+    }
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [order, setOrder] = useState('asc');
-    const { data, error, mutate } = useSWR<ServerResponse<CourseCatalogue>>(
-        `/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`
-    );
+    const { data, error, mutate } = useSWR<
+        ServerResponse<CourseCatalogue>,
+        AxiosError
+    >(`/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`);
     const courseData = data?.data as CourseCatalogue[];
 
     function handleSearch(newSearch: string) {
@@ -62,7 +66,7 @@ export default function CourseCatalog() {
                             return (
                                 <CatalogCourseCard
                                     course={course}
-                                    callMutate={() => mutate()}
+                                    callMutate={() => void mutate()}
                                     view={activeView}
                                     key={course.course_id}
                                 />

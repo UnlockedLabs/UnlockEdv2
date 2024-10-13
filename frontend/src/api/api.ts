@@ -1,12 +1,18 @@
-import axios, { AxiosResponse } from 'axios';
-import { ServerResponse } from '@/common';
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import {
+    ServerResponse,
+    ServerResponseMany,
+    ServerResponseOne,
+    ServerResponseBase
+} from '@/common';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.headers.common.Accept = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 const unauthorized: ServerResponse<undefined> = {
+    type: 'one',
     success: false,
     data: undefined,
     message: 'Unauthorized'
@@ -14,14 +20,15 @@ const unauthorized: ServerResponse<undefined> = {
 
 axios.interceptors.response.use(
     (response) => response,
-    (error) => {
+    (error: AxiosError) => {
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
-            return Promise.reject(unauthorized);
+            return Promise.resolve(unauthorized);
         }
-        return Promise.reject({
+        const errorData = error.response?.data as ServerResponse<string>;
+        return Promise.resolve({
             success: false,
-            message: error?.response?.data?.message ?? 'An error occurred',
+            message: errorData.message ?? 'An error occurred',
             data: undefined
         });
     }
@@ -30,12 +37,28 @@ axios.interceptors.response.use(
 class API {
     private static getReturnData<T>(resp: AxiosResponse): ServerResponse<T> {
         const respData = resp.data as ServerResponse<T>;
-        return {
-            success: true,
-            data: respData.data,
-            message: resp.data.message ?? 'Request successful',
-            meta: resp.data.meta
-        };
+        if (Array.isArray(respData.data)) {
+            const manyResp = respData as ServerResponseMany<T>;
+            return {
+                type: 'many',
+                success: true,
+                data: respData.data,
+                message: respData.message ?? 'Request successful',
+                meta: manyResp.meta ?? {
+                    total: 0,
+                    current_page: 1,
+                    last_page: 1,
+                    per_page: respData.data.length
+                }
+            };
+        } else {
+            return {
+                type: 'one',
+                success: true,
+                data: respData.data,
+                message: respData.message ?? 'Request successful'
+            };
+        }
     }
 
     public static async request<T>(
@@ -47,11 +70,15 @@ class API {
             const resp = await axios({
                 method,
                 url: '/api/' + url,
-                data
+                data //eslint-disable-line
             });
             return API.getReturnData<T>(resp);
-        } catch (error) {
-            return error;
+        } catch (error: unknown) {
+            return {
+                type: 'one',
+                success: false,
+                message: 'An error occurred'
+            } as ServerResponse<T>;
         }
     }
 

@@ -28,27 +28,33 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
+import { AxiosError } from 'axios';
 
 export default function Users() {
-    const addUserModal = useRef<undefined | HTMLDialogElement>();
-    const editUserModal = useRef<undefined | HTMLDialogElement>();
-    const resetUserPasswordModal = useRef<undefined | HTMLDialogElement>();
-    const deleteUserModal = useRef<undefined | HTMLDialogElement>();
+    const addUserModal = useRef<HTMLDialogElement>(null);
+    const editUserModal = useRef<HTMLDialogElement>(null);
+    const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
+    const deleteUserModal = useRef<HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
-    const showUserPassword = useRef<undefined | HTMLDialogElement>();
+    const showUserPassword = useRef<HTMLDialogElement>(null);
     const [toast, setToast] = useState({
         state: ToastState.null,
         message: '',
-        reset: () => {}
+        reset: () => {
+            return;
+        }
     });
 
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const { data, mutate, error, isLoading } = useSWR<ServerResponse<User>>(
+    const { data, mutate, error, isLoading } = useSWR<
+        ServerResponse<User>,
+        AxiosError
+    >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`
     );
     const userData = data?.data as User[] | [];
@@ -75,7 +81,7 @@ export default function Users() {
         }, 200);
     }
 
-    const deleteUser = async () => {
+    const deleteUser = () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
             showToast(
                 'This is the primary administrator and cannot be deleted',
@@ -83,17 +89,24 @@ export default function Users() {
             );
             return;
         }
-        const response = await API.delete('users/' + targetUser?.id);
-        const toastType = response.success
-            ? ToastState.success
-            : ToastState.error;
-        const message = response.success
-            ? 'User deleted successfully'
-            : (response.statusText as string);
-        deleteUserModal.current?.close();
-        showToast(message, toastType);
-        resetModal();
-        mutate();
+        API.delete('users/' + targetUser?.id)
+            .then((response) => {
+                const toastType = response.success
+                    ? ToastState.success
+                    : ToastState.error;
+                const message = response.success
+                    ? 'User deleted successfully'
+                    : response.message;
+                deleteUserModal.current?.close();
+                showToast(message, toastType);
+                resetModal();
+            })
+            .catch(() => {
+                showToast('Failed to delete user', ToastState.error);
+            });
+        mutate().catch(() => {
+            showToast('Failed to load users', ToastState.error);
+        });
         return;
     };
 
@@ -102,13 +115,17 @@ export default function Users() {
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
-        mutate();
+        mutate().catch(() => {
+            showToast('Failed to add user', ToastState.error);
+        });
     };
 
     const hanldleEditUser = () => {
         editUserModal.current?.close();
         resetModal();
-        mutate();
+        mutate().catch(() => {
+            console.error('failed to reload users');
+        });
     };
 
     const handleDeleteUserCancel = () => {
@@ -191,9 +208,7 @@ export default function Users() {
                         {!isLoading &&
                             !error &&
                             userData.map((user: User) => {
-                                const updatedAt = new Date(
-                                    user.updated_at as string
-                                );
+                                const updatedAt = new Date(user.updated_at);
                                 return (
                                     <tr
                                         key={user.id}
@@ -270,7 +285,7 @@ export default function Users() {
                 </table>
                 {!isLoading && !error && userData.length > 0 && (
                     <Pagination
-                        meta={data.meta as PaginationMeta}
+                        meta={data?.meta as PaginationMeta}
                         setPage={setPageQuery}
                     />
                 )}

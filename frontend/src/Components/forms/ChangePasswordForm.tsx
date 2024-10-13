@@ -17,7 +17,11 @@ export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
     const [isFacilityDefault, setIsFacilityDefault] = useState<boolean>(false);
-    const auth = useAuth();
+    const { user } = useAuth();
+
+    if (!user) {
+        return <div>Loading...</div>;
+    }
 
     const {
         control,
@@ -43,7 +47,7 @@ export default function ChangePasswordForm() {
     });
     useEffect(() => {
         const checkFacilityName = async () => {
-            if (auth.user.role !== 'admin') {
+            if (user.role !== 'admin') {
                 return;
             }
             const resp = await API.get<Facility>('facilities/1');
@@ -54,8 +58,8 @@ export default function ChangePasswordForm() {
                 return;
             }
         };
-        checkFacilityName();
-    }, [auth.user.role]);
+        void checkFacilityName();
+    }, [user.role]);
 
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);
@@ -64,7 +68,7 @@ export default function ChangePasswordForm() {
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
     const isFirstAdminLogin =
-        auth.user.id === 1 && auth.user.role === 'admin' && isFacilityDefault;
+        user.id === 1 && user.role === 'admin' && isFacilityDefault;
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
@@ -83,7 +87,7 @@ export default function ChangePasswordForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit(submit)}>
+        <form onSubmit={() => void handleSubmit(submit)}>
             <TextInput
                 label={'New password'}
                 interfaceRef={'password'}

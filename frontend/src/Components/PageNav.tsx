@@ -21,7 +21,7 @@ export default function PageNav({
     onShowNav?: () => void;
 }) {
     const { user } = useAuth();
-    const detailsRef = useRef<HTMLDetailsElement>();
+    const detailsRef = useRef<HTMLDetailsElement>(null);
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
@@ -47,7 +47,7 @@ export default function PageNav({
                         <li>
                             <ULIComponent
                                 onClick={() => {
-                                    onShowNav;
+                                    if (onShowNav) onShowNav();
                                 }}
                                 icon={Bars3Icon}
                                 iconClassName={'cursor-pointer'}
@@ -57,7 +57,7 @@ export default function PageNav({
                         <li>
                             <ULIComponent
                                 onClick={() => {
-                                    onShowNav;
+                                    if (onShowNav) onShowNav();
                                 }}
                                 icon={Bars3Icon}
                                 iconClassName={'lg:hidden cursor-pointer'}
@@ -69,7 +69,7 @@ export default function PageNav({
                         </li>
                     )}
 
-                    {path && path.map((p) => <li key={p}>{p}</li>)}
+                    {path?.map((p) => <li key={p}>{p}</li>)}
                 </ul>
             </div>
             <div className="navbar-end">
@@ -80,9 +80,11 @@ export default function PageNav({
                             ref={detailsRef}
                         >
                             <summary>
-                                <span className="font-semibold">
-                                    {user.name_first} {user.name_last}
-                                </span>
+                                {user && (
+                                    <span className="font-semibold">
+                                        {user.name_first} {user.name_last}
+                                    </span>
+                                )}
                             </summary>
                             <ul className="dropdown-content bg-grey-2 z-[1]">
                                 <li>
@@ -101,7 +103,11 @@ export default function PageNav({
                                 <div className="divider mt-0 mb-0"></div>
 
                                 <li>
-                                    <button onClick={() => handleLogout()}>
+                                    <button
+                                        onClick={() => {
+                                            void handleLogout();
+                                        }}
+                                    >
                                         <ArrowRightEndOnRectangleIcon className="h-4" />
                                         Logout
                                     </button>

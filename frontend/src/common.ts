@@ -13,12 +13,12 @@ export interface User {
     name_first: string;
     name_last: string;
     username: string;
-    role: string;
+    role: UserRole;
     email: string;
     password_reset?: boolean;
     created_at: string;
     updated_at: string;
-    [key: string]: number | string | boolean;
+    [key: string]: number | string | boolean | undefined;
 }
 
 export interface UserWithMappings {
@@ -28,6 +28,7 @@ export interface UserWithMappings {
 
 export interface AuthResponse {
     redirect_to: string;
+    logout_url?: string;
 }
 export interface NewUserResponse {
     user: User;
@@ -79,20 +80,23 @@ export interface PaginationMeta {
     per_page: number;
 }
 
-export interface ServerResponse<T> {
-    [key: string]:
-        | number
-        | string
-        | boolean
-        | Array<T>
-        | T
-        | undefined
-        | PaginationMeta;
+export interface ServerResponseBase {
     success: boolean;
     message: string;
-    data: Array<T> | T | undefined;
-    pagination?: PaginationMeta;
 }
+
+export interface ServerResponseOne<T> extends ServerResponseBase {
+    type: 'one';
+    data: T;
+}
+
+export interface ServerResponseMany<T> extends ServerResponseBase {
+    type: 'many';
+    data: T[];
+    meta: PaginationMeta;
+}
+
+export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
 export interface ResourceCategory {
     id: number;
@@ -101,9 +105,7 @@ export interface ResourceCategory {
     rank: number;
 }
 
-export interface ResourceLink {
-    [linkName: string]: string;
-}
+export type ResourceLink = Record<string, string>;
 
 export interface OidcClient {
     client_id: string;
@@ -196,9 +198,11 @@ export interface ProviderPlatform {
     state: ProviderPlatformState;
     type: ProviderPlatformType;
     oidc_id: number;
-    [key: string | ProviderPlatformState | ProviderPlatformType]:
+    [key: string]:
         | string
-        | number;
+        | number
+        | ProviderPlatformState
+        | ProviderPlatformType;
 }
 
 export enum ProviderPlatformState {
@@ -256,6 +260,9 @@ export interface Event {
 }
 
 export interface OverrideForm {
+    start_time: string;
+    date: string;
+    override_type: string;
     program_name?: string;
     location?: string;
     override_rule?: string;
@@ -328,9 +335,7 @@ export interface RecentActivity {
     delta: number;
 }
 
-export interface Link {
-    [name: string]: string;
-}
+export type Link = Record<string, string>;
 
 export interface Resource {
     id: number;

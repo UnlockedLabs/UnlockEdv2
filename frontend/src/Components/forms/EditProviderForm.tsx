@@ -18,6 +18,11 @@ interface ProviderInputs {
     account_id: string;
     access_key: string;
     state: ProviderPlatformState;
+    [key: string]:
+        | string
+        | number
+        | ProviderPlatformType
+        | ProviderPlatformState;
 }
 
 export default function EditProviderForm({
@@ -30,7 +35,6 @@ export default function EditProviderForm({
     const [errorMessage, setErrorMessage] = useState('');
     const [showAdditionalFields, setShowAdditionalFields] = useState(false);
     const [showAccessKey, setShowAccessKey] = useState(false);
-    const [accessKey, setAccessKey] = useState('');
     const {
         register,
         handleSubmit,
@@ -46,24 +50,8 @@ export default function EditProviderForm({
         }
     });
 
-    const getAccessKey = async () => {
-        if (showAccessKey) {
-            setShowAccessKey(false);
-            return;
-        }
-        if (accessKey) {
-            setShowAccessKey(true);
-            return;
-        }
-        const response = await API.get<ProviderPlatform>(
-            `provider-platforms/${provider.id}`
-        );
-        if (!response.success) {
-            setErrorMessage('Failed to get access key');
-            return;
-        }
-        setAccessKey(response.data['access_key']);
-        setShowAccessKey(true);
+    const toggleAccessKey = () => {
+        setShowAccessKey(!showAccessKey);
     };
 
     function diffFormData(
@@ -105,7 +93,7 @@ export default function EditProviderForm({
     return (
         <div>
             <CloseX close={() => closeAndReset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={() => void handleSubmit(onSubmit)}>
                 <TextInput
                     label="Name"
                     register={register}
@@ -167,43 +155,37 @@ export default function EditProviderForm({
                         </div>
                         <div className="relative">
                             {showAccessKey ? (
-                                <input
-                                    type="text"
-                                    className="input input-bordered w-full pr-10"
-                                    value={accessKey}
-                                    {...register('access_key', {
-                                        required: 'Access Key is required',
-                                        value: accessKey,
-                                        onChange: (e) =>
-                                            setAccessKey(e.target.value)
-                                    })}
-                                />
+                                <>
+                                    <TextInput
+                                        label="Access Key"
+                                        interfaceRef="access_key"
+                                        length={undefined}
+                                        errors={errors}
+                                        required
+                                        register={register}
+                                    />
+                                    <EyeSlashIcon
+                                        className="w-4 z-10 top-4 right-4 absolute"
+                                        onClick={toggleAccessKey}
+                                    />
+                                </>
                             ) : (
-                                <input
-                                    type="password"
-                                    className="input input-bordered w-full"
-                                    value="**********"
-                                    readOnly // Make the input read-only when showAccessKey is false
-                                />
-                            )}
-                            {showAccessKey ? (
-                                <EyeSlashIcon
-                                    className="w-4 z-10 top-4 right-4 absolute"
-                                    onClick={() => {
-                                        console.log(accessKey),
-                                            setAccessKey(accessKey),
-                                            setShowAccessKey(false);
-                                    }}
-                                />
-                            ) : (
-                                <EyeIcon
-                                    className="w-4 z-10 top-4 right-4 absolute"
-                                    onClick={getAccessKey}
-                                />
+                                <>
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value="**********"
+                                        readOnly // Make the input read-only when showAccessKey is false
+                                    />
+                                    <EyeIcon
+                                        className="w-4 z-10 top-4 right-4 absolute"
+                                        onClick={toggleAccessKey}
+                                    />
+                                </>
                             )}
                         </div>
                         <div className="text-error text-sm">
-                            {errors.access_key && errors.access_key?.message}
+                            {errors.access_key?.message}
                         </div>
                     </label>
                 </div>

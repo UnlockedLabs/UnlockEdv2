@@ -50,7 +50,7 @@ export default function RegisterOidcClientForm({
             setErrorMessage('Failed to register OIDC client.');
             onSuccess(response, ToastState.error);
         }
-        const client = response as ServerResponse<OidcClient>;
+        const client = response;
         onSuccess(client, ToastState.success);
     };
 

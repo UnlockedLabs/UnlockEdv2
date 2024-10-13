@@ -9,6 +9,7 @@ export interface SectionEventProps {
 
 export interface EditEventForm {
     date: string;
+    start_time: string;
     duration_unit?: string;
     duration?: number | string;
     location?: string;
@@ -52,25 +53,25 @@ function EditEventForm({ event, onClose }: SectionEventProps) {
 
     const diffForm = (form: EditEventForm, event: Event): OverrideForm => {
         const toUpdate = {} as OverrideForm;
-        if (form['start_time'] != event.start_time) {
-            toUpdate['start_time'] = form['start_time'];
+        if (form.start_time != event.start_time) {
+            toUpdate.start_time = form.start_time;
         }
-        if (form['location'] != event.location) {
-            toUpdate['location'] = form['location'];
+        if (form.location != event.location) {
+            toUpdate.location = form.location;
         }
-        if (form['is_cancelled'] != event.is_cancelled) {
-            toUpdate['is_cancelled'] = form['is_cancelled'];
+        if (form.is_cancelled != event.is_cancelled) {
+            toUpdate.is_cancelled = form.is_cancelled;
         }
-        if (form['duration']) {
-            toUpdate['duration'] = formatDuration();
+        if (form.duration) {
+            toUpdate.duration = formatDuration();
         }
-        toUpdate['date'] = form['date'];
+        toUpdate.date = form.date;
         return toUpdate;
     };
 
     const handleSubmit = async (apply: string) => {
         const diffed = diffForm(form, event);
-        diffed['override_type'] = apply;
+        diffed.override_type = apply;
         const response = await API.put(`events/${event.event_id}`, diffed);
         if (response.success) {
             onClose();
@@ -166,19 +167,19 @@ function EditEventForm({ event, onClose }: SectionEventProps) {
                         <div className="space-y-2">
                             <button
                                 className="btn btn-primary w-full"
-                                onClick={() => handleSubmit('all')}
+                                onClick={() => void handleSubmit('all')}
                             >
                                 Apply to All Instances
                             </button>
                             <button
                                 className="btn btn-primary w-full"
-                                onClick={() => handleSubmit('forward')}
+                                onClick={() => void handleSubmit('forward')}
                             >
                                 Apply going forward
                             </button>
                             <button
                                 className="btn w-full btn-primary"
-                                onClick={() => handleSubmit('self')}
+                                onClick={() => void handleSubmit('self')}
                             >
                                 Apply to this event only
                             </button>
