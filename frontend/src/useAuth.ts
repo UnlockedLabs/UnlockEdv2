@@ -4,35 +4,35 @@ import API from './api/api';
 import axios from 'axios';
 
 interface AuthContextType {
-    user: User | undefined;
-    setUser: Dispatch<SetStateAction<User | undefined>>;
+  user: User | undefined;
+  setUser: Dispatch<SetStateAction<User | undefined>>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
-    undefined
+  undefined
 );
 
 export function useAuth(): AuthContextType {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
 
 export async function handleLogout(): Promise<void> {
-    try {
-        const resp = await API.post<AuthResponse>('logout', {});
-        if (resp.success) {
-            const logout = await axios.get(
-                (resp.data as AuthResponse).redirect_to
-            );
-            if (logout.status === 200) {
-                window.location.href = logout.data.logout_url;
-            }
-        }
-    } catch (error) {
-        window.location.href = BROWSER_URL;
-        console.log('Logout failed', error);
+  try {
+    const resp = await API.post<AuthResponse>('logout', {});
+    if (resp.success) {
+      const logout = await axios.get(
+        (resp.data as AuthResponse).redirect_to
+      );
+      if (logout.status === 200) {
+        window.location.href = logout.data.logout_url;
+      }
     }
+  } catch (error) {
+    window.location.href = BROWSER_URL;
+    console.log('Logout failed', error);
+  }
 }
