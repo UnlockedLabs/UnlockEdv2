@@ -3,33 +3,41 @@ import { Announcement, NotificationType } from '@/common.ts';
 
 const date = new Date();
 
-const announcements = [
+const announcements: Announcement[] = [
     {
+        course_name: 'Data and Algorithms',
         title: 'Enrollment Approved',
         message:
             'You are now enrolled in Data and Algorithms from Harvard University.',
-        url: ''
+        url: '',
+        provider_platform: 'Canvas',
+        due: date
     },
     {
         course_name: 'Advanced English Composition',
         title: 'Schedule Change',
         message: 'Advanced English Composition is now M/W 10:30am-12pm.',
-        url: ''
+        url: '',
+        provider_platform: 'Canvas',
+        due: date
     },
     {
         course_name: 'Linear Algebra',
         title: 'Midterm Grades Out',
         message:
             'Hi everyone, midterm grades have been posted. Please reach out if you have any questions.',
-        url: ''
+        url: '',
+        provider_platform: 'Canvas',
+        due: date
     }
 ];
 
-const toDo = [
+const toDo: Announcement[] = [
     {
         title: 'Assignment 4',
         course_name: 'Introduction to Computer Science',
         provider_platform: 'Kolibri',
+        message: 'Please submit your assignment 4 by the end of the day.',
         url: '',
         due: date
     },
@@ -37,6 +45,7 @@ const toDo = [
         title: 'Homework 6',
         course_name: 'Linear Algebra',
         provider_platform: 'WashU Canvas',
+        message: 'Please submit your homework 6 by the end of the day.',
         url: '',
         due: date
     }

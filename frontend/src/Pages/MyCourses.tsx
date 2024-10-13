@@ -14,6 +14,15 @@ import {
 } from '@/common';
 import useSWR from 'swr';
 import TabView from '@/Components/TabView';
+import { AxiosError } from 'axios';
+
+// TO DO: make sure this lives in the right place
+const tabTypes = {
+    Current: 'in_progress',
+    Completed: 'completed',
+    Favorited: 'is_favorited',
+    All: 'all'
+};
 
 export default function MyCourses() {
     const tabs: Tab[] = [
@@ -24,13 +33,15 @@ export default function MyCourses() {
     ];
 
     const { user } = useAuth();
+    if (!user) return null;
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [sort, setSort] = useState<string>('order=asc&order_by=course_name');
     const [activeTab, setActiveTab] = useState<Tab>(tabs[0]);
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
     const { data, mutate, isLoading, error } = useSWR<
-        ServerResponse<UserCoursesInfo>
+        ServerResponse<UserCoursesInfo>,
+        AxiosError
     >(
         `/api/users/${user.id}/courses?${
             sort +
@@ -60,6 +71,21 @@ export default function MyCourses() {
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                 />
+                <div className="flex flex-row gap-16 w-100 border-b-2 border-grey-2 py-3">
+                    {Object.entries(tabTypes).map(([k, v]) => (
+                        <button
+                            className={
+                                activeTab.value === v
+                                    ? 'text-teal-4 font-bold'
+                                    : ''
+                            }
+                            onClick={() => setActiveTab({ name: k, value: v })}
+                            key={k}
+                        >
+                            {k}
+                        </button>
+                    ))}
+                </div>
                 <div className="flex flex-row items-center mt-4 justify-between">
                     <div className="flex flex-row gap-x-2">
                         <SearchBar
@@ -94,7 +120,9 @@ export default function MyCourses() {
                                 <EnrolledCourseCard
                                     course={course}
                                     view={activeView}
-                                    callMutate={mutate}
+                                    callMutate={() => {
+                                        void mutate();
+                                    }}
                                     key={index}
                                 />
                             );

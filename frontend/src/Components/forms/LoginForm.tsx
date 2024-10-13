@@ -30,7 +30,11 @@ export default function LoginForm() {
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         const attributes = await initFlow();
-        user ? (data.identifier = user) : data.identifier;
+        if (user) {
+            data.identifier = user;
+        } else {
+            data.identifier = '';
+        }
         const reqBody = { ...data, ...attributes };
         setErrorMessage('');
         setProcessing(true);
@@ -39,8 +43,8 @@ export default function LoginForm() {
         if (resp.success) {
             const location =
                 (resp.data as AuthResponse).redirect_to ||
-                resp.data['redirect_browser_to'] ||
-                (params.get('return_to') as string) ||
+                resp.data.redirect_browser_to ||
+                params.get('return_to')! ||
                 '/dashboard';
             window.location.replace(location);
             return;
@@ -103,7 +107,7 @@ export default function LoginForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit(submit)}>
+        <form onSubmit={() => handleSubmit(submit)}>
             {user ? (
                 <div className="block">
                     <div className="text-lg text-center font-bold">
@@ -145,7 +149,7 @@ export default function LoginForm() {
                     <button
                         className="btn pr-3 btn-sm btn-ghost"
                         autoFocus={false}
-                        onClick={handleLogout}
+                        onClick={() => handleLogout}
                     >
                         Not You? Log out
                     </button>

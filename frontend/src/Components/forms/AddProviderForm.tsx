@@ -48,7 +48,11 @@ export default function AddProviderForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={() => {
+                    void handleSubmit(onSubmit);
+                }}
+            >
                 <TextInput
                     label="Name"
                     register={register}

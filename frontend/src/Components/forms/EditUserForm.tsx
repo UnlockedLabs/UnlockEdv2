@@ -85,7 +85,7 @@ export default function EditUserForm({
     return (
         <>
             <CloseX close={() => onSuccess()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={() => handleSubmit(onSubmit)}>
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}

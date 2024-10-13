@@ -1,5 +1,6 @@
 import { useAuth } from '@/useAuth';
 import { useState } from 'react';
+import { AxiosError } from 'axios';
 import StatsCard from '@/Components/StatsCard';
 import UserActivityMap from '@/Components/UserActivityMap';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -22,18 +23,21 @@ export default function MyProgress() {
     );
     const [filterCourses, setFilterCourses] = useState<number>(0);
     const { user } = useAuth();
-    const { data, isLoading, error } = useSWR<ServerResponse<UserCoursesInfo>>(
-        `/api/users/${user.id}/courses?${sortCourses}`
-    );
+    if (!user) {
+        return;
+    }
+    const { data, isLoading, error } = useSWR<
+        ServerResponse<UserCoursesInfo>,
+        AxiosError
+    >(`/api/users/${user.id}/courses?${sortCourses}`);
     const courseData = data?.data
         ? (data?.data as UserCoursesInfo)
         : ({} as UserCoursesInfo);
-
     const {
         data: progData,
         isLoading: loadingProgramData,
         error: programDataError
-    } = useSWR<ServerResponse<ProgramAttendanceData>>(
+    } = useSWR<ServerResponse<ProgramAttendanceData>, AxiosError>(
         `/api/student-attendance`
     );
     const userProgData = progData
@@ -159,7 +163,7 @@ export default function MyProgress() {
                                                             )}
                                                         </td>
                                                         <td className="w-1/5">
-                                                            {course?.grade ||
+                                                            {course?.grade ??
                                                                 '-'}
                                                         </td>
                                                         <td className="w-1/5">

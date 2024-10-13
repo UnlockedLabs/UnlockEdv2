@@ -38,8 +38,8 @@ export default function CategoryItem({
         ResourceLink | undefined
     >();
     const [open, setOpen] = useState(true);
-    const deleteLinkModal = useRef<undefined | HTMLDialogElement>();
-    const addLinkModal = useRef<undefined | HTMLDialogElement>();
+    const deleteLinkModal = useRef<HTMLDialogElement>(null);
+    const addLinkModal = useRef<HTMLDialogElement>(null);
 
     return (
         <details open>
@@ -82,8 +82,8 @@ export default function CategoryItem({
                                 <TrashIcon
                                     className="w-4 cursor-pointer"
                                     onClick={() => {
-                                        setActiveLinkToDelete(linkPair),
-                                            deleteLinkModal.current?.showModal();
+                                        setActiveLinkToDelete(linkPair);
+                                        deleteLinkModal.current?.showModal();
                                     }}
                                 />
                             </div>
@@ -120,33 +120,37 @@ export default function CategoryItem({
                 </button>
             </ul>
             {/* Modals */}
-            <Modal
-                type={ModalType.Confirm}
-                item="Delete Link"
-                form={
-                    <DeleteForm
-                        item="Link"
-                        onCancel={() => setActiveLinkToDelete(undefined)}
-                        onSuccess={() =>
-                            deleteLink(category, activeLinkToDelete)
-                        }
-                    />
-                }
-                ref={deleteLinkModal}
-            />
-            <Modal
-                type={ModalType.Add}
-                item="Link"
-                form={
-                    <AddLinkForm
-                        onSuccess={(title: string, url: string) => {
-                            addLink(category, title, url),
+            {activeLinkToDelete && (
+                <Modal
+                    type={ModalType.Confirm}
+                    item="Delete Link"
+                    form={
+                        <DeleteForm
+                            item="Link"
+                            onCancel={() => setActiveLinkToDelete(undefined)}
+                            onSuccess={() =>
+                                deleteLink(category, activeLinkToDelete)
+                            }
+                        />
+                    }
+                    ref={deleteLinkModal}
+                />
+            )}
+            {addLinkModal.current && (
+                <Modal
+                    type={ModalType.Add}
+                    item="Link"
+                    form={
+                        <AddLinkForm
+                            onSuccess={(title: string, url: string) => {
+                                addLink(category, title, url);
                                 addLinkModal.current?.close();
-                        }}
-                    />
-                }
-                ref={addLinkModal}
-            />
+                            }}
+                        />
+                    }
+                    ref={addLinkModal}
+                />
+            )}
         </details>
     );
 }

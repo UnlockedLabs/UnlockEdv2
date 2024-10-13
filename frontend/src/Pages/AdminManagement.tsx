@@ -27,29 +27,35 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
+import { AxiosError } from 'axios';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 
 export default function AdminManagement() {
-    const addUserModal = useRef<undefined | HTMLDialogElement>();
-    const editUserModal = useRef<undefined | HTMLDialogElement>();
-    const resetUserPasswordModal = useRef<undefined | HTMLDialogElement>();
-    const deleteUserModal = useRef<undefined | HTMLDialogElement>();
+    const addUserModal = useRef<HTMLDialogElement>(null);
+    const editUserModal = useRef<HTMLDialogElement>(null);
+    const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
+    const deleteUserModal = useRef<HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
-    const showUserPassword = useRef<undefined | HTMLDialogElement>();
+    const showUserPassword = useRef<HTMLDialogElement>(null);
     const [toast, setToast] = useState({
         state: ToastState.null,
         message: '',
-        reset: () => {}
+        reset: () => {
+            return;
+        }
     });
 
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const { data, mutate, error, isLoading } = useSWR<ServerResponse<User>>(
+    const { data, mutate, error, isLoading } = useSWR<
+        ServerResponse<User>,
+        AxiosError
+    >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=admin`
     );
     const userData = data?.data as User[] | [];
@@ -95,7 +101,7 @@ export default function AdminManagement() {
         deleteUserModal.current?.close();
         showToast(message, toastType);
         resetModal();
-        mutate();
+        await mutate();
         return;
     };
 
@@ -104,13 +110,13 @@ export default function AdminManagement() {
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
-        mutate();
+        void mutate();
     };
 
     const hanldleEditUser = () => {
         editUserModal.current?.close();
         resetModal();
-        mutate();
+        void mutate();
     };
 
     const handleDeleteUserCancel = () => {
@@ -307,7 +313,7 @@ export default function AdminManagement() {
                     <DeleteForm
                         item="User"
                         onCancel={handleDeleteUserCancel}
-                        onSuccess={deleteUser}
+                        onSuccess={() => void deleteUser}
                     />
                 }
             />

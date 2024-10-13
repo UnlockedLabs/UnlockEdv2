@@ -24,7 +24,7 @@ export default function ResetPasswordForm({
             onCancel('Failed to reset password', true);
             return;
         }
-        onSuccess(response.data['temp_password']);
+        onSuccess(response.data.temp_password);
         return;
     };
     return (

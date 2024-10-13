@@ -1,6 +1,7 @@
 import ProviderCard from '@/Components/ProviderCard';
 import AddProviderForm from '@/Components/forms/AddProviderForm';
 import EditProviderForm from '@/Components/forms/EditProviderForm';
+import { AxiosError } from 'axios';
 import Modal from '@/Components/Modal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import {
@@ -9,7 +10,8 @@ import {
     ProviderPlatform,
     ServerResponse,
     ToastProps,
-    ToastState
+    ToastState,
+    ProviderPlatformState
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
@@ -20,13 +22,13 @@ import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
 
 export default function ProviderPlatformManagement() {
-    const addProviderModal = useRef<undefined | HTMLDialogElement>();
-    const editProviderModal = useRef<undefined | HTMLDialogElement>();
+    const addProviderModal = useRef<HTMLDialogElement>(null);
+    const editProviderModal = useRef<HTMLDialogElement>(null);
     const [editProvider, setEditProvider] = useState<
         ProviderPlatform | undefined
     >();
-    const openOidcClientModal = useRef<undefined | HTMLDialogElement>();
-    const openOidcRegistrationModal = useRef<undefined | HTMLDialogElement>();
+    const openOidcClientModal = useRef<HTMLDialogElement>(null);
+    const openOidcRegistrationModal = useRef<HTMLDialogElement>(null);
     const [oidcClient, setOidcClient] = useState<OidcClient | undefined>();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
@@ -38,7 +40,9 @@ export default function ProviderPlatformManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponse<ProviderPlatform>>(`/api/provider-platforms`);
+    } = useSWR<ServerResponse<ProviderPlatform>, AxiosError>(
+        `/api/provider-platforms`
+    );
     const providerData = providers?.data
         ? (providers.data as ProviderPlatform[])
         : [];
@@ -55,7 +59,7 @@ export default function ProviderPlatformManagement() {
     }
 
     function updateProvider(state: ToastState, message: string) {
-        mutate();
+        void mutate();
         if (state && message) {
             setToast({
                 state: state,
@@ -92,37 +96,53 @@ export default function ProviderPlatformManagement() {
             setOidcClient(response.data as OidcClient);
             openOidcRegistrationModal.current?.showModal();
         }
-        mutate();
-        state &&
-            response &&
+        void mutate();
+        if (response && state) {
             setToast({
                 state: state,
                 message: response.message
             });
+        }
     };
     const handleToggleArchiveProvider = (provider: ProviderPlatform) => {
-        const state = provider.state === 'archived' ? 'enabled' : 'archived';
+        const state =
+            provider.state === ProviderPlatformState.ARCHIVED
+                ? 'enabled'
+                : 'archived';
         API.patch(`provider-platforms/${provider.id}`, {
             state: state
-        }).then((resp) => {
-            resp.success &&
+        })
+            .then((resp) => {
+                if (resp.success) {
+                    setToast({
+                        state: ToastState.success,
+                        message: `Provider platform ${provider.name} has been ${state}.`
+                    });
+                    void mutate();
+                }
+            })
+            .catch(() => {
                 setToast({
-                    state: ToastState.success,
-                    message: `Provider platform ${provider.name} has been ${state}.`
+                    state: ToastState.error,
+                    message: 'Unable to toggle provider state'
                 });
-            mutate();
-        });
+            });
     };
 
-    const showAuthorizationInfo = async (provider: ProviderPlatform) => {
-        const resp = await API.get<OidcClient>(
-            `oidc/clients/${provider.oidc_id}`
-        );
-        if (resp.success) {
-            setOidcClient(resp.data as OidcClient);
-            openOidcRegistrationModal.current?.showModal();
-            return;
-        }
+    const showAuthorizationInfo = (provider: ProviderPlatform) => {
+        API.get<OidcClient>(`oidc/clients/${provider.oidc_id}`)
+            .then((resp) => {
+                if (resp.success) {
+                    setOidcClient(resp.data as OidcClient);
+                    openOidcRegistrationModal.current?.showModal();
+                }
+            })
+            .catch(() => {
+                setToast({
+                    state: ToastState.error,
+                    message: 'unable to fetch authorization info for provider'
+                });
+            });
     };
 
     return (

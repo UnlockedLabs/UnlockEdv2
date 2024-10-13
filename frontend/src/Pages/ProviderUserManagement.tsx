@@ -9,9 +9,9 @@ import {
     ServerResponse,
     ToastState,
     UserImports
-} from '../common';
-import Toast from '../Components/Toast';
-import Modal from '../Components/Modal';
+} from '@/common';
+import Toast from '@/Components/Toast';
+import Modal from '@/Components/Modal';
 import MapUserForm from '@/Components/forms/MapUserForm';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ShowImportedUsers from '@/Components/forms/ShowImportedUsers';
@@ -21,17 +21,19 @@ import ConfirmImportAllUsersForm from '@/Components/forms/ConfirmImportAllUsersF
 import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
+import { AxiosError } from 'axios';
 
 export default function ProviderUserManagement() {
-    const mapUserModal = useRef<undefined | HTMLDialogElement>();
-    const importedUsersModal = useRef<undefined | HTMLDialogElement>();
-    const importAllUsersModal = useRef<undefined | HTMLDialogElement>();
+    const mapUserModal = useRef<HTMLDialogElement>(null);
+    const importedUsersModal = useRef<HTMLDialogElement>(null);
+    const importAllUsersModal = useRef<HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<undefined | ProviderUser>();
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const { providerId } = useParams();
+    const providerID = parseInt(providerId ?? '0', 10);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
         per_page: 10,
@@ -45,18 +47,17 @@ export default function ProviderUserManagement() {
     const [cache, setCache] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
-
     const [toast, setToast] = useState({
         state: ToastState.null,
         message: '',
-        reset: () => {}
+        reset: () => {
+            return;
+        }
     });
-
-    const { data, mutate } = useSWR<ServerResponse<ProviderUser>>(
+    const { data, mutate } = useSWR<ServerResponse<ProviderUser>, AxiosError>(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
     const providerData = (data?.data as ProviderUser[]) ?? [];
-
     const changePage = (page: number) => {
         setCurrentPage(page);
     };
@@ -71,7 +72,7 @@ export default function ProviderUserManagement() {
     const handleRefetch = () => {
         setError(false);
         setCache(true);
-        mutate();
+        void mutate();
     };
 
     const showToast = (message: string, state: ToastState) => {
@@ -117,11 +118,10 @@ export default function ProviderUserManagement() {
         );
         if (res.success) {
             showToast(res.message, ToastState.success);
-            console.log(res.data);
             setImportedUsers(res.data as UserImports[]);
             importedUsersModal.current?.showModal();
             setUsersToImport([]);
-            mutate();
+            await mutate();
             return;
         } else {
             setUsersToImport([]);
@@ -148,7 +148,7 @@ export default function ProviderUserManagement() {
         setUserToMap(undefined);
     }
 
-    async function handleMapUser(user: ProviderUser) {
+    function handleMapUser(user: ProviderUser) {
         setUserToMap(user);
         mapUserModal.current?.showModal();
     }
@@ -185,7 +185,7 @@ export default function ProviderUserManagement() {
                 showToast('Failed to fetch provider users', ToastState.error);
             }
         };
-        getData();
+        void getData();
     }, [providerId]);
 
     return (
@@ -217,7 +217,9 @@ export default function ProviderUserManagement() {
                         Import All Users
                     </PrimaryButton>
                     <PrimaryButton
-                        onClick={() => handleImportSelectedUsers()}
+                        onClick={() => {
+                            void handleImportSelectedUsers();
+                        }}
                         disabled={usersToImport.length === 0}
                     >
                         Import Selected Users
@@ -294,10 +296,7 @@ export default function ProviderUserManagement() {
                     </table>
                 </div>
                 <div className="flex flex-col justify-center">
-                    <Pagination
-                        meta={!isLoading && meta}
-                        setPage={changePage}
-                    />
+                    <Pagination meta={meta} setPage={changePage} />
                     <div className="flex-col-1 align-middle">
                         per page:
                         <br />
@@ -340,7 +339,7 @@ export default function ProviderUserManagement() {
                             onSubmit={handleSubmitMapUser}
                             externalUser={userToMap}
                             onCancel={handleCloseMapUser}
-                            providerId={parseInt(providerId)}
+                            providerId={providerID}
                         />
                     }
                 />
@@ -363,7 +362,9 @@ export default function ProviderUserManagement() {
                 form={
                     <ConfirmImportAllUsersForm
                         onCancel={() => importAllUsersModal.current?.close()}
-                        onSuccess={handleImportAllUsers}
+                        onSuccess={() => {
+                            void handleImportAllUsers();
+                        }}
                     />
                 }
             />
