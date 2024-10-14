@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { handleLogout, useAuth } from '@/useAuth';
 import {
+    ArrowRightEndOnRectangleIcon,
     Bars3Icon,
     HomeIcon
 } from '@heroicons/react/24/solid';

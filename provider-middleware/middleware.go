@@ -86,7 +86,7 @@ func (sh *ServiceHandler) initContentProviderService(msg *nats.Msg) (OpenContent
 }
 
 func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId int, jobId string, success bool) {
-	log.Infof(fmt.Sprintf("job %s succeeded?: %v \n cleaning up task", jobId, success))
+	log.Infof("job %s succeeded?: %v \n cleaning up task", jobId, success)
 	var task models.RunnableTask
 	if err := sh.db.WithContext(ctx).Model(models.RunnableTask{}).
 		Find(&task, "(provider_platform_id = ? AND job_id = ?) OR (open_content_provider_id = ? AND job_id = ?)", provId, jobId, provId, jobId).
