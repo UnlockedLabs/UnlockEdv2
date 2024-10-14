@@ -4,12 +4,11 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/gorm"
@@ -68,7 +67,6 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 			return nil
 		default:
 			externalIds = append(externalIds, entry.ID)
-
 			err = UpdateOrInsertLibrary(ctx, db, entry, ks.OpenContentProviderId)
 			if err != nil {
 				log.Errorf("error updating or inserting library: %v", err)
@@ -87,40 +85,17 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 
 func UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, entry Entry, providerId uint) error {
 	log.Infoln("Attempting to update existing Kiwix Libraries.")
-
-	library := &models.Library{}
-	err := db.Model(&models.Library{}).First(&library, "external_id = ?", entry.ID).Error
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			log.Printf("Could not find existing library for entry %v, creating new one", entry.ID)
-			library = IntoLibrary(entry, providerId)
-			if err := db.WithContext(ctx).Create(&library).Error; err != nil {
-				log.Errorf("Failed to insert library: %v", err)
-				return err
-			}
-			return nil
-		}
+	library := IntoLibrary(entry, providerId)
+	if err := db.WithContext(ctx).
+		Where(&models.Library{ExternalID: models.StringPtr(entry.ID)}).
+		Assign(models.Library{
+			Path:        library.Path,
+			Name:        library.Name,
+			Description: library.Description,
+			Language:    library.Language}).
+		FirstOrCreate(&library).Error; err != nil {
+		logrus.Errorln("Error updating or inserting library: ", err)
 		return err
-	}
-
-	entryLastUpdatedAt, err := time.Parse(time.RFC3339, entry.Updated)
-	if err != nil {
-		log.Errorf("Failed to parse entry updated date: %v", err)
-		return err
-	}
-	if entryLastUpdatedAt.After(library.UpdatedAt) {
-		log.Infof("Updating existing library for entry %v", entry.ID)
-		url, imageUrl := ParseUrls(entry.Links)
-		library.Name = entry.Name
-		library.Description = models.StringPtr(entry.Summary)
-		library.Path = *models.StringPtr(url)
-		library.ImageUrl = models.StringPtr(imageUrl)
-		library.Language = models.StringPtr(entry.Language)
-		if err := db.WithContext(ctx).Save(&library).Error; err != nil {
-			log.Errorf("Failed to save library: %v", err)
-			return err
-		}
 	}
 	return nil
 }

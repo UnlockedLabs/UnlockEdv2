@@ -37,9 +37,9 @@ type Publisher struct {
 }
 
 type Link struct {
-	Rel  string `xml:"rel"`
-	Href string `xml:"href"`
-	Type string `xml:"type"`
+	Rel  string `xml:"rel,attr"`
+	Href string `xml:"href,attr"`
+	Type string `xml:"type,attr"`
 }
 
 func IntoLibrary(entry Entry, providerId uint) *models.Library {
