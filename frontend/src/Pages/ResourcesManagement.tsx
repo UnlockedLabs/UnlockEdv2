@@ -127,7 +127,7 @@ export default function ResourcesManagement() {
         const newCollection = {
             id: Math.random(),
             name: collectionName,
-            links: [{ [linkName]: linkUrl }], // Use linkName as the key
+            links: [{ [linkName]: linkUrl }],
             rank: collectionList.length + 1,
             isModified: true
         };
@@ -146,7 +146,7 @@ export default function ResourcesManagement() {
         setHasDeletedCollection(true);
         setCollectionList(newCollections);
     };
-    // eslint-disable-next-line
+
     const updateFinalState = async (e: React.MouseEvent) => {
         setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
@@ -160,22 +160,19 @@ export default function ResourcesManagement() {
                 '/api/left-menu',
                 newCollectionList
             );
-            // check response is okay, and give notification
             if (response.status !== 201) {
-                // show error
                 setToast({
                     state: ToastState.error,
                     message: 'Error Saving Collections'
                 });
             } else {
                 mutate();
-                // show success
                 setToast({
                     state: ToastState.success,
                     message: 'Collections Saved!'
                 });
             }
-            // eslint-disable-next-line
+            //eslint-disable-next-line
         } catch (err: any) {
             console.log(err);
             if (err.response.status == 422) {
@@ -184,7 +181,6 @@ export default function ResourcesManagement() {
                     message: 'All collections must have associated links'
                 });
             } else {
-                // show general error
                 setToast({
                     state: ToastState.error,
                     message: 'Error Saving Collections'
@@ -196,16 +192,12 @@ export default function ResourcesManagement() {
     return (
         <AuthenticatedLayout title="Collections" path={['Resource Management']}>
             <div className="flex flex-row p-4 gap-x-8 h-full grow">
-                {' '}
                 {/* Full page */}
                 <div className="flex flex-col gap-4 w-[300px]">
-                    {' '}
                     {/* Left pane */}
                     <div className="card flex flex-col px-8 py-4 grow">
-                        {' '}
                         {/* Card */}
                         <div className="flex justify-between">
-                            {' '}
                             {/* Card header */}
                             <h3 className="">Resources Preview</h3>
                             <div className="tooltip" data-tip="Add Collection">
@@ -255,10 +247,9 @@ export default function ResourcesManagement() {
                     </div>
                 </div>
                 <div className="card flex flex-col flex-grow gap-4 px-8 py-4">
-                    {' '}
                     {/* Right pane */}
                     <h3>Modify Collection</h3>
-                    {selectedCollectionIndex && (
+                    {selectedCollectionIndex !== undefined && (
                         <ResourceCollectionEditor
                             collection={collectionList[selectedCollectionIndex]}
                             onCollectionChange={handleResourceCollectionChange}
