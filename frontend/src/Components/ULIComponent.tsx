@@ -15,7 +15,7 @@ type ULIComponentProps = {
 };
 
 export default function ULIComponent(props: ULIComponentProps) {
-    // Case 1: a icon with tooltipClassName 'w-4 h-4 self-start cursor-pointer'
+    // Case 1: an icon with tooltipClassName 'w-4 h-4 self-start cursor-pointer'
     // Case 2: an icon that needs the default width overridden with a prop value: this will be applied to the className as well
     // Case 3: an icon without 'self-start cursor-pointer'
 
