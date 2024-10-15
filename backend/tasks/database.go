@@ -13,6 +13,12 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	GetCourses    string = "tasks.get_courses"
+	GetActivity   string = "tasks.get_activity"
+	GetMilestones string = "tasks.get_milestones"
+)
+
 func initDB() *gorm.DB {
 	log.Info("initializing database")
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=allow",
@@ -27,13 +33,14 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) error {
-	if err := jr.db.Where("name = ?", cj.Name).FirstOrCreate(cj).Error; err != nil {
+func (jr *JobRunner) createIfNotExists(cj models.JobType) (*models.CronJob, error) {
+	job := models.CronJob{Name: string(cj)}
+	if err := jr.db.Model(&models.CronJob{}).Where("name = ?", cj).FirstOrCreate(&job).Error; err != nil {
 		log.Errorf("failed to find or create job: %v", err)
-		return err
+		return nil, err
 	}
-	log.Infof("CronJob %s has ID: %s", cj.Name, cj.ID)
-	return nil
+	log.Infof("CronJob %s has ID: %s", job.Name, job.ID)
+	return &job, nil
 }
 
 func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
@@ -44,32 +51,20 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 	}
 	if len(courses) == 0 {
 		done := make(chan bool)
-
 		params := map[string]interface{}{
 			"provider_platform_id": prov.ID,
 		}
-		jobs := prov.GetDefaultCronJobs()
-		var courseJob *models.CronJob
-		for _, job := range jobs {
-			if job.Name == string(models.GetCoursesJob) {
-				courseJob = job
-				break
-			}
-		}
-		if courseJob == nil {
-			return fmt.Errorf("GetCoursesJob not found in default jobs")
-		}
-		if err := jr.createIfNotExists(courseJob, prov); err != nil {
+		created, err := jr.createIfNotExists(models.GetCoursesJob)
+		if err != nil {
 			log.Errorf("Failed to create or find CronJob: %v", err)
 			return err
 		}
-		params["job_id"] = courseJob.ID
-
+		params["job_id"] = created.ID
 		if err := jr.db.Create(&models.RunnableTask{
-			JobID:              courseJob.ID,
+			JobID:              created.ID,
 			Parameters:         params,
 			Status:             models.StatusPending,
-			ProviderPlatformID: prov.ID,
+			ProviderPlatformID: &prov.ID,
 		}).Error; err != nil {
 			log.Errorf("failed to create task: %v", err)
 			return err
@@ -81,7 +76,7 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 				log.Errorf("failed to unmarshal completion message: %v", err)
 				return
 			}
-			if completedParams["job_id"] == courseJob.ID {
+			if completedParams["job_id"] == created.ID {
 				done <- true
 			}
 		})
@@ -96,13 +91,13 @@ func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
 			}
 		}()
 
-		params["job_id"] = courseJob.ID
+		params["job_id"] = created.ID
 		body, err := json.Marshal(&params)
 		if err != nil {
 			log.Errorf("failed to marshal params: %v", err)
 			return err
 		}
-		msg := nats.NewMsg("tasks.get_courses")
+		msg := nats.NewMsg(GetCourses)
 		msg.Data = body
 		err = jr.nats.PublishMsg(msg)
 		if err != nil {

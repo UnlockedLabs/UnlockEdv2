@@ -36,7 +36,6 @@ func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
 	/* only use auth middleware, user activity bloats the database + results */
 	srv.Mux.Handle("GET /api/auth", srv.applyMiddleware(srv.handleCheckAuth))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -78,21 +77,6 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "facility ID")
-	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	claims.FacilityID = uint(id)
-	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		log.add("facilityId", id)
-		return newInternalServerServiceError(err, "error updating user traits in kratos")
-	}
-	w.WriteHeader(http.StatusOK)
-	return nil
 }
 
 func (s *Server) clearKratosCookies(w http.ResponseWriter, r *http.Request) {

@@ -7,7 +7,7 @@ type Library struct {
 	Name                  string  `gorm:"size:255;not null" json:"name"`
 	Language              *string `gorm:"size:255" json:"language"`
 	Description           *string `json:"description"`
-	Url                   string  `gorm:"not null" json:"url"`
+	Path                  string  `gorm:"not null" json:"url"`
 	ImageUrl              *string `json:"image_url"`
 	VisibilityStatus      bool    `gorm:"default:false;not null" json:"visibility_status"`
 

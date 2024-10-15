@@ -13,6 +13,7 @@ func (srv *Server) registerFacilitiesRoutes() {
 	srv.Mux.Handle("POST /api/facilities", srv.applyAdminMiddleware(srv.handleCreateFacility))
 	srv.Mux.Handle("DELETE /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleDeleteFacility))
 	srv.Mux.Handle("PATCH /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleUpdateFacility))
+	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
 func (srv *Server) handleIndexFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -35,6 +36,21 @@ func (srv *Server) handleShowFacility(w http.ResponseWriter, r *http.Request, lo
 	}
 
 	return writeJsonResponse(w, http.StatusOK, facility)
+}
+
+func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	claims.FacilityID = uint(id)
+	if err := srv.updateUserTraitsInKratos(claims); err != nil {
+		log.add("facilityId", id)
+		return newInternalServerServiceError(err, "error updating user traits in kratos")
+	}
+	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
