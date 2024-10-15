@@ -7,12 +7,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllFacilities() ([]models.Facility, error) {
+func (db *DB) GetAllFacilities(page, itemsPerPage int) (int64, []models.Facility, error) {
+	var total int64
+	offset := (page - 1) * itemsPerPage
 	var facilities []models.Facility
-	if err := db.Model(&models.Facility{}).Find(&facilities).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "facilities")
+	if err := db.Model(&models.Facility{}).Find(&facilities).Count(&total).Offset(offset).Limit(itemsPerPage).Error; err != nil {
+		return total, nil, newGetRecordsDBError(err, "facilities")
 	}
-	return facilities, nil
+	return total, facilities, nil
 }
 
 func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {
@@ -31,16 +33,12 @@ func (db *DB) CreateFacility(facility *models.Facility) error {
 	return nil
 }
 
-func (db *DB) UpdateFacility(name string, id uint) (*models.Facility, error) {
-	if err := db.Model(models.Facility{}).Where("id = ?", fmt.Sprintf("%d", id)).Update("name", name).Error; err != nil {
-		log.WithField("facility_id", id).Error("error updating facility name database/UpdateFacility")
-		return nil, newUpdateDBError(err, "facilities")
+func (db *DB) UpdateFacility(facility *models.Facility, id uint) error {
+	if err := db.Model(models.Facility{}).Where("id = ?", id).Updates(&facility).Error; err != nil {
+		log.WithField("facility_id", facility.ID).Error("error updating facility name database/UpdateFacility")
+		return newUpdateDBError(err, "facilities")
 	}
-	facility := &models.Facility{}
-	if err := db.Model(models.Facility{}).Find(facility, "id = ?", fmt.Sprintf("%d", id)).Error; err != nil {
-		return nil, newUpdateDBError(err, "facilities")
-	}
-	return facility, nil
+	return nil
 }
 
 func (db *DB) DeleteFacility(id int) error {

@@ -16,14 +16,22 @@ func (srv *Server) registerFacilitiesRoutes() {
 	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
+/**
+* GET: /api/facility/{id}
+**/
 func (srv *Server) handleIndexFacilities(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facilities, err := srv.Db.GetAllFacilities()
+	page, perPage := srv.getPaginationInfo(r)
+	total, facilities, err := srv.Db.GetAllFacilities(page, perPage)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, facilities)
+	paginationData := models.NewPaginationInfo(page, perPage, total)
+	return writePaginatedResponse(w, http.StatusOK, facilities, paginationData)
 }
 
+/**
+* GET: /api/facility/{id}
+**/
 func (srv *Server) handleShowFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -60,6 +68,7 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
+
 	err = srv.Db.CreateFacility(&facility)
 	if err != nil {
 		log.add("facility.Name", facility.Name)
@@ -74,20 +83,23 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 		return newInvalidIdServiceError(err, "facility ID")
 	}
 	log.add("facilty_id", id)
-	facility := make(map[string]interface{}, 0)
+	var facility models.Facility
 	err = json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	toReturn, err := srv.Db.UpdateFacility(facility["name"].(string), uint(id))
+	err = srv.Db.UpdateFacility(&facility, uint(id))
 	if err != nil {
-		log.add("facilityName", facility["name"])
+		log.add("facilityName", facility.Name)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, *toReturn)
+	return writeJsonResponse(w, http.StatusOK, "facility updated successfully")
 }
 
+/**
+* DELETE: /api/facility/{id}
+ */
 func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {

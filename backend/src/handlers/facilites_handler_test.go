@@ -15,19 +15,19 @@ import (
 
 func TestHandleIndexFacilities(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetFacilitiesAsAdmin", "admin", nil, http.StatusOK, ""},
-		{"TestGetFacilitiesAsUser", "student", nil, http.StatusUnauthorized, ""},
+		{"TestGetFacilitiesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10}, http.StatusOK, "?page=1&per_page=10"},
+		{"TestGetFacilitiesAsUser", "student", map[string]any{"page": 1, "per_page": 10}, http.StatusUnauthorized, "?page=1&per_page=10"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/api/facilities", nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/facilities%v", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRoleWithMiddleware(server.handleIndexFacilities, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				facilities, err := server.Db.GetAllFacilities()
+				_, facilities, err := server.Db.GetAllFacilities(test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int))
 				if err != nil {
 					t.Fatalf("unable to retrieve facilities, error is %v", err)
 				}
@@ -124,16 +124,19 @@ func TestHandleCreateFacility(t *testing.T) {
 	}
 }
 
+const ozark string = "Ozark Correctional Center"
+
 func TestHandleUpdateFacility(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestAdminCanUpdateFacility", "admin", map[string]any{"name": "Ozark Correctional Center"}, http.StatusOK, ""},
+		{"TestAdminCanUpdateFacility", "admin", map[string]any{"name": ozark}, http.StatusOK, ""},
 		{"TestUserCannotUpdateFacility", "student", nil, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			var id uint
 			if test.expectedStatusCode == http.StatusOK {
-				facility := models.Facility{Name: "Ozark Correctional Center", Timezone: "America/Chicago"}
+
+				facility := models.Facility{Name: "Test Correctional Center", Timezone: "America/Chicago"}
 				err := server.Db.CreateFacility(&facility)
 				if err != nil {
 					t.Fatalf("unable to create facility, error is %v", err)
@@ -157,19 +160,15 @@ func TestHandleUpdateFacility(t *testing.T) {
 			}
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleUpdateFacility, test.role)
-			rr := executeRequest(t, req, handler, test)
+			_ = executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				facility, err := server.Db.GetFacilityByID(int(id))
+
 				if err != nil {
 					t.Fatalf("unable to get facility from db, error is %v", err)
 				}
-				received := rr.Body.String()
-				data := models.Resource[models.Facility]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal resource, error is %v", err)
-				}
-				if diff := cmp.Diff(facility, &data.Data); diff != "" {
-					t.Errorf("handler returned unexpected results: %v", diff)
+				if facility.Name != ozark {
+					t.Error("facility did not update properly")
 				}
 			}
 		})
