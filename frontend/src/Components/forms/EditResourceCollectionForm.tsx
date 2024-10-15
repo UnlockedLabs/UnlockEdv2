@@ -33,7 +33,11 @@ export default function EditResourceCollectionForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={() => void handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label="Collection Name"
                     interfaceRef="collectionName"

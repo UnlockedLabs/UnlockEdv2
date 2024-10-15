@@ -46,7 +46,7 @@ export default function CourseCatalog() {
                     />
                     <DropdownControl
                         label="order"
-                        callback={setOrder}
+                        setState={setOrder}
                         enumType={{
                             Ascending: 'asc',
                             Descending: 'desc'

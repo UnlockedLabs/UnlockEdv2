@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-    PaginationMeta,
-    ProviderUser,
-    ServerResponse,
-    ToastState,
-    User
-} from '@/common';
+import { ProviderUser, ServerResponseMany, ToastState, User } from '@/common';
 import { CloseX } from '../inputs/CloseX';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '../Pagination';
@@ -37,11 +31,11 @@ export default function MapUserForm({
         data: allUnmappedUsers,
         isLoading: isLoadingUnmapped,
         error: errorUnmappedUsers
-    } = useSWR<ServerResponse<User>, AxiosError>(
+    } = useSWR<ServerResponseMany<User>, AxiosError>(
         `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
     );
-    const unmappedUsers = allUnmappedUsers?.data as User[];
-    const meta = allUnmappedUsers?.meta as PaginationMeta;
+    const unmappedUsers = allUnmappedUsers?.data;
+    const meta = allUnmappedUsers?.meta;
     function cancel() {
         setSelectedUser(undefined);
         setCurrentPage(1);
@@ -67,7 +61,7 @@ export default function MapUserForm({
     useEffect(() => {
         async function fetchFuzzyUsers() {
             const response = await API.get<User>(
-                `users?include=only_unmapped&provider_id=${providerId}&search=${externalUser.username}&search=${externalUser.email}`
+                `users?include=only_unmapped&provider_id=${providerId}&search=${externalUser?.username}&search=${externalUser?.email}`
             );
             if (!response.success) {
                 setErrorMessage('Failed to fetch any matching users');
@@ -144,8 +138,8 @@ export default function MapUserForm({
                             <button
                                 className="text-teal-3 underline"
                                 onClick={() => {
-                                    setSeeAllUsers(true),
-                                        setSelectedUser(undefined);
+                                    setSeeAllUsers(true);
+                                    setSelectedUser(undefined);
                                 }}
                             >
                                 See all users
@@ -158,8 +152,8 @@ export default function MapUserForm({
                             <button
                                 className="body-small text-teal-3 underline text-left mb-2"
                                 onClick={() => {
-                                    setSeeAllUsers(false),
-                                        setSelectedUser(undefined);
+                                    setSeeAllUsers(false);
+                                    setSelectedUser(undefined);
                                 }}
                             >
                                 Go back to potential matches
@@ -172,7 +166,7 @@ export default function MapUserForm({
                                 choose to do so.
                             </p>
                         )}
-                        {unmappedUsers.map((user: User) => {
+                        {unmappedUsers?.map((user: User) => {
                             return (
                                 <UserRadioInput
                                     user={user}
@@ -180,7 +174,9 @@ export default function MapUserForm({
                                 />
                             );
                         })}
-                        <Pagination meta={meta} setPage={setCurrentPage} />
+                        {meta && (
+                            <Pagination meta={meta} setPage={setCurrentPage} />
+                        )}
                     </>
                 )}
             </div>
@@ -195,8 +191,10 @@ export default function MapUserForm({
                 </button>
                 <button
                     className="btn btn-primary"
-                    onClick={() => handleSubmit(selectedUser)}
                     disabled={!selectedUser}
+                    onClick={() => {
+                        void handleSubmit(selectedUser!);
+                    }}
                 >
                     Map Student
                 </button>

@@ -1,36 +1,24 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import {
-    ServerResponse,
-    ServerResponseMany,
-    ServerResponseOne,
-    ServerResponseBase
-} from '@/common';
+import { ServerResponse, ServerResponseMany } from '@/common';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common.Accept = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-const unauthorized: ServerResponse<undefined> = {
-    type: 'one',
-    success: false,
-    data: undefined,
-    message: 'Unauthorized'
-};
-
 axios.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
         const status = error?.response?.status;
         if (status === 401 || status === 403) {
-            return Promise.resolve(unauthorized);
+            return Promise.reject(new Error('Unauthorized'));
         }
         const errorData = error.response?.data as ServerResponse<string>;
-        return Promise.resolve({
+        return {
             success: false,
             message: errorData.message ?? 'An error occurred',
             data: undefined
-        });
+        };
     }
 );
 
@@ -73,7 +61,7 @@ class API {
                 data //eslint-disable-line
             });
             return API.getReturnData<T>(resp);
-        } catch (error: unknown) {
+        } catch {
             return {
                 type: 'one',
                 success: false,

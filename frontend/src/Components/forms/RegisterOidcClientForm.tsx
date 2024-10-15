@@ -57,7 +57,11 @@ export default function RegisterOidcClientForm({
     return (
         <>
             <CloseX close={() => onClose()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 {!hasAuto && (
                     <div className="label-text text-warning font-semibold">
                         If you do not choose to auto register, you must manually

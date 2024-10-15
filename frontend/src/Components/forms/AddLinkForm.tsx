@@ -19,7 +19,7 @@ export default function AddLinkForm({
         formState: { errors }
     } = useForm<Inputs>();
 
-    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    const onSubmit: SubmitHandler<Inputs> = (data) => {
         onSuccess(data.title, data.url);
         reset();
     };
@@ -27,7 +27,12 @@ export default function AddLinkForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    const func = handleSubmit(onSubmit);
+                    void func(e);
+                }}
+            >
                 <TextInput
                     label="Title"
                     interfaceRef="title"

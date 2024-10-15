@@ -1,5 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { ProviderPlatform, ProviderPlatformState } from '@/common';
+import {
+    ProviderPlatform,
+    ProviderPlatformState,
+    ProviderPlatformType
+} from '@/common';
 import {
     CheckCircleIcon,
     InformationCircleIcon,
@@ -9,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import TealPill from './pill-labels/TealPill';
 import YellowPill from './pill-labels/YellowPill';
-import OutcomePill from './pill-labels/GreyPill';
+import GreyPill from './pill-labels/GreyPill';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 
@@ -42,7 +46,7 @@ export default function ProviderCard({
                 {provider.state == ProviderPlatformState.ENABLED ? (
                     <TealPill>enabled</TealPill>
                 ) : provider.state == ProviderPlatformState.DISABLED ? (
-                    <OutcomePill outcome={undefined}>disabled</OutcomePill>
+                    <GreyPill>disabled</GreyPill>
                 ) : provider.state == ProviderPlatformState.ARCHIVED ? (
                     <YellowPill>archived</YellowPill>
                 ) : (
@@ -62,7 +66,8 @@ export default function ProviderCard({
                                     }
                                 />
 
-                                {provider.type !== 'kolibri' && (
+                                {provider.type !==
+                                    ProviderPlatformType.KOLIBRI && (
                                     <ULIComponent
                                         dataTip={'Manage Users'}
                                         icon={UserGroupIcon}

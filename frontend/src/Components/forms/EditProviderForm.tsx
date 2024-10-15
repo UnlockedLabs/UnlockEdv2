@@ -11,6 +11,11 @@ import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
 
 interface ProviderInputs {
+    [key: string]:
+        | string
+        | ProviderPlatformType
+        | ProviderPlatformState
+        | number;
     id: number;
     name: string;
     type: ProviderPlatformType;
@@ -18,11 +23,6 @@ interface ProviderInputs {
     account_id: string;
     access_key: string;
     state: ProviderPlatformState;
-    [key: string]:
-        | string
-        | number
-        | ProviderPlatformType
-        | ProviderPlatformState;
 }
 
 export default function EditProviderForm({

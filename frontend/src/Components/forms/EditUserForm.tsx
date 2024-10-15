@@ -8,6 +8,7 @@ import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
 interface Inputs {
+    [key: string]: string | UserRole;
     name_first: string;
     name_last: string;
     username: string;
@@ -34,7 +35,7 @@ export default function EditUserForm({
             name_first: user.name_first,
             name_last: user.name_last,
             username: user.username,
-            role: user.role as UserRole,
+            role: user.role,
             email: user.email
         }
     });
@@ -85,7 +86,11 @@ export default function EditUserForm({
     return (
         <>
             <CloseX close={() => onSuccess()} />
-            <form onSubmit={() => handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}

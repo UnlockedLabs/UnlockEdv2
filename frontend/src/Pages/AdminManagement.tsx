@@ -5,14 +5,13 @@ import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
     TrashIcon,
-    PencilSquareIcon,
+    PencilIcon,
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
-    PaginationMeta,
-    ServerResponse,
+    ServerResponseMany,
     ToastState,
     User
 } from '../common';
@@ -53,13 +52,13 @@ export default function AdminManagement() {
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { data, mutate, error, isLoading } = useSWR<
-        ServerResponse<User>,
+        ServerResponseMany<User>,
         AxiosError
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=admin`
     );
     const userData = data?.data as User[] | [];
-    const meta = data?.meta as PaginationMeta;
+    const meta = data?.meta;
     const showToast = (message: string, state: ToastState) => {
         setToast({
             state,
@@ -168,7 +167,7 @@ export default function AdminManagement() {
                         />
                         <DropdownControl
                             label="order by"
-                            callback={setSortQuery}
+                            setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
@@ -194,11 +193,13 @@ export default function AdminManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2">
                         <thead>
-                            <tr className="grid-cols-4 px-4">
-                                <th className="justify-self-start">Name</th>
+                            <tr className="border-gray-600">
+                                <th className="flex">
+                                    <span>Name</span>
+                                </th>
                                 <th>Username</th>
                                 <th>Last Updated</th>
-                                <th className="justify-self-end">Actions</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -209,9 +210,9 @@ export default function AdminManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-4 justify-items-center"
+                                            className="border-gray-600"
                                         >
-                                            <td className="justify-self-start">
+                                            <td>
                                                 {user.name_first}{' '}
                                                 {user.name_last}
                                             </td>
@@ -235,15 +236,15 @@ export default function AdminManagement() {
                                                     </a>
                                                 </div>
                                             </td>
-                                            <td className="justify-self-end">
-                                                <div className="flex space-x-4">
+                                            <td>
+                                                <div className="flex space-x-2 text-accent cursor-pointer">
                                                     <ULIComponent
                                                         dataTip={'Edit Admin'}
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             editUserModal.current?.showModal();
                                                         }}
-                                                        icon={PencilSquareIcon}
+                                                        icon={PencilIcon}
                                                     />
                                                     <ULIComponent
                                                         dataTip={'Edit Admin'}
@@ -270,20 +271,21 @@ export default function AdminManagement() {
                                 })}
                         </tbody>
                     </table>
+                    {!isLoading && !error && meta && userData.length > 0 && (
+                        <Pagination meta={meta} setPage={setPageQuery} />
+                    )}
+                    {error && (
+                        <span className="text-center text-error">
+                            Failed to load users.
+                        </span>
+                    )}
+                    {!isLoading && !error && userData.length === 0 && (
+                        <span className="text-center text-warning">
+                            No results
+                        </span>
+                    )}
                 </div>
-                {!isLoading && !error && userData.length > 0 && (
-                    <Pagination meta={meta} setPage={setPageQuery} />
-                )}
-                {error && (
-                    <span className="text-center text-error">
-                        Failed to load users.
-                    </span>
-                )}
-                {!isLoading && !error && userData.length === 0 && (
-                    <span className="text-center text-warning">No results</span>
-                )}
             </div>
-
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
@@ -313,7 +315,7 @@ export default function AdminManagement() {
                     <DeleteForm
                         item="User"
                         onCancel={handleDeleteUserCancel}
-                        onSuccess={() => void deleteUser}
+                        onSuccess={() => void deleteUser()}
                     />
                 }
             />

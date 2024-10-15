@@ -1,27 +1,29 @@
 import '@/bootstrap';
 import '@/css/app.css';
+import React from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import Welcome from '@/Pages/Welcome';
 import Dashboard from '@/Pages/Dashboard';
 import Login from '@/Pages/Auth/Login';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
-import ProviderPlatformManagement from './Pages/ProviderPlatformManagement';
-import { AuthProvider } from './AuthContext';
-import Consent from './Pages/Auth/Consent';
-import MyCourses from './Pages/MyCourses';
-import MyProgress from './Pages/MyProgress';
-import CourseCatalog from './Pages/CourseCatalog';
-import ProviderUserManagement from './Pages/ProviderUserManagement';
-import Error from './Pages/Error';
-import ResourcesManagement from './Pages/ResourcesManagement';
-import UnauthorizedNotFound from './Pages/Unauthorized';
+import ProviderPlatformManagement from '@/Pages/ProviderPlatformManagement';
+import { AuthProvider } from '@/AuthContext';
+import Consent from '@/Pages/Auth/Consent';
+import MyCourses from '@/Pages/MyCourses';
+import MyProgress from '@/Pages/MyProgress';
+import CourseCatalog from '@/Pages/CourseCatalog';
+import ProviderUserManagement from '@/Pages/ProviderUserManagement';
+import Error from '@/Pages/Error';
+import ResourcesManagement from '@/Pages/ResourcesManagement';
+import UnauthorizedNotFound from '@/Pages/Unauthorized';
 import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
-import { useAuth } from './useAuth';
 import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
+import { checkDefaultFacility, checkExistingFlow, useAuth } from '@/useAuth';
+import { UserRole } from '@/common';
 
-function WithAuth({ children }) {
+function WithAuth({ children }: { children: React.ReactNode }) {
     return <AuthProvider>{children}</AuthProvider>;
 }
 
@@ -30,14 +32,14 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!user) {
         return;
     }
-    if (user.role === 'admin') {
+    if (user.role === UserRole.Admin) {
         return <div>{children}</div>;
     } else {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
 };
 
-function WithAdmin({ children }) {
+function WithAdmin({ children }: { children: React.ReactNode }) {
     return (
         <WithAuth>
             <AdminOnly>{children}</AdminOnly>
@@ -55,7 +57,8 @@ export default function App() {
         {
             path: '/login',
             element: <Login />,
-            errorElement: <Error />
+            errorElement: <Error />,
+            loader: checkExistingFlow
         },
         {
             path: '/dashboard',
@@ -85,7 +88,8 @@ export default function App() {
         {
             path: '/reset-password',
             element: WithAuth({ children: <ResetPassword /> }),
-            errorElement: <Error />
+            errorElement: <Error />,
+            loader: checkDefaultFacility
         },
         {
             path: '/consent',

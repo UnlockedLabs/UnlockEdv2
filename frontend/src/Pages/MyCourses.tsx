@@ -58,10 +58,6 @@ export default function MyCourses() {
         // setPageQuery(1);
     };
 
-    function handleDropdownChange(value: string) {
-        setSort(value);
-    }
-
     return (
         <AuthenticatedLayout title="My Courses" path={['My Courses']}>
             <div className="px-8 py-4">
@@ -94,7 +90,7 @@ export default function MyCourses() {
                         />
                         <DropdownControl
                             label="Sort by"
-                            callback={handleDropdownChange}
+                            setState={setSort}
                             enumType={{
                                 'Name (A-Z)': 'order=asc&order_by=course_name',
                                 'Name (Z-A)': 'order=desc&order_by=course_name',

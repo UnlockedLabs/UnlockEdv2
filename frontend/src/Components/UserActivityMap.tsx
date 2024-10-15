@@ -104,7 +104,7 @@ export default function UserActivityMap() {
                 <form className="">
                     <DropdownControl
                         label=""
-                        callback={dropdownChange}
+                        customCallback={dropdownChange}
                         enumType={yearOptions}
                     />
                 </form>

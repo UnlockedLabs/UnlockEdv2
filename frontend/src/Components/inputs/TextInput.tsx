@@ -1,4 +1,4 @@
-import { FieldErrors } from 'react-hook-form';
+import { FieldErrors, UseFormRegister } from 'react-hook-form';
 
 interface TextProps {
     label: string;
@@ -6,7 +6,7 @@ interface TextProps {
     required: boolean;
     length: number | undefined;
     errors: FieldErrors<any>; // eslint-disable-line
-    register: Function; // eslint-disable-line
+    register: UseFormRegister<any>; // eslint-disable-line
     password?: boolean;
     isFocused?: boolean;
     autoComplete?: string;

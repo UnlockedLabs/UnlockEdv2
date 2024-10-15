@@ -11,8 +11,7 @@ import {
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
-    PaginationMeta,
-    ServerResponse,
+    ServerResponseMany,
     ToastState,
     User
 } from '../common';
@@ -52,12 +51,19 @@ export default function Users() {
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { data, mutate, error, isLoading } = useSWR<
-        ServerResponse<User>,
+        ServerResponseMany<User>,
         AxiosError
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`
     );
     const userData = data?.data as User[] | [];
+    const meta = data?.meta ?? {
+        current_page: 1,
+        page: 1,
+        total: userData.length,
+        per_page: userData.length,
+        last_page: 1
+    };
     const showToast = (message: string, state: ToastState) => {
         setToast({
             state,
@@ -173,7 +179,7 @@ export default function Users() {
                         />
                         <DropdownControl
                             label="order by"
-                            callback={setSortQuery}
+                            setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
@@ -284,10 +290,7 @@ export default function Users() {
                     </tbody>
                 </table>
                 {!isLoading && !error && userData.length > 0 && (
-                    <Pagination
-                        meta={data?.meta as PaginationMeta}
-                        setPage={setPageQuery}
-                    />
+                    <Pagination meta={meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">
