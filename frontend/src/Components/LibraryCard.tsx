@@ -9,8 +9,7 @@ import {
 } from '@/common';
 import API from '@/api/api';
 import { KeyedMutator } from 'swr';
-
-// TO DO: update URLS to refelct the actual URL rather than the half generated one
+import { useNavigate } from 'react-router-dom';
 
 export default function LibraryCard({
     library,
@@ -24,6 +23,7 @@ export default function LibraryCard({
     role: UserRole;
 }) {
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
+    const navigate = useNavigate();
 
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
@@ -47,28 +47,29 @@ export default function LibraryCard({
             });
         }
     };
+    const openContentProviderName =
+        library?.open_content_provider.name.charAt(0).toUpperCase() +
+        library?.open_content_provider.name.slice(1);
 
     return (
-        <div className="card">
-            <figure className="h-[100px]">
-                {library.image_url ? (
+        <div
+            className="card overflow-hidden cursor-pointer"
+            onClick={() => navigate(`/viewer/libraries/${library.id}`)}
+        >
+            <div className="flex p-4 gap-2 border-b-2">
+                <figure className="w-[48px] h-[48px] bg-cover">
                     <img
-                        className="object-cover w-full h-full"
-                        // TO DO: make sure that scraper is grabbing the entire URL so we dont have to append this
-                        src={'https://library.kiwix.org' + library.image_url}
+                        src={
+                            library?.open_content_provider.url +
+                            library?.image_url
+                        }
                         alt={`${library.name} thumbnail`}
                     />
-                ) : (
-                    <div className="bg-teal-1 h-full w-full"></div>
-                )}
-            </figure>
+                </figure>
+                <h3 className="w-3/4 body my-auto">{library.name}</h3>
+            </div>
             <div className="p-4 space-y-2">
-                <p className="body-small">
-                    {library?.open_content_provider.name}
-                </p>
-                <h3 className="card-title text-sm line-clamp-1">
-                    {library.name}
-                </h3>
+                <p className="body-small">{openContentProviderName}</p>
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
                     {library?.description}
                 </p>

@@ -22,6 +22,7 @@ import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import { checkDefaultFacility, checkExistingFlow, useAuth } from '@/useAuth';
 import { UserRole } from '@/common';
+import LibraryViewer from './Pages/LibraryViewer';
 
 function WithAuth({ children }: { children: React.ReactNode }) {
     return <AuthProvider>{children}</AuthProvider>;
@@ -121,6 +122,11 @@ export default function App() {
         {
             path: '/open-content',
             element: WithAuth({ children: <OpenContent /> }),
+            errorElement: <Error />
+        },
+        {
+            path: '/viewer/libraries/:id',
+            element: WithAuth({ children: <LibraryViewer /> }),
             errorElement: <Error />
         },
         {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -23,6 +24,8 @@ const (
 
 type csrfTokenKey string
 
+const libraryKey contextKey = "library"
+
 func (srv *Server) applyMiddleware(h HttpFunc) http.Handler {
 	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
 		srv.rateLimitMiddleware(
@@ -36,6 +39,23 @@ func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
 			srv.authMiddleware(
 				srv.adminMiddleware(
 					srv.handleError(h))))))
+}
+
+func (srv *Server) proxyMiddleware(next http.Handler) http.Handler {
+	log.Printf("proxy middleware")
+	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
+		srv.rateLimitMiddleware(
+			srv.authMiddleware(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					resourceID := r.PathValue("id")
+					var library models.Library
+					if err := srv.Db.Preload("OpenContentProvider").First(&library, "id = ? AND visibility_status = true", resourceID).Error; err != nil {
+						srv.errorResponse(w, http.StatusNotFound, "Library not found or visibility is not enabled")
+						return
+					}
+					ctx := context.WithValue(r.Context(), libraryKey, &library)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})))))
 }
 
 func corsMiddleware(next http.Handler) http.HandlerFunc {
