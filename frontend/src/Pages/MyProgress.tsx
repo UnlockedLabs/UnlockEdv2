@@ -110,7 +110,6 @@ export default function MyProgress() {
                                     <tr className="flex flex-row justify-between border border-x-0 border-t-0 body text-grey-4 text-left">
                                         <th className="w-1/2">Course Name</th>
                                         <th className="w-1/5">Status</th>
-                                        <th className="w-1/5">Grade</th>
                                         <th className="w-1/5">Hours Spent</th>
                                     </tr>
                                 </thead>
@@ -154,9 +153,6 @@ export default function MyProgress() {
                                                                 in progress
                                                             </TealPill>
                                                         )}
-                                                    </td>
-                                                    <td className="w-1/5">
-                                                        {course?.grade ?? '-'}
                                                     </td>
                                                     <td className="w-1/5">
                                                         {courseTotalTime.number +
