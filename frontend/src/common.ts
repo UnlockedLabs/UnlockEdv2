@@ -635,6 +635,6 @@ export enum FilterLibraries {
 }
 export enum FilterLibrariesAdmin {
     'All Libraries' = 'all',
-    'Visible' = '&visibility=visible',
-    'Hidden' = '&visibility=hidden'
+    'Visible' = 'visible',
+    'Hidden' = 'hidden'
 }

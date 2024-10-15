@@ -11,7 +11,10 @@ export default function VisibleHiddenToggle({
     const toggleClass =
         'py-1 rounded-lg inline-flex items-center justify-center gap-2';
     return (
-        <div className="bg-grey-1 rounded-lg border border-grey-2 w-full p-1 grid grid-cols-2 shadow-md justify-self-end">
+        <div
+            className="bg-grey-1 rounded-lg border border-grey-2 w-full p-1 grid grid-cols-2 shadow-md justify-self-end"
+            onClick={(e) => e.stopPropagation()}
+        >
             <button
                 className={`${toggleClass} ${visible ? 'bg-teal-3 text-white' : 'bg-transparent'}`}
                 onClick={() => changeVisibility(true)}

@@ -3,7 +3,14 @@ import {
     FilterLibrariesAdmin,
     Library,
     OpenContentProvider,
+<<<<<<< HEAD
     ServerResponseMany,
+||||||| parent of c3f8ce7 (feat: add library reverse proxy middleware and handler, update frontend)
+    ServerResponse,
+=======
+    PaginationMeta,
+    ServerResponse,
+>>>>>>> c3f8ce7 (feat: add library reverse proxy middleware and handler, update frontend)
     Tab,
     ToastProps,
     UserRole
@@ -13,8 +20,9 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
 import TabView from '@/Components/TabView';
 import { useAuth } from '@/useAuth';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
+import Pagination from './Pagination';
 
 export default function LibaryLayout({
     setToast,
@@ -44,11 +52,18 @@ export default function LibaryLayout({
         role = UserRole.Student;
     }
 
-    const { data: libraries, mutate: mutateLibraries } = useSWR<
-        ServerResponseMany<Library>
-    >(
-        `/api/libraries?${role == UserRole.Admin ? filterLibrariesAdmin : filterLibraries}&search=${searchTerm}`
+    const [pageQuery, setPageQuery] = useState<number>(1);
+
+    const {
+        data: libraries,
+        mutate: mutateLibraries,
+        error: librariesError,
+        isLoading: librariesLoading
+    } = useSWR<ServerResponseMany<Library>>(
+        `/api/libraries?page=${pageQuery}&per_page=20&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
     );
+    const librariesMeta = libraries?.meta;
+
     const { data: openContentProviders } =
         useSWR<ServerResponseMany<OpenContentProvider>>('/api/open-content');
 
@@ -63,6 +78,10 @@ export default function LibaryLayout({
             ) ?? [])
         ];
     }, [openContentProviders]);
+
+    useEffect(() => {
+        setPageQuery(1);
+    }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
     return (
         <div className="pt-6 space-y-6">
@@ -102,6 +121,17 @@ export default function LibaryLayout({
                         />
                     ))}
             </div>
+            {!librariesLoading &&
+                !librariesError &&
+				librariesMeta &&
+                libraries?.data.length > 0 && (
+                    <div className="flex justify-center">
+                        <Pagination
+                            meta={librariesMeta}
+                            setPage={setPageQuery}
+                        />
+                    </div>
+                )}
         </div>
     );
 }
