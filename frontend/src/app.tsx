@@ -18,6 +18,7 @@ import UnauthorizedNotFound from './Pages/Unauthorized';
 import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
 import { useAuth } from './useAuth';
+import FacilityManagement from '@/Pages/FacilityManagement.tsx';
 
 function WithAuth({ children }) {
     return <AuthProvider>{children}</AuthProvider>;
@@ -121,6 +122,12 @@ export default function App() {
             element: WithAuth({
                 children: <UnauthorizedNotFound which="notFound" />
             })
+        },
+        {
+            path: '/facilities-management',
+            element: WithAuth({ children: <FacilityManagement /> }),
+
+            errorElement: <Error />
         }
     ]);
 

@@ -13,6 +13,7 @@ import {
     UsersIcon
 } from '@heroicons/react/24/solid';
 import { useAuth } from '@/useAuth';
+import { BuildingOffice2Icon } from '@heroicons/react/16/solid';
 
 export default function Navbar({
     isPinned,
@@ -83,6 +84,12 @@ export default function Navbar({
                             <a href="/provider-platform-management">
                                 <RectangleStackIcon className="h-4" />
                                 Platforms
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/facilities">
+                                <BuildingOffice2Icon className="w-4" />{' '}
+                                Facilities
                             </a>
                         </li>
                     </>
