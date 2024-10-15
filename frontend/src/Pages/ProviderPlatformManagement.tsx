@@ -134,8 +134,10 @@ export default function ProviderPlatformManagement() {
             title="Provider Platform Management"
             path={['Provider Platform Management']}
         >
-            <div className="px-8 py-4">
-                <h1>Provider Platforms</h1>
+            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
+                <div className="pt-8">
+                    <h1>Provider Platforms</h1>
+                </div>
                 <div className="flex flex-row justify-between">
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}

@@ -195,6 +195,11 @@ export default function ResourcesManagement() {
 
     return (
         <AuthenticatedLayout title="Collections" path={['Resource Management']}>
+            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
+                <div className="pt-8">
+                    <h1>Resource Management</h1>
+                </div>
+            </div>
             <div className="flex flex-row p-4 gap-x-8 h-full grow">
                 {' '}
                 {/* Full page */}

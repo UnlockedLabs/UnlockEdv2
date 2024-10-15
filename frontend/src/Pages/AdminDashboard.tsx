@@ -22,8 +22,10 @@ export default function AdminDashboard() {
     const totalActivity = convertSeconds(activityData.total_weekly_activity);
 
     return (
-        <div className="px-8 py-4">
-            <h1 className="text-5xl">{activityData.facility_name}</h1>
+        <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
+            <div className="pt-8">
+                <h1>{activityData.facility_name}</h1>
+            </div>
             <div className="flex flex-row mt-12 gap-12">
                 <div className="flex flex-col gap-6">
                     <div className="card h-[240px]">
