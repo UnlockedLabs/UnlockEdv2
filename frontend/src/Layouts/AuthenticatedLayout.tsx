@@ -13,8 +13,8 @@ export default function AuthenticatedLayout({
     // 3. If the nav is not open. (Small screens only)
 
     const getInitialPinnedState = () => {
-        const storedNavPinned = localStorage.getItem('navPinned');
-        return storedNavPinned ? JSON.parse(storedNavPinned) : true;
+        const storedNavPinned = localStorage.getItem('navPinned') ?? 'true';
+        return JSON.parse(storedNavPinned) as boolean;
     };
 
     const [isNavOpen, setIsNavOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function AuthenticatedLayout({
                 <div className="drawer-content flex flex-col border-l border-grey-1">
                     <main className="w-full min-h-screen bg-background flex flex-col">
                         <PageNav
-                            path={path}
+                            path={path ?? []}
                             showOpenMenu={!isNavPinned}
                             onShowNav={showNav}
                         />

@@ -3,6 +3,7 @@ import Error from '@/Pages/Error';
 import useSWR from 'swr';
 import StaticContentCard from './StaticContentCard';
 import ResourcesCategoryCard from './ResourcesCategoryCard';
+import { AxiosError } from 'axios';
 
 const KolibriCard = () => {
     return (
@@ -31,8 +32,10 @@ const WikiCard = () => {
 };
 
 export default function ResourcesSideBar() {
-    const { data, isLoading, error } =
-        useSWR<ServerResponse<ResourceCategory>>('/api/left-menu');
+    const { data, isLoading, error } = useSWR<
+        ServerResponse<ResourceCategory>,
+        AxiosError
+    >('/api/left-menu');
 
     if (isLoading) return <div>Loading...</div>;
     if (error) return <Error />;
@@ -47,17 +50,16 @@ export default function ResourcesSideBar() {
             <div className="p-4 space-y-4">
                 <h2>Resources</h2>
                 <div className="flex flex-col gap-4">
-                    {categoryData &&
-                        categoryData.map(
-                            (category: ResourceCategory, index: number) => {
-                                return (
-                                    <ResourcesCategoryCard
-                                        key={category.id + ' ' + index}
-                                        category={category}
-                                    />
-                                );
-                            }
-                        )}
+                    {categoryData?.map(
+                        (category: ResourceCategory, index: number) => {
+                            return (
+                                <ResourcesCategoryCard
+                                    key={category.id + ' ' + index}
+                                    category={category}
+                                />
+                            );
+                        }
+                    )}
                 </div>
             </div>
         </div>

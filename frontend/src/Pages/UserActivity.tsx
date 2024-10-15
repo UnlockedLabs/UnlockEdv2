@@ -2,9 +2,10 @@ import Pagination from '../Components/Pagination';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '../Components/inputs/SearchBar';
-import { Activity, PaginationMeta, ServerResponse } from '../common';
+import { Activity, ServerResponseMany } from '@/common';
 import { useState } from 'react';
 import useSWR from 'swr';
+import { AxiosError } from 'axios';
 // import { useDebounceValue } from "usehooks-ts";
 
 export default function UserActivity() {
@@ -12,16 +13,15 @@ export default function UserActivity() {
     // const searchQuery = useDebounceValue(searchTerm, 300);
     // TO DO: come back and figure out pagequery
     const [pageQuery, setPageQuery] = useState(1);
-    pageQuery;
-
     const [sortQuery, setSortQuery] = useState('user_id DESC');
 
-    const { data, error, isLoading } = useSWR<ServerResponse<Activity>>(
+    const { data, error, isLoading } = useSWR<
+        ServerResponseMany<Activity>,
+        AxiosError
+    >(
         `/api/users/activity-log?sort=${sortQuery}&page=${pageQuery}&search=${searchTerm}`
     );
-
-    const userActivityData = data?.data as Activity[];
-
+    const userActivityData = data?.data ?? [];
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
         setPageQuery(1);
@@ -51,7 +51,7 @@ export default function UserActivity() {
                                 'Name (Z-A)':
                                     'user_activities.user_id desc, user_activities.created_at desc'
                             }}
-                            callback={setSortQuery}
+                            setState={setSortQuery}
                         />
                     </div>
                 </div>
@@ -69,7 +69,7 @@ export default function UserActivity() {
                     <tbody>
                         {!isLoading &&
                             !error &&
-                            userActivityData.map((activityInstance) => {
+                            userActivityData?.map((activityInstance) => {
                                 const dateTime = new Date(
                                     activityInstance.created_at
                                 );
@@ -112,11 +112,8 @@ export default function UserActivity() {
                             })}
                     </tbody>
                 </table>
-                {!isLoading && !error && userActivityData.length > 0 && (
-                    <Pagination
-                        meta={data.meta as PaginationMeta}
-                        setPage={setPageQuery}
-                    />
+                {!isLoading && !error && data && (
+                    <Pagination meta={data?.meta} setPage={setPageQuery} />
                 )}
                 {error && (
                     <span className="text-center text-error">

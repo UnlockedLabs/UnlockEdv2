@@ -1,11 +1,11 @@
-import { FieldErrors } from 'react-hook-form';
+import { FieldErrors, UseFormRegister } from 'react-hook-form';
 
 interface DropdownProps {
     label: string;
     interfaceRef: string;
     required: boolean;
     errors: FieldErrors<any>; // eslint-disable-line
-    register: Function; // eslint-disable-line
+    register: UseFormRegister<any>; // eslint-disable-line
     enumType: Record<string, string>;
 }
 

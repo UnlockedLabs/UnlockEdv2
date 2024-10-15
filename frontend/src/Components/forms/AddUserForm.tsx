@@ -93,13 +93,18 @@ export default function AddUserForm({
                 setProviders(resp.data as ProviderPlatform[]);
             }
         };
-        fetchActiveProviders();
+        void fetchActiveProviders();
     }, []);
 
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    const func = handleSubmit(onSubmit);
+                    void func(e);
+                }}
+            >
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}
@@ -133,34 +138,31 @@ export default function AddUserForm({
                     enumType={UserRole}
                 />
                 <br />
-                {providers &&
-                    providers.map((provider: ProviderPlatform) => (
-                        <div
-                            className="tooltip"
-                            data-tip="Also create account in provider platform"
-                            key={provider.id}
-                        >
-                            <div className="justify-items-center">
-                                Create New Account for User in:
-                            </div>
-                            <div className="form-control">
-                                <label className="label cursor-pointer gap-2">
-                                    <label className="badge-md">
-                                        {provider.name}
-                                    </label>
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox"
-                                        onChange={() =>
-                                            handleAddUserToProviderList(
-                                                provider.id
-                                            )
-                                        }
-                                    />
-                                </label>
-                            </div>
+                {providers?.map((provider: ProviderPlatform) => (
+                    <div
+                        className="tooltip"
+                        data-tip="Also create account in provider platform"
+                        key={provider.id}
+                    >
+                        <div className="justify-items-center">
+                            Create New Account for User in:
                         </div>
-                    ))}
+                        <div className="form-control">
+                            <label className="label cursor-pointer gap-2">
+                                <label className="badge-md">
+                                    {provider.name}
+                                </label>
+                                <input
+                                    type="checkbox"
+                                    className="checkbox"
+                                    onChange={() =>
+                                        handleAddUserToProviderList(provider.id)
+                                    }
+                                />
+                            </label>
+                        </div>
+                    </div>
+                ))}
                 <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>

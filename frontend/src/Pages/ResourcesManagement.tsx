@@ -1,18 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import useSWR from 'swr';
 import Modal from '../Components/Modal';
 import Toast from '../Components/Toast';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
-import AddResourceCollectionForm from '@/Components/forms/AddResourceCollectionForm.1';
-import EditResourceCollectionForm from '../Components/forms/EditResourceCollectionForm';
+import AddResourceCollectionForm from '@/Components/forms/AddResourceCollectionForm';
+import EditResourceCollectionForm from '@/Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
 import {
     ModalType,
-    Resource,
     ResourceCategory,
     ResourceLink,
-    ServerResponse,
+    ServerResponseMany,
     ToastState
 } from '@/common';
 import { PencilSquareIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -23,7 +22,6 @@ import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
 import ExternalLink from '@/Components/ExternalLink';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import API from '@/api/api';
 
 interface ToastProps {
     state: ToastState;
@@ -36,22 +34,20 @@ type EditableResourceCollection = ResourceCategory & {
 
 export default function ResourcesManagement() {
     const { data, error, mutate, isLoading } = useSWR<
-        ServerResponse<Resource>,
+        ServerResponseMany<ResourceCategory>,
         AxiosError
     >('/api/left-menu');
-    if (error) {
-        return null;
-    }
-    const [collectionList, setCollectionList] =
-        useState<EditableResourceCollection[]>();
+
+    const [collectionList, setCollectionList] = useState<
+        EditableResourceCollection[]
+    >([]);
     const [collectionToDelete, setCollectionToDelete] = useState<
         number | undefined
     >();
     const [selectedCollectionIndex, setSelectedCollectionIndex] = useState<
         number | undefined
     >();
-    const [hasDeletedCollection, setHasDeletedCollection] =
-        useState<boolean>(false);
+    const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
@@ -61,9 +57,9 @@ export default function ResourcesManagement() {
     const deleteCollectionModal = useRef<HTMLDialogElement>(null);
 
     useEffect(() => {
-        if (data && data instanceof Array) {
-            const updatedData = data.map(
-                (collection: EditableResourceCollection) => {
+        if (data) {
+            const updatedData = data.data.map(
+                (collection: ResourceCategory) => {
                     return {
                         ...collection,
                         id: Math.random(),
@@ -71,6 +67,7 @@ export default function ResourcesManagement() {
                     } as EditableResourceCollection;
                 }
             );
+
             setHasDeletedCollection(false);
             setSelectedCollectionIndex(undefined);
             setCollectionList(updatedData);
@@ -78,11 +75,9 @@ export default function ResourcesManagement() {
     }, [data]);
 
     const handleCollectionClick = (collection: EditableResourceCollection) => {
-        if (collectionList) {
-            setSelectedCollectionIndex(
-                collectionList.findIndex((c) => c.id === collection.id)
-            );
-        }
+        setSelectedCollectionIndex(
+            collectionList.findIndex((c) => c.id === collection.id)
+        );
     };
 
     const handleDeleteCollectionClick = (collectionId: number) => {
@@ -94,12 +89,13 @@ export default function ResourcesManagement() {
         updatedCollectionList: EditableResourceCollection[]
     ) => {
         // Retain selected collection (even if it was reordered)
-        if (selectedCollectionIndex && collectionList) {
+        if (selectedCollectionIndex) {
             const newSelectedCollectionIndex = updatedCollectionList.findIndex(
                 (c) => c.id === collectionList[selectedCollectionIndex].id
             );
             setSelectedCollectionIndex(newSelectedCollectionIndex);
         }
+
         setCollectionList(updatedCollectionList);
     };
 
@@ -107,7 +103,7 @@ export default function ResourcesManagement() {
         linkIndex: number,
         updatedResourceLink: ResourceLink
     ) => {
-        if (selectedCollectionIndex && collectionList) {
+        if (selectedCollectionIndex) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex].links[linkIndex] =
                 updatedResourceLink;
@@ -119,7 +115,7 @@ export default function ResourcesManagement() {
     const handleResourceCollectionChange = (
         updatedResourceCollection: EditableResourceCollection
     ) => {
-        if (selectedCollectionIndex && collectionList) {
+        if (selectedCollectionIndex) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex] =
                 updatedResourceCollection;
@@ -128,9 +124,6 @@ export default function ResourcesManagement() {
     };
 
     const hasMadeModifications = () => {
-        if (!collectionList) {
-            return false;
-        }
         return hasDeletedCollection || collectionList.some((c) => c.isModified);
     };
 
@@ -139,9 +132,6 @@ export default function ResourcesManagement() {
         linkName: string,
         linkUrl: string
     ) => {
-        if (!collectionList) {
-            return;
-        }
         const newCollection = {
             id: Math.random(),
             name: collectionName,
@@ -154,9 +144,6 @@ export default function ResourcesManagement() {
     };
 
     const deleteCollection = (id: number | undefined) => {
-        if (!collectionList) {
-            return;
-        }
         if (
             selectedCollectionIndex &&
             collectionList[selectedCollectionIndex].id === id
@@ -169,9 +156,6 @@ export default function ResourcesManagement() {
     };
 
     const updateFinalState = async (e: React.MouseEvent) => {
-        if (!collectionList) {
-            return;
-        }
         setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
         const newCollectionList = collectionList.map((c, i) => {
@@ -179,24 +163,39 @@ export default function ResourcesManagement() {
             c.id = i;
             return c;
         });
-        const response = await API.put<string>(
-            '/api/left-menu',
-            newCollectionList
-        );
-        // check response is okay, and give notification
-        if (!response.success) {
-            // show error
-            setToast({
-                state: ToastState.error,
-                message: 'Error Saving Collections'
-            });
-        } else {
-            await mutate();
-            // show success
-            setToast({
-                state: ToastState.success,
-                message: 'Collections Saved!'
-            });
+        try {
+            const response = await axios.put(
+                '/api/left-menu',
+                newCollectionList
+            );
+            // check response is okay, and give notification
+            if (response.status !== 201) {
+                // show error
+                setToast({
+                    state: ToastState.error,
+                    message: 'Error Saving Collections'
+                });
+            } else {
+                await mutate();
+                // show success
+                setToast({
+                    state: ToastState.success,
+                    message: 'Collections Saved!'
+                });
+            }
+        } catch (err) {
+            if (err instanceof AxiosError && err.response?.status == 422) {
+                setToast({
+                    state: ToastState.error,
+                    message: 'All collections must have associated links'
+                });
+            } else {
+                // show general error
+                setToast({
+                    state: ToastState.error,
+                    message: 'Error Saving Collections'
+                });
+            }
         }
     };
 
@@ -228,7 +227,7 @@ export default function ResourcesManagement() {
                             <div>failed to load</div>
                         ) : isLoading ? (
                             <div>loading...</div>
-                        ) : collectionList ? (
+                        ) : (
                             <SortableCollectionList
                                 collections={collectionList}
                                 selectedCollectionIndex={
@@ -244,14 +243,14 @@ export default function ResourcesManagement() {
                                     handleCollectionListReorder
                                 }
                             />
-                        ) : (
-                            <div> No collections found </div>
                         )}
                     </div>
                     <div className="flex justify-center">
                         <button
                             className="btn btn-primary btn-sm flex items-center justify-center space-x-2 text-white"
-                            onClick={(e) => void updateFinalState(e)}
+                            onClick={(e) => {
+                                void updateFinalState(e);
+                            }}
                             disabled={!hasMadeModifications()}
                         >
                             <CloudArrowUpIcon className="h-5 w-5" />
@@ -262,7 +261,7 @@ export default function ResourcesManagement() {
                 <div className="card flex flex-col flex-grow gap-4 px-8 py-4">
                     {/* Right pane */}
                     <h3>Modify Collection</h3>
-                    {selectedCollectionIndex && collectionList && (
+                    {selectedCollectionIndex && (
                         <ResourceCollectionEditor
                             collection={collectionList[selectedCollectionIndex]}
                             onCollectionChange={handleResourceCollectionChange}
@@ -335,12 +334,12 @@ const SortableCollectionList = ({
     const dragOverItem = useDebounceValue(draggedOverItem, 100);
 
     const handleSort = () => {
-        if (draggedItem == undefined || dragOverItem == undefined) return;
+        if (!draggedItem) return;
 
         const insertAtIndex = dragOverItem;
 
         // if dragged item is higher in the list, then should subtract a number from where it needs to be placed
-        if (draggedItem < dragOverItem[0]!) {
+        if (draggedItem && draggedItem < dragOverItem[0]!) {
             insertAtIndex[0] = insertAtIndex[0]! - 1;
         }
 
@@ -419,7 +418,7 @@ const SortableCollectionList = ({
             >
                 <div
                     className={
-                        draggedItem === index
+                        draggedItem == index
                             ? dragOverItem[0] == -1
                                 ? 'block'
                                 : 'hidden'
@@ -451,7 +450,7 @@ const SortableCollectionList = ({
                 </div>
 
                 {/* Render an empty div as a drop target for the end of the list. */}
-                {index == collections.length - 1 ? (
+                {index === collections.length - 1 ? (
                     <div
                         className="grow"
                         onDragOver={(e) => {
@@ -464,7 +463,7 @@ const SortableCollectionList = ({
                         }}
                         onDrop={(e) => {
                             e.preventDefault();
-                            setDraggedItem(undefined);
+                            setDraggedItem(index);
                         }}
                     ></div>
                 ) : undefined}

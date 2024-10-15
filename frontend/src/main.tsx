@@ -9,6 +9,7 @@ ReactDOM.createRoot(document.querySelector('#root')!).render(
     <React.StrictMode>
         <SWRConfig
             value={{
+                // eslint-disable-next-line
                 fetcher: (url) => window.axios.get(url).then((res) => res.data)
             }}
         >

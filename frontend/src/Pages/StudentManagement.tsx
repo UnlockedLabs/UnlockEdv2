@@ -11,8 +11,7 @@ import {
 import {
     DEFAULT_ADMIN_ID,
     ModalType,
-    PaginationMeta,
-    ServerResponse,
+    ServerResponseMany,
     ToastState,
     User
 } from '../common';
@@ -53,13 +52,13 @@ export default function StudentManagement() {
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { data, mutate, error, isLoading } = useSWR<
-        ServerResponse<User>,
+        ServerResponseMany<User>,
         AxiosError
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=student`
     );
     const userData = data?.data as User[] | [];
-    const meta = data?.meta as PaginationMeta;
+    const meta = data?.meta;
     const showToast = (message: string, state: ToastState) => {
         setToast({
             state,
@@ -168,7 +167,7 @@ export default function StudentManagement() {
                         />
                         <DropdownControl
                             label="order by"
-                            callback={setSortQuery}
+                            setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
@@ -276,20 +275,21 @@ export default function StudentManagement() {
                                 })}
                         </tbody>
                     </table>
+                    {!isLoading && !error && meta && userData.length > 0 && (
+                        <Pagination meta={meta} setPage={setPageQuery} />
+                    )}
+                    {error && (
+                        <span className="text-center text-error">
+                            Failed to load users.
+                        </span>
+                    )}
+                    {!isLoading && !error && userData.length === 0 && (
+                        <span className="text-center text-warning">
+                            No results
+                        </span>
+                    )}
                 </div>
-                {!isLoading && !error && userData.length > 0 && (
-                    <Pagination meta={meta} setPage={setPageQuery} />
-                )}
-                {error && (
-                    <span className="text-center text-error">
-                        Failed to load users.
-                    </span>
-                )}
-                {!isLoading && !error && userData.length === 0 && (
-                    <span className="text-center text-warning">No results</span>
-                )}
             </div>
-
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}

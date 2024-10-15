@@ -96,7 +96,7 @@ export default function MyProgress() {
                                     <h2 className="mt-2">All Courses</h2>
                                     <DropdownControl
                                         label="Sort by"
-                                        callback={handleSortCourses}
+                                        customCallback={handleSortCourses}
                                         enumType={{
                                             Name: 'order=asc&order_by=course_name',
                                             'Completed Only': 'completed',

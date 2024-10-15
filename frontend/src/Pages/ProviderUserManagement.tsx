@@ -6,7 +6,7 @@ import {
     PaginationMeta,
     ProviderPlatform,
     ProviderUser,
-    ServerResponse,
+    ServerResponseMany,
     ToastState,
     UserImports
 } from '@/common';
@@ -54,10 +54,13 @@ export default function ProviderUserManagement() {
             return;
         }
     });
-    const { data, mutate } = useSWR<ServerResponse<ProviderUser>, AxiosError>(
+    const { data, mutate } = useSWR<
+        ServerResponseMany<ProviderUser>,
+        AxiosError
+    >(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
-    const providerData = (data?.data as ProviderUser[]) ?? [];
+    const providerData = data?.data ?? [];
     const changePage = (page: number) => {
         setCurrentPage(page);
     };
@@ -168,7 +171,7 @@ export default function ProviderUserManagement() {
 
     useEffect(() => {
         if (data) {
-            setMeta(data.meta as PaginationMeta);
+            setMeta(data.meta);
             setCache(false);
         }
     }, [data]);
@@ -320,14 +323,9 @@ export default function ProviderUserManagement() {
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading &&
-                    !error &&
-                    data &&
-                    (data.meta as PaginationMeta).total === 0 && (
-                        <span className="text-center text-warning">
-                            No results
-                        </span>
-                    )}
+                {!isLoading && !error && data && data.meta.total === 0 && (
+                    <span className="text-center text-warning">No results</span>
+                )}
             </div>
             {provider && (
                 <Modal

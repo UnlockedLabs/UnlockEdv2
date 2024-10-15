@@ -18,13 +18,15 @@ import {
     ServerResponse,
     StudentDashboardJoin
 } from '@/common';
+import { AxiosError } from 'axios';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { data, error, isLoading } = useSWR<
-        ServerResponse<StudentDashboardJoin>
-    >(`/api/users/${user.id}/student-dashboard`);
+        ServerResponse<StudentDashboardJoin>,
+        AxiosError
+    >(`/api/users/${user?.id}/student-dashboard`);
     const userData = data?.data as StudentDashboardJoin;
 
     if (isLoading) return <div>Loading...</div>;
@@ -88,7 +90,7 @@ export default function StudentDashboard() {
     return (
         <div className="flex w-full">
             <div className="px-8 py-4">
-                <h1 className="text-5xl">Hi, {user.name_first}!</h1>
+                <h1 className="text-5xl">Hi, {user?.name_first}!</h1>
                 <h2 className="mt-7"> Pick Up Where You Left Off</h2>
                 <div className="mt-3 bg-base-teal p-6 card">
                     <div

@@ -1,4 +1,9 @@
-import { ResetPasswordResponse, User, UserRole } from '../../common';
+import {
+    ResetPasswordResponse,
+    ServerResponseOne,
+    User,
+    UserRole
+} from '@/common';
 import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
@@ -14,12 +19,9 @@ export default function ResetPasswordForm({
     onCancel
 }: ResetPasswordFormProps) {
     const getTempPassword = async () => {
-        const response = await API.post<ResetPasswordResponse>(
-            'users/student-password',
-            {
-                user_id: user?.id
-            }
-        );
+        const response = (await API.post('users/student-password', {
+            user_id: user?.id
+        })) as ServerResponseOne<ResetPasswordResponse>;
         if (!response.success) {
             onCancel('Failed to reset password', true);
             return;
@@ -52,7 +54,7 @@ export default function ResetPasswordForm({
                         <button
                             className="btn btn-error"
                             onClick={() => {
-                                getTempPassword();
+                                void getTempPassword();
                             }}
                         >
                             Reset Password

@@ -40,7 +40,7 @@ export default function ConsentForm() {
                 <PrimaryButton
                     className="btn btn-primary w-24"
                     type="button"
-                    onClick={accept}
+                    onClick={void accept}
                 >
                     Accept
                 </PrimaryButton>
