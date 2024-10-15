@@ -264,6 +264,7 @@ export interface Facility {
     name: string;
     created_at: string;
     updated_at: string;
+    timezone: string;
 }
 
 export interface ProviderUser {

@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/useAuth';
 import ULIComponent from './ULIComponent';
 import { Link } from 'react-router-dom';
+import { BuildingOffice2Icon } from '@heroicons/react/16/solid';
 
 export default function Navbar({
     isPinned,
@@ -92,6 +93,18 @@ export default function Navbar({
                                 <ULIComponent icon={RectangleStackIcon} />
                                 Platforms
                             </Link>
+                        </li>
+                        <li>
+                            <a href="/facilities">
+                                <BuildingOffice2Icon className="w-4" />{' '}
+                                Facilities
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/facilities">
+                                <BuildingOffice2Icon className="w-4" />{' '}
+                                Facilities
+                            </a>
                         </li>
                     </>
                 ) : (

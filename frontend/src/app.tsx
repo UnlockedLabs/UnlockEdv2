@@ -28,6 +28,7 @@ import { PathValueProvider } from '@/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
 import Dashboard from './Pages/Dashboard.tsx';
+import FacilityManagement from '@/Pages/FacilityManagement.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -220,6 +221,15 @@ const router = createBrowserRouter([
                     {
                         path: '*',
                         element: <UnauthorizedNotFound which="notFound" />
+                    },
+                    {
+                        path: 'facilities-management',
+                        element: <FacilityManagement />,
+                        handle: {
+                            title: 'Facilities Management',
+                            path: ['facilities-management']
+                        }
+                        errorElement: <Error />
                     }
                 ]
             }
