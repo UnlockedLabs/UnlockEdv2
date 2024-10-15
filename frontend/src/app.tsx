@@ -23,6 +23,8 @@ import OpenContent from './Pages/OpenContent';
 import { checkDefaultFacility, checkExistingFlow, useAuth } from '@/useAuth';
 import { UserRole } from '@/common';
 import LibraryViewer from './Pages/LibraryViewer';
+import { checkDefaultFacility, checkExistingFlow, useAuth } from '@/useAuth';
+import { UserRole } from '@/common';
 
 function WithAuth({ children }: { children: React.ReactNode }) {
     return <AuthProvider>{children}</AuthProvider>;
