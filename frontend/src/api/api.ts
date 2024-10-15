@@ -4,13 +4,11 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
-
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common.Accept = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-// Interceptor to handle responses and errors
 axios.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
@@ -25,13 +23,6 @@ axios.interceptors.response.use(
         const customError = new Error(message) as Error & {
             response: ServerResponse<null>;
         };
-        customError.response = {
-            type: 'one',
-            success: false,
-            message,
-            data: null
-        };
-
         return Promise.reject(customError);
     }
 );
