@@ -110,7 +110,6 @@ export default function MyProgress() {
                                                 Course Name
                                             </th>
                                             <th className="w-1/5">Status</th>
-                                            {/*<th className="w-1/5">Grade</th>*/}
                                             <th className="w-1/5">
                                                 Hours Spent
                                             </th>
@@ -158,10 +157,6 @@ export default function MyProgress() {
                                                                 </TealPill>
                                                             )}
                                                         </td>
-                                                        {/*<td className="w-1/5">*/}
-                                                        {/*    {course?.grade ||*/}
-                                                        {/*        '-'}*/}
-                                                        {/*</td>*/}
                                                         <td className="w-1/5">
                                                             {courseTotalTime.number +
                                                                 ' ' +
