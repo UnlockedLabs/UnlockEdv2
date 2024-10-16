@@ -1,12 +1,9 @@
-// import ProviderCard from '@/Components/ProviderCard.tsx';
-import AddProviderForm from '@/Components/forms/AddProviderForm.tsx';
-// import EditProviderForm from '@/Components/forms/EditProviderForm.tsx';
-import Modal from '@/Components/Modal.tsx';
+// import Modal from '@/Components/Modal.tsx';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
 import {
     Facility,
     ModalType,
-    // OidcClient,
+    // PaginationMeta,
     ServerResponse,
     ToastState
 } from '@/common.ts';
@@ -15,8 +12,11 @@ import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import Toast from '@/Components/Toast.tsx';
 import FacilityCard from '@/Components/FacilityCard.tsx';
-// import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm.tsx';
-// import NewOidcClientNotification from '@/Components/NewOidcClientNotification.tsx';
+import Modal from '@/Components/Modal.tsx';
+// import AddProviderForm from '@/Components/forms/AddProviderForm.tsx';
+import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
+// import Pagination from '@/Components/Pagination.tsx';
+// import SearchBar from '@/Components/inputs/SearchBar.tsx';
 
 interface ToastProps {
     state: ToastState;
@@ -25,11 +25,13 @@ interface ToastProps {
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<undefined | HTMLDialogElement>();
-    const editFacilityModal = useRef<undefined | HTMLDialogElement>();
-    // const [editFacility, setEditFacility] = useState<Facility | undefined>();
-    // const openOidcClientModal = useRef<undefined | HTMLDialogElement>();
-    // const openOidcRegistrationModal = useRef<undefined | HTMLDialogElement>();
-    // const [oidcClient, setOidcClient] = useState<OidcClient | undefined>();
+    // const editFacilityModal = useRef<undefined | HTMLDialogElement>();
+    // const [editFacility, setEditFacility] = useState<
+    //     Facility | undefined
+    // >();
+    // const [setEditFacility] = useState<
+    //     Facility | undefined
+    // >();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
@@ -45,12 +47,16 @@ export default function FacilityManagement() {
 
     const facilityData = facility?.data ? (facility.data as Facility[]) : [];
     // const meta = facility?.meta as PaginationMeta;
-    // const [pageQuery, setPageQuery] = useState(1);
-    // function resetModal() {
-    //     setTimeout(() => {
-    //         setEditFacility(undefined);
-    //     }, 200);
-    // }
+    // // const [searchTerm, setSearchTerm] = useState('');
+    // // const searchQuery = useDebounceValue(searchTerm, 300);
+    // const [, setPageQuery] = useState(1);
+    // const [sortQuery, setSortQuery] = useState('created_at DESC');
+
+    function resetModal() {
+        setTimeout(() => {
+            // setEditFacility(undefined);
+        }, 200);
+    }
     //
     // function openEditFacility(facility: Facility) {
     //     setEditFacility(facility);
@@ -65,67 +71,14 @@ export default function FacilityManagement() {
                 message: message
             });
         }
-        editFacilityModal.current?.close();
+        // editFacilityModal.current?.close();
         addFacilityModal.current?.close();
-        // resetModal();
+        resetModal();
     }
 
-    // const registerOidcClient = (fac: Facility) => {
-    //     openOidcClientModal.current?.showModal();
-    //     setEditFacility(fac);
-    // };
-    //
-    // const onRegisterOidcClientClose = (
-    //     response: ServerResponse<OidcClient>,
-    //     state: ToastState
-    // ) => {
-    //     openOidcClientModal.current?.close();
-    //     setEditFacility(undefined);
-    //     if (!response && state === ToastState.success) {
-    //         setToast({
-    //             state: state,
-    //             message: 'OIDC client registered successfully.'
-    //         });
-    //     } else if (!response && state === ToastState.error) {
-    //         setToast({
-    //             state: state,
-    //             message: 'Failed to register OIDC client.'
-    //         });
-    //     } else {
-    //         setOidcClient(response.data as OidcClient);
-    //         openOidcRegistrationModal.current?.showModal();
-    //     }
-    //     mutate();
-    //     state &&
-    //         response &&
-    //         setToast({
-    //             state: state,
-    //             message: response.message
-    //         });
-    // };
-    // const handleToggleArchiveProvider = (provider: ProviderPlatform) => {
-    //     const state = provider.state === 'archived' ? 'enabled' : 'archived';
-    //     API.patch(`provider-platforms/${provider.id}`, {
-    //         state: state
-    //     }).then((resp) => {
-    //         resp.success &&
-    //             setToast({
-    //                 state: ToastState.success,
-    //                 message: `Provider platform ${provider.name} has been ${state}.`
-    //             });
-    //         mutate();
-    //     });
-    // };
-
-    // const showAuthorizationInfo = async (provider: ProviderPlatform) => {
-    //     const resp = await API.get<OidcClient>(
-    //         `oidc/clients/${provider.oidc_id}`
-    //     );
-    //     if (resp.success) {
-    //         setOidcClient(resp.data as OidcClient);
-    //         openOidcRegistrationModal.current?.showModal();
-    //         return;
-    //     }
+    // const handleChange = (newSearch: string) => {
+    //     setSearchTerm(newSearch);
+    //     setPageQuery(1);
     // };
 
     return (
@@ -138,6 +91,22 @@ export default function FacilityManagement() {
                 <div className="flex flex-row justify-between">
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}
+                        <div className="flex flex-row gap-x-2">
+                            {/*<SearchBar*/}
+                            {/*    searchTerm={searchTerm}*/}
+                            {/*    changeCallback={handleChange}*/}
+                            {/*/>*/}
+                            {/*<DropdownControl*/}
+                            {/*    label="order by"*/}
+                            {/*    callback={setSortQuery}*/}
+                            {/*    enumType={{*/}
+                            {/*        'Name (A-Z)': 'name_last asc',*/}
+                            {/*        'Name (Z-A)': 'name_last desc',*/}
+                            {/*        'Account Created ↓ ': 'created_at desc',*/}
+                            {/*        'Account Created ↑ ': 'created_at asc'*/}
+                            {/*    }}*/}
+                            {/*/>*/}
+                        </div>
                     </div>
                     <button
                         className="button"
@@ -178,7 +147,7 @@ export default function FacilityManagement() {
                 type={ModalType.Add}
                 item="Facility"
                 form={
-                    <AddProviderForm
+                    <AddFacilityForm
                         onSuccess={(state: ToastState, message: string) => {
                             updateFacility(state, message);
                         }}
