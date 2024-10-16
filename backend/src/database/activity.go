@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"math"
 	"sort"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 
 type DailyActivity struct {
 	Date       time.Time         `json:"date"`
-	TotalTime  uint              `json:"total_time"`
-	Quartile   uint              `json:"quartile"`
+	TotalTime  int64             `json:"total_time"`
+	Quartile   int64             `json:"quartile"`
 	Activities []models.Activity `json:"activities"`
 }
 
@@ -105,7 +106,7 @@ type result struct {
 	ProviderPlatformName string
 	ExternalURL          string
 	Date                 string
-	TimeDelta            uint
+	TimeDelta            int64
 }
 
 func dashboardHelper(results []result) []models.CurrentEnrollment {
@@ -313,9 +314,9 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 		return dashboard, NewDBError(err, "error getting admin dashboard info")
 	}
 
-	dashboard.WeeklyActiveUsers = result.WeeklyActiveUsers
-	dashboard.AvgDailyActivity = int64(result.AvgDailyActivity)
-	dashboard.TotalWeeklyActivity = result.TotalWeeklyActivity
+	dashboard.WeeklyActiveUsers = int64(math.Abs(float64(result.WeeklyActiveUsers)))
+	dashboard.AvgDailyActivity = int64(math.Abs(result.AvgDailyActivity))
+	dashboard.TotalWeeklyActivity = int64(math.Abs(float64(result.TotalWeeklyActivity)))
 
 	// Course Milestones
 	err = db.Table("courses c").

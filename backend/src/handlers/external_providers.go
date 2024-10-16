@@ -225,6 +225,10 @@ func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderP
 		log.Error("error parsing id from response from kolibri for user creation")
 		return errors.New("error creating user in kolibri")
 	}
+	if !strings.Contains(id, "-") && len(id) > 20 {
+		// add hyphens back to the uuid django strips out
+		id = fmt.Sprintf("%s-%s-%s-%s-%s", id[:8], id[8:12], id[12:16], id[16:20], id[20:])
+	}
 	providerMapping := models.ProviderUserMapping{
 		UserID:             user.ID,
 		ProviderPlatformID: prov.ID,

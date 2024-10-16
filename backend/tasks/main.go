@@ -34,6 +34,7 @@ func main() {
 			continue
 		}
 	}
+	runner.execute()
 	scheduler.Start()
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
