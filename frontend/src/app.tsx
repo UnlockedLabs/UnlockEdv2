@@ -20,6 +20,7 @@ import StudentManagement from '@/Pages/StudentManagement.tsx';
 import { useAuth } from './useAuth';
 import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
+import LibraryViewer from './Pages/LibraryViewer';
 
 function WithAuth({ children }) {
     return <AuthProvider>{children}</AuthProvider>;
@@ -117,6 +118,11 @@ export default function App() {
         {
             path: '/open-content',
             element: WithAuth({ children: <OpenContent /> }),
+            errorElement: <Error />
+        },
+        {
+            path: '/viewer/libraries/:id',
+            element: WithAuth({ children: <LibraryViewer /> }),
             errorElement: <Error />
         },
         {

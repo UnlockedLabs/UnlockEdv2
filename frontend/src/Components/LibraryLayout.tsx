@@ -3,6 +3,7 @@ import {
     FilterLibrariesAdmin,
     Library,
     OpenContentProvider,
+    PaginationMeta,
     ServerResponse,
     Tab,
     ToastProps,
@@ -13,8 +14,9 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
 import TabView from '@/Components/TabView';
 import { useAuth } from '@/useAuth';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
+import Pagination from './Pagination';
 
 export default function LibaryLayout({
     setToast,
@@ -39,11 +41,18 @@ export default function LibaryLayout({
         role = UserRole.Student;
     }
 
-    const { data: libraries, mutate: mutateLibraries } = useSWR<
-        ServerResponse<Library[]>
-    >(
-        `/api/libraries?${role == UserRole.Admin ? filterLibrariesAdmin : filterLibraries}&search=${searchTerm}`
+    const [pageQuery, setPageQuery] = useState<number>(1);
+
+    const {
+        data: libraries,
+        mutate: mutateLibraries,
+        error: librariesError,
+        isLoading: librariesLoading
+    } = useSWR<ServerResponse<Library[]>>(
+        `/api/libraries?page=${pageQuery}&per_page=20&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
     );
+    const librariesMeta = libraries?.meta as PaginationMeta;
+
     const { data: openContentProviders } =
         useSWR<ServerResponse<OpenContentProvider[]>>('/api/open-content');
 
@@ -56,6 +65,10 @@ export default function LibaryLayout({
             })) ?? [])
         ];
     }, [openContentProviders]); //eslint-disable-line
+
+    useEffect(() => {
+        setPageQuery(1);
+    }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
     return (
         <div className="pt-6 space-y-6">
@@ -94,6 +107,16 @@ export default function LibaryLayout({
                     />
                 ))}
             </div>
+            {!librariesLoading &&
+                !librariesError &&
+                libraries.data.length > 0 && (
+                    <div className="flex justify-center">
+                        <Pagination
+                            meta={librariesMeta}
+                            setPage={setPageQuery}
+                        />
+                    </div>
+                )}
         </div>
     );
 }
