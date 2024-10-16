@@ -31,7 +31,7 @@ func (Course) TableName() string {
 
 type RecentActivity struct {
 	Date  string  `json:"date"`
-	Delta float32 `json:"delta"`
+	Delta float64 `json:"delta"`
 }
 
 type CurrentEnrollment struct {
@@ -39,7 +39,7 @@ type CurrentEnrollment struct {
 	Name                 string `json:"name"`
 	ProviderPlatformName string `json:"provider_platform_name"`
 	ExternalURL          string `json:"external_url"`
-	TotalTime            uint   `json:"total_activity_time"`
+	TotalTime            int64  `json:"total_activity_time"`
 }
 
 type RecentCourse struct {

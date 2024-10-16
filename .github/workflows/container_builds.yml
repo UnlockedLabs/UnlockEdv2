@@ -42,8 +42,6 @@ jobs:
         run: |
           echo "Frontend changes: ${{ steps.frontend_changes.outputs.changed }}"
           echo "Backend changes: ${{ steps.backend_changes.outputs.changed }}"
-
-
           echo "Middleware changes: ${{ steps.middleware_changes.outputs.changed }}"
           echo "Crontasks changes: ${{ steps.crontasks_changes.outputs.changed }}"
 
