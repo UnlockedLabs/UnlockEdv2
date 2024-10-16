@@ -101,7 +101,7 @@ export default function Navbar({
                             </a>
                         </li>
                         <li>
-                            <a href="/facilities">
+                            <a href="/facilities-management">
                                 <BuildingOffice2Icon className="w-4" />{' '}
                                 Facilities
                             </a>
