@@ -99,7 +99,6 @@ export default function MyProgress() {
                                             'In Progress Only': 'in_progress',
                                             'Total time':
                                                 'order=desc&order_by=total_time'
-                                            //"Grade": "order=asc&order_by=grade",
                                         }}
                                     />
                                 </div>
@@ -110,7 +109,6 @@ export default function MyProgress() {
                                                 Course Name
                                             </th>
                                             <th className="w-1/5">Status</th>
-                                            <th className="w-1/5">Grade</th>
                                             <th className="w-1/5">
                                                 Hours Spent
                                             </th>
@@ -157,10 +155,6 @@ export default function MyProgress() {
                                                                     in progress
                                                                 </TealPill>
                                                             )}
-                                                        </td>
-                                                        <td className="w-1/5">
-                                                            {course?.grade ||
-                                                                '-'}
                                                         </td>
                                                         <td className="w-1/5">
                                                             {courseTotalTime.number +
