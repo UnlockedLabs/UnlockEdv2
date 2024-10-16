@@ -18,7 +18,7 @@ export default function LibraryCard({
     role
 }: {
     library: Library;
-    setToast: React.Dispatch<React.SetStateAction<ToastProps>>;
+    setToast?: React.Dispatch<React.SetStateAction<ToastProps>>;
     mutate: KeyedMutator<ServerResponseMany<Library>>;
     role: UserRole;
 }) {
@@ -35,16 +35,18 @@ export default function LibraryCard({
     const handleToggleVisibility = async () => {
         const response = await API.put(`libraries/${library.id}`, {});
         if (response.success) {
-            setToast({
-                state: ToastState.success,
-                message: response.message
-            });
+            if (setToast)
+                setToast({
+                    state: ToastState.success,
+                    message: response.message
+                });
             await mutate();
         } else {
-            setToast({
-                state: ToastState.error,
-                message: response.message
-            });
+            if (setToast)
+                setToast({
+                    state: ToastState.error,
+                    message: response.message
+                });
         }
     };
     const openContentProviderName =
