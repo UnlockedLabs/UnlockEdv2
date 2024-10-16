@@ -365,11 +365,6 @@ export interface Milestone {
 }
 
 export interface ProviderPlatform {
-    [key: string]:
-        | string
-        | number
-        | ProviderPlatformState
-        | ProviderPlatformType;
     access_key: string;
     account_id: string;
     base_url: string;
@@ -621,6 +616,7 @@ export interface Library {
 }
 
 export interface OpenContentProvider {
+    id: number;
     name: string;
     url: string;
     provider_platform_id: number | null;

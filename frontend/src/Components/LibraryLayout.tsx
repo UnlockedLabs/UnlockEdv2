@@ -3,7 +3,7 @@ import {
     FilterLibrariesAdmin,
     Library,
     OpenContentProvider,
-    ServerResponse,
+    ServerResponseMany,
     Tab,
     ToastProps,
     UserRole
@@ -23,39 +23,46 @@ export default function LibaryLayout({
     setToast?: React.Dispatch<React.SetStateAction<ToastProps>>;
     studentView?: boolean;
 }) {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const [searchTerm, setSearchTerm] = useState<string>('');
     const allLibrariesTab: Tab = {
         name: 'All',
         value: 'all'
     };
     const [activeTab, setActiveTab] = useState<Tab>(allLibrariesTab);
-    const [filterLibraries, setFilterLibraries] = useState<FilterLibraries>(
+    const [filterLibraries, setFilterLibraries] = useState<string>(
         FilterLibraries['All Libraries']
     );
-    const [filterLibrariesAdmin, setFilterLibrariesAdmin] =
-        useState<FilterLibrariesAdmin>(FilterLibrariesAdmin['All Libraries']);
-    let role = useAuth().user.role;
+    const [filterLibrariesAdmin, setFilterLibrariesAdmin] = useState<string>(
+        FilterLibrariesAdmin['All Libraries']
+    );
+    let role = user.role;
     if (studentView) {
         role = UserRole.Student;
     }
 
     const { data: libraries, mutate: mutateLibraries } = useSWR<
-        ServerResponse<Library[]>
+        ServerResponseMany<Library>
     >(
         `/api/libraries?${role == UserRole.Admin ? filterLibrariesAdmin : filterLibraries}&search=${searchTerm}`
     );
     const { data: openContentProviders } =
-        useSWR<ServerResponse<OpenContentProvider[]>>('/api/open-content');
+        useSWR<ServerResponseMany<OpenContentProvider>>('/api/open-content');
 
     const openContentTabs = useMemo(() => {
         return [
             allLibrariesTab,
-            ...(openContentProviders?.data?.map((provider) => ({
-                name: provider.name,
-                value: provider.id
-            })) ?? [])
+            ...(openContentProviders?.data?.map(
+                (provider: OpenContentProvider) => ({
+                    name: provider.name,
+                    value: provider.id
+                })
+            ) ?? [])
         ];
-    }, [openContentProviders]); //eslint-disable-line
+    }, [openContentProviders]);
 
     return (
         <div className="pt-6 space-y-6">
@@ -73,26 +80,27 @@ export default function LibaryLayout({
                     <DropdownControl
                         label="Filter by"
                         enumType={FilterLibrariesAdmin}
-                        callback={setFilterLibrariesAdmin}
+                        setState={setFilterLibrariesAdmin}
                     />
                 ) : (
                     <DropdownControl
                         label="Filter by"
                         enumType={FilterLibraries}
-                        callback={setFilterLibraries}
+                        setState={setFilterLibraries}
                     />
                 )}
             </div>
             <div className="grid grid-cols-4 gap-6">
-                {libraries?.data.map((library) => (
-                    <LibraryCard
-                        key={library.id}
-                        library={library}
-                        setToast={setToast}
-                        mutate={mutateLibraries}
-                        role={role}
-                    />
-                ))}
+                {setToast &&
+                    libraries?.data.map((library) => (
+                        <LibraryCard
+                            key={library.id}
+                            library={library}
+                            setToast={setToast}
+                            mutate={mutateLibraries}
+                            role={role}
+                        />
+                    ))}
             </div>
         </div>
     );

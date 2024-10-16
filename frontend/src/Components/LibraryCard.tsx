@@ -2,7 +2,7 @@ import { useState } from 'react';
 import VisibleHiddenToggle from './VisibleHiddenToggle';
 import {
     Library,
-    ServerResponse,
+    ServerResponseMany,
     ToastProps,
     ToastState,
     UserRole
@@ -20,15 +20,15 @@ export default function LibraryCard({
 }: {
     library: Library;
     setToast: React.Dispatch<React.SetStateAction<ToastProps>>;
-    mutate: KeyedMutator<ServerResponse<Library[]>>;
-    role: string;
+    mutate: KeyedMutator<ServerResponseMany<Library>>;
+    role: UserRole;
 }) {
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
 
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
             setVisible(visibilityStatus);
-            handleToggleVisibility();
+            void handleToggleVisibility();
         }
     }
 
@@ -39,7 +39,7 @@ export default function LibraryCard({
                 state: ToastState.success,
                 message: response.message
             });
-            mutate();
+            await mutate();
         } else {
             setToast({
                 state: ToastState.error,
@@ -72,7 +72,7 @@ export default function LibraryCard({
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
                     {library?.description}
                 </p>
-                {role == UserRole.Admin && (
+                {role === UserRole.Admin && (
                     <VisibleHiddenToggle
                         visible={visible}
                         changeVisibility={changeVisibility}
