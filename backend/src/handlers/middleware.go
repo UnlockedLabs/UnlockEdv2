@@ -49,7 +49,15 @@ func (srv *Server) proxyMiddleware(next http.Handler) http.Handler {
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					resourceID := r.PathValue("id")
 					var library models.Library
-					if err := srv.Db.Preload("OpenContentProvider").First(&library, "id = ? AND visibility_status = true", resourceID).Error; err != nil {
+					tx := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID)
+					user := r.Context().Value(ClaimsKey).(*Claims)
+					switch user.Role {
+					case models.Admin:
+						tx = tx.First(&library)
+					default:
+						tx = tx.Where("visibility_status = true").First(&library)
+					}
+					if err := tx.Error; err != nil {
 						srv.errorResponse(w, http.StatusNotFound, "Library not found or visibility is not enabled")
 						return
 					}

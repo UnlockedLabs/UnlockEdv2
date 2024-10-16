@@ -23,13 +23,13 @@ export default function LibraryViewer() {
                 } else {
                     setError('Error loading library');
                 }
-            } catch (error) {
+            } catch {
                 setError('Error loading library');
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchLibraryData();
+        void fetchLibraryData();
     }, [libraryId]);
 
     return (

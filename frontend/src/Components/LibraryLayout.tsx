@@ -3,14 +3,7 @@ import {
     FilterLibrariesAdmin,
     Library,
     OpenContentProvider,
-<<<<<<< HEAD
     ServerResponseMany,
-||||||| parent of c3f8ce7 (feat: add library reverse proxy middleware and handler, update frontend)
-    ServerResponse,
-=======
-    PaginationMeta,
-    ServerResponse,
->>>>>>> c3f8ce7 (feat: add library reverse proxy middleware and handler, update frontend)
     Tab,
     ToastProps,
     UserRole
@@ -23,6 +16,7 @@ import { useAuth } from '@/useAuth';
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
+import { AxiosError } from 'axios';
 
 export default function LibaryLayout({
     setToast,
@@ -53,16 +47,21 @@ export default function LibaryLayout({
     }
 
     const [pageQuery, setPageQuery] = useState<number>(1);
-
     const {
         data: libraries,
         mutate: mutateLibraries,
         error: librariesError,
         isLoading: librariesLoading
-    } = useSWR<ServerResponseMany<Library>>(
+    } = useSWR<ServerResponseMany<Library>, AxiosError>(
         `/api/libraries?page=${pageQuery}&per_page=20&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
     );
-    const librariesMeta = libraries?.meta;
+    const librariesMeta = libraries?.meta ?? {
+        total: 0,
+        per_page: 20,
+        page: 1,
+        current_page: 1,
+        last_page: 1
+    };
 
     const { data: openContentProviders } =
         useSWR<ServerResponseMany<OpenContentProvider>>('/api/open-content');
@@ -110,28 +109,21 @@ export default function LibaryLayout({
                 )}
             </div>
             <div className="grid grid-cols-4 gap-6">
-                {setToast &&
-                    libraries?.data.map((library) => (
-                        <LibraryCard
-                            key={library.id}
-                            library={library}
-                            setToast={setToast}
-                            mutate={mutateLibraries}
-                            role={role}
-                        />
-                    ))}
+                {libraries?.data.map((library) => (
+                    <LibraryCard
+                        key={library.id}
+                        library={library}
+                        setToast={setToast}
+                        mutate={mutateLibraries}
+                        role={role}
+                    />
+                ))}
             </div>
-            {!librariesLoading &&
-                !librariesError &&
-				librariesMeta &&
-                libraries?.data.length > 0 && (
-                    <div className="flex justify-center">
-                        <Pagination
-                            meta={librariesMeta}
-                            setPage={setPageQuery}
-                        />
-                    </div>
-                )}
+            {!librariesLoading && !librariesError && librariesMeta && (
+                <div className="flex justify-center">
+                    <Pagination meta={librariesMeta} setPage={setPageQuery} />
+                </div>
+            )}
         </div>
     );
 }
