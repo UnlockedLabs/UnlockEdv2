@@ -93,7 +93,7 @@ export default function EditProviderForm({
     return (
         <div>
             <CloseX close={() => closeAndReset()} />
-            <form onSubmit={() => void handleSubmit(onSubmit)}>
+            <form onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
                 <TextInput
                     label="Name"
                     register={register}

@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
+    LockClosedIcon,
     TrashIcon,
     PencilIcon,
     PlusCircleIcon
@@ -152,6 +153,25 @@ export default function AdminManagement() {
         setPageQuery(1);
     };
 
+    const getUserIconData = {
+        'data-tip': (user: User) => {
+            return user.id === DEFAULT_ADMIN_ID
+                ? 'Cannot Delete'
+                : 'Delete Admin';
+        },
+        icon: (user: User) => {
+            return user.id === DEFAULT_ADMIN_ID ? LockClosedIcon : TrashIcon;
+        },
+        onClick: (user: User) => {
+            return user.id === DEFAULT_ADMIN_ID
+                ? undefined
+                : () => {
+                      setTargetUser(user);
+                      deleteUserModal.current?.showModal();
+                  };
+        }
+    };
+
     return (
         <AuthenticatedLayout
             title="Admin Management"
@@ -257,12 +277,15 @@ export default function AdminManagement() {
                                                         }
                                                     />
                                                     <ULIComponent
-                                                        dataTip={'Delete Admin'}
-                                                        onClick={() => {
-                                                            setTargetUser(user);
-                                                            deleteUserModal.current?.showModal();
-                                                        }}
-                                                        icon={TrashIcon}
+                                                        dataTip={getUserIconData[
+                                                            'data-tip'
+                                                        ](user)}
+                                                        onClick={getUserIconData.onClick(
+                                                            user
+                                                        )}
+                                                        icon={getUserIconData.icon(
+                                                            user
+                                                        )}
                                                     />
                                                 </div>
                                             </td>
