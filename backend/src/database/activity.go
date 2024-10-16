@@ -295,9 +295,9 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	// Weekly Active Users, Average Daily Activity, Total Weekly Activity
 	var result struct {
-		WeeklyActiveUsers   uint
+		WeeklyActiveUsers   int64
 		AvgDailyActivity    float64
-		TotalWeeklyActivity uint
+		TotalWeeklyActivity int64
 	}
 
 	err = db.Table("activities a").
@@ -314,7 +314,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 	}
 
 	dashboard.WeeklyActiveUsers = result.WeeklyActiveUsers
-	dashboard.AvgDailyActivity = uint(result.AvgDailyActivity)
+	dashboard.AvgDailyActivity = int64(result.AvgDailyActivity)
 	dashboard.TotalWeeklyActivity = result.TotalWeeklyActivity
 
 	// Course Milestones

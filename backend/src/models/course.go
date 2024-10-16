@@ -74,9 +74,9 @@ type ImportCourse struct {
 type AdminDashboardJoin struct {
 	FacilityName        string             `json:"facility_name"`
 	MonthlyActivity     []RecentActivity   `json:"monthly_activity"`
-	WeeklyActiveUsers   uint               `json:"weekly_active_users"`
-	AvgDailyActivity    uint               `json:"avg_daily_activity"`
-	TotalWeeklyActivity uint               `json:"total_weekly_activity"`
+	WeeklyActiveUsers   int64              `json:"weekly_active_users"`
+	AvgDailyActivity    int64              `json:"avg_daily_activity"`
+	TotalWeeklyActivity int64              `json:"total_weekly_activity"`
 	CourseMilestones    []CourseMilestones `json:"course_milestones"`
 	TopCourseActivity   []CourseActivity   `json:"top_course_activity"`
 }
