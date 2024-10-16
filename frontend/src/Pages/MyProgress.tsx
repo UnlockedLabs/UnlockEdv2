@@ -99,7 +99,6 @@ export default function MyProgress() {
                                             'In Progress Only': 'in_progress',
                                             'Total time':
                                                 'order=desc&order_by=total_time'
-                                            //"Grade": "order=asc&order_by=grade",
                                         }}
                                     />
                                 </div>
