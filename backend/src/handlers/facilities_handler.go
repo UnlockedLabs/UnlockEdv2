@@ -44,12 +44,13 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	newFacility, err := srv.Db.CreateFacility(facility.Name)
+	log.debug(facility)
+	err = srv.Db.CreateFacility(&facility)
 	if err != nil {
 		log.add("facility.Name", facility.Name)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusCreated, newFacility)
+	return writeJsonResponse(w, http.StatusCreated, facility)
 }
 
 func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {

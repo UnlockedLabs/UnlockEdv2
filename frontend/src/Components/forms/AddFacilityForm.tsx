@@ -49,7 +49,7 @@ export default function AddFacilityForm({
                 <TextInput
                     label="Timezone"
                     register={register}
-                    interfaceRef="base_url"
+                    interfaceRef="timezone"
                     required
                     length={undefined}
                     errors={errors}
