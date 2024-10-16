@@ -24,8 +24,8 @@ export default function AddResourceCollectionForm({
         <div>
             <CloseX close={() => reset()} />
             <form
-                onSubmit={() => {
-                    void handleSubmit(onSubmit);
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
                 }}
             >
                 <TextInput
