@@ -60,6 +60,7 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
+	
 	err = srv.Db.CreateFacility(&facility)
 	if err != nil {
 		log.add("facility.Name", facility.Name)
