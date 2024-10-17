@@ -46,9 +46,7 @@ export default function PageNav({
                     {showOpenMenu ? (
                         <li>
                             <ULIComponent
-                                onClick={() => {
-                                    onShowNav;
-                                }}
+                                onClick={onShowNav}
                                 icon={Bars3Icon}
                                 iconClassName={'cursor-pointer'}
                             />
@@ -56,9 +54,7 @@ export default function PageNav({
                     ) : (
                         <li>
                             <ULIComponent
-                                onClick={() => {
-                                    onShowNav;
-                                }}
+                                onClick={onShowNav}
                                 icon={Bars3Icon}
                                 iconClassName={'lg:hidden cursor-pointer'}
                             />
