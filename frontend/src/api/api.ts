@@ -1,30 +1,45 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import { ServerResponse, ServerResponseMany } from '@/common';
+import {
+    ServerResponse,
+    ServerResponseMany,
+    ServerResponseOne
+} from '@/common';
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.headers.common.Accept = 'application/json';
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
+// Interceptor to handle responses and errors
 axios.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
         const status = error?.response?.status;
+        let message = 'An error occurred';
         if (status === 401 || status === 403) {
-            return Promise.reject(new Error('Unauthorized'));
+            message = 'Unauthorized';
+        } else if (error?.response?.data) {
+            message = (error.response.data as ServerResponse<null>).message;
         }
-        const errorData = error.response?.data as ServerResponse<string>;
-        return {
-            success: false,
-            message: errorData.message ?? 'An error occurred',
-            data: undefined
+
+        const customError = new Error(message) as Error & {
+            response: ServerResponse<null>;
         };
+        customError.response = {
+            type: 'one',
+            success: false,
+            message,
+            data: null
+        };
+
+        return Promise.reject(customError);
     }
 );
 
 class API {
     private static getReturnData<T>(resp: AxiosResponse): ServerResponse<T> {
         const respData = resp.data as ServerResponse<T>;
+
         if (Array.isArray(respData.data)) {
             const manyResp = respData as ServerResponseMany<T>;
             return {
@@ -38,14 +53,14 @@ class API {
                     last_page: 1,
                     per_page: respData.data.length
                 }
-            };
+            } as ServerResponseMany<T>;
         } else {
             return {
                 type: 'one',
                 success: true,
                 data: respData.data,
                 message: respData.message ?? 'Request successful'
-            };
+            } as ServerResponseOne<T>;
         }
     }
 
@@ -61,11 +76,13 @@ class API {
                 data //eslint-disable-line
             });
             return API.getReturnData<T>(resp);
-        } catch {
+        } catch (error) {
+            const err = error as Error & { response?: ServerResponse<null> };
             return {
                 type: 'one',
                 success: false,
-                message: 'An error occurred'
+                message: err.message ?? 'An error occurred',
+                data: null
             } as ServerResponse<T>;
         }
     }

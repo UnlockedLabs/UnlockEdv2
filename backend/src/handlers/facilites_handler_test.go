@@ -133,7 +133,8 @@ func TestHandleUpdateFacility(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			var id uint
 			if test.expectedStatusCode == http.StatusOK {
-				facility, err := server.Db.CreateFacility("Ozark Correct. Cent.")
+				facility := models.Facility{Name: "Ozark Correctional Center", Timezone: "America/Chicago"}
+				err := server.Db.CreateFacility(&facility)
 				if err != nil {
 					t.Fatalf("unable to create facility, error is %v", err)
 				}
@@ -184,7 +185,8 @@ func TestHandleDeleteFacility(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			var id uint
 			if test.expectedStatusCode == http.StatusNoContent {
-				facility, err := server.Db.CreateFacility("Ozark Correctional Center")
+				facility := models.Facility{Name: "Ozark Correctional Center", Timezone: "America/Chicago"}
+				err := server.Db.CreateFacility(&facility)
 				if err != nil {
 					t.Errorf("failed to create facility")
 				}

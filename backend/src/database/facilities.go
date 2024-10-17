@@ -23,18 +23,12 @@ func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {
 	return &facility, nil
 }
 
-func (db *DB) CreateFacility(name string) (*models.Facility, error) {
-	log.Infoln("Creating facility:" + name)
-	facility := models.Facility{Name: name}
+func (db *DB) CreateFacility(facility *models.Facility) error {
 	if err := db.Create(&facility).Error; err != nil {
-		log.WithField("facility_name", name).Error("error creating facility in database")
-		return nil, newCreateDBError(err, "facilities")
+		log.Error("error creating facility in database")
+		return newCreateDBError(err, "facilities")
 	}
-	newFacility := models.Facility{}
-	if err := db.Model(models.Facility{}).Find(&newFacility, "name = ?", name).Error; err != nil {
-		return nil, newCreateDBError(err, "facilities")
-	}
-	return &newFacility, nil
+	return nil
 }
 
 func (db *DB) UpdateFacility(name string, id uint) (*models.Facility, error) {

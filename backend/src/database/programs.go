@@ -46,7 +46,7 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64
 }
 
 func (db *DB) CreateProgram(content *models.Program) (*models.Program, error) {
-	err := validate().Struct(content)
+	err := Validate().Struct(content)
 	if err != nil {
 		return nil, newCreateDBError(err, "create programs validation error")
 	}

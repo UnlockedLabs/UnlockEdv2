@@ -69,11 +69,11 @@ func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request, 
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	newProv, err := srv.Db.CreateProviderPlatform(&platform)
+	err = srv.Db.CreateProviderPlatform(&platform)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusCreated, newProv)
+	return writeJsonResponse(w, http.StatusCreated, platform)
 }
 
 func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request, log sLog) error {

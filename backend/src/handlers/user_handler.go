@@ -1,15 +1,16 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/go-playground/validator/v10"
+	"unicode"
 )
 
 func (srv *Server) registerUserRoutes() {
@@ -135,48 +136,52 @@ type CreateUserRequest struct {
 * TODO: transactional
 **/
 func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
-	user := CreateUserRequest{}
-	err := json.NewDecoder(r.Body).Decode(&user)
+	reqForm := CreateUserRequest{}
+	err := json.NewDecoder(r.Body).Decode(&reqForm)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	if user.User.FacilityID == 0 {
-		user.User.FacilityID = srv.getFacilityID(r)
+	if reqForm.User.FacilityID == 0 {
+		reqForm.User.FacilityID = srv.getFacilityID(r)
 	}
-	invalidUser := validateUsername(user.User)
+	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
-		return newBadRequestServiceError(err, invalidUser)
+		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
-	userNameExists := srv.Db.UsernameExists(user.User.Username)
+	userNameExists := srv.Db.UsernameExists(reqForm.User.Username)
 	if userNameExists {
 		return newBadRequestServiceError(err, "userexists")
 	}
-	user.User.Username = removeChars(user.User.Username, disallowedChars)
-	newUser, err := srv.Db.CreateUser(&user.User)
+	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username)
+	err = database.Validate().Struct(reqForm.User)
+	if err != nil {
+		return newBadRequestServiceError(err, "user did not pass validation")
+	}
+	err = srv.Db.CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	for _, providerID := range user.Providers {
+	for _, providerID := range reqForm.Providers {
 		provider, err := srv.Db.GetProviderPlatformByID(providerID)
 		if err != nil {
 			log.add("providerID", providerID)
 			log.error("Error getting provider platform by id createProviderUserAccount")
 			return newDatabaseServiceError(err)
 		}
-		if err = srv.createAndRegisterProviderUserAccount(provider, newUser); err != nil {
+		if err = srv.createAndRegisterProviderUserAccount(provider, &reqForm.User); err != nil {
 			log.add("providerID", providerID)
 			log.error("Error creating provider user account for provider: ", provider.Name)
 		}
 	}
-	tempPw := newUser.CreateTempPassword()
+	tempPw := reqForm.User.CreateTempPassword()
 	response := NewUserResponse{
-		User:         *newUser,
+		User:         reqForm.User,
 		TempPassword: tempPw,
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
-		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
+		if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
 			log.infof("Error creating user in kratos: %v", err)
 		}
 		kolibri, err := srv.Db.FindKolibriInstance()
@@ -186,8 +191,8 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			// kolibri might not be set up/available
 			return writeJsonResponse(w, http.StatusCreated, response)
 		}
-		if err := srv.CreateUserInKolibri(newUser, kolibri); err != nil {
-			log.add("userId", newUser.ID)
+		if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
+			log.add("userId", reqForm.User.ID)
 			log.error("error creating user in kolibri")
 		}
 	}
@@ -240,22 +245,19 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 	if toUpdate.Username != user.Username && user.Username != "" {
-		userNameExists := srv.Db.UsernameExists(user.Username)
-		if userNameExists {
+		if srv.Db.UsernameExists(user.Username) {
 			return newBadRequestServiceError(err, "userexists")
 		}
 	}
-	invalidUser := validateUsername(user)
+	invalidUser := validateUser(&user)
 	if invalidUser != "" {
-		return newBadRequestServiceError(err, invalidUser)
+		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
-	models.UpdateStruct(&toUpdate, &user)
-
-	updatedUser, err := srv.Db.UpdateUser(toUpdate)
+	err = srv.Db.UpdateUser(toUpdate)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, updatedUser)
+	return writeJsonResponse(w, http.StatusOK, toUpdate)
 }
 
 type TempPasswordRequest struct {
@@ -295,12 +297,16 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
-func validateUsername(user models.User) string {
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	err := validate.Struct(user)
-	if err != nil {
-		for _, err := range err.(validator.ValidationErrors) {
-			return err.Tag()
+func validateUser(user *models.User) string {
+	validateFunc := func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+	}
+	for _, tag := range []string{user.Username, user.NameFirst, user.NameLast} {
+		if tag == "" {
+			continue
+		}
+		if strings.ContainsFunc(tag, validateFunc) {
+			return "alphanum"
 		}
 	}
 	return ""

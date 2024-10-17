@@ -119,12 +119,12 @@ func (srv *Server) HandleCreateUserKratos(username, password string) error {
 		log.Error("Error updating password for new kratos user")
 		return err
 	}
-	updated, err := srv.Db.UpdateUser(user)
+	err = srv.Db.UpdateUser(user)
 	if err != nil {
 		log.Error("Error updating user")
 		return err
 	}
-	log.Infof("user created successfully + identity registered with kratos: %v", updated)
+	log.Infof("user created successfully + identity registered with kratos: %v", user)
 	return nil
 }
 

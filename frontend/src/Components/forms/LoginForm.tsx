@@ -50,7 +50,7 @@ export default function LoginForm() {
     };
     useEffect(() => {
         if (loaderData.redirect_to) {
-            navigate(loaderData.redirect_to);
+            window.location.replace(loaderData.redirect_to);
         }
     });
     return (

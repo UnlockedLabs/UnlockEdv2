@@ -52,27 +52,27 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 			NameFirst: user.NameFirst,
 			NameLast:  user.NameLast,
 		}
-		created, err := srv.Db.CreateUser(&newUser)
+		err := srv.Db.CreateUser(&newUser)
 		if err != nil {
 			log.error("Error creating user:" + err.Error())
 			continue
 		}
-		tempPw := created.CreateTempPassword()
+		tempPw := newUser.CreateTempPassword()
 		if !srv.isTesting(r) {
-			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
+			if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
 				log.add("error", err.Error())
 				log.errorf("Error creating user in kratos: %v", err)
 				// FIXME: Error handling if we fail/handle atomicity
 			}
 		}
 		mapping := models.ProviderUserMapping{
-			UserID:             created.ID,
+			UserID:             newUser.ID,
 			ProviderPlatformID: service.ProviderPlatformID,
 			ExternalUsername:   user.Username,
 			ExternalUserID:     user.ExternalUserID,
 		}
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
-			log.add("created.ID", created.ID)
+			log.add("created.ID", newUser.ID)
 			log.add("ExternalUserID", user.ExternalUserID)
 			log.errorf("error creating a mapping between user %v and provider %d", user, provider.ID)
 			return newDatabaseServiceError(err)

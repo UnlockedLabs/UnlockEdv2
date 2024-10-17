@@ -1,4 +1,4 @@
-import { User, UserRole } from '../../common';
+import { ServerResponseOne, User, UserRole } from '../../common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
@@ -56,7 +56,10 @@ export default function EditUserForm({
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
         const cleanData = diffFormData(data, user);
-        const resp = await API.patch(`users/${user.id}`, cleanData);
+        const resp = (await API.patch(
+            `users/${user.id}`,
+            cleanData
+        )) as ServerResponseOne<User>;
         if (!resp.success) {
             switch (resp.message) {
                 case 'userexists': {

@@ -141,11 +141,11 @@ func TestHandleUpdateProvider(t *testing.T) {
 			createPlat := getUpdateDeleteProvider()
 			var id uint
 			if test.expectedStatusCode == http.StatusOK {
-				newPlat, err := server.Db.CreateProviderPlatform(&createPlat)
+				err := server.Db.CreateProviderPlatform(&createPlat)
 				if err != nil {
 					t.Fatalf("unable to create platform provider, error is %v", err)
 				}
-				id = newPlat.ID
+				id = createPlat.ID
 				t.Cleanup(func() {
 					if err := server.Db.DeleteProviderPlatform(int(id)); err != nil {
 						fmt.Println("unable to cleanup/delete provider platform. Error is: ", err)
@@ -193,11 +193,11 @@ func TestHandleDeleteProvider(t *testing.T) {
 			createPlat := getUpdateDeleteProvider()
 			var id uint
 			if test.expectedStatusCode == http.StatusNoContent {
-				newPlat, err := server.Db.CreateProviderPlatform(&createPlat)
+				err := server.Db.CreateProviderPlatform(&createPlat)
 				if err != nil {
 					t.Fatalf("unable to create platform provider, error is %v", err)
 				}
-				id = newPlat.ID
+				id = createPlat.ID
 			} else {
 				id = 1
 			}

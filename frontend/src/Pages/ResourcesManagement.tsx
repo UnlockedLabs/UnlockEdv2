@@ -46,7 +46,7 @@ export default function ResourcesManagement() {
     >();
     const [selectedCollectionIndex, setSelectedCollectionIndex] = useState<
         number | undefined
-    >();
+    >(undefined);
     const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
@@ -59,10 +59,10 @@ export default function ResourcesManagement() {
     useEffect(() => {
         if (data) {
             const updatedData = data.data.map(
-                (collection: ResourceCategory) => {
+                (collection: ResourceCategory, idx: number) => {
                     return {
                         ...collection,
-                        id: Math.random(),
+                        id: idx,
                         isModified: false
                     } as EditableResourceCollection;
                 }
@@ -261,7 +261,7 @@ export default function ResourcesManagement() {
                 <div className="card flex flex-col flex-grow gap-4 px-8 py-4">
                     {/* Right pane */}
                     <h3>Modify Collection</h3>
-                    {selectedCollectionIndex && (
+                    {selectedCollectionIndex !== undefined && (
                         <ResourceCollectionEditor
                             collection={collectionList[selectedCollectionIndex]}
                             onCollectionChange={handleResourceCollectionChange}
