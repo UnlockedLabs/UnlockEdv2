@@ -1,4 +1,3 @@
-// import Modal from '@/Components/Modal.tsx';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
 import {
     Facility,
@@ -13,8 +12,8 @@ import useSWR from 'swr';
 import Toast from '@/Components/Toast.tsx';
 import FacilityCard from '@/Components/FacilityCard.tsx';
 import Modal from '@/Components/Modal.tsx';
-// import AddProviderForm from '@/Components/forms/AddProviderForm.tsx';
 import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
+import EditFacilityForm from '@/Components/forms/EditFacilityForm';
 // import Pagination from '@/Components/Pagination.tsx';
 // import SearchBar from '@/Components/inputs/SearchBar.tsx';
 
@@ -25,13 +24,9 @@ interface ToastProps {
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<undefined | HTMLDialogElement>();
-    // const editFacilityModal = useRef<undefined | HTMLDialogElement>();
-    // const [editFacility, setEditFacility] = useState<
-    //     Facility | undefined
-    // >();
-    // const [setEditFacility] = useState<
-    //     Facility | undefined
-    // >();
+    const editFacilityModal = useRef<undefined | HTMLDialogElement>();
+
+    const [editFacility, setEditFacility] = useState<Facility | undefined>();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
@@ -54,14 +49,14 @@ export default function FacilityManagement() {
 
     function resetModal() {
         setTimeout(() => {
-            // setEditFacility(undefined);
+            setEditFacility(undefined);
         }, 200);
     }
-    //
-    // function openEditFacility(facility: Facility) {
-    //     setEditFacility(facility);
-    //     editFacilityModal.current?.showModal();
-    // }
+
+    function openEditFacility(facility: Facility) {
+        setEditFacility(facility);
+        editFacilityModal.current?.showModal();
+    }
 
     function updateFacility(state: ToastState, message: string) {
         mutate();
@@ -71,7 +66,7 @@ export default function FacilityManagement() {
                 message: message
             });
         }
-        // editFacilityModal.current?.close();
+        editFacilityModal.current?.close();
         addFacilityModal.current?.close();
         resetModal();
     }
@@ -120,7 +115,7 @@ export default function FacilityManagement() {
                 </div>
                 <table className="table-2">
                     <thead>
-                        <tr className="grid-cols-4 px-4">
+                        <tr className="grid-cols-3 px-3">
                             <th className="justify-self-start">Name</th>
                             <th>Timezone</th>
                             <th className="justify-self-end">Actions</th>
@@ -129,7 +124,14 @@ export default function FacilityManagement() {
                     <tbody>
                         {!isLoading && !error ? (
                             facilityData.map((facility: Facility) => {
-                                return <FacilityCard facility={facility} />;
+                                return (
+                                    <FacilityCard
+                                        facility={facility}
+                                        openEditFacility={() => {
+                                            openEditFacility(facility);
+                                        }}
+                                    />
+                                );
                             })
                         ) : (
                             <tr>
@@ -155,23 +157,23 @@ export default function FacilityManagement() {
                 }
                 ref={addFacilityModal}
             />
-            {/*<Modal*/}
-            {/*    type={ModalType.Edit}*/}
-            {/*    item="Provider"*/}
-            {/*    form={*/}
-            {/*        editFacility ? (*/}
-            {/*            <EditProviderForm*/}
-            {/*                onSuccess={(state: ToastState, message: string) => {*/}
-            {/*                    updateFacility(state, message);*/}
-            {/*                }}*/}
-            {/*                provider={editFacility}*/}
-            {/*            />*/}
-            {/*        ) : (*/}
-            {/*            <div></div>*/}
-            {/*        )*/}
-            {/*    }*/}
-            {/*    ref={editFacilityModal}*/}
-            {/*/>*/}
+            <Modal
+                type={ModalType.Edit}
+                item="Facility"
+                form={
+                    editFacility ? (
+                        <EditFacilityForm
+                            onSuccess={(state: ToastState, message: string) => {
+                                updateFacility(state, message);
+                            }}
+                            facility={editFacility}
+                        />
+                    ) : (
+                        <div></div>
+                    )
+                }
+                ref={editFacilityModal}
+            />
             {/*<Modal*/}
             {/*    type={ModalType.Register}*/}
             {/*    item="Provider"*/}

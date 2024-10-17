@@ -1,52 +1,32 @@
 // import { useNavigate } from 'react-router-dom';
 import { Facility } from '@/common';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import {
-    ArrowPathRoundedSquareIcon,
-    PencilIcon,
-    TrashIcon
-} from '@heroicons/react/20/solid';
+import { PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
 
 export default function FacilityCard({
-    facility
-    // openEditProvider,
-    // oidcClient,
-    // showAuthorizationInfo,
-    // archiveProvider
+    facility,
+    openEditFacility
 }: {
     facility: Facility;
-    // openEditProvider: (prov: ProviderPlatform) => void;
-    // oidcClient: (prov: ProviderPlatform) => void;
-    // showAuthorizationInfo: (prov: ProviderPlatform) => void;
-    // archiveProvider: (prov: ProviderPlatform) => void;
+    openEditFacility: (fac: Facility) => void;
 }) {
     // const navigate = useNavigate();
     return (
-        <tr className="bg-base-teal card p-4 w-full grid-cols-4 justify-items-center">
+        <tr className="bg-base-teal card p-4 w-full grid-cols-3 justify-items-center">
             <td className="justify-self-start">{facility.name}</td>
             <td className="">{facility.timezone}</td>
             <td className="flex flex-row gap-3 justify-self-end">
-                <div className="flex space-x-2 text-accent cursor-pointer">
+                <div className="flex space-x-2 cursor-pointer">
                     <ULIComponent
-                        dataTip={'Edit Student'}
+                        dataTip={'Edit Facility'}
                         icon={PencilIcon}
                         onClick={() => {
-                            // setTargetUser(user);
-                            // editUserModal.current?.showModal();
+                            openEditFacility(facility);
                         }}
                     />
 
                     <ULIComponent
-                        dataTip={'Reset Password'}
-                        icon={ArrowPathRoundedSquareIcon}
-                        onClick={() => {
-                            // setTargetUser(user);
-                            // resetUserPasswordModal.current?.showModal();
-                        }}
-                    />
-
-                    <ULIComponent
-                        dataTip={'Delete Student'}
+                        dataTip={'Delete Facility'}
                         icon={TrashIcon}
                         onClick={() => {
                             // setTargetUser(user);

@@ -1,0 +1,90 @@
+import { Facility, ToastState } from '@/common';
+import { useState } from 'react';
+import { SubmitHandler, useForm } from 'react-hook-form';
+import { CloseX, SubmitButton, TextInput } from '../inputs';
+import API from '@/api/api';
+
+interface FacilityInputs {
+    name: string;
+    timezone: string;
+}
+
+export default function EditFacilityForm({
+    onSuccess,
+    facility
+}: {
+    onSuccess: (state: ToastState, message: string) => void;
+    facility: Facility;
+}) {
+    const [errorMessage, setErrorMessage] = useState('');
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors }
+    } = useForm<FacilityInputs>({
+        defaultValues: {
+            name: facility.name,
+            timezone: facility.timezone
+        }
+    });
+
+    function diffFormData(formData: FacilityInputs, currentUserData: Facility) {
+        const changes: Partial<Facility> = {};
+        Object.keys(formData).forEach((key) => {
+            if (
+                formData[key] !== currentUserData[key] &&
+                formData[key] !== undefined
+            ) {
+                changes[key] = formData[key];
+            }
+        });
+        return changes;
+    }
+
+    const onSubmit: SubmitHandler<Facility> = async (data) => {
+        const cleanData = diffFormData(data, facility);
+        setErrorMessage('');
+        const response = await API.patch(
+            `facilities/${facility?.id}`,
+            cleanData
+        );
+        if (!response.success) {
+            onSuccess(ToastState.error, 'Failed to update facility');
+            return;
+        }
+        reset();
+        onSuccess(ToastState.success, 'Facility updated successfully');
+    };
+
+    function closeAndReset() {
+        onSuccess(ToastState.null, '');
+        reset();
+    }
+
+    return (
+        <div>
+            <CloseX close={() => closeAndReset()} />
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <TextInput
+                    label="Name"
+                    register={register}
+                    interfaceRef="name"
+                    required
+                    length={25}
+                    errors={errors}
+                />
+                <TextInput
+                    label="Timezone"
+                    register={register}
+                    interfaceRef="timezone"
+                    required
+                    length={25}
+                    errors={errors}
+                />
+                <SubmitButton errorMessage={errorMessage} />
+            </form>
+        </div>
+    );
+}

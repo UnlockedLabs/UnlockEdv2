@@ -186,7 +186,7 @@ func TestHandleDeleteFacility(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			var id uint
 			if test.expectedStatusCode == http.StatusNoContent {
-			    facility := models.Facility{Name: "Ozark Correctional Center", Timezone: "America / Chicago"}
+				facility := models.Facility{Name: "Ozark Correctional Center", Timezone: "America / Chicago"}
 				err := server.Db.CreateFacility(&facility)
 				if err != nil {
 					t.Errorf("failed to create facility")
