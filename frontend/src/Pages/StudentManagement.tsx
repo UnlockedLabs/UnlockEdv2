@@ -157,7 +157,7 @@ export default function StudentManagement() {
             title="Student Management"
             path={['Student Management']}
         >
-            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
+            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-8">
                 <h1>Student Management</h1>
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
