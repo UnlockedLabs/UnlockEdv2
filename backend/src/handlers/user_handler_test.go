@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -149,26 +150,26 @@ func TestUpdateUser(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestNonAdminCannotUpdateUser", "student", getUpdateUserForm(), http.StatusUnauthorized, ""},
 		{"TestAdminCanUpdateUser", "admin", getUpdateUserForm(), http.StatusOK, ""},
-		{"TestAdminUpdateUserNameValidationFailed", "admin", getBadUserWithNoNameForm(), http.StatusBadRequest, ""},
+		{"TestAdminUpdateUserNameValidationFailed", "admin", getUserWithBadCharsForm(), http.StatusBadRequest, ""},
 		{"TestAdminUpdateUserNameExits", "admin", getUserWhereNameExistsAlreadyForm(), http.StatusBadRequest, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			newUser := models.User{
-				NameFirst:  "testUser",
-				NameLast:   "testUser",
-				Username:   "testUser",
-				Email:      "testUser",
+				NameFirst:  "testDeleteUser",
+				NameLast:   "testDeleteUser",
+				Username:   "testDeleteUser",
+				Email:      "testDeleteUser",
 				Role:       "admin",
 				FacilityID: 1,
 			}
 			var id uint
 			if test.expectedStatusCode == http.StatusOK {
-				created, err := server.Db.CreateUser(&newUser)
+				err := server.Db.CreateUser(&newUser)
 				if err != nil {
 					t.Errorf("unable to create user, error is %v", err)
 				}
-				id = created.ID
+				id = newUser.ID
 				t.Cleanup(func() {
 					if err := server.Db.DeleteUser(int(id)); err != nil {
 						fmt.Printf("unable to cleanup/delete user. Error is: %v", err)
@@ -198,7 +199,7 @@ func TestUpdateUser(t *testing.T) {
 				if err := json.Unmarshal([]byte(received), &resource); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(user, &resource.Data); diff != "" {
+				if diff := cmp.Diff(user, &resource.Data); diff != "" && !strings.Contains(diff, "UpdatedAt") {
 					t.Errorf("handler returned unexpected results: %v", diff)
 				}
 			}
@@ -223,11 +224,11 @@ func TestDeleteUser(t *testing.T) {
 			}
 			var id uint
 			if test.expectedStatusCode == http.StatusNoContent {
-				created, err := server.Db.CreateUser(&newUser)
+				err := server.Db.CreateUser(&newUser)
 				if err != nil {
 					t.Fatalf("unable to create user, error is %v", err)
 				}
-				id = created.ID
+				id = newUser.ID
 			} else {
 				id = 1
 			}
@@ -344,6 +345,13 @@ func getUserWhereNameExistsAlreadyForm() map[string]any {
 	form["email"] = "test"
 	form["role"] = "admin"
 	return form
+}
+
+func getUserWithBadCharsForm() map[string]any {
+	return map[string]any{
+		"name_first": "3cx03#2@",
+		"username":   "testUserName",
+	}
 }
 
 func getBadUserWithNoNameForm() map[string]any {

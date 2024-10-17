@@ -49,7 +49,7 @@ var TableList = []interface{}{
 	&models.Library{},
 }
 
-var validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
+var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB

@@ -33,7 +33,7 @@ func (db *DB) GetSectionsForFacility(page, perPage int, facilityId uint, search 
 }
 
 func (db *DB) CreateProgramSection(content *models.ProgramSection) (*models.ProgramSection, error) {
-	err := validate().Struct(content)
+	err := Validate().Struct(content)
 	if err != nil {
 		return nil, newCreateDBError(err, "create program sections validation error")
 	}

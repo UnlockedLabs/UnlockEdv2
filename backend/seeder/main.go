@@ -206,8 +206,8 @@ func seedTestData(db *gorm.DB) {
 					UserID:     user.ID,
 					CourseID:   prog.ID,
 					Type:       "interaction",
-					TotalTime:  uint(startTime + randTime),
-					TimeDelta:  uint(randTime),
+					TotalTime:  int64(startTime + randTime),
+					TimeDelta:  int64(randTime),
 					ExternalID: strconv.Itoa(rand.Intn(1000)),
 					CreatedAt:  time,
 				}

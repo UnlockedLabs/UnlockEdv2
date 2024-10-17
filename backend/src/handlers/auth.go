@@ -202,7 +202,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				}
 				traits := identity["traits"].(map[string]interface{})
 				fields["user"] = user
-				log.WithFields(fields).Info("found user from ory session")
+				log.WithFields(fields).Trace("found user from ory session")
 				facilityId, ok := traits["facility_id"].(float64)
 				if !ok {
 					facilityId = float64(user.FacilityID)

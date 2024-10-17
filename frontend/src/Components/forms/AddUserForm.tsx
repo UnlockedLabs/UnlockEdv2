@@ -41,7 +41,7 @@ export default function AddUserForm({
             user: data,
             provider_platforms: selectedProviders
         });
-
+        console.log('form response: ', response);
         if (!response.success) {
             const msg = response.message.trim();
             switch (msg) {
@@ -56,7 +56,7 @@ export default function AddUserForm({
                     setError('username', {
                         type: 'custom',
                         message:
-                            'Name + Username must contain letters and numbers only'
+                            'First/Last and Username must contain letters and numbers only'
                     });
                     break;
                 }

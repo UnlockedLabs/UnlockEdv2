@@ -46,7 +46,8 @@ export default function EditProviderForm({
             type: provider.type,
             base_url: provider.base_url,
             account_id: provider.account_id,
-            state: provider.state
+            state: provider.state,
+            access_key: provider.access_key
         }
     });
 
