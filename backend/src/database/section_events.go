@@ -25,7 +25,7 @@ func (db *DB) GetSectionEvents(page, perPage, sectionId int) (int64, []models.Pr
 }
 
 func (db *DB) CreateNewEvent(sectionId int, form *models.ProgramSectionEvent) (*models.ProgramSectionEvent, error) {
-	err := validate().Struct(form)
+	err := Validate().Struct(form)
 	if err != nil {
 		return nil, newCreateDBError(err, "program_section_event")
 	}

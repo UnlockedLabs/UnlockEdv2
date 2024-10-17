@@ -61,9 +61,9 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 	return &platform, nil
 }
 
-func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models.ProviderPlatform, error) {
-	if err := db.Create(&platform).Error; err != nil {
-		return nil, newCreateDBError(err, "provider_platforms")
+func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) error {
+	if err := db.Create(platform).Error; err != nil {
+		return newCreateDBError(err, "provider_platforms")
 	}
 	if platform.Type == models.Kolibri {
 		contentProv := models.OpenContentProvider{
@@ -77,11 +77,7 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) (*models
 			log.Errorln("unable to create relevant content provider for new kolibri instance")
 		}
 	}
-	newProv := models.ProviderPlatform{}
-	if err := db.Find(&newProv, "id = ?", platform.ID).Error; err != nil {
-		return nil, newCreateDBError(err, "provider_platforms")
-	}
-	return &newProv, nil
+	return nil
 }
 
 func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint) (*models.ProviderPlatform, error) {
