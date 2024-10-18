@@ -42,8 +42,6 @@ func (srv *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
 
 			req.URL.Path = parsedURL.Path
 			req.URL.RawQuery = r.URL.RawQuery
-
-			// These headers come from my nginx configuration file that I had used
 			req.Header.Set("X-Real-IP", r.RemoteAddr)
 			req.Header.Set("X-Forwarded-For", r.RemoteAddr)
 			req.Header.Set("X-Forwarded-Proto", "https")

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -79,7 +80,7 @@ func (sh *ServiceHandler) initContentProviderService(msg *nats.Msg) (OpenContent
 		log.Printf("Error looking up content provider: %v", err)
 		return nil, fmt.Errorf("failed to find open content provider: %v", err)
 	}
-	if openContentProvider.Name == models.Kiwix {
+	if strings.ToLower(openContentProvider.Name) == strings.ToLower(models.Kiwix) {
 		return NewKiwixService(openContentProvider, &body), nil
 	}
 	return nil, fmt.Errorf("unsupported open content provider type: %s", openContentProvider.Name)

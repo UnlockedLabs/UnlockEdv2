@@ -22,7 +22,7 @@ type OpenContentProvider struct {
 
 const (
 	KolibriThumbnailUrl string = "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg"
-	Kiwix               string = "kiwix"
+	Kiwix               string = "Kiwix"
 	KolibriDescription  string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
 )
 
