@@ -5,7 +5,7 @@ import {
     OpenContentProvider,
     ServerResponseMany,
     Tab,
-    ToastProps,
+    ToastState,
     UserRole
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -19,10 +19,10 @@ import Pagination from './Pagination';
 import { AxiosError } from 'axios';
 
 export default function LibaryLayout({
-    setToast,
+    toaster,
     studentView
 }: {
-    setToast?: React.Dispatch<React.SetStateAction<ToastProps>>;
+    toaster?: (msg: string, state: ToastState) => void;
     studentView?: boolean;
 }) {
     const { user } = useAuth();
@@ -113,7 +113,7 @@ export default function LibaryLayout({
                     <LibraryCard
                         key={library.id}
                         library={library}
-                        setToast={setToast}
+                        toaster={toaster}
                         mutate={mutateLibraries}
                         role={role}
                     />

@@ -7,8 +7,7 @@ export default function Login({ status }: { status?: string }) {
         window.location.href = BROWSER_URL;
     }
     return (
-        <>
-            <div title="Log in" />
+        <div title="Log in">
             <GuestLayout>
                 {status && (
                     <div className="mb-4 font-medium text-sm text-body-text bg-background">
@@ -17,6 +16,6 @@ export default function Login({ status }: { status?: string }) {
                 )}
                 <LoginForm />
             </GuestLayout>
-        </>
+        </div>
     );
 }

@@ -1,4 +1,3 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Error from './Error';
@@ -33,7 +32,7 @@ export default function LibraryViewer() {
     }, [libraryId]);
 
     return (
-        <AuthenticatedLayout title="Library Viewer" path={['Library Viewer']}>
+        <div>
             <div className="px-8 pb-4">
                 <h1>Library Viewer</h1>
                 <div className="w-full pt-4 justify-center">
@@ -54,6 +53,6 @@ export default function LibraryViewer() {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </div>
     );
 }

@@ -1,24 +1,18 @@
 import { useState } from 'react';
 import VisibleHiddenToggle from './VisibleHiddenToggle';
-import {
-    Library,
-    ServerResponseMany,
-    ToastProps,
-    ToastState,
-    UserRole
-} from '@/common';
+import { Library, ServerResponseMany, ToastState, UserRole } from '@/common';
 import API from '@/api/api';
 import { KeyedMutator } from 'swr';
 import { useNavigate } from 'react-router-dom';
 
 export default function LibraryCard({
     library,
-    setToast,
+    toaster,
     mutate,
     role
 }: {
     library: Library;
-    setToast?: React.Dispatch<React.SetStateAction<ToastProps>>;
+    toaster?: (msg: string, state: ToastState) => void;
     mutate: KeyedMutator<ServerResponseMany<Library>>;
     role: UserRole;
 }) {
@@ -35,18 +29,10 @@ export default function LibraryCard({
     const handleToggleVisibility = async () => {
         const response = await API.put(`libraries/${library.id}`, {});
         if (response.success) {
-            if (setToast)
-                setToast({
-                    state: ToastState.success,
-                    message: response.message
-                });
+            if (toaster) toaster(response.message, ToastState.success);
             await mutate();
         } else {
-            if (setToast)
-                setToast({
-                    state: ToastState.error,
-                    message: response.message
-                });
+            if (toaster) toaster(response.message, ToastState.error);
         }
     };
     const openContentProviderName =

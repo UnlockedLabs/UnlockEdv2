@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
 
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
     TrashIcon,
@@ -10,8 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
+    defaultToast,
     ModalType,
     ServerResponseMany,
+    showToast,
     ToastState,
     User
 } from '../common';
@@ -39,18 +40,15 @@ export default function StudentManagement() {
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
-    const [toast, setToast] = useState({
-        state: ToastState.null,
-        message: '',
-        reset: () => {
-            return;
-        }
-    });
+    const [toast, setToast] = useState(defaultToast);
 
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const toaster = (msg: string, state: ToastState) => {
+        showToast(setToast, setDisplayToast, msg, state);
+    };
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
@@ -59,22 +57,6 @@ export default function StudentManagement() {
     );
     const userData = data?.data as User[] | [];
     const meta = data?.meta;
-    const showToast = (message: string, state: ToastState) => {
-        setToast({
-            state,
-            message,
-            reset: () => {
-                setToast({
-                    state: ToastState.success,
-                    message: '',
-                    reset: () => {
-                        setDisplayToast(false);
-                    }
-                });
-            }
-        });
-        setDisplayToast(true);
-    };
 
     function resetModal() {
         setTimeout(() => {
@@ -84,7 +66,7 @@ export default function StudentManagement() {
 
     const deleteUser = async () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
-            showToast(
+            toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
@@ -98,14 +80,14 @@ export default function StudentManagement() {
             ? 'User deleted successfully'
             : response.message;
         deleteUserModal.current?.close();
-        showToast(message, toastType);
+        showToast(setToast, setDisplayToast, message, toastType);
         resetModal();
         await mutate();
         return;
     };
 
     const onAddUserSuccess = (pswd = '', msg: string, type: ToastState) => {
-        showToast(msg, type);
+        toaster(msg, type);
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
@@ -130,7 +112,7 @@ export default function StudentManagement() {
             resetModal();
             return;
         }
-        showToast(msg, state);
+        toaster(msg, state);
         resetModal();
     };
 
@@ -138,7 +120,7 @@ export default function StudentManagement() {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
-        showToast('Password Successfully Reset', ToastState.success);
+        toaster('Password Successfully Reset', ToastState.success);
     };
 
     const handleShowPasswordClose = () => {
@@ -153,10 +135,7 @@ export default function StudentManagement() {
     };
 
     return (
-        <AuthenticatedLayout
-            title="Student Management"
-            path={['Student Management']}
-        >
+        <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <h1>Student Management</h1>
                 <div className="flex justify-between">
@@ -191,13 +170,15 @@ export default function StudentManagement() {
                     </div>
                 </div>
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
-                    <table className="table-2">
+                    <table className="table-2 mb-4">
                         <thead>
                             <tr className="grid-cols-4 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
                                 <th>Last Updated</th>
-                                <th className="justify-self-end">Actions</th>
+                                <th className="justify-self-end pr-4">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -275,9 +256,17 @@ export default function StudentManagement() {
                                 })}
                         </tbody>
                     </table>
-                    {!isLoading && !error && meta && userData.length > 0 && (
-                        <Pagination meta={meta} setPage={setPageQuery} />
-                    )}
+                    <div className="flex justify-center pt-20">
+                        {!isLoading &&
+                            !error &&
+                            meta &&
+                            userData.length > 0 && (
+                                <Pagination
+                                    meta={meta}
+                                    setPage={setPageQuery}
+                                />
+                            )}
+                    </div>
                     {error && (
                         <span className="text-center text-error">
                             Failed to load users.
@@ -355,6 +344,6 @@ export default function StudentManagement() {
             />
             {/* Toasts */}
             {displayToast && <Toast {...toast} />}
-        </AuthenticatedLayout>
+        </div>
     );
 }

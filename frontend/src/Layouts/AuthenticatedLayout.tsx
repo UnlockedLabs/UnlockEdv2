@@ -1,12 +1,20 @@
-import { PropsWithChildren, useState } from 'react';
+import { useState } from 'react';
 import Navbar from '@/Components/Navbar';
+import { useMatches, UIMatch, Outlet } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
+import { RouteLabel } from '@/common';
 
-export default function AuthenticatedLayout({
-    title,
-    path,
-    children
-}: PropsWithChildren<{ title: string; path?: string[] }>) {
+// Extend RouteMatch with custom RouteMeta
+interface CustomRouteMatch extends UIMatch {
+    handle: RouteLabel;
+}
+
+export default function AuthenticatedLayout() {
+    const matches = useMatches() as CustomRouteMatch[];
+    const currentMatch = matches.find((match) => match?.handle?.title);
+    const title = currentMatch?.handle?.title ?? 'UnlockEd';
+    const path = currentMatch?.handle?.path;
+
     // We have three states we need to factor for.
     // 1. If the nav is open & pinned (Large screens only & uses lg:drawer-open)
     // 2. If the nav is open & not pinned (Large screens only)
@@ -35,9 +43,7 @@ export default function AuthenticatedLayout({
     return (
         <div className="font-lato">
             <div title={title} />
-            <div
-                className={`drawer drawer-mobile  ${isNavPinned ? 'lg:drawer-open' : ''} `}
-            >
+            <div className={`drawer ${isNavPinned ? 'lg:drawer-open' : ''} `}>
                 <div className="drawer-content flex flex-col border-l border-grey-1">
                     <main className="w-full min-h-screen bg-background flex flex-col">
                         <PageNav
@@ -45,7 +51,9 @@ export default function AuthenticatedLayout({
                             showOpenMenu={!isNavPinned}
                             onShowNav={showNav}
                         />
-                        <div className="grow">{children}</div>
+                        <div className="grow">
+                            <Outlet />
+                        </div>
                     </main>
                 </div>
                 <input

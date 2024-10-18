@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
     LockClosedIcon,
@@ -11,8 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
+    defaultToast,
     ModalType,
     ServerResponseMany,
+    showToast,
     ToastState,
     User
 } from '../common';
@@ -40,18 +40,14 @@ export default function AdminManagement() {
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
-    const [toast, setToast] = useState({
-        state: ToastState.null,
-        message: '',
-        reset: () => {
-            return;
-        }
-    });
-
+    const [toast, setToast] = useState(defaultToast);
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const toaster = (msg: string, state: ToastState) => {
+        showToast(setToast, setDisplayToast, msg, state);
+    };
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
@@ -60,22 +56,6 @@ export default function AdminManagement() {
     );
     const userData = data?.data as User[] | [];
     const meta = data?.meta;
-    const showToast = (message: string, state: ToastState) => {
-        setToast({
-            state,
-            message,
-            reset: () => {
-                setToast({
-                    state: ToastState.success,
-                    message: '',
-                    reset: () => {
-                        setDisplayToast(false);
-                    }
-                });
-            }
-        });
-        setDisplayToast(true);
-    };
 
     function resetModal() {
         setTimeout(() => {
@@ -85,7 +65,7 @@ export default function AdminManagement() {
 
     const deleteUser = async () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
-            showToast(
+            toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
@@ -96,17 +76,17 @@ export default function AdminManagement() {
             ? ToastState.success
             : ToastState.error;
         const message = response.success
-            ? 'User deleted successfully'
+            ? 'Administrator deleted successfully'
             : response.message;
         deleteUserModal.current?.close();
-        showToast(message, toastType);
+        toaster(message, toastType);
         resetModal();
         await mutate();
         return;
     };
 
     const onAddUserSuccess = (pswd = '', msg: string, type: ToastState) => {
-        showToast(msg, type);
+        toaster(msg, type);
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
@@ -131,7 +111,7 @@ export default function AdminManagement() {
             resetModal();
             return;
         }
-        showToast(msg, state);
+        toaster(msg, state);
         resetModal();
     };
 
@@ -139,7 +119,7 @@ export default function AdminManagement() {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
-        showToast('Password Successfully Reset', ToastState.success);
+        toaster('Password Successfully Reset', ToastState.success);
     };
 
     const handleShowPasswordClose = () => {
@@ -173,10 +153,7 @@ export default function AdminManagement() {
     };
 
     return (
-        <AuthenticatedLayout
-            title="Admin Management"
-            path={['Admin Management']}
-        >
+        <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <h1>Admin Management</h1>
                 <div className="flex justify-between">
@@ -211,15 +188,15 @@ export default function AdminManagement() {
                     </div>
                 </div>
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
-                    <table className="table-2">
+                    <table className="table-2 mb-4">
                         <thead>
-                            <tr className="border-gray-600">
-                                <th className="flex">
-                                    <span>Name</span>
-                                </th>
+                            <tr className="grid-cols-4 px-4">
+                                <th className="justify-self-start">Name</th>
                                 <th>Username</th>
                                 <th>Last Updated</th>
-                                <th>Actions</th>
+                                <th className="justify-self-end pr-4">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -230,9 +207,9 @@ export default function AdminManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="border-gray-600"
+                                            className="card p-4 w-full grid-cols-4 justify-items-center"
                                         >
-                                            <td>
+                                            <td className="justify-self-start">
                                                 {user.name_first}{' '}
                                                 {user.name_last}
                                             </td>
@@ -240,7 +217,7 @@ export default function AdminManagement() {
                                             <td>
                                                 <div
                                                     className="tooltip"
-                                                    data-tip="Activity"
+                                                    data-tip="User Activity"
                                                 >
                                                     <a className="flex justify-start cursor-pointer">
                                                         <span>
@@ -256,8 +233,8 @@ export default function AdminManagement() {
                                                     </a>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <div className="flex space-x-2 text-accent cursor-pointer">
+                                            <td className="justify-self-end">
+                                                <div className="flex space-x-4">
                                                     <ULIComponent
                                                         dataTip={'Edit Admin'}
                                                         onClick={() => {
@@ -294,9 +271,17 @@ export default function AdminManagement() {
                                 })}
                         </tbody>
                     </table>
-                    {!isLoading && !error && meta && userData.length > 0 && (
-                        <Pagination meta={meta} setPage={setPageQuery} />
-                    )}
+                    <div className="flex justify-center pt-20">
+                        {!isLoading &&
+                            !error &&
+                            meta &&
+                            userData.length > 0 && (
+                                <Pagination
+                                    meta={meta}
+                                    setPage={setPageQuery}
+                                />
+                            )}
+                    </div>
                     {error && (
                         <span className="text-center text-error">
                             Failed to load users.
@@ -372,6 +357,6 @@ export default function AdminManagement() {
             />
             {/* Toasts */}
             {displayToast && <Toast {...toast} />}
-        </AuthenticatedLayout>
+        </div>
     );
 }

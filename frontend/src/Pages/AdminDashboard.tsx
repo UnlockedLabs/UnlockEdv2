@@ -5,7 +5,7 @@ import StatsCard from '@/Components/StatsCard';
 import TopProgPieChart from '@/Components/TopProgActivityPieChart';
 import { AdminDashboardJoin, CourseActivity, ServerResponse } from '@/common';
 import useSWR from 'swr';
-import convertSeconds from '../Components/ConvertSeconds';
+import convertSeconds from '@/Components/ConvertSeconds';
 import { useContext } from 'react';
 import { ThemeContext } from '@/Components/ThemeContext';
 import { AxiosError } from 'axios';
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
         <div className="px-8 py-4">
             <h1 className="text-5xl">{activityData.facility_name}</h1>
             <div className="flex flex-row mt-12 gap-12">
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 w-2/3">
                     <div className="card h-[240px]">
                         <h2 className="card-h-padding">
                             Overall Platform Engagement
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
                     </div>
                 </div>
                 {/* Top course engagement */}
-                <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
+                <div className="card h-100 flex flex-col flex-grow justify-between overflow-auto">
                     <h2 className="card-h-padding">Top Course Engagement</h2>
                     <div className="">
                         <TopProgPieChart

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, SetStateAction } from 'react';
 
 export enum UserRole {
     Admin = 'admin',
@@ -132,6 +132,12 @@ export interface Client {
     userinfo_signed_response_alg: string;
 }
 
+export enum ToastState {
+    success = 'success',
+    error = 'error',
+    null = ''
+}
+
 export interface OidcContext {
     acr_values: string[];
     display: string;
@@ -175,7 +181,39 @@ export interface Attributes {
     type: string;
     value: string;
 }
+export const defaultToast = {
+    state: ToastState.success,
+    message: '',
+    reset: () => {
+        return;
+    }
+};
 
+export const showToast = (
+    setToast: React.Dispatch<SetStateAction<ToastProps>>,
+    setDisplayToast: React.Dispatch<SetStateAction<boolean>>,
+    message: string,
+    state: ToastState
+) => {
+    setToast({
+        state,
+        message,
+        reset: () => {
+            setToast({
+                state: ToastState.success,
+                message: '',
+                reset: () => {
+                    setDisplayToast(false);
+                }
+            });
+        }
+    });
+    setDisplayToast(true);
+};
+export interface RouteLabel {
+    title?: string;
+    path: string[];
+}
 export interface Label {
     id: number;
     text: string;
@@ -579,12 +617,6 @@ export enum NotificationType {
     ToDo = 'ToDo'
 }
 
-export enum ToastState {
-    success = 'success',
-    error = 'error',
-    null = ''
-}
-
 export enum CourseStatus {
     Current = 'Current',
     Completed = 'Completed',
@@ -628,6 +660,7 @@ export interface OpenContentProvider {
 export interface ToastProps {
     state: ToastState;
     message: string;
+    reset: () => void;
 }
 
 export enum FilterLibraries {
