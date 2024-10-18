@@ -1,4 +1,3 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useAuth } from '@/useAuth';
 import { UserRole } from '@/common';
 import StudentDashboard from './StudentDashboard';
@@ -10,12 +9,12 @@ export default function Dashboard() {
         return;
     }
     return (
-        <AuthenticatedLayout title="Dashboard" path={['Dashboard']}>
+        <div>
             {user.role === UserRole.Student ? (
                 <StudentDashboard />
             ) : (
                 <AdminDashboard />
             )}
-        </AuthenticatedLayout>
+        </div>
     );
 }

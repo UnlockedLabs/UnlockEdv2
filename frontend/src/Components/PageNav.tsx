@@ -69,7 +69,11 @@ export default function PageNav({
                         </li>
                     )}
 
-                    {path?.map((p) => <li key={p}>{p}</li>)}
+                    {path?.map((p) => (
+                        <li className="capitalize" key={p}>
+                            {p}
+                        </li>
+                    ))}
                 </ul>
             </div>
             <div className="navbar-end">
@@ -86,7 +90,7 @@ export default function PageNav({
                                     </span>
                                 )}
                             </summary>
-                            <ul className="dropdown-content bg-grey-2 z-[1]">
+                            <ul className="dropdown-content bg-grey-2 z-[1] dark:bg-grey-1">
                                 <li>
                                     <label className="flex cursor-pointer gap-2">
                                         <ULIComponent

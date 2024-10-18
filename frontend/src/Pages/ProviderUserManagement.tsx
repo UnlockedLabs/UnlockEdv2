@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useParams } from 'react-router-dom';
 import {
+    defaultToast,
     ModalType,
     PaginationMeta,
     ProviderPlatform,
     ProviderUser,
     ServerResponseMany,
+    showToast,
     ToastState,
     UserImports
 } from '@/common';
@@ -47,13 +48,10 @@ export default function ProviderUserManagement() {
     const [cache, setCache] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [toast, setToast] = useState({
-        state: ToastState.null,
-        message: '',
-        reset: () => {
-            return;
-        }
-    });
+    const [toast, setToast] = useState(defaultToast);
+    const toaster = (msg: string, state: ToastState) => {
+        showToast(setToast, setDisplayToast, msg, state);
+    };
     const { data, mutate } = useSWR<
         ServerResponseMany<ProviderUser>,
         AxiosError
@@ -78,36 +76,19 @@ export default function ProviderUserManagement() {
         void mutate();
     };
 
-    const showToast = (message: string, state: ToastState) => {
-        setToast({
-            state,
-            message,
-            reset: () => {
-                setToast({
-                    state: ToastState.success,
-                    message: '',
-                    reset: () => {
-                        setDisplayToast(false);
-                    }
-                });
-            }
-        });
-        setDisplayToast(true);
-    };
-
     async function handleImportAllUsers() {
         const res = await API.post(
             `actions/provider-platforms/${providerId}/import-users`,
             {}
         );
         if (res.success) {
-            showToast(
+            toaster(
                 'Users imported successfully, please check for accounts not created',
                 ToastState.success
             );
             window.location.reload();
         } else {
-            showToast(
+            toaster(
                 'error importing users, please check accounts',
                 ToastState.error
             );
@@ -120,7 +101,7 @@ export default function ProviderUserManagement() {
             { users: usersToImport }
         );
         if (res.success) {
-            showToast(res.message, ToastState.success);
+            toaster(res.message, ToastState.success);
             setImportedUsers(res.data as UserImports[]);
             importedUsersModal.current?.showModal();
             setUsersToImport([]);
@@ -128,7 +109,7 @@ export default function ProviderUserManagement() {
             return;
         } else {
             setUsersToImport([]);
-            showToast(
+            toaster(
                 'error importing users, please check accounts',
                 ToastState.error
             );
@@ -136,7 +117,7 @@ export default function ProviderUserManagement() {
     }
 
     function handleSubmitMapUser(msg: string, toastState: ToastState) {
-        showToast(msg, toastState);
+        toaster(msg, toastState);
         mapUserModal.current?.close();
     }
 
@@ -185,20 +166,14 @@ export default function ProviderUserManagement() {
                 setProvider(res.data as ProviderPlatform);
                 setIsLoading(false);
             } else {
-                showToast('Failed to fetch provider users', ToastState.error);
+                toaster('Failed to fetch provider users', ToastState.error);
             }
         };
         void getData();
     }, [providerId]);
 
     return (
-        <AuthenticatedLayout
-            title="Users"
-            path={[
-                'Provider Platforms',
-                `Provider User Management${provider ? ' (' + provider.name + ')' : ''}`
-            ]}
-        >
+        <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <SearchBar
@@ -367,6 +342,6 @@ export default function ProviderUserManagement() {
                 }
             />
             {displayToast && <Toast {...toast} />}
-        </AuthenticatedLayout>
+        </div>
     );
 }

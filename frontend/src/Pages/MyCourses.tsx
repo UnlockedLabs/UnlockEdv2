@@ -1,5 +1,4 @@
 import { useAuth } from '@/useAuth';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import EnrolledCourseCard from '@/Components/EnrolledCourseCard';
 import { useState } from 'react';
 import ToggleView from '@/Components/ToggleView';
@@ -17,13 +16,6 @@ import TabView from '@/Components/TabView';
 import { AxiosError } from 'axios';
 
 // TO DO: make sure this lives in the right place
-const tabTypes = {
-    Current: 'in_progress',
-    Completed: 'completed',
-    Favorited: 'is_favorited',
-    All: 'all'
-};
-
 export default function MyCourses() {
     const tabs: Tab[] = [
         { name: 'Current', value: 'in_progress' },
@@ -59,73 +51,56 @@ export default function MyCourses() {
     };
 
     return (
-        <AuthenticatedLayout title="My Courses" path={['My Courses']}>
-            <div className="px-8 py-4">
-                <h1>My Courses</h1>
-                <TabView
-                    tabs={tabs}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                />
-                <div className="flex flex-row gap-16 w-100 border-b-2 border-grey-2 py-3">
-                    {Object.entries(tabTypes).map(([k, v]) => (
-                        <button
-                            className={
-                                activeTab.value === v
-                                    ? 'text-teal-4 font-bold'
-                                    : ''
-                            }
-                            onClick={() => setActiveTab({ name: k, value: v })}
-                            key={k}
-                        >
-                            {k}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex flex-row items-center mt-4 justify-between">
-                    <div className="flex flex-row gap-x-2">
-                        <SearchBar
-                            searchTerm={searchTerm}
-                            changeCallback={handleChange}
-                        />
-                        <DropdownControl
-                            label="Sort by"
-                            setState={setSort}
-                            enumType={{
-                                'Name (A-Z)': 'order=asc&order_by=course_name',
-                                'Name (Z-A)': 'order=desc&order_by=course_name',
-                                'Progress (ascending)':
-                                    'order=asc&order_by=course_progress',
-                                'Progress (descending)':
-                                    'order=desc&order_by=course_progress'
-                            }}
-                        />
-                    </div>
-                    <ToggleView
-                        activeView={activeView}
-                        setActiveView={setActiveView}
+        <div className="px-8 py-4">
+            <h1>My Courses</h1>
+            <TabView
+                tabs={tabs}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+            />
+            <div className="flex flex-row items-center mt-4 justify-between">
+                <div className="flex flex-row gap-x-2">
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        changeCallback={handleChange}
+                    />
+                    <DropdownControl
+                        label="Sort by"
+                        setState={setSort}
+                        enumType={{
+                            'Name (A-Z)': 'order=asc&order_by=course_name',
+                            'Name (Z-A)': 'order=desc&order_by=course_name',
+                            'Progress (ascending)':
+                                'order=asc&order_by=course_progress',
+                            'Progress (descending)':
+                                'order=desc&order_by=course_progress'
+                        }}
                     />
                 </div>
-                {/* render on gallery or list view */}
-                <div
-                    className={`grid mt-8 ${activeView == ViewType.Grid ? 'grid-cols-4 gap-6' : 'gap-4'}`}
-                >
-                    {courseData.courses.map(
-                        (course: UserCourses, index: number) => {
-                            return (
-                                <EnrolledCourseCard
-                                    course={course}
-                                    view={activeView}
-                                    callMutate={() => {
-                                        void mutate();
-                                    }}
-                                    key={index}
-                                />
-                            );
-                        }
-                    )}
-                </div>
+                <ToggleView
+                    activeView={activeView}
+                    setActiveView={setActiveView}
+                />
             </div>
-        </AuthenticatedLayout>
+            {/* render on gallery or list view */}
+            <div
+                className={`grid mt-8 ${activeView == ViewType.Grid ? 'grid-cols-4 gap-6' : 'gap-4'}`}
+            >
+                {courseData.courses.map(
+                    (course: UserCourses, index: number) => {
+                        return (
+                            <EnrolledCourseCard
+                                course={course}
+                                view={activeView}
+                                callMutate={() => {
+                                    void mutate();
+                                }}
+                                key={index}
+                            />
+                        );
+                    }
+                )}
+            </div>
+        </div>
     );
 }

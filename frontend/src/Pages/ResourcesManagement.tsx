@@ -3,7 +3,6 @@ import axios, { AxiosError } from 'axios';
 import useSWR from 'swr';
 import Modal from '../Components/Modal';
 import Toast from '../Components/Toast';
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import AddResourceCollectionForm from '@/Components/forms/AddResourceCollectionForm';
 import EditResourceCollectionForm from '@/Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
@@ -200,7 +199,7 @@ export default function ResourcesManagement() {
     };
 
     return (
-        <AuthenticatedLayout title="Collections" path={['Resource Management']}>
+        <div>
             <div className="flex flex-row p-4 gap-x-8 h-full grow">
                 {/* Full page */}
                 <div className="flex flex-col gap-4 w-[300px]">
@@ -310,7 +309,7 @@ export default function ResourcesManagement() {
                     }
                 />
             )}
-        </AuthenticatedLayout>
+        </div>
     );
 }
 
