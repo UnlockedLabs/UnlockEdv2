@@ -29,7 +29,6 @@ func (sh *ServiceHandler) initSubscription() error {
 		{"tasks.get_activity", sh.handleAcitivityForCourse},
 		{"tasks.scrape_kiwix", sh.handleScrapeLibraries},
 	}
-
 	for _, sub := range subscriptions {
 		_, err := sh.nats.Subscribe(sub.topic, func(msg *nats.Msg) {
 			go sub.fn(sh.ctx, msg)
