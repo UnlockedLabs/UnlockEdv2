@@ -53,14 +53,13 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, error) {
 	otherTasks := make([]models.RunnableTask, 0)
 	providers := make([]models.OpenContentProvider, 0)
-	if err := jr.db.Find(&providers).Error; err != nil {
+	if err := jr.db.Find(&providers, "currently_enabled = true").Error; err != nil {
 		log.Errorf("failed to fetch all open content providers: %v", err)
 		return nil, err
 	}
 	for idx := range providers {
 		for _, jobType := range models.AllContentProviderJobs {
 			job := models.CronJob{Name: string(jobType)}
-			provider := models.OpenContentProvider{}
 			switch jobType {
 			case models.ScrapeKiwixJob:
 				if providers[idx].Name == models.Kiwix {
@@ -68,8 +67,8 @@ func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, 
 						log.Errorf("failed to create job: %v", err)
 						continue
 					}
-					task := models.RunnableTask{OpenContentProviderID: &provider.ID, JobID: job.ID, Status: models.StatusPending}
-					if err := jr.intoOpenContentTask(&job, provider.ID, &task); err != nil {
+					task := models.RunnableTask{OpenContentProviderID: &providers[idx].ID, JobID: job.ID, Status: models.StatusPending}
+					if err := jr.intoOpenContentTask(&job, providers[idx].ID, &task); err != nil {
 						log.Errorf("failed to create task: %v", err)
 						return nil, err
 					}
