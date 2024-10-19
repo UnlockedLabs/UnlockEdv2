@@ -144,6 +144,10 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
+		kiwix := models.OpenContentProvider{Name: models.Kiwix, BaseUrl: "https://library.kiwix.org", CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix}
+		if err := db.Create(&kiwix).Error; err != nil {
+			log.Fatalf("Failed to create kiwix open content provider: %v", err)
+		}
 	}
 }
 

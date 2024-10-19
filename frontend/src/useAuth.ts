@@ -73,6 +73,7 @@ const redirectTo = (url: string): AuthFlow => {
         redirect_to: url
     };
 };
+
 export const checkExistingFlow: LoaderFunction = async ({ request }) => {
     const url = new URL(request.url);
     const queryParams = new URLSearchParams(url.search);
@@ -81,6 +82,7 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
         console.log('No login flow specified');
         return json<AuthFlow>(redirectTo(BROWSER_URL));
     }
+    const attributes = await initFlow(flow);
     try {
         const checkResp = await axios.get<OrySessionWhoami>(SESSION_URL, {
             withCredentials: true
@@ -90,7 +92,6 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
             checkResp.data.active &&
             checkResp.data.identity.traits
         ) {
-            const attributes = await initFlow(flow);
             const reqBody = {
                 username: checkResp.data.identity.traits.username,
                 identity: checkResp.data.identity.id,
@@ -108,12 +109,7 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
     } catch {
         console.error('No active sessions found for this user');
     }
-    const attributes = await initFlow(flow);
-    return json<AuthFlow>({
-        flow_id: attributes.flow_id,
-        challenge: attributes.challenge,
-        csrf_token: attributes.csrf_token
-    });
+    return json<AuthFlow>(attributes);
 };
 
 export async function handleLogout(): Promise<void> {

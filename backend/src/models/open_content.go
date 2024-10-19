@@ -24,6 +24,8 @@ const (
 	KolibriThumbnailUrl string = "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg"
 	Kiwix               string = "Kiwix"
 	KolibriDescription  string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
+	KiwixThumbnailURL   string = "/kiwix.jpg"
+	KiwixDescription    string = "Kiwix is an offline reader that allows you to host a wide array of educational content."
 )
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {

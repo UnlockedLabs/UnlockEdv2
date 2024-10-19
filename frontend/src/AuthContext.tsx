@@ -1,7 +1,7 @@
 import '@/bootstrap';
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { User } from '@/common';
+import { BROWSER_URL, User } from '@/common';
 import { AuthContext, fetchUser } from '@/useAuth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -23,6 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return <div>Loading...</div>;
     }
     if (!user) {
+        window.location.href = BROWSER_URL;
         return;
     } else if (user.password_reset && window.location.pathname !== passReset) {
         window.location.href = passReset;

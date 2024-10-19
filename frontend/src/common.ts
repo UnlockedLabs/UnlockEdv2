@@ -230,11 +230,12 @@ export interface AuthFlow {
     challenge?: string;
     csrf_token: string;
     redirect_to?: string;
+    identifier?: string;
 }
 export interface OryTraits {
     username: string;
     facility_id: number;
-    role: string;
+    role: UserRole;
     password_reset: boolean;
 }
 
