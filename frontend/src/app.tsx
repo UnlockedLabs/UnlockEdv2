@@ -25,12 +25,15 @@ import { checkDefaultFacility, checkExistingFlow, useAuth } from '@/useAuth';
 import { UserRole } from '@/common';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
+import { PathValueProvider } from '@/PathValueCtx';
 
 const WithAuth: React.FC = () => {
     return (
-        <AuthProvider>
-            <Outlet />
-        </AuthProvider>
+        <PathValueProvider>
+            <AuthProvider>
+                <Outlet />
+            </AuthProvider>
+        </PathValueProvider>
     );
 };
 const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -47,11 +50,13 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function WithAdmin() {
     return (
-        <AuthProvider>
-            <AdminOnly>
-                <Outlet />
-            </AdminOnly>
-        </AuthProvider>
+        <PathValueProvider>
+            <AuthProvider>
+                <AdminOnly>
+                    <Outlet />
+                </AdminOnly>
+            </AuthProvider>
+        </PathValueProvider>
     );
 }
 
@@ -125,7 +130,7 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         handle: {
                             title: 'Library Viewer',
-                            path: ['viewer', 'libraries']
+                            path: ['viewer', 'libraries', ':id']
                         }
                     }
                 ]
@@ -182,12 +187,12 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'provider-users/:providerId',
+                        path: 'provider-users/:id',
                         element: <ProviderUserManagement />,
                         errorElement: <Error />,
                         handle: {
                             title: 'Provider User Management',
-                            path: ['provider-users', ':providerId']
+                            path: ['provider-platforms', ':id']
                         }
                     },
                     {

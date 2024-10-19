@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { handleLogout, useAuth } from '@/useAuth';
 import {
     ArrowRightEndOnRectangleIcon,
@@ -10,6 +10,7 @@ import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 import ThemeToggle from './ThemeToggle';
 import ULIComponent from '@/Components/ULIComponent.tsx';
+import { usePathValue } from '@/PathValueCtx';
 
 export default function PageNav({
     path,
@@ -22,7 +23,23 @@ export default function PageNav({
 }) {
     const { user } = useAuth();
     const detailsRef = useRef<HTMLDetailsElement>(null);
+    const { pathVal } = usePathValue();
+    const [customPath, setCustomPath] = useState<string[]>(path ?? []);
+
     useEffect(() => {
+        const handlePathChange = () => {
+            if (
+                path &&
+                path.length > 0 &&
+                path[path.length - 1] === ':id' &&
+                pathVal
+            ) {
+                const newPath = [...path];
+                newPath[path.length - 1] = pathVal;
+                setCustomPath(newPath);
+            }
+        };
+        handlePathChange();
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
                 detailsRef.current &&
@@ -33,11 +50,10 @@ export default function PageNav({
         };
 
         window.addEventListener('click', closeDropdown);
-
         return () => {
             window.removeEventListener('click', closeDropdown);
         };
-    }, []);
+    }, [path, pathVal]);
 
     return (
         <div className="navbar px-8">
@@ -69,7 +85,7 @@ export default function PageNav({
                         </li>
                     )}
 
-                    {path?.map((p) => (
+                    {customPath?.map((p) => (
                         <li className="capitalize" key={p}>
                             {p}
                         </li>

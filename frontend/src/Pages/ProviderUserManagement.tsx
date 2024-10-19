@@ -23,6 +23,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
+import { usePathValue } from '@/PathValueCtx';
 
 export default function ProviderUserManagement() {
     const mapUserModal = useRef<HTMLDialogElement>(null);
@@ -33,7 +34,8 @@ export default function ProviderUserManagement() {
     const [userToMap, setUserToMap] = useState<undefined | ProviderUser>();
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
-    const { providerId } = useParams();
+    const { id: providerId } = useParams();
+    const { setPathVal } = usePathValue();
     const providerID = parseInt(providerId ?? '0', 10);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
@@ -163,7 +165,9 @@ export default function ProviderUserManagement() {
                 `provider-platforms/${providerId}`
             );
             if (res.success) {
-                setProvider(res.data as ProviderPlatform);
+                const prov = res.data as ProviderPlatform;
+                setProvider(prov);
+                setPathVal(prov.name);
                 setIsLoading(false);
             } else {
                 toaster('Failed to fetch provider users', ToastState.error);

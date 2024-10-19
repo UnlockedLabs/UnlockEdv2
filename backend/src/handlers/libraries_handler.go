@@ -8,6 +8,7 @@ import (
 
 func (srv *Server) registerLibraryRoutes() {
 	srv.Mux.Handle("GET /api/libraries", srv.applyMiddleware(srv.handleIndexLibraries))
+	srv.Mux.Handle("GET /api/libraries/{id}", srv.applyMiddleware(srv.handleGetLibrary))
 	srv.Mux.Handle("PUT /api/libraries/{id}", srv.applyAdminMiddleware(srv.handleToggleLibraryVisibility))
 }
 
@@ -31,6 +32,19 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	}
 	paginationData := models.NewPaginationInfo(page, perPage, total)
 	return writePaginatedResponse(w, http.StatusOK, libraries, paginationData)
+}
+
+func (srv *Server) handleGetLibrary(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "library id")
+	}
+	library, err := srv.Db.GetLibraryByID(id)
+	if err != nil {
+		log.add("library_id", id)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, library)
 }
 
 func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
