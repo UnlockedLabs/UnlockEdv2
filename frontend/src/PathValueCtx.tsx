@@ -1,8 +1,8 @@
 import { createContext, useContext, useState } from 'react';
 
 const PathValueContext = createContext<{
-    pathVal: string | null;
-    setPathVal: (val: string) => void;
+    pathVal: PathValue[] | null;
+    setPathVal: (val: PathValue[]) => void;
 }>({
     pathVal: null,
     setPathVal: () => {
@@ -10,10 +10,15 @@ const PathValueContext = createContext<{
     }
 });
 
+export interface PathValue {
+    path_id: string;
+    value: string;
+    [key: string]: string;
+}
 export const PathValueProvider: React.FC<{ children: React.ReactNode }> = ({
     children
 }) => {
-    const [pathVal, setPathVal] = useState<string | null>(null);
+    const [pathVal, setPathVal] = useState<PathValue[] | null>(null);
     return (
         <PathValueContext.Provider value={{ pathVal, setPathVal }}>
             {children}

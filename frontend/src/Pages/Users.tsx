@@ -43,12 +43,13 @@ export default function Users() {
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
+    const [perPage, setPerPage] = useState(10);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
     const userData = data?.data as User[] | [];
     const meta = data?.meta ?? {
@@ -70,9 +71,7 @@ export default function Users() {
 
     const deleteUser = () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
-            showToast(
-                setToast,
-                setDisplayToast,
+            toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
@@ -149,6 +148,11 @@ export default function Users() {
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
         setPageQuery(1);
+    };
+    const handleSetPerPage = (val: number) => {
+        setPerPage(val);
+        setPageQuery(1);
+        void mutate();
     };
 
     return (
@@ -273,7 +277,11 @@ export default function Users() {
                     </tbody>
                 </table>
                 {!isLoading && !error && userData.length > 0 && (
-                    <Pagination meta={meta} setPage={setPageQuery} />
+                    <Pagination
+                        meta={meta}
+                        setPage={setPageQuery}
+                        setPerPage={handleSetPerPage}
+                    />
                 )}
                 {error && (
                     <span className="text-center text-error">

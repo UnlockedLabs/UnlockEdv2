@@ -3,12 +3,19 @@ import MilestonesBarChart from '@/Components/MilestonesBarChart';
 import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
 import TopProgPieChart from '@/Components/TopProgActivityPieChart';
-import { AdminDashboardJoin, CourseActivity, ServerResponse } from '@/common';
+import {
+    AdminDashboardJoin,
+    CourseActivity,
+    ServerResponse,
+    UserRole
+} from '@/common';
 import useSWR from 'swr';
 import convertSeconds from '@/Components/ConvertSeconds';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { ThemeContext } from '@/Components/ThemeContext';
 import { AxiosError } from 'axios';
+import { usePathValue } from '@/PathValueCtx';
+import UnauthorizedNotFound from './Unauthorized';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
@@ -17,12 +24,19 @@ export default function AdminDashboard() {
         AxiosError
     >(`/api/users/${user?.id}/admin-dashboard`);
     const { theme } = useContext(ThemeContext);
-
+    const { setPathVal } = usePathValue();
     if (error || isLoading) return <div></div>;
+    if (user?.role !== UserRole.Admin) {
+        return <UnauthorizedNotFound which="unauthorized" />;
+    }
     const activityData = data?.data as AdminDashboardJoin;
     const avgActivity = convertSeconds(activityData.avg_daily_activity);
     const totalActivity = convertSeconds(activityData.total_weekly_activity);
-
+    useEffect(() => {
+        setPathVal([
+            { path_id: ':facility_name', value: user?.facility_name ?? '' }
+        ]);
+    }, [user]);
     return (
         <div className="px-8 py-4">
             <h1 className="text-5xl">{activityData.facility_name}</h1>

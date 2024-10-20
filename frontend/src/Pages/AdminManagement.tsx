@@ -43,6 +43,7 @@ export default function AdminManagement() {
     const [toast, setToast] = useState(defaultToast);
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
+    const [perPage, setPerPage] = useState(10);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const toaster = (msg: string, state: ToastState) => {
@@ -52,7 +53,7 @@ export default function AdminManagement() {
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=admin`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=admin`
     );
     const userData = data?.data as User[] | [];
     const meta = data?.meta;
@@ -132,7 +133,11 @@ export default function AdminManagement() {
         setSearchTerm(newSearch);
         setPageQuery(1);
     };
-
+    const handleSetPerPage = (val: number) => {
+        setPerPage(val);
+        setPageQuery(1);
+        void mutate();
+    };
     const getUserIconData = {
         'data-tip': (user: User) => {
             return user.id === DEFAULT_ADMIN_ID
@@ -279,6 +284,7 @@ export default function AdminManagement() {
                                 <Pagination
                                     meta={meta}
                                     setPage={setPageQuery}
+                                    setPerPage={handleSetPerPage}
                                 />
                             )}
                     </div>

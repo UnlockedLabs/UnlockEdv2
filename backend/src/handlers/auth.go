@@ -28,6 +28,7 @@ type (
 		PasswordReset bool            `json:"password_reset"`
 		Role          models.UserRole `json:"role"`
 		FacilityID    uint            `json:"facility_id"`
+		FacilityName  string          `json:"facility_name"`
 		KratosID      string          `json:"kratos_id"`
 	}
 )
@@ -44,6 +45,7 @@ func (claims *Claims) getTraits() map[string]interface{} {
 		"facility_id":    claims.FacilityID,
 		"role":           claims.Role,
 		"password_reset": claims.PasswordReset,
+		"facility_name":  claims.FacilityName,
 	}
 }
 
@@ -194,7 +196,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					return nil, hasCookie, err
 				}
 				var user models.User
-				if err := srv.Db.Find(&user, "kratos_id = ?", kratosID).Error; err != nil {
+				if err := srv.Db.Model(&models.User{}).Preload("Facility").Find(&user, "kratos_id = ?", kratosID).Error; err != nil {
 					fields["error"] = err.Error()
 					fields["kratos_id"] = kratosID
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")
@@ -215,6 +217,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					Username:      user.Username,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
+					FacilityName:  user.Facility.Name,
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
@@ -269,7 +272,13 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	if err := tx.Commit().Error; err != nil {
 		return newInternalServerServiceError(err, "Transaction commit failed")
 	}
-	return writeJsonResponse(w, http.StatusOK, "Password reset successfully")
+	resp := map[string]string{}
+	if claims.Role == models.Admin {
+		resp["redirect_to"] = "/admin-dashboard"
+	} else {
+		resp["redirect_to"] = "/dashboard"
+	}
+	return writeJsonResponse(w, http.StatusOK, resp)
 }
 
 func validatePassword(pass string) bool {

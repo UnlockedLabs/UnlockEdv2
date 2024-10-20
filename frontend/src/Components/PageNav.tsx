@@ -28,18 +28,23 @@ export default function PageNav({
 
     useEffect(() => {
         const handlePathChange = () => {
-            if (
-                path &&
-                path.length > 0 &&
-                path[path.length - 1] === ':id' &&
-                pathVal
-            ) {
-                const newPath = [...path];
-                newPath[path.length - 1] = pathVal;
-                setCustomPath(newPath);
+            const newPath = [...path];
+            if (newPath && newPath.length > 0) {
+                setCustomPath(
+                    newPath.map((p) => {
+                        return (
+                            pathVal?.find((pv) => pv.path_id === p)?.value ?? p
+                        );
+                    })
+                );
+                return;
             }
+            setCustomPath(path);
         };
         handlePathChange();
+    }, [path, pathVal]);
+
+    useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
                 detailsRef.current &&
@@ -53,7 +58,7 @@ export default function PageNav({
         return () => {
             window.removeEventListener('click', closeDropdown);
         };
-    }, [path, pathVal]);
+    }, []);
 
     return (
         <div className="navbar px-8">

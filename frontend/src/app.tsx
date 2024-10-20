@@ -3,7 +3,6 @@ import '@/css/app.css';
 import React from 'react';
 import { Outlet, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import Welcome from '@/Pages/Welcome';
-import Dashboard from '@/Pages/Dashboard';
 import Login from '@/Pages/Auth/Login';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import ProviderPlatformManagement from '@/Pages/ProviderPlatformManagement';
@@ -26,14 +25,16 @@ import { UserRole } from '@/common';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/PathValueCtx';
+import AdminDashboard from './Pages/AdminDashboard.tsx';
+import StudentDashboard from './Pages/StudentDashboard.tsx';
 
 const WithAuth: React.FC = () => {
     return (
-        <PathValueProvider>
-            <AuthProvider>
+        <AuthProvider>
+            <PathValueProvider>
                 <Outlet />
-            </AuthProvider>
-        </PathValueProvider>
+            </PathValueProvider>
+        </AuthProvider>
     );
 };
 const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,13 +51,13 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function WithAdmin() {
     return (
-        <PathValueProvider>
-            <AuthProvider>
+        <AuthProvider>
+            <PathValueProvider>
                 <AdminOnly>
                     <Outlet />
                 </AdminOnly>
-            </AuthProvider>
-        </PathValueProvider>
+            </PathValueProvider>
+        </AuthProvider>
     );
 }
 
@@ -81,7 +82,7 @@ const router = createBrowserRouter([
                 children: [
                     {
                         path: 'dashboard',
-                        element: <Dashboard />,
+                        element: <StudentDashboard />,
                         errorElement: <Error />,
                         handle: { title: 'Dashboard', path: ['dashboard'] }
                     },
@@ -130,7 +131,7 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         handle: {
                             title: 'Library Viewer',
-                            path: ['viewer', 'libraries', ':id']
+                            path: ['viewer', 'libraries', ':library_name']
                         }
                     }
                 ]
@@ -151,12 +152,21 @@ const router = createBrowserRouter([
                 element: <AuthenticatedLayout />,
                 children: [
                     {
+                        path: 'admin-dashboard',
+                        element: <AdminDashboard />,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Admin Dashboard',
+                            path: ['admin-dashboard', ':facility_name']
+                        }
+                    },
+                    {
                         path: 'student-management',
                         element: <StudentManagement />,
                         errorElement: <Error />,
                         handle: {
                             title: 'Student Management',
-                            path: ['student-management']
+                            path: ['student-management', ':facility_name']
                         }
                     },
                     {
@@ -192,7 +202,10 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         handle: {
                             title: 'Provider User Management',
-                            path: ['provider-platforms', ':id']
+                            path: [
+                                'provider-platforms',
+                                ':provider_platform_name'
+                            ]
                         }
                     },
                     {

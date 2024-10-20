@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
 import {
@@ -30,6 +30,8 @@ import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { AxiosError } from 'axios';
+import { usePathValue } from '@/PathValueCtx';
+import { useAuth } from '@/useAuth';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -41,11 +43,13 @@ export default function StudentManagement() {
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
     const [toast, setToast] = useState(defaultToast);
-
+    const { setPathVal } = usePathValue();
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const [perPage, setPerPage] = useState(10);
     const toaster = (msg: string, state: ToastState) => {
         showToast(setToast, setDisplayToast, msg, state);
     };
@@ -53,7 +57,7 @@ export default function StudentManagement() {
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=student`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
     );
     const userData = data?.data as User[] | [];
     const meta = data?.meta;
@@ -63,7 +67,11 @@ export default function StudentManagement() {
             setTargetUser(undefined);
         }, 200);
     }
-
+    useEffect(() => {
+        setPathVal([
+            { path_id: ':facility_name', value: user?.facility_name ?? '' }
+        ]);
+    }, [user?.facility_name]);
     const deleteUser = async () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
             toaster(
@@ -80,7 +88,7 @@ export default function StudentManagement() {
             ? 'User deleted successfully'
             : response.message;
         deleteUserModal.current?.close();
-        showToast(setToast, setDisplayToast, message, toastType);
+        toaster(message, toastType);
         resetModal();
         await mutate();
         return;
@@ -133,7 +141,11 @@ export default function StudentManagement() {
         setSearchTerm(newSearch);
         setPageQuery(1);
     };
-
+    const handleSetPerPage = (val: number) => {
+        setPerPage(val);
+        setPageQuery(1);
+        void mutate();
+    };
     return (
         <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
@@ -264,6 +276,7 @@ export default function StudentManagement() {
                                 <Pagination
                                     meta={meta}
                                     setPage={setPageQuery}
+                                    setPerPage={handleSetPerPage}
                                 />
                             )}
                     </div>

@@ -66,7 +66,11 @@ export default function ChangePasswordForm() {
         }
         const response = await API.post('reset-password', data);
         if (response.success) {
-            window.location.replace('dashboard');
+            const location =
+                user.role === UserRole.Admin
+                    ? '/admin-dashboard'
+                    : '/dashboard';
+            window.location.href = location;
         } else {
             setErrorMessage(`Your passwords did not pass validation, 
         please check that they match and are 8 or more characters with at least 1 number.`);

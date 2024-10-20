@@ -123,7 +123,13 @@ func getKratosRedirect(resp *http.Response) (map[string]string, error) {
 		if !ok || reset {
 			respBody["redirect_to"] = "/reset-password"
 		} else {
-			respBody["redirect_to"] = "/dashboard"
+			role := traits["role"].(string)
+			switch models.UserRole(role) {
+			case models.Admin:
+				respBody["redirect_to"] = "/admin-dashboard"
+			case models.Student:
+				respBody["redirect_to"] = "/dashboard"
+			}
 		}
 	default:
 		return nil, errors.New("invalid login")

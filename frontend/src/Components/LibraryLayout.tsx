@@ -45,7 +45,7 @@ export default function LibaryLayout({
     if (studentView) {
         role = UserRole.Student;
     }
-
+    const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
     const {
         data: libraries,
@@ -53,7 +53,7 @@ export default function LibaryLayout({
         error: librariesError,
         isLoading: librariesLoading
     } = useSWR<ServerResponseMany<Library>, AxiosError>(
-        `/api/libraries?page=${pageQuery}&per_page=20&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
     );
     const librariesMeta = libraries?.meta ?? {
         total: 0,
@@ -65,7 +65,11 @@ export default function LibaryLayout({
 
     const { data: openContentProviders } =
         useSWR<ServerResponseMany<OpenContentProvider>>('/api/open-content');
-
+    const handleSetPerPage = (perPage: number) => {
+        setPerPage(perPage);
+        setPageQuery(1);
+        void mutateLibraries();
+    };
     const openContentTabs = useMemo(() => {
         return [
             allLibrariesTab,
@@ -121,7 +125,11 @@ export default function LibaryLayout({
             </div>
             {!librariesLoading && !librariesError && librariesMeta && (
                 <div className="flex justify-center">
-                    <Pagination meta={librariesMeta} setPage={setPageQuery} />
+                    <Pagination
+                        meta={librariesMeta}
+                        setPage={setPageQuery}
+                        setPerPage={handleSetPerPage}
+                    />
                 </div>
             )}
         </div>

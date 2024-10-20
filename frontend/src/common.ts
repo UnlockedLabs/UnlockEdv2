@@ -18,6 +18,7 @@ export interface User {
     password_reset?: boolean;
     created_at: string;
     updated_at: string;
+    facility_name?: string;
     [key: string]: number | string | boolean | undefined;
 }
 

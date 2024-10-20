@@ -16,13 +16,20 @@ import {
     CurrentEnrollment,
     RecentCourse,
     ServerResponse,
-    StudentDashboardJoin
+    StudentDashboardJoin,
+    UserRole
 } from '@/common';
 import { AxiosError } from 'axios';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    if (!user) {
+        return;
+    } else if (user?.role === UserRole.Admin) {
+        navigate('/admin-dashboard');
+        return;
+    }
     const { data, error, isLoading } = useSWR<
         ServerResponse<StudentDashboardJoin>,
         AxiosError

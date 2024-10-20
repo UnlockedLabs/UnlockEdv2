@@ -59,7 +59,7 @@ export default function Navbar({
                     <>
                         {/* admin view */}
                         <li className="mt-16">
-                            <Link to="/dashboard">
+                            <Link to="/admin-dashboard">
                                 <ULIComponent icon={HomeIcon} /> Dashboard
                             </Link>
                         </li>

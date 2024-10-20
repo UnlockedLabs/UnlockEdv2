@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import Brand from '../Components/Brand';
-import { BROWSER_URL, ServerResponse, User } from '@/common';
+import { BROWSER_URL, ServerResponse, User, UserRole } from '@/common';
 import API from '@/api/api';
+import { Link } from 'react-router-dom';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv1Sm.webp');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [authUser, setAuthUser] = useState<User | undefined>();
 
     useEffect(() => {
         API.get<User>(`auth`)
             .then((user: ServerResponse<User>) => {
                 if (user.success) {
-                    setIsLoggedIn(true);
+                    setAuthUser(user.data as User);
                 }
             })
             .catch(() => {
@@ -32,13 +33,21 @@ export default function Welcome() {
                 </div>
                 <div className="flex-none">
                     <ul className="menu menu-horizontal px-1 text-primary">
-                        {!isLoggedIn ? (
+                        {!authUser ? (
                             <li>
-                                <a href={BROWSER_URL}>Log in</a>
+                                <Link to={BROWSER_URL}>Log in</Link>
                             </li>
                         ) : (
                             <li>
-                                <a href="/dashboard">Dashboard</a>
+                                <Link
+                                    to={
+                                        authUser.role === UserRole.Student
+                                            ? '/dashboard'
+                                            : '/admin-dashboard'
+                                    }
+                                >
+                                    Dashboard
+                                </Link>
                             </li>
                         )}
                     </ul>

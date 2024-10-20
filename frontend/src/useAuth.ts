@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, createContext, useContext } from 'react';
-import { LoaderFunction, json } from 'react-router-dom';
+import { LoaderFunction, json, redirect } from 'react-router-dom';
 import {
     AuthFlow,
     AuthResponse,
@@ -8,7 +8,8 @@ import {
     OryFlow,
     OrySessionWhoami,
     ServerResponseOne,
-    User
+    User,
+    UserRole
 } from './common';
 import API from './api/api';
 import axios from 'axios';
@@ -30,7 +31,12 @@ export async function fetchUser(): Promise<User | null> {
     const user = response.data as User;
     return user;
 }
-
+export const checkStudentRoleLoader: LoaderFunction = async () => {
+    const user = await fetchUser();
+    if (user?.Role === UserRole.Admin) {
+        return redirect('/admin-dashboard');
+    }
+};
 export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);
     if (!context) {

@@ -20,7 +20,9 @@ export default function LibraryViewer() {
                     `libraries/${libraryId}`
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
-                    setPathVal(resp.data.name);
+                    setPathVal([
+                        { path_id: ':library_name', value: resp.data.name }
+                    ]);
                 }
                 const response = await fetch(
                     `/api/proxy/libraries/${libraryId}/`

@@ -5,6 +5,7 @@ import {
     ModalType,
     PaginationMeta,
     ProviderPlatform,
+    ProviderPlatformType,
     ProviderUser,
     ServerResponseMany,
     showToast,
@@ -60,16 +61,13 @@ export default function ProviderUserManagement() {
     >(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
+    if (provider && provider.type === ProviderPlatformType.KOLIBRI) {
+        return <div>Kolibri users are managed automatically</div>;
+    }
     const providerData = data?.data ?? [];
     const changePage = (page: number) => {
         setCurrentPage(page);
-    };
-
-    const handleChangeUsersPerPage = (
-        e: React.ChangeEvent<HTMLSelectElement>
-    ) => {
-        setPerPage(parseInt(e.target.value));
-        setCurrentPage(1); // Reset to the first page when changing per page
+        handleRefetch();
     };
 
     const handleRefetch = () => {
@@ -147,9 +145,14 @@ export default function ProviderUserManagement() {
         }
     }
 
-    const handleChange = (newSearch: string) => {
+    const handleChangeSearch = (newSearch: string) => {
         setSearch(newSearch);
         setCurrentPage(1);
+    };
+    const handleSetPerPage = (perPage: number) => {
+        setPerPage(perPage);
+        setCurrentPage(1);
+        handleRefetch();
     };
 
     useEffect(() => {
@@ -167,14 +170,16 @@ export default function ProviderUserManagement() {
             if (res.success) {
                 const prov = res.data as ProviderPlatform;
                 setProvider(prov);
-                setPathVal(prov.name);
+                setPathVal([
+                    { path_id: ':provider_platform_name', value: prov.name }
+                ]);
                 setIsLoading(false);
             } else {
                 toaster('Failed to fetch provider users', ToastState.error);
             }
         };
         void getData();
-    }, [providerId]);
+    }, [providerId, provider]);
 
     return (
         <div>
@@ -182,7 +187,7 @@ export default function ProviderUserManagement() {
                 <div className="flex justify-between">
                     <SearchBar
                         searchTerm={searchQuery[0]}
-                        changeCallback={handleChange}
+                        changeCallback={handleChangeSearch}
                     />
                 </div>
                 <div className="flex justify-between">
@@ -278,24 +283,11 @@ export default function ProviderUserManagement() {
                     </table>
                 </div>
                 <div className="flex flex-col justify-center">
-                    <Pagination meta={meta} setPage={changePage} />
-                    <div className="flex-col-1 align-middle">
-                        per page:
-                        <br />
-                        {!isLoading && providerData && (
-                            <select
-                                className="select select-none select-sm select-bordered"
-                                value={perPage}
-                                onChange={handleChangeUsersPerPage}
-                            >
-                                {[10, 15, 20, 30, 50].map((value) => (
-                                    <option key={value} value={value}>
-                                        {value}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
+                    <Pagination
+                        meta={meta}
+                        setPage={changePage}
+                        setPerPage={handleSetPerPage}
+                    />
                 </div>
                 {error && (
                     <span className="text-center text-error">

@@ -43,6 +43,7 @@ export default function LoginForm() {
                 location = queryParams.get('return_to') ?? '/dashboard';
             }
             window.location.href = location;
+            return;
         }
         setErrorMessage(true);
     };
