@@ -20,16 +20,17 @@ func (sh *ServiceHandler) initServiceFromRequest(ctx context.Context, r *http.Re
 		log.Printf("Error: %v", err)
 		return nil, fmt.Errorf("failed to find provider: %v", err)
 	}
-	provider, err := sh.LookupProvider(ctx, id)
+	var provider models.ProviderPlatform
+	err = sh.db.WithContext(ctx).First(&provider, "id = ?", id).Error
 	if err != nil {
-		log.Printf("Error: %v", err)
-		return nil, fmt.Errorf("failed to find provider: %v", err)
+		log.Println("Failed to find provider")
+		return nil, err
 	}
 	switch provider.Type {
 	case models.Kolibri:
-		return NewKolibriService(provider, nil), nil
+		return NewKolibriService(&provider, nil), nil
 	case models.CanvasCloud, models.CanvasOSS:
-		return newCanvasService(provider, nil), nil
+		return newCanvasService(&provider, nil), nil
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
@@ -49,8 +50,8 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 		return nil, fmt.Errorf("failed to parse job_id: %v", body["job_id"])
 	}
 	// prior to here, we are unable to cleanup the job
-	provider, err := sh.LookupProvider(ctx, int(providerId))
-	log.Infoln("InitService called")
+	var provider models.ProviderPlatform
+	err := sh.db.WithContext(ctx).First(&provider, "id = ?", int(providerId)).Error
 	if err != nil {
 		log.Errorf("error looking up provider platform: %v", err)
 		sh.cleanupJob(ctx, int(providerId), jobId, false)
@@ -58,9 +59,9 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 	}
 	switch provider.Type {
 	case models.Kolibri:
-		return NewKolibriService(provider, &body), nil
+		return NewKolibriService(&provider, &body), nil
 	case models.CanvasCloud, models.CanvasOSS:
-		return newCanvasService(provider, &body), nil
+		return newCanvasService(&provider, &body), nil
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }

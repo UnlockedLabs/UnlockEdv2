@@ -52,22 +52,11 @@ func (ProviderPlatform) TableName() string {
 	return "provider_platforms"
 }
 
-func (provider *ProviderPlatform) BeforeSave(tx *gorm.DB) (err error) {
-	if tx.Statement.Changed("AccessKey") || provider.ID == 0 {
-		if key, keyErr := provider.EncryptAccessKey(); keyErr == nil {
-			provider.AccessKey = key
-		} else {
-			provider.AccessKey = "error encrypting: please update key"
-		}
-	}
-	return nil
-}
-
 func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
 	if key, keyErr := provider.DecryptAccessKey(); keyErr == nil {
 		provider.AccessKey = key
 	}
-	return
+	return nil
 }
 
 func (provider *ProviderPlatform) DecryptAccessKey() (string, error) {

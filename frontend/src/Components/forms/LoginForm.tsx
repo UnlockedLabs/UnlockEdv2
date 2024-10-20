@@ -28,7 +28,6 @@ export default function LoginForm() {
     } = useForm<Inputs>();
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        const queryParams = new URLSearchParams(window.location.search);
         if (user) {
             data.identifier = user;
         }
@@ -37,12 +36,8 @@ export default function LoginForm() {
             data
         )) as ServerResponseOne<AuthResponse>;
         if (resp.success) {
-            let location =
+            window.location.href =
                 resp.data.redirect_to ?? resp.data.redirect_browser_to;
-            if (!location) {
-                location = queryParams.get('return_to') ?? '/dashboard';
-            }
-            window.location.href = location;
             return;
         }
         setErrorMessage(true);

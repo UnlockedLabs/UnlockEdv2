@@ -27,6 +27,7 @@ import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
+import Dashboard from './Pages/Dashboard.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -76,20 +77,23 @@ const router = createBrowserRouter([
     {
         path: '/',
         element: <WithAuth />,
+        errorElement: <Error />,
         children: [
             {
                 element: <AuthenticatedLayout />,
                 children: [
                     {
                         path: 'dashboard',
+                        element: <Dashboard />
+                    },
+                    {
+                        path: 'student-dashboard',
                         element: <StudentDashboard />,
-                        errorElement: <Error />,
                         handle: { title: 'Dashboard', path: ['dashboard'] }
                     },
                     {
                         path: 'consent',
                         element: <Consent />,
-                        errorElement: <Error />,
                         handle: {
                             title: 'External Provider Consent',
                             path: ['consent']
@@ -98,19 +102,16 @@ const router = createBrowserRouter([
                     {
                         path: 'my-courses',
                         element: <MyCourses />,
-                        errorElement: <Error />,
                         handle: { title: 'My Courses', path: ['my-courses'] }
                     },
                     {
                         path: 'my-progress',
                         element: <MyProgress />,
-                        errorElement: <Error />,
                         handle: { title: 'My Progress', path: ['my-progress'] }
                     },
                     {
                         path: 'course-catalog',
                         element: <CourseCatalog />,
-                        errorElement: <Error />,
                         handle: {
                             title: 'Course Catalog',
                             path: ['course-catalog']
@@ -119,7 +120,6 @@ const router = createBrowserRouter([
                     {
                         path: 'open-content',
                         element: <OpenContent />,
-                        errorElement: <Error />,
                         handle: {
                             title: 'Open Content',
                             path: ['open-content']

@@ -62,6 +62,9 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 }
 
 func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) error {
+	if key, err := platform.EncryptAccessKey(); err == nil {
+		platform.AccessKey = key
+	}
 	if err := db.Create(platform).Error; err != nil {
 		return newCreateDBError(err, "provider_platforms")
 	}
@@ -85,6 +88,12 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 	var existingPlatform models.ProviderPlatform
 	if err := db.First(&existingPlatform, id).Error; err != nil {
 		return nil, newUpdateDBError(err, "provider_platforms")
+	}
+	// at this point, they are both decrypted
+	if platform.AccessKey != "" && existingPlatform.AccessKey != platform.AccessKey {
+		if key, err := platform.EncryptAccessKey(); err == nil {
+			platform.AccessKey = key
+		}
 	}
 	models.UpdateStruct(&existingPlatform, platform)
 	if err := db.Save(&existingPlatform).Error; err != nil {

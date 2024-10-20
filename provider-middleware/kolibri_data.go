@@ -3,7 +3,6 @@ package main
 import (
 	"UnlockEdv2/src/models"
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -20,16 +19,6 @@ type KolibriResponse[T any] struct {
 	Page       int `json:"page"`
 	Count      int `json:"count"`
 	TotalPages int `json:"total_pages"`
-}
-
-func (srv *ServiceHandler) LookupProvider(ctx context.Context, id int) (*models.ProviderPlatform, error) {
-	var provider models.ProviderPlatform
-	err := srv.db.WithContext(ctx).Where("id = ?", id).First(&provider).Error
-	if err != nil {
-		log.Println("Failed to find provider")
-		return nil, err
-	}
-	return &provider, nil
 }
 
 type KolibriUser struct {

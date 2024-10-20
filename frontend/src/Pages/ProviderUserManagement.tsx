@@ -61,9 +61,6 @@ export default function ProviderUserManagement() {
     >(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
-    if (provider && provider.type === ProviderPlatformType.KOLIBRI) {
-        return <div>Kolibri users are managed automatically</div>;
-    }
     const providerData = data?.data ?? [];
     const changePage = (page: number) => {
         setCurrentPage(page);
@@ -179,8 +176,11 @@ export default function ProviderUserManagement() {
             }
         };
         void getData();
-    }, [providerId, provider]);
+    }, [providerId]);
 
+    if (provider && provider.type === ProviderPlatformType.KOLIBRI) {
+        return <div>Kolibri users are managed automatically</div>;
+    }
     return (
         <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">

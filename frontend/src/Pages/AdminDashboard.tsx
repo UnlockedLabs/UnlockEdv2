@@ -25,6 +25,11 @@ export default function AdminDashboard() {
     >(`/api/users/${user?.id}/admin-dashboard`);
     const { theme } = useContext(ThemeContext);
     const { setPathVal } = usePathValue();
+    useEffect(() => {
+        setPathVal([
+            { path_id: ':facility_name', value: user?.facility_name ?? '' }
+        ]);
+    }, [user]);
     if (error || isLoading) return <div></div>;
     if (user?.role !== UserRole.Admin) {
         return <UnauthorizedNotFound which="unauthorized" />;
@@ -32,11 +37,6 @@ export default function AdminDashboard() {
     const activityData = data?.data as AdminDashboardJoin;
     const avgActivity = convertSeconds(activityData.avg_daily_activity);
     const totalActivity = convertSeconds(activityData.total_weekly_activity);
-    useEffect(() => {
-        setPathVal([
-            { path_id: ':facility_name', value: user?.facility_name ?? '' }
-        ]);
-    }, [user]);
     return (
         <div className="px-8 py-4">
             <h1 className="text-5xl">{activityData.facility_name}</h1>
