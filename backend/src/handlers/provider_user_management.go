@@ -136,12 +136,10 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 				toReturn = append(toReturn, userResponse)
 				continue
 			}
-			kolibri, err := srv.Db.FindKolibriInstance()
-			if err != nil {
-				log.error("Error getting kolibri instance")
-			}
-			if err = srv.CreateUserInKolibri(&newUser, kolibri); err != nil {
-				log.error("Error creating kolibri user")
+			if kolibri, err := srv.Db.FindKolibriInstance(); err == nil {
+				if err = srv.CreateUserInKolibri(&newUser, kolibri); err != nil {
+					log.error("Error creating kolibri user")
+				}
 			}
 		}
 		mapping := models.ProviderUserMapping{

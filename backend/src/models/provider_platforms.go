@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -25,9 +26,10 @@ const (
 type ProviderPlatformState string
 
 const (
-	Enabled  ProviderPlatformState = "enabled"
-	Disabled ProviderPlatformState = "disabled"
-	Archived ProviderPlatformState = "archived"
+	Enabled   ProviderPlatformState = "enabled"
+	Disabled  ProviderPlatformState = "disabled"
+	Archived  ProviderPlatformState = "archived"
+	UuidV4Len                       = 32
 )
 
 type ProviderPlatform struct {
@@ -50,6 +52,14 @@ type ProviderPlatform struct {
 
 func (ProviderPlatform) TableName() string {
 	return "provider_platforms"
+}
+
+func (provider *ProviderPlatform) BeforeCreate(tx *gorm.DB) (err error) {
+	if provider.Type == Kolibri && !strings.Contains(provider.AccountID, "-") && len(provider.AccountID) == UuidV4Len {
+		// convert the uuid back into hypenated format
+		provider.AccountID = fmt.Sprintf("%s-%s-%s-%s-%s", provider.AccountID[0:8], provider.AccountID[8:12], provider.AccountID[12:16], provider.AccountID[16:20], provider.AccountID[20:])
+	}
+	return nil
 }
 
 func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
