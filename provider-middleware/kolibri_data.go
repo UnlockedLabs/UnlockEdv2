@@ -10,6 +10,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -96,17 +97,23 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 	}
 
 	if courseType == "channel" {
-		url, err := UploadImage(thumbnail, root, id)
+		imgUrl, err := UploadImage(thumbnail, root, id)
 		if err != nil {
 			log.Printf("Failed to upload image %v", err)
-			url = ""
+			imgUrl = ""
 		}
 		course.Description = description
-		course.ThumbnailURL = url
-		course.ExternalURL = kc.BaseURL + "en/learn/#/topics/t/" + id + "/folders?last=HOME"
+		course.ThumbnailURL = imgUrl
+		if externalUrl, err := url.JoinPath(kc.BaseURL, "en/learn/#/topics/t/", id, "/folders?last=HOME"); err == nil {
+			course.ExternalURL = externalUrl
+		}
 	} else {
 		course.Description = "Kolibri managed course"
-		course.ExternalURL = kc.BaseURL + "en/learn/#/home/classes/" + id
+		if externUrl, err := url.JoinPath(kc.BaseURL, "/en/learn/#/home/classes/", id); err == nil {
+			course.ExternalURL = externUrl
+		} else {
+			course.ExternalURL = kc.BaseURL + "/en/learn/#/home/classes/" + id
+		}
 	}
 	return &course
 }

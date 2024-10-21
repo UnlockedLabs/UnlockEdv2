@@ -98,7 +98,7 @@ export default function Navbar({
                     <>
                         {/* student view */}
                         <li className="mt-16">
-                            <Link to="/dashboard">
+                            <Link to="/student-dashboard">
                                 <ULIComponent icon={HomeIcon} /> Dashboard
                             </Link>
                         </li>
