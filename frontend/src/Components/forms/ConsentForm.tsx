@@ -1,27 +1,26 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/useAuth';
 import DangerButton from '../DangerButton';
 import PrimaryButton from '../PrimaryButton';
 import API from '@/api/api';
-import { AuthResponse } from '@/common';
+import { AuthResponse, getDashboard } from '@/common';
 
 export default function ConsentForm() {
-    const navigate = useNavigate();
+    const { user } = useAuth();
     const accept = async () => {
-        const location = useLocation();
-        const urlParams = new URLSearchParams(location.search);
+        const urlParams = new URLSearchParams(window.location.search);
         const consent = urlParams.get('consent_challenge');
         const resp = await API.post<AuthResponse>(`consent/accept`, {
             consent_challenge: consent
         });
         if (resp.success) {
             const location = (resp.data as AuthResponse).redirect_to;
-            navigate(location);
+            window.location.href = location;
             return;
         }
-        navigate('/dashboard');
+        window.location.href = getDashboard(user);
     };
     const deny = () => {
-        navigate('/dashboard');
+        window.location.href = getDashboard(user);
     };
     return (
         <div className="bg-base-100 shadow-lg rounded-lg p-8 mb-4 flex flex-col my-2 max-w-screen-xl mx-auto">

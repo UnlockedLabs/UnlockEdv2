@@ -6,7 +6,7 @@ import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/useAuth';
 import API from '@/api/api';
-import { Facility, UserRole } from '@/common';
+import { AuthResponse, Facility, ServerResponseOne, UserRole } from '@/common';
 import { useLoaderData } from 'react-router-dom';
 interface Inputs {
     password: string;
@@ -19,10 +19,6 @@ export default function ChangePasswordForm() {
     const [processing, setProcessing] = useState(false);
     const loaderData = useLoaderData() as Facility | null;
     const { user } = useAuth();
-
-    if (!user) {
-        return <div>Loading...</div>;
-    }
 
     const {
         control,
@@ -54,8 +50,8 @@ export default function ChangePasswordForm() {
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
     const isFirstAdminLogin =
-        user.id === 1 &&
-        user.role === UserRole.Admin &&
+        user?.id === 1 &&
+        user?.role === UserRole.Admin &&
         loaderData?.name === 'Default';
 
     const submit: SubmitHandler<Inputs> = async (data) => {
@@ -64,13 +60,12 @@ export default function ChangePasswordForm() {
         if (data.facility_name) {
             data.facility_name = data.facility_name.trim();
         }
-        const response = await API.post('reset-password', data);
+        const response = (await API.post<AuthResponse>(
+            'reset-password',
+            data
+        )) as ServerResponseOne<AuthResponse>;
         if (response.success) {
-            const location =
-                user.role === UserRole.Admin
-                    ? '/admin-dashboard'
-                    : '/dashboard';
-            window.location.href = location;
+            window.location.href = response.data.redirect_to;
         } else {
             setErrorMessage(`Your passwords did not pass validation, 
         please check that they match and are 8 or more characters with at least 1 number.`);

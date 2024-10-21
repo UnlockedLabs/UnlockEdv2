@@ -276,7 +276,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	if claims.Role == models.Admin {
 		resp["redirect_to"] = "/admin-dashboard"
 	} else {
-		resp["redirect_to"] = "/dashboard"
+		resp["redirect_to"] = "/student-dashboard"
 	}
 	return writeJsonResponse(w, http.StatusOK, resp)
 }
