@@ -61,8 +61,8 @@ export default function PageNav({
     }, []);
 
     return (
-        <div className="navbar px-8">
-            <div className="navbar-start breadcrumbs !py-0 pl-0">
+        <div className="px-8 flex justify-between items-center">
+            <div className="breadcrumbs">
                 <ul>
                     {showOpenMenu ? (
                         <li>
@@ -97,51 +97,46 @@ export default function PageNav({
                     ))}
                 </ul>
             </div>
-            <div className="navbar-end">
-                <ul className="menu menu-horizontal px-1">
-                    <li>
-                        <details
-                            className="dropdown dropdown-end"
-                            ref={detailsRef}
-                        >
-                            <summary>
-                                {user && (
-                                    <span className="font-semibold">
-                                        {user.name_first} {user.name_last}
-                                    </span>
-                                )}
-                            </summary>
-                            <ul className="dropdown-content bg-grey-2 z-[1] dark:bg-grey-1">
-                                <li>
-                                    <label className="flex cursor-pointer gap-2">
-                                        <ULIComponent
-                                            icon={SunIcon}
-                                            iconClassName={'w-6 h-6'}
-                                        />
-                                        <ThemeToggle />
-                                        <ULIComponent
-                                            icon={MoonIcon}
-                                            iconClassName={'w-6 h-6'}
-                                        />
-                                    </label>
-                                </li>
-                                <div className="divider mt-0 mb-0"></div>
+            <ul className="menu menu-horizontal px-1">
+                <li>
+                    <details className="dropdown dropdown-end" ref={detailsRef}>
+                        <summary>
+                            {user && (
+                                <span className="font-semibold">
+                                    {user.name_first} {user.name_last}
+                                </span>
+                            )}
+                        </summary>
+                        <ul className="dropdown-content bg-grey-2 z-[1] dark:bg-grey-1">
+                            <li>
+                                <label className="flex cursor-pointer gap-2">
+                                    <ULIComponent
+                                        icon={SunIcon}
+                                        iconClassName={'w-6 h-6'}
+                                    />
+                                    <ThemeToggle />
+                                    <ULIComponent
+                                        icon={MoonIcon}
+                                        iconClassName={'w-6 h-6'}
+                                    />
+                                </label>
+                            </li>
+                            <div className="divider mt-0 mb-0"></div>
 
-                                <li>
-                                    <button
-                                        onClick={() => {
-                                            void handleLogout();
-                                        }}
-                                    >
-                                        <ArrowRightEndOnRectangleIcon className="h-4" />
-                                        Logout
-                                    </button>
-                                </li>
-                            </ul>
-                        </details>
-                    </li>
-                </ul>
-            </div>
+                            <li>
+                                <button
+                                    onClick={() => {
+                                        void handleLogout();
+                                    }}
+                                >
+                                    <ArrowRightEndOnRectangleIcon className="h-4" />
+                                    Logout
+                                </button>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
         </div>
     );
 }
