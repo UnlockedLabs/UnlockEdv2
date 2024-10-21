@@ -1,14 +1,15 @@
-// import { useNavigate } from 'react-router-dom';
 import { Facility } from '@/common';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
 
 export default function FacilityCard({
     facility,
-    openEditFacility
+    openEditFacility,
+    openDeleteFacility
 }: {
     facility: Facility;
     openEditFacility: (fac: Facility) => void;
+    openDeleteFacility: (fac: Facility) => void;
 }) {
     // const navigate = useNavigate();
     return (
@@ -29,8 +30,7 @@ export default function FacilityCard({
                         dataTip={'Delete Facility'}
                         icon={TrashIcon}
                         onClick={() => {
-                            // setTargetUser(user);
-                            // deleteUserModal.current?.showModal();
+                            openDeleteFacility(facility);
                         }}
                     />
                 </div>

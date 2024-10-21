@@ -1,19 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
-import {
-    Facility,
-    ModalType,
-    // PaginationMeta,
-    ServerResponse,
-    ToastState
-} from '@/common.ts';
+import { Facility, ModalType, ServerResponse, ToastState } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import Toast from '@/Components/Toast.tsx';
 import FacilityCard from '@/Components/FacilityCard.tsx';
+import DeleteForm from '../Components/DeleteForm';
 import Modal from '@/Components/Modal.tsx';
 import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
 import EditFacilityForm from '@/Components/forms/EditFacilityForm';
+import API from '@/api/api';
 // import Pagination from '@/Components/Pagination.tsx';
 // import SearchBar from '@/Components/inputs/SearchBar.tsx';
 
@@ -25,13 +21,15 @@ interface ToastProps {
 export default function FacilityManagement() {
     const addFacilityModal = useRef<undefined | HTMLDialogElement>();
     const editFacilityModal = useRef<undefined | HTMLDialogElement>();
-
+    const deleteFacilityModal = useRef<undefined | HTMLDialogElement>();
     const [editFacility, setEditFacility] = useState<Facility | undefined>();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
         message: ''
     });
-
+    const [targetFacility, setTargetFacility] = useState<
+        undefined | Facility
+    >();
     // TODO: modify this const
     const {
         data: facility,
@@ -70,6 +68,33 @@ export default function FacilityManagement() {
         addFacilityModal.current?.close();
         resetModal();
     }
+
+    const handleDeleteFacilityCancel = () => {
+        deleteFacilityModal.current?.close();
+        resetModal();
+    };
+    const openDeleteFacility = (facility: Facility) => {
+        deleteFacilityModal.current?.showModal();
+        setTargetFacility(facility);
+    };
+    const handleDeleteFacility = async () => {
+        const response = await API.delete('facilities/' + targetFacility?.id);
+        if (response.success) {
+            setToast({
+                state: ToastState.success,
+                message: 'Facility successfully deleted.'
+            });
+        } else {
+            setToast({
+                state: ToastState.error,
+                message: 'Error deleting Facility.'
+            });
+        }
+        deleteFacilityModal.current?.close();
+        resetModal();
+        mutate();
+        return;
+    };
 
     // const handleChange = (newSearch: string) => {
     //     setSearchTerm(newSearch);
@@ -126,10 +151,12 @@ export default function FacilityManagement() {
                             facilityData.map((facility: Facility) => {
                                 return (
                                     <FacilityCard
+                                        key={facility.id}
                                         facility={facility}
                                         openEditFacility={() => {
                                             openEditFacility(facility);
                                         }}
+                                        openDeleteFacility={openDeleteFacility}
                                     />
                                 );
                             })
@@ -174,39 +201,18 @@ export default function FacilityManagement() {
                 }
                 ref={editFacilityModal}
             />
-            {/*<Modal*/}
-            {/*    type={ModalType.Register}*/}
-            {/*    item="Provider"*/}
-            {/*    form={*/}
-            {/*        editFacility ? (*/}
-            {/*            <RegisterOidcClientForm*/}
-            {/*                provider={editFacility}*/}
-            {/*                onSuccess={onRegisterOidcClientClose}*/}
-            {/*                onClose={() => openOidcClientModal.current?.close()}*/}
-            {/*            />*/}
-            {/*        ) : (*/}
-            {/*            <div></div>*/}
-            {/*        )*/}
-            {/*    }*/}
-            {/*    ref={openOidcClientModal}*/}
-            {/*/>*/}
-            {/*<Modal*/}
-            {/*    type={ModalType.Register}*/}
-            {/*    item="OIDC Client"*/}
-            {/*    form={*/}
-            {/*        oidcClient ? (*/}
-            {/*            <NewOidcClientNotification*/}
-            {/*                client={oidcClient}*/}
-            {/*                onClose={() =>*/}
-            {/*                    openOidcRegistrationModal.current?.close()*/}
-            {/*                }*/}
-            {/*            />*/}
-            {/*        ) : (*/}
-            {/*            <div></div>*/}
-            {/*        )*/}
-            {/*    }*/}
-            {/*    ref={openOidcRegistrationModal}*/}
-            {/*/>*/}
+            <Modal
+                ref={deleteFacilityModal}
+                type={ModalType.Confirm}
+                item="Delete Facility"
+                form={
+                    <DeleteForm
+                        item="Facility"
+                        onCancel={handleDeleteFacilityCancel}
+                        onSuccess={handleDeleteFacility}
+                    />
+                }
+            />
             {/* Toasts */}
             {toast.state !== ToastState.null && (
                 <Toast
