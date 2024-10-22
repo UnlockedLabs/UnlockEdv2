@@ -7,12 +7,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllFacilities() ([]models.Facility, error) {
+func (db *DB) GetAllFacilities(page, itemsPerPage int,) (int64, []models.Facility, error) {
+	var total int64
+	offset := (page - 1) * itemsPerPage
 	var facilities []models.Facility
-	if err := db.Model(&models.Facility{}).Find(&facilities).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "facilities")
+	if err := db.Model(&models.Facility{}).Find(&facilities).Count(&total).Offset(offset).Limit(itemsPerPage).Error; err != nil {
+		return total, nil, newGetRecordsDBError(err, "facilities")
 	}
-	return facilities, nil
+	return total, facilities, nil
 }
 
 func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {

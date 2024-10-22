@@ -273,7 +273,7 @@ func getProgramsBySearch(tags string, search string) map[string]any {
 
 func getNewProgramForm() map[string]any {
 	form := make(map[string]any)
-	facilities, err := server.Db.GetAllFacilities()
+	_, facilities, err := server.Db.GetAllFacilities(1,100)
 	if err != nil {
 		form["err"] = err
 	}

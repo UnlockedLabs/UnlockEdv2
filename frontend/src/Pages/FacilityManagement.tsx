@@ -1,7 +1,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
-import { Facility, ModalType, ServerResponse, ToastState } from '@/common.ts';
+import {
+    Facility,
+    ModalType,
+    PaginationMeta,
+    ServerResponse,
+    ToastState
+} from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import Toast from '@/Components/Toast.tsx';
 import FacilityCard from '@/Components/FacilityCard.tsx';
@@ -10,8 +16,7 @@ import Modal from '@/Components/Modal.tsx';
 import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
 import EditFacilityForm from '@/Components/forms/EditFacilityForm';
 import API from '@/api/api';
-// import Pagination from '@/Components/Pagination.tsx';
-// import SearchBar from '@/Components/inputs/SearchBar.tsx';
+import Pagination from '@/Components/Pagination.tsx';
 
 interface ToastProps {
     state: ToastState;
@@ -39,11 +44,12 @@ export default function FacilityManagement() {
     } = useSWR<ServerResponse<Facility>>(`/api/facilities`);
 
     const facilityData = facility?.data ? (facility.data as Facility[]) : [];
-    // const meta = facility?.meta as PaginationMeta;
-    // // const [searchTerm, setSearchTerm] = useState('');
-    // // const searchQuery = useDebounceValue(searchTerm, 300);
-    // const [, setPageQuery] = useState(1);
-    // const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const meta = facility?.meta as PaginationMeta;
+
+    const [, setPageQuery] = useState(1);
+    useEffect(() => {
+        console.log(facility);
+    }, [facility]);
 
     function resetModal() {
         setTimeout(() => {
@@ -96,37 +102,17 @@ export default function FacilityManagement() {
         return;
     };
 
-    // const handleChange = (newSearch: string) => {
-    //     setSearchTerm(newSearch);
-    //     setPageQuery(1);
-    // };
-
     return (
         <AuthenticatedLayout
             title="Facility Management"
             path={['Facility Management']}
         >
-            <div className="px-8 py-4">
+            <div className="px-8 py-4 flex flex-col justify-center gap-4">
                 <h1>Facility Management</h1>
                 <div className="flex flex-row justify-between">
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}
-                        <div className="flex flex-row gap-x-2">
-                            {/*<SearchBar*/}
-                            {/*    searchTerm={searchTerm}*/}
-                            {/*    changeCallback={handleChange}*/}
-                            {/*/>*/}
-                            {/*<DropdownControl*/}
-                            {/*    label="order by"*/}
-                            {/*    callback={setSortQuery}*/}
-                            {/*    enumType={{*/}
-                            {/*        'Name (A-Z)': 'name_last asc',*/}
-                            {/*        'Name (Z-A)': 'name_last desc',*/}
-                            {/*        'Account Created ↓ ': 'created_at desc',*/}
-                            {/*        'Account Created ↑ ': 'created_at asc'*/}
-                            {/*    }}*/}
-                            {/*/>*/}
-                        </div>
+                        <div className="flex flex-row gap-x-2"></div>
                     </div>
                     <button
                         className="button"
@@ -167,9 +153,9 @@ export default function FacilityManagement() {
                         )}
                     </tbody>
                 </table>
-                {/*{!isLoading && !error && facilityData.length > 0 && (*/}
-                {/*    <Pagination meta={meta} setPage={setPageQuery} />*/}
-                {/*)}*/}
+                {!isLoading && !error && facilityData.length > 0 && (
+                    <Pagination meta={meta} setPage={setPageQuery} />
+                )}
             </div>
             {/* Modals */}
             <Modal
