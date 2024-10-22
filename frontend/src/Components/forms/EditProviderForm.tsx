@@ -35,6 +35,8 @@ export default function EditProviderForm({
     const [errorMessage, setErrorMessage] = useState('');
     const [showAdditionalFields, setShowAdditionalFields] = useState(false);
     const [showAccessKey, setShowAccessKey] = useState(false);
+    const [accessKey, setAccessKey] = useState<string>(provider.access_key);
+
     const {
         register,
         handleSubmit,
@@ -151,23 +153,28 @@ export default function EditProviderForm({
                         errors={errors}
                     />
                     <label className="form-control">
-                        <div className="label">
-                            <span className="label-text">Access Key</span>
-                        </div>
                         <div className="relative">
+                            <div className="label">
+                                <span className="label-text">Access Key</span>
+                            </div>
                             {showAccessKey ? (
                                 <>
-                                    <TextInput
-                                        label="Access Key"
-                                        interfaceRef="access_key"
-                                        length={undefined}
-                                        errors={errors}
-                                        required
-                                        register={register}
+                                    <input // TextInput component cannot be used because we need to modify class
+                                        type="text"
+                                        className="input input-bordered w-full pr-10"
+                                        value={accessKey}
+                                        {...register('access_key', {
+                                            required: 'Access Key is required',
+                                            value: accessKey,
+                                            onChange: (
+                                                e: React.ChangeEvent<HTMLInputElement>
+                                            ) => setAccessKey(e.target.value)
+                                        })}
                                     />
                                     <EyeSlashIcon
-                                        className="w-4 z-10 top-4 right-4 absolute"
+                                        className="w-4 z-10 bottom-4 right-4 absolute"
                                         onClick={toggleAccessKey}
+                                        onMouseDown={(e) => e.preventDefault()}
                                     />
                                 </>
                             ) : (
@@ -176,11 +183,12 @@ export default function EditProviderForm({
                                         type="password"
                                         className="input input-bordered w-full"
                                         value="**********"
-                                        readOnly // Make the input read-only when showAccessKey is false
+                                        readOnly
                                     />
                                     <EyeIcon
-                                        className="w-4 z-10 top-4 right-4 absolute"
+                                        className="w-4 z-10 bottom-4 right-4 absolute"
                                         onClick={toggleAccessKey}
+                                        onMouseDown={(e) => e.preventDefault()}
                                     />
                                 </>
                             )}
