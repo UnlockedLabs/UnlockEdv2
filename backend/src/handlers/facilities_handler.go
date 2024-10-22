@@ -32,8 +32,9 @@ func (srv *Server) handleIndexFacilities(w http.ResponseWriter, r *http.Request,
 		CurrentPage: page,
 		Total:       total,
 	}
-	return writePaginatedResponse(w, http.StatusOK, facilities,paginationData)
+	return writePaginatedResponse(w, http.StatusOK, facilities, paginationData)
 }
+
 /**
 * GET: /api/facility/{id}
 **/
@@ -82,7 +83,6 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 	return writeJsonResponse(w, http.StatusCreated, facility)
 }
 
-
 func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -102,6 +102,7 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 	}
 	return writeJsonResponse(w, http.StatusOK, *toReturn)
 }
+
 /**
 * DELETE: /api/facility/{id}
  */

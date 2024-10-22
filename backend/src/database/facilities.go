@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllFacilities(page, itemsPerPage int,) (int64, []models.Facility, error) {
+func (db *DB) GetAllFacilities(page, itemsPerPage int) (int64, []models.Facility, error) {
 	var total int64
 	offset := (page - 1) * itemsPerPage
 	var facilities []models.Facility

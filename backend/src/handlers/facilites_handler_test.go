@@ -16,7 +16,7 @@ import (
 func TestHandleIndexFacilities(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetFacilitiesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10}, http.StatusOK, "?page=1&per_page=10"},
-		{"TestGetFacilitiesAsUser", "student", map[string]any{"page": 1, "per_page": 10}, http.StatusUnauthorized,"?page=1&per_page=10"},
+		{"TestGetFacilitiesAsUser", "student", map[string]any{"page": 1, "per_page": 10}, http.StatusUnauthorized, "?page=1&per_page=10"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
