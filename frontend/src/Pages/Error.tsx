@@ -10,7 +10,7 @@ export default function Error() {
                 <button
                     className="btn btn-primary btn-outline"
                     onClick={() => {
-                        window.location.href = '/';
+                        window.location.href = '/authcallback';
                     }}
                 >
                     Home Page

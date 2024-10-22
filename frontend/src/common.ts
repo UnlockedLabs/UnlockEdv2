@@ -5,7 +5,7 @@ export enum UserRole {
     Student = 'student'
 }
 
-export const BROWSER_URL = '/self-service/login/browser';
+export const INIT_KRATOS_LOGIN_FLOW = '/self-service/login/browser';
 export const DEFAULT_ADMIN_ID = 1;
 export interface User {
     id: number;
@@ -20,10 +20,15 @@ export interface User {
     facility_name?: string;
     [key: string]: number | string | boolean | undefined;
 }
-export const getDashboard = (user?: User) => {
-    return user?.role === UserRole.Admin
-        ? '/admin-dashboard'
-        : '/student-dashboard';
+
+export const getDashboard = (user?: User): string => {
+    if (!user) {
+        return INIT_KRATOS_LOGIN_FLOW;
+    } else {
+        return user.role === UserRole.Admin
+            ? '/admin-dashboard'
+            : '/student-dashboard';
+    }
 };
 
 export interface UserWithMappings {

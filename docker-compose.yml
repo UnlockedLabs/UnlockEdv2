@@ -53,6 +53,7 @@ services:
       - intranet
     volumes:
       - ./:/app
+      - ./frontend/public/thumbnails:/imgs
     environment:
       - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
       - APP_ENV=production
@@ -70,6 +71,7 @@ services:
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
+      - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
     depends_on:
       kratos:
@@ -84,7 +86,6 @@ services:
       dockerfile: provider-middleware/dev.Dockerfile
     environment:
       - APP_ENV=production
-      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=unlocked
@@ -94,6 +95,7 @@ services:
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
+      - APP_URL=http://server:8080 
     networks:
       - intranet
     volumes:

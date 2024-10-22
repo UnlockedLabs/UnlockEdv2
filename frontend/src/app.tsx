@@ -20,14 +20,19 @@ import StudentManagement from '@/Pages/StudentManagement.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
-import { checkDefaultFacility, checkExistingFlow, useAuth } from '@/useAuth';
+import {
+    checkDefaultFacility,
+    checkExistingFlow,
+    checkRole,
+    useAuth
+} from '@/useAuth';
 import { UserRole } from '@/common';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
-import Dashboard from './Pages/Dashboard.tsx';
+import { getRandomVisibleLibraries } from './routeLoaders.ts';
 
 const WithAuth: React.FC = () => {
     return (
@@ -83,12 +88,13 @@ const router = createBrowserRouter([
                 element: <AuthenticatedLayout />,
                 children: [
                     {
-                        path: 'dashboard',
-                        element: <Dashboard />
+                        path: 'authcallback',
+                        loader: checkRole
                     },
                     {
                         path: 'student-dashboard',
                         element: <StudentDashboard />,
+                        loader: getRandomVisibleLibraries,
                         handle: { title: 'Dashboard', path: ['dashboard'] }
                     },
                     {

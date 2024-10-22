@@ -16,21 +16,26 @@ import (
 
 const (
 	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=1&count="
-	MaxLibraries    = 1000
+	MaxLibraries    = 10
 )
 
 type KiwixService struct {
 	OpenContentProviderId uint
 	Url                   string
+	BaseUrl               string
+	Client                *http.Client
 	params                *map[string]interface{}
 }
 
 func NewKiwixService(openContentProvider *models.OpenContentProvider, params *map[string]interface{}) *KiwixService {
 	url := fmt.Sprintf("%s%s%d", openContentProvider.BaseUrl, KiwixCatalogUrl, MaxLibraries)
+	client := http.Client{}
 	return &KiwixService{
 		OpenContentProviderId: openContentProvider.ID,
+		BaseUrl:               openContentProvider.BaseUrl,
 		Url:                   url,
 		params:                params,
+		Client:                &client,
 	}
 }
 
@@ -40,7 +45,12 @@ func (ks *KiwixService) GetJobParams() *map[string]interface{} {
 
 func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error {
 	log.Infoln("Importing libraries from Kiwix")
-	resp, err := http.Get(ks.Url)
+	req, err := http.NewRequest(http.MethodGet, ks.Url, nil)
+	if err != nil {
+		log.Errorf("error creating request: %v", err)
+		return err
+	}
+	resp, err := ks.Client.Do(req)
 	if err != nil {
 		log.Errorf("error fetching data from url: %v", err)
 		return err
@@ -67,7 +77,7 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 			return nil
 		default:
 			externalIds = append(externalIds, entry.ID)
-			err = UpdateOrInsertLibrary(ctx, db, entry, ks.OpenContentProviderId)
+			err = ks.UpdateOrInsertLibrary(ctx, db, entry, ks.OpenContentProviderId)
 			if err != nil {
 				log.Errorf("error updating or inserting library: %v", err)
 				return err
@@ -83,16 +93,18 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 	return nil
 }
 
-func UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, entry Entry, providerId uint) error {
+func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, entry Entry, providerId uint) error {
 	log.Infoln("Attempting to update existing Kiwix Libraries.")
-	library := IntoLibrary(entry, providerId)
+	library := ks.IntoLibrary(entry, providerId)
 	if err := db.WithContext(ctx).
 		Where(&models.Library{ExternalID: models.StringPtr(entry.ID)}).
 		Assign(models.Library{
 			Path:        library.Path,
 			Name:        library.Name,
 			Description: library.Description,
-			Language:    library.Language}).
+			Language:    library.Language,
+			ImageUrl:    library.ImageUrl,
+		}).
 		FirstOrCreate(&library).Error; err != nil {
 		logrus.Errorln("Error updating or inserting library: ", err)
 		return err

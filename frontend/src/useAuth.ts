@@ -3,13 +3,13 @@ import { LoaderFunction, json, redirect } from 'react-router-dom';
 import {
     AuthFlow,
     AuthResponse,
-    BROWSER_URL,
+    INIT_KRATOS_LOGIN_FLOW,
     Facility,
+    getDashboard,
     OryFlow,
     OrySessionWhoami,
     ServerResponseOne,
-    User,
-    UserRole
+    User
 } from './common';
 import API from './api/api';
 import axios from 'axios';
@@ -26,17 +26,17 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const SESSION_URL = '/sessions/whoami';
 export const KRATOS_CHECK_FLOW_URL = '/self-service/login/flows?id=';
 
-export async function fetchUser(): Promise<User | null> {
+export async function fetchUser(): Promise<User | undefined> {
     const response = await API.get<User>('auth');
     const user = response.data as User;
     return user;
 }
-export const checkStudentRoleLoader: LoaderFunction = async () => {
+
+export const checkRole: LoaderFunction = async () => {
     const user = await fetchUser();
-    if (user?.Role === UserRole.Admin) {
-        return redirect('/admin-dashboard');
-    }
+    return redirect(getDashboard(user));
 };
+
 export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);
     if (!context) {
@@ -86,7 +86,7 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
     const flow = queryParams.get('flow');
     if (!flow) {
         console.log('No login flow specified');
-        return json<AuthFlow>(redirectTo(BROWSER_URL));
+        return json<AuthFlow>(redirectTo(INIT_KRATOS_LOGIN_FLOW));
     }
     const attributes = await initFlow(flow);
     try {
@@ -127,11 +127,13 @@ export async function handleLogout(): Promise<void> {
             );
             if (logout.status === 200) {
                 const logoutResp = logout.data as AuthResponse;
-                window.location.replace(logoutResp.logout_url ?? BROWSER_URL);
+                window.location.replace(
+                    logoutResp.logout_url ?? INIT_KRATOS_LOGIN_FLOW
+                );
             }
         }
     } catch (error) {
-        window.location.href = BROWSER_URL;
+        window.location.href = INIT_KRATOS_LOGIN_FLOW;
         console.log('Logout failed', error);
     }
 }

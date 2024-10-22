@@ -12,7 +12,7 @@ export default function UnauthorizedNotFound({ which }: { which: string }) {
                     <button
                         className="btn btn-primary btn-outline"
                         onClick={() => {
-                            window.location.href = '/';
+                            window.location.href = '/authcallback';
                         }}
                     >
                         Dashboard

@@ -1,4 +1,6 @@
-/frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/src
 /config
 /logs
 /.git

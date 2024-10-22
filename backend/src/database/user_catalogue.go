@@ -94,7 +94,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
     END as course_progress,
     a.total_time`, userId, userId).
 		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
-		Joins("LEFT JOIN (SELECT * FROM milestones WHERE user_id = ?) as m ON m.course_id = c.id", userId).
+		Joins("JOIN milestones as m ON m.course_id = c.id AND m.user_id = ?", userId).
 		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = ?", userId).
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userId).
 		Joins(`LEFT JOIN activities a ON a.id = (

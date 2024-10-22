@@ -16,7 +16,7 @@ func main() {
 		log.Error("error loading .env file, using default env variables")
 	}
 	initLogging()
-	runner := getRunner()
+	runner := newJobRunner()
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
@@ -28,6 +28,9 @@ func main() {
 		return
 	}
 	for _, task := range tasks {
+		if task.Job == nil {
+			continue
+		}
 		_, err := scheduler.NewJob(gocron.CronJob(task.Job.Schedule, false), gocron.NewTask(runner.runTask, task))
 		if err != nil {
 			log.Errorf("Failed to create job: %v", err)

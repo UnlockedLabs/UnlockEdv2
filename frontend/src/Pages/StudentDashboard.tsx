@@ -6,7 +6,7 @@ import convertSeconds from '@/Components/ConvertSeconds';
 import ResourcesSideBar from '@/Components/ResourcesSideBar';
 import WeekActivityChart from '@/Components/WeeklyActivity';
 import Error from './Error';
-import { useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import {
     AcademicCapIcon,
     ArrowRightIcon,
@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import {
     CurrentEnrollment,
+    Library,
     RecentCourse,
     ServerResponse,
     StudentDashboardJoin,
@@ -22,6 +23,7 @@ import {
 import { AxiosError } from 'axios';
 
 export default function StudentDashboard() {
+    const loaderData = useLoaderData() as Library[];
     const { user } = useAuth();
     const navigate = useNavigate();
     if (!user) {
@@ -205,7 +207,7 @@ export default function StudentDashboard() {
                 </div>
             </div>
             <div className="min-w-px bg-grey-1"></div>
-            <ResourcesSideBar />
+            <ResourcesSideBar libraries={loaderData} />
         </div>
     );
 }

@@ -47,10 +47,7 @@ export default function LibraryCard({
             <div className="flex p-4 gap-2 border-b-2">
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img
-                        src={
-                            library?.open_content_provider.url +
-                            library?.image_url
-                        }
+                        src={library.image_url ?? ''}
                         alt={`${library.name} thumbnail`}
                     />
                 </figure>

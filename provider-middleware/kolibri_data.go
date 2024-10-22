@@ -76,6 +76,10 @@ type KolibriContent struct {
 	TotalResourceCount int    `json:"total_resource_count"`
 }
 
+func stripUuidForUrl(uuid string) string {
+	return strings.ReplaceAll(uuid, "-", "")
+}
+
 func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course {
 	courseType := data["course_type"].(string)
 	thumbnail := data["thumbnail"].(string)
@@ -104,15 +108,15 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 		}
 		course.Description = description
 		course.ThumbnailURL = imgUrl
-		if externalUrl, err := url.JoinPath(kc.BaseURL, "en/learn/#/topics/t/", id, "/folders?last=HOME"); err == nil {
+		if externalUrl, err := url.JoinPath(kc.BaseURL, "en/learn/#/topics/t/", stripUuidForUrl(id), "/folders?last=HOME"); err == nil {
 			course.ExternalURL = externalUrl
 		}
 	} else {
 		course.Description = "Kolibri managed course"
-		if externUrl, err := url.JoinPath(kc.BaseURL, "/en/learn/#/home/classes/", id); err == nil {
+		if externUrl, err := url.JoinPath(kc.BaseURL, "/en/learn/#/home/classes/", stripUuidForUrl(id)); err == nil {
 			course.ExternalURL = externUrl
 		} else {
-			course.ExternalURL = kc.BaseURL + "/en/learn/#/home/classes/" + id
+			course.ExternalURL = kc.BaseURL + "/en/learn/#/home/classes/" + stripUuidForUrl(id)
 		}
 	}
 	return &course
@@ -162,16 +166,17 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 	if response.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("server returned non-OK status: %s", response.Status)
 	}
-	var result map[string]string
-	err = json.NewDecoder(response.Body).Decode(&result)
+	urlRes := struct {
+		data struct {
+			url string
+		}
+		message string
+	}{}
+	err = json.NewDecoder(response.Body).Decode(&urlRes)
 	if err != nil {
 		return "", err
 	}
-	url, ok := result["url"]
-	if !ok {
-		return "", errors.New("response does not contain URL")
-	}
-	return url, nil
+	return urlRes.data.url, nil
 }
 
 type Role struct {

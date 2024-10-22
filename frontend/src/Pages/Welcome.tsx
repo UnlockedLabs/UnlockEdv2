@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import Brand from '../Components/Brand';
-import { BROWSER_URL, ServerResponse, User, UserRole } from '@/common';
+import {
+    INIT_KRATOS_LOGIN_FLOW,
+    ServerResponse,
+    User,
+    UserRole
+} from '@/common';
 import API from '@/api/api';
 import { Link } from 'react-router-dom';
 
@@ -9,6 +14,11 @@ export default function Welcome() {
     const [authUser, setAuthUser] = useState<User | undefined>();
 
     useEffect(() => {
+        const img = new Image();
+        img.src = 'unlockedv1.png';
+        img.onload = () => {
+            setImgSrc('unlockedv1.png');
+        };
         API.get<User>(`auth`)
             .then((user: ServerResponse<User>) => {
                 if (user.success) {
@@ -18,11 +28,6 @@ export default function Welcome() {
             .catch(() => {
                 return;
             });
-        const img = new Image();
-        img.src = 'unlockedv1.png';
-        img.onload = () => {
-            setImgSrc('unlockedv1.png');
-        };
     }, []);
 
     return (
@@ -35,14 +40,14 @@ export default function Welcome() {
                     <ul className="menu menu-horizontal px-1 text-primary">
                         {!authUser ? (
                             <li>
-                                <Link to={BROWSER_URL}>Log in</Link>
+                                <Link to={INIT_KRATOS_LOGIN_FLOW}>Log in</Link>
                             </li>
                         ) : (
                             <li>
                                 <Link
                                     to={
                                         authUser.role === UserRole.Student
-                                            ? '/dashboard'
+                                            ? '/student-dashboard'
                                             : '/admin-dashboard'
                                     }
                                 >

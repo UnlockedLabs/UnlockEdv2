@@ -17,7 +17,7 @@ type (
 		Schedule  string    `gorm:"size 60" json:"schedule"`
 		CreatedAt time.Time `json:"created_at"`
 
-		Tasks []*RunnableTask `gorm:"foreignKey:JobID;references:ID" json:"-"`
+		Tasks []RunnableTask `gorm:"foreignKey:JobID;references:ID" json:"-"`
 	}
 	JobType   string
 	JobStatus string

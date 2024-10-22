@@ -1,7 +1,7 @@
 import '@/bootstrap';
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { BROWSER_URL, User } from '@/common';
+import { INIT_KRATOS_LOGIN_FLOW, User } from '@/common';
 import { AuthContext, fetchUser } from '@/useAuth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -12,22 +12,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const checkAuth = async () => {
-            const user = await fetchUser();
-            if (user) setUser(user);
+            const authUser = await fetchUser();
+            if (authUser) {
+                setUser(authUser);
+            }
             setLoading(false);
         };
         void checkAuth();
     }, []);
-
     if (loading) {
-        return <div>Loading...</div>;
+        return <div></div>;
     }
-    if (!user) {
-        window.location.href = BROWSER_URL;
-        return;
-    } else if (user.password_reset && window.location.pathname !== passReset) {
+    if (!user && !loading) {
+        window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        return null;
+    } else if (
+        !loading &&
+        user?.password_reset &&
+        window.location.pathname !== passReset
+    ) {
         window.location.href = passReset;
-        return;
+        return null;
     }
     return (
         <AuthContext.Provider value={{ user, setUser }}>

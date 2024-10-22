@@ -25,7 +25,7 @@ export default function Pagination({
             >
                 <button
                     disabled={page == 0}
-                    className="join-item btn btn-sm"
+                    className="join-item btn btn-sm rounded-l"
                     onClick={() => setPage(1)}
                 >
                     <ChevronDoubleLeftIcon className="h-4" />
@@ -55,7 +55,7 @@ export default function Pagination({
                 data-tip="Last Page"
             >
                 <button
-                    className="join-item btn btn-sm"
+                    className="join-item btn btn-sm rounded-r-xl"
                     onClick={() => setPage(meta.last_page)}
                     disabled={page == meta.last_page - 1}
                 >
@@ -64,7 +64,7 @@ export default function Pagination({
             </div>
             {setPerPage && (
                 <div
-                    className="tooltip tooltip-right"
+                    className="tooltip tooltip-bottom"
                     data-tip="Items per page"
                 >
                     <div className="flex-col-1 pl-5 align-middle">

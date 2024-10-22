@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -17,8 +16,6 @@ type JobRunner struct {
 	nats *nats.Conn
 	db   *gorm.DB
 }
-
-var getRunner = sync.OnceValue(func() *JobRunner { return newJobRunner() })
 
 func newJobRunner() *JobRunner {
 	db := initDB()
@@ -63,11 +60,17 @@ func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, 
 			switch jobType {
 			case models.ScrapeKiwixJob:
 				if providers[idx].Name == models.Kiwix {
-					if err := jr.db.Model(&models.CronJob{}).Where("name = ?", string(job.Name)).FirstOrCreate(&job).Error; err != nil {
+					if err := jr.db.Model(&models.CronJob{}).Preload("Tasks").Where("name = ?", string(job.Name)).FirstOrCreate(&job).Error; err != nil {
 						log.Errorf("failed to create job: %v", err)
 						continue
 					}
-					task := models.RunnableTask{OpenContentProviderID: &providers[idx].ID, JobID: job.ID, Status: models.StatusPending}
+					task := models.RunnableTask{}
+					if len(job.Tasks) > 0 {
+						log.Infof("Job %s already has a task with id: %d", job.Name, job.Tasks[0].ID)
+						task = job.Tasks[0]
+					} else {
+						task = models.RunnableTask{OpenContentProviderID: &providers[idx].ID, JobID: job.ID, Status: models.StatusPending}
+					}
 					if err := jr.intoOpenContentTask(&job, providers[idx].ID, &task); err != nil {
 						log.Errorf("failed to create task: %v", err)
 						return nil, err
@@ -104,11 +107,7 @@ func (jr *JobRunner) fetchInitialProviderCourses(prov *models.ProviderPlatform, 
 			log.Errorf("failed to unsubscribe from completion subject: %v", err)
 		}
 	}()
-	err = jr.runTask(task)
-	if err != nil {
-		log.Errorf("failed to run initial courses task for provider: %s", prov.Name)
-		return err
-	}
+	jr.runTask(task)
 	select {
 	case <-done:
 		log.Info("Course fetching job completed. Continuing with the rest of the jobs...")
@@ -192,20 +191,23 @@ func (jr *JobRunner) intoProviderPlatformTask(cj *models.CronJob, provId uint, t
 }
 
 func (jr *JobRunner) intoOpenContentTask(cj *models.CronJob, provId uint, task *models.RunnableTask) error {
-	if err := jr.db.Model(&models.RunnableTask{}).Preload("Job").Where("job_id = ? AND open_content_provider_id = ?", cj.ID, provId).FirstOrCreate(&task).Error; err != nil {
-		log.Errorln("failed to create non-provider task from cronjob")
-		return err
+	if task.ID == 0 {
+		if err := jr.db.Preload("Job").Where("job_id = ? AND open_content_provider_id = ?", cj.ID, provId).FirstOrCreate(task).Error; err != nil {
+			log.Errorln("failed to create non-provider task from cronjob")
+			return err
+		}
 	}
 	params, err := models.JobType(cj.Name).GetParams(jr.db, provId, cj.ID)
 	if err != nil {
 		log.Errorln("failed to get params for non-provider job")
 		return err
 	}
+	task.Job = cj
 	task.Parameters = params
 	return nil
 }
 
-func (jr *JobRunner) runTask(task *models.RunnableTask) error {
+func (jr *JobRunner) runTask(task *models.RunnableTask) {
 	log.Info("Running task: ", task)
 	// publish the task to the nats server, update the satus of the task to 'running'
 	task.Parameters["last_run"] = task.LastRun
@@ -214,21 +216,21 @@ func (jr *JobRunner) runTask(task *models.RunnableTask) error {
 	params, err := json.Marshal(task.Parameters)
 	if err != nil {
 		log.Errorf("failed to marshal params: %v", err)
-		return err
+		return
 	}
 	task.Status = models.StatusRunning
 	if err := jr.db.Save(task).Error; err != nil {
 		log.Errorf("failed to update task status: %v", err)
-		return err
+		return
 	}
 	msg := nats.NewMsg(fmt.Sprintf("tasks.%s", string(jobType)))
 	msg.Data = params
 	if err := jr.nats.PublishMsg(msg); err != nil {
 		log.Errorf("failed to publish job: %v", err)
-		return err
+		return
 	}
 	log.Info("Published job: ", jobType)
-	return nil
+	return
 }
 
 func (jr *JobRunner) execute() {
@@ -238,8 +240,6 @@ func (jr *JobRunner) execute() {
 		return
 	}
 	for _, task := range tasks {
-		if err := jr.runTask(&task); err != nil {
-			log.Errorf("failed to run task: %v", err)
-		}
+		jr.runTask(&task)
 	}
 }
