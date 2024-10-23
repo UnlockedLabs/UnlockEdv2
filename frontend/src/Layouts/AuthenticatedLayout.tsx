@@ -62,7 +62,7 @@ export default function AuthenticatedLayout() {
                     checked={isNavOpen && !isNavPinned}
                     onChange={() => setIsNavOpen(!isNavOpen)}
                 />
-                <div className="drawer-side">
+                <div className="!overflow-visible drawer-side">
                     <label
                         htmlFor="nav-drawer"
                         className="drawer-overlay"

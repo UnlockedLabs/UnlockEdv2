@@ -1,5 +1,10 @@
 import { json, LoaderFunction } from 'react-router-dom';
-import { OpenContentProvider, ServerResponseMany } from './common';
+import {
+    Facility,
+    OpenContentProvider,
+    ServerResponse,
+    ServerResponseMany
+} from './common';
 import API from './api/api';
 
 export const getOpenContentProviders: LoaderFunction = async () => {
@@ -10,4 +15,13 @@ export const getOpenContentProviders: LoaderFunction = async () => {
         return json<OpenContentProvider[]>(resp.data);
     }
     return json<OpenContentProvider[]>([]);
+};
+
+export const getFacilities: LoaderFunction = async () => {
+    const response: ServerResponse<Facility[]> =
+        await API.get<Facility[]>(`facilities`);
+    if (response.success) {
+        return json<Facility[]>(response.data as Facility[]);
+    }
+    return json<null>(null);
 };

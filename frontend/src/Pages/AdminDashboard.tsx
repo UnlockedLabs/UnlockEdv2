@@ -11,10 +11,9 @@ import {
 } from '@/common';
 import useSWR from 'swr';
 import convertSeconds from '@/Components/ConvertSeconds';
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import { ThemeContext } from '@/Components/ThemeContext';
 import { AxiosError } from 'axios';
-import { usePathValue } from '@/PathValueCtx';
 import UnauthorizedNotFound from './Unauthorized';
 
 export default function AdminDashboard() {
@@ -24,12 +23,7 @@ export default function AdminDashboard() {
         AxiosError
     >(`/api/users/${user?.id}/admin-dashboard`);
     const { theme } = useContext(ThemeContext);
-    const { setPathVal } = usePathValue();
-    useEffect(() => {
-        setPathVal([
-            { path_id: ':facility_name', value: user?.facility_name ?? '' }
-        ]);
-    }, [user]);
+
     if (error || isLoading) return <div></div>;
     if (user?.role !== UserRole.Admin) {
         return <UnauthorizedNotFound which="unauthorized" />;
@@ -39,7 +33,7 @@ export default function AdminDashboard() {
     const totalActivity = convertSeconds(activityData.total_weekly_activity);
     return (
         <div className="px-8 py-4">
-            <h1 className="text-5xl">{activityData.facility_name}</h1>
+            <h1 className="text-5xl">{user.facility_name}</h1>
             <div className="flex flex-row mt-12 gap-12">
                 <div className="flex flex-col gap-6 w-2/3">
                     <div className="card h-[240px]">

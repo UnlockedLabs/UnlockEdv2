@@ -213,11 +213,15 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				if !ok {
 					passReset = true
 				}
+				var facilityName string
+				if err := srv.Db.Model(&models.Facility{}).Select("name").Where("id = ?", facilityId).Find(&facilityName).Error; err != nil {
+					return nil, hasCookie, err
+				}
 				claims := &Claims{
 					Username:      user.Username,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
-					FacilityName:  user.Facility.Name,
+					FacilityName:  facilityName,
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
