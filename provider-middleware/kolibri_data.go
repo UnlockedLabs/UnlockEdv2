@@ -168,15 +168,15 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 	}
 	urlRes := struct {
 		data struct {
-			url string
+			Url string `json:"url"`
 		}
-		message string
+		Message string `json:"message"`
 	}{}
 	err = json.NewDecoder(response.Body).Decode(&urlRes)
 	if err != nil {
 		return "", err
 	}
-	return urlRes.data.url, nil
+	return urlRes.data.Url, nil
 }
 
 type Role struct {
