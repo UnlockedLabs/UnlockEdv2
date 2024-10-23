@@ -32,7 +32,7 @@ import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
-import { getOpenContentProviders } from './routeLoaders.ts';
+import { getOpenContentProviders, getFacilities } from './routeLoaders.ts';
 
 const WithAuth: React.FC = () => {
     return (
@@ -156,6 +156,7 @@ const router = createBrowserRouter([
         children: [
             {
                 element: <AuthenticatedLayout />,
+                loader: getFacilities,
                 children: [
                     {
                         path: 'admin-dashboard',
@@ -163,7 +164,7 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         handle: {
                             title: 'Admin Dashboard',
-                            path: ['admin-dashboard', ':facility_name']
+                            path: ['admin-dashboard']
                         }
                     },
                     {
@@ -172,7 +173,7 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         handle: {
                             title: 'Student Management',
-                            path: ['student-management', ':facility_name']
+                            path: ['student-management']
                         }
                     },
                     {

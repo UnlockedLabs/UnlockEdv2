@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import useSWR from 'swr';
 
 import {
@@ -30,8 +30,6 @@ import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { AxiosError } from 'axios';
-import { usePathValue } from '@/PathValueCtx';
-import { useAuth } from '@/useAuth';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -43,8 +41,6 @@ export default function StudentManagement() {
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
     const [toast, setToast] = useState(defaultToast);
-    const { setPathVal } = usePathValue();
-    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
@@ -67,11 +63,6 @@ export default function StudentManagement() {
             setTargetUser(undefined);
         }, 200);
     }
-    useEffect(() => {
-        setPathVal([
-            { path_id: ':facility_name', value: user?.facility_name ?? '' }
-        ]);
-    }, [user?.facility_name]);
     const deleteUser = async () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
             toaster(

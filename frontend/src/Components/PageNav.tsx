@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { handleLogout, useAuth } from '@/useAuth';
+import { useAuth } from '@/useAuth';
 import {
-    ArrowRightEndOnRectangleIcon,
     Bars3Icon,
+    BuildingOffice2Icon,
     HomeIcon
 } from '@heroicons/react/24/solid';
-
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
-
-import ThemeToggle from './ThemeToggle';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { usePathValue } from '@/PathValueCtx';
+import { Facility, UserRole } from '@/common';
+import { useLoaderData } from 'react-router-dom';
+import API from '@/api/api';
 
 export default function PageNav({
     path,
@@ -25,6 +24,7 @@ export default function PageNav({
     const detailsRef = useRef<HTMLDetailsElement>(null);
     const { pathVal } = usePathValue();
     const [customPath, setCustomPath] = useState<string[]>(path ?? []);
+    const facilityNames = useLoaderData() as Facility[] | null;
 
     useEffect(() => {
         const handlePathChange = () => {
@@ -59,6 +59,13 @@ export default function PageNav({
             window.removeEventListener('click', closeDropdown);
         };
     }, []);
+
+    const handleSwitchFacility = async (facility: Facility) => {
+        const resp = await API.put(`admin/facility-context/${facility.id}`, {});
+        if (resp.success) {
+            window.location.reload();
+        }
+    };
 
     return (
         <div className="px-8 flex justify-between items-center">
@@ -97,46 +104,42 @@ export default function PageNav({
                     ))}
                 </ul>
             </div>
-            <ul className="menu menu-horizontal px-1">
-                <li>
-                    <details className="dropdown dropdown-end" ref={detailsRef}>
-                        <summary>
-                            {user && (
+            {user?.role == UserRole.Admin ? (
+                <ul className="menu menu-horizontal px-1">
+                    <li>
+                        <details
+                            className="dropdown dropdown-end"
+                            ref={detailsRef}
+                        >
+                            <summary>
+                                <ULIComponent icon={BuildingOffice2Icon} />
                                 <span className="font-semibold">
-                                    {user.name_first} {user.name_last}
+                                    {user.facility_name}
                                 </span>
-                            )}
-                        </summary>
-                        <ul className="dropdown-content bg-grey-2 z-[1] dark:bg-grey-1">
-                            <li>
-                                <label className="flex cursor-pointer gap-2">
-                                    <ULIComponent
-                                        icon={SunIcon}
-                                        iconClassName={'w-6 h-6'}
-                                    />
-                                    <ThemeToggle />
-                                    <ULIComponent
-                                        icon={MoonIcon}
-                                        iconClassName={'w-6 h-6'}
-                                    />
-                                </label>
-                            </li>
-                            <div className="divider mt-0 mb-0"></div>
-
-                            <li>
-                                <button
-                                    onClick={() => {
-                                        void handleLogout();
-                                    }}
-                                >
-                                    <ArrowRightEndOnRectangleIcon className="h-4" />
-                                    Logout
-                                </button>
-                            </li>
-                        </ul>
-                    </details>
-                </li>
-            </ul>
+                            </summary>
+                            <ul className="dropdown-content w-max bg-grey-2 z-[1] dark:bg-grey-1 flex flex-col">
+                                {facilityNames?.map((facility: Facility) => (
+                                    <li
+                                        key={facility.id}
+                                        onClick={() => {
+                                            void handleSwitchFacility(facility);
+                                        }}
+                                    >
+                                        <label>{facility.name}</label>
+                                    </li>
+                                ))}
+                            </ul>
+                        </details>
+                    </li>
+                </ul>
+            ) : (
+                <div className="flex flex-row items-center gap-2 px-6 py-4">
+                    <ULIComponent icon={BuildingOffice2Icon} />
+                    <label className="font-semibold">
+                        {user?.facility_name}
+                    </label>
+                </div>
+            )}
         </div>
     );
 }
