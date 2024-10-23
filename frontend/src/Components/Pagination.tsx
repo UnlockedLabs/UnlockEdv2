@@ -55,7 +55,7 @@ export default function Pagination({
                 data-tip="Last Page"
             >
                 <button
-                    className="join-item btn btn-sm rounded-r-xl"
+                    className="join-item btn btn-sm rounded-r"
                     onClick={() => setPage(meta.last_page)}
                     disabled={page == meta.last_page - 1}
                 >

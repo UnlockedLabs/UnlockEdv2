@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import {
     CurrentEnrollment,
-    Library,
+    OpenContentProvider,
     RecentCourse,
     ServerResponse,
     StudentDashboardJoin,
@@ -23,7 +23,7 @@ import {
 import { AxiosError } from 'axios';
 
 export default function StudentDashboard() {
-    const loaderData = useLoaderData() as Library[];
+    const loaderData = useLoaderData() as OpenContentProvider[];
     const { user } = useAuth();
     const navigate = useNavigate();
     if (!user) {
@@ -207,7 +207,7 @@ export default function StudentDashboard() {
                 </div>
             </div>
             <div className="min-w-px bg-grey-1"></div>
-            <ResourcesSideBar libraries={loaderData} />
+            <ResourcesSideBar providers={loaderData} />
         </div>
     );
 }

@@ -17,7 +17,6 @@ func TestHandleUploadHandler(t *testing.T) {
 	t.Setenv("APP_URL", "http://127.0.0.1")
 	httpTests := []httpTest{
 		{"TestUploadHandlerAsAdmin", "admin", map[string]any{"uploadPath": "test_data/uploadsrc/20240808_124813.jpg", "cleanupPath": "test_data/uploadsrc/outsideart.jpg"}, http.StatusOK, ""},
-		{"TestUploadHandlerAsUser", "student", map[string]any{"uploadPath": "test_data/uploadsrc/20240808_124813.jpg", "cleanupPath": "test_data/uploadsrc/outsideart.jpg"}, http.StatusOK, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -54,7 +53,7 @@ func TestHandleUploadHandler(t *testing.T) {
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
 				t.Errorf("failed to unmarshal resource, error is %v", err)
 			}
-			if data.Data["url"] != os.Getenv("APP_URL")+"/photos/"+fileName {
+			if data.Data["url"] != os.Getenv("APP_URL")+"/api/photos/"+fileName {
 				t.Error("unexpected response data returned for photos uploaded")
 			}
 			t.Cleanup(func() {

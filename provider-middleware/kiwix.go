@@ -16,7 +16,7 @@ import (
 
 const (
 	KiwixCatalogUrl = "/catalog/v2/entries?lang=eng&start=1&count="
-	MaxLibraries    = 10
+	MaxLibraries    = 1000
 )
 
 type KiwixService struct {

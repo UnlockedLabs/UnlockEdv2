@@ -22,7 +22,7 @@ export default function StaticContentCard({
             <img
                 src={imgSrc}
                 alt={altText}
-                className="h-[60px] w-[75px] self-center object-cover"
+                className="h-[105px] self-center object-cover"
             />
             <div className="card-body gap-2">
                 <h3 className="card-title text-sm">{title}</h3>

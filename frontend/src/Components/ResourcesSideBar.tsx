@@ -1,4 +1,8 @@
-import { Library, ResourceCategory, ServerResponse } from '@/common';
+import {
+    OpenContentProvider,
+    ResourceCategory,
+    ServerResponse
+} from '@/common';
 import Error from '@/Pages/Error';
 import useSWR from 'swr';
 import StaticContentCard from './StaticContentCard';
@@ -6,9 +10,9 @@ import ResourcesCategoryCard from './ResourcesCategoryCard';
 import { AxiosError } from 'axios';
 
 interface ResourcesSideBarProps {
-    libraries: Library[];
+    providers: OpenContentProvider[];
 }
-export default function ResourcesSideBar({ libraries }: ResourcesSideBarProps) {
+export default function ResourcesSideBar({ providers }: ResourcesSideBarProps) {
     const { data, isLoading, error } = useSWR<
         ServerResponse<ResourceCategory>,
         AxiosError
@@ -22,15 +26,15 @@ export default function ResourcesSideBar({ libraries }: ResourcesSideBarProps) {
         <div className="w-[409px] min-[1400px]:min-w-[409px] bg-background py-4 px-9">
             <div className="p-4 space-y-4">
                 <h2>Open Content</h2>
-                {libraries?.map((library: Library) => {
+                {providers?.map((provider: OpenContentProvider) => {
                     return (
                         <StaticContentCard
-                            key={library.id}
-                            title={library.name}
-                            description={library.description ?? ''}
-                            imgSrc={`${library.external_id}.png`}
-                            altText={library.name}
-                            linkUrl={`/viewer/libraries/${library.id}`}
+                            key={provider.id}
+                            title={provider.name}
+                            description={provider.description ?? ''}
+                            imgSrc={provider.thumbnail_url ?? ''}
+                            altText={provider.name}
+                            linkUrl={`/viewer/libraries/${provider.id}`}
                             linkText={`Explore Content`}
                         />
                     );

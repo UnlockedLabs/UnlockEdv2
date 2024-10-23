@@ -32,7 +32,7 @@ import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
-import { getRandomVisibleLibraries } from './routeLoaders.ts';
+import { getOpenContentProviders } from './routeLoaders.ts';
 
 const WithAuth: React.FC = () => {
     return (
@@ -94,7 +94,7 @@ const router = createBrowserRouter([
                     {
                         path: 'student-dashboard',
                         element: <StudentDashboard />,
-                        loader: getRandomVisibleLibraries,
+                        loader: getOpenContentProviders,
                         handle: { title: 'Dashboard', path: ['dashboard'] }
                     },
                     {

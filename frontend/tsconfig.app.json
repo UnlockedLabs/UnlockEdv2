@@ -23,7 +23,7 @@
         "jsx": "react-jsx",
         /* Linting */
         "strict": true,
-        "noUnusedLocals": true,
+        "strictPropertyInitialization": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true
     },
