@@ -89,18 +89,18 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 		return newInvalidIdServiceError(err, "facility ID")
 	}
 	log.add("facilty_id", id)
-	facility := make(map[string]interface{}, 0)
+	var facility models.Facility
 	err = json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	toReturn, err := srv.Db.UpdateFacility(facility["name"].(string), uint(id))
+	err = srv.Db.UpdateFacility(&facility, uint(id))
 	if err != nil {
-		log.add("facilityName", facility["name"])
+		log.add("facilityName", facility.Name)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, *toReturn)
+	return writeJsonResponse(w, http.StatusOK, "facility updated successfully")
 }
 
 /**

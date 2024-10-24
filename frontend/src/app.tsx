@@ -228,7 +228,7 @@ const router = createBrowserRouter([
                         handle: {
                             title: 'Facilities Management',
                             path: ['facilities-management']
-                        }
+                        },
                         errorElement: <Error />
                     }
                 ]

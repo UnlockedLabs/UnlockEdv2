@@ -5,6 +5,7 @@ import { CloseX, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
 
 interface FacilityInputs {
+    [key: string]: string
     name: string;
     timezone: string;
 }
@@ -43,7 +44,7 @@ export default function EditFacilityForm({
         return changes;
     }
 
-    const onSubmit: SubmitHandler<Facility> = async (data) => {
+    const onSubmit: SubmitHandler<FacilityInputs> = async (data) => {
         const cleanData = diffFormData(data, facility);
         setErrorMessage('');
         const response = await API.patch(
@@ -66,7 +67,9 @@ export default function EditFacilityForm({
     return (
         <div>
             <CloseX close={() => closeAndReset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={(e)=>{
+                void handleSubmit(onSubmit)(e);
+            }}>
                 <TextInput
                     label="Name"
                     register={register}

@@ -1,6 +1,6 @@
 import { Facility } from '@/common';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { PencilIcon, TrashIcon } from '@heroicons/react/20/solid';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 export default function FacilityCard({
     facility,

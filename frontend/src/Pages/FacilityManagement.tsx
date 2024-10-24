@@ -1,13 +1,12 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
 import {
     Facility,
     ModalType,
     PaginationMeta,
-    ServerResponse,
+    ServerResponseMany,
     ToastState
 } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import Toast from '@/Components/Toast.tsx';
 import FacilityCard from '@/Components/FacilityCard.tsx';
@@ -24,9 +23,9 @@ interface ToastProps {
 }
 
 export default function FacilityManagement() {
-    const addFacilityModal = useRef<undefined | HTMLDialogElement>();
-    const editFacilityModal = useRef<undefined | HTMLDialogElement>();
-    const deleteFacilityModal = useRef<undefined | HTMLDialogElement>();
+    const addFacilityModal = useRef<HTMLDialogElement>(null);
+    const editFacilityModal = useRef<HTMLDialogElement>(null);
+    const deleteFacilityModal = useRef<HTMLDialogElement>(null);
     const [editFacility, setEditFacility] = useState<Facility | undefined>();
     const [toast, setToast] = useState<ToastProps>({
         state: ToastState.null,
@@ -41,15 +40,11 @@ export default function FacilityManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponse<Facility>>(`/api/facilities`);
+    } = useSWR<ServerResponseMany<Facility>>(`/api/facilities`);
 
-    const facilityData = facility?.data ? (facility.data as Facility[]) : [];
-    const meta = facility?.meta as PaginationMeta;
-
+    const facilityData = facility?.data ? facility.data : [];
+    const meta = facility?.meta!;
     const [, setPageQuery] = useState(1);
-    useEffect(() => {
-        console.log(facility);
-    }, [facility]);
 
     function resetModal() {
         setTimeout(() => {
@@ -84,18 +79,35 @@ export default function FacilityManagement() {
         setTargetFacility(facility);
     };
     const handleDeleteFacility = async () => {
-        const response = await API.delete('facilities/' + targetFacility?.id);
-        if (response.success) {
-            setToast({
-                state: ToastState.success,
-                message: 'Facility successfully deleted.'
-            });
-        } else {
+        if (targetFacility?.id == 1) {
             setToast({
                 state: ToastState.error,
-                message: 'Error deleting Facility.'
+                message: 'Cannot delete default facility'
             });
+            return;
         }
+
+        await API.delete('facilities/' + targetFacility?.id)
+            .then((response) => {
+                if (response.success) {
+                    setToast({
+                        state: ToastState.success,
+                        message: 'Facility successfully deleted.'
+                    });
+                } else {
+                    setToast({
+                        state: ToastState.error,
+                        message: 'Error deleting Facility.'
+                    });
+                }
+            })
+            .catch(() => {
+                setToast({
+                    state: ToastState.error,
+                    message: 'Error deleting facility'
+                });
+            });
+
         deleteFacilityModal.current?.close();
         resetModal();
         mutate();
@@ -103,10 +115,7 @@ export default function FacilityManagement() {
     };
 
     return (
-        <AuthenticatedLayout
-            title="Facility Management"
-            path={['Facility Management']}
-        >
+        <>
             <div className="px-8 py-4 flex flex-col justify-center gap-4">
                 <h1>Facility Management</h1>
                 <div className="flex flex-row justify-between">
@@ -209,6 +218,6 @@ export default function FacilityManagement() {
                     }
                 />
             )}
-        </AuthenticatedLayout>
+        </>
     );
 }
