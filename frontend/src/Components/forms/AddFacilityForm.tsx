@@ -37,9 +37,11 @@ export default function AddFacilityForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={(e)=>{
-                void handleSubmit(onSubmit)(e);
-            }}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label="Name"
                     register={register}

@@ -5,7 +5,7 @@ import { CloseX, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
 
 interface FacilityInputs {
-    [key: string]: string
+    [key: string]: string;
     name: string;
     timezone: string;
 }
@@ -67,9 +67,11 @@ export default function EditFacilityForm({
     return (
         <div>
             <CloseX close={() => closeAndReset()} />
-            <form onSubmit={(e)=>{
-                void handleSubmit(onSubmit)(e);
-            }}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label="Name"
                     register={register}

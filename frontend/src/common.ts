@@ -260,7 +260,7 @@ export interface ResetPasswordResponse {
 }
 
 export interface Facility {
-    [key:string]: string | number;
+    [key: string]: string | number;
     id: number;
     name: string;
     created_at: string;

@@ -1,8 +1,9 @@
 import {
+    defaultToast,
     Facility,
     ModalType,
-    PaginationMeta,
     ServerResponseMany,
+    showToast,
     ToastState
 } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -16,21 +17,18 @@ import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
 import EditFacilityForm from '@/Components/forms/EditFacilityForm';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
-
-interface ToastProps {
-    state: ToastState;
-    message: string;
-}
+import { AxiosError } from 'axios';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
     const editFacilityModal = useRef<HTMLDialogElement>(null);
     const deleteFacilityModal = useRef<HTMLDialogElement>(null);
     const [editFacility, setEditFacility] = useState<Facility | undefined>();
-    const [toast, setToast] = useState<ToastProps>({
-        state: ToastState.null,
-        message: ''
-    });
+    const [toast, setToast] = useState(defaultToast);
+    const [displayToast, setDisplayToast] = useState(false);
+    const toaster = (message: string, toastState: ToastState) => {
+        showToast(setToast, setDisplayToast, message, toastState);
+    };
     const [targetFacility, setTargetFacility] = useState<
         undefined | Facility
     >();
@@ -40,10 +38,9 @@ export default function FacilityManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponseMany<Facility>>(`/api/facilities`);
+    } = useSWR<ServerResponseMany<Facility>, AxiosError>(`/api/facilities`);
 
     const facilityData = facility?.data ? facility.data : [];
-    const meta = facility?.meta!;
     const [, setPageQuery] = useState(1);
 
     function resetModal() {
@@ -58,12 +55,9 @@ export default function FacilityManagement() {
     }
 
     function updateFacility(state: ToastState, message: string) {
-        mutate();
+        void mutate();
         if (state && message) {
-            setToast({
-                state: state,
-                message: message
-            });
+            toaster(message, state);
         }
         editFacilityModal.current?.close();
         addFacilityModal.current?.close();
@@ -80,37 +74,28 @@ export default function FacilityManagement() {
     };
     const handleDeleteFacility = async () => {
         if (targetFacility?.id == 1) {
-            setToast({
-                state: ToastState.error,
-                message: 'Cannot delete default facility'
-            });
+            toaster('Cannot delete default facility', ToastState.error);
             return;
         }
 
         await API.delete('facilities/' + targetFacility?.id)
             .then((response) => {
                 if (response.success) {
-                    setToast({
-                        state: ToastState.success,
-                        message: 'Facility successfully deleted.'
-                    });
+                    toaster(
+                        'Facility successfully deleted.',
+                        ToastState.success
+                    );
                 } else {
-                    setToast({
-                        state: ToastState.error,
-                        message: 'Error deleting Facility.'
-                    });
+                    toaster('Error deleting Facility.', ToastState.success);
                 }
             })
             .catch(() => {
-                setToast({
-                    state: ToastState.error,
-                    message: 'Error deleting facility'
-                });
+                toaster('Error deleting facility', ToastState.error);
             });
 
         deleteFacilityModal.current?.close();
         resetModal();
-        mutate();
+        void mutate();
         return;
     };
 
@@ -162,9 +147,15 @@ export default function FacilityManagement() {
                         )}
                     </tbody>
                 </table>
-                {!isLoading && !error && facilityData.length > 0 && (
-                    <Pagination meta={meta} setPage={setPageQuery} />
-                )}
+                {!isLoading &&
+                    !error &&
+                    facilityData.length > 0 &&
+                    facility?.meta && (
+                        <Pagination
+                            meta={facility?.meta}
+                            setPage={setPageQuery}
+                        />
+                    )}
             </div>
             {/* Modals */}
             <Modal
@@ -204,20 +195,11 @@ export default function FacilityManagement() {
                     <DeleteForm
                         item="Facility"
                         onCancel={handleDeleteFacilityCancel}
-                        onSuccess={handleDeleteFacility}
+                        onSuccess={() => handleDeleteFacility}
                     />
                 }
             />
-            {/* Toasts */}
-            {toast.state !== ToastState.null && (
-                <Toast
-                    state={toast.state}
-                    message={toast.message}
-                    reset={() =>
-                        setToast({ state: ToastState.null, message: '' })
-                    }
-                />
-            )}
+            {displayToast && <Toast {...toast} />}
         </>
     );
 }
