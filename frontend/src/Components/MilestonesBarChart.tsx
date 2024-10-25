@@ -12,47 +12,50 @@ import { ThemeContext } from './ThemeContext';
 import { useContext } from 'react';
 import { CourseMilestones, YAxisTickProps } from '@/common';
 
+const maxYAxisLabel = (props: YAxisTickProps) => {
+    const { theme } = useContext(ThemeContext);
+    const fill = theme == 'light' ? '#666' : '#CCC';
+
+    const { x, y, payload } = props;
+    const name = payload.value;
+    if (name.length > 10) {
+        return (
+            <>
+                <text
+                    x={x}
+                    y={y + 1}
+                    textAnchor="end"
+                    fontSize={10}
+                    fill={fill}
+                >
+                    {name.slice(0, 11)}
+                </text>
+                <text
+                    x={x}
+                    y={y + 15}
+                    textAnchor="end"
+                    fontSize={10}
+                    fill={fill}
+                >
+                    {name.length > 20
+                        ? name.slice(11, 20) + '...'
+                        : name.slice(11, 20)}
+                </text>
+            </>
+        );
+    }
+    return (
+        <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill={fill}>
+            {name}
+        </text>
+    );
+};
+
 const MilestonesBarChart = ({ data }: { data: CourseMilestones[] }) => {
     const { theme } = useContext(ThemeContext);
     const fill = theme == 'light' ? '#666' : '#CCC';
     const barColor = theme == 'light' ? '#18ABA0' : '#61BAB2';
     const backgroundColor = theme == 'light' ? '#FFFFFF' : '#0F2926';
-
-    const maxYAxisLabel = (props: YAxisTickProps) => {
-        const { x, y, payload } = props;
-        const name = payload.value;
-        if (name.length > 10) {
-            return (
-                <>
-                    <text
-                        x={x}
-                        y={y + 1}
-                        textAnchor="end"
-                        fontSize={10}
-                        fill={fill}
-                    >
-                        {name.slice(0, 11)}
-                    </text>
-                    <text
-                        x={x}
-                        y={y + 15}
-                        textAnchor="end"
-                        fontSize={10}
-                        fill={fill}
-                    >
-                        {name.length > 20
-                            ? name.slice(11, 20) + '...'
-                            : name.slice(11, 20)}
-                    </text>
-                </>
-            );
-        }
-        return (
-            <text x={x} y={y + 1} textAnchor="end" fontSize={10} fill={fill}>
-                {name}
-            </text>
-        );
-    };
 
     const YAxisTick = (props: YAxisTickProps) => {
         return <g>{maxYAxisLabel(props)}</g>;
