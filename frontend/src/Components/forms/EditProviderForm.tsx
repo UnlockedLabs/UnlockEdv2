@@ -11,6 +11,11 @@ import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
 
 interface ProviderInputs {
+    [key: string]:
+        | string
+        | ProviderPlatformType
+        | ProviderPlatformState
+        | number;
     id: number;
     name: string;
     type: ProviderPlatformType;
@@ -30,7 +35,8 @@ export default function EditProviderForm({
     const [errorMessage, setErrorMessage] = useState('');
     const [showAdditionalFields, setShowAdditionalFields] = useState(false);
     const [showAccessKey, setShowAccessKey] = useState(false);
-    const [accessKey, setAccessKey] = useState('');
+    const [accessKey, setAccessKey] = useState<string>(provider.access_key);
+
     const {
         register,
         handleSubmit,
@@ -42,28 +48,13 @@ export default function EditProviderForm({
             type: provider.type,
             base_url: provider.base_url,
             account_id: provider.account_id,
-            state: provider.state
+            state: provider.state,
+            access_key: provider.access_key
         }
     });
 
-    const getAccessKey = async () => {
-        if (showAccessKey) {
-            setShowAccessKey(false);
-            return;
-        }
-        if (accessKey) {
-            setShowAccessKey(true);
-            return;
-        }
-        const response = await API.get<ProviderPlatform>(
-            `provider-platforms/${provider.id}`
-        );
-        if (!response.success) {
-            setErrorMessage('Failed to get access key');
-            return;
-        }
-        setAccessKey(response.data['access_key']);
-        setShowAccessKey(true);
+    const toggleAccessKey = () => {
+        setShowAccessKey(!showAccessKey);
     };
 
     function diffFormData(
@@ -105,7 +96,7 @@ export default function EditProviderForm({
     return (
         <div>
             <CloseX close={() => closeAndReset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
                 <TextInput
                     label="Name"
                     register={register}
@@ -162,48 +153,48 @@ export default function EditProviderForm({
                         errors={errors}
                     />
                     <label className="form-control">
-                        <div className="label">
-                            <span className="label-text">Access Key</span>
-                        </div>
                         <div className="relative">
+                            <div className="label">
+                                <span className="label-text">Access Key</span>
+                            </div>
                             {showAccessKey ? (
-                                <input
-                                    type="text"
-                                    className="input input-bordered w-full pr-10"
-                                    value={accessKey}
-                                    {...register('access_key', {
-                                        required: 'Access Key is required',
-                                        value: accessKey,
-                                        onChange: (e) =>
-                                            setAccessKey(e.target.value)
-                                    })}
-                                />
+                                <>
+                                    <input // TextInput component cannot be used because we need to modify class
+                                        type="text"
+                                        className="input input-bordered w-full pr-10"
+                                        value={accessKey}
+                                        {...register('access_key', {
+                                            required: 'Access Key is required',
+                                            value: accessKey,
+                                            onChange: (
+                                                e: React.ChangeEvent<HTMLInputElement>
+                                            ) => setAccessKey(e.target.value)
+                                        })}
+                                    />
+                                    <EyeSlashIcon
+                                        className="w-4 z-10 bottom-4 right-4 absolute"
+                                        onClick={toggleAccessKey}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                    />
+                                </>
                             ) : (
-                                <input
-                                    type="password"
-                                    className="input input-bordered w-full"
-                                    value="**********"
-                                    readOnly // Make the input read-only when showAccessKey is false
-                                />
-                            )}
-                            {showAccessKey ? (
-                                <EyeSlashIcon
-                                    className="w-4 z-10 top-4 right-4 absolute"
-                                    onClick={() => {
-                                        console.log(accessKey),
-                                            setAccessKey(accessKey),
-                                            setShowAccessKey(false);
-                                    }}
-                                />
-                            ) : (
-                                <EyeIcon
-                                    className="w-4 z-10 top-4 right-4 absolute"
-                                    onClick={getAccessKey}
-                                />
+                                <>
+                                    <input
+                                        type="password"
+                                        className="input input-bordered w-full"
+                                        value="**********"
+                                        readOnly
+                                    />
+                                    <EyeIcon
+                                        className="w-4 z-10 bottom-4 right-4 absolute"
+                                        onClick={toggleAccessKey}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                    />
+                                </>
                             )}
                         </div>
                         <div className="text-error text-sm">
-                            {errors.access_key && errors.access_key?.message}
+                            {errors.access_key?.message}
                         </div>
                     </label>
                 </div>

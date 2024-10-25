@@ -6,12 +6,16 @@ import {
 
 export default function Pagination({
     meta,
-    setPage
+    setPage,
+    setPerPage
 }: {
     meta: PaginationMeta;
     setPage: (page: number) => void;
+    setPerPage?: (perPage: number) => void;
 }) {
     const page = meta.current_page - 1;
+    const perPage = meta.per_page;
+    const perPageSelections = [10, 20, 30, 50, 100];
 
     return (
         <div className="join place-content-center">
@@ -21,7 +25,7 @@ export default function Pagination({
             >
                 <button
                     disabled={page == 0}
-                    className="join-item btn btn-sm"
+                    className="join-item btn btn-sm rounded-l"
                     onClick={() => setPage(1)}
                 >
                     <ChevronDoubleLeftIcon className="h-4" />
@@ -51,13 +55,47 @@ export default function Pagination({
                 data-tip="Last Page"
             >
                 <button
-                    className="join-item btn btn-sm"
+                    className="join-item btn btn-sm rounded-r"
                     onClick={() => setPage(meta.last_page)}
                     disabled={page == meta.last_page - 1}
                 >
                     <ChevronDoubleRightIcon className="h-4" />
                 </button>
             </div>
+            {setPerPage && (
+                <div
+                    className="tooltip tooltip-bottom"
+                    data-tip="Items per page"
+                >
+                    <div className="flex-col-1 pl-5 align-middle">
+                        <div className="dropdown dropdown-hover dropdown-top">
+                            <div
+                                tabIndex={0}
+                                role="button"
+                                className="btn btn-sm"
+                            >
+                                {perPage}
+                            </div>
+                            <ul
+                                tabIndex={0}
+                                className="dropdown-content menu bg-base-100 rounded-box z-[1] w-30 p-2 shadow"
+                            >
+                                {perPageSelections.map((item) => (
+                                    <li key={item}>
+                                        <a
+                                            onClick={() => {
+                                                setPerPage(item);
+                                            }}
+                                        >
+                                            {item}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

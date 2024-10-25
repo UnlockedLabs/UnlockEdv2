@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
     PencilIcon,
@@ -10,9 +8,10 @@ import {
 } from '@heroicons/react/20/solid';
 import {
     DEFAULT_ADMIN_ID,
+    defaultToast,
     ModalType,
-    PaginationMeta,
-    ServerResponse,
+    ServerResponseMany,
+    showToast,
     ToastState,
     User
 } from '../common';
@@ -28,45 +27,40 @@ import SearchBar from '../Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
+import { AxiosError } from 'axios';
 
 export default function Users() {
-    const addUserModal = useRef<undefined | HTMLDialogElement>();
-    const editUserModal = useRef<undefined | HTMLDialogElement>();
-    const resetUserPasswordModal = useRef<undefined | HTMLDialogElement>();
-    const deleteUserModal = useRef<undefined | HTMLDialogElement>();
+    const addUserModal = useRef<HTMLDialogElement>(null);
+    const editUserModal = useRef<HTMLDialogElement>(null);
+    const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
+    const deleteUserModal = useRef<HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
-    const showUserPassword = useRef<undefined | HTMLDialogElement>();
-    const [toast, setToast] = useState({
-        state: ToastState.null,
-        message: '',
-        reset: () => {}
-    });
+    const showUserPassword = useRef<HTMLDialogElement>(null);
+    const [toast, setToast] = useState(defaultToast);
 
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
+    const [perPage, setPerPage] = useState(10);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const { data, mutate, error, isLoading } = useSWR<ServerResponse<User>>(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}`
+    const { data, mutate, error, isLoading } = useSWR<
+        ServerResponseMany<User>,
+        AxiosError
+    >(
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
     const userData = data?.data as User[] | [];
-    const showToast = (message: string, state: ToastState) => {
-        setToast({
-            state,
-            message,
-            reset: () => {
-                setToast({
-                    state: ToastState.success,
-                    message: '',
-                    reset: () => {
-                        setDisplayToast(false);
-                    }
-                });
-            }
-        });
-        setDisplayToast(true);
+    const meta = data?.meta ?? {
+        current_page: 1,
+        page: 1,
+        total: userData.length,
+        per_page: userData.length,
+        last_page: 1
+    };
+    const toaster = (msg: string, state: ToastState) => {
+        showToast(setToast, setDisplayToast, msg, state);
     };
 
     function resetModal() {
@@ -75,40 +69,51 @@ export default function Users() {
         }, 200);
     }
 
-    const deleteUser = async () => {
+    const deleteUser = () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
-            showToast(
+            toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
             return;
         }
-        const response = await API.delete('users/' + targetUser?.id);
-        const toastType = response.success
-            ? ToastState.success
-            : ToastState.error;
-        const message = response.success
-            ? 'User deleted successfully'
-            : (response.statusText as string);
-        deleteUserModal.current?.close();
-        showToast(message, toastType);
-        resetModal();
-        mutate();
+        API.delete('users/' + targetUser?.id)
+            .then((response) => {
+                const toastType = response.success
+                    ? ToastState.success
+                    : ToastState.error;
+                const message = response.success
+                    ? 'User deleted successfully'
+                    : response.message;
+                deleteUserModal.current?.close();
+                toaster(message, toastType);
+                resetModal();
+            })
+            .catch(() => {
+                toaster('Failed to delete user', ToastState.error);
+            });
+        mutate().catch(() => {
+            toaster('Failed to load users', ToastState.error);
+        });
         return;
     };
 
     const onAddUserSuccess = (pswd = '', msg: string, type: ToastState) => {
-        showToast(msg, type);
+        toaster(msg, type);
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
-        mutate();
+        mutate().catch(() => {
+            toaster('Failed to add user', ToastState.error);
+        });
     };
 
     const hanldleEditUser = () => {
         editUserModal.current?.close();
         resetModal();
-        mutate();
+        mutate().catch(() => {
+            console.error('failed to reload users');
+        });
     };
 
     const handleDeleteUserCancel = () => {
@@ -123,7 +128,7 @@ export default function Users() {
             resetModal();
             return;
         }
-        showToast(msg, state);
+        toaster(msg, state);
         resetModal();
     };
 
@@ -131,7 +136,7 @@ export default function Users() {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
-        showToast('Password Successfully Reset', ToastState.success);
+        toaster('Password Successfully Reset', ToastState.success);
     };
 
     const handleShowPasswordClose = () => {
@@ -144,9 +149,14 @@ export default function Users() {
         setSearchTerm(newSearch);
         setPageQuery(1);
     };
+    const handleSetPerPage = (val: number) => {
+        setPerPage(val);
+        setPageQuery(1);
+        void mutate();
+    };
 
     return (
-        <AuthenticatedLayout title="Users" path={['Users']}>
+        <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
@@ -156,7 +166,7 @@ export default function Users() {
                         />
                         <DropdownControl
                             label="order by"
-                            callback={setSortQuery}
+                            setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
@@ -191,9 +201,7 @@ export default function Users() {
                         {!isLoading &&
                             !error &&
                             userData.map((user: User) => {
-                                const updatedAt = new Date(
-                                    user.updated_at as string
-                                );
+                                const updatedAt = new Date(user.updated_at);
                                 return (
                                     <tr
                                         key={user.id}
@@ -270,8 +278,9 @@ export default function Users() {
                 </table>
                 {!isLoading && !error && userData.length > 0 && (
                     <Pagination
-                        meta={data.meta as PaginationMeta}
+                        meta={meta}
                         setPage={setPageQuery}
+                        setPerPage={handleSetPerPage}
                     />
                 )}
                 {error && (
@@ -347,6 +356,6 @@ export default function Users() {
             />
             {/* Toasts */}
             {displayToast && <Toast {...toast} />}
-        </AuthenticatedLayout>
+        </div>
     );
 }

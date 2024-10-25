@@ -1,0 +1,32 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "target": "ESNext",
+        "useDefineForClassFields": true,
+        "lib": ["ES2020", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        "paths": {
+            "@": ["src"],
+            "@/*": ["src/*"]
+        },
+        "sourceMap": true,
+        /* Bundler mode */
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "allowImportingTsExtensions": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "moduleDetection": "force",
+        "noEmit": true,
+        "jsx": "react-jsx",
+        /* Linting */
+        "strict": true,
+        "strictPropertyInitialization": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true
+    },
+    "exclude": ["vite.config.ts"],
+    "include": ["src/**/*"]
+}

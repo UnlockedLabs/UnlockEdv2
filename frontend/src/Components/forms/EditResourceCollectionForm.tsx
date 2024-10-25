@@ -25,7 +25,7 @@ export default function EditResourceCollectionForm({
         }
     });
 
-    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    const onSubmit: SubmitHandler<Inputs> = (data) => {
         onSuccess(data.collectionName);
         reset();
     };
@@ -33,7 +33,11 @@ export default function EditResourceCollectionForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label="Collection Name"
                     interfaceRef="collectionName"

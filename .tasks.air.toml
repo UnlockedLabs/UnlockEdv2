@@ -1,0 +1,33 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./bin/cron_tasks ./backend/tasks/."
+bin = "bin/cron_tasks"
+include_dir = ["backend"]
+include_file = []
+exclude_dir = ["frontend", "provider-middleware"]
+exclude_regex = ["_test\\.go"]
+exclude_unchanged = true
+
+log = "logs/tasks.air.log"
+stop_on_error = true
+send_interrupt = true
+rerun_delay = 500
+
+[log]
+time = false
+main_only = false
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+clean_on_exit = true
+
+[screen]
+clear_on_rebuild = true
+keep_scroll = true

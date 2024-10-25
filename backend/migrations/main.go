@@ -22,7 +22,7 @@ import (
 func main() {
 	var migrationDir string
 	fresh := flag.Bool("fresh", false, "Drop all tables and reapply migrations")
-	flag.StringVar(&migrationDir, "dir", "backend/migrations", "The directory containing the migration files")
+	flag.StringVar(&migrationDir, "dir", "./backend/migrations", "The directory containing the migration files")
 	flag.Parse()
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Failed to load .env file: %v", err)

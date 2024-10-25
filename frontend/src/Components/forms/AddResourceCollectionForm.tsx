@@ -1,13 +1,13 @@
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, SubmitButton, TextInput } from '../inputs';
 
-interface Inputs {
+export interface Inputs {
     collectionName: string;
     linkName: string;
     linkUrl: string;
 }
 
-interface AddResourceCollectionFormProps {
+export interface AddResourceCollectionFormProps {
     onSuccess: (
         collectionName: string,
         linkName: string,
@@ -15,7 +15,7 @@ interface AddResourceCollectionFormProps {
     ) => void;
 }
 
-export default function AddResourceCollectionForm({
+export function AddResourceCollectionForm({
     onSuccess
 }: AddResourceCollectionFormProps) {
     const {
@@ -25,7 +25,7 @@ export default function AddResourceCollectionForm({
         formState: { errors }
     } = useForm<Inputs>();
 
-    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    const onSubmit: SubmitHandler<Inputs> = (data) => {
         onSuccess(data.collectionName, data.linkName, data.linkUrl);
         reset();
     };
@@ -33,7 +33,11 @@ export default function AddResourceCollectionForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label="Collection Name"
                     interfaceRef="collectionName"
@@ -66,3 +70,4 @@ export default function AddResourceCollectionForm({
         </div>
     );
 }
+export default AddResourceCollectionForm;

@@ -2,15 +2,20 @@ package main
 
 import (
 	"UnlockEdv2/src/models"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+)
+
+const (
+	GetCourses    string        = "tasks.get_courses"
+	GetActivity   string        = "tasks.get_activity"
+	GetMilestones string        = "tasks.get_milestones"
+	WaitTime      time.Duration = 5 * time.Minute
 )
 
 func initDB() *gorm.DB {
@@ -27,97 +32,12 @@ func initDB() *gorm.DB {
 	return db
 }
 
-func (jr *JobRunner) createIfNotExists(cj *models.CronJob, prov *models.ProviderPlatform) error {
-	if err := jr.db.Where("name = ?", cj.Name).FirstOrCreate(cj).Error; err != nil {
+func (jr *JobRunner) createIfNotExists(cj models.JobType) (*models.CronJob, error) {
+	job := models.CronJob{Name: string(cj)}
+	if err := jr.db.Model(&models.CronJob{}).Where("name = ?", cj).FirstOrCreate(&job).Error; err != nil {
 		log.Errorf("failed to find or create job: %v", err)
-		return err
+		return nil, err
 	}
-	log.Infof("CronJob %s has ID: %s", cj.Name, cj.ID)
-	return nil
-}
-
-func (jr *JobRunner) checkFirstRun(prov *models.ProviderPlatform) error {
-	var courses []models.Course
-	if err := jr.db.Find(&courses, "provider_platform_id = ?", prov.ID).Error; err != nil {
-		log.Errorf("failed to fetch courses: %v", err)
-		return err
-	}
-	if len(courses) == 0 {
-		done := make(chan bool)
-
-		params := map[string]interface{}{
-			"provider_platform_id": prov.ID,
-		}
-		jobs := prov.GetDefaultCronJobs()
-		var courseJob *models.CronJob
-		for _, job := range jobs {
-			if job.Name == string(models.GetCoursesJob) {
-				courseJob = job
-				break
-			}
-		}
-		if courseJob == nil {
-			return fmt.Errorf("GetCoursesJob not found in default jobs")
-		}
-		if err := jr.createIfNotExists(courseJob, prov); err != nil {
-			log.Errorf("Failed to create or find CronJob: %v", err)
-			return err
-		}
-		params["job_id"] = courseJob.ID
-
-		if err := jr.db.Create(&models.RunnableTask{
-			JobID:              courseJob.ID,
-			Parameters:         params,
-			Status:             models.StatusPending,
-			ProviderPlatformID: prov.ID,
-		}).Error; err != nil {
-			log.Errorf("failed to create task: %v", err)
-			return err
-		}
-
-		sub, err := jr.nats.Subscribe("tasks.get_courses.completed", func(msg *nats.Msg) {
-			var completedParams map[string]interface{}
-			if err := json.Unmarshal(msg.Data, &completedParams); err != nil {
-				log.Errorf("failed to unmarshal completion message: %v", err)
-				return
-			}
-			if completedParams["job_id"] == courseJob.ID {
-				done <- true
-			}
-		})
-		if err != nil {
-			log.Errorf("failed to subscribe to completion subject: %v", err)
-			return err
-		}
-		defer func() {
-			err := sub.Unsubscribe()
-			if err != nil {
-				log.Errorf("failed to unsubscribe from completion subject: %v", err)
-			}
-		}()
-
-		params["job_id"] = courseJob.ID
-		body, err := json.Marshal(&params)
-		if err != nil {
-			log.Errorf("failed to marshal params: %v", err)
-			return err
-		}
-		msg := nats.NewMsg("tasks.get_courses")
-		msg.Data = body
-		err = jr.nats.PublishMsg(msg)
-		if err != nil {
-			log.Errorf("failed to publish message to get courses: %v", err)
-			return err
-		}
-		log.Info("published message to get courses")
-
-		select {
-		case <-done:
-			log.Info("Course fetching job completed. Continuing with the rest of the jobs...")
-		case <-time.After(3 * time.Minute):
-			log.Error("Timeout waiting for course fetching job to complete")
-			return fmt.Errorf("timeout waiting for course fetching job to complete")
-		}
-	}
-	return nil
+	log.Infof("CronJob %s has ID: %s", job.Name, job.ID)
+	return &job, nil
 }

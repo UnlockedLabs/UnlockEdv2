@@ -1,4 +1,4 @@
-import { User, UserRole } from '../../common';
+import { ServerResponseOne, User, UserRole } from '../../common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
@@ -8,6 +8,7 @@ import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
 interface Inputs {
+    [key: string]: string | UserRole;
     name_first: string;
     name_last: string;
     username: string;
@@ -34,7 +35,7 @@ export default function EditUserForm({
             name_first: user.name_first,
             name_last: user.name_last,
             username: user.username,
-            role: user.role as UserRole,
+            role: user.role,
             email: user.email
         }
     });
@@ -55,7 +56,10 @@ export default function EditUserForm({
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
         const cleanData = diffFormData(data, user);
-        const resp = await API.patch(`users/${user.id}`, cleanData);
+        const resp = (await API.patch(
+            `users/${user.id}`,
+            cleanData
+        )) as ServerResponseOne<User>;
         if (!resp.success) {
             switch (resp.message) {
                 case 'userexists': {
@@ -85,7 +89,11 @@ export default function EditUserForm({
     return (
         <>
             <CloseX close={() => onSuccess()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label={'First Name'}
                     interfaceRef={'name_first'}

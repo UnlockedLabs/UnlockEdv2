@@ -21,8 +21,8 @@ type Activity struct {
 	CourseID  uint           `gorm:"not null" json:"course_id"`
 	UserID    uint           `gorm:"not null" json:"user_id"`
 	Type      ActivityType   `gorm:"size:255;not null" json:"type"`
-	TotalTime uint           `json:"total_time"`
-	TimeDelta uint           `json:"time_delta"`
+	TotalTime int64          `json:"total_time"`
+	TimeDelta int64          `json:"time_delta"`
 
 	// is this a url perhaps?
 	ExternalID string `gorm:"size:255;not null" json:"external_content_id"`

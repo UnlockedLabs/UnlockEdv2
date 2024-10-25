@@ -53,12 +53,12 @@ services:
       - intranet
     volumes:
       - ./:/app
+      - ./frontend/public/thumbnails:/imgs
     environment:
-      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked?log_duration=true&log_min_duration_statement=100
+      - APP_DSN=postgres://unlocked:dev@postgres:5432/unlocked
       - APP_ENV=production
       - LOG_LEVEL=debug
       - APP_URL=http://127.0.0.1
-      - PROVIDER_SERVICE_KEY=NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
       - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
       - PROVIDER_SERVICE_URL=http://provider-service:8081
       - HYDRA_ADMIN_URL=http://hydra:4445
@@ -71,6 +71,7 @@ services:
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
+      - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
     depends_on:
       kratos:
@@ -82,11 +83,9 @@ services:
   provider-service:
     build:
       context: .
-      dockerfile: provider-middleware/Dockerfile
+      dockerfile: provider-middleware/dev.Dockerfile
     environment:
       - APP_ENV=production
-      - PROVIDER_SERVICE_KEY=NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
-      - APP_KEY=base64:NTQxODNmNDMyM2YzNzdiNzM3NDMzYTFlOTgyMjllYWQwZmRjNjg2ZjkzYmFiMDU3ZWNiNjEyZGFhOTQwMDJiNSAgLQo=
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=unlocked
@@ -96,21 +95,22 @@ services:
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
-    command: ./provider-service
+      - APP_URL=http://server:8080 
     networks:
       - intranet
     volumes:
       - logs:/logs
+      - ./:/app 
+    ports:
+      - 8081:8081
     restart: unless-stopped 
-    depends_on:
-      postgres:
-        condition: service_healthy
+    depends_on: [server]
 
   # Scheduler + task runner for provider-middleware
   cron-tasks:
     build:
       context: .
-      dockerfile: ./backend/tasks/Dockerfile
+      dockerfile: ./backend/tasks/dev.Dockerfile
     environment:
       - LOG_LEVEL=debug
       - NATS_URL=nats:4222
@@ -126,6 +126,7 @@ services:
       - intranet
     volumes:
       - logs:/logs
+      - ./:/app 
     depends_on:
       provider-service:
         condition: service_started

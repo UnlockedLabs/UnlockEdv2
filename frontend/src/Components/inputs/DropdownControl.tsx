@@ -1,13 +1,17 @@
+import { Dispatch, SetStateAction } from 'react';
+
 interface DropdownControlProps {
     label?: string;
-    callback: Function; // eslint-disable-line
-    enumType: { [key: string]: string };
+    setState?: Dispatch<SetStateAction<string>>;
+    customCallback?: (value: string) => void;
+    enumType: Record<string, string>;
 }
 
 /* a dropdown that executes a callback function on change */
 export default function DropdownControl({
     label,
-    callback,
+    setState: callback,
+    customCallback,
     enumType
 }: DropdownControlProps) {
     return (
@@ -15,7 +19,14 @@ export default function DropdownControl({
             <select
                 defaultValue={label}
                 className="select select-bordered"
-                onChange={(e) => callback(e.target.value)}
+                onChange={(e) => {
+                    if (callback) {
+                        callback(e.target.value);
+                    }
+                    if (customCallback) {
+                        customCallback(e.target.value);
+                    }
+                }}
             >
                 {label ? (
                     <option value="" disabled>

@@ -5,6 +5,7 @@ import {
     ResponsiveContainer,
     Tooltip,
     XAxis,
+    XAxisProps,
     YAxis
 } from 'recharts';
 import { ThemeContext } from './ThemeContext';
@@ -31,12 +32,14 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
             (activity: RecentActivity) =>
                 activity.date.split('T')[0] === dateString
         );
-        entry
-            ? (entry = {
-                  date: entry.date.split('T')[0],
-                  delta: Math.round(entry.delta / 60)
-              })
-            : (entry = { date: dateString, delta: 0 });
+        if (entry) {
+            entry = {
+                date: entry.date.split('T')[0],
+                delta: Math.round(entry.delta / 60)
+            };
+        } else {
+            entry = { date: dateString, delta: 0 };
+        }
         result[6 - i] = entry;
     }
 
@@ -50,25 +53,27 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
         'Sat',
         'Today'
     ];
-    const XAxisTick = (props) => {
-        const { x, y, payload } = props;
-        let day = new Date(payload.value).getDay() + 1;
-        if (new Date().getDay() == day) day = 7;
-        return (
-            <g transform={`translate(${x},${y})`}>
-                <text
-                    x={10}
-                    y={0}
-                    dy={16}
-                    textAnchor="end"
-                    fill="#808080"
-                    transform="rotate(-35)"
-                    style={{ fontSize: 12 }}
-                >
-                    {weekdays[day]}
-                </text>
-            </g>
-        );
+    const XAxisTick = (props: XAxisProps) => {
+        const { x, y, dataKey } = props;
+        if (dataKey == 'date') {
+            let day = new Date(dataKey).getDay() + 1;
+            if (new Date().getDay() == day) day = 7;
+            return (
+                <g transform={`translate(${x},${y})`}>
+                    <text
+                        x={10}
+                        y={0}
+                        dy={16}
+                        textAnchor="end"
+                        fill="#808080"
+                        transform="rotate(-35)"
+                        style={{ fontSize: 12 }}
+                    >
+                        {weekdays[day]}
+                    </text>
+                </g>
+            );
+        }
     };
     return (
         <ResponsiveContainer>

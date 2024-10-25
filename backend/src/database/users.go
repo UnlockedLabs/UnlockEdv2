@@ -127,21 +127,12 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 	return count, userWithLogins, nil
 }
 
-func (db *DB) CreateUser(user *models.User) (*models.User, error) {
-	err := validate().Struct(user)
-	if err != nil {
-		return nil, newCreateDBError(err, "users")
-	}
+func (db *DB) CreateUser(user *models.User) error {
 	error := db.Create(&user).Error
 	if error != nil {
-		return nil, newCreateDBError(error, "users")
+		return newCreateDBError(error, "users")
 	}
-	newUser := &models.User{}
-	if err := db.Find(&newUser, "username = ?", user.Username).Error; err != nil {
-		log.Error("Error getting user we just created: ", err)
-		return nil, newCreateDBError(err, "users")
-	}
-	return newUser, nil
+	return nil
 }
 
 func (db *DB) DeleteUser(id int) error {
@@ -166,24 +157,22 @@ func (db *DB) GetUserByUsername(username string) (*models.User, error) {
 func (db *DB) UsernameExists(username string) bool {
 	userExists := false
 	email := username + "@unlocked.v2"
-	err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ? OR email = ?)", strings.ToLower(username), email).
-		Scan(&userExists).Error
-	if err != nil {
+	if err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ? OR email = ?)", strings.ToLower(username), email).
+		Scan(&userExists).Error; err != nil {
 		log.Error("Error checking if username exists: ", err)
 	}
 	return userExists
 }
 
-func (db *DB) UpdateUser(user *models.User) (*models.User, error) {
+func (db *DB) UpdateUser(user *models.User) error {
 	if user.ID == 0 {
-		return nil, newUpdateDBError(errors.New("invalid user ID"), "users")
+		return newUpdateDBError(errors.New("invalid user ID"), "users")
 	}
-	log.Printf("User ID: %d, Facility ID: %d", user.ID, user.FacilityID)
-	err := db.Save(&user).Error
+	err := db.Model(&models.User{}).Where("id = ?", user.ID).Updates(user).Error
 	if err != nil {
-		return nil, newUpdateDBError(err, "users")
+		return newUpdateDBError(err, "users")
 	}
-	return user, nil
+	return nil
 }
 
 func (db *DB) ToggleUserFavorite(user_id uint, id uint) (bool, error) {

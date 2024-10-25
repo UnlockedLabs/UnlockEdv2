@@ -13,6 +13,8 @@ import {
     UsersIcon
 } from '@heroicons/react/24/solid';
 import { useAuth } from '@/useAuth';
+import ULIComponent from './ULIComponent';
+import { Link } from 'react-router-dom';
 
 export default function Navbar({
     isPinned,
@@ -48,81 +50,83 @@ export default function Navbar({
                 )}
             </div>
 
-            <a href="/" className="mt-16">
+            <Link to="/" className="mt-16">
                 <Brand />
-            </a>
+            </Link>
 
             <ul className="menu">
-                {user.user.role == UserRole.Admin ? (
+                {user.user?.role == UserRole.Admin ? (
                     <>
                         {/* admin view */}
                         <li className="mt-16">
-                            <a href="/dashboard">
-                                <HomeIcon className="w-4" /> Dashboard
-                            </a>
+                            <Link to="/admin-dashboard">
+                                <ULIComponent icon={HomeIcon} /> Dashboard
+                            </Link>
                         </li>
                         <li>
-                            <a href="/student-management">
-                                <AcademicCapIcon className="h-4" />
+                            <Link to="/student-management">
+                                <ULIComponent icon={AcademicCapIcon} />
                                 Students
-                            </a>
+                            </Link>
                         </li>
                         <li>
-                            <a href="/admin-management">
-                                <UsersIcon className="h-4" />
+                            <Link to="/admin-management">
+                                <ULIComponent icon={UsersIcon} />
                                 Admins
-                            </a>
+                            </Link>
                         </li>
                         <li>
-                            <a href="/resources-management">
-                                <ArchiveBoxIcon className="h-4" />
+                            <Link to="/open-content-management">
+                                <ULIComponent icon={BookOpenIcon} />
+                                Open Content
+                            </Link>
+                        </li>
+                        <li>
+                            <Link to="/resources-management">
+                                <ULIComponent icon={ArchiveBoxIcon} />
                                 Resources
-                            </a>
+                            </Link>
                         </li>
                         <li>
-                            <a href="/provider-platform-management">
-                                <RectangleStackIcon className="h-4" />
+                            <Link to="/provider-platform-management">
+                                <ULIComponent icon={RectangleStackIcon} />
                                 Platforms
-                            </a>
+                            </Link>
                         </li>
                     </>
                 ) : (
                     <>
                         {/* student view */}
                         <li className="mt-16">
-                            <a href="/dashboard">
-                                <HomeIcon className="w-4" /> Dashboard
-                            </a>
+                            <Link to="/student-dashboard">
+                                <ULIComponent icon={HomeIcon} /> Dashboard
+                            </Link>
                         </li>
                         <li className="">
-                            <a href="/my-courses">
-                                <BookOpenIcon className="w-4" /> My Courses
-                            </a>
+                            <Link to="/my-courses">
+                                <ULIComponent icon={BookOpenIcon} /> My Courses
+                            </Link>
                         </li>
                         <li className="">
-                            <a href="/my-progress">
-                                <TrophyIcon className="w-4" /> My Progress
-                            </a>
+                            <Link to="/my-progress">
+                                <ULIComponent icon={TrophyIcon} /> My Progress
+                            </Link>
+                        </li>
+                        <li>
+                            <Link to="/open-content">
+                                <ULIComponent icon={BookOpenIcon} />
+                                Open Content
+                            </Link>
                         </li>
                         <li className="">
-                            <a href="/course-catalog">
-                                <BuildingStorefrontIcon className="w-4" />{' '}
+                            <Link to="/course-catalog">
+                                <ULIComponent icon={BuildingStorefrontIcon} />
                                 Course Catalog
-                            </a>
+                            </Link>
                         </li>
                     </>
                 )}
             </ul>
-            {/* <div className="">
-                <ul className="menu mb-5">
-                    <li>
-                        <button onClick={() => handleLogout()}>
-                            <ArrowRightEndOnRectangleIcon className="h-4" />
-                            Logout
-                        </button>
-                    </li>
-                </ul>
-            </div> */}
         </div>
     );
 }

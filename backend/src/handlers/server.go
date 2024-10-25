@@ -51,6 +51,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerFacilitiesRoutes()
 	srv.registerOpenContentRoutes()
 	srv.registerLibraryRoutes()
+	srv.registerProxyRoutes()
 	srv.registerProgramsRoutes()
 	srv.registerSectionsRoutes()
 	srv.registerSectionEventsRoutes()
@@ -225,7 +226,7 @@ func (srv *Server) generateKolibriOidcClient() error {
 			AccountID: "TODO", // kolibri wont be running yet. This will be updated the first time a user is added
 			State:     models.Enabled,
 		}
-		provider, err = srv.Db.CreateProviderPlatform(provider)
+		err = srv.Db.CreateProviderPlatform(provider)
 		if err != nil {
 			fields["error"] = err.Error()
 			log.WithFields(fields).Errorln("error creating kolibri provider")

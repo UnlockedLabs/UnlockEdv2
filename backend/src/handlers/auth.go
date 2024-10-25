@@ -28,6 +28,7 @@ type (
 		PasswordReset bool            `json:"password_reset"`
 		Role          models.UserRole `json:"role"`
 		FacilityID    uint            `json:"facility_id"`
+		FacilityName  string          `json:"facility_name"`
 		KratosID      string          `json:"kratos_id"`
 	}
 )
@@ -36,7 +37,6 @@ func (srv *Server) registerAuthRoutes() {
 	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
 	/* only use auth middleware, user activity bloats the database + results */
 	srv.Mux.Handle("GET /api/auth", srv.applyMiddleware(srv.handleCheckAuth))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(srv.handleChangeAdminFacility))
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -45,6 +45,7 @@ func (claims *Claims) getTraits() map[string]interface{} {
 		"facility_id":    claims.FacilityID,
 		"role":           claims.Role,
 		"password_reset": claims.PasswordReset,
+		"facility_name":  claims.FacilityName,
 	}
 }
 
@@ -78,21 +79,6 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "facility ID")
-	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	claims.FacilityID = uint(id)
-	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		log.add("facilityId", id)
-		return newInternalServerServiceError(err, "error updating user traits in kratos")
-	}
-	w.WriteHeader(http.StatusOK)
-	return nil
 }
 
 func (s *Server) clearKratosCookies(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +196,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					return nil, hasCookie, err
 				}
 				var user models.User
-				if err := srv.Db.Find(&user, "kratos_id = ?", kratosID).Error; err != nil {
+				if err := srv.Db.Model(&models.User{}).Preload("Facility").Find(&user, "kratos_id = ?", kratosID).Error; err != nil {
 					fields["error"] = err.Error()
 					fields["kratos_id"] = kratosID
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")
@@ -218,7 +204,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				}
 				traits := identity["traits"].(map[string]interface{})
 				fields["user"] = user
-				log.WithFields(fields).Info("found user from ory session")
+				log.WithFields(fields).Trace("found user from ory session")
 				facilityId, ok := traits["facility_id"].(float64)
 				if !ok {
 					facilityId = float64(user.FacilityID)
@@ -231,6 +217,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					Username:      user.Username,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
+					FacilityName:  user.Facility.Name,
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
@@ -285,7 +272,13 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	if err := tx.Commit().Error; err != nil {
 		return newInternalServerServiceError(err, "Transaction commit failed")
 	}
-	return writeJsonResponse(w, http.StatusOK, "Password reset successfully")
+	resp := map[string]string{}
+	if claims.Role == models.Admin {
+		resp["redirect_to"] = "/admin-dashboard"
+	} else {
+		resp["redirect_to"] = "/student-dashboard"
+	}
+	return writeJsonResponse(w, http.StatusOK, resp)
 }
 
 func validatePassword(pass string) bool {

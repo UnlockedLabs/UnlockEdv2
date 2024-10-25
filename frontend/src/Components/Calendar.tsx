@@ -1,7 +1,13 @@
-import Calendar from 'react-calendar';
+import Calendar, { TileArgs } from 'react-calendar';
 import API from '@/api/api.ts';
 import { MouseEvent, useEffect, useRef, useState } from 'react';
-import { Event, EventCalendar, ModalType, parseDuration } from '@/common';
+import {
+    Event,
+    EventCalendar,
+    ModalType,
+    parseDuration,
+    UserRole
+} from '@/common';
 import '@/css/app.css';
 import { OnArgs } from 'node_modules/react-calendar/dist/cjs';
 import Modal from './Modal';
@@ -10,14 +16,14 @@ import { useAuth } from '@/useAuth';
 
 function CalendarComponent() {
     const user = useAuth().user;
-    const editModal = useRef<HTMLDialogElement | undefined>();
+    const editModal = useRef<HTMLDialogElement>(null);
     const [eventsMap, setEventsMap] = useState<Map<string, Event[]>>(new Map());
     const [date, setDate] = useState(new Date());
     const [selectedEvents, setSelectedEvents] = useState<Event[] | undefined>();
     const [eventToEdit, setEventToEdit] = useState<Event>();
     const YEAR_IDX = 10;
     const onMonthChange = ({ activeStartDate }: OnArgs) => {
-        setDate(activeStartDate as Date);
+        setDate(activeStartDate!);
     };
 
     const getSelectedDate = (event: string): string => {
@@ -26,36 +32,39 @@ function CalendarComponent() {
     };
 
     useEffect(() => {
+        if (user == undefined) return;
         const url =
-            user.role === 'admin' ? 'admin-calendar' : 'student-calendar';
+            user.role === UserRole.Admin
+                ? 'admin-calendar'
+                : 'student-calendar';
         API.get<EventCalendar>(
             `${url}?month=${date.getMonth() + 1}&year=${date.getFullYear()}`
         )
             .then((response) => {
                 const data = response.data as EventCalendar;
-                const eventsByDate = new Map();
+                const eventsByDate = new Map<string, Event[]>();
                 data.month.days.forEach((day) => {
                     const dateKey = day.date.slice(0, YEAR_IDX);
-                    eventsByDate[dateKey] = day.events;
+                    eventsByDate.set(dateKey, day.events);
                 });
                 setEventsMap(eventsByDate);
             })
             .catch((error) => {
                 console.error('Error fetching calendar data:', error);
             });
-    }, [date, user.role]);
+    }, [date, user?.role]);
 
     const onClickDay = (clickedDate: Date) => {
         const dateKey = clickedDate.toISOString().slice(0, YEAR_IDX);
-        const events = eventsMap[dateKey];
+        const events = eventsMap.get(dateKey);
         if (events && events.length > 0) {
             setSelectedEvents(events);
         } else setSelectedEvents(undefined);
     };
-    const tileClassName = ({ date, view }) => {
+    const tileClassName = ({ date, view }: TileArgs) => {
         if (view === 'month') {
             const dateKey = date.toISOString().slice(0, YEAR_IDX);
-            if (eventsMap[dateKey] && eventsMap[dateKey].length > 0) {
+            if (eventsMap.get(dateKey)) {
                 return '!bg-teal-1';
             }
         }
@@ -129,7 +138,7 @@ function CalendarComponent() {
                                         <strong>Duration:</strong>{' '}
                                         {parseDuration(event.duration)}
                                     </p>
-                                    {user.role === 'admin' && (
+                                    {user?.role === UserRole.Admin && (
                                         <button
                                             onClick={(e) =>
                                                 openEditModal(e, event)
@@ -149,6 +158,7 @@ function CalendarComponent() {
                     )}
                 </div>
             </div>
+            {}
             {eventToEdit && (
                 <Modal
                     ref={editModal}

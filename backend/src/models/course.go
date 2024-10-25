@@ -31,7 +31,7 @@ func (Course) TableName() string {
 
 type RecentActivity struct {
 	Date  string  `json:"date"`
-	Delta float32 `json:"delta"`
+	Delta float64 `json:"delta"`
 }
 
 type CurrentEnrollment struct {
@@ -39,7 +39,7 @@ type CurrentEnrollment struct {
 	Name                 string `json:"name"`
 	ProviderPlatformName string `json:"provider_platform_name"`
 	ExternalURL          string `json:"external_url"`
-	TotalTime            uint   `json:"total_activity_time"`
+	TotalTime            int64  `json:"total_activity_time"`
 }
 
 type RecentCourse struct {
@@ -74,9 +74,9 @@ type ImportCourse struct {
 type AdminDashboardJoin struct {
 	FacilityName        string             `json:"facility_name"`
 	MonthlyActivity     []RecentActivity   `json:"monthly_activity"`
-	WeeklyActiveUsers   uint               `json:"weekly_active_users"`
-	AvgDailyActivity    uint               `json:"avg_daily_activity"`
-	TotalWeeklyActivity uint               `json:"total_weekly_activity"`
+	WeeklyActiveUsers   int64              `json:"weekly_active_users"`
+	AvgDailyActivity    int64              `json:"avg_daily_activity"`
+	TotalWeeklyActivity int64              `json:"total_weekly_activity"`
 	CourseMilestones    []CourseMilestones `json:"course_milestones"`
 	TopCourseActivity   []CourseActivity   `json:"top_course_activity"`
 }

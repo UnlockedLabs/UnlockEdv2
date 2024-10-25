@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-type ULIComponentProps = {
+interface ULIComponentProps {
     tooltipClassName?: string; //for applying classes other than 'tooltip'
     iconClassName?: string; //for applying classes other than 'w-4 h-4'
     dataTip?: string;
@@ -12,7 +12,7 @@ type ULIComponentProps = {
             titleId?: string;
         } & React.RefAttributes<SVGSVGElement>
     >;
-};
+}
 
 export default function ULIComponent(props: ULIComponentProps) {
     // Case 1: an icon with tooltipClassName 'w-4 h-4 self-start cursor-pointer'

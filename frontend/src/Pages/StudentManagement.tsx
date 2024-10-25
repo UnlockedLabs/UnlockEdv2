@@ -1,18 +1,18 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import {
     ArrowPathRoundedSquareIcon,
-    PencilIcon,
     TrashIcon,
-    UserPlusIcon
-} from '@heroicons/react/20/solid';
+    PencilSquareIcon,
+    PlusCircleIcon
+} from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
+    defaultToast,
     ModalType,
-    PaginationMeta,
-    ServerResponse,
+    ServerResponseMany,
+    showToast,
     ToastState,
     User
 } from '../common';
@@ -29,57 +29,52 @@ import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
+import { AxiosError } from 'axios';
+import { usePathValue } from '@/PathValueCtx';
+import { useAuth } from '@/useAuth';
 
 export default function StudentManagement() {
-    const addUserModal = useRef<undefined | HTMLDialogElement>();
-    const editUserModal = useRef<undefined | HTMLDialogElement>();
-    const resetUserPasswordModal = useRef<undefined | HTMLDialogElement>();
-    const deleteUserModal = useRef<undefined | HTMLDialogElement>();
+    const addUserModal = useRef<HTMLDialogElement>(null);
+    const editUserModal = useRef<HTMLDialogElement>(null);
+    const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
+    const deleteUserModal = useRef<HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
-    const showUserPassword = useRef<undefined | HTMLDialogElement>();
-    const [toast, setToast] = useState({
-        state: ToastState.null,
-        message: '',
-        reset: () => {}
-    });
-
+    const showUserPassword = useRef<HTMLDialogElement>(null);
+    const [toast, setToast] = useState(defaultToast);
+    const { setPathVal } = usePathValue();
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const { data, mutate, error, isLoading } = useSWR<ServerResponse<User>>(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&order_by=${sortQuery}&role=student`
+    const [perPage, setPerPage] = useState(10);
+    const toaster = (msg: string, state: ToastState) => {
+        showToast(setToast, setDisplayToast, msg, state);
+    };
+    const { data, mutate, error, isLoading } = useSWR<
+        ServerResponseMany<User>,
+        AxiosError
+    >(
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
     );
     const userData = data?.data as User[] | [];
-    const meta = data?.meta as PaginationMeta;
-    const showToast = (message: string, state: ToastState) => {
-        setToast({
-            state,
-            message,
-            reset: () => {
-                setToast({
-                    state: ToastState.success,
-                    message: '',
-                    reset: () => {
-                        setDisplayToast(false);
-                    }
-                });
-            }
-        });
-        setDisplayToast(true);
-    };
+    const meta = data?.meta;
 
     function resetModal() {
         setTimeout(() => {
             setTargetUser(undefined);
         }, 200);
     }
-
+    useEffect(() => {
+        setPathVal([
+            { path_id: ':facility_name', value: user?.facility_name ?? '' }
+        ]);
+    }, [user?.facility_name]);
     const deleteUser = async () => {
         if (targetUser?.id === DEFAULT_ADMIN_ID) {
-            showToast(
+            toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
@@ -93,24 +88,24 @@ export default function StudentManagement() {
             ? 'User deleted successfully'
             : response.message;
         deleteUserModal.current?.close();
-        showToast(message, toastType);
+        toaster(message, toastType);
         resetModal();
-        mutate();
+        await mutate();
         return;
     };
 
     const onAddUserSuccess = (pswd = '', msg: string, type: ToastState) => {
-        showToast(msg, type);
+        toaster(msg, type);
         setTempPassword(pswd);
         addUserModal.current?.close();
         showUserPassword.current?.showModal();
-        mutate();
+        void mutate();
     };
 
     const hanldleEditUser = () => {
         editUserModal.current?.close();
         resetModal();
-        mutate();
+        void mutate();
     };
 
     const handleDeleteUserCancel = () => {
@@ -125,7 +120,7 @@ export default function StudentManagement() {
             resetModal();
             return;
         }
-        showToast(msg, state);
+        toaster(msg, state);
         resetModal();
     };
 
@@ -133,7 +128,7 @@ export default function StudentManagement() {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
-        showToast('Password Successfully Reset', ToastState.success);
+        toaster('Password Successfully Reset', ToastState.success);
     };
 
     const handleShowPasswordClose = () => {
@@ -146,13 +141,14 @@ export default function StudentManagement() {
         setSearchTerm(newSearch);
         setPageQuery(1);
     };
-
+    const handleSetPerPage = (val: number) => {
+        setPerPage(val);
+        setPageQuery(1);
+        void mutate();
+    };
     return (
-        <AuthenticatedLayout
-            title="Student Management"
-            path={['Student Management']}
-        >
-            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
+        <div>
+            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-8">
                 <h1>Student Management</h1>
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
@@ -162,7 +158,7 @@ export default function StudentManagement() {
                         />
                         <DropdownControl
                             label="order by"
-                            callback={setSortQuery}
+                            setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
@@ -177,107 +173,125 @@ export default function StudentManagement() {
                         data-tip="Add Student"
                     >
                         <button
-                            className="btn btn-primary btn-sm"
+                            className="btn btn-primary btn-sm text-base-teal"
                             onClick={() => addUserModal.current?.showModal()}
                         >
-                            <UserPlusIcon className="h-4" />
+                            <PlusCircleIcon className="w-4 my-auto" />
+                            Add Student
                         </button>
                     </div>
                 </div>
-                <table className="table">
-                    <thead>
-                        <tr className="border-gray-600">
-                            <th className="flex">
-                                <span>Name</span>
-                            </th>
-                            <th>Username</th>
-                            <th>Last Updated</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div className="relative w-full" style={{ overflowX: 'clip' }}>
+                    <table className="table-2 mb-4">
+                        <thead>
+                            <tr className="grid-cols-4 px-4">
+                                <th className="justify-self-start">Name</th>
+                                <th>Username</th>
+                                <th>Last Updated</th>
+                                <th className="justify-self-end pr-4">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {!isLoading &&
+                                !error &&
+                                userData.map((user: User) => {
+                                    const updatedAt = new Date(user.updated_at);
+                                    return (
+                                        <tr
+                                            key={user.id}
+                                            className="card p-4 w-full grid-cols-4 justify-items-center"
+                                        >
+                                            <td className="justify-self-start">
+                                                {user.name_first}{' '}
+                                                {user.name_last}
+                                            </td>
+                                            <td>{user.username}</td>
+                                            <td>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="User Activity"
+                                                >
+                                                    <a className="flex justify-start cursor-pointer">
+                                                        <span>
+                                                            {updatedAt.toLocaleDateString(
+                                                                'en-US',
+                                                                {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                }
+                                                            )}
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td className="justify-self-end">
+                                                <div className="flex space-x-4">
+                                                    <ULIComponent
+                                                        dataTip={'Edit Student'}
+                                                        icon={PencilSquareIcon}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            editUserModal.current?.showModal();
+                                                        }}
+                                                    />
+
+                                                    <ULIComponent
+                                                        dataTip={
+                                                            'Reset Password'
+                                                        }
+                                                        icon={
+                                                            ArrowPathRoundedSquareIcon
+                                                        }
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            resetUserPasswordModal.current?.showModal();
+                                                        }}
+                                                    />
+
+                                                    <ULIComponent
+                                                        dataTip={
+                                                            'Delete Student'
+                                                        }
+                                                        icon={TrashIcon}
+                                                        onClick={() => {
+                                                            setTargetUser(user);
+                                                            deleteUserModal.current?.showModal();
+                                                        }}
+                                                    />
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                    <div className="flex justify-center pt-20">
                         {!isLoading &&
                             !error &&
-                            userData.map((user: User) => {
-                                const updatedAt = new Date(user.updated_at);
-                                return (
-                                    <tr
-                                        key={user.id}
-                                        className="border-gray-600"
-                                    >
-                                        <td>
-                                            {user.name_first} {user.name_last}
-                                        </td>
-                                        <td>{user.username}</td>
-                                        <td>
-                                            <div
-                                                className="tooltip"
-                                                data-tip="User Activity"
-                                            >
-                                                <a className="flex justify-start cursor-pointer">
-                                                    <span>
-                                                        {updatedAt.toLocaleDateString(
-                                                            'en-US',
-                                                            {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            }
-                                                        )}
-                                                    </span>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div className="flex space-x-2 text-accent cursor-pointer">
-                                                <ULIComponent
-                                                    dataTip={'Edit Student'}
-                                                    icon={PencilIcon}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        editUserModal.current?.showModal();
-                                                    }}
-                                                />
-
-                                                <ULIComponent
-                                                    dataTip={'Reset Password'}
-                                                    icon={
-                                                        ArrowPathRoundedSquareIcon
-                                                    }
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        resetUserPasswordModal.current?.showModal();
-                                                    }}
-                                                />
-
-                                                <ULIComponent
-                                                    dataTip={'Delete Student'}
-                                                    icon={TrashIcon}
-                                                    onClick={() => {
-                                                        setTargetUser(user);
-                                                        deleteUserModal.current?.showModal();
-                                                    }}
-                                                />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                    </tbody>
-                </table>
-                {!isLoading && !error && userData.length > 0 && (
-                    <Pagination meta={meta} setPage={setPageQuery} />
-                )}
-                {error && (
-                    <span className="text-center text-error">
-                        Failed to load users.
-                    </span>
-                )}
-                {!isLoading && !error && userData.length === 0 && (
-                    <span className="text-center text-warning">No results</span>
-                )}
+                            meta &&
+                            userData.length > 0 && (
+                                <Pagination
+                                    meta={meta}
+                                    setPage={setPageQuery}
+                                    setPerPage={handleSetPerPage}
+                                />
+                            )}
+                    </div>
+                    {error && (
+                        <span className="text-center text-error">
+                            Failed to load users.
+                        </span>
+                    )}
+                    {!isLoading && !error && userData.length === 0 && (
+                        <span className="text-center text-warning">
+                            No results
+                        </span>
+                    )}
+                </div>
             </div>
-
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
@@ -307,7 +321,9 @@ export default function StudentManagement() {
                     <DeleteForm
                         item="User"
                         onCancel={handleDeleteUserCancel}
-                        onSuccess={deleteUser}
+                        onSuccess={() => {
+                            void deleteUser;
+                        }}
                     />
                 }
             />
@@ -341,6 +357,6 @@ export default function StudentManagement() {
             />
             {/* Toasts */}
             {displayToast && <Toast {...toast} />}
-        </AuthenticatedLayout>
+        </div>
     );
 }

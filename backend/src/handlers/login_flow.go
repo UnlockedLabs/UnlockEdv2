@@ -21,6 +21,7 @@ func (srv *Server) registerOidcFlowRoutes() {
 
 const (
 	LoginEndpoint       = "/self-service/login"
+	LogoutEndpoint      = "/self-service/logout/browser"
 	ConsentPutEndpoint  = "/admin/oauth2/auth/requests/consent/accept"
 	AcceptLoginEndpoint = "/admin/oauth2/auth/requests/login/accept"
 	ConsentGetEndpoint  = "/admin/oauth2/auth/requests/consent?consent_challenge="
@@ -35,9 +36,7 @@ type LoginRequest struct {
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, log sLog) error {
-	resp := map[string]string{}
-	resp["redirect_to"] = "/self-service/logout/browser"
-	return writeJsonResponse(w, http.StatusOK, resp)
+	return writeJsonResponse(w, http.StatusOK, map[string]string{"redirect_to": LogoutEndpoint})
 }
 
 // (oauth) login flow is semi complicated, so I will do my best to comment
@@ -123,7 +122,13 @@ func getKratosRedirect(resp *http.Response) (map[string]string, error) {
 		if !ok || reset {
 			respBody["redirect_to"] = "/reset-password"
 		} else {
-			respBody["redirect_to"] = "/dashboard"
+			role := traits["role"].(string)
+			switch models.UserRole(role) {
+			case models.Admin:
+				respBody["redirect_to"] = "/admin-dashboard"
+			case models.Student:
+				respBody["redirect_to"] = "/student-dashboard"
+			}
 		}
 	default:
 		return nil, errors.New("invalid login")

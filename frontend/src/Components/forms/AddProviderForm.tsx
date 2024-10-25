@@ -32,9 +32,6 @@ export default function AddProviderForm({
     } = useForm<ProviderInputs>();
 
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
-        if (!data.base_url.startsWith('http')) {
-            data.base_url = 'https://' + data.base_url;
-        }
         setErrorMessage('');
         const response = await API.post('provider-platforms', data);
         if (!response.success) {
@@ -48,7 +45,11 @@ export default function AddProviderForm({
     return (
         <div>
             <CloseX close={() => reset()} />
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(e) => {
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
                 <TextInput
                     label="Name"
                     register={register}

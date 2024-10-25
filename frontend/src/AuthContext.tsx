@@ -1,34 +1,38 @@
 import '@/bootstrap';
-import React, { useEffect, useState } from 'react';
-import { User } from './common';
-import API from './api/api';
-import { AuthContext } from '@/useAuth';
+import React from 'react';
+import { useState, useEffect } from 'react';
+import { INIT_KRATOS_LOGIN_FLOW, User } from '@/common';
+import { AuthContext, fetchUser } from '@/useAuth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children
 }) => {
+    const passReset = '/reset-password';
     const [user, setUser] = useState<User | undefined>();
     const [loading, setLoading] = useState(true);
     useEffect(() => {
-        const fetchUser = async () => {
-            const response = await API.get<User>(`auth`);
-            setUser(response.data as User);
+        const checkAuth = async () => {
+            const authUser = await fetchUser();
+            if (authUser) {
+                setUser(authUser);
+            }
             setLoading(false);
         };
-        fetchUser();
+        void checkAuth();
     }, []);
-
     if (loading) {
-        return <div>Loading...</div>;
+        return <div></div>;
     }
-    if (!user) {
-        return;
+    if (!user && !loading) {
+        window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        return null;
     } else if (
-        user.password_reset &&
-        window.location.pathname !== '/reset-password'
+        !loading &&
+        user?.password_reset &&
+        window.location.pathname !== passReset
     ) {
-        window.location.href = '/reset-password';
-        return;
+        window.location.href = passReset;
+        return null;
     }
     return (
         <AuthContext.Provider value={{ user, setUser }}>

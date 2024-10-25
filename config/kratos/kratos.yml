@@ -35,13 +35,12 @@ oauth2_provider:
   url: http://hydra:4445
 
 selfservice:
-  default_browser_return_url: http://127.0.0.1/dashboard
+  default_browser_return_url: http://127.0.0.1/authcallback
   allowed_return_urls:
+    - http://127.0.0.1/authcallback
     - http://127.0.0.1:4455
     - /dashboard
     - http://127.0.0.1/dashboard
-    - http://localhost:19006/Callback
-    - exp://localhost:8081/--/Callback
 
   methods:
     password:

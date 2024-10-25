@@ -1,4 +1,4 @@
-import React, { ReactNode, createContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 
 interface ThemeContextType {
     theme: string;
@@ -7,20 +7,31 @@ interface ThemeContextType {
 
 const defaultContext: ThemeContextType = {
     theme: 'light',
-    toggleTheme: () => {}
+    toggleTheme: () => {
+        return;
+    }
 };
 
 export const ThemeContext = createContext<ThemeContextType>(defaultContext);
 
 interface ThemeProviderProps {
-    children: ReactNode;
+    children: React.ReactNode;
 }
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({
+    children
+}: ThemeProviderProps) => {
     const [theme, setTheme] = useState('light');
 
     useEffect(() => {
         const storedTheme = localStorage.getItem('theme');
+        if (!storedTheme) {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        }
         if (storedTheme) {
             setTheme(storedTheme);
             document.documentElement.setAttribute('data-theme', storedTheme);

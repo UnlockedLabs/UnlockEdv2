@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
@@ -6,7 +6,8 @@ import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/useAuth';
 import API from '@/api/api';
-import { Facility } from '@/common';
+import { AuthResponse, Facility, ServerResponseOne, UserRole } from '@/common';
+import { useLoaderData } from 'react-router-dom';
 interface Inputs {
     password: string;
     confirm: string;
@@ -16,8 +17,8 @@ interface Inputs {
 export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
-    const [isFacilityDefault, setIsFacilityDefault] = useState<boolean>(false);
-    const auth = useAuth();
+    const loaderData = useLoaderData() as Facility | null;
+    const { user } = useAuth();
 
     const {
         control,
@@ -41,21 +42,6 @@ export default function ChangePasswordForm() {
         control,
         name: 'facility_name'
     });
-    useEffect(() => {
-        const checkFacilityName = async () => {
-            if (auth.user.role !== 'admin') {
-                return;
-            }
-            const resp = await API.get<Facility>('facilities/1');
-            if (resp.success) {
-                setIsFacilityDefault(
-                    (resp.data as Facility).name === 'Default'
-                );
-                return;
-            }
-        };
-        checkFacilityName();
-    }, [auth.user.role]);
 
     const isLengthValid = password && password.length >= 8;
     const hasNumber = /\d/.test(password);
@@ -64,7 +50,9 @@ export default function ChangePasswordForm() {
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
     const isFirstAdminLogin =
-        auth.user.id === 1 && auth.user.role === 'admin' && isFacilityDefault;
+        user?.id === 1 &&
+        user?.role === UserRole.Admin &&
+        loaderData?.name === 'Default';
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
@@ -72,9 +60,12 @@ export default function ChangePasswordForm() {
         if (data.facility_name) {
             data.facility_name = data.facility_name.trim();
         }
-        const response = await API.post('reset-password', data);
+        const response = (await API.post<AuthResponse>(
+            'reset-password',
+            data
+        )) as ServerResponseOne<AuthResponse>;
         if (response.success) {
-            window.location.replace('dashboard');
+            window.location.href = response.data.redirect_to;
         } else {
             setErrorMessage(`Your passwords did not pass validation, 
         please check that they match and are 8 or more characters with at least 1 number.`);
@@ -83,7 +74,11 @@ export default function ChangePasswordForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit(submit)}>
+        <form
+            onSubmit={(e) => {
+                void handleSubmit(submit)(e);
+            }}
+        >
             <TextInput
                 label={'New password'}
                 interfaceRef={'password'}

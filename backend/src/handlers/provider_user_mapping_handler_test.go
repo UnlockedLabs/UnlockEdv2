@@ -183,11 +183,11 @@ func createUser() (*models.User, error) {
 		Role:       "student",
 		FacilityID: 2,
 	}
-	user, err := server.Db.CreateUser(&newUser)
+	err := server.Db.CreateUser(&newUser)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &newUser, nil
 }
 
 func createProviderUserMapping() (*models.ProviderUserMapping, error) {

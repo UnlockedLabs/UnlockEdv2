@@ -56,7 +56,6 @@ func GetProviderService(prov *models.ProviderPlatform, client *http.Client) (*Pr
 
 func (serv *ProviderService) Request(url string) (*http.Request, error) {
 	log.Println("Init request for provider service")
-	serviceKey := os.Getenv("PROVIDER_SERVICE_KEY")
 	finalUrl := serv.ServiceURL + url + "?id=" + strconv.Itoa(int(serv.ProviderPlatformID))
 	log.Printf("url: %s \n", finalUrl)
 	request, err := http.NewRequest("GET", finalUrl, nil)
@@ -64,7 +63,6 @@ func (serv *ProviderService) Request(url string) (*http.Request, error) {
 		log.Printf("error creating request %v", err.Error())
 		return nil, err
 	}
-	request.Header.Set("Authorization", serviceKey)
 	log.Printf("request: %v", request)
 	return request, nil
 }

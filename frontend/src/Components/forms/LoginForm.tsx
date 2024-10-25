@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useLoaderData, Form, useNavigation } from 'react-router-dom';
+import { TextInput } from '@/Components/inputs/TextInput';
+import InputError from '@/Components/inputs/InputError';
+import PrimaryButton from '@/Components/PrimaryButton';
+import { AuthFlow, AuthResponse, ServerResponseOne } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import InputError from '../../Components/inputs/InputError';
-import PrimaryButton from '../../Components/PrimaryButton';
-import { TextInput } from '../../Components/inputs/TextInput';
-import axios from 'axios';
-import { handleLogout } from '@/useAuth';
-import { AuthResponse, BROWSER_URL } from '@/common';
 import API from '@/api/api';
+import { useEffect, useState } from 'react';
 
 interface Inputs {
     identifier: string;
@@ -17,107 +16,72 @@ interface Inputs {
 }
 
 export default function LoginForm() {
-    const [errorMessage, setErrorMessage] = useState('');
-    const [processing, setProcessing] = useState(false);
-    const [user, setUser] = useState<string | undefined>();
+    const loaderData = useLoaderData() as AuthFlow;
+    const navigation = useNavigation();
+    const processing = navigation.state === 'submitting';
+    const [user, setUser] = useState<string | undefined>(undefined);
+    const [errorMessage, setErrorMessage] = useState(false);
     const {
         register,
         handleSubmit,
         formState: { errors }
     } = useForm<Inputs>();
-    const kratosUrl = '/self-service/login/flows?id=';
-    const sessionUrl = '/sessions/whoami';
 
-    const submit: SubmitHandler<Inputs> = async (data) => {
-        const attributes = await initFlow();
-        user ? (data.identifier = user) : data.identifier;
-        const reqBody = { ...data, ...attributes };
-        setErrorMessage('');
-        setProcessing(true);
-        const params = new URLSearchParams(window.location.search);
-        const resp = await API.post<AuthResponse>('login', reqBody);
+    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+        if (user) {
+            data.identifier = user;
+        }
+        const resp = (await API.post(
+            'login',
+            data
+        )) as ServerResponseOne<AuthResponse>;
         if (resp.success) {
-            const location =
-                (resp.data as AuthResponse).redirect_to ||
-                resp.data['redirect_browser_to'] ||
-                (params.get('return_to') as string) ||
-                '/dashboard';
-            window.location.replace(location);
+            window.location.href =
+                resp.data.redirect_to ?? resp.data.redirect_browser_to;
             return;
         }
-        setProcessing(false);
-        setErrorMessage('Login failed, Invalid username or password');
+        setErrorMessage(true);
     };
-
     useEffect(() => {
-        const checkExistingFlow = async () => {
-            try {
-                const checkResp = await axios.get(sessionUrl);
-                if (checkResp.status === 200 && checkResp.data.active) {
-                    setUser(checkResp.data.identity.traits.username);
-                    const attributes = await initFlow();
-                    const reqBody = {
-                        identity: checkResp.data.identity.id,
-                        csrf_token: attributes.csrf_token,
-                        session: checkResp.data,
-                        challenge: attributes.challenge
-                    };
-                    const resp = await API.post<AuthResponse>(
-                        'auth/refresh',
-                        reqBody
-                    );
-                    resp.success &&
-                        window.location.replace(
-                            (resp.data as AuthResponse).redirect_to
-                        );
-                    return;
-                }
-                // eslint-disable-next-line
-            } catch (error: any) {
-                //Todo: unsure about what to type this as Error or ApiError
-                console.error('No active sessions found for this user');
-                return;
-            }
-        };
-        checkExistingFlow();
-    }, []);
-
-    const initFlow = async () => {
-        const queryParams = new URLSearchParams(window.location.search);
-        if (!queryParams.has('flow')) {
-            setErrorMessage('No login flow specified');
-            window.location.replace(BROWSER_URL);
-            return;
+        if (loaderData.redirect_to) {
+            window.location.href = loaderData.redirect_to;
         }
-        const url = kratosUrl + queryParams.get('flow');
-        const resp = await axios.get(url);
-        if (resp.status !== 200) {
-            console.error('Error initializing login flow');
-            return;
+        if (loaderData.identifier) {
+            setUser(loaderData.identifier);
         }
-        return {
-            flow_id: resp.data.id,
-            challenge: resp.data.oauth2_login_challenge,
-            csrf_token: resp.data.ui.nodes[0].attributes.value
-        };
-    };
-
+    });
     return (
-        <form onSubmit={handleSubmit(submit)}>
+        <Form
+            method="post"
+            onSubmit={(e) => {
+                const func = handleSubmit(onSubmit);
+                void func(e);
+            }}
+        >
+            <input
+                type="hidden"
+                {...register('flow_id')}
+                value={loaderData.flow_id}
+            />
+            <input
+                type="hidden"
+                {...register('challenge')}
+                value={loaderData.challenge}
+            />
+            <input
+                type="hidden"
+                {...register('csrf_token')}
+                value={loaderData.csrf_token}
+            />
             {user ? (
                 <div className="block">
-                    <div className="text-lg text-center font-bold">
-                        Logged in as
-                        <div className="text-primary text-3xl text-bold">
-                            {user}
-                        </div>
-                        Please confirm your password.
-                    </div>
+                    <label className="label" />
+                    <span className="input input-bordered">{user}</span>
                 </div>
             ) : (
                 <TextInput
-                    label={'Username'}
-                    interfaceRef={'identifier'}
+                    label="Username"
+                    interfaceRef="identifier"
                     required
                     length={50}
                     errors={errors}
@@ -126,8 +90,8 @@ export default function LoginForm() {
             )}
 
             <TextInput
-                label={'Password'}
-                interfaceRef={'password'}
+                label="Password"
+                interfaceRef="password"
                 required
                 length={50}
                 errors={errors}
@@ -137,20 +101,13 @@ export default function LoginForm() {
 
             {errorMessage && (
                 <div className="block">
-                    <InputError message={errorMessage} className="pt-2" />
+                    <InputError
+                        message={'incorrect username or password'}
+                        className="pt-2"
+                    />
                 </div>
             )}
-            {user && (
-                <div className="text-sm text-body-text text-center mt-2">
-                    <button
-                        className="btn pr-3 btn-sm btn-ghost"
-                        autoFocus={false}
-                        onClick={handleLogout}
-                    >
-                        Not You? Log out
-                    </button>
-                </div>
-            )}
+
             <div className="flex items-center justify-end mt-4">
                 <PrimaryButton
                     className="ms-4 w-24 h-10"
@@ -160,12 +117,10 @@ export default function LoginForm() {
                     {processing ? (
                         <span className="loading loading-spinner loading-sm mx-auto"></span>
                     ) : (
-                        <div className="m-auto">
-                            {user ? 'Confirm' : 'Log in'}
-                        </div>
+                        <div className="m-auto">Log in</div>
                     )}
                 </PrimaryButton>
             </div>
-        </form>
+        </Form>
     );
 }

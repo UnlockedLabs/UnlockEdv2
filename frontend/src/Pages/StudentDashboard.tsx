@@ -6,7 +6,7 @@ import convertSeconds from '@/Components/ConvertSeconds';
 import ResourcesSideBar from '@/Components/ResourcesSideBar';
 import WeekActivityChart from '@/Components/WeeklyActivity';
 import Error from './Error';
-import { useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import {
     AcademicCapIcon,
     ArrowRightIcon,
@@ -14,17 +14,28 @@ import {
 } from '@heroicons/react/24/outline';
 import {
     CurrentEnrollment,
+    OpenContentProvider,
     RecentCourse,
     ServerResponse,
-    StudentDashboardJoin
+    StudentDashboardJoin,
+    UserRole
 } from '@/common';
+import { AxiosError } from 'axios';
 
 export default function StudentDashboard() {
+    const loaderData = useLoaderData() as OpenContentProvider[];
     const { user } = useAuth();
     const navigate = useNavigate();
+    if (!user) {
+        return;
+    } else if (user?.role === UserRole.Admin) {
+        navigate('/admin-dashboard');
+        return;
+    }
     const { data, error, isLoading } = useSWR<
-        ServerResponse<StudentDashboardJoin>
-    >(`/api/users/${user.id}/student-dashboard`);
+        ServerResponse<StudentDashboardJoin>,
+        AxiosError
+    >(`/api/users/${user?.id}/student-dashboard`);
     const userData = data?.data as StudentDashboardJoin;
 
     if (isLoading) return <div>Loading...</div>;
@@ -88,7 +99,7 @@ export default function StudentDashboard() {
     return (
         <div className="flex w-full">
             <div className="px-8 py-4">
-                <h1 className="text-5xl">Hi, {user.name_first}!</h1>
+                <h1 className="text-5xl">Hi, {user?.name_first}!</h1>
                 <h2 className="mt-7"> Pick Up Where You Left Off</h2>
                 <div className="mt-3 bg-base-teal p-6 card">
                     <div
@@ -196,7 +207,7 @@ export default function StudentDashboard() {
                 </div>
             </div>
             <div className="min-w-px bg-grey-1"></div>
-            <ResourcesSideBar />
+            <ResourcesSideBar providers={loaderData} />
         </div>
     );
 }

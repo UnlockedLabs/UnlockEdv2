@@ -3,29 +3,45 @@ import MilestonesBarChart from '@/Components/MilestonesBarChart';
 import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
 import TopProgPieChart from '@/Components/TopProgActivityPieChart';
-import { AdminDashboardJoin, CourseActivity, ServerResponse } from '@/common';
+import {
+    AdminDashboardJoin,
+    CourseActivity,
+    ServerResponse,
+    UserRole
+} from '@/common';
 import useSWR from 'swr';
-import convertSeconds from '../Components/ConvertSeconds';
-import { useContext } from 'react';
+import convertSeconds from '@/Components/ConvertSeconds';
+import { useContext, useEffect } from 'react';
 import { ThemeContext } from '@/Components/ThemeContext';
+import { AxiosError } from 'axios';
+import { usePathValue } from '@/PathValueCtx';
+import UnauthorizedNotFound from './Unauthorized';
 
 export default function AdminDashboard() {
     const { user } = useAuth();
     const { data, error, isLoading } = useSWR<
-        ServerResponse<AdminDashboardJoin>
-    >(`/api/users/${user.id}/admin-dashboard`);
+        ServerResponse<AdminDashboardJoin>,
+        AxiosError
+    >(`/api/users/${user?.id}/admin-dashboard`);
     const { theme } = useContext(ThemeContext);
-
+    const { setPathVal } = usePathValue();
+    useEffect(() => {
+        setPathVal([
+            { path_id: ':facility_name', value: user?.facility_name ?? '' }
+        ]);
+    }, [user]);
     if (error || isLoading) return <div></div>;
-    const activityData = data.data as AdminDashboardJoin;
+    if (user?.role !== UserRole.Admin) {
+        return <UnauthorizedNotFound which="unauthorized" />;
+    }
+    const activityData = data?.data as AdminDashboardJoin;
     const avgActivity = convertSeconds(activityData.avg_daily_activity);
     const totalActivity = convertSeconds(activityData.total_weekly_activity);
-
     return (
         <div className="px-8 py-4">
             <h1 className="text-5xl">{activityData.facility_name}</h1>
             <div className="flex flex-row mt-12 gap-12">
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 w-2/3">
                     <div className="card h-[240px]">
                         <h2 className="card-h-padding">
                             Overall Platform Engagement
@@ -57,7 +73,7 @@ export default function AdminDashboard() {
                     </div>
                 </div>
                 {/* Top course engagement */}
-                <div className="card h-100 w-[35%] flex flex-col justify-between overflow-auto">
+                <div className="card h-100 flex flex-col flex-grow justify-between overflow-auto">
                     <h2 className="card-h-padding">Top Course Engagement</h2>
                     <div className="">
                         <TopProgPieChart
@@ -73,62 +89,58 @@ export default function AdminDashboard() {
                                     </tr>
                                 </thead>
                                 <tbody className="!gap-6">
-                                    {!error &&
-                                        !isLoading &&
-                                        activityData &&
-                                        activityData.top_course_activity.map(
-                                            (
-                                                course: CourseActivity,
-                                                index: number
-                                            ) => {
-                                                let courseTime: string;
-                                                if (course.hours_engaged < 1)
-                                                    courseTime =
-                                                        Math.round(
-                                                            course.hours_engaged *
-                                                                60
-                                                        ) + ' min';
-                                                else {
-                                                    const hours = Math.floor(
-                                                        course.hours_engaged
-                                                    );
-                                                    const leftoverMins =
-                                                        Math.round(
-                                                            course.hours_engaged *
-                                                                60
-                                                        ) % 60;
-                                                    if (leftoverMins == 0)
-                                                        courseTime =
-                                                            hours + ' hrs';
-                                                    else
-                                                        courseTime =
-                                                            hours +
-                                                            ' hr ' +
-                                                            leftoverMins +
-                                                            ' min';
-                                                }
-                                                let legendColor =
-                                                    'bg-teal-' +
-                                                    (index + 1).toString();
-                                                // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
-                                                if (index == 4)
-                                                    legendColor =
-                                                        theme == 'light'
-                                                            ? 'bg-[#002E2A]'
-                                                            : 'bg-[#B0DFDA]';
-                                                return (
-                                                    <tr key={index}>
-                                                        <td className="flex flex-row gap-2">
-                                                            <div
-                                                                className={`h-3 w-3 ${legendColor} my-auto`}
-                                                            ></div>
-                                                            {course.course_name}
-                                                        </td>
-                                                        <td>{courseTime}</td>
-                                                    </tr>
+                                    {activityData?.top_course_activity.map(
+                                        (
+                                            course: CourseActivity,
+                                            index: number
+                                        ) => {
+                                            let courseTime: string;
+                                            if (course.hours_engaged < 1)
+                                                courseTime =
+                                                    Math.round(
+                                                        course.hours_engaged *
+                                                            60
+                                                    ) + ' min';
+                                            else {
+                                                const hours = Math.floor(
+                                                    course.hours_engaged
                                                 );
+                                                const leftoverMins =
+                                                    Math.round(
+                                                        course.hours_engaged *
+                                                            60
+                                                    ) % 60;
+                                                if (leftoverMins == 0)
+                                                    courseTime = hours + ' hrs';
+                                                else
+                                                    courseTime =
+                                                        hours +
+                                                        ' hr ' +
+                                                        leftoverMins +
+                                                        ' min';
                                             }
-                                        )}
+                                            let legendColor =
+                                                'bg-teal-' +
+                                                (index + 1).toString();
+                                            // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
+                                            if (index == 4)
+                                                legendColor =
+                                                    theme == 'light'
+                                                        ? 'bg-[#002E2A]'
+                                                        : 'bg-[#B0DFDA]';
+                                            return (
+                                                <tr key={index}>
+                                                    <td className="flex flex-row gap-2">
+                                                        <div
+                                                            className={`h-3 w-3 ${legendColor} my-auto`}
+                                                        ></div>
+                                                        {course.course_name}
+                                                    </td>
+                                                    <td>{courseTime}</td>
+                                                </tr>
+                                            );
+                                        }
+                                    )}
                                 </tbody>
                             </table>
                         </div>

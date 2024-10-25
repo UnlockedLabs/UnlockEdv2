@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -25,9 +26,10 @@ const (
 type ProviderPlatformState string
 
 const (
-	Enabled  ProviderPlatformState = "enabled"
-	Disabled ProviderPlatformState = "disabled"
-	Archived ProviderPlatformState = "archived"
+	Enabled   ProviderPlatformState = "enabled"
+	Disabled  ProviderPlatformState = "disabled"
+	Archived  ProviderPlatformState = "archived"
+	UuidV4Len                       = 32
 )
 
 type ProviderPlatform struct {
@@ -52,13 +54,10 @@ func (ProviderPlatform) TableName() string {
 	return "provider_platforms"
 }
 
-func (provider *ProviderPlatform) BeforeSave(tx *gorm.DB) (err error) {
-	if tx.Statement.Changed("AccessKey") || provider.ID == 0 {
-		if key, keyErr := provider.EncryptAccessKey(); keyErr == nil {
-			provider.AccessKey = key
-		} else {
-			provider.AccessKey = "error encrypting: please update key"
-		}
+func (provider *ProviderPlatform) BeforeCreate(tx *gorm.DB) (err error) {
+	if provider.Type == Kolibri && !strings.Contains(provider.AccountID, "-") && len(provider.AccountID) == UuidV4Len {
+		// convert the uuid back into hypenated format
+		provider.AccountID = fmt.Sprintf("%s-%s-%s-%s-%s", provider.AccountID[0:8], provider.AccountID[8:12], provider.AccountID[12:16], provider.AccountID[16:20], provider.AccountID[20:])
 	}
 	return nil
 }
@@ -67,7 +66,7 @@ func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
 	if key, keyErr := provider.DecryptAccessKey(); keyErr == nil {
 		provider.AccessKey = key
 	}
-	return
+	return nil
 }
 
 func (provider *ProviderPlatform) DecryptAccessKey() (string, error) {
@@ -122,11 +121,11 @@ func (provider *ProviderPlatform) GetDefaultRedirectURI() []string {
 	return []string{}
 }
 
-func (prov *ProviderPlatform) GetDefaultCronJobs() []*CronJob {
-	// this is only here because at some point this may be different per provider.Type
-	jobs := []*CronJob{}
-	for _, job := range AllDefaultJobs {
-		jobs = append(jobs, NewCronJob(job))
+func (prov *ProviderPlatform) GetDefaultCronJobs() []JobType {
+	jobs := []JobType{}
+	// at some point these may differ per provider, for now they all return the default jobs
+	for _, job := range AllDefaultProviderJobs {
+		jobs = append(jobs, job)
 		log.WithFields(log.Fields{"job": job, "provider": prov.Name}).Info("Job added for provider")
 	}
 	return jobs

@@ -1,9 +1,11 @@
+import { useAuth } from '@/useAuth';
 import DangerButton from '../DangerButton';
 import PrimaryButton from '../PrimaryButton';
 import API from '@/api/api';
-import { AuthResponse } from '@/common';
+import { AuthResponse, getDashboard } from '@/common';
 
 export default function ConsentForm() {
+    const { user } = useAuth();
     const accept = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const consent = urlParams.get('consent_challenge');
@@ -12,14 +14,13 @@ export default function ConsentForm() {
         });
         if (resp.success) {
             const location = (resp.data as AuthResponse).redirect_to;
-            console.log('Redirecting to', location);
-            window.location.replace(location);
+            window.location.href = location;
             return;
         }
-        return;
+        window.location.href = getDashboard(user);
     };
     const deny = () => {
-        window.location.replace('/dashboard');
+        window.location.href = getDashboard(user);
     };
     return (
         <div className="bg-base-100 shadow-lg rounded-lg p-8 mb-4 flex flex-col my-2 max-w-screen-xl mx-auto">
@@ -40,7 +41,7 @@ export default function ConsentForm() {
                 <PrimaryButton
                     className="btn btn-primary w-24"
                     type="button"
-                    onClick={accept}
+                    onClick={() => void accept()}
                 >
                     Accept
                 </PrimaryButton>

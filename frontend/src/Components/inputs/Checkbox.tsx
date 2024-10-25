@@ -1,7 +1,9 @@
+import { UseFormRegister } from 'react-hook-form';
+
 interface CheckboxProps {
     label: string;
     interfaceRef: string;
-    register: Function; // eslint-disable-line
+    register: UseFormRegister<any>; // eslint-disable-line
 }
 
 export default function Checkbox({

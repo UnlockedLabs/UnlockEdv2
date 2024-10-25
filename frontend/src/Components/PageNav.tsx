@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { handleLogout, useAuth } from '@/useAuth';
 import {
     ArrowRightEndOnRectangleIcon,
@@ -10,6 +10,7 @@ import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 import ThemeToggle from './ThemeToggle';
 import ULIComponent from '@/Components/ULIComponent.tsx';
+import { usePathValue } from '@/PathValueCtx';
 
 export default function PageNav({
     path,
@@ -21,7 +22,28 @@ export default function PageNav({
     onShowNav?: () => void;
 }) {
     const { user } = useAuth();
-    const detailsRef = useRef<HTMLDetailsElement>();
+    const detailsRef = useRef<HTMLDetailsElement>(null);
+    const { pathVal } = usePathValue();
+    const [customPath, setCustomPath] = useState<string[]>(path ?? []);
+
+    useEffect(() => {
+        const handlePathChange = () => {
+            const newPath = [...path];
+            if (newPath && newPath.length > 0) {
+                setCustomPath(
+                    newPath.map((p) => {
+                        return (
+                            pathVal?.find((pv) => pv.path_id === p)?.value ?? p
+                        );
+                    })
+                );
+                return;
+            }
+            setCustomPath(path);
+        };
+        handlePathChange();
+    }, [path, pathVal]);
+
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
@@ -33,21 +55,20 @@ export default function PageNav({
         };
 
         window.addEventListener('click', closeDropdown);
-
         return () => {
             window.removeEventListener('click', closeDropdown);
         };
     }, []);
 
     return (
-        <div className="navbar px-8">
-            <div className="navbar-start breadcrumbs !py-0 pl-0">
+        <div className="px-8 flex justify-between items-center">
+            <div className="breadcrumbs">
                 <ul>
                     {showOpenMenu ? (
                         <li>
                             <ULIComponent
                                 onClick={() => {
-                                    onShowNav;
+                                    if (onShowNav) onShowNav();
                                 }}
                                 icon={Bars3Icon}
                                 iconClassName={'cursor-pointer'}
@@ -57,7 +78,7 @@ export default function PageNav({
                         <li>
                             <ULIComponent
                                 onClick={() => {
-                                    onShowNav;
+                                    if (onShowNav) onShowNav();
                                 }}
                                 icon={Bars3Icon}
                                 iconClassName={'lg:hidden cursor-pointer'}
@@ -69,48 +90,53 @@ export default function PageNav({
                         </li>
                     )}
 
-                    {path && path.map((p) => <li key={p}>{p}</li>)}
+                    {customPath?.map((p) => (
+                        <li className="capitalize" key={p}>
+                            {p}
+                        </li>
+                    ))}
                 </ul>
             </div>
-            <div className="navbar-end">
-                <ul className="menu menu-horizontal px-1">
-                    <li>
-                        <details
-                            className="dropdown dropdown-end"
-                            ref={detailsRef}
-                        >
-                            <summary>
+            <ul className="menu menu-horizontal px-1">
+                <li>
+                    <details className="dropdown dropdown-end" ref={detailsRef}>
+                        <summary>
+                            {user && (
                                 <span className="font-semibold">
                                     {user.name_first} {user.name_last}
                                 </span>
-                            </summary>
-                            <ul className="dropdown-content bg-grey-2 z-[1]">
-                                <li>
-                                    <label className="flex cursor-pointer gap-2">
-                                        <ULIComponent
-                                            icon={SunIcon}
-                                            iconClassName={'w-6 h-6'}
-                                        />
-                                        <ThemeToggle />
-                                        <ULIComponent
-                                            icon={MoonIcon}
-                                            iconClassName={'w-6 h-6'}
-                                        />
-                                    </label>
-                                </li>
-                                <div className="divider mt-0 mb-0"></div>
+                            )}
+                        </summary>
+                        <ul className="dropdown-content bg-grey-2 z-[1] dark:bg-grey-1">
+                            <li>
+                                <label className="flex cursor-pointer gap-2">
+                                    <ULIComponent
+                                        icon={SunIcon}
+                                        iconClassName={'w-6 h-6'}
+                                    />
+                                    <ThemeToggle />
+                                    <ULIComponent
+                                        icon={MoonIcon}
+                                        iconClassName={'w-6 h-6'}
+                                    />
+                                </label>
+                            </li>
+                            <div className="divider mt-0 mb-0"></div>
 
-                                <li>
-                                    <button onClick={() => handleLogout()}>
-                                        <ArrowRightEndOnRectangleIcon className="h-4" />
-                                        Logout
-                                    </button>
-                                </li>
-                            </ul>
-                        </details>
-                    </li>
-                </ul>
-            </div>
+                            <li>
+                                <button
+                                    onClick={() => {
+                                        void handleLogout();
+                                    }}
+                                >
+                                    <ArrowRightEndOnRectangleIcon className="h-4" />
+                                    Logout
+                                </button>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
         </div>
     );
 }

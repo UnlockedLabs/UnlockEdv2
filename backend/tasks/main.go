@@ -16,25 +16,31 @@ func main() {
 		log.Error("error loading .env file, using default env variables")
 	}
 	initLogging()
-	runner := getRunner()
+	runner := newJobRunner()
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
 		return
 	}
-	newJob, err := scheduler.NewJob(gocron.CronJob(os.Getenv("MIDDLEWARE_CRON_SCHEDULE"), false), gocron.NewTask(runner.execute))
+	tasks, err := runner.generateTasks()
 	if err != nil {
-		log.Fatalf("Failed to create job: %v", err)
+		log.Fatalf("failed to generate tasks: %v", err)
+		return
 	}
+	for _, task := range tasks {
+		if task.Job == nil {
+			continue
+		}
+		_, err := scheduler.NewJob(gocron.CronJob(task.Job.Schedule, false), gocron.NewTask(runner.runTask, task))
+		if err != nil {
+			log.Errorf("Failed to create job: %v", err)
+			continue
+		}
+	}
+	runner.execute()
 	scheduler.Start()
-	err = newJob.RunNow()
-	if err != nil {
-		log.Errorln("Failed to run job now: ", err)
-	}
-	log.Infof("Scheduler started, running %s", newJob.ID())
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
 	<-shutdown
 }
 

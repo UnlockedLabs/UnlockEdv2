@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -70,20 +71,14 @@ type ImportUserResponse struct {
 	Error        string `json:"error"`
 }
 
-func removeChars(str string, toStrip string) string {
-	removeMap := make(map[rune]bool)
-	for _, char := range toStrip {
-		removeMap[char] = true
-	}
+func stripNonAlphaChars(str string) string {
 	return strings.Map(func(r rune) rune {
-		if removeMap[r] {
+		if !unicode.IsLetter(r) {
 			return -1
 		}
 		return r
 	}, str)
 }
-
-const disallowedChars string = "`; *#@!^&)(|\\\"'"
 
 // This function takes an array of 1 or more Provider users (that come from the middleware, so they are
 // already in the correct format) and creates a new user in the database for each of them, as well as
@@ -112,28 +107,28 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 	toReturn := make([]ImportUserResponse, 0)
 	for _, user := range users.Users {
 		newUser := models.User{
-			Username:   removeChars(user.Username, disallowedChars),
+			Username:   stripNonAlphaChars(user.Username),
 			Email:      user.Email,
-			NameFirst:  removeChars(user.NameFirst, disallowedChars),
-			NameLast:   removeChars(user.NameLast, disallowedChars),
+			NameFirst:  stripNonAlphaChars(user.NameFirst),
+			NameLast:   stripNonAlphaChars(user.NameLast),
 			FacilityID: facilityId,
 			Role:       models.Student,
 		}
 		userResponse := ImportUserResponse{
 			Username: newUser.Username,
 		}
-		created, err := srv.Db.CreateUser(&newUser)
+		err := srv.Db.CreateUser(&newUser)
 		if err != nil {
 			log.error("Error creating user in import-provider-users", err)
 			userResponse.Error = "error creating user, likely a duplicate username"
 			toReturn = append(toReturn, userResponse)
 			continue
 		}
-		tempPw := created.CreateTempPassword()
+		tempPw := newUser.CreateTempPassword()
 		userResponse.TempPassword = tempPw
 		if !srv.isTesting(r) { //if not testing then reach out
-			if err := srv.HandleCreateUserKratos(created.Username, tempPw); err != nil {
-				if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
+			if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
+				if err = srv.Db.DeleteUser(int(newUser.ID)); err != nil {
 					log.error("Error deleting user after failed provider user mapping import-provider-users")
 				}
 				log.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
@@ -141,22 +136,20 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 				toReturn = append(toReturn, userResponse)
 				continue
 			}
-			kolibri, err := srv.Db.FindKolibriInstance()
-			if err != nil {
-				log.error("Error getting kolibri instance")
-			}
-			if err = srv.CreateUserInKolibri(created, kolibri); err != nil {
-				log.error("Error creating kolibri user")
+			if kolibri, err := srv.Db.FindKolibriInstance(); err == nil {
+				if err = srv.CreateUserInKolibri(&newUser, kolibri); err != nil {
+					log.error("Error creating kolibri user")
+				}
 			}
 		}
 		mapping := models.ProviderUserMapping{
-			UserID:             created.ID,
+			UserID:             newUser.ID,
 			ProviderPlatformID: provider.ID,
 			ExternalUsername:   user.Username,
 			ExternalUserID:     user.ExternalUserID,
 		}
 		if err = srv.Db.CreateProviderUserMapping(&mapping); err != nil {
-			if err = srv.Db.DeleteUser(int(created.ID)); err != nil {
+			if err = srv.Db.DeleteUser(int(newUser.ID)); err != nil {
 				log.error("Error deleting user after failed provider user mapping import-provider-users")
 			}
 			userResponse.Error = "user was created in database, but there was an error creating provider user mapping, please try again"

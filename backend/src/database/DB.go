@@ -49,7 +49,7 @@ var TableList = []interface{}{
 	&models.Library{},
 }
 
-var validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
+var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
@@ -143,6 +143,10 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 		}
 		if err := db.Create(&links).Error; err != nil {
 			log.Fatalf("Failed to create left menu links: %v", err)
+		}
+		kiwix := models.OpenContentProvider{Name: models.Kiwix, BaseUrl: "https://library.kiwix.org", CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix}
+		if err := db.Create(&kiwix).Error; err != nil {
+			log.Fatalf("Failed to create kiwix open content provider: %v", err)
 		}
 	}
 }
@@ -325,8 +329,8 @@ func (db *DB) SeedTestData() {
 					UserID:     dbUsers[idx].ID,
 					CourseID:   courses[jdx].ID,
 					Type:       "interaction",
-					TotalTime:  uint(startTime + randTime),
-					TimeDelta:  uint(randTime),
+					TotalTime:  int64(startTime + randTime),
+					TimeDelta:  int64(randTime),
 					ExternalID: strconv.Itoa(rand.Intn(1000)),
 					CreatedAt:  time,
 				}

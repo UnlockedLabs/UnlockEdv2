@@ -27,15 +27,14 @@ export default function EnrolledCourseCard({
 }: CourseCard) {
     const coverImage = course.thumbnail_url;
     const url = course.external_url;
-    let status: CourseStatus;
+    let status: CourseStatus | null = null;
     if (course.course_progress == 100) status = CourseStatus.Completed;
 
     function updateFavorite(e: React.MouseEvent) {
         e.preventDefault();
         API.put(`courses/${course.id}/save`, {})
-            .then((response) => {
-                callMutate();
-                console.log(response);
+            .then(() => {
+                if (callMutate) callMutate();
             })
             .catch((error) => {
                 console.log(error);
@@ -62,20 +61,18 @@ export default function EnrolledCourseCard({
                     <p className="body">|</p>
                     <p className="body">{course.provider_platform_name}</p>
                 </div>
-                {status == CourseStatus.Completed ? (
+                {status === CourseStatus.Completed ? (
                     <div className="flex flex-row gap-2 body-small text-teal-3">
                         <CheckCircleIcon className="h-4" /> Course Completed
                     </div>
-                ) : status == CourseStatus.Pending ? (
+                ) : status === CourseStatus.Pending ? (
                     <div className="flex flex-row gap-2 body-small text-dark-yellow">
                         <ClockIcon className="h-4" /> Course Pending
                     </div>
                 ) : (
                     <div className="w-1/3">
                         <ProgressBar
-                            percent={Math.floor(
-                                course.course_progress as number
-                            )}
+                            percent={Math.floor(course.course_progress)}
                         />
                     </div>
                 )}

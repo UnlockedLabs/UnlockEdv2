@@ -19,12 +19,7 @@ export default function DeleteForm({ item, onCancel, onSuccess }: DeleteProps) {
                 <button className="btn" onClick={() => onCancel()}>
                     Cancel
                 </button>
-                <button
-                    className="btn btn-error"
-                    onClick={() => {
-                        onSuccess();
-                    }}
-                >
+                <button className="btn btn-error" onClick={onSuccess}>
                     Delete {item}
                 </button>
             </form>

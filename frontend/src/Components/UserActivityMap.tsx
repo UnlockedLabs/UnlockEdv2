@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { useAuth } from '@/useAuth';
 import { ServerResponse } from '@/common';
 import convertSeconds from './ConvertSeconds';
+import { AxiosError } from 'axios';
 
 interface ActivityMapData {
     date: string;
@@ -18,9 +19,7 @@ interface Activities {
 }
 
 /* interface for dynamically generated year options */
-interface ValidYears {
-    [year: string]: string;
-}
+type ValidYears = Record<string, string>;
 
 /* subtract a year from a date */
 const subtractYear = (date: Date) => {
@@ -40,22 +39,27 @@ const quartileColors: string[] = [
 ];
 
 /* node sizes for the activity map */
-const nodeSizes: string =
+const nodeSizes =
     'w-1.5 h-1.5 rounded-sm text-xs md:w-2 md:h-2 lg:w-3 lg:h-3 xl:w-3.5 xl:h-3.5 xl:rounded-md';
 
 /* gaps between cells in activity map */
-const gapSizes: string = 'p-0 ml-px mt-px md:m-0 md:p-px';
+const gapSizes = 'p-0 ml-px mt-px md:m-0 md:p-px';
 
 /* main component for the user activity map */
 export default function UserActivityMap() {
     const { user } = useAuth();
+
+    if (!user) return <div>Loading...</div>;
 
     const createdAtYear = parseInt(user.created_at.split('-')[0]);
 
     const [yearEnd, setYearEnd] = useState(new Date());
     const [dropdownValDesc, setDropdownValDesc] = useState('the past year');
 
-    const { data, error, isLoading } = useSWR<ServerResponse<Activities>>(
+    const { data, error, isLoading } = useSWR<
+        ServerResponse<Activities>,
+        AxiosError
+    >(
         `/api/users/${user.id}/daily-activity${dropdownValDesc !== 'the past year' ? '?year=' + dropdownValDesc.trim() : ''}`
     );
     const activityData = data?.data ? (data.data as Activities).activities : [];
@@ -100,7 +104,7 @@ export default function UserActivityMap() {
                 <form className="">
                     <DropdownControl
                         label=""
-                        callback={dropdownChange}
+                        customCallback={dropdownChange}
                         enumType={yearOptions}
                     />
                 </form>
@@ -197,7 +201,8 @@ function ActivityMapTable({
     const len = data?.length;
     //  const now = new Date();
     let aggregateActivityTime = 0;
-    let oldMonth: number, newMonth: number;
+    let oldMonth = 0;
+    let newMonth = 0;
 
     const getAggregateActivityTime = (time: number) => {
         if (error) {

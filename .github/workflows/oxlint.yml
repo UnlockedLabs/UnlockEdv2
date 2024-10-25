@@ -10,6 +10,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
          cd frontend && \
-         npm install && \
-         npm run lint-staged && \
-         npm run build
+         corepack install -g yarn && \
+         yarn && \
+         yarn lint-staged && \
+         yarn build

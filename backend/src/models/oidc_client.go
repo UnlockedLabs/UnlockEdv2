@@ -125,6 +125,7 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 	form.Add("authorize_url", os.Getenv("APP_URL")+"/oauth2/auth")
 	form.Add("token_url", os.Getenv("APP_URL")+"/oauth2/token")
 	form.Add("userinfo_endpoint", os.Getenv("APP_URL")+"/userinfo")
+	form.Add("login_attribute", "preferred_username")
 	request, err := http.NewRequest("POST", baseURL, bytes.NewBufferString(form.Encode()))
 	if err != nil {
 		log.Println("Error creating request object: ", err)

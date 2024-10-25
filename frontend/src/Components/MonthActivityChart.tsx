@@ -13,9 +13,8 @@ import { RecentActivity } from '@/common.ts';
 
 const ActivityChart = ({ data }: { data: RecentActivity[] }) => {
     const { theme } = useContext(ThemeContext);
-
+    const strokeColor = theme === 'light' ? '#666' : '#CCC';
     const lineColor = theme === 'light' ? '#18ABA0' : '#61BAB2';
-    const gridColor = theme === 'light' ? '#ECECEC' : '#737373';
     const backgroundColor = theme === 'light' ? '#FFFFFF' : '#0F2926';
 
     const safeData = data && data.length > 0 ? data : [{ date: '', delta: 0 }];
@@ -26,11 +25,12 @@ const ActivityChart = ({ data }: { data: RecentActivity[] }) => {
                 data={safeData}
                 margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
             >
-                <CartesianGrid stroke={gridColor} />
+                <CartesianGrid stroke={strokeColor} />
                 <XAxis
                     dataKey={'date'}
                     tick={false}
                     label={{ value: 'Past 30 days' }}
+                    stroke={strokeColor}
                 />
                 <YAxis
                     dataKey={'delta'}
@@ -41,6 +41,7 @@ const ActivityChart = ({ data }: { data: RecentActivity[] }) => {
                         position: 'left',
                         offset: 0
                     }}
+                    stroke={strokeColor}
                 />
                 <Tooltip
                     labelClassName="text-body"

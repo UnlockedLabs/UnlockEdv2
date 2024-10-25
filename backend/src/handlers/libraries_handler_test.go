@@ -12,12 +12,14 @@ import (
 
 func TestHandleIndexLibraries(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetLibrariesAsUser", "student", map[string]any{"page": 1, "per_page": 10, "show_hidden": false, "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10"},
-		{"TestGetLibrariesAsUserShowHidden", "student", map[string]any{"page": 1, "per_page": 10, "show_hidden": false, "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&show_hidden=true"},
-		{"TestGetLibrariesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10, "show_hidden": false, "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10"},
-		{"TestGetLibrariesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10, "show_hidden": true, "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&show_hidden=true&provider_id=0"},
-		{"TestGetLibrariesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10, "show_hidden": true, "search": "", "provider_id": 1}, http.StatusOK, "?page=1&per_page=10&show_hidden=true&provider_id=1"},
-		{"TestGetLibrariesAsAdminWithParams", "admin", map[string]any{"page": 1, "per_page": 10, "show_hidden": false, "search": "python", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&search=python"},
+		{"TestGetLibrariesAsUser", "student", map[string]any{"page": 1, "per_page": 10, "visibility": "visible", "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10"},
+		{"TestGetLibrariesAsUserShowHidden", "student", map[string]any{"page": 1, "per_page": 10, "visibility": "hidden", "search": "", "provider_id": 0}, http.StatusUnauthorized, "?page=1&per_page=10&visibility=hidden"},
+		{"TestGetLibrariesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10, "visibility": "", "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10"},
+		{"TestGetLibrariesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10, "visibility": "hidden", "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&visibility=hidden&provider_id=0"},
+		{"TestGetLibrariesAsAdmin", "admin", map[string]any{"page": 1, "per_page": 10, "visibility": "hidden", "search": "", "provider_id": 1}, http.StatusOK, "?page=1&per_page=10&visibility=hidden&provider_id=1"},
+		{"TestGetLibrariesAsAdminOnlyVisible", "admin", map[string]any{"page": 1, "per_page": 10, "visibility": "visible", "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&visibility=visible"},
+		{"TestGetLibrariesAsAdminOnlyHidden", "admin", map[string]any{"page": 1, "per_page": 10, "visibility": "hidden", "search": "", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&visibility=hidden"},
+		{"TestGetLibrariesAsAdminWithParams", "admin", map[string]any{"page": 1, "per_page": 10, "visibility": "", "search": "python", "provider_id": 0}, http.StatusOK, "?page=1&per_page=10&search=python"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -28,7 +30,7 @@ func TestHandleIndexLibraries(t *testing.T) {
 			handler := getHandlerByRole(server.handleIndexLibraries, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				_, expectedLibraries, err := server.Db.GetAllLibraries(test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int), test.mapKeyValues["show_hidden"].(bool), test.mapKeyValues["search"].(string), test.mapKeyValues["provider_id"].(int))
+				_, expectedLibraries, err := server.Db.GetAllLibraries(test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int), test.mapKeyValues["visibility"].(string), test.mapKeyValues["search"].(string), test.mapKeyValues["provider_id"].(int))
 				if err != nil {
 					t.Fatalf("unable to get libraries, error is %v", err)
 				}

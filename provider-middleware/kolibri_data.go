@@ -10,6 +10,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -19,16 +20,6 @@ type KolibriResponse[T any] struct {
 	Page       int `json:"page"`
 	Count      int `json:"count"`
 	TotalPages int `json:"total_pages"`
-}
-
-func (srv *ServiceHandler) LookupProvider(id int) (*models.ProviderPlatform, error) {
-	var provider models.ProviderPlatform
-	err := srv.db.Where("id = ?", id).First(&provider).Error
-	if err != nil {
-		log.Println("Failed to find provider")
-		return nil, err
-	}
-	return &provider, nil
 }
 
 type KolibriUser struct {
@@ -85,6 +76,10 @@ type KolibriContent struct {
 	TotalResourceCount int    `json:"total_resource_count"`
 }
 
+func stripUuidForUrl(uuid string) string {
+	return strings.ReplaceAll(uuid, "-", "")
+}
+
 func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course {
 	courseType := data["course_type"].(string)
 	thumbnail := data["thumbnail"].(string)
@@ -106,17 +101,23 @@ func (kc *KolibriService) IntoCourse(data map[string]interface{}) *models.Course
 	}
 
 	if courseType == "channel" {
-		url, err := UploadImage(thumbnail, root, id)
+		imgUrl, err := UploadImage(thumbnail, root, id)
 		if err != nil {
 			log.Printf("Failed to upload image %v", err)
-			url = ""
+			imgUrl = ""
 		}
 		course.Description = description
-		course.ThumbnailURL = url
-		course.ExternalURL = kc.BaseURL + "en/learn/#/topics/t/" + id + "/folders?last=HOME"
+		course.ThumbnailURL = imgUrl
+		if externalUrl, err := url.JoinPath(kc.BaseURL, "en/learn/#/topics/t/", stripUuidForUrl(id), "/folders?last=HOME"); err == nil {
+			course.ExternalURL = externalUrl
+		}
 	} else {
 		course.Description = "Kolibri managed course"
-		course.ExternalURL = kc.BaseURL + "en/learn/#/home/classes/" + id
+		if externUrl, err := url.JoinPath(kc.BaseURL, "/en/learn/#/home/classes/", stripUuidForUrl(id)); err == nil {
+			course.ExternalURL = externUrl
+		} else {
+			course.ExternalURL = kc.BaseURL + "/en/learn/#/home/classes/" + stripUuidForUrl(id)
+		}
 	}
 	return &course
 }
@@ -165,16 +166,17 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 	if response.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("server returned non-OK status: %s", response.Status)
 	}
-	var result map[string]string
-	err = json.NewDecoder(response.Body).Decode(&result)
+	urlRes := struct {
+		data struct {
+			Url string `json:"url"`
+		}
+		Message string `json:"message"`
+	}{}
+	err = json.NewDecoder(response.Body).Decode(&urlRes)
 	if err != nil {
 		return "", err
 	}
-	url, ok := result["url"]
-	if !ok {
-		return "", errors.New("response does not contain URL")
-	}
-	return url, nil
+	return urlRes.data.Url, nil
 }
 
 type Role struct {

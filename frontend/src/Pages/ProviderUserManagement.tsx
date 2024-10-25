@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout';
 import { useParams } from 'react-router-dom';
 import {
+    defaultToast,
     ModalType,
     PaginationMeta,
     ProviderPlatform,
+    ProviderPlatformType,
     ProviderUser,
-    ServerResponse,
+    ServerResponseMany,
+    showToast,
     ToastState,
     UserImports
-} from '../common';
-import Toast from '../Components/Toast';
-import Modal from '../Components/Modal';
+} from '@/common';
+import Toast from '@/Components/Toast';
+import Modal from '@/Components/Modal';
 import MapUserForm from '@/Components/forms/MapUserForm';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ShowImportedUsers from '@/Components/forms/ShowImportedUsers';
@@ -21,17 +23,21 @@ import ConfirmImportAllUsersForm from '@/Components/forms/ConfirmImportAllUsersF
 import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
+import { AxiosError } from 'axios';
+import { usePathValue } from '@/PathValueCtx';
 
 export default function ProviderUserManagement() {
-    const mapUserModal = useRef<undefined | HTMLDialogElement>();
-    const importedUsersModal = useRef<undefined | HTMLDialogElement>();
-    const importAllUsersModal = useRef<undefined | HTMLDialogElement>();
+    const mapUserModal = useRef<HTMLDialogElement>(null);
+    const importedUsersModal = useRef<HTMLDialogElement>(null);
+    const importAllUsersModal = useRef<HTMLDialogElement>(null);
     const [displayToast, setDisplayToast] = useState(false);
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<undefined | ProviderUser>();
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
-    const { providerId } = useParams();
+    const { id: providerId } = useParams();
+    const { setPathVal } = usePathValue();
+    const providerID = parseInt(providerId ?? '0', 10);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
         per_page: 10,
@@ -45,50 +51,26 @@ export default function ProviderUserManagement() {
     const [cache, setCache] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
-
-    const [toast, setToast] = useState({
-        state: ToastState.null,
-        message: '',
-        reset: () => {}
-    });
-
-    const { data, mutate } = useSWR<ServerResponse<ProviderUser>>(
+    const [toast, setToast] = useState(defaultToast);
+    const toaster = (msg: string, state: ToastState) => {
+        showToast(setToast, setDisplayToast, msg, state);
+    };
+    const { data, mutate } = useSWR<
+        ServerResponseMany<ProviderUser>,
+        AxiosError
+    >(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
-    const providerData = (data?.data as ProviderUser[]) ?? [];
-
+    const providerData = data?.data ?? [];
     const changePage = (page: number) => {
         setCurrentPage(page);
-    };
-
-    const handleChangeUsersPerPage = (
-        e: React.ChangeEvent<HTMLSelectElement>
-    ) => {
-        setPerPage(parseInt(e.target.value));
-        setCurrentPage(1); // Reset to the first page when changing per page
+        handleRefetch();
     };
 
     const handleRefetch = () => {
         setError(false);
         setCache(true);
-        mutate();
-    };
-
-    const showToast = (message: string, state: ToastState) => {
-        setToast({
-            state,
-            message,
-            reset: () => {
-                setToast({
-                    state: ToastState.success,
-                    message: '',
-                    reset: () => {
-                        setDisplayToast(false);
-                    }
-                });
-            }
-        });
-        setDisplayToast(true);
+        void mutate();
     };
 
     async function handleImportAllUsers() {
@@ -97,13 +79,13 @@ export default function ProviderUserManagement() {
             {}
         );
         if (res.success) {
-            showToast(
+            toaster(
                 'Users imported successfully, please check for accounts not created',
                 ToastState.success
             );
             window.location.reload();
         } else {
-            showToast(
+            toaster(
                 'error importing users, please check accounts',
                 ToastState.error
             );
@@ -116,16 +98,15 @@ export default function ProviderUserManagement() {
             { users: usersToImport }
         );
         if (res.success) {
-            showToast(res.message, ToastState.success);
-            console.log(res.data);
+            toaster(res.message, ToastState.success);
             setImportedUsers(res.data as UserImports[]);
             importedUsersModal.current?.showModal();
             setUsersToImport([]);
-            mutate();
+            await mutate();
             return;
         } else {
             setUsersToImport([]);
-            showToast(
+            toaster(
                 'error importing users, please check accounts',
                 ToastState.error
             );
@@ -133,7 +114,7 @@ export default function ProviderUserManagement() {
     }
 
     function handleSubmitMapUser(msg: string, toastState: ToastState) {
-        showToast(msg, toastState);
+        toaster(msg, toastState);
         mapUserModal.current?.close();
     }
 
@@ -148,7 +129,7 @@ export default function ProviderUserManagement() {
         setUserToMap(undefined);
     }
 
-    async function handleMapUser(user: ProviderUser) {
+    function handleMapUser(user: ProviderUser) {
         setUserToMap(user);
         mapUserModal.current?.showModal();
     }
@@ -161,14 +142,19 @@ export default function ProviderUserManagement() {
         }
     }
 
-    const handleChange = (newSearch: string) => {
+    const handleChangeSearch = (newSearch: string) => {
         setSearch(newSearch);
         setCurrentPage(1);
+    };
+    const handleSetPerPage = (perPage: number) => {
+        setPerPage(perPage);
+        setCurrentPage(1);
+        handleRefetch();
     };
 
     useEffect(() => {
         if (data) {
-            setMeta(data.meta as PaginationMeta);
+            setMeta(data.meta);
             setCache(false);
         }
     }, [data]);
@@ -179,28 +165,29 @@ export default function ProviderUserManagement() {
                 `provider-platforms/${providerId}`
             );
             if (res.success) {
-                setProvider(res.data as ProviderPlatform);
+                const prov = res.data as ProviderPlatform;
+                setProvider(prov);
+                setPathVal([
+                    { path_id: ':provider_platform_name', value: prov.name }
+                ]);
                 setIsLoading(false);
             } else {
-                showToast('Failed to fetch provider users', ToastState.error);
+                toaster('Failed to fetch provider users', ToastState.error);
             }
         };
-        getData();
+        void getData();
     }, [providerId]);
 
+    if (provider && provider.type === ProviderPlatformType.KOLIBRI) {
+        return <div>Kolibri users are managed automatically</div>;
+    }
     return (
-        <AuthenticatedLayout
-            title="Users"
-            path={[
-                'Provider Platforms',
-                `Provider User Management${provider ? ' (' + provider.name + ')' : ''}`
-            ]}
-        >
+        <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4">
                 <div className="flex justify-between">
                     <SearchBar
                         searchTerm={searchQuery[0]}
-                        changeCallback={handleChange}
+                        changeCallback={handleChangeSearch}
                     />
                 </div>
                 <div className="flex justify-between">
@@ -217,7 +204,9 @@ export default function ProviderUserManagement() {
                         Import All Users
                     </PrimaryButton>
                     <PrimaryButton
-                        onClick={() => handleImportSelectedUsers()}
+                        onClick={() => {
+                            void handleImportSelectedUsers();
+                        }}
                         disabled={usersToImport.length === 0}
                     >
                         Import Selected Users
@@ -295,40 +284,19 @@ export default function ProviderUserManagement() {
                 </div>
                 <div className="flex flex-col justify-center">
                     <Pagination
-                        meta={!isLoading && meta}
+                        meta={meta}
                         setPage={changePage}
+                        setPerPage={handleSetPerPage}
                     />
-                    <div className="flex-col-1 align-middle">
-                        per page:
-                        <br />
-                        {!isLoading && providerData && (
-                            <select
-                                className="select select-none select-sm select-bordered"
-                                value={perPage}
-                                onChange={handleChangeUsersPerPage}
-                            >
-                                {[10, 15, 20, 30, 50].map((value) => (
-                                    <option key={value} value={value}>
-                                        {value}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
                 </div>
                 {error && (
                     <span className="text-center text-error">
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading &&
-                    !error &&
-                    data &&
-                    (data.meta as PaginationMeta).total === 0 && (
-                        <span className="text-center text-warning">
-                            No results
-                        </span>
-                    )}
+                {!isLoading && !error && data && data.meta.total === 0 && (
+                    <span className="text-center text-warning">No results</span>
+                )}
             </div>
             {provider && (
                 <Modal
@@ -340,7 +308,7 @@ export default function ProviderUserManagement() {
                             onSubmit={handleSubmitMapUser}
                             externalUser={userToMap}
                             onCancel={handleCloseMapUser}
-                            providerId={parseInt(providerId)}
+                            providerId={providerID}
                         />
                     }
                 />
@@ -363,11 +331,13 @@ export default function ProviderUserManagement() {
                 form={
                     <ConfirmImportAllUsersForm
                         onCancel={() => importAllUsersModal.current?.close()}
-                        onSuccess={handleImportAllUsers}
+                        onSuccess={() => {
+                            void handleImportAllUsers();
+                        }}
                     />
                 }
             />
             {displayToast && <Toast {...toast} />}
-        </AuthenticatedLayout>
+        </div>
     );
 }

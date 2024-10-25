@@ -1,24 +1,33 @@
 import { useEffect, useState } from 'react';
 import Brand from '../Components/Brand';
-import { BROWSER_URL, User } from '@/common';
+import {
+    INIT_KRATOS_LOGIN_FLOW,
+    ServerResponse,
+    User,
+    UserRole
+} from '@/common';
 import API from '@/api/api';
+import { Link } from 'react-router-dom';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv1Sm.webp');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const checkLoggedIn = async () => {
-        const user = await API.get<User>(`auth`);
-        if (user.success) {
-            setIsLoggedIn(true);
-        }
-    };
+    const [authUser, setAuthUser] = useState<User | undefined>();
+
     useEffect(() => {
         const img = new Image();
         img.src = 'unlockedv1.png';
         img.onload = () => {
             setImgSrc('unlockedv1.png');
         };
-        checkLoggedIn();
+        API.get<User>(`auth`)
+            .then((user: ServerResponse<User>) => {
+                if (user.success) {
+                    setAuthUser(user.data as User);
+                }
+            })
+            .catch(() => {
+                return;
+            });
     }, []);
 
     return (
@@ -29,13 +38,21 @@ export default function Welcome() {
                 </div>
                 <div className="flex-none">
                     <ul className="menu menu-horizontal px-1 text-primary">
-                        {!isLoggedIn ? (
+                        {!authUser ? (
                             <li>
-                                <a href={BROWSER_URL}>Log in</a>
+                                <Link to={INIT_KRATOS_LOGIN_FLOW}>Log in</Link>
                             </li>
                         ) : (
                             <li>
-                                <a href="/dashboard">Dashboard</a>
+                                <Link
+                                    to={
+                                        authUser.role === UserRole.Student
+                                            ? '/student-dashboard'
+                                            : '/admin-dashboard'
+                                    }
+                                >
+                                    Dashboard
+                                </Link>
                             </li>
                         )}
                     </ul>
