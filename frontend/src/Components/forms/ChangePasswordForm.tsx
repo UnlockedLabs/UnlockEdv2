@@ -4,9 +4,15 @@ import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
 import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
-import { useAuth } from '@/useAuth';
 import API from '@/api/api';
-import { AuthResponse, Facility, ServerResponseOne, UserRole } from '@/common';
+import {
+    AuthResponse,
+    DEFAULT_ADMIN_FACILITY,
+    DEFAULT_ADMIN_ID,
+    ServerResponseOne,
+    User,
+    UserRole
+} from '@/common';
 import { useLoaderData } from 'react-router-dom';
 interface Inputs {
     password: string;
@@ -17,8 +23,7 @@ interface Inputs {
 export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
-    const loaderData = useLoaderData() as Facility | null;
-    const { user } = useAuth();
+    const user = useLoaderData() as User;
 
     const {
         control,
@@ -50,9 +55,9 @@ export default function ChangePasswordForm() {
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
     const isFirstAdminLogin =
-        user?.id === 1 &&
-        user?.role === UserRole.Admin &&
-        loaderData?.name === 'Default';
+        user.id === DEFAULT_ADMIN_ID &&
+        user.role === UserRole.Admin &&
+        user.facility_name === DEFAULT_ADMIN_FACILITY;
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');

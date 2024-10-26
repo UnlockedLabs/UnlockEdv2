@@ -21,7 +21,7 @@ import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
 import {
-    checkDefaultFacility,
+    fetchUserAuthInfo,
     checkExistingFlow,
     checkRole,
     useAuth
@@ -32,6 +32,7 @@ import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
+import GuestLayout from './Layouts/GuestLayout.tsx';
 import { getOpenContentProviders } from './routeLoaders.ts';
 
 const WithAuth: React.FC = () => {
@@ -74,18 +75,30 @@ const router = createBrowserRouter([
         errorElement: <Error />
     },
     {
-        path: '/login',
-        element: <Login />,
-        errorElement: <Error />,
-        loader: checkExistingFlow
+        path: '/',
+        element: <GuestLayout />,
+        children: [
+            {
+                path: '/login',
+                element: <Login />,
+                errorElement: <Error />,
+                loader: checkExistingFlow
+            },
+            {
+                path: '/reset-password',
+                element: <ResetPassword />,
+                errorElement: <Error />,
+                loader: fetchUserAuthInfo
+            }
+        ]
     },
     {
         path: '/',
         element: <WithAuth />,
-        errorElement: <Error />,
         children: [
             {
                 element: <AuthenticatedLayout />,
+                errorElement: <Error />,
                 children: [
                     {
                         path: 'authcallback',
@@ -100,6 +113,7 @@ const router = createBrowserRouter([
                     {
                         path: 'consent',
                         element: <Consent />,
+                        errorElement: <Error />,
                         handle: {
                             title: 'External Provider Consent',
                             path: ['consent']
@@ -108,10 +122,12 @@ const router = createBrowserRouter([
                     {
                         path: 'my-courses',
                         element: <MyCourses />,
+                        errorElement: <Error />,
                         handle: { title: 'My Courses', path: ['my-courses'] }
                     },
                     {
                         path: 'my-progress',
+                        errorElement: <Error />,
                         element: <MyProgress />,
                         handle: { title: 'My Progress', path: ['my-progress'] }
                     },
@@ -126,6 +142,7 @@ const router = createBrowserRouter([
                     {
                         path: 'open-content',
                         element: <OpenContent />,
+                        errorElement: <Error />,
                         handle: {
                             title: 'Open Content',
                             path: ['open-content']
@@ -141,12 +158,6 @@ const router = createBrowserRouter([
                         }
                     }
                 ]
-            },
-            {
-                path: '/reset-password',
-                element: <ResetPassword />,
-                errorElement: <Error />,
-                loader: checkDefaultFacility
             }
         ]
     },
@@ -156,6 +167,7 @@ const router = createBrowserRouter([
         children: [
             {
                 element: <AuthenticatedLayout />,
+                errorElement: <Error />,
                 children: [
                     {
                         path: 'admin-dashboard',

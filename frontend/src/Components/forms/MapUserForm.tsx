@@ -122,8 +122,8 @@ export default function MapUserForm({
                 ) : fuzzySearchUsers?.length != 0 && !seeAllUsers ? (
                     <>
                         <p className="body-small mb-2">
-                            We have found a potential match to the student you'd
-                            like to map:
+                            We have found a potential match to the student
+                            you&aposd like to map:
                         </p>
                         {fuzzySearchUsers?.map((user: User) => {
                             return (
@@ -168,10 +168,9 @@ export default function MapUserForm({
                         )}
                         {unmappedUsers?.map((user: User) => {
                             return (
-                                <UserRadioInput
-                                    user={user}
-                                    key={'allUsers' + user.id}
-                                />
+                                <p key={user.id}>
+                                    <UserRadioInput user={user} />
+                                </p>
                             );
                         })}
                         {meta && (

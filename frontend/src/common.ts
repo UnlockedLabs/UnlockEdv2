@@ -7,6 +7,7 @@ export enum UserRole {
 
 export const INIT_KRATOS_LOGIN_FLOW = '/self-service/login/browser';
 export const DEFAULT_ADMIN_ID = 1;
+export const DEFAULT_ADMIN_FACILITY = 'Default';
 export interface User {
     id: number;
     name_first: string;
@@ -580,6 +581,7 @@ export interface Announcement {
 }
 
 export interface YAxisTickProps {
+    theme: string;
     x: number;
     y: number;
     payload: {

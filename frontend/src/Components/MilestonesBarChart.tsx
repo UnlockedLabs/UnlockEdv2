@@ -13,8 +13,7 @@ import { useContext } from 'react';
 import { CourseMilestones, YAxisTickProps } from '@/common';
 
 const maxYAxisLabel = (props: YAxisTickProps) => {
-    const { theme } = useContext(ThemeContext);
-    const fill = theme == 'light' ? '#666' : '#CCC';
+    const fill = props.theme == 'light' ? '#666' : '#CCC';
 
     const { x, y, payload } = props;
     const name = payload.value;
