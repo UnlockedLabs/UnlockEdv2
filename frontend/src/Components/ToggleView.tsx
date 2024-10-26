@@ -11,7 +11,7 @@ export default function ToggleView({
 }) {
     return (
         <div className="flex flex-row items-center gap-2">
-            <label className="text-sm">View</label>
+            <label className="text-md">View</label>
             <div className="bg-teal-1 join p-1">
                 {/* TO DO: come back and render on active or not */}
                 <button

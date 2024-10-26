@@ -1,7 +1,7 @@
+import { Outlet } from 'react-router-dom';
 import ApplicationLogo from '../Components/ApplicationLogo';
-import { PropsWithChildren } from 'react';
 
-export default function Guest({ children }: PropsWithChildren) {
+export default function Guest() {
     return (
         <div className="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-background">
             <div>
@@ -11,7 +11,7 @@ export default function Guest({ children }: PropsWithChildren) {
             </div>
 
             <div className="w-full sm:max-w-md mt-6 px-6 py-4 bg-inner-background shadow-md overflow-hidden sm:rounded-lg">
-                {children}
+                <Outlet />
             </div>
         </div>
     );

@@ -77,6 +77,7 @@ export default function CatalogCourseCard({
                 className="card bg-base-teal body-small p-6 flex flex-row items-center"
                 href={course.external_url}
                 target="_blank"
+                rel="noreferrer"
             >
                 <div className="flex flex-col justify-between gap-3">
                     <div className="flex flex-row gap-3 items-center">

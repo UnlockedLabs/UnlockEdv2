@@ -3,10 +3,12 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { INIT_KRATOS_LOGIN_FLOW, User } from '@/common';
 import { AuthContext, fetchUser } from '@/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     children
 }) => {
+    const navigate = useNavigate();
     const passReset = '/reset-password';
     const [user, setUser] = useState<User | undefined>();
     const [loading, setLoading] = useState(true);
@@ -24,14 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return <div></div>;
     }
     if (!user && !loading) {
-        window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        navigate(INIT_KRATOS_LOGIN_FLOW);
         return null;
     } else if (
         !loading &&
         user?.password_reset &&
         window.location.pathname !== passReset
     ) {
-        window.location.href = passReset;
+        navigate(passReset);
         return null;
     }
     return (

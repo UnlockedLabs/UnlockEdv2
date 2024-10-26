@@ -20,11 +20,11 @@ export default function ShowTempPasswordForm({
             ) : (
                 <>
                     <p className="py-4">
-                        You have successfully reset {userName}'s password.
+                        You have successfully reset {userName}&apos;s password.
                     </p>
                     <p className="text-error">
-                        Copy this password now. If you lose it, you'll need to
-                        regenerate it to get a new one.
+                        Copy this password now. If you lose it, you&apos;ll need
+                        to regenerate it to get a new one.
                     </p>
                 </>
             )}

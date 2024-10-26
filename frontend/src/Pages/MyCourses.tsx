@@ -17,6 +17,7 @@ import { AxiosError } from 'axios';
 
 // TO DO: make sure this lives in the right place
 export default function MyCourses() {
+    const { user } = useAuth();
     const tabs: Tab[] = [
         { name: 'Current', value: 'in_progress' },
         { name: 'Completed', value: 'completed' },
@@ -24,8 +25,6 @@ export default function MyCourses() {
         { name: 'All', value: 'all' }
     ];
 
-    const { user } = useAuth();
-    if (!user) return null;
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [sort, setSort] = useState<string>('order=asc&order_by=course_name');
     const [activeTab, setActiveTab] = useState<Tab>(tabs[0]);
@@ -35,13 +34,14 @@ export default function MyCourses() {
         ServerResponse<UserCoursesInfo>,
         AxiosError
     >(
-        `/api/users/${user.id}/courses?${
+        `/api/users/${user?.id}/courses?${
             sort +
             (activeTab.value !== 'all' ? `&tags=${activeTab.value}` : '') +
             (searchTerm ? `&search=${searchTerm}` : '')
         }`
     );
     const courseData = data?.data as UserCoursesInfo;
+    if (!user) return null;
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error loading courses.</div>;
 

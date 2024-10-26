@@ -4,7 +4,6 @@ import {
     AuthFlow,
     AuthResponse,
     INIT_KRATOS_LOGIN_FLOW,
-    Facility,
     getDashboard,
     OryFlow,
     OrySessionWhoami,
@@ -62,13 +61,15 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
     }
 };
 
-export const checkDefaultFacility: LoaderFunction = async () => {
-    const resp = await API.get<Facility>('facilities/1');
-    if (resp.success && resp.type == 'one') {
-        return json<Facility>(resp.data);
-    } else {
-        return json<null>(null);
+export const fetchUserAuthInfo: LoaderFunction = async () => {
+    const user = await fetchUser();
+    if (!user) {
+        return redirect(INIT_KRATOS_LOGIN_FLOW);
     }
+    if (!user.password_reset) {
+        return redirect('/authcallback');
+    }
+    return json<User>(user);
 };
 
 const redirectTo = (url: string): AuthFlow => {

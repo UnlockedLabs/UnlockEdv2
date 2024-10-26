@@ -120,37 +120,33 @@ export default function CategoryItem({
                 </button>
             </ul>
             {/* Modals */}
-            {activeLinkToDelete && (
-                <Modal
-                    type={ModalType.Confirm}
-                    item="Delete Link"
-                    form={
-                        <DeleteForm
-                            item="Link"
-                            onCancel={() => setActiveLinkToDelete(undefined)}
-                            onSuccess={() =>
-                                deleteLink(category, activeLinkToDelete)
-                            }
-                        />
-                    }
-                    ref={deleteLinkModal}
-                />
-            )}
-            {addLinkModal.current && (
-                <Modal
-                    type={ModalType.Add}
-                    item="Link"
-                    form={
-                        <AddLinkForm
-                            onSuccess={(title: string, url: string) => {
-                                addLink(category, title, url);
-                                addLinkModal.current?.close();
-                            }}
-                        />
-                    }
-                    ref={addLinkModal}
-                />
-            )}
+            <Modal
+                type={ModalType.Confirm}
+                item="Delete Link"
+                form={
+                    <DeleteForm
+                        item="Link"
+                        onCancel={() => setActiveLinkToDelete(undefined)}
+                        onSuccess={() =>
+                            deleteLink(category, activeLinkToDelete!)
+                        }
+                    />
+                }
+                ref={deleteLinkModal}
+            />
+            <Modal
+                type={ModalType.Add}
+                item="Link"
+                form={
+                    <AddLinkForm
+                        onSuccess={(title: string, url: string) => {
+                            addLink(category, title, url);
+                            addLinkModal.current?.close();
+                        }}
+                    />
+                }
+                ref={addLinkModal}
+            />
         </details>
     );
 }

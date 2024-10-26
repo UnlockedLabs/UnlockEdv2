@@ -1,11 +1,9 @@
-import ChangePasswordForm from '../../Components/forms/ChangePasswordForm';
-import GuestLayout from '../..//Layouts/GuestLayout';
+import ChangePasswordForm from '@/Components/forms/ChangePasswordForm';
 
 export default function ResetPassword() {
     return (
-        <GuestLayout>
-            <div title="Reset Password" />
+        <div title="Reset Password">
             <ChangePasswordForm />
-        </GuestLayout>
+        </div>
     );
 }

@@ -12,5 +12,5 @@ jobs:
          cd frontend && \
          corepack install -g yarn && \
          yarn && \
-         yarn lint-staged && \
+         yarn lint && \
          yarn build

@@ -1,21 +1,15 @@
 import LoginForm from '@/Components/forms/LoginForm';
-import GuestLayout from '@/Layouts/GuestLayout';
 import { INIT_KRATOS_LOGIN_FLOW } from '@/common';
+import { useNavigate } from 'react-router-dom';
 
-export default function Login({ status }: { status?: string }) {
+export default function Login() {
+    const navigate = useNavigate();
     if (!window.location.search.includes('flow')) {
-        window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        navigate(INIT_KRATOS_LOGIN_FLOW);
     }
     return (
         <div title="Log in">
-            <GuestLayout>
-                {status && (
-                    <div className="mb-4 font-medium text-sm text-body-text bg-background">
-                        {status}
-                    </div>
-                )}
-                <LoginForm />
-            </GuestLayout>
+            <LoginForm />
         </div>
     );
 }

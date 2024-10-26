@@ -333,16 +333,16 @@ const SortableCollectionList = ({
     const [draggedOverItem, setDraggedOverItem] = useState<
         undefined | number
     >();
-    const dragOverItem = useDebounceValue(draggedOverItem, 100);
+    const [dragOverItem] = useDebounceValue(draggedOverItem, 100);
 
     const handleSort = () => {
         if (!draggedItem) return;
 
-        const insertAtIndex = dragOverItem;
+        let insertAtIndex = dragOverItem;
 
         // if dragged item is higher in the list, then should subtract a number from where it needs to be placed
-        if (draggedItem && draggedItem < dragOverItem[0]!) {
-            insertAtIndex[0] = insertAtIndex[0]! - 1;
+        if (draggedItem && draggedItem < dragOverItem!) {
+            insertAtIndex = insertAtIndex! - 1;
         }
 
         const newCollectionList = [...collections];
@@ -351,10 +351,10 @@ const SortableCollectionList = ({
         const draggedItemContent = newCollectionList.splice(draggedItem, 1)[0];
 
         // Insert the dragged item into its new position
-        if (insertAtIndex[0] === collections.length) {
+        if (insertAtIndex === collections.length) {
             newCollectionList.push(draggedItemContent);
         } else {
-            newCollectionList.splice(insertAtIndex[0]!, 0, draggedItemContent);
+            newCollectionList.splice(insertAtIndex!, 0, draggedItemContent);
         }
 
         // Check to see which collections had their positions modified.
@@ -405,7 +405,7 @@ const SortableCollectionList = ({
 
     const dragEnd = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
-        if (dragOverItem[0] == undefined) {
+        if (dragOverItem == undefined) {
             setDraggedOverItem(-1);
         } else {
             handleSort();
@@ -421,7 +421,7 @@ const SortableCollectionList = ({
                 <div
                     className={
                         draggedItem == index
-                            ? dragOverItem[0] == -1
+                            ? dragOverItem == -1
                                 ? 'block'
                                 : 'hidden'
                             : 'block'
@@ -429,9 +429,7 @@ const SortableCollectionList = ({
                 >
                     <div
                         className={
-                            dragOverItem[0] == index
-                                ? 'pt-36 flex'
-                                : 'pt-2 flex'
+                            dragOverItem == index ? 'pt-36 flex' : 'pt-2 flex'
                         }
                         onDragOver={(e) => dragOver(e, index)}
                         onDragLeave={(e) => dragLeave(e)}

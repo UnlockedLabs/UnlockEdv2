@@ -26,6 +26,7 @@ export default function CurrentlyEnrolledClass({
                 href={course.external_url}
                 target="_blank"
                 className="flex gap-2"
+                rel="noreferrer"
             >
                 <span>{course.provider_platform_name}</span>
                 <ArrowUpRightIcon className="w-4" />
