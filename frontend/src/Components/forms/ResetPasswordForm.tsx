@@ -41,7 +41,7 @@ export default function ResetPasswordForm({
                 <div>
                     <p>
                         Are you sure you would like to reset {user?.name_first}{' '}
-                        {user?.name_last}&aposs password?
+                        {user?.name_last}&apos;s password?
                     </p>
                     <p className="py-4"></p>
                     <div className="flex flex-row justify-between">

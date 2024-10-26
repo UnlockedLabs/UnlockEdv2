@@ -123,7 +123,7 @@ export default function MapUserForm({
                     <>
                         <p className="body-small mb-2">
                             We have found a potential match to the student
-                            you&aposd like to map:
+                            you&apos;d like to map:
                         </p>
                         {fuzzySearchUsers?.map((user: User) => {
                             return (

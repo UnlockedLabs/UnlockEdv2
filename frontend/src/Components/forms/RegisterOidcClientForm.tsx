@@ -66,7 +66,7 @@ export default function RegisterOidcClientForm({
                     <div className="label-text text-warning font-semibold">
                         If you do not choose to auto register, you must manually
                         setup authentication for UnlockEd the provider
-                        platform&aposs settings.
+                        platform&apos;s settings.
                     </div>
                 )}
                 <label className="label-text text-md font-semibold">
