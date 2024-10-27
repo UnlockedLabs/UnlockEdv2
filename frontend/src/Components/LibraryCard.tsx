@@ -4,18 +4,18 @@ import { Library, ServerResponseMany, ToastState, UserRole } from '@/common';
 import API from '@/api/api';
 import { KeyedMutator } from 'swr';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/Context/ToastCtx';
 
 export default function LibraryCard({
     library,
-    toaster,
     mutate,
     role
 }: {
     library: Library;
-    toaster?: (msg: string, state: ToastState) => void;
     mutate: KeyedMutator<ServerResponseMany<Library>>;
     role: UserRole;
 }) {
+    const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
     const navigate = useNavigate();
 
@@ -29,10 +29,10 @@ export default function LibraryCard({
     const handleToggleVisibility = async () => {
         const response = await API.put(`libraries/${library.id}`, {});
         if (response.success) {
-            if (toaster) toaster(response.message, ToastState.success);
+            toaster(response.message, ToastState.success);
             await mutate();
         } else {
-            if (toaster) toaster(response.message, ToastState.error);
+            toaster(response.message, ToastState.error);
         }
     };
     const openContentProviderName =

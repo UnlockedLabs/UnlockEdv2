@@ -5,7 +5,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 
-// params needed: error or success, message, isVisible
 interface ToastProps {
     state: ToastState;
     message: string;

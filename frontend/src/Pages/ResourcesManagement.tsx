@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import useSWR from 'swr';
 import Modal from '../Components/Modal';
-import Toast from '../Components/Toast';
 import AddResourceCollectionForm from '@/Components/forms/AddResourceCollectionForm';
 import EditResourceCollectionForm from '@/Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
@@ -21,17 +20,15 @@ import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
 import ExternalLink from '@/Components/ExternalLink';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-
-interface ToastProps {
-    state: ToastState;
-    message: string;
-}
+import { useToast } from '@/Context/ToastCtx';
+import API from '@/api/api';
 
 type EditableResourceCollection = ResourceCategory & {
     isModified: boolean;
 };
 
 export default function ResourcesManagement() {
+    const { toaster } = useToast();
     const { data, error, mutate, isLoading } = useSWR<
         ServerResponseMany<ResourceCategory>,
         AxiosError
@@ -47,10 +44,6 @@ export default function ResourcesManagement() {
         number | undefined
     >(undefined);
     const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
-    const [toast, setToast] = useState<ToastProps>({
-        state: ToastState.null,
-        message: ''
-    });
 
     const addCollectionModal = useRef<HTMLDialogElement>(null);
     const deleteCollectionModal = useRef<HTMLDialogElement>(null);
@@ -66,7 +59,6 @@ export default function ResourcesManagement() {
                     } as EditableResourceCollection;
                 }
             );
-
             setHasDeletedCollection(false);
             setSelectedCollectionIndex(undefined);
             setCollectionList(updatedData);
@@ -155,46 +147,21 @@ export default function ResourcesManagement() {
     };
 
     const updateFinalState = async (e: React.MouseEvent) => {
-        setToast({ state: ToastState.null, message: '' });
         e.preventDefault();
         const newCollectionList = collectionList.map((c, i) => {
             c.rank = i + 1;
             c.id = i;
             return c;
         });
-        try {
-            const response = await axios.put(
-                '/api/left-menu',
-                newCollectionList
+        const response = await API.put('left-menu', newCollectionList);
+        if (response.success) {
+            await mutate();
+            toaster('Collections Saved!', ToastState.success);
+        } else {
+            toaster(
+                'All collections must have associated links',
+                ToastState.error
             );
-            // check response is okay, and give notification
-            if (response.status !== 201) {
-                // show error
-                setToast({
-                    state: ToastState.error,
-                    message: 'Error Saving Collections'
-                });
-            } else {
-                await mutate();
-                // show success
-                setToast({
-                    state: ToastState.success,
-                    message: 'Collections Saved!'
-                });
-            }
-        } catch (err) {
-            if (err instanceof AxiosError && err.response?.status == 422) {
-                setToast({
-                    state: ToastState.error,
-                    message: 'All collections must have associated links'
-                });
-            } else {
-                // show general error
-                setToast({
-                    state: ToastState.error,
-                    message: 'Error Saving Collections'
-                });
-            }
         }
     };
 
@@ -302,16 +269,6 @@ export default function ResourcesManagement() {
                 }
                 ref={deleteCollectionModal}
             />
-            {/* Toasts */}
-            {toast.state !== ToastState.null && (
-                <Toast
-                    state={toast.state}
-                    message={toast.message}
-                    reset={() =>
-                        setToast({ state: ToastState.null, message: '' })
-                    }
-                />
-            )}
         </div>
     );
 }

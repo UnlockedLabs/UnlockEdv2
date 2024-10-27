@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './app';
-import './css/app.css';
+import App from '@/app';
+import '@/css/app.css';
 import { SWRConfig } from 'swr';
-import { ThemeProvider } from './Components/ThemeContext';
+import { ThemeProvider } from '@/Context/ThemeContext';
 
 ReactDOM.createRoot(document.querySelector('#root')!).render(
     <React.StrictMode>

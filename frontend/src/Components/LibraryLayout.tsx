@@ -5,7 +5,6 @@ import {
     OpenContentProvider,
     ServerResponseMany,
     Tab,
-    ToastState,
     UserRole
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -19,10 +18,8 @@ import Pagination from './Pagination';
 import { AxiosError } from 'axios';
 
 export default function LibaryLayout({
-    toaster,
     studentView
 }: {
-    toaster?: (msg: string, state: ToastState) => void;
     studentView?: boolean;
 }) {
     const { user } = useAuth();
@@ -117,7 +114,6 @@ export default function LibaryLayout({
                     <LibraryCard
                         key={library.id}
                         library={library}
-                        toaster={toaster}
                         mutate={mutateLibraries}
                         role={role}
                     />
