@@ -8,7 +8,7 @@ import {
     XAxisProps,
     YAxis
 } from 'recharts';
-import { ThemeContext } from './ThemeContext';
+import { ThemeContext } from '@/Context/ThemeContext';
 import { useContext } from 'react';
 import { RecentActivity } from '@/common';
 

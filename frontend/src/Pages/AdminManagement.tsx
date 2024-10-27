@@ -9,46 +9,40 @@ import {
 } from '@heroicons/react/24/outline';
 import {
     DEFAULT_ADMIN_ID,
-    defaultToast,
     ModalType,
     ServerResponseMany,
-    showToast,
     ToastState,
     User
-} from '../common';
-import AddUserForm from '../Components/forms/AddUserForm';
-import EditUserForm from '../Components/forms/EditUserForm';
-import Toast from '../Components/Toast';
-import Modal from '../Components/Modal';
-import DeleteForm from '../Components/DeleteForm';
-import ResetPasswordForm from '../Components/forms/ResetPasswordForm';
-import ShowTempPasswordForm from '../Components/forms/ShowTempPasswordForm';
+} from '@/common';
+import AddUserForm from '@/Components/forms/AddUserForm';
+import EditUserForm from '@/Components/forms/EditUserForm';
+import Modal from '@/Components/Modal';
+import DeleteForm from '@/Components/DeleteForm';
+import ResetPasswordForm from '@/Components/forms/ResetPasswordForm';
+import ShowTempPasswordForm from '@/Components/forms/ShowTempPasswordForm';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import SearchBar from '../Components/inputs/SearchBar';
+import SearchBar from '@/Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import { AxiosError } from 'axios';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
+import { useToast } from '@/Context/ToastCtx';
 
 export default function AdminManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
     const editUserModal = useRef<HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
     const deleteUserModal = useRef<HTMLDialogElement>(null);
-    const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
-    const [toast, setToast] = useState(defaultToast);
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [perPage, setPerPage] = useState(10);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const toaster = (msg: string, state: ToastState) => {
-        showToast(setToast, setDisplayToast, msg, state);
-    };
+    const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
@@ -361,8 +355,6 @@ export default function AdminManagement() {
                     />
                 }
             />
-            {/* Toasts */}
-            {displayToast && <Toast {...toast} />}
         </div>
     );
 }

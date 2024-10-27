@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-    defaultToast,
     ModalType,
     PaginationMeta,
     ProviderPlatform,
     ProviderPlatformType,
     ProviderUser,
     ServerResponseMany,
-    showToast,
     ToastState,
     UserImports
 } from '@/common';
-import Toast from '@/Components/Toast';
 import Modal from '@/Components/Modal';
 import MapUserForm from '@/Components/forms/MapUserForm';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -24,13 +21,13 @@ import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
-import { usePathValue } from '@/PathValueCtx';
+import { usePathValue } from '@/Context/PathValueCtx';
+import { useToast } from '@/Context/ToastCtx';
 
 export default function ProviderUserManagement() {
     const mapUserModal = useRef<HTMLDialogElement>(null);
     const importedUsersModal = useRef<HTMLDialogElement>(null);
     const importAllUsersModal = useRef<HTMLDialogElement>(null);
-    const [displayToast, setDisplayToast] = useState(false);
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<undefined | ProviderUser>();
     const [perPage, setPerPage] = useState(10);
@@ -51,10 +48,7 @@ export default function ProviderUserManagement() {
     const [cache, setCache] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [toast, setToast] = useState(defaultToast);
-    const toaster = (msg: string, state: ToastState) => {
-        showToast(setToast, setDisplayToast, msg, state);
-    };
+    const { toaster } = useToast();
     const { data, mutate } = useSWR<
         ServerResponseMany<ProviderUser>,
         AxiosError
@@ -337,7 +331,6 @@ export default function ProviderUserManagement() {
                     />
                 }
             />
-            {displayToast && <Toast {...toast} />}
         </div>
     );
 }

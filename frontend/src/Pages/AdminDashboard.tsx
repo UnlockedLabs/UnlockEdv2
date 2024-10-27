@@ -12,7 +12,7 @@ import {
 import useSWR from 'swr';
 import convertSeconds from '@/Components/ConvertSeconds';
 import { useContext } from 'react';
-import { ThemeContext } from '@/Components/ThemeContext';
+import { ThemeContext } from '@/Context/ThemeContext';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
 

@@ -8,37 +8,34 @@ import {
 } from '@heroicons/react/20/solid';
 import {
     DEFAULT_ADMIN_ID,
-    defaultToast,
     ModalType,
     ServerResponseMany,
-    showToast,
     ToastState,
     User
-} from '../common';
-import AddUserForm from '../Components/forms/AddUserForm';
-import EditUserForm from '../Components/forms/EditUserForm';
-import Toast from '../Components/Toast';
-import Modal from '../Components/Modal';
-import DeleteForm from '../Components/DeleteForm';
-import ResetPasswordForm from '../Components/forms/ResetPasswordForm';
-import ShowTempPasswordForm from '../Components/forms/ShowTempPasswordForm';
+} from '@/common';
+import AddUserForm from '@/Components/forms/AddUserForm';
+import EditUserForm from '@/Components/forms/EditUserForm';
+import Modal from '@/Components/Modal';
+import DeleteForm from '@/Components/DeleteForm';
+import ResetPasswordForm from '@/Components/forms/ResetPasswordForm';
+import ShowTempPasswordForm from '@/Components/forms/ShowTempPasswordForm';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import SearchBar from '../Components/inputs/SearchBar';
+import SearchBar from '@/Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
+import { useToast } from '@/Context/ToastCtx';
 
 export default function Users() {
     const addUserModal = useRef<HTMLDialogElement>(null);
     const editUserModal = useRef<HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
     const deleteUserModal = useRef<HTMLDialogElement>(null);
-    const [displayToast, setDisplayToast] = useState(false);
     const [targetUser, setTargetUser] = useState<undefined | User>();
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
-    const [toast, setToast] = useState(defaultToast);
+    const { toaster } = useToast();
 
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
@@ -58,9 +55,6 @@ export default function Users() {
         total: userData.length,
         per_page: userData.length,
         last_page: 1
-    };
-    const toaster = (msg: string, state: ToastState) => {
-        showToast(setToast, setDisplayToast, msg, state);
     };
 
     function resetModal() {
@@ -354,8 +348,6 @@ export default function Users() {
                     />
                 }
             />
-            {/* Toasts */}
-            {displayToast && <Toast {...toast} />}
         </div>
     );
 }
