@@ -83,7 +83,7 @@ services:
   provider-service:
     build:
       context: .
-      dockerfile: provider-middleware/dev.Dockerfile
+      dockerfile: provider-middleware/Dockerfile
     environment:
       - APP_ENV=production
       - DB_HOST=postgres
@@ -96,11 +96,12 @@ services:
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
       - APP_URL=http://server:8080 
+      - VIDEO_DOWNLOAD_DIR=/videos
     networks:
       - intranet
     volumes:
       - logs:/logs
-      - ./:/app 
+      - ./frontend/public:/videos
     ports:
       - 8081:8081
     restart: unless-stopped 

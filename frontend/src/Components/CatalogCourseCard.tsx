@@ -27,7 +27,7 @@ export default function CatalogCourseCard({
 
     function updateFavorite(e: MouseEvent) {
         e.preventDefault();
-        API.put(`courses/${course.course_id}/save`, {})
+        API.put<null, object>(`courses/${course.course_id}/save`, {})
             .then(() => {
                 callMutate();
             })

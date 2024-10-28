@@ -31,6 +31,25 @@ export const getDashboard = (user?: User): string => {
     }
 };
 
+export interface Video {
+    id: number;
+    title: string;
+    description: string;
+    channel_title: string;
+    youtube_id: string;
+    visibility_status: boolean;
+    thumbnail_url: string;
+    open_content_provider_id: number;
+    availability: 'available' | 'processing' | 'has_error';
+    created_at: string;
+    updated_at: string;
+    open_content_provider?: OpenContentProvider;
+}
+
+export function videoIsAvailable(vid: Video): boolean {
+    return vid.availability === 'available';
+}
+
 export interface UserWithMappings {
     User: User;
     logins: ProviderMapping[];
@@ -406,6 +425,11 @@ export enum ProviderPlatformState {
     ENABLED = 'enabled',
     DISABLED = 'disabled',
     ARCHIVED = 'archived'
+}
+
+export enum OpenContentProviderType {
+    KIWIX = 'Libraries',
+    VIDEOS = 'Videos'
 }
 
 export enum ProviderPlatformType {

@@ -11,10 +11,10 @@ import (
 )
 
 func (srv *Server) registerProxyRoutes() {
-	srv.Mux.Handle("GET /api/proxy/libraries/{id}/", srv.proxyMiddleware(http.HandlerFunc(srv.handleForwardProxy)))
+	srv.Mux.Handle("GET /api/proxy/libraries/{id}/", srv.libraryProxyMiddleware(http.HandlerFunc(srv.handleForwardKiwixProxy)))
 }
 
-func (srv *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Request) {
 	library, ok := r.Context().Value(libraryKey).(*models.Library)
 	if !ok {
 		srv.errorResponse(w, http.StatusNotFound, "Library context not found")
@@ -50,7 +50,7 @@ func (srv *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
 			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{
 				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: true, // Disable SSL verification for testing
+				InsecureSkipVerify: true,
 			},
 		},
 		ModifyResponse: func(res *http.Response) error {

@@ -3,15 +3,29 @@ import DangerButton from '../DangerButton';
 import PrimaryButton from '../PrimaryButton';
 import API from '@/api/api';
 import { AuthResponse, getDashboard } from '@/common';
+import { useNavigate } from 'react-router-dom';
+
+interface ConsentForm {
+    consent_challenge: string;
+}
 
 export default function ConsentForm() {
     const { user } = useAuth();
+    const navigate = useNavigate();
+
     const accept = async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const consent = urlParams.get('consent_challenge');
-        const resp = await API.post<AuthResponse>(`consent/accept`, {
-            consent_challenge: consent
-        });
+        if (!consent) {
+            navigate('/error');
+            return;
+        }
+        const resp = await API.post<AuthResponse, ConsentForm>(
+            `consent/accept`,
+            {
+                consent_challenge: consent
+            }
+        );
         if (resp.success) {
             const location = (resp.data as AuthResponse).redirect_to;
             window.location.href = location;

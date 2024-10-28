@@ -1,5 +1,4 @@
 import { Tab } from '@/common';
-import { SetStateAction } from 'react';
 
 export default function TabView({
     tabs,
@@ -8,7 +7,7 @@ export default function TabView({
 }: {
     tabs: Tab[];
     activeTab: Tab;
-    setActiveTab: (state: SetStateAction<Tab>) => void;
+    setActiveTab: (tab: Tab) => void;
 }) {
     return (
         <div className="flex flex-row gap-16 w-100 border-b-2 border-grey-2 py-3">

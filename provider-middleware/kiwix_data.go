@@ -121,17 +121,12 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 	if err != nil {
 		return "", err
 	}
-	err = writer.WriteField("filename", filename)
-	if err != nil {
-		return "", err
-	}
-	err = writer.WriteField("size", fmt.Sprintf("%d", len(imgData)))
-	if err != nil {
-		return "", err
-	}
-	err = writer.WriteField("type", "image/png")
-	if err != nil {
-		return "", err
+	fields := map[string]string{"filename": filename, "size": fmt.Sprintf("%d", len(imgData)), "type": "image/png"}
+	for key, value := range fields {
+		err = writer.WriteField(key, value)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	err = writer.Close()

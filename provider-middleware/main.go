@@ -29,11 +29,6 @@ type ProviderServiceInterface interface {
 	GetJobParams() *map[string]interface{}
 }
 
-type OpenContentProviderServiceInterface interface {
-	ImportLibraries(ctx context.Context, db *gorm.DB) error
-	GetJobParams() *map[string]interface{}
-}
-
 /**
 * Handler struct that will be passed to our HTTP server handlers
 * to handle the different routes.

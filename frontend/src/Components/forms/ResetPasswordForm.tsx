@@ -12,16 +12,21 @@ interface ResetPasswordFormProps {
     onSuccess: (psw: string) => void;
     user: User | undefined;
 }
-
+interface Form {
+    user_id: number;
+}
 export default function ResetPasswordForm({
     user,
     onSuccess,
     onCancel
 }: ResetPasswordFormProps) {
     const getTempPassword = async () => {
-        const response = (await API.post('users/student-password', {
-            user_id: user?.id
-        })) as ServerResponseOne<ResetPasswordResponse>;
+        const response = (await API.post<ResetPasswordResponse, Form>(
+            'users/student-password',
+            {
+                user_id: user!.id
+            }
+        )) as ServerResponseOne<ResetPasswordResponse>;
         if (!response.success) {
             onCancel('Failed to reset password', true);
             return;
