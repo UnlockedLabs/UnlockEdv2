@@ -85,9 +85,11 @@ export default function ProviderUserManagement() {
             );
         }
     }
-
+    interface Form {
+        users: ProviderUser[];
+    }
     async function handleImportSelectedUsers() {
-        const res = await API.post<UserImports>(
+        const res = await API.post<UserImports, Form>(
             `provider-platforms/${providerId}/users/import`,
             { users: usersToImport }
         );

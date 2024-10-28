@@ -55,16 +55,16 @@ class API {
         }
     }
 
-    public static async request<T>(
+    public static async request<T, D>(
         method: 'get' | 'post' | 'put' | 'patch' | 'delete',
         url: string,
-        data?: any // eslint-disable-line
+        data?: D
     ): Promise<ServerResponse<T>> {
         try {
             const resp = await axios({
                 method,
                 url: '/api/' + url,
-                data //eslint-disable-line
+                data
             });
             return API.getReturnData<T>(resp);
         } catch (error) {
@@ -79,32 +79,26 @@ class API {
     }
 
     public static get<T>(url: string): Promise<ServerResponse<T>> {
-        return API.request<T>('get', url);
+        return API.request<T, null>('get', url);
     }
 
-    public static post<T>(
-        url: string,
-        data: any // eslint-disable-line
-    ): Promise<ServerResponse<T>> {
-        return API.request<T>('post', url, data);
+    public static post<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
+        return API.request<T, D>('post', url, data);
     }
 
-    public static put<T>(
-        url: string,
-        data: any // eslint-disable-line
-    ): Promise<ServerResponse<T>> {
-        return API.request<T>('put', url, data);
+    public static put<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
+        return API.request<T, D>('put', url, data);
     }
 
-    public static patch<T>(
+    public static patch<T, D>(
         url: string,
-        data: any // eslint-disable-line
+        data: D
     ): Promise<ServerResponse<T>> {
-        return API.request<T>('patch', url, data);
+        return API.request<T, D>('patch', url, data);
     }
 
     public static delete<T>(url: string): Promise<ServerResponse<T>> {
-        return API.request<T>('delete', url);
+        return API.request<T, null>('delete', url);
     }
 }
 

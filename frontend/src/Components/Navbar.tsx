@@ -85,7 +85,7 @@ export default function Navbar({
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/open-content-management">
+                                    <Link to="/open-content-management/libraries">
                                         <ULIComponent icon={BookOpenIcon} />
                                         Open Content
                                     </Link>

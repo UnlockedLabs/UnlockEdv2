@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"unicode"
 
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
@@ -47,8 +48,26 @@ var TableList = []interface{}{
 	&models.CronJob{},
 	&models.RunnableTask{},
 	&models.Library{},
+	&models.Video{},
 }
-var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
+
+func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
+	for _, char := range fl.Field().String() {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) {
+			return false
+		}
+	}
+	return true
+}
+
+var Validate = sync.OnceValue(func() *validator.Validate {
+	Ins := validator.New(validator.WithRequiredStructEnabled())
+	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
+	if err != nil {
+		log.Fatalf("Failed to register custom validation: %v", err)
+	}
+	return Ins
+})
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
@@ -144,9 +163,13 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
-		kiwix := models.OpenContentProvider{Name: models.Kiwix, BaseUrl: "https://library.kiwix.org", CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix}
-		if err := db.Create(&kiwix).Error; err != nil {
-			log.Fatalf("Failed to create kiwix open content provider: %v", err)
+		ytApiKey := os.Getenv("YOUTUBE_API_KEY")
+		openContent := []models.OpenContentProvider{{Name: models.Kiwix, BaseUrl: models.KiwixLibraryUrl, CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix},
+			{Name: models.Youtube, BaseUrl: models.YoutubeApi, CurrentlyEnabled: true, Thumbnail: models.YoutubeThumbnail, Description: models.YoutubeDescription, ApiKey: &ytApiKey}}
+		for idx := range openContent {
+			if err := db.Create(&openContent[idx]).Error; err != nil {
+				log.Fatalf("Failed to create kiwix open content provider: %v", err)
+			}
 		}
 	}
 }
