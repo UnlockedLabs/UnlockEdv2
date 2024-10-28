@@ -211,8 +211,10 @@ export default function ResourcesManagement() {
             c.id = i;
             return c;
         });
-
-        const response = await API.put('left-menu', newCollectionList);
+        const response = await API.put<null, EditableResourceCollection[]>(
+            'left-menu',
+            newCollectionList
+        );
         if (response.success) {
             await mutate();
             toaster('Collections Saved!', ToastState.success);

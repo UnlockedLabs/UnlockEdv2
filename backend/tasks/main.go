@@ -29,6 +29,7 @@ func main() {
 	}
 	for _, task := range tasks {
 		if task.Job == nil {
+			log.Errorf("Task %v has no job", task.ID)
 			continue
 		}
 		_, err := scheduler.NewJob(gocron.CronJob(task.Job.Schedule, false), gocron.NewTask(runner.runTask, task))

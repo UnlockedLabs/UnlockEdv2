@@ -64,20 +64,20 @@ func (provider *ProviderPlatform) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (provider *ProviderPlatform) AfterFind(tx *gorm.DB) (err error) {
-	if key, keyErr := provider.DecryptAccessKey(); keyErr == nil {
+	if key, keyErr := DecryptAccessKey(provider.AccessKey); keyErr == nil {
 		provider.AccessKey = key
 	}
 	return nil
 }
 
-func (provider *ProviderPlatform) DecryptAccessKey() (string, error) {
+func DecryptAccessKey(axxKey string) (string, error) {
 	key := os.Getenv("APP_KEY")
 	hashedKey := sha256.Sum256([]byte(key))
 	block, err := aes.NewCipher(hashedKey[:])
 	if err != nil {
 		return "", err
 	}
-	ciphertext, err := base64.StdEncoding.DecodeString(provider.AccessKey)
+	ciphertext, err := base64.StdEncoding.DecodeString(axxKey)
 	if err != nil {
 		return "", err
 	}
@@ -91,20 +91,20 @@ func (provider *ProviderPlatform) DecryptAccessKey() (string, error) {
 	return string(ciphertext), nil
 }
 
-func (provider *ProviderPlatform) EncryptAccessKey() (string, error) {
+func EncryptAccessKey(apiKey string) (string, error) {
 	key := os.Getenv("APP_KEY")
 	hashedKey := sha256.Sum256([]byte(key))
 	block, err := aes.NewCipher(hashedKey[:])
 	if err != nil {
 		return "", err
 	}
-	ciphertext := make([]byte, aes.BlockSize+len(provider.AccessKey))
+	ciphertext := make([]byte, aes.BlockSize+len(apiKey))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", err
 	}
 	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(provider.AccessKey))
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(apiKey))
 	encoded := base64.StdEncoding.EncodeToString(ciphertext)
 	return encoded, nil
 }

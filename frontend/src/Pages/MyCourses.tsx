@@ -50,13 +50,17 @@ export default function MyCourses() {
         // setPageQuery(1);
     };
 
+    const handleSetTab = (tab: Tab) => {
+        setActiveTab(tab);
+    };
+
     return (
         <div className="px-8 py-4">
             <h1>My Courses</h1>
             <TabView
                 tabs={tabs}
                 activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={handleSetTab}
             />
             <div className="flex flex-row items-center mt-4 justify-between">
                 <div className="flex flex-row gap-x-2">

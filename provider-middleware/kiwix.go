@@ -24,23 +24,22 @@ type KiwixService struct {
 	Url                   string
 	BaseUrl               string
 	Client                *http.Client
+	JobID                 string
 	params                *map[string]interface{}
 }
 
 func NewKiwixService(openContentProvider *models.OpenContentProvider, params *map[string]interface{}) *KiwixService {
 	url := fmt.Sprintf("%s%s%d", openContentProvider.BaseUrl, KiwixCatalogUrl, MaxLibraries)
 	client := http.Client{}
+	jobID := (*params)["job_id"].(string)
 	return &KiwixService{
 		OpenContentProviderId: openContentProvider.ID,
 		BaseUrl:               openContentProvider.BaseUrl,
 		Url:                   url,
 		params:                params,
 		Client:                &client,
+		JobID:                 jobID,
 	}
-}
-
-func (ks *KiwixService) GetJobParams() *map[string]interface{} {
-	return ks.params
 }
 
 func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error {

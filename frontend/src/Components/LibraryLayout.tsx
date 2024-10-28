@@ -2,17 +2,14 @@ import {
     FilterLibraries,
     FilterLibrariesAdmin,
     Library,
-    OpenContentProvider,
     ServerResponseMany,
-    Tab,
     UserRole
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
-import TabView from '@/Components/TabView';
 import { useAuth } from '@/useAuth';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 import { AxiosError } from 'axios';
@@ -27,11 +24,6 @@ export default function LibaryLayout({
         return null;
     }
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const allLibrariesTab: Tab = {
-        name: 'All',
-        value: 'all'
-    };
-    const [activeTab, setActiveTab] = useState<Tab>(allLibrariesTab);
     const [filterLibraries, setFilterLibraries] = useState<string>(
         FilterLibraries['All Libraries']
     );
@@ -60,42 +52,24 @@ export default function LibaryLayout({
         last_page: 1
     };
 
-    const { data: openContentProviders } =
-        useSWR<ServerResponseMany<OpenContentProvider>>('/api/open-content');
     const handleSetPerPage = (perPage: number) => {
         setPerPage(perPage);
         setPageQuery(1);
         void mutateLibraries();
     };
-    const openContentTabs = useMemo(() => {
-        return [
-            allLibrariesTab,
-            ...(openContentProviders?.data?.map(
-                (provider: OpenContentProvider) => ({
-                    name: provider.name,
-                    value: provider.id
-                })
-            ) ?? [])
-        ];
-    }, [openContentProviders]);
 
     useEffect(() => {
         setPageQuery(1);
     }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
     return (
-        <div className="pt-6 space-y-6">
-            <TabView
-                tabs={openContentTabs}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-            />
+        <div className="px-8">
             <div className="flex flex-row gap-4">
                 <SearchBar
                     searchTerm={searchTerm}
                     changeCallback={setSearchTerm}
                 />
-                {role == UserRole.Admin ? (
+                {role === UserRole.Admin ? (
                     <DropdownControl
                         label="Filter by"
                         enumType={FilterLibrariesAdmin}
@@ -109,7 +83,7 @@ export default function LibaryLayout({
                     />
                 )}
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-4 pb-8 pt-8 gap-6">
                 {libraries?.data.map((library) => (
                     <LibraryCard
                         key={library.id}

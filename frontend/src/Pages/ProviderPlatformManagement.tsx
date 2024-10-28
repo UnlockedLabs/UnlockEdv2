@@ -91,9 +91,12 @@ export default function ProviderPlatformManagement() {
             provider.state === ProviderPlatformState.ARCHIVED
                 ? 'enabled'
                 : 'archived';
-        API.patch(`provider-platforms/${provider.id}`, {
-            state: state
-        })
+        API.patch<null, { state: string }>(
+            `provider-platforms/${provider.id}`,
+            {
+                state: state
+            }
+        )
             .then((resp) => {
                 if (resp.success) {
                     toaster(

@@ -10,6 +10,7 @@ jar
 /logs/*.json
 /frontend/public/build
 /frontend/public/thumbnails/*
+/frontend/public/*.mp4
 /migrations/migrations
 /provider-middleware/providers.db
 /backend/server

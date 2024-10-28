@@ -120,7 +120,7 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
 
 export async function handleLogout(): Promise<void> {
     try {
-        const resp = await API.post<AuthResponse>('logout', {});
+        const resp = await API.post<AuthResponse, object>('logout', {});
         if (resp.success) {
             const logout = await axios.get(
                 (resp.data as AuthResponse).redirect_to

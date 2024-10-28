@@ -1,6 +1,7 @@
 package main
 
 import (
+	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -17,17 +18,21 @@ func (sh *ServiceHandler) registerRoutes() {
 	sh.Mux.HandleFunc("GET /api/users", sh.handleUsers)
 }
 
-const CANCEL_TIMEOUT = 30 * time.Minute
+const (
+	CANCEL_TIMEOUT = 30 * time.Minute
+)
 
 func (sh *ServiceHandler) initSubscription() error {
 	subscriptions := []struct {
 		topic string
 		fn    func(ctx context.Context, msg *nats.Msg)
 	}{
-		{"tasks.get_courses", sh.handleCourses},
-		{"tasks.get_milestones", sh.handleMilestonesForCourseUser},
-		{"tasks.get_activity", sh.handleAcitivityForCourse},
-		{"tasks.scrape_kiwix", sh.handleScrapeLibraries},
+		{models.GetCoursesJob.PubName(), sh.handleCourses},
+		{models.GetMilestonesJob.PubName(), sh.handleMilestonesForCourseUser},
+		{models.GetActivityJob.PubName(), sh.handleAcitivityForCourse},
+		{models.ScrapeKiwixJob.PubName(), sh.handleScrapeLibraries},
+		{models.AddVideosJob.PubName(), sh.handleAddVideos},
+		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
 	}
 	for _, sub := range subscriptions {
 		_, err := sh.nats.Subscribe(sub.topic, func(msg *nats.Msg) {
@@ -61,7 +66,7 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 	err = service.ImportCourses(sh.db)
 	if err != nil {
 		sh.cleanupJob(contxt, providerPlatformId, jobId, false)
-		log.Println("error fetching provider service from msg parameters", err)
+		log.Println("error importing kolibri courses", err)
 		return
 	}
 	finished := nats.NewMsg("tasks.get_courses.completed")
@@ -73,30 +78,24 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
 }
 
-/**
-* GET: /api/libraries
-* This handler will be responsible for importing libraries from Open Content Providers
-* to the UnlockEd platform with the proper fields for Library objects
-**/
 func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.Msg) {
 	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
 	defer cancel()
-	service, err := sh.initContentProviderService(msg)
+	provider, body, err := sh.getContentProvider(msg)
 	if err != nil {
 		log.Errorf("error fetching provider service from msg parameters %v", err)
 		return
 	}
-	params := *service.GetJobParams()
-	provId := int(params["open_content_provider_id"].(float64))
-	jobId := params["job_id"].(string)
-	err = service.ImportLibraries(contxt, sh.db)
+	jobId := body["job_id"].(string)
+	kiwixService := NewKiwixService(provider, &body)
+	err = kiwixService.ImportLibraries(contxt, sh.db)
 	if err != nil {
 		log.Errorf("error importing libraries from msg %v", err)
-		sh.cleanupJob(contxt, provId, jobId, false)
+		sh.cleanupJob(contxt, int(provider.ID), jobId, false)
 		return
 	}
 
-	sh.cleanupJob(contxt, provId, jobId, true)
+	sh.cleanupJob(contxt, int(provider.ID), jobId, true)
 }
 
 /**
@@ -198,6 +197,41 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 		}
 	}
 	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
+}
+
+func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	provider, body, err := sh.getContentProvider(msg)
+	if err != nil {
+		log.Errorf("error fetching provider from msg parameters %v", err)
+		return
+	}
+	ytService := NewVideoService(provider, sh.db, &body)
+	err = ytService.AddVideos(contxt)
+	if err != nil {
+		log.Errorf("error adding videos: %v", err)
+		return
+	}
+	// this is a one time job, so it doesn't need cleanup
+}
+
+func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats.Msg) {
+	log.Infof("Retrying failed videos")
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	provider, body, err := sh.getContentProvider(msg)
+	if err != nil {
+		log.Errorf("error fetching provider from msg parameters %v", err)
+		return
+	}
+	ytService := NewVideoService(provider, sh.db, &body)
+	err = ytService.RetryFailedVideos(contxt)
+	if err != nil {
+		log.Errorf("error retrying failed videos: %v", err)
+		return
+	}
+	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), true)
 }
 
 func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {

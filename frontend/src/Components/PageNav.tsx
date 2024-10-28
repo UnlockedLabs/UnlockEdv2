@@ -61,7 +61,10 @@ export default function PageNav({
     }, []);
 
     const handleSwitchFacility = async (facility: Facility) => {
-        const resp = await API.put(`admin/facility-context/${facility.id}`, {});
+        const resp = await API.put<null, object>(
+            `admin/facility-context/${facility.id}`,
+            {}
+        );
         if (resp.success) {
             window.location.reload();
         }

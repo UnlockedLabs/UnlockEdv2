@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -30,7 +31,16 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 		cj.ID = uuid.NewString()
 	}
 	if len(cj.Schedule) == 0 {
-		cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
+		switch cj.Name {
+		case string(RetryVideoDownloadsJob):
+			schedule := os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
+			if schedule == "" {
+				schedule = EveryThreeHours
+			}
+			cj.Schedule = schedule
+		default:
+			cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
+		}
 	}
 	return nil
 }
@@ -55,15 +65,23 @@ const (
 	GetMilestonesJob JobType = "get_milestones"
 	GetCoursesJob    JobType = "get_courses"
 	GetActivityJob   JobType = "get_activity"
-	// GetOutcomesJob   JobType = "get_outcomes"
 
-	ScrapeKiwixJob JobType = "scrape_kiwix"
+	ScrapeKiwixJob         JobType = "scrape_kiwix"
+	RetryVideoDownloadsJob JobType = "retry_video_downloads"
+	AddVideosJob           JobType = "add_videos"
+	EveryThreeHours        string  = "0 */3 * * *"
 
 	StatusPending JobStatus = "pending"
 	StatusRunning JobStatus = "running"
 )
 
-// provider id can be nil pointer
+var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
+var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob}
+
+func (jt JobType) PubName() string {
+	return fmt.Sprintf("tasks.%s", string(jt))
+}
+
 func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]interface{}, error) {
 	var skip bool
 	if jt == ScrapeKiwixJob {
@@ -71,6 +89,12 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]
 			"open_content_provider_id": provId,
 			"job_id":                   jobId,
 			"job_type":                 jt,
+		}, nil
+	} else if jt == RetryVideoDownloadsJob {
+		return map[string]interface{}{
+			"job_id":                   jobId,
+			"job_type":                 jt,
+			"open_content_provider_id": provId,
 		}, nil
 	}
 	users := []map[string]interface{}{}
@@ -117,27 +141,6 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]
 			"job_type":             jt,
 			"job_id":               jobId,
 		}, nil
-		// case GetOutcomesJob:
-		// 	if skip {
-		// 		return nil, errors.New("no users or courses found for provider platform")
-		// 	}
-		// 	return map[string]interface{}{
-		// 		"provider_platform_id": provId,
-		// 		"user_mappings":        users,
-		// 		"courses":              courses,
-		// 		"job_type":             jt,
-		// 	}, nil
 	}
 	return nil, errors.New("job type not found")
-}
-
-var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob /* GetOutcomesJob */}
-var AllContentProviderJobs = []JobType{ScrapeKiwixJob}
-
-func NewCronJob(name JobType) *CronJob {
-	return &CronJob{
-		ID:       uuid.NewString(),
-		Name:     string(name),
-		Schedule: os.Getenv("MIDDLEWARE_CRON_SCHEDULE"),
-	}
 }

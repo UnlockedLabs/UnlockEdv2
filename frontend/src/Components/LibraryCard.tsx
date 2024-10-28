@@ -27,7 +27,10 @@ export default function LibraryCard({
     }
 
     const handleToggleVisibility = async () => {
-        const response = await API.put(`libraries/${library.id}`, {});
+        const response = await API.put<null, object>(
+            `libraries/${library.id}`,
+            {}
+        );
         if (response.success) {
             toaster(response.message, ToastState.success);
             await mutate();

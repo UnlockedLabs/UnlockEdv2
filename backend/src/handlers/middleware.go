@@ -19,12 +19,11 @@ const (
 	CsrfTokenCtx csrfTokenKey = "csrf_token"
 	timeWindow                = time.Minute
 	maxRequests  int          = 50
+	libraryKey   contextKey   = "library"
 	// rate limit is 50 requests from a unique user in a minute
 )
 
 type csrfTokenKey string
-
-const libraryKey contextKey = "library"
 
 func (srv *Server) applyMiddleware(h HttpFunc) http.Handler {
 	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
@@ -41,7 +40,7 @@ func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
 					srv.handleError(h))))))
 }
 
-func (srv *Server) proxyMiddleware(next http.Handler) http.Handler {
+func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 	log.Printf("proxy middleware")
 	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
 		srv.rateLimitMiddleware(
