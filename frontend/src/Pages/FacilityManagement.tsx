@@ -32,16 +32,21 @@ export default function FacilityManagement() {
     const [targetFacility, setTargetFacility] = useState<
         undefined | Facility
     >();
+
+    const [perPage, setPerPage] = useState(10);
+    const [pageQuery, setPageQuery] = useState(1);
+
     // TODO: modify this const
     const {
         data: facility,
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponseMany<Facility>, AxiosError>(`/api/facilities`);
+    } = useSWR<ServerResponseMany<Facility>, AxiosError>(
+        `/api/facilities?page=${pageQuery}&per_page=${perPage}`
+    );
 
     const facilityData = facility?.data ? facility.data : [];
-    const [, setPageQuery] = useState(1);
 
     function resetModal() {
         setTimeout(() => {
@@ -99,6 +104,11 @@ export default function FacilityManagement() {
         return;
     };
 
+    const handleSetPerPage = (val: number) => {
+        setPerPage(val);
+        setPageQuery(1);
+        void mutate();
+    };
     return (
         <>
             <div className="px-8 py-4 flex flex-col justify-center gap-4">
@@ -154,6 +164,7 @@ export default function FacilityManagement() {
                         <Pagination
                             meta={facility?.meta}
                             setPage={setPageQuery}
+                            setPerPage={handleSetPerPage}
                         />
                     )}
             </div>
