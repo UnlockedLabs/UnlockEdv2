@@ -93,16 +93,15 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
           ELSE (SELECT COUNT(m.id) * 100.0 / c.total_progress_milestones) END
     END as course_progress,
     a.total_time`, userId, userId).
-		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
-		Joins("JOIN milestones as m ON m.course_id = c.id AND m.user_id = ?", userId).
-		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = ?", userId).
-		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userId).
-		Joins(`LEFT JOIN activities a ON a.id = (
-        SELECT id FROM activities
-        WHERE course_id = c.id AND user_id = ?
-        ORDER BY created_at DESC
-        LIMIT 1
-    )`, userId).
+		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("JOIN milestones as m ON m.course_id = c.id and m.user_id = ?", userId).
+		Joins(`JOIN (select id, course_id, user_id, total_time, row_number() over (PARTITION BY course_id, user_id ORDER BY created_at DESC) AS RN 
+               			from activities
+			) a on a.course_id = c.id
+        			and a.user_id = m.user_id
+        			and a.RN = 1`).
+		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = m.user_id").
+		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = m.user_id").
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 
