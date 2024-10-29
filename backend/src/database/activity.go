@@ -280,6 +280,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 			Joins("JOIN users u ON a.user_id = u.id").
 			Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
 			Group("STRFTIME('%Y-%m-%d', 'YYYY-MM-DD')").
+			Order("date ").
 			Find(&dashboard.MonthlyActivity).Error
 
 	} else {
@@ -288,6 +289,7 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 			Joins("JOIN users u ON a.user_id = u.id").
 			Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
 			Group("TO_CHAR(a.created_at, 'YYYY-MM-DD')").
+			Order("date ").
 			Find(&dashboard.MonthlyActivity).Error
 	}
 	if err != nil {
@@ -320,9 +322,9 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	// Course Milestones
 	err = db.Table("courses c").
-		Select("c.name as name, COALESCE(COUNT(m.id), 0) as milestones").
-		Joins("LEFT JOIN milestones m ON m.course_id = c.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
-		Joins("LEFT JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
+		Select("c.name as name, COUNT(m.id) as milestones").
+		Joins("INNER JOIN milestones m ON m.course_id = c.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
+		Joins("INNER JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
 		Group("c.name").
 		Order("milestones DESC").
 		Limit(5).
