@@ -1,4 +1,4 @@
-import { ReactNode, SetStateAction } from 'react';
+import { ReactNode } from 'react';
 
 export enum UserRole {
     Admin = 'admin',
@@ -191,35 +191,6 @@ export interface Attributes {
     type: string;
     value: string;
 }
-export const defaultToast = {
-    state: ToastState.success,
-    message: '',
-    reset: () => {
-        return;
-    }
-};
-
-export const showToast = (
-    setToast: React.Dispatch<SetStateAction<ToastProps>>,
-    setDisplayToast: React.Dispatch<SetStateAction<boolean>>,
-    message: string,
-    state: ToastState
-) => {
-    setToast({
-        state,
-        message,
-        reset: () => {
-            setToast({
-                state: ToastState.success,
-                message: '',
-                reset: () => {
-                    setDisplayToast(false);
-                }
-            });
-        }
-    });
-    setDisplayToast(true);
-};
 export interface RouteLabel {
     title?: string;
     path: string[];
@@ -673,7 +644,6 @@ export interface OpenContentProvider {
 export interface ToastProps {
     state: ToastState;
     message: string;
-    reset: () => void;
 }
 
 export enum FilterLibraries {

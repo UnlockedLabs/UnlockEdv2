@@ -8,7 +8,7 @@ import {
     XAxis,
     YAxis
 } from 'recharts';
-import { ThemeContext } from './ThemeContext';
+import { ThemeContext } from '@/Context/ThemeContext';
 import { useContext } from 'react';
 import { CourseMilestones, YAxisTickProps } from '@/common';
 

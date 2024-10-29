@@ -6,7 +6,7 @@ import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import ProviderPlatformManagement from '@/Pages/ProviderPlatformManagement';
-import { AuthProvider } from '@/AuthContext';
+import { AuthProvider } from '@/Context/AuthContext';
 import Consent from '@/Pages/Auth/Consent';
 import MyCourses from '@/Pages/MyCourses';
 import MyProgress from '@/Pages/MyProgress';
@@ -29,18 +29,23 @@ import {
 import { UserRole } from '@/common';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
-import { PathValueProvider } from '@/PathValueCtx';
+import { PathValueProvider } from '@/Context/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
 import { getOpenContentProviders, getFacilities } from './routeLoaders.ts';
+
 import FacilityManagement from '@/Pages/FacilityManagement.tsx';
+
+import { ToastProvider } from './Context/ToastCtx.tsx';
 
 const WithAuth: React.FC = () => {
     return (
         <AuthProvider>
-            <PathValueProvider>
-                <Outlet />
-            </PathValueProvider>
+            <ToastProvider>
+                <PathValueProvider>
+                    <Outlet />
+                </PathValueProvider>
+            </ToastProvider>
         </AuthProvider>
     );
 };
@@ -59,11 +64,13 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 function WithAdmin() {
     return (
         <AuthProvider>
-            <PathValueProvider>
-                <AdminOnly>
-                    <Outlet />
-                </AdminOnly>
-            </PathValueProvider>
+            <ToastProvider>
+                <PathValueProvider>
+                    <AdminOnly>
+                        <Outlet />
+                    </AdminOnly>
+                </PathValueProvider>
+            </ToastProvider>
         </AuthProvider>
     );
 }

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import Error from './Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
-import { usePathValue } from '@/PathValueCtx';
+import { usePathValue } from '@/Context/PathValueCtx';
 
 export default function LibraryViewer() {
     const { id: libraryId } = useParams();

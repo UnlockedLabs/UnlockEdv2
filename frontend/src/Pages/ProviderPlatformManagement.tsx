@@ -9,17 +9,15 @@ import {
     ProviderPlatform,
     ServerResponse,
     ToastState,
-    ProviderPlatformState,
-    defaultToast,
-    showToast
+    ProviderPlatformState
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-import Toast from '@/Components/Toast';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
+import { useToast } from '@/Context/ToastCtx';
 
 export default function ProviderPlatformManagement() {
     const addProviderModal = useRef<HTMLDialogElement>(null);
@@ -30,11 +28,7 @@ export default function ProviderPlatformManagement() {
     const openOidcClientModal = useRef<HTMLDialogElement>(null);
     const openOidcRegistrationModal = useRef<HTMLDialogElement>(null);
     const [oidcClient, setOidcClient] = useState<OidcClient | undefined>();
-    const [toast, setToast] = useState(defaultToast);
-    const [displayToast, setDisplayToast] = useState(false);
-    const toaster = (msg: string, state: ToastState) => {
-        showToast(setToast, setDisplayToast, msg, state);
-    };
+    const { toaster } = useToast();
     const {
         data: providers,
         mutate,
@@ -250,8 +244,6 @@ export default function ProviderPlatformManagement() {
                 }
                 ref={openOidcRegistrationModal}
             />
-            {/* Toasts */}
-            {displayToast && <Toast {...toast} />}
         </div>
     );
 }

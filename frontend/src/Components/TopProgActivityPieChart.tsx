@@ -1,5 +1,5 @@
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import { ThemeContext } from './ThemeContext';
+import { ThemeContext } from '@/Context/ThemeContext';
 import { useContext } from 'react';
 import { CourseActivity } from '@/common';
 
