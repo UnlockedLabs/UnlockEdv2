@@ -1,15 +1,12 @@
 import {
-    defaultToast,
     Facility,
     ModalType,
     ServerResponseMany,
-    showToast,
     ToastState
 } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
 import useSWR from 'swr';
-import Toast from '@/Components/Toast.tsx';
 import FacilityCard from '@/Components/FacilityCard.tsx';
 import DeleteForm from '../Components/DeleteForm';
 import Modal from '@/Components/Modal.tsx';
@@ -18,17 +15,14 @@ import EditFacilityForm from '@/Components/forms/EditFacilityForm';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
 import { AxiosError } from 'axios';
+import { useToast } from '@/Context/ToastCtx';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
     const editFacilityModal = useRef<HTMLDialogElement>(null);
     const deleteFacilityModal = useRef<HTMLDialogElement>(null);
     const [editFacility, setEditFacility] = useState<Facility | undefined>();
-    const [toast, setToast] = useState(defaultToast);
-    const [displayToast, setDisplayToast] = useState(false);
-    const toaster = (message: string, toastState: ToastState) => {
-        showToast(setToast, setDisplayToast, message, toastState);
-    };
+    const { toaster } = useToast();
     const [targetFacility, setTargetFacility] = useState<
         undefined | Facility
     >();
@@ -210,7 +204,6 @@ export default function FacilityManagement() {
                     />
                 }
             />
-            {displayToast && <Toast {...toast} />}
         </>
     );
 }
