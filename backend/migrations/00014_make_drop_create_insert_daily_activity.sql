@@ -47,4 +47,5 @@ as
         END IF;
     END;
 '
-;-- +goose StatementEnd
+;
+-- +goose StatementEnd
