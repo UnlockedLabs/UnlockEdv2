@@ -683,7 +683,7 @@ const ResourceCollectionEditor = ({
                         item="Link"
                         onCancel={() => setActiveLinkToDelete(undefined)}
                         onSuccess={() =>
-                            activeLinkToDelete &&
+                            activeLinkToDelete != undefined &&
                             deleteLink(collection, activeLinkToDelete)
                         }
                     />
