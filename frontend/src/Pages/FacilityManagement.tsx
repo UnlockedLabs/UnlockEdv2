@@ -46,7 +46,7 @@ export default function FacilityManagement() {
         `/api/facilities?page=${pageQuery}&per_page=${perPage}`
     );
 
-    const facilityData = facility?.data ? facility.data : [];
+    const facilityData = facility?.data ?? [];
 
     function resetModal() {
         setTimeout(() => {
