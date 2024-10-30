@@ -261,7 +261,8 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 		return newDatabaseServiceError(err)
 	}
 	if claims.UserID == 1 && claims.Role == "admin" && form.FacilityName != "" {
-		if _, err := srv.Db.UpdateFacility(form.FacilityName, 1); err != nil {
+		facility := models.Facility{Name: form.FacilityName, Timezone: "America/Chicago"}
+		if err := srv.Db.UpdateFacility(&facility, 1); err != nil {
 			tx.Rollback()
 			return newDatabaseServiceError(err)
 		}

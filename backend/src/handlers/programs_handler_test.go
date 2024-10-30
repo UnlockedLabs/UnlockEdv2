@@ -273,8 +273,8 @@ func getProgramsBySearch(tags string, search string) map[string]any {
 
 func getNewProgramForm() map[string]any {
 	form := make(map[string]any)
-	facilities, err := server.Db.GetAllFacilities()
-	if err != nil {
+	var facilities []models.Facility
+	if err := server.Db.Find(&facilities).Error; err != nil {
 		form["err"] = err
 	}
 	form["program"] = models.Program{

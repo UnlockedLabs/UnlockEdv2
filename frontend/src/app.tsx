@@ -33,6 +33,9 @@ import { PathValueProvider } from '@/Context/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
 import { getOpenContentProviders, getFacilities } from './routeLoaders.ts';
+
+import FacilityManagement from '@/Pages/FacilityManagement.tsx';
+
 import { ToastProvider } from './Context/ToastCtx.tsx';
 
 const WithAuth: React.FC = () => {
@@ -232,6 +235,15 @@ const router = createBrowserRouter([
                     {
                         path: '*',
                         element: <UnauthorizedNotFound which="notFound" />
+                    },
+                    {
+                        path: 'facilities-management',
+                        element: <FacilityManagement />,
+                        handle: {
+                            title: 'Facilities Management',
+                            path: ['facilities-management']
+                        },
+                        errorElement: <Error />
                     }
                 ]
             }

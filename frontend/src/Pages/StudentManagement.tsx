@@ -306,9 +306,7 @@ export default function StudentManagement() {
                     <DeleteForm
                         item="User"
                         onCancel={handleDeleteUserCancel}
-                        onSuccess={() => {
-                            void deleteUser;
-                        }}
+                        onSuccess={() => void deleteUser()}
                     />
                 }
             />
