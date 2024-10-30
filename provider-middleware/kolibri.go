@@ -99,10 +99,10 @@ func (ks *KolibriService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 **/
 func (ks *KolibriService) ImportCourses(db *gorm.DB) error { //add more to this:::
 	log.Println("Importing channel and classroom courses from Kolibri")
-	var courses []map[string]interface{}
+	var courses []map[string]interface{} //modified to left join as quizzes only activate when teachers click 'START QUIZ'
 	sql := `SELECT id, name, description, thumbnail, total_resource_count, root_id, 'channel' as course_type FROM content_channelmetadata
 			UNION 
-			SELECT col.id, name, '' as description, '' as thumbnail, lesson.resource_count+exam.resource_count as total_resource_count, col.id as root_id, 'class' as course_type 
+			SELECT col.id, name, '' as description, '' as thumbnail, lesson.resource_count+COALESCE(exam.resource_count,0) as total_resource_count, col.id as root_id, 'class' as course_type 
 			FROM kolibriauth_collection col
 			inner join (SELECT col.id, count(col.id) as resource_count 
         		FROM kolibriauth_collection col
@@ -110,7 +110,7 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error { //add more to this:
         		where kind = 'classroom'
         		group by col.id
 			) lesson on col.id = lesson.id
- 			inner join (SELECT exam.collection_id, count(exam.collection_id) as resource_count 
+ 			left join (SELECT exam.collection_id, count(exam.collection_id) as resource_count 
         			FROM kolibriauth_collection col
         			inner join exams_exam exam on col.id = exam.collection_id
         			where kind = 'classroom'
@@ -124,6 +124,9 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error { //add more to this:
 	for _, course := range courses {
 		id := course["id"].(string)
 		if db.Where("provider_platform_id = ? AND external_id = ?", ks.ProviderPlatformID, id).First(&models.Course{}).Error == nil {
+			if course["thumbnail"].(string) == "" {
+				updateTotalProgress(db, ks.ProviderPlatformID, course)
+			}
 			continue
 		}
 		prog := ks.IntoCourse(course)
@@ -133,6 +136,16 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error { //add more to this:
 		}
 	}
 	return nil
+}
+
+func updateTotalProgress(db *gorm.DB, providerPlatformID uint, course map[string]interface{}) {
+	id := course["id"].(string)
+	totalResourceCount := course["total_resource_count"].(int64)
+	if db.Where("provider_platform_id = ? AND external_id = ? AND total_progress_milestones = ?", providerPlatformID, id, totalResourceCount).First(&models.Course{}).Error != nil {
+		if err := db.Table("courses as c").Where("provider_platform_id = ? AND external_id = ?", providerPlatformID, id).Update("total_progress_milestones", totalResourceCount).Error; err != nil {
+			log.Errorln("error updating course total_progress_milestones in db, error is: ", err) //just logging the error if it occurs, logic will continue
+		}
+	}
 }
 
 type milestonePO struct {
