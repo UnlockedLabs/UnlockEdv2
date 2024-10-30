@@ -124,7 +124,7 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error { //add more to this:
 	for _, course := range courses {
 		id := course["id"].(string)
 		if db.Where("provider_platform_id = ? AND external_id = ?", ks.ProviderPlatformID, id).First(&models.Course{}).Error == nil {
-			if course["thumbnail"].(string) == "" {
+			if course["course_type"].(string) == "class" {
 				updateTotalProgress(db, ks.ProviderPlatformID, course)
 			}
 			continue
