@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"archive/zip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -77,6 +78,7 @@ func (srv *BrightspaceService) GetPluginId(pluginName string) (string, error) {
 }
 
 func (srv *BrightspaceService) DownloadAndUnzipFile(targetDirectory string, targetFileName string, endpointUrl string) (string, error) {
+	//initial method for download/unzip file--WIP
 	var destPath string
 	resp, err := srv.SendRequest(endpointUrl)
 	if err != nil {
@@ -101,7 +103,9 @@ func (srv *BrightspaceService) DownloadAndUnzipFile(targetDirectory string, targ
 		for _, zippedFile := range zipFile.File {
 			destPath := filepath.Join(targetDirectory, zippedFile.Name)
 			if zippedFile.FileInfo().IsDir() {
-				os.MkdirAll(destPath, os.ModePerm)
+				if err := os.MkdirAll(destPath, os.ModePerm); err != nil {
+					fmt.Println("error occurred while trying to make directories, error is: ", err)
+				}
 				continue
 			}
 			//there is going to be no directory for this file, as these are csv files
