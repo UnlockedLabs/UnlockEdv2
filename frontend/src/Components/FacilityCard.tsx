@@ -1,6 +1,6 @@
 import { Facility } from '@/common';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 export default function FacilityCard({
     facility,
@@ -19,7 +19,7 @@ export default function FacilityCard({
                 <div className="flex space-x-2 cursor-pointer">
                     <ULIComponent
                         dataTip={'Edit Facility'}
-                        icon={PencilIcon}
+                        icon={PencilSquareIcon}
                         onClick={() => {
                             openEditFacility(facility);
                         }}
