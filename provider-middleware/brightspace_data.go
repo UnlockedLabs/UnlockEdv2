@@ -86,7 +86,8 @@ func (srv *BrightspaceService) DownloadAndUnzipFile(targetDirectory string, targ
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
-		file, err := os.Create(filepath.Join(targetDirectory, targetFileName))
+		zipFilePath := filepath.Join(targetDirectory, targetFileName)
+		file, err := os.Create(zipFilePath)
 		if err != nil {
 			return destPath, err
 		}
@@ -95,13 +96,13 @@ func (srv *BrightspaceService) DownloadAndUnzipFile(targetDirectory string, targ
 			return destPath, err
 		}
 		file.Close()
-		zipFile, err := zip.OpenReader(destPath) //open the zip file
+		zipFile, err := zip.OpenReader(zipFilePath) //open the zip file
 		if err != nil {
 			return destPath, err
 		}
 		defer zipFile.Close() //close it later
 		for _, zippedFile := range zipFile.File {
-			destPath := filepath.Join(targetDirectory, zippedFile.Name)
+			destPath = filepath.Join(targetDirectory, zippedFile.Name)
 			if zippedFile.FileInfo().IsDir() {
 				if err := os.MkdirAll(destPath, os.ModePerm); err != nil {
 					fmt.Println("error occurred while trying to make directories, error is: ", err)
