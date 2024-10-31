@@ -631,6 +631,21 @@ export interface Library {
     open_content_provider: OpenContentProvider;
 }
 
+export interface Program {
+    id: number;
+    created_at: Date;
+    updated_at: Date;
+    name: string;
+    description: string;
+    tags: ProgramTag[];
+    is_favorited: boolean;
+}
+
+export interface ProgramTag {
+    id: string;
+    value: number;
+}
+
 export interface OpenContentProvider {
     id: number;
     name: string;

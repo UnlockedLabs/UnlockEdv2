@@ -9,7 +9,7 @@ import (
 )
 
 func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.applyAdminMiddleware(srv.handleIndexPrograms))
+	srv.Mux.Handle("GET /api/programs", srv.applyMiddleware(srv.handleIndexPrograms))
 	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(srv.handleShowProgram))
 	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(srv.handleCreateProgram))
 	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(srv.handleDeleteProgram))
