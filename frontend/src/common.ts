@@ -414,6 +414,13 @@ export enum ProviderPlatformType {
     KOLIBRI = 'kolibri'
 }
 
+export enum ProgramType {
+    ACADEMIC_CREDIT = 'Academic Credit',
+    PARTICIPATION_CREDIT = 'Participation Credit',
+    CERTIFICATE_OF_COMPLETION = 'Certificate of Completion',
+    EARNED_TIME_CREDIT = 'Earned-Time Credit',
+    REHABILITATION_CREDIT = 'Rehabilitation Credit'
+}
 export interface AdminDashboardJoin {
     monthly_activity: RecentActivity[];
     weekly_active_users: number;

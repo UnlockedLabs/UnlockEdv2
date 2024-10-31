@@ -47,6 +47,7 @@ var TableList = []interface{}{
 	&models.CronJob{},
 	&models.RunnableTask{},
 	&models.Library{},
+	&models.FacilitiesPrograms{},
 }
 
 var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
