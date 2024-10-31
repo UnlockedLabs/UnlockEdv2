@@ -236,10 +236,12 @@ export interface ResetPasswordResponse {
 }
 
 export interface Facility {
+    [key: string]: string | number;
     id: number;
     name: string;
     created_at: string;
     updated_at: string;
+    timezone: string;
 }
 
 export interface ProviderUser {
@@ -651,4 +653,13 @@ export enum FilterLibrariesAdmin {
     'All Libraries' = 'all',
     'Visible' = 'visible',
     'Hidden' = 'hidden'
+}
+
+export enum Timezones {
+    'america/chicago' = 'America/Chicago',
+    'america/new_york' = 'America/New_York',
+    'america/anchorage' = 'America/Anchorage',
+    'america/los_angeles' = 'America/Los_Angeles',
+    'america/denver' = 'America/Denver',
+    'america/phoenix' = 'America/Phoenix'
 }

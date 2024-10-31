@@ -14,7 +14,8 @@ import {
     ArrowRightEndOnRectangleIcon,
     SunIcon,
     MoonIcon,
-    UserCircleIcon
+    UserCircleIcon,
+    BuildingOffice2Icon
 } from '@heroicons/react/24/solid';
 import { useAuth, handleLogout } from '@/useAuth';
 import ULIComponent from './ULIComponent';
@@ -102,6 +103,14 @@ export default function Navbar({
                                             icon={RectangleStackIcon}
                                         />
                                         Platforms
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/facilities-management">
+                                        <ULIComponent
+                                            icon={BuildingOffice2Icon}
+                                        />
+                                        Facilities
                                     </Link>
                                 </li>
                             </>
