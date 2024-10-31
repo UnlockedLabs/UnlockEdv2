@@ -56,7 +56,6 @@ func NewBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 	//c save new refresh_token (tack it onto the end of the client secret separated by semicolon)
 	provider.AccessKey = brightspaceService.ClientSecret + ";" + brightspaceService.RefreshToken
 	if err := db.Debug().Save(&provider).Error; err != nil {
-		//send admin email??? maybe but not now
 		return nil, err
 	}
 	//d set headers that are required for requests to brightspace
@@ -65,6 +64,35 @@ func NewBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 	headers["Accept"] = "application/json"
 	brightspaceService.BaseHeaders = &headers
 	return &brightspaceService, nil
+}
+
+func (srv *BrightspaceService) SendPostRequest(url string, data url.Values) (*http.Response, error) {
+	encodedUrl := data.Encode()
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(encodedUrl))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded") //standard header for url.Values (encoded)
+	resp, err := srv.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (srv *BrightspaceService) SendRequest(url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range *srv.BaseHeaders {
+		req.Header.Add(key, value)
+	}
+	resp, err := srv.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (srv *BrightspaceService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
