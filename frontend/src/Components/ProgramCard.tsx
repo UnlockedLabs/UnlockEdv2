@@ -25,16 +25,13 @@ export default function ProgramCard({
             });
     }
 
-    let bookmark: JSX.Element;
-    if (program.is_favorited) {
-        bookmark = <BookmarkIcon className="h-5 text-primary-yellow" />;
-    } else {
-        bookmark = (
-            <BookmarkIconOutline
-                className={`h-5 ${view === ViewType.List ? 'text-header-text' : 'text-white'}`}
-            />
-        );
-    }
+    const bookmark: JSX.Element = program.is_favorited ? (
+        <BookmarkIcon className="h-5 text-primary-yellow" />
+    ) : (
+        <BookmarkIconOutline
+            className={`h-5 ${view === ViewType.List ? 'text-header-text' : 'text-white'}`}
+        />
+    );
 
     const tagPills = program.tags.map((tag) => (
         <LightGreenPill key={tag.id}>{tag.value.toString()}</LightGreenPill>
@@ -45,7 +42,7 @@ export default function ProgramCard({
             <a
                 className="card bg-base-teal body-small p-6 flex flex-row items-center"
                 href="#"
-                onClick={(e) => e.preventDefault()} // No link available yet
+                onClick={(e) => e.preventDefault()}
             >
                 <div className="flex flex-col justify-between gap-3">
                     <div className="flex flex-row gap-3 items-center">
