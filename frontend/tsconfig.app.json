@@ -28,5 +28,5 @@
         "noFallthroughCasesInSwitch": true
     },
     "exclude": ["vite.config.ts"],
-    "include": ["src/**/*"]
+    "include": ["src/**/*", "tailwind.config.cjs"]
 }
