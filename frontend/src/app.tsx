@@ -20,6 +20,7 @@ import StudentManagement from '@/Pages/StudentManagement.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
+import Programs from './Pages/Programs.tsx';
 import {
     checkDefaultFacility,
     checkExistingFlow,
@@ -147,6 +148,15 @@ const router = createBrowserRouter([
                             title: 'Library Viewer',
                             path: ['viewer', 'libraries', ':library_name']
                         }
+                    },
+                    {
+                        path: 'programs',
+                        element: <Programs />,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Programs',
+                            path: ['programs']
+                        }
                     }
                 ]
             },
@@ -233,10 +243,6 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: '*',
-                        element: <UnauthorizedNotFound which="notFound" />
-                    },
-                    {
                         path: 'facilities-management',
                         element: <FacilityManagement />,
                         handle: {
@@ -244,6 +250,27 @@ const router = createBrowserRouter([
                             path: ['facilities-management']
                         },
                         errorElement: <Error />
+                    },
+                    {
+                        path: 'course-catalog-admin',
+                        element: <CourseCatalog />,
+                        handle: {
+                            title: 'Course Catalog',
+                            path: ['course-catalog']
+                        }
+                    },
+                    {
+                        path: 'programs',
+                        element: <Programs />,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Programs',
+                            path: ['programs']
+                        }
+                    },
+                    {
+                        path: '*',
+                        element: <UnauthorizedNotFound which="notFound" />
                     }
                 ]
             }
