@@ -167,7 +167,7 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 		return "", fmt.Errorf("server returned non-OK status: %s", response.Status)
 	}
 	urlRes := struct {
-		data struct {
+		Data struct {
 			Url string `json:"url"`
 		}
 		Message string `json:"message"`
@@ -176,7 +176,7 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return urlRes.data.Url, nil
+	return urlRes.Data.Url, nil
 }
 
 type Role struct {
