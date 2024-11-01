@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
 	{
-		ignores: ['eslint.config.mjs', 'tailwind.config.js', 'postcss.config.cjs', 'vite.config.ts', 'dist/**'],
+		ignores: ['eslint.config.mjs', 'tailwind.config.mjs', 'postcss.config.cjs', 'vite.config.ts', 'dist/**'],
 	},
 	{
 		languageOptions: {
