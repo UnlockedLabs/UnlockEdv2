@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
@@ -154,10 +153,6 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newBadRequestServiceError(err, "userexists")
 	}
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username)
-	err = database.Validate().Struct(reqForm.User)
-	if err != nil {
-		return newBadRequestServiceError(err, "user did not pass validation")
-	}
 	err = srv.Db.CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -253,6 +248,7 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
+	models.UpdateStruct(toUpdate, &user)
 	err = srv.Db.UpdateUser(toUpdate)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -298,16 +294,10 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 }
 
 func validateUser(user *models.User) string {
-	validateFunc := func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-	}
-	for _, tag := range []string{user.Username, user.NameFirst, user.NameLast} {
-		if tag == "" {
-			continue
-		}
-		if strings.ContainsFunc(tag, validateFunc) {
-			return "alphanum"
-		}
+	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) }) {
+		return "alphanum"
+	} else if strings.ContainsFunc(user.NameFirst, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsSpace(r) }) {
+		return "alphanum"
 	}
 	return ""
 }

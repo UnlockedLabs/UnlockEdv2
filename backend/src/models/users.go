@@ -26,16 +26,16 @@ type DatabaseFields struct {
 type User struct {
 	DatabaseFields
 	Username   string   `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
-	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumunicode"`
+	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
 	Email      string   `gorm:"size:255;not null;unique" json:"email" validate:"-"`
-	NameLast   string   `gorm:"size:255;not null" json:"name_last" validate:"alphanumunicode"`
+	NameLast   string   `gorm:"size:255;not null" json:"name_last" validate:"alphanumspace"`
 	Role       UserRole `gorm:"size:255;default:student" json:"role" validate:"oneof=admin student"`
 	KratosID   string   `gorm:"size:255" json:"kratos_id"`
 	FacilityID uint     `json:"facility_id"`
 
 	/* foreign keys */
-	Mappings []ProviderUserMapping `json:"-"`
-	Facility *Facility             `gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL" json:"-"`
+	Mappings []ProviderUserMapping `json:"mappings,omitempty"`
+	Facility *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
 }
 
 type ImportUser struct {

@@ -280,6 +280,7 @@ func getNewProgramForm() map[string]any {
 	form["program"] = models.Program{
 		Name:        "Program for facility: " + strconv.Itoa(rand.Intn(1000)) + facilities[rand.Intn(len(facilities))].Name,
 		Description: "Testing program",
+		CreditType:  "Good-time",
 	}
 	return form
 }

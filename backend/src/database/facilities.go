@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,9 +26,9 @@ func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {
 }
 
 func (db *DB) CreateFacility(facility *models.Facility) error {
-	if err := Validate().Struct(facility); err != nil{
+	if err := Validate().Struct(facility); err != nil {
 		log.Error("Validation Error")
-		return newCreateDBError(err,"facilities")
+		return NewDBError(err, "facilities")
 	}
 
 	if err := db.Create(&facility).Error; err != nil {

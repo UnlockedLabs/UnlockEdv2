@@ -108,7 +108,7 @@ func TestHandleShowUser(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestNonAdminCannotCreateUser", "student", getNewUserForm(), http.StatusUnauthorized, ""},
-		{"TestAdminCanCreateUser", "admin", getNewUserForm(), http.StatusCreated, ""},
+		{"TestAdminCanCreateUser", "admin", getUserWithSpacesInName(), http.StatusCreated, ""},
 		{"TestAdminCreateUserNameValidationFailed", "admin", getBadUserWithNoNameForm(), http.StatusBadRequest, ""},
 		{"TestAdminCreateUserNameExits", "admin", getUserWhereNameExistsAlreadyForm(), http.StatusBadRequest, ""},
 	}
@@ -364,6 +364,15 @@ func getBadUserWithNoNameForm() map[string]any {
 	return form
 }
 
+func getUserWithSpacesInName() map[string]any {
+	form := make(map[string]any)
+	form["username"] = "test"
+	form["name_first"] = "Sarah Beth"
+	form["name_last"] = "test user"
+	form["email"] = "test"
+	form["role"] = "student"
+	return form
+}
 func getUpdateUserForm() map[string]any {
 	form := make(map[string]any)
 	form["username"] = "testUpdate"

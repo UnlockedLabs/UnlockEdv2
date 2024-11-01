@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"unicode"
 
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
@@ -47,10 +48,25 @@ var TableList = []interface{}{
 	&models.CronJob{},
 	&models.RunnableTask{},
 	&models.Library{},
-	&models.FacilitiesPrograms{},
 }
 
-var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
+func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
+	for _, char := range fl.Field().String() {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) {
+			return false
+		}
+	}
+	return true
+}
+
+var Validate = sync.OnceValue(func() *validator.Validate {
+	Ins := validator.New(validator.WithRequiredStructEnabled())
+	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
+	if err != nil {
+		log.Fatalf("Failed to register custom validation: %v", err)
+	}
+	return Ins
+})
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
@@ -118,7 +134,8 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			log.Fatal("db transaction failed getting default facility")
 		}
 		defaultFacility := models.Facility{
-			Name: "Default",
+			Name:     "Default",
+			Timezone: "America/Chicago",
 		}
 		log.Printf("Creating facility: %v", defaultFacility)
 		if err := db.Create(&defaultFacility).Error; err != nil {
