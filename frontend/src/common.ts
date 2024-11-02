@@ -421,6 +421,13 @@ export enum ProgramType {
     EARNED_TIME_CREDIT = 'Earned-Time Credit',
     REHABILITATION_CREDIT = 'Rehabilitation Credit'
 }
+export enum ProgramStatus {
+    AVAILABLE = '',
+    ACTIVE = 'ACTIVE',
+    INACTIVE = 'INACTIVE',
+    ARCHIVED = 'ARCHIVED'
+}
+
 export interface AdminDashboardJoin {
     monthly_activity: RecentActivity[];
     weekly_active_users: number;

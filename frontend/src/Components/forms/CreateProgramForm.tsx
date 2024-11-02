@@ -1,4 +1,4 @@
-import { ProgramType, ToastState } from '@/common';
+import { ProgramStatus, ProgramType, ToastState } from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
@@ -8,6 +8,7 @@ interface ProgramInputs {
     name: string;
     description: string;
     credit_type: string;
+    program_status: string;
 }
 
 export default function CreateProgramForm({
@@ -64,6 +65,14 @@ export default function CreateProgramForm({
                     register={register}
                     enumType={ProgramType}
                     interfaceRef="credit_type"
+                    required
+                    errors={errors}
+                />
+                <DropdownInput
+                    label="Program-Status"
+                    register={register}
+                    enumType={ProgramStatus}
+                    interfaceRef="program_status"
                     required
                     errors={errors}
                 />
