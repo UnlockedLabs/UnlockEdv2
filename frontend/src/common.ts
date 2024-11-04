@@ -422,7 +422,7 @@ export enum ProgramType {
     REHABILITATION_CREDIT = 'Rehabilitation Credit'
 }
 export enum ProgramStatus {
-    AVAILABLE = '',
+    AVAILABLE = 'AVAILABLE',
     ACTIVE = 'ACTIVE',
     INACTIVE = 'INACTIVE',
     ARCHIVED = 'ARCHIVED'
