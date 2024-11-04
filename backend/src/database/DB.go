@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"unicode"
 
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
@@ -49,24 +48,7 @@ var TableList = []interface{}{
 	&models.RunnableTask{},
 	&models.Library{},
 }
-
-func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
-	for _, char := range fl.Field().String() {
-		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) {
-			return false
-		}
-	}
-	return true
-}
-
-var Validate = sync.OnceValue(func() *validator.Validate {
-	Ins := validator.New(validator.WithRequiredStructEnabled())
-	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
-	if err != nil {
-		log.Fatalf("Failed to register custom validation: %v", err)
-	}
-	return Ins
-})
+var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
