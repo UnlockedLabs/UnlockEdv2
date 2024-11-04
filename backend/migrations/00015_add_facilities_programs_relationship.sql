@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-alter table public.programs add COLUMN credit_type character varying(255);
+alter table public.programs add COLUMN credit_type character varying(255), add COLUMN program_status character varying(50);
 create table public.facilities_programs(
     id SERIAL not null primary key,
     facility_id integer not null,
@@ -17,6 +17,6 @@ create index idx_facility_program_program_id on public.facilities_programs using
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin
-alter table public.programs drop COLUMN credit_type;
+alter table public.programs drop COLUMN credit_type, drop COLUMN program_status;
 drop table if exists public.facilities_programs CASCADE;
 -- +goose StatementEnd
