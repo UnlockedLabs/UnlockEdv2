@@ -28,8 +28,8 @@ func (Video) TableName() string { return "videos" }
 
 type VideoDownloadAttempt struct {
 	DatabaseFields
-	VideoID uint   `json:"video_id" gorm:"not null"`
-	Error   string `json:"error" gorm:"size:512"`
+	VideoID      uint   `json:"video_id" gorm:"not null"`
+	ErrorMessage string `json:"error_message" gorm:"size:512"`
 
 	Video *Video `json:"video" gorm:"foreignKey:VideoID"`
 }

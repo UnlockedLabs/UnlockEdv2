@@ -68,6 +68,7 @@ const (
 
 	ScrapeKiwixJob         JobType = "scrape_kiwix"
 	RetryVideoDownloadsJob JobType = "retry_video_downloads"
+	RetryManualDownloadJob JobType = "retry_manual_download"
 	AddVideosJob           JobType = "add_videos"
 	EveryThreeHours        string  = "0 */3 * * *"
 
