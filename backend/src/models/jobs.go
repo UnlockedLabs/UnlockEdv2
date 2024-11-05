@@ -69,6 +69,7 @@ const (
 	ScrapeKiwixJob         JobType = "scrape_kiwix"
 	RetryVideoDownloadsJob JobType = "retry_video_downloads"
 	RetryManualDownloadJob JobType = "retry_manual_download"
+	SyncVideoMetadataJob   JobType = "sync_video_metadata"
 	AddVideosJob           JobType = "add_videos"
 	EveryThreeHours        string  = "0 */3 * * *"
 
@@ -77,7 +78,7 @@ const (
 )
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
-var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob}
+var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
 
 func (jt JobType) PubName() string {
 	return fmt.Sprintf("tasks.%s", string(jt))
@@ -85,13 +86,8 @@ func (jt JobType) PubName() string {
 
 func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]interface{}, error) {
 	var skip bool
-	if jt == ScrapeKiwixJob {
-		return map[string]interface{}{
-			"open_content_provider_id": provId,
-			"job_id":                   jobId,
-			"job_type":                 jt,
-		}, nil
-	} else if jt == RetryVideoDownloadsJob {
+	switch jt {
+	case RetryVideoDownloadsJob, SyncVideoMetadataJob, ScrapeKiwixJob:
 		return map[string]interface{}{
 			"job_id":                   jobId,
 			"job_type":                 jt,

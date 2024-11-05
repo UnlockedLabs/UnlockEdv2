@@ -65,7 +65,7 @@ func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, 
 					}
 					otherTasks = append(otherTasks, *task)
 				}
-			case models.RetryVideoDownloadsJob:
+			case models.RetryVideoDownloadsJob, models.SyncVideoMetadataJob:
 				job := models.CronJob{Name: string(jobType)}
 				if providers[idx].Name == models.Youtube {
 					task, err := jr.handleCreateOCProviderTask(&job, providers[idx].ID)

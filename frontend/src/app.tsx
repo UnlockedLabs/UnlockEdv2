@@ -17,8 +17,6 @@ import ResourcesManagement from '@/Pages/ResourcesManagement';
 import UnauthorizedNotFound from '@/Pages/Unauthorized';
 import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
-// import Programs from '@/Pages/Programs.tsx';
-import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
 import Programs from './Pages/Programs.tsx';
@@ -42,6 +40,8 @@ import FacilityManagement from '@/Pages/FacilityManagement.tsx';
 
 import { ToastProvider } from './Context/ToastCtx.tsx';
 import VideoViewer from './Components/VideoEmbedViewer.tsx';
+import VideoContent from './Components/VideoContent.tsx';
+import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -141,7 +141,7 @@ const router = createBrowserRouter([
                         element: <OpenContent />,
                         handle: {
                             title: 'Open Content',
-                            path: ['open-content']
+                            path: ['open-content', ':kind']
                         },
                         children: [
                             {
@@ -155,7 +155,7 @@ const router = createBrowserRouter([
                             },
                             {
                                 path: 'videos',
-                                element: <VideoManagement />,
+                                element: <VideoContent />,
                                 errorElement: <Error />,
                                 handle: {
                                     title: 'Videos',
@@ -267,9 +267,17 @@ const router = createBrowserRouter([
                         }
                     },
                     {
+                        path: 'facilities-management',
+                        element: <FacilityManagement />,
+                        handle: {
+                            title: 'Facilities Management',
+                            path: ['facilities-management']
+                        },
+                        errorElement: <Error />
+                    },
+                    {
                         path: 'open-content-management',
                         element: <OpenContentManagement />,
-                        errorElement: <Error />,
                         handle: {
                             title: 'Open Content Management',
                             path: ['open-content-management', ':kind']
@@ -281,31 +289,19 @@ const router = createBrowserRouter([
                                 errorElement: <Error />,
                                 handle: {
                                     title: 'Libraries',
-                                    path: [
-                                        'open-content-management',
-                                        'libraries'
-                                    ]
+                                    path: ['open-content', 'libraries']
                                 }
                             },
                             {
                                 path: 'videos',
                                 element: <VideoManagement />,
-                                errorElement: <Error />,
                                 handle: {
                                     title: 'Videos',
                                     path: ['open-content-management', 'videos']
                                 }
-                            }
+                            },
+                            {}
                         ]
-                    },
-                    {
-                        path: 'facilities-management',
-                        element: <FacilityManagement />,
-                        handle: {
-                            title: 'Facilities Management',
-                            path: ['facilities-management']
-                        },
-                        errorElement: <Error />
                     },
                     {
                         path: 'course-catalog-admin',

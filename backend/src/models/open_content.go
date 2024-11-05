@@ -9,17 +9,14 @@ import (
 
 type OpenContentProvider struct {
 	DatabaseFields
-	Name               string  `gorm:"size:255"  json:"name"`
-	BaseUrl            string  `gorm:"size:255;not null;unique" json:"url"`
-	ProviderPlatformID *uint   `json:"provider_platform_id"`
-	Thumbnail          string  `json:"thumbnail_url"`
-	CurrentlyEnabled   bool    `json:"currently_enabled"`
-	Description        string  `json:"description"`
-	ApiKey             *string `json:"api_key"`
+	Name             string `gorm:"size:255"  json:"name"`
+	BaseUrl          string `gorm:"size:255;not null" json:"base_url"`
+	Thumbnail        string `json:"thumbnail_url"`
+	CurrentlyEnabled bool   `json:"currently_enabled"`
+	Description      string `json:"description"`
 
-	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
-	Videos           []Video           `gorm:"foreignKey:OpenContentProviderID" json:"-"`
-	Tasks            []RunnableTask    `gorm:"foreignKey:OpenContentProviderID" json:"-"`
+	Videos []Video        `gorm:"foreignKey:OpenContentProviderID" json:"-"`
+	Tasks  []RunnableTask `gorm:"foreignKey:OpenContentProviderID" json:"-"`
 }
 
 const (
@@ -36,18 +33,11 @@ const (
 )
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
-	if !strings.HasPrefix(cp.BaseUrl, "http") {
-		cp.BaseUrl = fmt.Sprintf("https://%s", cp.BaseUrl)
-	}
-	if cp.ApiKey != nil {
-		encryptedKey, err := EncryptAccessKey(*cp.ApiKey)
-		if err != nil {
-			return err
-		}
-		cp.ApiKey = &encryptedKey
-	}
 	if cp.Name == Youtube && cp.BaseUrl == "" {
 		cp.BaseUrl = YoutubeApi
+	}
+	if cp.BaseUrl != "" && !strings.HasPrefix(cp.BaseUrl, "http") {
+		cp.BaseUrl = fmt.Sprintf("https://%s", cp.BaseUrl)
 	}
 	return nil
 }

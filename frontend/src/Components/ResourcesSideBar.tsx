@@ -22,12 +22,10 @@ export default function ResourcesSideBar({ providers }: ResourcesSideBarProps) {
     if (error) return <Error />;
     const categoryData = data?.data as ResourceCategory[];
     const getUrl = (prov: OpenContentProvider): string => {
-        switch (prov.name) {
-            case 'Kiwix':
+        switch (prov.name.toLowerCase()) {
+            case 'kiwix':
                 return '/open-content/libraries';
-            case 'Kolibri':
-                return prov.url;
-            case 'Youtube':
+            case 'youtube':
                 return '/open-content/videos';
         }
         return '/open-content/libraries';
