@@ -280,7 +280,9 @@ func getNewProgramForm() map[string]any {
 	form["program"] = models.Program{
 		Name:        "Program for facility: " + strconv.Itoa(rand.Intn(1000)) + facilities[rand.Intn(len(facilities))].Name,
 		Description: "Testing program",
-		CreditType:  "Good-time",
+		CreditType:  "Participation Credit",
+		ProgramStatus: "Available",
+		ProgramType: "Educational",
 	}
 	return form
 }
@@ -289,5 +291,9 @@ func getUpdatedProgramForm() map[string]any {
 	form := make(map[string]any)
 	form["name"] = "Introduction to Management"
 	form["description"] = "A course in human resource management, covering fundamental concepts such as how to deal with unruly employees, recruitment, and inteview strategies."
+	form["credit_type"] = "Earned-Time Credit"
+	form["program_status"] = "ARCHIVED"
+	form["program_type"] = "THERAPEUTIC"
+
 	return form
 }

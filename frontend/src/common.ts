@@ -414,7 +414,7 @@ export enum ProviderPlatformType {
     KOLIBRI = 'kolibri'
 }
 
-export enum ProgramType {
+export enum CreditType {
     ACADEMIC_CREDIT = 'Academic Credit',
     PARTICIPATION_CREDIT = 'Participation Credit',
     CERTIFICATE_OF_COMPLETION = 'Certificate of Completion',
@@ -426,6 +426,13 @@ export enum ProgramStatus {
     ACTIVE = 'ACTIVE',
     INACTIVE = 'INACTIVE',
     ARCHIVED = 'ARCHIVED'
+}
+
+export enum ProgramType {
+    EDUCATIONAL = 'EDUCATIONAL',
+    VOCATIONAL = 'VOCATIONAL',
+    LIFE_SKILLS = 'LIFE SKILLS',
+    THERAPEUTIC = 'THERAPEUTIC'
 }
 
 export interface AdminDashboardJoin {

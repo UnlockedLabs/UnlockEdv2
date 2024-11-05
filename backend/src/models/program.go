@@ -4,7 +4,9 @@ type Program struct {
 	DatabaseFields
 	Name        string `json:"name" gorm:"not null;unique" validate:"required,max=255"`
 	Description string `json:"description" gorm:"not null" validate:"required,max=255"`
-	CreditType  string `json:"credit_type" gorm:"not null" validate:"required,max=255"`
+	CreditType  string `json:"credit_type" gorm:"not null" validate:"required,max=50"`
+	ProgramStatus  string `json:"program_status" gorm:"not null" validate:"required,max=50"`
+	ProgramType  string `json:"program_type" gorm:"not null" validate:"required,max=50"`
 
 	Tags       []ProgramTag `json:"tags" gorm:"foreignKey:ProgramID;references:ID"`
 	Facilities []Facility   `json:"facilities" gorm:"many2many:facilities_programs;"`
