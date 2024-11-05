@@ -44,8 +44,20 @@ export interface Video {
     created_at: string;
     updated_at: string;
     open_content_provider?: OpenContentProvider;
+    video_download_attempts: VideoDownloadAttempt[];
 }
 
+export interface VideoDownloadAttempt {
+    id: number;
+    video_id: number;
+    error_message: string;
+}
+export const MAX_DOWNLOAD_ATTEMPTS = 5;
+export function getVideoErrorMessage(video: Video): string | undefined {
+    return video.video_download_attempts.find(
+        (attempt) => attempt.error_message !== ''
+    )?.error_message;
+}
 export function videoIsAvailable(vid: Video): boolean {
     return vid.availability === 'available';
 }

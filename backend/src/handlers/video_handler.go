@@ -14,9 +14,12 @@ func (srv *Server) registerVideoRoutes() {
 	srv.Mux.Handle("GET /api/videos", srv.applyMiddleware(srv.handleGetVideos))
 	srv.Mux.Handle("GET /api/videos/{id}", srv.applyMiddleware(srv.handleGetVideoById))
 	srv.Mux.Handle("POST /api/videos", srv.applyAdminMiddleware(srv.handlePostVideos))
+	srv.Mux.Handle("PUT /api/videos/{id}/retry", srv.applyAdminMiddleware(srv.handleRetryVideo))
 	srv.Mux.Handle("PUT /api/videos/{id}/toggle", srv.applyAdminMiddleware(srv.handleToggleVideoVisibility))
 	srv.Mux.Handle("DELETE /api/videos/{id}", srv.applyAdminMiddleware(srv.handleDeleteVideo))
 }
+
+const MaxVideoAttempts = 5
 
 func (srv *Server) handleGetVideos(w http.ResponseWriter, r *http.Request, log sLog) error {
 	user := r.Context().Value(ClaimsKey).(*Claims)
@@ -43,6 +46,35 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 		return newForbiddenServiceError(errors.New("video not visible"), "you are not authorized to view this content")
 	}
 	return writeJsonResponse(w, http.StatusOK, video)
+}
+
+func (srv *Server) handleRetryVideo(w http.ResponseWriter, r *http.Request, log sLog) error {
+	vidId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "video_id")
+	}
+	video, err := srv.Db.GetVideoByID(vidId)
+	if err != nil {
+		return newInvalidIdServiceError(err, "video_id")
+	}
+	if len(video.Attempts) >= MaxVideoAttempts {
+		return newBadRequestServiceError(errors.New("max attempts reached"), "max download attempts reached, please remove video and try again")
+	}
+	msg := nats.NewMsg(models.RetryManualDownloadJob.PubName())
+	body := make(map[string]interface{})
+	log.add("video_id", video.ID)
+	body["video_id"] = video.ID
+	body["open_content_provider_id"] = video.OpenContentProviderID
+	body["job_type"] = models.RetryVideoDownloadsJob
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return newInternalServerServiceError(err, "error marshalling video")
+	}
+	msg.Data = bodyBytes
+	if err := srv.nats.PublishMsg(msg); err != nil {
+		return newInternalServerServiceError(err, "error publishing retry job")
+	}
+	return writeJsonResponse(w, http.StatusOK, "retry job published, please wait...")
 }
 
 func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log sLog) error {

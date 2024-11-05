@@ -21,6 +21,7 @@ import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
 import { useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
+import VideoInfoModalForm from '@/Components/forms/VideoInfoModalForm';
 
 export default function VideoManagement() {
     const { user } = useAuth();
@@ -31,6 +32,7 @@ export default function VideoManagement() {
     );
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
+    const videoErrorModal = useRef<HTMLDialogElement>(null);
     const [perPage, setPerPage] = useState(10);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
@@ -56,6 +58,19 @@ export default function VideoManagement() {
         toaster(msg, state);
         addVideoModal.current?.close();
         void mutate();
+    };
+
+    const handleRetryVideo = async (video: Video) => {
+        const response = await API.put<null, object>(
+            `videos/${video.id}/retry`,
+            {}
+        );
+        if (response.success) {
+            toaster(response.message, ToastState.success);
+            await mutate();
+        } else {
+            toaster(response.message, ToastState.error);
+        }
     };
 
     const handleDeleteVideoSuccess = async () => {
@@ -126,6 +141,17 @@ export default function VideoManagement() {
                             video={video}
                             mutate={mutate}
                             role={user?.role ?? UserRole.Student}
+                            handleRetryVideo={async () => {
+                                await handleRetryVideo(video);
+                            }}
+                            handleOpenInfo={() => {
+                                setTargetVideo(video);
+                                videoErrorModal.current?.show();
+                            }}
+                            handleDeleteVideo={() => {
+                                setTargetVideo(video);
+                                deleteVideoModal.current?.show();
+                            }}
                         />
                     ))}
                 </div>
@@ -154,18 +180,40 @@ export default function VideoManagement() {
                 item="Videos"
                 form={<AddVideosForm onSuccess={handleAddVideoSuccess} />}
             />
-            <Modal
-                ref={deleteVideoModal}
-                type={ModalType.Confirm}
-                item="Delete Video"
-                form={
-                    <DeleteForm
-                        item="Video"
-                        onCancel={() => deleteVideoModal.current?.close()}
-                        onSuccess={() => void handleDeleteVideoSuccess()}
+            {targetVideo && (
+                <div>
+                    <Modal
+                        ref={deleteVideoModal}
+                        type={ModalType.Confirm}
+                        item="Delete Video"
+                        form={
+                            <DeleteForm
+                                item="Video"
+                                onCancel={() =>
+                                    deleteVideoModal.current?.close()
+                                }
+                                onSuccess={() =>
+                                    void handleDeleteVideoSuccess()
+                                }
+                            />
+                        }
                     />
-                }
-            />
+                    <Modal
+                        ref={videoErrorModal}
+                        item="video info"
+                        form={
+                            <VideoInfoModalForm
+                                video={targetVideo}
+                                onClose={() => {
+                                    videoErrorModal.current?.close();
+                                    setTargetVideo(undefined);
+                                }}
+                            />
+                        }
+                        type={ModalType.Show}
+                    />
+                </div>
+            )}
         </div>
     );
 }

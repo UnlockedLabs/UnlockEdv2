@@ -4,7 +4,7 @@ import "UnlockEdv2/src/models"
 
 func (db *DB) GetVideoByID(id int) (*models.Video, error) {
 	var video models.Video
-	if err := db.First(&video, id).Error; err != nil {
+	if err := db.Preload("Attempts").First(&video, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "videos")
 	}
 	return &video, nil
