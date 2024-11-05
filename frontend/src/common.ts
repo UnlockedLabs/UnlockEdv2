@@ -41,10 +41,16 @@ export interface Video {
     thumbnail_url: string;
     open_content_provider_id: number;
     availability: 'available' | 'processing' | 'has_error';
+    duration: number;
     created_at: string;
     updated_at: string;
     open_content_provider?: OpenContentProvider;
     video_download_attempts: VideoDownloadAttempt[];
+    video_favorites: VideoFavorites[];
+}
+export interface VideoFavorites {
+    user_id: number;
+    video_id: number;
 }
 
 export interface VideoDownloadAttempt {
@@ -706,8 +712,7 @@ export interface ProgramTag {
 export interface OpenContentProvider {
     id: number;
     name: string;
-    url: string;
-    provider_platform_id: number | null;
+    base_url: string;
     thumbnail_url: string | null;
     currently_enabled: boolean;
     description: string | null;

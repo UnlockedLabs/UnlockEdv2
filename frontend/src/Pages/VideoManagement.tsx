@@ -6,11 +6,9 @@ import {
     ToastState,
     Video,
     ServerResponseMany,
-    UserRole,
-    videoIsAvailable
+    UserRole
 } from '../common';
 import AddVideosForm from '@/Components/forms/AddVideosForm';
-import DeleteForm from '../Components/DeleteForm';
 import Modal from '../Components/Modal';
 import SearchBar from '../Components/inputs/SearchBar';
 import DropdownControl from '../Components/inputs/DropdownControl';
@@ -22,20 +20,22 @@ import VideoCard from '@/Components/VideoCard';
 import { useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import VideoInfoModalForm from '@/Components/forms/VideoInfoModalForm';
+import { useNavigate } from 'react-router-dom';
 
 export default function VideoManagement() {
     const { user } = useAuth();
     const addVideoModal = useRef<HTMLDialogElement>(null);
-    const deleteVideoModal = useRef<HTMLDialogElement>(null);
     const [targetVideo, setTargetVideo] = useState<Video | undefined>(
         undefined
     );
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const videoErrorModal = useRef<HTMLDialogElement>(null);
-    const [perPage, setPerPage] = useState(10);
+    const [polling, setPolling] = useState<boolean>(false);
+    const [perPage, setPerPage] = useState(12);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const navigate = useNavigate();
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
@@ -44,20 +44,32 @@ export default function VideoManagement() {
         `/api/videos?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    let videoData = data?.data ?? [];
+    const videoData = data?.data ?? [];
     const meta = data?.meta;
     if (!user) {
         return null;
     }
     if (user.role === UserRole.Student) {
-        videoData = videoData.filter(
-            (vid) => videoIsAvailable(vid) && vid.visibility_status
-        );
+        navigate('/open-content/videos', { replace: true });
     }
+
+    const pollVideos = (delay: number) => {
+        if (!polling) return;
+        void mutate().then(() => {
+            if (delay > 10000) {
+                setPolling(false);
+                return;
+            }
+            delay *= 2;
+            setTimeout(() => pollVideos(delay), delay);
+        });
+    };
+
     const handleAddVideoSuccess = (msg: string, state: ToastState) => {
-        toaster(msg, state);
+        if (state !== ToastState.null) toaster(msg, state);
         addVideoModal.current?.close();
-        void mutate();
+        setPolling(true);
+        setTimeout(() => pollVideos(1000), 1000);
     };
 
     const handleRetryVideo = async (video: Video) => {
@@ -67,22 +79,11 @@ export default function VideoManagement() {
         );
         if (response.success) {
             toaster(response.message, ToastState.success);
-            await mutate();
+            setPolling(true);
+            setTimeout(() => pollVideos(1000), 1000);
         } else {
             toaster(response.message, ToastState.error);
         }
-    };
-
-    const handleDeleteVideoSuccess = async () => {
-        const response = await API.delete(`videos/${targetVideo?.id}`);
-        const state = response.success ? ToastState.success : ToastState.error;
-        const msg = response.success
-            ? 'Video deleted successfully'
-            : response.message;
-        deleteVideoModal.current?.close();
-        toaster(msg, state);
-        setTargetVideo(undefined);
-        await mutate();
     };
 
     const handleChange = (newSearch: string) => {
@@ -117,22 +118,18 @@ export default function VideoManagement() {
                             }}
                         />
                     </div>
-                    {user?.role === UserRole.Admin && (
-                        <div
-                            className="tooltip tooltip-left"
-                            data-tip="Add Videos"
+                    <div
+                        className="tooltip tooltip-left pl-5"
+                        data-tip="Add Videos to open content library"
+                    >
+                        <button
+                            className="btn btn-primary btn-sm text-base-teal"
+                            onClick={() => addVideoModal.current?.showModal()}
                         >
-                            <button
-                                className="btn btn-primary btn-sm text-base-teal"
-                                onClick={() =>
-                                    addVideoModal.current?.showModal()
-                                }
-                            >
-                                <PlusCircleIcon className="w-4 my-auto" />
-                                Add Videos
-                            </button>
-                        </div>
-                    )}
+                            <PlusCircleIcon className="w-4 my-auto" />
+                            Add Videos
+                        </button>
+                    </div>
                 </div>
                 <div className="grid grid-cols-4 gap-6">
                     {videoData.map((video) => (
@@ -142,15 +139,18 @@ export default function VideoManagement() {
                             mutate={mutate}
                             role={user?.role ?? UserRole.Student}
                             handleRetryVideo={async () => {
+                                if (polling) {
+                                    toaster(
+                                        'please wait several minutes before attempting to retry newly added videos',
+                                        ToastState.error
+                                    );
+                                    return;
+                                }
                                 await handleRetryVideo(video);
                             }}
                             handleOpenInfo={() => {
                                 setTargetVideo(video);
-                                videoErrorModal.current?.show();
-                            }}
-                            handleDeleteVideo={() => {
-                                setTargetVideo(video);
-                                deleteVideoModal.current?.show();
+                                videoErrorModal.current?.showModal();
                             }}
                         />
                     ))}
@@ -173,7 +173,6 @@ export default function VideoManagement() {
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>
-
             <Modal
                 ref={addVideoModal}
                 type={ModalType.Add}
@@ -182,22 +181,6 @@ export default function VideoManagement() {
             />
             {targetVideo && (
                 <div>
-                    <Modal
-                        ref={deleteVideoModal}
-                        type={ModalType.Confirm}
-                        item="Delete Video"
-                        form={
-                            <DeleteForm
-                                item="Video"
-                                onCancel={() =>
-                                    deleteVideoModal.current?.close()
-                                }
-                                onSuccess={() =>
-                                    void handleDeleteVideoSuccess()
-                                }
-                            />
-                        }
-                    />
                     <Modal
                         ref={videoErrorModal}
                         item="video info"

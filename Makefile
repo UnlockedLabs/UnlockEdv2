@@ -7,6 +7,8 @@ BINARY_NAME=server
 MIDDLEWARE=provider-middleware
 GOARCH=$(shell go env GOARCH)
 GOOS=$(shell go env GOOS)
+ACCOUNT_ID=$(AWS_ACCOUNT_ID)
+REPO=.dkr.ecr.us-west-2.amazonaws.com
 
 ascii_art:
 	@echo ' ____ ___      .__                 __              .___     ________  '
@@ -66,9 +68,11 @@ seed: ascii_art
 	go run $(SEED_MAIN)
 
 build: ascii_art
-	@echo "Building binaries for your platform..."
-	go build -o bin/$(BINARY_NAME)-$(GOOS)-$(GOARCH) backend/main.go && go build -o bin/$(MIDDLEWARE)-$(GOOS)-$(GOARCH) $(MIDDLEWARE)/. && go build -o bin/cron-tasks-$(GOOS)-$(GOARCH) ./backend/tasks/.
-	@echo "Binaries built successfully."
+	@if [ -z "$(ACCOUNT_ID)" ]; then \
+		echo "Error: ACCOUNT_ID is not set, you must set AWS_ACCOUNT_ID env var, or pass ACCOUNT_ID=value in order to tag builds"; \
+		exit 1; \
+	fi
+	docker buildx build . -f backend/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/unlockedv2:latest && docker buildx build . -f backend/tasks/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/cron_tasks:latest && docker buildx build frontend -f frontend/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/frontend:latest && docker buildx build . -f provider-middleware/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/provider_middleware:latest
 
 migration: ascii_art
 	@if [ -z "$(NAME)" ]; then \

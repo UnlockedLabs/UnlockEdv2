@@ -11,6 +11,7 @@ jar
 /frontend/public/build
 /frontend/public/thumbnails/*
 /frontend/public/*.mp4
+/frontend/public/videos/*
 /migrations/migrations
 /provider-middleware/providers.db
 /backend/server

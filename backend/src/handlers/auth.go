@@ -187,7 +187,6 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 			return nil, hasCookie, err
 		}
 		if active {
-			log.WithFields(fields).Info("Got active  session from ory")
 			identity, ok := oryResp["identity"].(map[string]interface{})
 			if ok {
 				kratosID, ok := identity["id"].(string)

@@ -12,7 +12,8 @@ import {
     ModalType,
     ServerResponseMany,
     ToastState,
-    User
+    User,
+    UserRole
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
 import EditUserForm from '@/Components/forms/EditUserForm';
@@ -281,7 +282,12 @@ export default function StudentManagement() {
                 ref={addUserModal}
                 type={ModalType.Add}
                 item="Student"
-                form={<AddUserForm onSuccess={onAddUserSuccess} />}
+                form={
+                    <AddUserForm
+                        role={UserRole.Student}
+                        onSuccess={onAddUserSuccess}
+                    />
+                }
             />
             <Modal
                 ref={editUserModal}

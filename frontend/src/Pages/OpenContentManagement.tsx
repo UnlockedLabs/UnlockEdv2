@@ -1,8 +1,9 @@
 import { OpenContentProviderType, Tab } from '@/common';
-import { useState, useEffect } from 'react';
-import TabView from '@/Components/TabView';
-import { Outlet, useNavigate } from 'react-router-dom';
 import { usePathValue } from '@/Context/PathValueCtx';
+import { useEffect, useState } from 'react';
+import TabView from '@/Components/TabView';
+import { useNavigate, Outlet } from 'react-router-dom';
+import { PlusCircleIcon } from '@heroicons/react/24/solid';
 
 export default function OpenContentManagement() {
     const { setPathVal } = usePathValue();
@@ -14,7 +15,6 @@ export default function OpenContentManagement() {
     useEffect(() => {
         setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
     }, [activeTab]);
-
     const tabs = [
         { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
         { name: OpenContentProviderType.VIDEOS, value: 'Videos' }
@@ -33,6 +33,22 @@ export default function OpenContentManagement() {
                 activeTab={activeTab}
                 setActiveTab={handlePageChange}
             />
+            <div
+                className="tooltip tooltip-left mt-5 pl-5 justify-self-end"
+                data-tip="View as Student"
+            >
+                <button
+                    className="btn btn-primary btn-sm text-base-teal"
+                    onClick={() =>
+                        navigate(`/open-content/${activeTab.value}`, {
+                            replace: true
+                        })
+                    }
+                >
+                    <PlusCircleIcon className="w-4 my-auto" />
+                    Student View
+                </button>
+            </div>
             <div className="flex flex-row gap-4 pt-8 pb-8">
                 <Outlet />
             </div>

@@ -149,7 +149,7 @@ export default function Navbar({
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/open-content">
+                                    <Link to="/open-content/libraries">
                                         <ULIComponent icon={BookOpenIcon} />
                                         Open Content
                                     </Link>
