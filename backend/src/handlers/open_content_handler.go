@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 func (srv *Server) registerOpenContentRoutes() {
 	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleIndexOpenContent))
 	srv.Mux.Handle("PUT /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleToggleOpenContent))
+	srv.Mux.Handle("PATCH /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleUpdateOpenContentProvider))
 	srv.Mux.Handle("POST /api/open-content", srv.applyAdminMiddleware(srv.handleCreateOpenContent))
 }
 
@@ -26,6 +28,28 @@ func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request
 	return writeJsonResponse(w, http.StatusOK, content)
 }
 
+func (srv *Server) handleUpdateOpenContentProvider(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "open content provider ID")
+	}
+	log.add("open_content_provider_id", id)
+	var body models.OpenContentProvider
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	defer r.Body.Close()
+	var prov models.OpenContentProvider
+	if err := srv.Db.Find(&prov, id).Error; err != nil {
+		return newDatabaseServiceError(err)
+	}
+	models.UpdateStruct(&prov, &body)
+	if err := srv.Db.UpdateOpenContentProvider(&prov); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Content provider updated successfully")
+}
+
 func (srv *Server) handleToggleOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -38,20 +62,13 @@ func (srv *Server) handleToggleOpenContent(w http.ResponseWriter, r *http.Reques
 	return writeJsonResponse(w, http.StatusOK, "Content provider toggled successfully")
 }
 
-type NewContentRequest struct {
-	Url          string `json:"url"`
-	ThumbnailUrl string `json:"thumbnail_url"`
-	LinkedID     int    `json:"linked_provider_id"`
-	Description  string `json:"description"`
-}
-
 func (srv *Server) handleCreateOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var body NewContentRequest
+	var body models.OpenContentProvider
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
-	if err := srv.Db.CreateContentProvider(body.Url, body.ThumbnailUrl, body.Description, body.LinkedID); err != nil {
+	if err := srv.Db.CreateContentProvider(&body); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Content provider created successfully")

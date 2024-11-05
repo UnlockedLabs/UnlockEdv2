@@ -19,7 +19,8 @@ func (sh *ServiceHandler) registerRoutes() {
 }
 
 const (
-	CANCEL_TIMEOUT = 30 * time.Minute
+	CANCEL_TIMEOUT       = 30 * time.Minute
+	VIDEO_CANCEL_TIMEOUT = 4 * time.Hour
 )
 
 func (sh *ServiceHandler) initSubscription() error {
@@ -34,6 +35,7 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.AddVideosJob.PubName(), sh.handleAddVideos},
 		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
 		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
+		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
 	}
 	for _, sub := range subscriptions {
 		_, err := sh.nats.Subscribe(sub.topic, func(msg *nats.Msg) {
@@ -200,7 +202,7 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 }
 
 func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
-	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	contxt, cancel := context.WithTimeout(ctx, 120*time.Minute)
 	defer cancel()
 	provider, body, err := sh.getContentProvider(msg)
 	if err != nil {
@@ -208,7 +210,7 @@ func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
 		return
 	}
 	ytService := NewVideoService(provider, sh.db, &body)
-	err = ytService.AddVideos(contxt)
+	err = ytService.addVideos(contxt)
 	if err != nil {
 		logger().Errorf("error adding videos: %v", err)
 		return
@@ -228,7 +230,7 @@ func (sh *ServiceHandler) handleManualRetryDownload(ctx context.Context, msg *na
 	ytService := NewVideoService(provider, sh.db, &body)
 	videoId, ok := body["video_id"].(float64)
 	if ok {
-		err = ytService.RetrySingleVideo(contxt, int(videoId))
+		err = ytService.retrySingleVideo(contxt, int(videoId))
 		if err != nil {
 			logger().Errorf("error retrying single video: %v", err)
 		}
@@ -239,6 +241,24 @@ func (sh *ServiceHandler) handleManualRetryDownload(ctx context.Context, msg *na
 
 func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats.Msg) {
 	logger().Infof("Retrying failed videos")
+	contxt, cancel := context.WithTimeout(ctx, VIDEO_CANCEL_TIMEOUT)
+	defer cancel()
+	provider, body, err := sh.getContentProvider(msg)
+	if err != nil {
+		logger().Errorf("error fetching provider from msg parameters %v", err)
+		return
+	}
+	ytService := NewVideoService(provider, sh.db, &body)
+	err = ytService.retryFailedVideos(contxt)
+	if err != nil {
+		logger().Errorf("error retrying failed videos: %v", err)
+		return
+	}
+	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), true)
+}
+
+func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats.Msg) {
+	logger().Infof("Syncing video metadata")
 	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
 	defer cancel()
 	provider, body, err := sh.getContentProvider(msg)
@@ -247,9 +267,9 @@ func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats
 		return
 	}
 	ytService := NewVideoService(provider, sh.db, &body)
-	err = ytService.RetryFailedVideos(contxt)
+	err = ytService.syncVideoMetadataFromS3(contxt)
 	if err != nil {
-		logger().Errorf("error retrying failed videos: %v", err)
+		logger().Errorf("error syncing video metadata: %v", err)
 		return
 	}
 	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), true)

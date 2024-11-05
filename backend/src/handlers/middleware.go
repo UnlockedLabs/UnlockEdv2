@@ -16,53 +16,72 @@ import (
 )
 
 const (
-	CsrfTokenCtx csrfTokenKey = "csrf_token"
-	timeWindow                = time.Minute
-	maxRequests  int          = 50
-	libraryKey   contextKey   = "library"
+	CsrfTokenCtx contextKey = "csrf_token"
+	timeWindow              = time.Minute
+	maxRequests  int        = 50
+	libraryKey   contextKey = "library"
+	videoKey     contextKey = "video"
 	// rate limit is 50 requests from a unique user in a minute
 )
 
-type csrfTokenKey string
-
 func (srv *Server) applyMiddleware(h HttpFunc) http.Handler {
-	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
-		srv.rateLimitMiddleware(
-			srv.authMiddleware(
-				srv.handleError(h)))))
+	return srv.applyStandardMiddleware(
+		srv.handleError(h))
 }
 
 func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
+	return srv.applyStandardMiddleware(
+		srv.adminMiddleware(
+			srv.handleError(h)))
+}
+
+func (srv *Server) applyStandardMiddleware(next http.Handler) http.Handler {
 	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
 		srv.rateLimitMiddleware(
 			srv.authMiddleware(
-				srv.adminMiddleware(
-					srv.handleError(h))))))
+				next))))
+}
+
+func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
+	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resourceID := r.PathValue("id")
+		var video models.Video
+		tx := srv.Db.Model(&models.Video{}).Where("id = ?", resourceID)
+		user := r.Context().Value(ClaimsKey).(*Claims)
+		switch user.Role {
+		case models.Admin:
+			tx = tx.First(&video)
+		default:
+			tx = tx.First(&video, "visibility_status = true AND availability = 'available'")
+		}
+		if err := tx.Error; err != nil {
+			srv.errorResponse(w, http.StatusNotFound, "Video not found, is not available or visibility is not enabled")
+			return
+		}
+		ctx := context.WithValue(r.Context(), videoKey, &video)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}))
 }
 
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
-	log.Printf("proxy middleware")
-	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
-		srv.rateLimitMiddleware(
-			srv.authMiddleware(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					resourceID := r.PathValue("id")
-					var library models.Library
-					tx := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID)
-					user := r.Context().Value(ClaimsKey).(*Claims)
-					switch user.Role {
-					case models.Admin:
-						tx = tx.First(&library)
-					default:
-						tx = tx.Where("visibility_status = true").First(&library)
-					}
-					if err := tx.Error; err != nil {
-						srv.errorResponse(w, http.StatusNotFound, "Library not found or visibility is not enabled")
-						return
-					}
-					ctx := context.WithValue(r.Context(), libraryKey, &library)
-					next.ServeHTTP(w, r.WithContext(ctx))
-				})))))
+	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resourceID := r.PathValue("id")
+		var library models.Library
+		tx := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID)
+		user := r.Context().Value(ClaimsKey).(*Claims)
+		switch user.Role {
+		case models.Admin:
+			tx = tx.First(&library)
+		default:
+			tx = tx.First(&library, "visibility_status = true")
+		}
+		if err := tx.Error; err != nil {
+			srv.errorResponse(w, http.StatusNotFound, "Library not found or visibility is not enabled")
+			return
+		}
+		ctx := context.WithValue(r.Context(), libraryKey, &library)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}))
 }
 
 func corsMiddleware(next http.Handler) http.HandlerFunc {
