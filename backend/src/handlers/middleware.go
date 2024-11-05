@@ -41,7 +41,6 @@ func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
 }
 
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
-	log.Printf("proxy middleware")
 	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
 		srv.rateLimitMiddleware(
 			srv.authMiddleware(

@@ -59,7 +59,7 @@ You will be prompted immediately to set a new password and name for the default 
 will be redirected to the dashboard.
 
 
-**Installing front-end dependencies when developing**
+**Installing front-end dependencies**
 Because `vite` runs in a docker container when developing, there is a docker volume with the `node_modules` mounted to the container. Installing the package in the frontend directory will not allow the changes to reflect when developing. The easiest way to do this is to run `make install-dep NAME=some_library` and it will take care of it for you.
 If this does not work because your directory is named something different, you can do the following:
 

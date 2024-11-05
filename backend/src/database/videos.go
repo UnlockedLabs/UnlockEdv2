@@ -1,6 +1,8 @@
 package database
 
-import "UnlockEdv2/src/models"
+import (
+	"UnlockEdv2/src/models"
+)
 
 func (db *DB) GetVideoByID(id int) (*models.Video, error) {
 	var video models.Video
@@ -18,18 +20,59 @@ func (db *DB) GetVideoProvider() (*models.OpenContentProvider, error) {
 	return &provider, nil
 }
 
-// onlyVisible parameter is for student users who can not see all selections
-func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int) ([]models.Video, error) {
+func (db *DB) FavoriteVideo(vidID int, userID uint) (bool, error) {
+	fav := models.VideoFavorite{
+		VideoID: uint(vidID),
+		UserID:  userID,
+	}
+	if db.Where("video_id = ? AND user_id = ?", vidID, userID).First(&models.VideoFavorite{}).RowsAffected > 0 {
+		if err := db.Where("video_id = ? AND user_id = ?", vidID, userID).Delete(&fav).Error; err != nil {
+			return false, newDeleteDBError(err, "video_favorites")
+		}
+		return false, nil
+	} else {
+		if err := db.Create(&fav).Error; err != nil {
+			return false, newCreateDBError(err, "video_favorites")
+		}
+	}
+	return true, nil
+}
+
+func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy string, userID uint) (int64, []models.Video, error) {
 	var videos []models.Video
-	tx := db.Model(&models.Video{})
+	tx := db.Model(&models.Video{}).Preload("Attempts").Preload("Favorites", "user_id = ?", userID)
+	var total int64
+	validOrder := map[string]bool{
+		"title ASC":       true,
+		"title DESC":      true,
+		"created_at ASC":  true,
+		"created_at DESC": true,
+		"favorited":       true,
+	}
 	if onlyVisible {
 		tx = tx.Where("visibility_status = ?", true)
 	}
-	offset := (page - 1) * perPage
-	if err := tx.Preload("Attempts").Offset(offset).Limit(perPage).Find(&videos).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "videos")
+	if search != "" {
+		search = "%" + search + "%"
+		tx = tx.Where("LOWER(title) LIKE ? OR LOWER(channel_title) LIKE ?", search, search)
 	}
-	return videos, nil
+	if valid, ok := validOrder[orderBy]; ok && valid {
+		if orderBy == "favorited" {
+			tx = tx.Joins("LEFT JOIN video_favorites ON video_favorites.video_id = videos.id").Group("videos.id").Order("COUNT(video_favorites.id) DESC")
+		} else {
+			tx = tx.Order(orderBy)
+		}
+	} else {
+		tx = tx.Order("created_at DESC")
+	}
+	if err := tx.Count(&total).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "videos")
+	}
+	offset := (page - 1) * perPage
+	if err := tx.Offset(offset).Limit(perPage).Find(&videos).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "videos")
+	}
+	return total, videos, nil
 }
 
 func (db *DB) ToggleVideoVisibility(id int) error {

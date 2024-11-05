@@ -68,18 +68,6 @@ func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) error {
 	if err := db.Create(platform).Error; err != nil {
 		return newCreateDBError(err, "provider_platforms")
 	}
-	if platform.Type == models.Kolibri {
-		contentProv := models.OpenContentProvider{
-			BaseUrl:            platform.BaseUrl,
-			ProviderPlatformID: &platform.ID,
-			CurrentlyEnabled:   true,
-			Description:        models.KolibriDescription,
-			Thumbnail:          models.KolibriThumbnailUrl,
-		}
-		if err := db.Create(&contentProv).Error; err != nil {
-			log.Errorln("unable to create relevant content provider for new kolibri instance")
-		}
-	}
 	return nil
 }
 

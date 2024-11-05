@@ -129,9 +129,7 @@ services:
     volumes:
       - logs:/logs
       - ./:/app 
-    depends_on:
-      provider-service:
-        condition: service_started
+    depends_on: [provider-service]
 
   keto-migrate:
     image: oryd/keto:v0.12.0-alpha.0

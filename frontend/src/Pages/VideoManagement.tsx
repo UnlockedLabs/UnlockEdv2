@@ -6,8 +6,7 @@ import {
     ToastState,
     Video,
     ServerResponseMany,
-    UserRole,
-    videoIsAvailable
+    UserRole
 } from '../common';
 import AddVideosForm from '@/Components/forms/AddVideosForm';
 import DeleteForm from '../Components/DeleteForm';
@@ -22,6 +21,7 @@ import VideoCard from '@/Components/VideoCard';
 import { useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import VideoInfoModalForm from '@/Components/forms/VideoInfoModalForm';
+import { useNavigate } from 'react-router-dom';
 
 export default function VideoManagement() {
     const { user } = useAuth();
@@ -33,9 +33,11 @@ export default function VideoManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const videoErrorModal = useRef<HTMLDialogElement>(null);
-    const [perPage, setPerPage] = useState(10);
+    const [polling, setPolling] = useState<boolean>(false);
+    const [perPage, setPerPage] = useState(12);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const navigate = useNavigate();
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
@@ -44,20 +46,37 @@ export default function VideoManagement() {
         `/api/videos?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    let videoData = data?.data ?? [];
+    const videoData = data?.data ?? [];
     const meta = data?.meta;
     if (!user) {
         return null;
     }
     if (user.role === UserRole.Student) {
-        videoData = videoData.filter(
-            (vid) => videoIsAvailable(vid) && vid.visibility_status
-        );
+        navigate('/open-content/videos', { replace: true });
     }
+
     const handleAddVideoSuccess = (msg: string, state: ToastState) => {
-        toaster(msg, state);
+        if (state !== ToastState.null) toaster(msg, state);
         addVideoModal.current?.close();
-        void mutate();
+        let delay = 1000;
+        const initialVideos = videoData.length;
+        const pollVideos = () => {
+            void mutate().then((data) => {
+                if (
+                    (data && data.data.length > initialVideos) ||
+                    delay > 10000
+                ) {
+                    // Stop polling if populated or we max out at 10 seconds
+                    // keep polling set for another minute to prevent retries while still processing
+                    setTimeout(() => setPolling(false), 128 << 9);
+                    return;
+                }
+                delay *= 2;
+                setTimeout(pollVideos, delay);
+            });
+        };
+        setPolling(true);
+        setTimeout(pollVideos, delay);
     };
 
     const handleRetryVideo = async (video: Video) => {
@@ -117,22 +136,18 @@ export default function VideoManagement() {
                             }}
                         />
                     </div>
-                    {user?.role === UserRole.Admin && (
-                        <div
-                            className="tooltip tooltip-left"
-                            data-tip="Add Videos"
+                    <div
+                        className="tooltip tooltip-left pl-5"
+                        data-tip="Add Videos to open content library"
+                    >
+                        <button
+                            className="btn btn-primary btn-sm text-base-teal"
+                            onClick={() => addVideoModal.current?.showModal()}
                         >
-                            <button
-                                className="btn btn-primary btn-sm text-base-teal"
-                                onClick={() =>
-                                    addVideoModal.current?.showModal()
-                                }
-                            >
-                                <PlusCircleIcon className="w-4 my-auto" />
-                                Add Videos
-                            </button>
-                        </div>
-                    )}
+                            <PlusCircleIcon className="w-4 my-auto" />
+                            Add Videos
+                        </button>
+                    </div>
                 </div>
                 <div className="grid grid-cols-4 gap-6">
                     {videoData.map((video) => (
@@ -142,15 +157,22 @@ export default function VideoManagement() {
                             mutate={mutate}
                             role={user?.role ?? UserRole.Student}
                             handleRetryVideo={async () => {
+                                if (polling) {
+                                    toaster(
+                                        'please wait several minutes before attempting to retry newly added videos',
+                                        ToastState.error
+                                    );
+                                    return;
+                                }
                                 await handleRetryVideo(video);
                             }}
                             handleOpenInfo={() => {
                                 setTargetVideo(video);
-                                videoErrorModal.current?.show();
+                                videoErrorModal.current?.showModal();
                             }}
                             handleDeleteVideo={() => {
                                 setTargetVideo(video);
-                                deleteVideoModal.current?.show();
+                                deleteVideoModal.current?.showModal();
                             }}
                         />
                     ))}
@@ -173,7 +195,6 @@ export default function VideoManagement() {
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>
-
             <Modal
                 ref={addVideoModal}
                 type={ModalType.Add}

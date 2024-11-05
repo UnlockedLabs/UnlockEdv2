@@ -13,7 +13,8 @@ import { KeyedMutator } from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import ULIComponent from './ULIComponent';
-import { TrashIcon } from '@heroicons/react/24/solid';
+import { BookmarkIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
 
 export default function VideoCard({
     video,
@@ -26,9 +27,9 @@ export default function VideoCard({
     video: Video;
     mutate: KeyedMutator<ServerResponseMany<Video>>;
     role: UserRole;
-    handleOpenInfo: () => void;
-    handleDeleteVideo: () => void;
-    handleRetryVideo: (video: Video) => Promise<void>;
+    handleOpenInfo?: () => void;
+    handleDeleteVideo?: () => void;
+    handleRetryVideo?: (video: Video) => Promise<void>;
 }) {
     const [visible, setVisible] = useState<boolean>(video.visibility_status);
     const navigate = useNavigate();
@@ -37,13 +38,13 @@ export default function VideoCard({
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
             setVisible(visibilityStatus);
-            void handleToggleVisibility();
+            void handleToggleAction('visibility');
         }
     }
 
-    const handleToggleVisibility = async () => {
+    const handleToggleAction = async (action: 'favorite' | 'visibility') => {
         const response = await API.put<null, object>(
-            `videos/${video.id}/toggle`,
+            `videos/${video.id}/${action}`,
             {}
         );
         if (response.success) {
@@ -53,29 +54,42 @@ export default function VideoCard({
             if (toaster) toaster(response.message, ToastState.error);
         }
     };
-
+    let bookmark: JSX.Element;
+    if (video.video_favorites && video.video_favorites.length > 0) {
+        bookmark = <BookmarkIcon className="h-5 text-primary-yellow" />;
+    } else bookmark = <BookmarkIconOutline className={`h-5 text-black`} />;
     return (
         <div
-            className={`card overflow-hidden ${
+            className={`card overflow-visible ${
                 videoIsAvailable(video)
                     ? 'cursor-pointer'
                     : 'cursor-pointer border-3 border-red-500'
             }`}
-            onClick={() =>
-                videoIsAvailable(video) &&
-                navigate(`/viewer/videos/${video.id}`)
-            }
         >
-            {role === UserRole.Admin && (
+            {role === UserRole.Admin ? (
                 <ULIComponent
-                    iconClassName="w-6 h-4"
+                    iconClassName="w-8 h-4"
                     dataTip="Delete video"
                     icon={TrashIcon}
                     tooltipClassName="w-6 h-6 self-start cursor-pointer"
                     onClick={handleDeleteVideo}
                 />
+            ) : (
+                <div
+                    className="tooltip tooltip-top w-6 h-6"
+                    data-tip="Favorite video"
+                    onClick={() => void handleToggleAction('favorite')}
+                >
+                    {bookmark}
+                </div>
             )}
-            <div className="flex p-4 gap-2 border-b-2">
+            <div
+                className="flex p-4 gap-2 border-b-2"
+                onClick={() =>
+                    videoIsAvailable(video) &&
+                    navigate(`/viewer/videos/${video.id}`)
+                }
+            >
                 <figure className="w-[300px] bg-cover">
                     <img
                         src={video?.thumbnail_url ?? ''}
@@ -99,7 +113,7 @@ export default function VideoCard({
                             visible={visible}
                             changeVisibility={changeVisibility}
                         />
-                    ) : (
+                    ) : handleRetryVideo ? (
                         <div>
                             <button
                                 className="btn btn-sm btn-outline"
@@ -114,7 +128,7 @@ export default function VideoCard({
                                 Retry Download
                             </button>
                         </div>
-                    ))}
+                    ) : null)}
             </div>
         </div>
     );

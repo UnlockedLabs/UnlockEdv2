@@ -200,7 +200,7 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 }
 
 func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
-	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	contxt, cancel := context.WithTimeout(ctx, 120*time.Minute)
 	defer cancel()
 	provider, body, err := sh.getContentProvider(msg)
 	if err != nil {

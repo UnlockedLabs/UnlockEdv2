@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 import { AxiosError } from 'axios';
+import { useLocation } from 'react-router-dom';
 
 export default function LibaryLayout({
     studentView
@@ -36,13 +37,29 @@ export default function LibaryLayout({
     }
     const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
+    const route = useLocation();
+    const adminWithStudentView = (): boolean => {
+        return (
+            !route.pathname.includes('management') &&
+            user?.role === UserRole.Admin
+        );
+    };
+    const getVisibility = (): string => {
+        return adminWithStudentView()
+            ? 'visible'
+            : role == UserRole.Admin
+              ? filterLibrariesAdmin
+              : studentView
+                ? 'visible'
+                : filterLibraries;
+    };
     const {
         data: libraries,
         mutate: mutateLibraries,
         error: librariesError,
         isLoading: librariesLoading
     } = useSWR<ServerResponseMany<Library>, AxiosError>(
-        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${getVisibility()}&search=${searchTerm}`
     );
     const librariesMeta = libraries?.meta ?? {
         total: 0,
@@ -69,17 +86,17 @@ export default function LibaryLayout({
                     searchTerm={searchTerm}
                     changeCallback={setSearchTerm}
                 />
-                {role === UserRole.Admin ? (
-                    <DropdownControl
-                        label="Filter by"
-                        enumType={FilterLibrariesAdmin}
-                        setState={setFilterLibrariesAdmin}
-                    />
-                ) : (
+                {adminWithStudentView() || role === UserRole.Student ? (
                     <DropdownControl
                         label="Filter by"
                         enumType={FilterLibraries}
                         setState={setFilterLibraries}
+                    />
+                ) : (
+                    <DropdownControl
+                        label="Filter by"
+                        enumType={FilterLibrariesAdmin}
+                        setState={setFilterLibrariesAdmin}
                     />
                 )}
             </div>
@@ -89,7 +106,7 @@ export default function LibaryLayout({
                         key={library.id}
                         library={library}
                         mutate={mutateLibraries}
-                        role={role}
+                        role={adminWithStudentView() ? UserRole.Student : role}
                     />
                 ))}
             </div>
