@@ -83,7 +83,7 @@ services:
   provider-service:
     build:
       context: .
-      dockerfile: provider-middleware/Dockerfile
+      dockerfile: provider-middleware/dev.Dockerfile
     environment:
       - APP_ENV=production
       - DB_HOST=postgres
@@ -101,7 +101,8 @@ services:
       - intranet
     volumes:
       - logs:/logs
-      - ./frontend/public:/videos
+      - ./frontend/public/videos:/videos
+      - ./:/app 
     ports:
       - 8081:8081
     restart: unless-stopped 
