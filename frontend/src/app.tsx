@@ -243,15 +243,15 @@ const router = createBrowserRouter([
                             path: ['open-content-management']
                         }
                     },
-                    // {
-                    //     path: 'programs',
-                    //     element: <Programs />,
-                    //     errorElement: <Error />,
-                    //     handle: {
-                    //         title: 'Programs',
-                    //         path: ['programs']
-                    //     }
-                    // },
+                    {
+                        path: 'programs',
+                        element: <Programs />,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Programs',
+                            path: ['programs']
+                        }
+                    },
                     {
                         path: 'facilities-management',
                         element: <FacilityManagement />,
