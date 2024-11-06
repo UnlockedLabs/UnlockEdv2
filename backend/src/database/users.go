@@ -128,7 +128,7 @@ func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []
 }
 
 func (db *DB) CreateUser(user *models.User) error {
-	error := db.Create(&user).Error
+	error := db.Create(user).Error
 	if error != nil {
 		return newCreateDBError(error, "users")
 	}

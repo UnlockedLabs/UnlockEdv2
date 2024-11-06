@@ -26,6 +26,11 @@ func (db *DB) GetFacilityByID(id int) (*models.Facility, error) {
 }
 
 func (db *DB) CreateFacility(facility *models.Facility) error {
+	if err := Validate().Struct(facility); err != nil {
+		log.Error("Validation Error")
+		return NewDBError(err, "facilities")
+	}
+
 	if err := db.Create(&facility).Error; err != nil {
 		log.Error("error creating facility in database")
 		return newCreateDBError(err, "facilities")
