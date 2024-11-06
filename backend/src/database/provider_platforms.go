@@ -36,7 +36,7 @@ func iterMap[T any](fun func(T) T, arr []T) []T {
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
 	if err := db.Model(models.ProviderPlatform{}).Preload("OidcClient").
-		Find(&platforms, "state = ?", "active").Error; err != nil {
+		Find(&platforms, "state = ?", "enabled").Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
 
