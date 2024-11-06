@@ -88,7 +88,7 @@ export default function AdminManagement() {
         void mutate();
     };
 
-    const hanldleEditUser = () => {
+    const handleEditUser = () => {
         editUserModal.current?.close();
         resetModal();
         void mutate();
@@ -236,6 +236,7 @@ export default function AdminManagement() {
                                                 <div className="flex space-x-4">
                                                     <ULIComponent
                                                         dataTip={'Edit Admin'}
+                                                        tooltipClassName="tooltip-left"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             editUserModal.current?.showModal();
@@ -243,7 +244,10 @@ export default function AdminManagement() {
                                                         icon={PencilIcon}
                                                     />
                                                     <ULIComponent
-                                                        dataTip={'Edit Admin'}
+                                                        dataTip={
+                                                            'Reset Password'
+                                                        }
+                                                        tooltipClassName="tooltip-left"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             resetUserPasswordModal.current?.showModal();
@@ -256,6 +260,7 @@ export default function AdminManagement() {
                                                         dataTip={getUserIconData[
                                                             'data-tip'
                                                         ](user)}
+                                                        tooltipClassName="tooltip-left"
                                                         onClick={getUserIconData.onClick(
                                                             user
                                                         )}
@@ -307,7 +312,7 @@ export default function AdminManagement() {
                 form={
                     targetUser ? (
                         <EditUserForm
-                            onSuccess={hanldleEditUser}
+                            onSuccess={handleEditUser}
                             user={targetUser}
                         />
                     ) : (

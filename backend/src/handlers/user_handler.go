@@ -253,6 +253,7 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
+	models.UpdateStruct(&toUpdate, &user)
 	err = srv.Db.UpdateUser(toUpdate)
 	if err != nil {
 		return newDatabaseServiceError(err)

@@ -21,11 +21,11 @@ export default function ULIComponent(props: ULIComponentProps) {
 
     return (
         <div
-            className={`tooltip ${props.tooltipClassName}`}
+            className={`tooltip ${props.tooltipClassName ?? ''}`}
             data-tip={props.dataTip}
         >
             <props.icon
-                className={`w-4 h-4 ${props.iconClassName}`}
+                className={`w-4 h-4 ${props.iconClassName ?? ''}`}
                 onClick={props.onClick}
                 onMouseDown={props.onMouseDown}
             />
