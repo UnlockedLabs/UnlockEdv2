@@ -30,7 +30,7 @@ func (secEvent *ProgramSectionEvent) BeforeCreate(tx *gorm.DB) (err error) {
 		return
 	}
 	if duration <= 0 {
-		err = errors.New("Duration cannot be negative")
+		err = errors.New("duration cannot be negative")
 		return
 	}
 	_, err = rrule.StrToRRule(secEvent.RecurrenceRule)

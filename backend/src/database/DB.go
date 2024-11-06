@@ -48,7 +48,6 @@ var TableList = []interface{}{
 	&models.RunnableTask{},
 	&models.Library{},
 }
-
 var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
 
 func InitDB(isTesting bool) *DB {
@@ -117,7 +116,8 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			log.Fatal("db transaction failed getting default facility")
 		}
 		defaultFacility := models.Facility{
-			Name: "Default",
+			Name:     "Default",
+			Timezone: "America/Chicago",
 		}
 		log.Printf("Creating facility: %v", defaultFacility)
 		if err := db.Create(&defaultFacility).Error; err != nil {

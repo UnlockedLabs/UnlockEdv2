@@ -34,8 +34,8 @@ type User struct {
 	FacilityID uint     `json:"facility_id"`
 
 	/* foreign keys */
-	Mappings []ProviderUserMapping `json:"-"`
-	Facility *Facility             `gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL" json:"-"`
+	Mappings []ProviderUserMapping `json:"mappings,omitempty"`
+	Facility *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
 }
 
 type ImportUser struct {

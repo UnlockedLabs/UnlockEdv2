@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -23,6 +24,13 @@ func NewDBError(err error, msg string) DBError {
 	dbError := DBError{
 		Message:     msg,
 		InternalErr: err,
+	}
+	// first handle validation errors
+	valErrs, ok := err.(validator.ValidationErrors)
+	if ok {
+		dbError.Status = http.StatusBadRequest
+		dbError.Message = fmt.Sprintf("%s failed: %v", msg, valErrs)
+		return dbError
 	}
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
