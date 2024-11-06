@@ -244,15 +244,6 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'programs',
-                        element: <Programs />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Programs',
-                            path: ['programs']
-                        }
-                    },
-                    {
                         path: 'facilities-management',
                         element: <FacilityManagement />,
                         handle: {
@@ -267,15 +258,6 @@ const router = createBrowserRouter([
                         handle: {
                             title: 'Course Catalog',
                             path: ['course-catalog']
-                        }
-                    },
-                    {
-                        path: 'programs',
-                        element: <Programs />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Programs',
-                            path: ['programs']
                         }
                     },
                     {
