@@ -31,6 +31,8 @@ func (sh *ServiceHandler) initServiceFromRequest(ctx context.Context, r *http.Re
 		return NewKolibriService(&provider, nil), nil
 	case models.CanvasCloud, models.CanvasOSS:
 		return newCanvasService(&provider, nil), nil
+	case models.Brightspace:
+		return newBrightspaceService(&provider, sh.db, nil)
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
@@ -62,6 +64,8 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 		return NewKolibriService(&provider, &body), nil
 	case models.CanvasCloud, models.CanvasOSS:
 		return newCanvasService(&provider, &body), nil
+	case models.Brightspace:
+		return newBrightspaceService(&provider, sh.db, &body)
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
