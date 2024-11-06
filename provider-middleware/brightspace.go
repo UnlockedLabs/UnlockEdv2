@@ -130,8 +130,36 @@ func (srv *BrightspaceService) SendRequest(url string) (*http.Response, error) {
 }
 
 func (srv *BrightspaceService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
-	fmt.Println("GetUsers...")
-	return nil, nil
+	pluginId, err := srv.getPluginId("Users")
+	if err != nil {
+		log.Errorf("error attempting to get plugin id for users, error is: %v", err)
+		return nil, err
+	}
+	log.Infof("successfully retrieved plugin id %v for downloading csv file for users", pluginId)
+	downloadUrl := fmt.Sprintf(DataDownloadEnpoint, pluginId)
+	csvFile, err := srv.downloadAndUnzipFile("Users.zip", downloadUrl)
+	if err != nil {
+		log.Errorf("error downloading and unzipping csv file, error is: %v", err)
+		return nil, err
+	}
+	log.Infof("successfully downloaded and unzipped %v for importing users", csvFile)
+	bsUsers := []BrightspaceUser{}
+	importUsers := []models.ImportUser{}
+	readCSV(&bsUsers, csvFile)
+	cleanUpFiles("Users.zip", csvFile)
+	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "GetUsers", "csvFile": csvFile}
+	log.WithFields(fields).Info("importing users from provider using csv file")
+	for _, bsUser := range bsUsers {
+		if strings.ToUpper(bsUser.IsActive) == "TRUE" {
+			if db.Where("provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, bsUser.UserId).First(&models.ProviderUserMapping{}).Error == nil {
+				continue
+			}
+			user := srv.IntoImportUser(bsUser)
+			importUsers = append(importUsers, *user)
+		}
+	}
+	log.Info("successfully imported users from provider")
+	return importUsers, nil
 }
 
 func (srv *BrightspaceService) ImportCourses(db *gorm.DB) error {

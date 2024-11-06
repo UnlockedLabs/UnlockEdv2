@@ -55,8 +55,15 @@ type BrightspaceEnrollment struct {
 	EnrollmentType string `csv:"EnrollmentType"`
 }
 
-func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.ImportUser {
-	return nil
+func (kc *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.ImportUser {
+	user := models.ImportUser{
+		Username:       bsUser.UserName,
+		NameFirst:      bsUser.FirstName,
+		NameLast:       bsUser.LastName,
+		Email:          bsUser.ExternalEmail,
+		ExternalUserID: bsUser.UserId,
+	}
+	return &user
 }
 
 func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Course {
