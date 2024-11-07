@@ -26,13 +26,9 @@ export default function ProgramCard({
     }
 
     const getFacilitiesList = () => {
-        return program.facilities.map((facility: Facility, idx: number) => {
-            if (idx === program.facilities.length - 1) {
-                return facility.name;
-            } else {
-                return facility.name + ', ';
-            }
-        });
+        return program.facilities
+            .map((facility: Facility) => facility.name)
+            .join(', ');
     };
 
     const bookmark: JSX.Element = program.is_favorited ? (
