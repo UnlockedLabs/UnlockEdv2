@@ -2,7 +2,7 @@ import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
 import LightGreenPill from './pill-labels/LightGreenPill';
 import { MouseEvent } from 'react';
-import { Program, ViewType } from '@/common';
+import { Facility, Program, ViewType } from '@/common';
 import API from '@/api/api';
 
 export default function ProgramCard({
@@ -25,11 +25,21 @@ export default function ProgramCard({
             });
     }
 
+    const getFacilitiesList = () => {
+        return program.facilities.map((facility: Facility, idx: number) => {
+            if (idx === program.facilities.length - 1) {
+                return facility.name;
+            } else {
+                return facility.name + ', ';
+            }
+        });
+    };
+
     const bookmark: JSX.Element = program.is_favorited ? (
         <BookmarkIcon className="h-5 text-primary-yellow" />
     ) : (
         <BookmarkIconOutline
-            className={`h-5 ${view === ViewType.List ? 'text-header-text' : 'text-white'}`}
+            className={`h-5 ${view === ViewType.List ? 'text-header-text' : ' text-grey-3'}`}
         />
     );
 
@@ -54,26 +64,28 @@ export default function ProgramCard({
                     <p className="body-small h-[1rem] line-clamp-2 overflow-hidden">
                         {program.description}
                     </p>
+                    <p className="body">Available in Facilities:</p>
+                    <p className="body">{getFacilitiesList()}</p>
                 </div>
             </a>
         );
     } else {
         return (
-            <div className="card card-compact bg-base-teal overflow-hidden relative">
+            <div className="card bg-base-teal overflow-hidden relative">
                 <div
                     className="absolute top-2 right-2 cursor-pointer"
                     onClick={(e) => updateFavorite(e)}
                 >
                     {bookmark}
                 </div>
-                <div className="card-body gap-0.2">
-                    <h3 className="card-title text-sm">{program.name}</h3>
-                    <p className="body-small line-clamp-2">
+                <div className="p-4 gap-2 flex flex-col columns-4">
+                    <h3 className="text-sm">{program.name}</h3>
+                    <p className="body-small line-clamp-4 h-16">
                         {program.description}
                     </p>
-                    <div className="flex flex-wrap py-1 mt-2 space-y-2 sm:space-y-0 gap-x-1 gap-y-2">
-                        {tagPills}
-                    </div>
+                    <p className="body font-bold">Available in Facilities:</p>
+                    <p>{getFacilitiesList()}</p>
+                    <div className="flex flex-auto gap-2">{tagPills}</div>
                 </div>
             </div>
         );

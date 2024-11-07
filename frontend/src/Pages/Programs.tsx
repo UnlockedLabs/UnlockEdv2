@@ -2,15 +2,25 @@ import { useAuth } from '@/useAuth';
 import { useState, useRef } from 'react';
 import ProgramCard from '@/Components/ProgramCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { Program, ServerResponse, ViewType, UserRole } from '@/common';
+import {
+    Program,
+    ServerResponse,
+    ViewType,
+    UserRole,
+    Facility
+} from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { AxiosError } from 'axios';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import ToggleView from '@/Components/ToggleView';
+import Modal from '@/Components/Modal';
+import CreateProgramForm from '@/Components/forms/CreateProgramForm';
+import { useLoaderData } from 'react-router-dom';
 
 export default function Programs() {
     const { user } = useAuth();
+    const facilities = useLoaderData() as Facility[];
     const addProgramModal = useRef<HTMLDialogElement>(null);
 
     if (!user) {
@@ -84,18 +94,17 @@ export default function Programs() {
                     })
                 )}
             </div>
-
-            <dialog ref={addProgramModal} className="modal">
-                <form method="dialog" className="modal-box">
-                    <h3 className="font-bold text-lg">Add New Program</h3>
-                    <p className="py-4">
-                        This feature will be implemented soon.
-                    </p>
-                    <div className="modal-action">
-                        <button className="btn">Close</button>
-                    </div>
-                </form>
-            </dialog>
+            <Modal
+                ref={addProgramModal}
+                type="Add"
+                item="Program"
+                form={
+                    <CreateProgramForm
+                        onSuccess={() => void mutate()}
+                        facilities={facilities}
+                    />
+                }
+            />
         </div>
     );
 }

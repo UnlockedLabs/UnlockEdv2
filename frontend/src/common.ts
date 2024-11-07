@@ -421,6 +421,7 @@ export enum CreditType {
     EARNED_TIME_CREDIT = 'Earned-Time Credit',
     REHABILITATION_CREDIT = 'Rehabilitation Credit'
 }
+
 export enum ProgramStatus {
     AVAILABLE = 'AVAILABLE',
     ACTIVE = 'ACTIVE',
@@ -660,6 +661,7 @@ export interface Program {
     description: string;
     tags: ProgramTag[];
     is_favorited: boolean;
+    facilities: Facility[];
 }
 
 export interface ProgramTag {

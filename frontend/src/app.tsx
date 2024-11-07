@@ -134,6 +134,16 @@ const router = createBrowserRouter([
                         }
                     },
                     {
+                        path: 'programs',
+                        element: <Programs />,
+                        loader: getFacilities,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Programs',
+                            path: ['programs']
+                        }
+                    },
+                    {
                         path: 'open-content',
                         element: <OpenContent />,
                         handle: {
@@ -148,15 +158,6 @@ const router = createBrowserRouter([
                         handle: {
                             title: 'Library Viewer',
                             path: ['viewer', 'libraries', ':library_name']
-                        }
-                    },
-                    {
-                        path: 'programs',
-                        element: <Programs />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Programs',
-                            path: ['programs']
                         }
                     }
                 ]
@@ -243,6 +244,15 @@ const router = createBrowserRouter([
                             path: ['open-content-management']
                         }
                     },
+                    // {
+                    //     path: 'programs',
+                    //     element: <Programs />,
+                    //     errorElement: <Error />,
+                    //     handle: {
+                    //         title: 'Programs',
+                    //         path: ['programs']
+                    //     }
+                    // },
                     {
                         path: 'facilities-management',
                         element: <FacilityManagement />,

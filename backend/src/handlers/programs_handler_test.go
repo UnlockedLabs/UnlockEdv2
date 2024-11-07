@@ -133,11 +133,11 @@ func TestHandleUpdateProgram(t *testing.T) {
 			programToUpdate := form["program"].(models.Program)
 			var id uint
 			if test.expectedStatusCode == http.StatusOK {
-				program, err := server.Db.CreateProgram(&programToUpdate)
+				err := server.Db.CreateProgram(&programToUpdate)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
 				}
-				id = program.ID
+				id = programToUpdate.ID
 				t.Cleanup(func() {
 					if err := server.Db.DeleteProgram(int(id)); err != nil {
 						fmt.Println("unable to cleanup/delete program, error is ", err)
@@ -189,11 +189,11 @@ func TestHandleDeleteProgram(t *testing.T) {
 					t.Fatalf("unable to create new program form, error is %v", form["err"])
 				}
 				programToDelete := form["program"].(models.Program)
-				program, err := server.Db.CreateProgram(&programToDelete)
+				err := server.Db.CreateProgram(&programToDelete)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
 				}
-				id = program.ID
+				id = programToDelete.ID
 			} else {
 				id = 1
 			}

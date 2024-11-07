@@ -26,7 +26,7 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64
 			}
 		}
 
-		tx := db.Model(&models.Program{}).Preload("Tags").Find(&content, "id IN (?)", query).Count(&total)
+		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities").Find(&content, "id IN (?)", query).Count(&total)
 		if search != "" {
 			tx = tx.Where("name LIKE ?", "%"+search+"%")
 		}
@@ -34,7 +34,7 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 	} else {
-		tx := db.Model(&models.Program{}).Preload("Tags")
+		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities")
 		if search != "" {
 			tx = tx.Where("name LIKE ?", "%"+search+"%").Count(&total)
 		}
@@ -45,15 +45,15 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64
 	return total, content, nil
 }
 
-func (db *DB) CreateProgram(content *models.Program) (*models.Program, error) {
+func (db *DB) CreateProgram(content *models.Program) error {
 	err := Validate().Struct(content)
 	if err != nil {
-		return nil, newCreateDBError(err, "create programs validation error")
+		return NewDBError(err, "create programs validation error")
 	}
 	if err := db.Create(content).Error; err != nil {
-		return nil, newCreateDBError(err, "programs")
+		return newCreateDBError(err, "programs")
 	}
-	return content, nil
+	return nil
 }
 
 func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
