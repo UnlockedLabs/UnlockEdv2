@@ -33,7 +33,18 @@ export function TextInput({
                 value: length,
                 message: `${label} should be ${length} characters or less`
             }
-        })
+        }),
+        // Adding pattern validation only for fields that should allow spaces (username, name_first, name_last)
+        ...(interfaceRef === 'username' ||
+        interfaceRef === 'name_first' ||
+        interfaceRef === 'name_last'
+            ? {
+                  pattern: {
+                      value: /^[\w\s]+$/,
+                      message: `${label} must contain only letters, numbers, or spaces`
+                  }
+              }
+            : {})
     };
     return (
         <label className="form-control">

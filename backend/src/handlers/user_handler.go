@@ -135,6 +135,7 @@ type CreateUserRequest struct {
 * POST: /api/users
 * TODO: transactional
 **/
+
 func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	reqForm := CreateUserRequest{}
 	err := json.NewDecoder(r.Body).Decode(&reqForm)
@@ -142,26 +143,32 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
+
 	if reqForm.User.FacilityID == 0 {
 		reqForm.User.FacilityID = srv.getFacilityID(r)
 	}
+
 	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
+
 	userNameExists := srv.Db.UsernameExists(reqForm.User.Username)
 	if userNameExists {
 		return newBadRequestServiceError(err, "userexists")
 	}
+
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username)
-	err = database.Validate().Struct(reqForm.User)
+	err = database.Validate().Struct(reqForm.User) // Should pass validation now
 	if err != nil {
 		return newBadRequestServiceError(err, "user did not pass validation")
 	}
+
 	err = srv.Db.CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+
 	for _, providerID := range reqForm.Providers {
 		provider, err := srv.Db.GetProviderPlatformByID(providerID)
 		if err != nil {
@@ -174,28 +181,30 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			log.error("Error creating provider user account for provider: ", provider.Name)
 		}
 	}
+
 	tempPw := reqForm.User.CreateTempPassword()
 	response := NewUserResponse{
 		User:         reqForm.User,
 		TempPassword: tempPw,
 	}
-	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
+
 	if !srv.isTesting(r) {
 		if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
 			log.infof("Error creating user in kratos: %v", err)
 		}
+
 		kolibri, err := srv.Db.FindKolibriInstance()
 		if err != nil {
 			log.error("error getting kolibri instance")
-			// still return 201 because user has been created in kratos,
-			// kolibri might not be set up/available
 			return writeJsonResponse(w, http.StatusCreated, response)
 		}
+
 		if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
 			log.add("userId", reqForm.User.ID)
 			log.error("error creating user in kolibri")
 		}
 	}
+
 	return writeJsonResponse(w, http.StatusCreated, response)
 }
 
@@ -224,39 +233,68 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	return writeJsonResponse(w, http.StatusNoContent, "User deleted successfully")
 }
 
-/**
-* PATCH: /api/users/{id}
-**/
 func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
+
+	// Decode the incoming JSON data into a user struct
 	user := models.User{}
 	err = json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		return newBadRequestServiceError(err, "invalid form data submited")
+		return newBadRequestServiceError(err, "invalid form data submitted")
 	}
 	defer r.Body.Close()
+
+	// Retrieve the existing user from the database
 	toUpdate, err := srv.Db.GetUserByID(uint(id))
 	log.add("userId", id)
 	if err != nil {
 		log.error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		return newDatabaseServiceError(err)
 	}
+
+	// Check if the username is being updated and is not taken
 	if toUpdate.Username != user.Username && user.Username != "" {
 		if srv.Db.UsernameExists(user.Username) {
 			return newBadRequestServiceError(err, "userexists")
 		}
 	}
+
+	// Apply changes from `user` to `toUpdate` only for fields that are non-empty
+	if user.Username != "" {
+		toUpdate.Username = user.Username
+	}
+	if user.NameFirst != "" {
+		toUpdate.NameFirst = user.NameFirst
+	}
+	if user.NameLast != "" {
+		toUpdate.NameLast = user.NameLast
+	}
+	if user.Email != "" {
+		toUpdate.Email = user.Email
+	}
+	if user.Role != "" {
+		toUpdate.Role = user.Role
+	}
+	if user.FacilityID != 0 {
+		toUpdate.FacilityID = user.FacilityID
+	}
+
+	// Validate the updated user struct
 	invalidUser := validateUser(&user)
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
+
+	// Commit the changes to the database
 	err = srv.Db.UpdateUser(toUpdate)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+
+	// Return the updated user data as a response
 	return writeJsonResponse(w, http.StatusOK, toUpdate)
 }
 
@@ -297,10 +335,13 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
+// validateUser checks if the username, first name, and last name contain only valid characters (letters, numbers, spaces)
 func validateUser(user *models.User) string {
+	// Modify validateFunc to allow letters, numbers, and spaces only
 	validateFunc := func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+		return !unicode.IsLetter(r) && !unicode.IsNumber(r) && !unicode.IsSpace(r)
 	}
+
 	for _, tag := range []string{user.Username, user.NameFirst, user.NameLast} {
 		if tag == "" {
 			continue

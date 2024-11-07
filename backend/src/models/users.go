@@ -25,10 +25,10 @@ type DatabaseFields struct {
 
 type User struct {
 	DatabaseFields
-	Username   string   `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
-	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumunicode"`
+	Username   string   `gorm:"size:255;not null;unique" json:"username"`
+	NameFirst  string   `gorm:"size:255;not null" json:"name_first"`
 	Email      string   `gorm:"size:255;not null;unique" json:"email" validate:"-"`
-	NameLast   string   `gorm:"size:255;not null" json:"name_last" validate:"alphanumunicode"`
+	NameLast   string   `gorm:"size:255;not null" json:"name_last"`
 	Role       UserRole `gorm:"size:255;default:student" json:"role" validate:"oneof=admin student"`
 	KratosID   string   `gorm:"size:255" json:"kratos_id"`
 	FacilityID uint     `json:"facility_id"`

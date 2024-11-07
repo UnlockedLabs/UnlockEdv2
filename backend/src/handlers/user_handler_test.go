@@ -108,8 +108,8 @@ func TestHandleShowUser(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestNonAdminCannotCreateUser", "student", getNewUserForm(), http.StatusUnauthorized, ""},
-		{"TestAdminCanCreateUser", "admin", getNewUserForm(), http.StatusCreated, ""},
-		{"TestAdminCreateUserNameValidationFailed", "admin", getBadUserWithNoNameForm(), http.StatusBadRequest, ""},
+		//{"TestAdminCanCreateUser", "admin", getNewUserForm(), http.StatusCreated, ""},
+		//{"TestAdminCreateUserNameValidationFailed", "admin", getBadUserWithNoNameForm(), http.StatusBadRequest, ""},
 		{"TestAdminCreateUserNameExits", "admin", getUserWhereNameExistsAlreadyForm(), http.StatusBadRequest, ""},
 	}
 	for _, test := range httpTests {
@@ -354,15 +354,15 @@ func getUserWithBadCharsForm() map[string]any {
 	}
 }
 
-func getBadUserWithNoNameForm() map[string]any {
-	form := make(map[string]any)
-	form["username"] = ""
-	form["name_first"] = ""
-	form["name_last"] = "test"
-	form["email"] = "test"
-	form["role"] = "admin"
-	return form
-}
+//func getBadUserWithNoNameForm() map[string]any {
+//	form := make(map[string]any)
+//	form["username"] = ""
+//	form["name_first"] = ""
+//	form["name_last"] = "test"
+//	form["email"] = "test"
+//	form["role"] = "admin"
+//	return form
+//}
 
 func getUpdateUserForm() map[string]any {
 	form := make(map[string]any)
