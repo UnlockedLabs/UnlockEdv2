@@ -335,46 +335,24 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
-// validateUser checks if the username, first name, and last name contain only valid characters (letters, numbers, spaces)
-//
-//	func validateUser(user *models.User) string {
-//		// Modify validateFunc to allow letters, numbers, and spaces only
-//		validateFunc := func(r rune) bool {
-//			return !unicode.IsLetter(r) && !unicode.IsNumber(r) && !unicode.IsSpace(r)
-//		}
-//
-//		for _, tag := range []string{user.Username, user.NameFirst, user.NameLast} {
-//			if tag == "" {
-//				continue
-//			}
-//			if strings.ContainsFunc(tag, validateFunc) {
-//				return "alphanum"
-//			}
-//		}
-//		return ""
-//	}
 func validateUser(user *models.User) string {
 	// Modify validateFunc to allow letters, numbers, and spaces only
 	validateFunc := func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsNumber(r) && !unicode.IsSpace(r)
+		// Return true for any invalid characters (non-letter, non-number, and non-space)
+		return !(unicode.IsLetter(r) || unicode.IsNumber(r) || unicode.IsSpace(r))
 	}
 
-	// Check if any required fields are empty
-	if user.Username == "" {
-		return "username_empty"
-	}
-	if user.NameFirst == "" {
-		return "name_first_empty"
-	}
-	if user.NameLast == "" {
-		return "name_last_empty"
-	}
-
-	// Check for invalid characters in the fields
+	// Validate each field
 	for _, tag := range []string{user.Username, user.NameFirst, user.NameLast} {
+		// Check for completely empty fields (whitespace is also considered empty)
+		if strings.TrimSpace(tag) == "" {
+			continue
+		}
+
+		// Check for invalid characters
 		if strings.ContainsFunc(tag, validateFunc) {
-			return "alphanum"
+			return "alphanum" // Invalid characters found
 		}
 	}
-	return ""
+	return "" // No validation errors
 }
