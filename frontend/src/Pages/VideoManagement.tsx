@@ -9,10 +9,10 @@ import {
     UserRole
 } from '../common';
 import AddVideosForm from '@/Components/forms/AddVideosForm';
-import Modal from '../Components/Modal';
-import SearchBar from '../Components/inputs/SearchBar';
-import DropdownControl from '../Components/inputs/DropdownControl';
-import Pagination from '../Components/Pagination';
+import Modal from '@/Components/Modal';
+import SearchBar from '@/Components/inputs/SearchBar';
+import DropdownControl from '@/Components/inputs/DropdownControl';
+import Pagination from '@/Components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
@@ -60,8 +60,9 @@ export default function VideoManagement() {
                 setPolling(false);
                 return;
             }
+            console.log('****polling****');
             delay *= 2;
-            setTimeout(() => pollVideos(delay), delay);
+            setTimeout((delay: number) => pollVideos(delay), delay, delay);
         });
     };
 
@@ -111,25 +112,20 @@ export default function VideoManagement() {
                             label="Order by"
                             setState={setSortQuery}
                             enumType={{
-                                'Title (A-Z)': 'title ASC',
-                                'Title (Z-A)': 'title DESC',
                                 'Date Added ↓': 'created_at DESC',
-                                'Date Added ↑': 'created_at ASC'
+                                'Date Added ↑': 'created_at ASC',
+                                'Title (A-Z)': 'title ASC',
+                                'Title (Z-A)': 'title DESC'
                             }}
                         />
                     </div>
-                    <div
-                        className="tooltip tooltip-left pl-5"
-                        data-tip="Add Videos to open content library"
+                    <button
+                        className="button"
+                        onClick={() => addVideoModal.current?.showModal()}
                     >
-                        <button
-                            className="btn btn-primary btn-sm text-base-teal"
-                            onClick={() => addVideoModal.current?.showModal()}
-                        >
-                            <PlusCircleIcon className="w-4 my-auto" />
-                            Add Videos
-                        </button>
-                    </div>
+                        <PlusCircleIcon className="w-4 my-auto" />
+                        Add Videos
+                    </button>
                 </div>
                 <div className="grid grid-cols-4 gap-6">
                     {videoData.map((video) => (

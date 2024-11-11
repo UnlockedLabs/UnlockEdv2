@@ -69,7 +69,7 @@ export default function VideoCard({
         >
             {role === UserRole.Student && (
                 <div
-                    className="tooltip tooltip-top w-6 h-6"
+                    className="tooltip tooltip-top absolute right-2 top-2 w-6 h-6"
                     data-tip="Favorite video"
                     onClick={() => void handleToggleAction('favorite')}
                 >
@@ -77,24 +77,25 @@ export default function VideoCard({
                 </div>
             )}
             <div
-                className="flex p-4 gap-2 border-b-2"
+                className="flex flex-col p-4 gap-2 border-b-2"
                 onClick={() =>
                     videoIsAvailable(video) &&
                     navigate(`/viewer/videos/${video.id}`)
                 }
             >
-                <figure className="w-[300px] bg-cover">
+                <figure className="w-1/2 mx-auto bg-cover">
                     <img
                         src={video?.thumbnail_url ?? ''}
                         alt={`${video.title} thumbnail`}
                     />
                 </figure>
-                <h3 className="w-3/4 body my-auto">{video.title}</h3>
+                <h3 className="body text-center h-10 line-clamp-2 my-auto">
+                    {video.title}
+                </h3>
             </div>
             <div className="p-4 space-y-2">
-                <p className="body-medium font-bold">{video.channel_title}</p>
-                <p className="body-small font-bold">
-                    {toMinutes(video.duration)}
+                <p className="body font-bold sm:h-10 sm:line-clamp-2">
+                    {video.channel_title} - {toMinutes(video.duration)}
                 </p>
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
                     {videoIsAvailable(video)
