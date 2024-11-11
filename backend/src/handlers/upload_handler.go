@@ -3,7 +3,6 @@ package handlers
 import (
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,10 +33,7 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 	if _, err = io.Copy(f, file); err != nil {
 		return newInternalServerServiceError(err, "Failed to save file")
 	}
-	imgUrl, err := url.JoinPath(os.Getenv("APP_URL"), "/api/photos/", header.Filename)
-	if err != nil {
-		return newInternalServerServiceError(err, "Failed to generate url")
-	}
+	imgUrl := "/api/photos/" + header.Filename
 	return writeJsonResponse(w, http.StatusOK, map[string]string{"url": imgUrl})
 }
 

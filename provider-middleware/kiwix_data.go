@@ -12,8 +12,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Feed struct {
@@ -69,12 +67,12 @@ func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Librar
 func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (string, error) {
 	imgUrl, err := url.JoinPath(ks.BaseUrl, thumbnail)
 	if err != nil {
-		logrus.Errorf("error joining URL: %v", err)
+		logger().Errorf("error joining URL: %v", err)
 		return "", err
 	}
 	parsedURL, err := url.Parse(imgUrl)
 	if err != nil {
-		logrus.Errorf("error parsing imgUrl: %v", err)
+		logger().Errorf("error parsing imgUrl: %v", err)
 		return "", err
 	}
 	query := parsedURL.Query()
@@ -82,11 +80,11 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 	parsedURL.RawQuery = query.Encode()
 
 	finalURL := parsedURL.String()
-	logrus.Infof("downloading thumbnail image from URL: %s", finalURL)
+	logger().Infof("downloading thumbnail image from URL: %s", finalURL)
 
 	req, err := http.NewRequest(http.MethodGet, finalURL, nil)
 	if err != nil {
-		logrus.Errorf("error creating request: %v", err)
+		logger().Errorf("error creating request: %v", err)
 		return "", err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0")
@@ -94,18 +92,18 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 
 	resp, err := ks.Client.Do(req)
 	if err != nil {
-		logrus.Errorf("error fetching thumbnail image from URL: %v", err)
+		logger().Errorf("error fetching thumbnail image from URL: %v", err)
 		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		logrus.Errorf("failed to fetch thumbnail image: received %v response", resp.Status)
+		logger().Errorf("failed to fetch thumbnail image: received %v response", resp.Status)
 		return "", fmt.Errorf("failed to fetch thumbnail image: %v", resp.Status)
 	}
 
 	imgData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("error reading thumbnail image: %v", err)
+		logger().Errorf("error reading thumbnail image: %v", err)
 		return "", err
 	}
 
@@ -131,26 +129,26 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 
 	err = writer.Close()
 	if err != nil {
-		logrus.Errorf("error closing writer: %v", err)
+		logger().Errorf("error closing writer: %v", err)
 		return "", err
 	}
 
 	uploadURL := os.Getenv("APP_URL") + "/upload"
 	req, err = http.NewRequest(http.MethodPost, uploadURL, body)
 	if err != nil {
-		logrus.Errorf("error creating upload request: %v", err)
+		logger().Errorf("error creating upload request: %v", err)
 		return "", err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	uploadResp, err := ks.Client.Do(req)
 	if err != nil {
-		logrus.Errorf("error sending upload request: %v", err)
+		logger().Errorf("error sending upload request: %v", err)
 		return "", err
 	}
 	defer uploadResp.Body.Close()
 	if uploadResp.StatusCode != http.StatusOK {
-		logrus.Errorf("failed to upload image: received %v response", uploadResp.Status)
+		logger().Errorf("failed to upload image: received %v response", uploadResp.Status)
 		return "", fmt.Errorf("failed to upload image: %v", uploadResp.Status)
 	}
 
@@ -164,11 +162,31 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 	urlRes := &UploadResponse{}
 	err = json.NewDecoder(uploadResp.Body).Decode(urlRes)
 	if err != nil {
-		logrus.Errorf("error decoding upload response: %v", err)
+		logger().Errorf("error decoding upload response: %v", err)
 		return "", err
 	}
 
 	return urlRes.Data.URL, nil
+}
+
+func (ks *KiwixService) thumbnailExists(lib string) bool {
+	thumbnailURL := os.Getenv("APP_URL") + "/api/photos/" + lib + ".png"
+	req, err := http.NewRequest(http.MethodHead, thumbnailURL, nil)
+	if err != nil {
+		logger().Errorf("error creating request: %v", err)
+		return false
+	}
+	resp, err := ks.Client.Do(req)
+	if err != nil {
+		logger().Errorf("error fetching thumbnail: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger().Errorf("thumbnail does not exist: received %v response", resp.Status)
+		return false
+	}
+	return true
 }
 
 func (ks *KiwixService) ParseUrls(externId string, links []Link) (string, string) {
@@ -179,11 +197,14 @@ func (ks *KiwixService) ParseUrls(externId string, links []Link) (string, string
 			url = link.Href
 		}
 		if strings.Split(link.Type, "/")[0] == "image" {
-			if thumbnail, err := ks.downloadAndHostThumbnailImg(externId, link.Href); err == nil {
-				thumbnailURL = thumbnail
+			if !ks.thumbnailExists(externId) {
+				if thumbnail, err := ks.downloadAndHostThumbnailImg(externId, link.Href); err == nil {
+					thumbnailURL = thumbnail
+				}
+			} else {
+				thumbnailURL = "/api/photos/" + externId + ".png"
 			}
 		}
 	}
-	logrus.Infof("URL: %s, ThumbnailURL: %s", url, thumbnailURL)
 	return url, thumbnailURL
 }

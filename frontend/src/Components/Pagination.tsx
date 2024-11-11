@@ -63,7 +63,7 @@ export default function Pagination({
             </div>
             {setPerPage && (
                 <div
-                    className="tooltip tooltip-bottom"
+                    className="tooltip tooltip-right"
                     data-tip="Items per page"
                 >
                     <div className="flex-col-1 pl-5 align-middle">
