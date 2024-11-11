@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
+import { DropdownInput } from '../inputs/DropdownInput';
 import { SubmitButton } from '../inputs/SubmitButton';
 import API from '@/api/api';
 
@@ -15,7 +16,7 @@ interface Inputs {
     name_first: string;
     name_last: string;
     username: string;
-    role?: UserRole;
+    role: UserRole;
 }
 
 interface Form {
@@ -24,11 +25,9 @@ interface Form {
 }
 
 export default function AddUserForm({
-    onSuccess,
-    role
+    onSuccess
 }: {
     onSuccess: (psw: string, msg: string, err: ToastState) => void;
-    role?: UserRole;
 }) {
     const [errorMessage, setErrorMessage] = useState('');
     const [providers, setProviders] = useState<ProviderPlatform[]>([]);
@@ -42,7 +41,6 @@ export default function AddUserForm({
     } = useForm<Inputs>();
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        data.role = role;
         setErrorMessage('');
         const response = await API.post<NewUserResponse, Form>('users', {
             user: data,
@@ -135,6 +133,14 @@ export default function AddUserForm({
                     length={50}
                     errors={errors}
                     register={register}
+                />
+                <DropdownInput
+                    label={'Role'}
+                    interfaceRef={'role'}
+                    required
+                    errors={errors}
+                    register={register}
+                    enumType={UserRole}
                 />
                 <br />
                 {providers?.map((provider: ProviderPlatform) => (

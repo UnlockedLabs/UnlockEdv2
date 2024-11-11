@@ -49,6 +49,12 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 	return writeJsonResponse(w, http.StatusOK, video)
 }
 
+const (
+	FavoriteVideoAction    = "favorite"
+	ToggleVisibilityAction = "visibility"
+	RetryVideoAction       = "retry"
+)
+
 func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
 	vidId, err := strconv.Atoi(r.PathValue("id"))
@@ -60,24 +66,27 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "video_id")
 	}
 	switch r.PathValue("action") {
-	case "favorite":
+
+	case FavoriteVideoAction:
 		isFavorited, err := srv.Db.FavoriteVideo(vidId, userID)
 		if err != nil {
 			return newInternalServerServiceError(err, "error favoriting video")
 		}
 		msg := ""
 		if isFavorited {
-			msg = "video favorited"
+			msg = "video added to favorites"
 		} else {
-			msg = "video unfavorited"
+			msg = "video removed from favorites"
 		}
 		return writeJsonResponse(w, http.StatusOK, msg)
-	case "visibility":
+
+	case ToggleVisibilityAction:
 		if err = srv.Db.ToggleVideoVisibility(vidId); err != nil {
 			return newInternalServerServiceError(err, "error toggling video visibility")
 		}
 		return writeJsonResponse(w, http.StatusOK, "video visibility toggled")
-	case "retry":
+
+	case RetryVideoAction:
 		if len(video.Attempts) >= models.MAX_DOWNLOAD_ATTEMPTS {
 			return newBadRequestServiceError(errors.New("max attempts reached"), "max download attempts reached, please remove video and try again")
 		}
@@ -107,6 +116,7 @@ func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log 
 	if err := json.NewDecoder(r.Body).Decode(&video); err != nil {
 		return newBadRequestServiceError(err, "error reading video")
 	}
+	defer r.Body.Close()
 	provider, err := srv.Db.GetVideoProvider()
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching video provider")

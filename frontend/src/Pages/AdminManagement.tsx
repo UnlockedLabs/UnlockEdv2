@@ -12,8 +12,7 @@ import {
     ModalType,
     ServerResponseMany,
     ToastState,
-    User,
-    UserRole
+    User
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
 import EditUserForm from '@/Components/forms/EditUserForm';
@@ -298,13 +297,8 @@ export default function AdminManagement() {
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
-                item="Admin"
-                form={
-                    <AddUserForm
-                        role={UserRole.Admin}
-                        onSuccess={onAddUserSuccess}
-                    />
-                }
+                item="User"
+                form={<AddUserForm onSuccess={onAddUserSuccess} />}
             />
             <Modal
                 ref={editUserModal}

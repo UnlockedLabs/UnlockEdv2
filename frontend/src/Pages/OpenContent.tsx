@@ -2,18 +2,23 @@ import { OpenContentProviderType, UserRole, Tab } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/useAuth';
-import { PlusCircleIcon } from '@heroicons/react/24/solid';
 
 export default function OpenContent() {
     const { setPathVal } = usePathValue();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<Tab>({
-        name: 'Kiwix',
-        value: 'Libraries'
-    });
+    const route = useLocation();
+    const tab = route.pathname.split('/')[2] ?? 'libraries';
+    const [activeTab, setActiveTab] = useState<Tab>(
+        tab.toLowerCase() === 'libraries'
+            ? {
+                  name: 'Kiwix',
+                  value: 'Libraries'
+              }
+            : { name: 'Videos', value: 'Videos' }
+    );
     useEffect(() => {
         setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
     }, [activeTab]);
@@ -29,30 +34,26 @@ export default function OpenContent() {
 
     return (
         <div className="px-8 pb-4">
-            <h1>Open Content</h1>
-            <TabView
-                tabs={tabs}
-                activeTab={activeTab}
-                setActiveTab={handlePageChange}
-            />
-            {user?.role === UserRole.Admin && (
-                <div
-                    className="tooltip tooltip-left mt-5 pl-5 justify-self-end"
-                    data-tip="View as Administrator"
-                >
+            <div className="flex flex-row justify-between">
+                <h1>Open Content</h1>
+                {user?.role === UserRole.Admin && (
                     <button
-                        className="btn btn-primary btn-sm text-base-teal"
+                        className="button border border-primary bg-transparent text-body-text"
                         onClick={() =>
                             navigate(
                                 `/open-content-management/${activeTab.value}`
                             )
                         }
                     >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        Admin View
+                        Return to Admin View
                     </button>
-                </div>
-            )}
+                )}
+            </div>
+            <TabView
+                tabs={tabs}
+                activeTab={activeTab}
+                setActiveTab={handlePageChange}
+            />
             <div className="flex flex-row gap-4 pt-8 pb-8">
                 <Outlet />
             </div>
