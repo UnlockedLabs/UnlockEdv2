@@ -54,7 +54,7 @@ func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Requ
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	claims.FacilityID = uint(id)
 	if err := srv.updateUserTraitsInKratos(claims); err != nil {
-		log.add("facilityId", id)
+		log.add("facility_id", id)
 		return newInternalServerServiceError(err, "error updating user traits in kratos")
 	}
 	w.WriteHeader(http.StatusOK)
@@ -71,7 +71,7 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 
 	err = srv.Db.CreateFacility(&facility)
 	if err != nil {
-		log.add("facility.Name", facility.Name)
+		log.add("facility_name", facility.Name)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, facility)

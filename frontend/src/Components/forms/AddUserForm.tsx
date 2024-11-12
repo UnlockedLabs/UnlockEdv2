@@ -19,6 +19,11 @@ interface Inputs {
     role: UserRole;
 }
 
+interface Form {
+    user: Inputs;
+    provider_platforms: number[];
+}
+
 export default function AddUserForm({
     onSuccess
 }: {
@@ -37,7 +42,7 @@ export default function AddUserForm({
 
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
-        const response = await API.post<NewUserResponse>('users', {
+        const response = await API.post<NewUserResponse, Form>('users', {
             user: data,
             provider_platforms: selectedProviders
         });

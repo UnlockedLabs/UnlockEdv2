@@ -296,18 +296,44 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 			{
 				Name:        randNames[rand.Intn(len(randNames))],
 				Description: "Testing program",
+				CreditType:  "Academic Credit",
+				ProgramStatus: "ACTIVE",
+				ProgramType: "EDUCATIONAL",
 			},
 			{
 				Name:        randNames[rand.Intn(len(randNames))],
 				Description: "Testing program",
+				CreditType:  "Participation Credit",
+				ProgramStatus: "AVAILABLE",
+				ProgramType: "VOCATIONAL",
 			},
 			{
 				Name:        randNames[rand.Intn(len(randNames))],
 				Description: "Testing program",
+				CreditType:  "Certificate of Completion",
+				ProgramStatus: "INACTIVE",
+				ProgramType: "LIFE SKILLS",
 			},
 			{
 				Name:        randNames[rand.Intn(len(randNames))],
 				Description: "Testing program",
+				CreditType:  "Earned-Time Credit",
+				ProgramStatus: "ARCHIVED",
+				ProgramType: "EDUCATIONAL",
+			},
+			{
+				Name:        randNames[rand.Intn(len(randNames))],
+				Description: "Testing program",
+				CreditType:  "Rehabilitation Credit",
+				ProgramStatus: "AVAILABLE",
+				ProgramType: "EDUCATIONAL",
+			},
+			{
+				Name:        randNames[rand.Intn(len(randNames))],
+				Description: "Testing program",
+				CreditType:  "Participation Credit",
+				ProgramStatus: "AVAILABLE",
+				ProgramType: "THERAPEUTIC",
 			},
 		}
 		for i := range prog {

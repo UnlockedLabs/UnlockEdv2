@@ -57,6 +57,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.registerSectionEventsRoutes()
 	srv.registerProgramSectionEnrollmentssRoutes()
 	srv.registerAttendanceRoutes()
+	srv.registerVideoRoutes()
 	srv.Mux.HandleFunc("/api/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("OK")); err != nil {
 			log.Errorln("Error writing healthcheck response: ", err)

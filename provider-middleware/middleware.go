@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -31,6 +30,8 @@ func (sh *ServiceHandler) initServiceFromRequest(ctx context.Context, r *http.Re
 		return NewKolibriService(&provider, nil), nil
 	case models.CanvasCloud, models.CanvasOSS:
 		return newCanvasService(&provider, nil), nil
+	case models.Brightspace:
+		return newBrightspaceService(&provider, sh.db, nil)
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
@@ -62,29 +63,28 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 		return NewKolibriService(&provider, &body), nil
 	case models.CanvasCloud, models.CanvasOSS:
 		return newCanvasService(&provider, &body), nil
+	case models.Brightspace:
+		return newBrightspaceService(&provider, sh.db, &body)
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
 
-func (sh *ServiceHandler) initContentProviderService(msg *nats.Msg) (OpenContentProviderServiceInterface, error) {
+func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*models.OpenContentProvider, map[string]interface{}, error) {
 	var body map[string]interface{}
 	if err := json.Unmarshal(msg.Data, &body); err != nil {
 		log.Errorf("failed to unmarshal message: %v", err)
-		return nil, fmt.Errorf("failed to unmarshal message: %v", err)
+		return nil, nil, fmt.Errorf("failed to unmarshal message: %v", err)
 	}
 	providerId, ok := body["open_content_provider_id"].(float64)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse open_content_provider_id: %v", body["open_content_provider_id"].(float64))
+		return nil, body, fmt.Errorf("failed to parse open_content_provider_id: %v", body["open_content_provider_id"].(float64))
 	}
 	openContentProvider, err := sh.LookupOpenContentProvider(int(providerId))
 	if err != nil {
 		log.Printf("Error looking up content provider: %v", err)
-		return nil, fmt.Errorf("failed to find open content provider: %v", err)
+		return nil, body, fmt.Errorf("failed to find open content provider: %v", err)
 	}
-	if strings.EqualFold(openContentProvider.Name, models.Kiwix) {
-		return NewKiwixService(openContentProvider, &body), nil
-	}
-	return nil, fmt.Errorf("unsupported open content provider type: %s", openContentProvider.Name)
+	return openContentProvider, body, nil
 }
 
 func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId int, jobId string, success bool) {

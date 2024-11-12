@@ -60,7 +60,7 @@ export default function ChangePasswordForm() {
         if (data.facility_name) {
             data.facility_name = data.facility_name.trim();
         }
-        const response = (await API.post<AuthResponse>(
+        const response = (await API.post<AuthResponse, Inputs>(
             'reset-password',
             data
         )) as ServerResponseOne<AuthResponse>;

@@ -15,8 +15,7 @@ export default function Pagination({
 }) {
     const page = meta.current_page - 1;
     const perPage = meta.per_page;
-    const perPageSelections = [10, 20, 30, 50, 100];
-
+    const perPageSelections = [10, 20, 50, 100];
     return (
         <div className="join place-content-center">
             <div
@@ -64,7 +63,7 @@ export default function Pagination({
             </div>
             {setPerPage && (
                 <div
-                    className="tooltip tooltip-bottom"
+                    className="tooltip tooltip-right"
                     data-tip="Items per page"
                 >
                     <div className="flex-col-1 pl-5 align-middle">

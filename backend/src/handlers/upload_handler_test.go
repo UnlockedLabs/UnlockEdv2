@@ -14,7 +14,6 @@ import (
 
 func TestHandleUploadHandler(t *testing.T) {
 	t.Setenv("IMG_FILEPATH", "test_data/uploadtrgt")
-	t.Setenv("APP_URL", "http://127.0.0.1")
 	httpTests := []httpTest{
 		{"TestUploadHandlerAsAdmin", "admin", map[string]any{"uploadPath": "test_data/uploadsrc/20240808_124813.jpg", "cleanupPath": "test_data/uploadsrc/outsideart.jpg"}, http.StatusOK, ""},
 	}
@@ -53,7 +52,7 @@ func TestHandleUploadHandler(t *testing.T) {
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
 				t.Errorf("failed to unmarshal resource, error is %v", err)
 			}
-			if data.Data["url"] != os.Getenv("APP_URL")+"/api/photos/"+fileName {
+			if data.Data["url"] != "/api/photos/"+fileName {
 				t.Error("unexpected response data returned for photos uploaded")
 			}
 			t.Cleanup(func() {
@@ -74,7 +73,7 @@ func TestHandleHostPhotos(t *testing.T) {
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/photos/{id}", nil)
+			req, err := http.NewRequest(http.MethodGet, "/api/photos/{id}", nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}

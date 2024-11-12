@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	_ "github.com/jackc/pgx"
@@ -29,11 +30,6 @@ type ProviderServiceInterface interface {
 	GetJobParams() *map[string]interface{}
 }
 
-type OpenContentProviderServiceInterface interface {
-	ImportLibraries(ctx context.Context, db *gorm.DB) error
-	GetJobParams() *map[string]interface{}
-}
-
 /**
 * Handler struct that will be passed to our HTTP server handlers
 * to handle the different routes.
@@ -47,6 +43,8 @@ type ServiceHandler struct {
 	cancel context.CancelFunc
 	ctx    context.Context
 }
+
+var logger = sync.OnceValue(func() *log.Logger { return initLogging() })
 
 func newServiceHandler(token string, db *gorm.DB) *ServiceHandler {
 	options := nats.GetDefaultOptions()
@@ -95,17 +93,17 @@ func main() {
 	err = handler.initSubscription()
 	if err != nil {
 		handler.cancel()
-		log.Fatalf("Failed to subscribe to NATS: %v", err)
+		logger().Fatalf("Failed to subscribe to NATS: %v", err)
 	}
-	initLogging()
 	err = http.ListenAndServe(":8081", handler.Mux)
 	if err != nil {
 		handler.cancel()
-		log.Fatalf("Failed to start server: %v", err)
+		logger().Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func initLogging() {
+func initLogging() *log.Logger {
+	var logger = log.New()
 	var file *os.File
 	var err error
 	env := os.Getenv("APP_ENV")
@@ -120,8 +118,8 @@ func initLogging() {
 	} else {
 		file = os.Stdout
 	}
-	log.SetOutput(file)
-	log.SetFormatter(&log.JSONFormatter{})
+	logger.SetOutput(file)
+	logger.SetFormatter(&log.JSONFormatter{})
 	if os.Getenv("LOG_LEVEL") == "" {
 		switch env {
 		case "prod", "production":
@@ -136,6 +134,7 @@ func initLogging() {
 		if err != nil {
 			log.SetLevel(log.DebugLevel)
 		}
-		log.SetLevel(level)
+		logger.SetLevel(level)
 	}
+	return logger
 }

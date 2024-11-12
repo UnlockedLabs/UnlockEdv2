@@ -31,6 +31,43 @@ export const getDashboard = (user?: User): string => {
     }
 };
 
+export interface Video {
+    id: number;
+    title: string;
+    description: string;
+    channel_title: string;
+    youtube_id: string;
+    visibility_status: boolean;
+    thumbnail_url: string;
+    open_content_provider_id: number;
+    availability: 'available' | 'processing' | 'has_error';
+    duration: number;
+    created_at: string;
+    updated_at: string;
+    open_content_provider?: OpenContentProvider;
+    video_download_attempts: VideoDownloadAttempt[];
+    video_favorites: VideoFavorites[];
+}
+export interface VideoFavorites {
+    user_id: number;
+    video_id: number;
+}
+
+export interface VideoDownloadAttempt {
+    id: number;
+    video_id: number;
+    error_message: string;
+}
+export const MAX_DOWNLOAD_ATTEMPTS = 5;
+export function getVideoErrorMessage(video: Video): string | undefined {
+    return video.video_download_attempts.find(
+        (attempt) => attempt.error_message !== ''
+    )?.error_message;
+}
+export function videoIsAvailable(vid: Video): boolean {
+    return vid.availability === 'available';
+}
+
 export interface UserWithMappings {
     User: User;
     logins: ProviderMapping[];
@@ -408,10 +445,36 @@ export enum ProviderPlatformState {
     ARCHIVED = 'archived'
 }
 
+export enum OpenContentProviderType {
+    KIWIX = 'Libraries',
+    VIDEOS = 'Videos'
+}
+
 export enum ProviderPlatformType {
     CANVAS_CLOUD = 'canvas_cloud',
     CANVAS_OSS = 'canvas_oss',
     KOLIBRI = 'kolibri'
+}
+
+export enum CreditType {
+    ACADEMIC_CREDIT = 'Academic Credit',
+    PARTICIPATION_CREDIT = 'Participation Credit',
+    CERTIFICATE_OF_COMPLETION = 'Certificate of Completion',
+    EARNED_TIME_CREDIT = 'Earned-Time Credit',
+    REHABILITATION_CREDIT = 'Rehabilitation Credit'
+}
+export enum ProgramStatus {
+    AVAILABLE = 'AVAILABLE',
+    ACTIVE = 'ACTIVE',
+    INACTIVE = 'INACTIVE',
+    ARCHIVED = 'ARCHIVED'
+}
+
+export enum ProgramType {
+    EDUCATIONAL = 'EDUCATIONAL',
+    VOCATIONAL = 'VOCATIONAL',
+    LIFE_SKILLS = 'LIFE SKILLS',
+    THERAPEUTIC = 'THERAPEUTIC'
 }
 
 export interface AdminDashboardJoin {
@@ -649,8 +712,7 @@ export interface ProgramTag {
 export interface OpenContentProvider {
     id: number;
     name: string;
-    url: string;
-    provider_platform_id: number | null;
+    base_url: string;
     thumbnail_url: string | null;
     currently_enabled: boolean;
     description: string | null;

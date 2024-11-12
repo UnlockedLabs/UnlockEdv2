@@ -36,7 +36,7 @@ func iterMap[T any](fun func(T) T, arr []T) []T {
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
 	if err := db.Model(models.ProviderPlatform{}).Preload("OidcClient").
-		Find(&platforms, "state = ?", "active").Error; err != nil {
+		Find(&platforms, "state = ?", "enabled").Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
 
@@ -62,23 +62,11 @@ func (db *DB) GetProviderPlatformByID(id int) (*models.ProviderPlatform, error) 
 }
 
 func (db *DB) CreateProviderPlatform(platform *models.ProviderPlatform) error {
-	if key, err := platform.EncryptAccessKey(); err == nil {
+	if key, err := models.EncryptAccessKey(platform.AccessKey); err == nil {
 		platform.AccessKey = key
 	}
 	if err := db.Create(platform).Error; err != nil {
 		return newCreateDBError(err, "provider_platforms")
-	}
-	if platform.Type == models.Kolibri {
-		contentProv := models.OpenContentProvider{
-			BaseUrl:            platform.BaseUrl,
-			ProviderPlatformID: &platform.ID,
-			CurrentlyEnabled:   true,
-			Description:        models.KolibriDescription,
-			Thumbnail:          models.KolibriThumbnailUrl,
-		}
-		if err := db.Create(&contentProv).Error; err != nil {
-			log.Errorln("unable to create relevant content provider for new kolibri instance")
-		}
 	}
 	return nil
 }
@@ -91,7 +79,7 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 	}
 	// at this point, they are both decrypted
 	if platform.AccessKey != "" && existingPlatform.AccessKey != platform.AccessKey {
-		if key, err := platform.EncryptAccessKey(); err == nil {
+		if key, err := models.EncryptAccessKey(platform.AccessKey); err == nil {
 			platform.AccessKey = key
 		}
 	}

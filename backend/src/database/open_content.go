@@ -31,16 +31,14 @@ func (db *DB) ToggleContentProvider(id int) error {
 	return nil
 }
 
-func (db *DB) CreateContentProvider(url, thumbnail, description string, id int) error {
-	provider := models.OpenContentProvider{
-		BaseUrl:     url,
-		Thumbnail:   thumbnail,
-		Description: description,
+func (db *DB) UpdateOpenContentProvider(prov *models.OpenContentProvider) error {
+	if err := db.Save(prov).Error; err != nil {
+		return newUpdateDBError(err, "open_content_providers")
 	}
-	if id != 0 {
-		providerId := uint(id)
-		provider.ProviderPlatformID = &providerId
-	}
+	return nil
+}
+
+func (db *DB) CreateContentProvider(provider *models.OpenContentProvider) error {
 	if err := db.Create(&provider).Error; err != nil {
 		return newCreateDBError(err, "open_content_providers")
 	}

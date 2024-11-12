@@ -7,14 +7,24 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 func (srv *Server) registerProxyRoutes() {
-	srv.Mux.Handle("GET /api/proxy/libraries/{id}/", srv.proxyMiddleware(http.HandlerFunc(srv.handleForwardProxy)))
+	srv.Mux.Handle("GET /api/proxy/libraries/{id}/", srv.libraryProxyMiddleware(http.HandlerFunc(srv.handleForwardKiwixProxy)))
+	if os.Getenv("S3_BUCKET_NAME") != "" {
+		// only register this route if we are in production and need this endpoint to proxy videos from S3
+		srv.Mux.Handle("GET /videos/{id}", srv.videoProxyMiddleware(http.HandlerFunc(srv.handleRedirectVideosS3)))
+	}
 }
 
-func (srv *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
+func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Request) {
 	library, ok := r.Context().Value(libraryKey).(*models.Library)
 	if !ok {
 		srv.errorResponse(w, http.StatusNotFound, "Library context not found")
@@ -50,7 +60,7 @@ func (srv *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
 			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{
 				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: true, // Disable SSL verification for testing
+				InsecureSkipVerify: true,
 			},
 		},
 		ModifyResponse: func(res *http.Response) error {
@@ -72,4 +82,36 @@ func (srv *Server) handleForwardProxy(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	proxy.ServeHTTP(w, r)
+}
+
+func (srv *Server) handleRedirectVideosS3(w http.ResponseWriter, r *http.Request) {
+	bucket := os.Getenv("S3_BUCKET_NAME")
+	video := r.Context().Value(videoKey).(*models.Video)
+	if bucket == "" || video == nil {
+		http.Error(w, "S3 bucket not configured", http.StatusInternalServerError)
+		return
+	}
+	key := video.GetS3KeyMp4()
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(os.Getenv("AWS_REGION")),
+	})
+	if err != nil {
+		http.Error(w, "Could not create S3 session", http.StatusInternalServerError)
+		return
+	}
+	svc := s3.New(sess)
+	req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	presignedURL, err := req.Presign(getTimeoutFromDuration(video.Duration))
+	if err != nil {
+		http.Error(w, "Could not generate pre-signed URL", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, presignedURL, http.StatusTemporaryRedirect)
+}
+
+func getTimeoutFromDuration(duration int) time.Duration {
+	return time.Duration(duration) * (time.Second * 2)
 }

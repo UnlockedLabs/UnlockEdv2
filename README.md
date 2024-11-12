@@ -59,7 +59,7 @@ You will be prompted immediately to set a new password and name for the default 
 will be redirected to the dashboard.
 
 
-**Installing front-end dependencies when developing**
+**Installing front-end dependencies**
 Because `vite` runs in a docker container when developing, there is a docker volume with the `node_modules` mounted to the container. Installing the package in the frontend directory will not allow the changes to reflect when developing. The easiest way to do this is to run `make install-dep NAME=some_library` and it will take care of it for you.
 If this does not work because your directory is named something different, you can do the following:
 
@@ -83,6 +83,29 @@ If this does not work because your directory is named something different, you c
   time and going to `/api/oidc/clients` and adding the client_id and client_secret as environment variables in
   the `config/docker-compose.kolibri.yml` file. After you set this value, run `docker restart unlockedv2-kolibri-1`
   and you should be able to access the provider at `localhost:8000`
+
+ - **Videos**:
+   Videos can be hosted locally for development, in which case they are simply downloaded and moved into the `frontend/public/videos` directory,
+   If you wish to use `s3` and test out hosting videos between multiple instances, you need to set the following environment variables in either
+   the docker-compose.yml for both the `provider-middleware` and `server` or in your production environment.
+ ```
+     - AWS_REGION=
+     - S3_BUCKET_NAME=
+     - AWS_ACCOUNT_ID=
+     - AWS_ACCESS_KEY_ID=
+     - AWS_SECRET_ACCESS_KEY=
+```
+  You will also need to add the following section to `dev.nginx.conf` if you want to test s3 locally:
+
+```
+	location /videos/ {
+		proxy_pass http://server:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+```
 
 ### To migrate the database to a fresh state, run `make migrate-fresh` (you can do this while docker is running with all the services, but you must restart the server (e.g. `docker restart unlockedv2-server-1` if your repo directory is called UnlockEdv2)
 
