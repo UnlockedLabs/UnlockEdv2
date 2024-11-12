@@ -55,7 +55,39 @@ type BrightspaceEnrollment struct {
 	EnrollmentType string `csv:"EnrollmentType"`
 }
 
-func (kc *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.ImportUser {
+type BrightspaceAssignmentSubmission struct {
+	DropboxId           string `csv:"DropboxId"`
+	OrgUnitId           string `csv:"OrgUnitId"`
+	UserId              string `csv:"SubmitterId"`
+	SubmitterType       string `csv:"SubmitterType"`
+	FileSubmissionCount string `csv:"FileSubmissionCount"`
+	Score               string `csv:"Score"`
+	IsGraded            string `csv:"IsGraded"`
+	LastSubmissionDate  string `csv:"LastSubmissionDate"`
+}
+
+func (assign *BrightspaceAssignmentSubmission) getCompositeKeyId() string {
+	return assign.DropboxId + "-" + assign.OrgUnitId + "-" + assign.UserId
+}
+
+func (assign *BrightspaceAssignmentSubmission) getGradedCompositeKeyId() string {
+	return "-assign-" + assign.DropboxId + "-" + assign.OrgUnitId + "-" + assign.UserId
+}
+
+type BrightspaceQuizSubmission struct {
+	AttemptId string `csv:"AttemptId"`
+	UserId    string `csv:"UserId"`
+	OrgUnitId string `csv:"OrgUnitId"`
+	Score     string `csv:"Score"`
+	IsGraded  string `csv:"IsGraded"`
+	IsDeleted string `csv:"IsDeleted"`
+}
+
+func (assign *BrightspaceQuizSubmission) getGradedCompositeKeyId() string {
+	return "-quiz-" + assign.AttemptId
+}
+
+func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.ImportUser {
 	user := models.ImportUser{
 		Username:       bsUser.UserName,
 		NameFirst:      bsUser.FirstName,
@@ -219,7 +251,10 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 			log.Errorf("error opening zip file reader for file %v, error is: %v", zipFilePath, err)
 			return destPath, err
 		}
-		defer zipFile.Close() //close it later
+		defer func() {
+			zipFile.Close()
+			cleanUpFiles(zipFilePath) //delete zipfile here
+		}()
 		for _, zippedFile := range zipFile.File {
 			destPath = filepath.Join(CsvDownloadPath, zippedFile.Name)
 			if zippedFile.FileInfo().IsDir() { //handles all zipped files
@@ -254,12 +289,31 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 	return destPath, err
 }
 
-func cleanUpFiles(zipFileName, csvFile string) {
-	zipFilePath := filepath.Join(CsvDownloadPath, zipFileName)
-	if err := os.Remove(zipFilePath); err != nil {
-		log.Warnf("unable to delete file %v", zipFilePath)
+func cleanUpCsvFiles() {
+	csvs, err := filepath.Glob(CsvDownloadPath + "/*.csv")
+	if err != nil {
+		log.Errorln("error retrieving list of csv file paths, error is ", err)
+		return
 	}
-	if err := os.Remove(csvFile); err != nil {
-		log.Warnf("unable to delete file %v", csvFile)
+	if len(csvs) > 0 {
+		cleanUpFiles(csvs...)
 	}
+}
+
+func cleanUpFiles(filePaths ...string) {
+	for _, fileToDelete := range filePaths {
+		if err := os.Remove(fileToDelete); err != nil {
+			log.Warnf("unable to delete file %v", fileToDelete)
+		}
+	}
+}
+
+func findSlice[T any](inSlice []T, checkCondition func(T) bool) []T {
+	var newSlice []T
+	for _, theElement := range inSlice {
+		if checkCondition(theElement) {
+			newSlice = append(newSlice, theElement)
+		}
+	}
+	return newSlice
 }
