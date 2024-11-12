@@ -1,13 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-drop function if exists
-    public.insert_daily_activity(
-       integer, integer, character varying, integer, character varying
-);
--- +goose StatementEnd
-
--- +goose Down
--- +goose StatementBegin
 create function
     public.insert_daily_activity(
         _user_id integer,
@@ -48,4 +40,12 @@ as
     END;
 '
 ;
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+drop function if exists
+    public.insert_daily_activity(
+       integer, integer, character varying, integer, character varying
+);
 -- +goose StatementEnd
