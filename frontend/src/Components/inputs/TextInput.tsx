@@ -3,25 +3,29 @@ import { FieldErrors, UseFormRegister } from 'react-hook-form';
 interface TextProps {
     label: string;
     interfaceRef: string;
-    required: boolean;
+    required?: boolean;
     length: number | undefined;
     errors: FieldErrors<any>; // eslint-disable-line
     register: UseFormRegister<any>; // eslint-disable-line
     password?: boolean;
     isFocused?: boolean;
     autoComplete?: string;
+    pattern?: {
+        value: RegExp;
+        message: string;
+    };
 }
-
 export function TextInput({
     label,
     interfaceRef,
-    required,
+    required = false,
     length,
     errors,
     register,
     password = false,
     isFocused = false,
-    autoComplete = 'on'
+    autoComplete = 'on',
+    pattern
 }: TextProps) {
     const options = {
         required: {
@@ -33,7 +37,8 @@ export function TextInput({
                 value: length,
                 message: `${label} should be ${length} characters or less`
             }
-        })
+        }),
+        ...(pattern && { pattern })
     };
     return (
         <label className="form-control">
