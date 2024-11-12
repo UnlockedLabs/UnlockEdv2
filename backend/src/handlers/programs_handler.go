@@ -61,16 +61,45 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 	return writeJsonResponse(w, http.StatusOK, program)
 }
 
+type ProgramForm struct {
+	// ... program
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	CreditType    string `json:"credit_type"`
+	ProgramStatus string `json:"program_status"`
+	ProgramType   string `json:"program_type"`
+	Facilities    []int  `json:"facilities"`
+}
+
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var program models.Program
+	var program ProgramForm
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	_, err = srv.Db.CreateProgram(&program)
+	newProg := models.Program{
+		Name:          program.Name,
+		Description:   program.Description,
+		CreditType:    program.CreditType,
+		ProgramStatus: program.ProgramStatus,
+		ProgramType:   program.ProgramType,
+	}
+	err = srv.Db.CreateProgram(&newProg)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	log.add("program_id", newProg.ID)
+	for _, facilityId := range program.Facilities {
+		facilityProgram := models.FacilitiesPrograms{
+			FacilityID: uint(facilityId),
+			ProgramID:  newProg.ID,
+		}
+		log.add("facility_id", facilityId)
+		if err := srv.Db.Create(&facilityProgram).Error; err != nil {
+			log.info("Error creating facility program: " + err.Error())
+			continue
+		}
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Program created successfully")
 }

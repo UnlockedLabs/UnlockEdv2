@@ -17,6 +17,7 @@ import ResourcesManagement from '@/Pages/ResourcesManagement';
 import UnauthorizedNotFound from '@/Pages/Unauthorized';
 import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
+import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
 import Programs from './Pages/Programs.tsx';
@@ -137,6 +138,16 @@ const router = createBrowserRouter([
                         }
                     },
                     {
+                        path: 'programs',
+                        element: <Programs />,
+                        loader: getFacilities,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Programs',
+                            path: ['programs']
+                        }
+                    },
+                    {
                         path: 'open-content',
                         element: <OpenContent />,
                         handle: {
@@ -171,15 +182,6 @@ const router = createBrowserRouter([
                         handle: {
                             title: 'Library Viewer',
                             path: ['viewer', 'libraries', ':library_name']
-                        }
-                    },
-                    {
-                        path: 'programs',
-                        element: <Programs />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Programs',
-                            path: ['programs']
                         }
                     },
                     {

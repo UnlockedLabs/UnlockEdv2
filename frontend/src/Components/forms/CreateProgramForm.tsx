@@ -1,4 +1,10 @@
-import { CreditType, ProgramStatus, ProgramType, ToastState } from '@/common';
+import {
+    CreditType,
+    Facility,
+    ProgramStatus,
+    ProgramType,
+    ToastState
+} from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
@@ -10,15 +16,19 @@ interface ProgramInputs {
     credit_type: string;
     program_status: string;
     program_type: string;
+    facilities: number[];
 }
 
 export default function CreateProgramForm({
-    onSuccess
+    onSuccess,
+    facilities
 }: {
     onSuccess: (state: ToastState, message: string) => void;
+    facilities: Facility[];
 }) {
     const [errorMessage, setErrorMessage] = useState('');
-
+    const [selectedFacilities, setSelectedFacilities] = useState<number[]>([]);
+    const [hasAll, setHasAll] = useState(false);
     const {
         register,
         handleSubmit,
@@ -28,6 +38,7 @@ export default function CreateProgramForm({
 
     const onSubmit: SubmitHandler<ProgramInputs> = async (data) => {
         setErrorMessage('');
+        data.facilities = selectedFacilities;
         const response = await API.post('programs', data);
         if (!response.success) {
             onSuccess(ToastState.error, 'Failed to add program');
@@ -85,6 +96,59 @@ export default function CreateProgramForm({
                     required
                     errors={errors}
                 />
+                <label className="label">
+                    Facilities to make program available:
+                </label>
+                <div className="m-2 columns-2">
+                    <input
+                        type="checkbox"
+                        className="checkbox mb-4 mr-1"
+                        id={'all'}
+                        name={'all'}
+                        value={'all'}
+                        onChange={() => {
+                            setHasAll(!hasAll);
+                            if (hasAll) setSelectedFacilities([]);
+                            else
+                                setSelectedFacilities(
+                                    facilities.map((fac) => {
+                                        return fac.id;
+                                    })
+                                );
+                        }}
+                    />
+                    <label htmlFor={'all'}>{'Select All'}</label>
+
+                    {facilities?.map((facility) => (
+                        <div key={facility.id}>
+                            <input
+                                type="checkbox"
+                                className="checkbox mb-4 mr-1"
+                                id={facility.name}
+                                name={facility.name}
+                                value={facility.id}
+                                disabled={hasAll}
+                                onChange={
+                                    selectedFacilities.includes(facility.id)
+                                        ? () =>
+                                              setSelectedFacilities(
+                                                  selectedFacilities.filter(
+                                                      (id) => id !== facility.id
+                                                  )
+                                              )
+                                        : () =>
+                                              setSelectedFacilities([
+                                                  ...selectedFacilities,
+                                                  facility.id
+                                              ])
+                                }
+                            />
+                            <label htmlFor={facility.name}>
+                                {facility.name}
+                            </label>
+                        </div>
+                    ))}
+                </div>
                 <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>
