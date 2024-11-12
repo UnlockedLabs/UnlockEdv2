@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"unicode"
 
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
@@ -24,31 +25,23 @@ import (
 
 type DB struct{ *gorm.DB }
 
-var TableList = []interface{}{
-	&models.User{},
-	&models.ProviderPlatform{},
-	&models.ProviderUserMapping{},
-	&models.LeftMenuLink{},
-	&models.Course{},
-	&models.Program{},
-	&models.ProgramTag{},
-	&models.ProgramSection{},
-	&models.ProgramSectionEvent{},
-	&models.ProgramSectionEnrollment{},
-	&models.ProgramSectionEventOverride{},
-	&models.ProgramSectionEventAttendance{},
-	&models.Milestone{},
-	&models.Outcome{},
-	&models.Activity{},
-	&models.OidcClient{},
-	&models.UserFavorite{},
-	&models.Facility{},
-	&models.OpenContentProvider{},
-	&models.CronJob{},
-	&models.RunnableTask{},
-	&models.Library{},
+func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
+	for _, char := range fl.Field().String() {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) {
+			return false
+		}
+	}
+	return true
 }
-var Validate = sync.OnceValue(func() *validator.Validate { return validator.New(validator.WithRequiredStructEnabled()) })
+
+var Validate = sync.OnceValue(func() *validator.Validate {
+	Ins := validator.New(validator.WithRequiredStructEnabled())
+	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
+	if err != nil {
+		log.Fatalf("Failed to register custom validation: %v", err)
+	}
+	return Ins
+})
 
 func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
@@ -98,6 +91,33 @@ func InitDB(isTesting bool) *DB {
 }
 
 func MigrateTesting(db *gorm.DB) {
+	var TableList = []interface{}{
+		&models.User{},
+		&models.ProviderPlatform{},
+		&models.ProviderUserMapping{},
+		&models.LeftMenuLink{},
+		&models.Course{},
+		&models.Program{},
+		&models.ProgramTag{},
+		&models.ProgramSection{},
+		&models.ProgramSectionEvent{},
+		&models.ProgramSectionEnrollment{},
+		&models.ProgramSectionEventOverride{},
+		&models.ProgramSectionEventAttendance{},
+		&models.Milestone{},
+		&models.Outcome{},
+		&models.Activity{},
+		&models.OidcClient{},
+		&models.UserFavorite{},
+		&models.Facility{},
+		&models.OpenContentProvider{},
+		&models.CronJob{},
+		&models.RunnableTask{},
+		&models.Library{},
+		&models.Video{},
+		&models.VideoDownloadAttempt{},
+		&models.VideoFavorite{},
+	}
 	for _, table := range TableList {
 		log.Printf("Migrating %T table...", table)
 		if err := db.AutoMigrate(table); err != nil {
@@ -144,9 +164,12 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
-		kiwix := models.OpenContentProvider{Name: models.Kiwix, BaseUrl: "https://library.kiwix.org", CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix}
-		if err := db.Create(&kiwix).Error; err != nil {
-			log.Fatalf("Failed to create kiwix open content provider: %v", err)
+		openContent := []models.OpenContentProvider{{Name: models.Kiwix, BaseUrl: models.KiwixLibraryUrl, CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix},
+			{Name: models.Youtube, BaseUrl: models.YoutubeApi, CurrentlyEnabled: true, Thumbnail: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
+		for idx := range openContent {
+			if err := db.Create(&openContent[idx]).Error; err != nil {
+				log.Fatalf("Failed to create kiwix open content provider: %v", err)
+			}
 		}
 	}
 }
@@ -192,7 +215,6 @@ func (db *DB) SeedTestData() {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 	for i := range openContentProviders {
-		openContentProviders[i].ProviderPlatformID = &platform[rand.Intn(len(platform))].ID
 		if err := db.Create(&openContentProviders[i]).Error; err != nil {
 			log.Fatalf("Failed to create open content provider: %v", err)
 		}

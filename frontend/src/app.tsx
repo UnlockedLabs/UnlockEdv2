@@ -21,6 +21,8 @@ import OpenContentManagement from './Pages/OpenContentManagement';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
 import Programs from './Pages/Programs.tsx';
+import LibraryLayout from './Components/LibraryLayout';
+import VideoManagement from './Pages/VideoManagement';
 import {
     checkDefaultFacility,
     checkExistingFlow,
@@ -38,6 +40,9 @@ import { getOpenContentProviders, getFacilities } from './routeLoaders.ts';
 import FacilityManagement from '@/Pages/FacilityManagement.tsx';
 
 import { ToastProvider } from './Context/ToastCtx.tsx';
+import VideoViewer from './Components/VideoEmbedViewer.tsx';
+import VideoContent from './Components/VideoContent.tsx';
+import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -147,8 +152,28 @@ const router = createBrowserRouter([
                         element: <OpenContent />,
                         handle: {
                             title: 'Open Content',
-                            path: ['open-content']
-                        }
+                            path: ['open-content', ':kind']
+                        },
+                        children: [
+                            {
+                                path: 'libraries',
+                                element: <LibraryLayout />,
+                                errorElement: <Error />,
+                                handle: {
+                                    title: 'Libraries',
+                                    path: ['open-content', 'libraries']
+                                }
+                            },
+                            {
+                                path: 'videos',
+                                element: <VideoContent />,
+                                errorElement: <Error />,
+                                handle: {
+                                    title: 'Videos',
+                                    path: ['open-content', 'videos']
+                                }
+                            }
+                        ]
                     },
                     {
                         path: 'viewer/libraries/:id',
@@ -157,6 +182,15 @@ const router = createBrowserRouter([
                         handle: {
                             title: 'Library Viewer',
                             path: ['viewer', 'libraries', ':library_name']
+                        }
+                    },
+                    {
+                        path: 'viewer/videos/:id',
+                        element: <VideoViewer />,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Video Viewer',
+                            path: ['viewer', 'videos', ':video_name']
                         }
                     }
                 ]
@@ -235,15 +269,6 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'open-content-management',
-                        element: <OpenContentManagement />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Open Content Management',
-                            path: ['open-content-management']
-                        }
-                    },
-                    {
                         path: 'facilities-management',
                         element: <FacilityManagement />,
                         handle: {
@@ -251,6 +276,34 @@ const router = createBrowserRouter([
                             path: ['facilities-management']
                         },
                         errorElement: <Error />
+                    },
+                    {
+                        path: 'open-content-management',
+                        element: <OpenContentManagement />,
+                        handle: {
+                            title: 'Open Content Management',
+                            path: ['open-content-management', ':kind']
+                        },
+                        children: [
+                            {
+                                path: 'libraries',
+                                element: <LibraryLayout />,
+                                errorElement: <Error />,
+                                handle: {
+                                    title: 'Libraries',
+                                    path: ['open-content', 'libraries']
+                                }
+                            },
+                            {
+                                path: 'videos',
+                                element: <VideoManagement />,
+                                handle: {
+                                    title: 'Videos',
+                                    path: ['open-content-management', 'videos']
+                                }
+                            },
+                            {}
+                        ]
                     },
                     {
                         path: 'course-catalog-admin',

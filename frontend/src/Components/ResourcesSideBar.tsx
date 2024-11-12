@@ -21,7 +21,15 @@ export default function ResourcesSideBar({ providers }: ResourcesSideBarProps) {
     if (isLoading) return <div>Loading...</div>;
     if (error) return <Error />;
     const categoryData = data?.data as ResourceCategory[];
-
+    const getUrl = (prov: OpenContentProvider): string => {
+        switch (prov.name.toLowerCase()) {
+            case 'kiwix':
+                return '/open-content/libraries';
+            case 'youtube':
+                return '/open-content/videos';
+        }
+        return '/open-content/libraries';
+    };
     return (
         <div className="w-[409px] min-[1400px]:min-w-[409px] bg-background py-4 px-9">
             <div className="p-4 space-y-4">
@@ -34,7 +42,7 @@ export default function ResourcesSideBar({ providers }: ResourcesSideBarProps) {
                             description={provider.description ?? ''}
                             imgSrc={provider.thumbnail_url ?? ''}
                             altText={provider.name}
-                            linkUrl={`/viewer/libraries/${provider.id}`}
+                            linkUrl={getUrl(provider)}
                             linkText={`Explore Content`}
                         />
                     );

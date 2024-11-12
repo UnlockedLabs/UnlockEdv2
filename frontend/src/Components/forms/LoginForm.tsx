@@ -31,7 +31,7 @@ export default function LoginForm() {
         if (user) {
             data.identifier = user;
         }
-        const resp = (await API.post(
+        const resp = (await API.post<AuthResponse, Inputs>(
             'login',
             data
         )) as ServerResponseOne<AuthResponse>;

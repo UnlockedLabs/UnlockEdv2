@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AxiosError } from 'axios';
 import useSWR from 'swr';
 import Modal from '../Components/Modal';
-import AddResourceCollectionForm from '@/Components/forms/AddResourceCollectionForm';
-import EditResourceCollectionForm from '@/Components/forms/EditResourceCollectionForm';
+import AddResourceCollectionForm from '../Components/forms/AddResourceCollectionForm';
+import EditResourceCollectionForm from '../Components/forms/EditResourceCollectionForm';
 import AddLinkForm from '../Components/forms/AddLinkForm';
 import {
     ModalType,
@@ -11,7 +11,7 @@ import {
     ResourceLink,
     ServerResponseMany,
     ToastState
-} from '@/common';
+} from '../common';
 import { PencilSquareIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { Bars3Icon, PlusIcon } from '@heroicons/react/24/solid';
@@ -20,13 +20,12 @@ import DeleteForm from '../Components/forms/DeleteForm';
 import { useDebounceValue } from 'usehooks-ts';
 import ExternalLink from '@/Components/ExternalLink';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { useToast } from '@/Context/ToastCtx';
+import { useToast } from '@/Context/ToastCtx.tsx';
 import API from '@/api/api';
 
 type EditableResourceCollection = ResourceCategory & {
     isModified: boolean;
 };
-
 export default function ResourcesManagement() {
     const { toaster } = useToast();
     const { data, error, mutate, isLoading } = useSWR<
@@ -37,38 +36,50 @@ export default function ResourcesManagement() {
     const [collectionList, setCollectionList] = useState<
         EditableResourceCollection[]
     >([]);
+    const [initialCollectionList, setInitialCollectionList] = useState<
+        EditableResourceCollection[]
+    >([]);
     const [collectionToDelete, setCollectionToDelete] = useState<
         number | undefined
     >();
     const [selectedCollectionIndex, setSelectedCollectionIndex] = useState<
         number | undefined
-    >(undefined);
+    >();
+    const [originalLinkValues, setOriginalLinkValues] = useState<
+        Record<number, ResourceLink>
+    >({});
     const [hasDeletedCollection, setHasDeletedCollection] = useState(false);
 
     const addCollectionModal = useRef<HTMLDialogElement>(null);
     const deleteCollectionModal = useRef<HTMLDialogElement>(null);
-
     useEffect(() => {
         if (data) {
-            const updatedData = data.data.map(
-                (collection: ResourceCategory, idx: number) => {
-                    return {
-                        ...collection,
-                        id: idx,
-                        isModified: false
-                    } as EditableResourceCollection;
-                }
-            );
+            const updatedData = data.data.map((collection) => ({
+                ...collection,
+                id: Math.random(),
+                isModified: false
+            }));
+
             setHasDeletedCollection(false);
             setSelectedCollectionIndex(undefined);
             setCollectionList(updatedData);
+            setInitialCollectionList(updatedData);
+            setOriginalLinkValues({});
         }
     }, [data]);
 
     const handleCollectionClick = (collection: EditableResourceCollection) => {
-        setSelectedCollectionIndex(
-            collectionList.findIndex((c) => c.id === collection.id)
+        const collectionIndex = collectionList.findIndex(
+            (c) => c.id === collection.id
         );
+        setSelectedCollectionIndex(collectionIndex);
+
+        // Store original values for all links in the collection
+        const linkValues: Record<number, ResourceLink> = {};
+        collection.links.forEach((link, index) => {
+            linkValues[index] = { ...link };
+        });
+        setOriginalLinkValues(linkValues);
     };
 
     const handleDeleteCollectionClick = (collectionId: number) => {
@@ -79,26 +90,62 @@ export default function ResourcesManagement() {
     const handleCollectionListReorder = (
         updatedCollectionList: EditableResourceCollection[]
     ) => {
-        // Retain selected collection (even if it was reordered)
-        if (selectedCollectionIndex) {
+        if (selectedCollectionIndex !== undefined) {
             const newSelectedCollectionIndex = updatedCollectionList.findIndex(
                 (c) => c.id === collectionList[selectedCollectionIndex].id
             );
             setSelectedCollectionIndex(newSelectedCollectionIndex);
         }
 
-        setCollectionList(updatedCollectionList);
+        const isModified = !areCollectionsEqual(
+            updatedCollectionList,
+            initialCollectionList
+        );
+        const updatedList = updatedCollectionList.map((collection) => ({
+            ...collection,
+            isModified
+        }));
+        setCollectionList(updatedList);
     };
 
     const handleResourceLinkChange = (
         linkIndex: number,
         updatedResourceLink: ResourceLink
     ) => {
-        if (selectedCollectionIndex) {
+        if (selectedCollectionIndex !== undefined) {
             const updatedCollections = [...collectionList];
+            const currentCollection =
+                updatedCollections[selectedCollectionIndex];
+
+            // Update the link
             updatedCollections[selectedCollectionIndex].links[linkIndex] =
                 updatedResourceLink;
-            updatedCollections[selectedCollectionIndex].isModified = true;
+
+            // Compare current values with original values
+            const originalLink = originalLinkValues[linkIndex];
+            const [originalName, originalUrl] = Object.entries(originalLink)[0];
+            const [newName, newUrl] = Object.entries(updatedResourceLink)[0];
+
+            // Check if current values match original values
+            const isLinkModified =
+                originalName !== newName || originalUrl !== newUrl;
+
+            // Check if any other links in the collection are modified
+            const areOtherLinksModified = currentCollection.links.some(
+                (link, idx) => {
+                    if (idx === linkIndex) return false;
+                    const [origName, origUrl] = Object.entries(
+                        originalLinkValues[idx]
+                    )[0];
+                    const [currName, currUrl] = Object.entries(link)[0];
+                    return origName !== currName || origUrl !== currUrl;
+                }
+            );
+
+            // Update collection's modified status
+            updatedCollections[selectedCollectionIndex].isModified =
+                isLinkModified || areOtherLinksModified;
+
             setCollectionList(updatedCollections);
         }
     };
@@ -106,12 +153,23 @@ export default function ResourcesManagement() {
     const handleResourceCollectionChange = (
         updatedResourceCollection: EditableResourceCollection
     ) => {
-        if (selectedCollectionIndex) {
+        if (selectedCollectionIndex !== undefined) {
             const updatedCollections = [...collectionList];
             updatedCollections[selectedCollectionIndex] =
                 updatedResourceCollection;
             setCollectionList(updatedCollections);
         }
+    };
+
+    const areCollectionsEqual = (
+        list1: EditableResourceCollection[],
+        list2: EditableResourceCollection[]
+    ) => {
+        if (list1.length !== list2.length) return false;
+        return list1.every(
+            (item, index) =>
+                item.id === list2[index].id && item.rank === list2[index].rank
+        );
     };
 
     const hasMadeModifications = () => {
@@ -153,10 +211,32 @@ export default function ResourcesManagement() {
             c.id = i;
             return c;
         });
-        const response = await API.put('left-menu', newCollectionList);
+        const response = await API.put<null, EditableResourceCollection[]>(
+            'left-menu',
+            newCollectionList
+        );
         if (response.success) {
             await mutate();
             toaster('Collections Saved!', ToastState.success);
+
+            setInitialCollectionList(newCollectionList);
+
+            if (selectedCollectionIndex !== undefined) {
+                const newOriginalValues: Record<number, ResourceLink> = {};
+                newCollectionList[selectedCollectionIndex].links.forEach(
+                    (link, index) => {
+                        newOriginalValues[index] = { ...link };
+                    }
+                );
+                setOriginalLinkValues(newOriginalValues);
+            }
+
+            setCollectionList(
+                newCollectionList.map((c) => ({
+                    ...c,
+                    isModified: false
+                }))
+            );
         } else {
             toaster(
                 'All collections must have associated links',
@@ -223,7 +303,7 @@ export default function ResourcesManagement() {
                             disabled={!hasMadeModifications()}
                         >
                             <CloudArrowUpIcon className="h-5 w-5" />
-                            <span>Publish Changes</span>
+                            <span> Publish Changes</span>
                         </button>
                     </div>
                 </div>

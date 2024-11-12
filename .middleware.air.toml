@@ -6,7 +6,7 @@ cmd = "go build -o ./bin/provider-middleware ./provider-middleware/."
 bin = "bin/provider-middleware"
 include_dir = ["backend", "provider-middleware"]
 include_file = []
-exclude_dir = ["frontend", "config", "backend/tasks"]
+exclude_dir = ["config", "backend/tasks"]
 exclude_regex = ["_test\\.go"]
 exclude_unchanged = true
 

@@ -45,7 +45,10 @@ export default function RegisterOidcClientForm({
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
         data.auto_register = hasAuto;
-        const response = await API.post<OidcClient>('oidc/clients', data);
+        const response = await API.post<OidcClient, Inputs>(
+            'oidc/clients',
+            data
+        );
         if (!response.success) {
             setErrorMessage('Failed to register OIDC client.');
             onSuccess(response, ToastState.error);

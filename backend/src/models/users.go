@@ -26,16 +26,18 @@ type DatabaseFields struct {
 type User struct {
 	DatabaseFields
 	Username   string   `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
-	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumunicode"`
+	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
 	Email      string   `gorm:"size:255;not null;unique" json:"email" validate:"-"`
-	NameLast   string   `gorm:"size:255;not null" json:"name_last" validate:"alphanumunicode"`
+	NameLast   string   `gorm:"size:255;not null" json:"name_last"  validate:"alphanumspace"`
 	Role       UserRole `gorm:"size:255;default:student" json:"role" validate:"oneof=admin student"`
 	KratosID   string   `gorm:"size:255" json:"kratos_id"`
 	FacilityID uint     `json:"facility_id"`
 
 	/* foreign keys */
-	Mappings []ProviderUserMapping `json:"mappings,omitempty"`
-	Facility *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
+	Mappings        []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	FavoriteVideos  []VideoFavorite       `json:"favorite_videos,omitempty" goem:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	FavoriteCourses []UserFavorite        `json:"favorite_courses,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Facility        *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
 }
 
 type ImportUser struct {

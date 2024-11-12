@@ -2,20 +2,18 @@ import {
     FilterLibraries,
     FilterLibrariesAdmin,
     Library,
-    OpenContentProvider,
     ServerResponseMany,
-    Tab,
     UserRole
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
-import TabView from '@/Components/TabView';
 import { useAuth } from '@/useAuth';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 import { AxiosError } from 'axios';
+import { useLocation } from 'react-router-dom';
 
 export default function LibaryLayout({
     studentView
@@ -27,11 +25,6 @@ export default function LibaryLayout({
         return null;
     }
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const allLibrariesTab: Tab = {
-        name: 'All',
-        value: 'all'
-    };
-    const [activeTab, setActiveTab] = useState<Tab>(allLibrariesTab);
     const [filterLibraries, setFilterLibraries] = useState<string>(
         FilterLibraries['All Libraries']
     );
@@ -44,13 +37,29 @@ export default function LibaryLayout({
     }
     const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
+    const route = useLocation();
+    const adminWithStudentView = (): boolean => {
+        return (
+            !route.pathname.includes('management') &&
+            user?.role === UserRole.Admin
+        );
+    };
+    const getVisibility = (): string => {
+        return adminWithStudentView()
+            ? 'visible'
+            : role == UserRole.Admin
+              ? filterLibrariesAdmin
+              : studentView
+                ? 'visible'
+                : filterLibraries;
+    };
     const {
         data: libraries,
         mutate: mutateLibraries,
         error: librariesError,
         isLoading: librariesLoading
     } = useSWR<ServerResponseMany<Library>, AxiosError>(
-        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${role == UserRole.Admin ? filterLibrariesAdmin : studentView ? 'visible' : filterLibraries}&search=${searchTerm}`
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${getVisibility()}&search=${searchTerm}`
     );
     const librariesMeta = libraries?.meta ?? {
         total: 0,
@@ -60,62 +69,44 @@ export default function LibaryLayout({
         last_page: 1
     };
 
-    const { data: openContentProviders } =
-        useSWR<ServerResponseMany<OpenContentProvider>>('/api/open-content');
     const handleSetPerPage = (perPage: number) => {
         setPerPage(perPage);
         setPageQuery(1);
         void mutateLibraries();
     };
-    const openContentTabs = useMemo(() => {
-        return [
-            allLibrariesTab,
-            ...(openContentProviders?.data?.map(
-                (provider: OpenContentProvider) => ({
-                    name: provider.name,
-                    value: provider.id
-                })
-            ) ?? [])
-        ];
-    }, [openContentProviders]);
 
     useEffect(() => {
         setPageQuery(1);
     }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
     return (
-        <div className="pt-6 space-y-6">
-            <TabView
-                tabs={openContentTabs}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-            />
+        <div className="px-8">
             <div className="flex flex-row gap-4">
                 <SearchBar
                     searchTerm={searchTerm}
                     changeCallback={setSearchTerm}
                 />
-                {role == UserRole.Admin ? (
-                    <DropdownControl
-                        label="Filter by"
-                        enumType={FilterLibrariesAdmin}
-                        setState={setFilterLibrariesAdmin}
-                    />
-                ) : (
+                {adminWithStudentView() || role === UserRole.Student ? (
                     <DropdownControl
                         label="Filter by"
                         enumType={FilterLibraries}
                         setState={setFilterLibraries}
                     />
+                ) : (
+                    <DropdownControl
+                        label="Filter by"
+                        enumType={FilterLibrariesAdmin}
+                        setState={setFilterLibrariesAdmin}
+                    />
                 )}
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-4 pb-8 pt-8 gap-6">
                 {libraries?.data.map((library) => (
                     <LibraryCard
                         key={library.id}
                         library={library}
                         mutate={mutateLibraries}
-                        role={role}
+                        role={adminWithStudentView() ? UserRole.Student : role}
                     />
                 ))}
             </div>
