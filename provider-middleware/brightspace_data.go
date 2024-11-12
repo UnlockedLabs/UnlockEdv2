@@ -38,14 +38,15 @@ type BrightspaceUser struct {
 }
 
 type BrightspaceCourse struct {
-	OrgUnitId     string `csv:"OrgUnitId"`
-	Organization  string `csv:"Organization"`
-	Type          string `csv:"Type"`
-	Name          string `csv:"Name"`
-	Code          string `csv:"Code"`
-	IsActive      string `csv:"IsActive"`
-	IsDeleted     string `csv:"IsDeleted"`
-	OrgUnitTypeId string `csv:"OrgUnitTypeId"`
+	OrgUnitId         string `csv:"OrgUnitId"`
+	Organization      string `csv:"Organization"`
+	Type              string `csv:"Type"`
+	Name              string `csv:"Name"`
+	Code              string `csv:"Code"`
+	IsActive          string `csv:"IsActive"`
+	IsDeleted         string `csv:"IsDeleted"`
+	OrgUnitTypeId     string `csv:"OrgUnitTypeId"`
+	TotalContentCount int
 }
 
 type BrightspaceEnrollment struct {
@@ -53,6 +54,10 @@ type BrightspaceEnrollment struct {
 	UserId         string `csv:"UserId"`
 	RoleName       string `csv:"RoleName"`
 	EnrollmentType string `csv:"EnrollmentType"`
+}
+
+func (enroll *BrightspaceEnrollment) getCompositeKeyId() string {
+	return enroll.UserId + "-" + enroll.OrgUnitId
 }
 
 type BrightspaceAssignmentSubmission struct {
@@ -87,6 +92,41 @@ func (assign *BrightspaceQuizSubmission) getGradedCompositeKeyId() string {
 	return "-quiz-" + assign.AttemptId
 }
 
+type BrightspaceContentObject struct {
+	ContentObjectId   string `csv:"ContentObjectId"`
+	OrgUnitId         string `csv:"OrgUnitId"`
+	Title             string `csv:"Title"`
+	ContentObjectType string `csv:"ContentObjectType"`
+	CompletionType    string `csv:"CompletionType"`
+	StartDate         string `csv:"StartDate"`
+	EndDate           string `csv:"EndDate"`
+	DueDate           string `csv:"DueDate"`
+	LastModified      string `csv:"LastModified"`
+	IsDeleted         string `csv:"IsDeleted"`
+}
+
+type BrightspaceContentUserProgress struct {
+	ContentObjectId string `csv:"ContentObjectId"`
+	UserId          string `csv:"UserId"`
+	CompletedDate   string `csv:"CompletedDate"`
+	LastVisited     string `csv:"LastVisited"`
+	TotalTime       string `csv:"TotalTime"`
+	Version         string `csv:"Version"`
+}
+
+func (bsProgress *BrightspaceContentUserProgress) getCompositeKeyId() string {
+	return bsProgress.Version + "-" + bsProgress.ContentObjectId + "-" + bsProgress.UserId + "-" + bsProgress.LastVisited
+}
+
+type BrightspaceUserContentDto struct {
+	OrgUnitId         string
+	ContentObjectId   string
+	TotalTime         string
+	Title             string
+	ContentObjectType string
+	ExternalId        string
+}
+
 func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.ImportUser {
 	user := models.ImportUser{
 		Username:       bsUser.UserName,
@@ -117,7 +157,7 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 			imgPath, err = UploadBrightspaceImage(imgBytes, id)
 			if err != nil {
 				log.Errorf("error during upload of Brightspace image to UnlockEd, id used was: %v error is %v", id, err)
-				imgPath = "/brightspace.png"
+				imgPath = "/brightspace.jpg"
 			}
 		}
 	}
@@ -129,8 +169,8 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		ThumbnailURL:            imgPath,
 		Type:                    "fixed_enrollment",                             //open to discussion
 		Description:             "Brightspace Managed Course: " + bsCourse.Name, //WIP
-		TotalProgressMilestones: uint(0),                                        //WIP
-		ExternalURL:             srv.BaseURL,                                    //WIP
+		TotalProgressMilestones: uint(bsCourse.TotalContentCount),
+		ExternalURL:             srv.BaseURL + "/" + "d2l/le/sequenceLauncher/" + bsCourse.OrgUnitId + "/View",//WIP
 	}
 	return &course
 }
@@ -232,6 +272,12 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 	if resp.StatusCode == http.StatusOK {
 		log.Infof("succesful request to url %v for downloading file %v", endpointUrl, targetFileName)
 		zipFilePath := filepath.Join(CsvDownloadPath, targetFileName)
+		targetDownloadDirectory := filepath.Dir(zipFilePath)
+		err := os.MkdirAll(targetDownloadDirectory, os.ModePerm)
+		if err != nil {
+			log.Errorf("unable to create directory %s for downloading and zipping bulk data from Brightspace, error is %v", targetDownloadDirectory, err)
+			return destPath, err
+		}
 		file, err := os.Create(zipFilePath)
 		if err != nil {
 			log.Errorf("error creating file %v used to write csv data into, error is: %v", zipFilePath, err)
@@ -256,7 +302,7 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 			cleanUpFiles(zipFilePath) //delete zipfile here
 		}()
 		for _, zippedFile := range zipFile.File {
-			destPath = filepath.Join(CsvDownloadPath, zippedFile.Name)
+			destPath = filepath.Join(targetDownloadDirectory, zippedFile.Name)
 			if zippedFile.FileInfo().IsDir() { //handles all zipped files
 				if err := os.MkdirAll(destPath, os.ModePerm); err != nil {
 					log.Errorf("error making directory to destination path %v, error is: %v", destPath, err)
@@ -289,8 +335,9 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 	return destPath, err
 }
 
-func cleanUpCsvFiles() {
-	csvs, err := filepath.Glob(CsvDownloadPath + "/*.csv")
+func cleanUpCsvFiles(subDirectory string) {
+	dirPath := filepath.Join(CsvDownloadPath, subDirectory)
+	csvs, err := filepath.Glob(dirPath + "/*.csv")
 	if err != nil {
 		log.Errorln("error retrieving list of csv file paths, error is ", err)
 		return
