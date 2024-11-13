@@ -11,7 +11,8 @@ import {
     ModalType,
     ServerResponseMany,
     ToastState,
-    User
+    User,
+    UserRole
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
 import EditUserForm from '@/Components/forms/EditUserForm';
@@ -147,6 +148,21 @@ export default function Users() {
         setPerPage(val);
         setPageQuery(1);
         void mutate();
+    };
+    const determineUserRole = (): UserRole => {
+        // Find the hidden input field with the name 'role'
+        const roleInput = document.querySelector('input[name="role"]');
+
+        // Check if the input field exists and has a value
+        if (roleInput?.role) {
+            // Return the appropriate UserRole based on the value
+            return roleInput.role === 'admin'
+                ? UserRole.Admin
+                : UserRole.Student;
+        }
+
+        // Default to Student if the input field is not found or has no value
+        return UserRole.Student;
     };
 
     return (
@@ -291,7 +307,12 @@ export default function Users() {
                 ref={addUserModal}
                 type={ModalType.Add}
                 item="User"
-                form={<AddUserForm onSuccess={onAddUserSuccess} />}
+                form={
+                    <AddUserForm
+                        onSuccess={onAddUserSuccess}
+                        userRole={determineUserRole()}
+                    />
+                }
             />
             <Modal
                 ref={editUserModal}

@@ -3,13 +3,12 @@ import {
     ProviderPlatform,
     ToastState,
     UserRole
-} from '../../common';
+} from '@/common.ts';
 import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
-import { DropdownInput } from '../inputs/DropdownInput';
-import { SubmitButton } from '../inputs/SubmitButton';
+import { SubmitButton } from '@/Components/inputs';
 import API from '@/api/api';
 
 interface Inputs {
@@ -18,17 +17,16 @@ interface Inputs {
     username: string;
     role: UserRole;
 }
-
 interface Form {
     user: Inputs;
     provider_platforms: number[];
 }
-
-export default function AddUserForm({
-    onSuccess
-}: {
+interface AddUserFormProps {
     onSuccess: (psw: string, msg: string, err: ToastState) => void;
-}) {
+    userRole: UserRole; // New prop to receive the role
+}
+
+export default function AddUserForm({ onSuccess, userRole }: AddUserFormProps) {
     const [errorMessage, setErrorMessage] = useState('');
     const [providers, setProviders] = useState<ProviderPlatform[]>([]);
     const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
@@ -37,16 +35,23 @@ export default function AddUserForm({
         register,
         handleSubmit,
         setError,
+        setValue,
         formState: { errors }
     } = useForm<Inputs>();
 
+    // Set the role value when the component mounts
+    useEffect(() => {
+        setValue('role', userRole);
+    }, [setValue, userRole]);
+
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
+
         const response = await API.post<NewUserResponse, Form>('users', {
             user: data,
             provider_platforms: selectedProviders
         });
-        console.log('form response: ', response);
+
         if (!response.success) {
             const msg = response.message.trim();
             switch (msg) {
@@ -61,7 +66,7 @@ export default function AddUserForm({
                     setError('username', {
                         type: 'custom',
                         message:
-                            'First/Last and Username must contain letters and numbers only'
+                            'Username must contain only letters and numbers'
                     });
                     break;
                 }
@@ -74,7 +79,7 @@ export default function AddUserForm({
         reset();
         onSuccess(
             (response.data as NewUserResponse).temp_password,
-            'User created successfully with temporary password',
+            `${userRole} created successfully with temporary password`,
             ToastState.success
         );
     };
@@ -117,6 +122,11 @@ export default function AddUserForm({
                     length={25}
                     errors={errors}
                     register={register}
+                    pattern={{
+                        value: /^[A-Za-z\s]+$/,
+                        message:
+                            'First name can only contain letters and spaces'
+                    }}
                 />
                 <TextInput
                     label={'Last Name'}
@@ -125,6 +135,10 @@ export default function AddUserForm({
                     length={25}
                     errors={errors}
                     register={register}
+                    pattern={{
+                        value: /^[A-Za-z\s]+$/,
+                        message: 'Last name can only contain letters and spaces'
+                    }}
                 />
                 <TextInput
                     label={'Username'}
@@ -133,15 +147,16 @@ export default function AddUserForm({
                     length={50}
                     errors={errors}
                     register={register}
+                    pattern={{
+                        value: /^[A-Za-z0-9]+$/,
+                        message:
+                            'Username can only contain letters and numbers without spaces'
+                    }}
                 />
-                <DropdownInput
-                    label={'Role'}
-                    interfaceRef={'role'}
-                    required
-                    errors={errors}
-                    register={register}
-                    enumType={UserRole}
-                />
+
+                {/* Hidden input for role */}
+                <input type="hidden" {...register('role')} />
+
                 <br />
                 {providers?.map((provider: ProviderPlatform) => (
                     <div
