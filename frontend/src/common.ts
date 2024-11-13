@@ -707,9 +707,9 @@ export interface Library {
     description: string | null;
     external_id: string | null;
     id: number;
-    image_url: string | null;
+    thumbnail_url: string | null;
     language: string | null;
-    name: string;
+    title: string;
     open_content_provider_id: number;
     updated_at: string;
     url: string;
@@ -783,4 +783,13 @@ export enum Timezones {
     'america/los_angeles' = 'America/Los_Angeles',
     'america/denver' = 'America/Denver',
     'america/phoenix' = 'America/Phoenix'
+}
+
+export interface OpenContentItem {
+    name: string;
+    url: string;
+    thumbnail_url: string | null;
+    open_content_provider_id: number;
+    content_id: number;
+    type: string;
 }

@@ -71,7 +71,7 @@ export default function PageNav({
     };
 
     return (
-        <div className="px-8 flex justify-between items-center">
+        <div className="px-6 py-3 flex justify-between items-center">
             <div className="breadcrumbs">
                 <ul>
                     {showOpenMenu ? (
@@ -101,7 +101,7 @@ export default function PageNav({
                     )}
 
                     {customPath?.map((p) => (
-                        <li className="capitalize" key={p}>
+                        <li className="capitalize body" key={p}>
                             {p}
                         </li>
                     ))}
@@ -128,7 +128,9 @@ export default function PageNav({
                                             void handleSwitchFacility(facility);
                                         }}
                                     >
-                                        <label>{facility.name}</label>
+                                        <label className="body">
+                                            {facility.name}
+                                        </label>
                                     </li>
                                 ))}
                             </ul>
@@ -138,7 +140,7 @@ export default function PageNav({
             ) : (
                 <div className="flex flex-row items-center gap-2 px-6 py-4">
                     <ULIComponent icon={BuildingOffice2Icon} />
-                    <label className="font-semibold">
+                    <label className="font-semibold body">
                         {user?.facility_name}
                     </label>
                 </div>
