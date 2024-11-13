@@ -30,6 +30,9 @@
     .card {
         @apply shadow-md rounded-lg border border-black border-opacity-[10%] bg-base-teal;
     }
+    .card-row-padding {
+        @apply px-6 py-4;
+    }
     .card-h-padding {
         @apply mt-4 ml-4;
     }
@@ -75,6 +78,15 @@
     .scrollbar {
         scrollbar-width: thin;
         scrollbar-color: var(--grey-2) transparent;
+    }
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
     }
 }
 

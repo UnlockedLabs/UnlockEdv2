@@ -21,7 +21,7 @@ export default function LibraryViewer() {
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
                     setPathVal([
-                        { path_id: ':library_name', value: resp.data.name }
+                        { path_id: ':library_name', value: resp.data.title }
                     ]);
                 }
                 const response = await fetch(

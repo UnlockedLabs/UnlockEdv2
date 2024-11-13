@@ -40,7 +40,11 @@ import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/Context/PathValueCtx';
 import AdminDashboard from './Pages/AdminDashboard.tsx';
 import StudentDashboard from './Pages/StudentDashboard.tsx';
-import { getOpenContentProviders, getFacilities } from './routeLoaders.ts';
+import {
+    getFacilities,
+    getOpenContentDashboardData,
+    getRightSidebarData
+} from './routeLoaders.ts';
 
 import FacilityManagement from '@/Pages/FacilityManagement.tsx';
 
@@ -50,6 +54,7 @@ import VideoContent from './Components/VideoContent.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
 import FavoritesPage from './Pages/Favorites.tsx';
+import OpenContentLevelDashboard from './Pages/OpenContentLevelDashboard.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -130,7 +135,13 @@ const router = createBrowserRouter([
                     {
                         path: 'student-dashboard',
                         element: <StudentDashboard />,
-                        loader: getOpenContentProviders,
+                        loader: getRightSidebarData,
+                        handle: { title: 'Dashboard', path: ['dashboard'] }
+                    },
+                    {
+                        path: 'open-content-dashboard',
+                        element: <OpenContentLevelDashboard />,
+                        loader: getOpenContentDashboardData,
                         handle: { title: 'Dashboard', path: ['dashboard'] }
                     },
                     {
