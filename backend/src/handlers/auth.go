@@ -237,7 +237,7 @@ type ResetPasswordRequest struct {
 	Password     string `json:"password"`
 	Confirm      string `json:"confirm"`
 	FacilityName string `json:"facility_name"`
-	Timezone string `json:"timezone"`
+	Timezone     string `json:"timezone"`
 }
 
 func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
