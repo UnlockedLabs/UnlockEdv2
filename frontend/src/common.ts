@@ -341,6 +341,9 @@ export interface ResourceCategory {
 
 export type ResourceLink = Record<string, string>;
 
+export type EditableResourceCollection = ResourceCategory & {
+    isModified: boolean;
+};
 export interface OidcClient {
     client_id: string;
     client_secret: string;
