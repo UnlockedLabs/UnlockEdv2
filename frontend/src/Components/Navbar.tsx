@@ -20,6 +20,7 @@ import { useAuth, handleLogout } from '@/useAuth';
 import ULIComponent from './ULIComponent';
 import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
 
 export default function Navbar({
     isPinned,
@@ -185,6 +186,9 @@ export default function Navbar({
                                     className="collapse-content menu bg-grey-2 dark:bg-grey-1 rounded-box text-xs"
                                 >
                                     <li>
+                                        <FeatureLevelCheckboxes />
+                                    </li>
+                                    {/* <li>
                                         <label>
                                             <input
                                                 type="checkbox"
@@ -213,7 +217,7 @@ export default function Navbar({
                                             />
                                             Program Management
                                         </label>
-                                    </li>
+                                    </li> */}
                                 </ul>
                             </li>
                             <li className="self-center">
