@@ -237,6 +237,7 @@ type ResetPasswordRequest struct {
 	Password     string `json:"password"`
 	Confirm      string `json:"confirm"`
 	FacilityName string `json:"facility_name"`
+	Timezone     string `json:"timezone"`
 }
 
 func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -260,7 +261,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 		return newDatabaseServiceError(err)
 	}
 	if claims.UserID == 1 && claims.Role == "admin" && form.FacilityName != "" {
-		facility := models.Facility{Name: form.FacilityName, Timezone: "America/Chicago"}
+		facility := models.Facility{Name: form.FacilityName, Timezone: form.Timezone}
 		if err := srv.Db.UpdateFacility(&facility, 1); err != nil {
 			tx.Rollback()
 			return newDatabaseServiceError(err)
