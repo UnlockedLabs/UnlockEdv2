@@ -11,17 +11,17 @@ import {
     RectangleStackIcon,
     TrophyIcon,
     UsersIcon,
-    DocumentTextIcon,
-    BuildingOffice2Icon,
+    ArrowRightEndOnRectangleIcon,
     SunIcon,
     MoonIcon,
-    UserCircleIcon,
-    ArrowRightEndOnRectangleIcon
+    UserCircleIcon
 } from '@heroicons/react/24/solid';
-import { handleLogout, useAuth } from '@/useAuth';
+import { useAuth, handleLogout } from '@/useAuth';
 import ULIComponent from './ULIComponent';
 import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
+
 export default function Navbar({
     isPinned,
     onTogglePin
@@ -60,15 +60,16 @@ export default function Navbar({
             <Link to="/" className="mt-16">
                 <Brand />
             </Link>
+
             <div className="h-full">
                 <ul className="menu h-full flex flex-col justify-between">
                     <div>
-                        {user && user.role == UserRole.Admin ? (
+                        {user?.role == UserRole.Admin ? (
                             <>
                                 {/* admin view */}
                                 <li className="mt-16">
                                     <Link to="/admin-dashboard">
-                                        <ULIComponent icon={HomeIcon} />{' '}
+                                        <ULIComponent icon={HomeIcon} />
                                         Dashboard
                                     </Link>
                                 </li>
@@ -104,45 +105,31 @@ export default function Navbar({
                                         Platforms
                                     </Link>
                                 </li>
-                                <li className="">
-                                    <Link to="/course-catalog-admin">
-                                        <ULIComponent
-                                            icon={BuildingStorefrontIcon}
-                                        />
-                                        Course Catalog
-                                    </Link>
-                                </li>
-                                <li className="">
+                                {/* <li>
                                     <Link to="/programs">
-                                        <ULIComponent icon={DocumentTextIcon} />
+                                        <ULIComponent
+                                            icon={RectangleStackIcon}
+                                        />
                                         Programs
                                     </Link>
-                                </li>
-                                <li className="">
-                                    <Link to="/facilities-management">
-                                        <ULIComponent
-                                            icon={BuildingOffice2Icon}
-                                        />
-                                        Facilities
-                                    </Link>
-                                </li>
+                                </li> */}
                             </>
                         ) : (
                             <>
                                 {/* student view */}
                                 <li className="mt-16">
                                     <Link to="/student-dashboard">
-                                        <ULIComponent icon={HomeIcon} />{' '}
+                                        <ULIComponent icon={HomeIcon} />
                                         Dashboard
                                     </Link>
                                 </li>
-                                <li className="">
+                                <li>
                                     <Link to="/my-courses">
                                         <ULIComponent icon={BookOpenIcon} /> My
                                         Courses
                                     </Link>
                                 </li>
-                                <li className="">
+                                <li>
                                     <Link to="/my-progress">
                                         <ULIComponent icon={TrophyIcon} /> My
                                         Progress
@@ -154,18 +141,12 @@ export default function Navbar({
                                         Open Content
                                     </Link>
                                 </li>
-                                <li className="">
+                                <li>
                                     <Link to="/course-catalog">
                                         <ULIComponent
                                             icon={BuildingStorefrontIcon}
                                         />
                                         Course Catalog
-                                    </Link>
-                                </li>
-                                <li className="">
-                                    <Link to="/programs">
-                                        <ULIComponent icon={DocumentTextIcon} />
-                                        Programs
                                     </Link>
                                 </li>
                             </>
@@ -197,6 +178,48 @@ export default function Navbar({
                                 </label>
                             </li>
                             <div className="divider mt-0 mb-0"></div>
+                            <li tabIndex={0} className="collapse ">
+                                <label>Feature Access Levels</label>
+
+                                <ul
+                                    tabIndex={0}
+                                    className="collapse-content menu bg-grey-2 dark:bg-grey-1 rounded-box text-xs"
+                                >
+                                    <li>
+                                        <FeatureLevelCheckboxes />
+                                    </li>
+                                    {/* <li>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                name="access_level"
+                                                value={'Open Content'}
+                                            />
+                                            Open Content
+                                        </label>
+                                    </li>
+                                    <li>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                name="access_level"
+                                                value={'Open Content'}
+                                            />
+                                            Provider Platform Integrations
+                                        </label>
+                                    </li>
+                                    <li>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                name="access_level"
+                                                value={'Open Content'}
+                                            />
+                                            Program Management
+                                        </label>
+                                    </li> */}
+                                </ul>
+                            </li>
                             <li className="self-center">
                                 <button
                                     onClick={() => {
