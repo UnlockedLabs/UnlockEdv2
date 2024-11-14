@@ -314,7 +314,7 @@ export default function AdminManagement() {
             <Modal
                 ref={editUserModal}
                 type={ModalType.Edit}
-                item="Admin"
+                item="Administrator"
                 form={
                     targetUser ? (
                         <EditUserForm
@@ -329,7 +329,7 @@ export default function AdminManagement() {
             <Modal
                 ref={deleteUserModal}
                 type={ModalType.Confirm}
-                item="Delete Admin"
+                item="Delete Administrator"
                 form={
                     <DeleteForm
                         item="User"

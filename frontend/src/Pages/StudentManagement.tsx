@@ -16,7 +16,6 @@ import {
     UserRole
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
-import EditUserForm from '@/Components/forms/EditUserForm';
 import Modal from '@/Components/Modal';
 import DeleteForm from '@/Components/DeleteForm';
 import ResetPasswordForm from '@/Components/forms/ResetPasswordForm';
@@ -29,6 +28,7 @@ import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
+import EditStudentForm from '@/Components/forms/EditStudentForm';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -298,7 +298,7 @@ export default function StudentManagement() {
                 item="Student"
                 form={
                     targetUser ? (
-                        <EditUserForm
+                        <EditStudentForm
                             onSuccess={hanldleEditUser}
                             user={targetUser}
                         />
