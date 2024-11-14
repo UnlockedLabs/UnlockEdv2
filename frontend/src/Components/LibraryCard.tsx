@@ -5,6 +5,7 @@ import API from '@/api/api';
 import { KeyedMutator } from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
+import { AdminRoles } from '@/useAuth';
 
 export default function LibraryCard({
     library,
@@ -61,7 +62,7 @@ export default function LibraryCard({
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
                     {library?.description}
                 </p>
-                {role === UserRole.Admin && (
+                {AdminRoles.includes(role) && (
                     <VisibleHiddenToggle
                         visible={visible}
                         changeVisibility={changeVisibility}

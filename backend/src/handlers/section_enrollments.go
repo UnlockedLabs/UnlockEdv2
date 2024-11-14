@@ -7,15 +7,18 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerProgramSectionEnrollmentssRoutes() {
-	srv.Mux.Handle("GET /api/section-enrollments", srv.applyMiddleware(srv.handleIndexProgramSectionEnrollments))
-	srv.Mux.Handle("GET /api/section-enrollments/{id}", srv.applyMiddleware(srv.handleGetProgramSectionEnrollments))
-	srv.Mux.Handle("GET /api/programs/{id}/sections/enrollments", srv.applyMiddleware(srv.handleGetEnrollmentsForProgram))
-	srv.Mux.Handle("POST /api/section-enrollments/{section_id}/enroll/{user_id}", srv.applyAdminMiddleware(srv.handleEnrollUser))
-	srv.Mux.Handle("DELETE /api/section-enrollments/{id}", srv.applyAdminMiddleware(srv.handleDeleteProgramSectionEnrollments))
-	srv.Mux.Handle("PATCH /api/section-enrollments/{id}", srv.applyAdminMiddleware(srv.handleUpdateProgramSectionEnrollments))
-	srv.Mux.Handle("GET /api/section-enrollments/{id}/attendance", srv.applyAdminMiddleware(srv.handleGetProgramSectionEnrollmentsAttendance))
-	srv.Mux.Handle("GET /api/users/{id}/section-enrollments", srv.applyMiddleware(srv.handleGetUserEnrollments))
+func (srv *Server) registerProgramSectionEnrollmentsRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/section-enrollments", srv.handleIndexProgramSectionEnrollments, true, axx},
+		{"GET /api/section-enrollments/{id}", srv.handleGetProgramSectionEnrollments, false, axx},
+		{"GET /api/programs/{id}/sections/enrollments", srv.handleGetEnrollmentsForProgram, false, axx},
+		{"POST /api/section-enrollments/{section_id}/enroll/{user_id}", srv.handleEnrollUser, false, axx},
+		{"DELETE /api/section-enrollments/{id}", srv.handleDeleteProgramSectionEnrollments, true, axx},
+		{"PATCH /api/section-enrollments/{id}", srv.handleUpdateProgramSectionEnrollments, true, axx},
+		{"GET /api/section-enrollments/{id}/attendance", srv.handleGetProgramSectionEnrollmentsAttendance, true, axx},
+		{"GET /api/users/{id}/section-enrollments", srv.handleGetUserEnrollments, false, axx},
+	}
 }
 
 /* this gets all enrollments for an entire facility.. may rarely be called */
@@ -51,7 +54,7 @@ func (srv *Server) handleGetUserEnrollments(w http.ResponseWriter, r *http.Reque
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	page, perPage := srv.getPaginationInfo(r)
-	if !srv.canViewUserData(r) {
+	if !srv.canViewUserData(r, id) {
 		return newUnauthorizedServiceError()
 	}
 	total, enrollemnts, err := srv.Db.GetProgramSectionEnrollmentsForUser(id, page, perPage)

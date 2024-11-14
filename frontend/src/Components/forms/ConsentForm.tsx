@@ -1,8 +1,7 @@
-import { useAuth } from '@/useAuth';
 import DangerButton from '../DangerButton';
 import PrimaryButton from '../PrimaryButton';
 import API from '@/api/api';
-import { AuthResponse, getDashboard } from '@/common';
+import { AuthResponse } from '@/common';
 import { useNavigate } from 'react-router-dom';
 
 interface ConsentForm {
@@ -10,7 +9,6 @@ interface ConsentForm {
 }
 
 export default function ConsentForm() {
-    const { user } = useAuth();
     const navigate = useNavigate();
 
     const accept = async () => {
@@ -31,10 +29,10 @@ export default function ConsentForm() {
             window.location.href = location;
             return;
         }
-        window.location.href = getDashboard(user);
+        window.location.href = '/authcallback';
     };
     const deny = () => {
-        window.location.href = getDashboard(user);
+        window.location.href = '/authcallback';
     };
     return (
         <div className="bg-base-100 shadow-lg rounded-lg p-8 mb-4 flex flex-col my-2 max-w-screen-xl mx-auto">

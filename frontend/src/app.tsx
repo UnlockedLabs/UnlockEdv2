@@ -26,9 +26,9 @@ import {
     checkDefaultFacility,
     checkExistingFlow,
     checkRole,
+    isAdministrator,
     useAuth
 } from '@/useAuth';
-import { UserRole } from '@/common';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/Context/PathValueCtx';
@@ -59,7 +59,7 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!user) {
         return;
     }
-    return user.role === UserRole.Admin ? (
+    return isAdministrator(user) ? (
         <div>{children}</div>
     ) : (
         <UnauthorizedNotFound which="unauthorized" />

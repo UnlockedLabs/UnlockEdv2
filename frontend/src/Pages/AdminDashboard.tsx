@@ -1,14 +1,9 @@
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import MilestonesBarChart from '@/Components/MilestonesBarChart';
 import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
 import TopProgPieChart from '@/Components/TopProgActivityPieChart';
-import {
-    AdminDashboardJoin,
-    CourseActivity,
-    ServerResponse,
-    UserRole
-} from '@/common';
+import { AdminDashboardJoin, CourseActivity, ServerResponse } from '@/common';
 import useSWR from 'swr';
 import convertSeconds from '@/Components/ConvertSeconds';
 import { useContext } from 'react';
@@ -24,8 +19,8 @@ export default function AdminDashboard() {
     >(`/api/users/${user?.id}/admin-dashboard`);
     const { theme } = useContext(ThemeContext);
 
-    if (error || isLoading) return <div></div>;
-    if (user?.role !== UserRole.Admin) {
+    if (error || isLoading || !user) return <div></div>;
+    if (!isAdministrator(user)) {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
     const activityData = data?.data as AdminDashboardJoin;

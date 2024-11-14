@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import Brand from '../Components/Brand';
-import {
-    INIT_KRATOS_LOGIN_FLOW,
-    ServerResponse,
-    User,
-    UserRole
-} from '@/common';
+import { INIT_KRATOS_LOGIN_FLOW, ServerResponse, User } from '@/common';
 import API from '@/api/api';
 import { Link } from 'react-router-dom';
 
@@ -44,15 +39,7 @@ export default function Welcome() {
                             </li>
                         ) : (
                             <li>
-                                <Link
-                                    to={
-                                        authUser.role === UserRole.Student
-                                            ? '/student-dashboard'
-                                            : '/admin-dashboard'
-                                    }
-                                >
-                                    Dashboard
-                                </Link>
+                                <Link to={'/authcallback'}>Dashboard</Link>
                             </li>
                         )}
                     </ul>

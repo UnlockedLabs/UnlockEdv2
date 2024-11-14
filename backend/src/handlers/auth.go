@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,25 +17,29 @@ import (
 const (
 	ClaimsKey         contextKey = "claims"
 	KratosBrowserFlow string     = "/self-service/login/browser"
+	AuthCallbackRoute string     = "/authcallback"
 )
 
 type (
 	contextKey string
 	Claims     struct {
-		Username      string          `json:"username"`
-		UserID        uint            `json:"user_id"`
-		PasswordReset bool            `json:"password_reset"`
-		Role          models.UserRole `json:"role"`
-		FacilityID    uint            `json:"facility_id"`
-		FacilityName  string          `json:"facility_name"`
-		KratosID      string          `json:"kratos_id"`
+		Username      string                 `json:"username"`
+		UserID        uint                   `json:"user_id"`
+		PasswordReset bool                   `json:"password_reset"`
+		Role          models.UserRole        `json:"role"`
+		FacilityID    uint                   `json:"facility_id"`
+		FacilityName  string                 `json:"facility_name"`
+		KratosID      string                 `json:"kratos_id"`
+		FeatureAccess []models.FeatureAccess `json:"feature_access"`
 	}
 )
 
-func (srv *Server) registerAuthRoutes() {
-	srv.Mux.Handle("POST /api/reset-password", srv.applyMiddleware(srv.handleResetPassword))
-	/* only use auth middleware, user activity bloats the database + results */
-	srv.Mux.Handle("GET /api/auth", srv.applyMiddleware(srv.handleCheckAuth))
+func (srv *Server) registerAuthRoutes() []routeDef {
+	return []routeDef{
+		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature()},
+		/* only use auth middleware, user activity bloats the database + results */
+		{"GET /api/auth", srv.handleCheckAuth, false, models.Feature()},
+	}
 }
 
 func (claims *Claims) getTraits() map[string]interface{} {
@@ -46,7 +49,12 @@ func (claims *Claims) getTraits() map[string]interface{} {
 		"role":           claims.Role,
 		"password_reset": claims.PasswordReset,
 		"facility_name":  claims.FacilityName,
+		"feature_access": claims.FeatureAccess,
 	}
+}
+
+func (claims *Claims) isAdmin() bool {
+	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
 func claimsFromUser(user *models.User) *Claims {
@@ -100,28 +108,23 @@ func isAuthRoute(r *http.Request) bool {
 
 func (srv *Server) UserIsAdmin(r *http.Request) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.Role == models.Admin
+	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
-/* this method **only** works when the path value is 'id' */
-func (srv *Server) canViewUserData(r *http.Request) bool {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return false
-	}
+func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.Role == models.Admin || claims.UserID == uint(id)
+	return slices.Contains(models.AdminRoles, claims.Role) || claims.UserID == uint(id)
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 		if !ok {
-			http.Error(w, "Unauthorized - no claims", http.StatusUnauthorized)
+			srv.errorResponse(w, http.StatusUnauthorized, "Unauthorized - no claims")
 			return
 		}
-		if claims.Role != models.Admin {
-			http.Error(w, "Unauthorized - not admin", http.StatusUnauthorized)
+		if !claims.isAdmin() {
+			srv.errorResponse(w, http.StatusUnauthorized, "Unauthorized - not admin")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -141,7 +144,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	if err != nil { //special case here, kept original flow as Unauthorized is referenced in api.ts file)
 		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized")
 	}
-	if claims.Role != models.Admin && claims.FacilityID != user.FacilityID {
+	if !claims.isAdmin() && claims.FacilityID != user.FacilityID {
 		// user isn't an admin, and has alternate facility_id in the JWT claims
 		log.error("user viewing context for different facility. this should never happen")
 		return newUnauthorizedServiceError()
@@ -224,6 +227,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
+					FeatureAccess: srv.features,
 				}
 				return claims, hasCookie, nil
 			}
@@ -260,7 +264,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if claims.UserID == 1 && claims.Role == "admin" && form.FacilityName != "" {
+	if claims.Role == models.SystemAdmin && form.FacilityName != "" {
 		facility := models.Facility{Name: form.FacilityName, Timezone: form.Timezone}
 		if err := srv.Db.UpdateFacility(&facility, 1); err != nil {
 			tx.Rollback()
@@ -278,11 +282,7 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 		return newInternalServerServiceError(err, "Transaction commit failed")
 	}
 	resp := map[string]string{}
-	if claims.Role == models.Admin {
-		resp["redirect_to"] = "/admin-dashboard"
-	} else {
-		resp["redirect_to"] = "/student-dashboard"
-	}
+	resp["redirect_to"] = AuthCallbackRoute
 	return writeJsonResponse(w, http.StatusOK, resp)
 }
 

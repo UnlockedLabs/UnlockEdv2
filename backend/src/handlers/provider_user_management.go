@@ -11,11 +11,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (srv *Server) registerProviderUserRoutes() {
+func (srv *Server) registerProviderUserRoutes() []routeDef {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.applyAdminMiddleware(srv.handleMapProviderUser))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/users/import", srv.applyAdminMiddleware(srv.handleImportProviderUsers))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.applyAdminMiddleware(srv.handleCreateProviderUserAccount))
+	axx := []models.FeatureAccess{models.ProviderAccess}
+	return []routeDef{
+		{"POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, true, axx},
+		{"POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, true, axx},
+		{"POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, true, axx},
+	}
 }
 
 // This function is used to take an existing canvas user that we receive from the middleware,

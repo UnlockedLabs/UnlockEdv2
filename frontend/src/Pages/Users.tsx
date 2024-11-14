@@ -7,11 +7,11 @@ import {
     UserPlusIcon
 } from '@heroicons/react/20/solid';
 import {
-    DEFAULT_ADMIN_ID,
     ModalType,
     ServerResponseMany,
     ToastState,
-    User
+    User,
+    UserRole
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
 import EditUserForm from '@/Components/forms/EditUserForm';
@@ -64,7 +64,7 @@ export default function Users() {
     }
 
     const deleteUser = () => {
-        if (targetUser?.id === DEFAULT_ADMIN_ID) {
+        if (targetUser?.role === UserRole.SystemAdmin) {
             toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error

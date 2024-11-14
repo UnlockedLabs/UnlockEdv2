@@ -7,13 +7,16 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerFacilitiesRoutes() {
-	srv.Mux.Handle("GET /api/facilities", srv.applyAdminMiddleware(srv.handleIndexFacilities))
-	srv.Mux.Handle("GET /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleShowFacility))
-	srv.Mux.Handle("POST /api/facilities", srv.applyAdminMiddleware(srv.handleCreateFacility))
-	srv.Mux.Handle("DELETE /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleDeleteFacility))
-	srv.Mux.Handle("PATCH /api/facilities/{id}", srv.applyAdminMiddleware(srv.handleUpdateFacility))
-	srv.Mux.Handle("PUT /api/admin/facility-context/{id}", srv.applyAdminMiddleware(srv.handleChangeAdminFacility))
+func (srv *Server) registerFacilitiesRoutes() []routeDef {
+	axx := models.Feature()
+	return []routeDef{
+		{"GET /api/facilities", srv.handleIndexFacilities, true, axx},
+		{"GET /api/facilities/{id}", srv.handleShowFacility, true, axx},
+		{"POST /api/facilities", srv.handleCreateFacility, true, axx},
+		{"DELETE /api/facilities/{id}", srv.handleDeleteFacility, true, axx},
+		{"PATCH /api/facilities/{id}", srv.handleUpdateFacility, true, axx},
+		{"PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility, true, axx},
+	}
 }
 
 /**

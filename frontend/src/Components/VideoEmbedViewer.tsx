@@ -66,7 +66,7 @@ export default function VideoViewer() {
                                     height="auto"
                                     controls
                                     onError={handleError}
-                                    src={`/videos/${video?.id}`}
+                                    src={`/videos/${video?.youtube_id}`}
                                 >
                                     Your browser does not support the video tag.
                                 </video>

@@ -1,4 +1,3 @@
-import { UserRole } from '@/common';
 import Brand from './Brand';
 import {
     AcademicCapIcon,
@@ -16,7 +15,7 @@ import {
     MoonIcon,
     UserCircleIcon
 } from '@heroicons/react/24/solid';
-import { useAuth, handleLogout } from '@/useAuth';
+import { handleLogout, isAdministrator, useAuth } from '@/useAuth';
 import ULIComponent from './ULIComponent';
 import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
@@ -64,7 +63,7 @@ export default function Navbar({
             <div className="h-full">
                 <ul className="menu h-full flex flex-col justify-between">
                     <div>
-                        {user?.role == UserRole.Admin ? (
+                        {user && isAdministrator(user) ? (
                             <>
                                 {/* admin view */}
                                 <li className="mt-16">

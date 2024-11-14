@@ -88,48 +88,42 @@ jobs:
         run: |
           docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v1
-        with:
-          version: v1.21.0
-
-      - name: Set up Kubeconfig Staging
-        if: github.ref == 'refs/heads/main'
-        run: |
-          mkdir -p $HOME/.kube && touch $HOME/.kube/config
-          echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > $HOME/.kube/config
-
-      - name: Set up Kubeconfig Demo
+      - name: Restart Demo deployments
         if: github.ref == 'refs/heads/demo'
+        env:
+          SSH_DEMO: ${{ secrets.SSH_DEMO }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
-          mkdir -p $HOME/.kube && touch $HOME/.kube/config
-          echo "${{ secrets.KUBECTL_CONFIG_DEMO }}" | base64 -d > $HOME/.kube/config
+          deployments=()
+          [[ "${{ needs.setup-env.outputs.frontend_changes }}" != "0" ]] && deployments+=("frontend")
+          [[ "${{ needs.setup-env.outputs.backend_changes }}" != "0" ]] && deployments+=("server")
+          [[ "${{ needs.setup-env.outputs.middleware_changes }}" != "0" ]] && deployments+=("provider-service")
+          [[ "${{ needs.setup-env.outputs.crontasks_changes }}" != "0" ]] && deployments+=("cron-tasks")
+          if [ "${#deployments[@]}" -eq 0 ]; then
+            echo "No deployments need restarting."
+            exit 0
+          fi
+          DEPLOYMENTS_ARGS="${deployments[@]}"
+          ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_DEMO" "bash -s" <<EOF
+            rollout.sh $DEPLOYMENTS_ARGS
+          EOF
 
-      - name: Create k8s ECR secret
+      - name: restart staging containers
+        if: github.ref = 'refs/heads/main'
+        env: 
+          SSH_STAGING: ${{ secrets.SSH_STAGING }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
-          kubectl delete secret ecr-secret --ignore-not-found
-          kubectl create secret docker-registry ecr-secret \
-            --docker-server=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com \
-            --docker-username=AWS \
-            --docker-password=$(aws ecr get-login-password --region us-west-2) \
-            --docker-email=none
-
-      - name: restart frontend
-        if: ${{ needs.setup-env.outputs.frontend_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment frontend
-
-      - name: restart server
-        if: ${{ needs.setup-env.outputs.backend_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment server
-
-      - name: restart provider_middleware
-        if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment provider-service
-
-      - name: restart cron_tasks 
-        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment cron-tasks
+          deployments=()
+          [[ "${{ needs.setup-env.outputs.frontend_changes }}" != "0" ]] && deployments+=("frontend")
+          [[ "${{ needs.setup-env.outputs.backend_changes }}" != "0" ]] && deployments+=("server")
+          [[ "${{ needs.setup-env.outputs.middleware_changes }}" != "0" ]] && deployments+=("provider-service")
+          [[ "${{ needs.setup-env.outputs.crontasks_changes }}" != "0" ]] && deployments+=("cron-tasks")
+          if [ "${#deployments[@]}" -eq 0 ]; then
+            echo "No deployments need restarting."
+            exit 0
+          fi
+          DEPLOYMENTS_ARGS="${deployments[@]}"
+          ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SSH_STAGING" "bash -s" <<EOF
+            rollout.sh $DEPLOYMENTS_ARGS
+          EOF

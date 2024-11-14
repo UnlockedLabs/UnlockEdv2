@@ -8,7 +8,7 @@ import {
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
@@ -39,15 +39,12 @@ export default function LibaryLayout({
     const [pageQuery, setPageQuery] = useState<number>(1);
     const route = useLocation();
     const adminWithStudentView = (): boolean => {
-        return (
-            !route.pathname.includes('management') &&
-            user?.role === UserRole.Admin
-        );
+        return !route.pathname.includes('management') && isAdministrator(user);
     };
     const getVisibility = (): string => {
         return adminWithStudentView()
             ? 'visible'
-            : role == UserRole.Admin
+            : isAdministrator(user)
               ? filterLibrariesAdmin
               : studentView
                 ? 'visible'

@@ -7,11 +7,14 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerProviderMappingRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/logins", srv.applyAdminMiddleware(srv.handleGetMappingsForUser))
-	srv.Mux.Handle("POST /api/users/{id}/logins", srv.applyAdminMiddleware(srv.handleCreateProviderUserMapping))
-	srv.Mux.Handle("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.applyAdminMiddleware(srv.handleCreateProviderUserAccount))
-	srv.Mux.Handle("DELETE /api/users/{userId}/logins/{providerId}", srv.applyAdminMiddleware(srv.handleDeleteProviderUserMapping))
+func (srv *Server) registerProviderMappingRoutes() []routeDef {
+	axx := []models.FeatureAccess{models.ProviderAccess}
+	return []routeDef{
+		{"GET /api/users/{id}/logins", srv.handleGetMappingsForUser, true, axx},
+		{"POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, true, axx},
+		{"POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, true, axx},
+		{"DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, true, axx},
+	}
 }
 
 func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Request, log sLog) error {

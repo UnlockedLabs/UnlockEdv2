@@ -10,18 +10,21 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func (srv *Server) registerVideoRoutes() {
-	srv.Mux.Handle("GET /api/videos", srv.applyMiddleware(srv.handleGetVideos))
-	srv.Mux.Handle("GET /api/videos/{id}", srv.applyMiddleware(srv.handleGetVideoById))
-	srv.Mux.Handle("POST /api/videos", srv.applyAdminMiddleware(srv.handlePostVideos))
-	srv.Mux.Handle("PUT /api/videos/{id}/{action}", srv.applyAdminMiddleware(srv.handleVideoAction))
-	srv.Mux.Handle("DELETE /api/videos/{id}", srv.applyAdminMiddleware(srv.handleDeleteVideo))
+func (srv *Server) registerVideoRoutes() []routeDef {
+	axx := []models.FeatureAccess{models.OpenContentAccess}
+	return []routeDef{
+		{"GET /api/videos", srv.handleGetVideos, false, axx},
+		{"GET /api/videos/{id}", srv.handleGetVideoById, false, axx},
+		{"POST /api/videos", srv.handlePostVideos, true, axx},
+		{"PUT /api/videos/{id}/{action}", srv.handleVideoAction, true, axx},
+		{"DELETE /api/videos/{id}", srv.handleDeleteVideo, true, axx},
+	}
 }
 
 func (srv *Server) handleGetVideos(w http.ResponseWriter, r *http.Request, log sLog) error {
 	user := r.Context().Value(ClaimsKey).(*Claims)
 	// cookie gets preference over query unless query specifies student
-	onlyVisible := user.Role == models.Student || r.URL.Query().Get("visibility") == "student"
+	onlyVisible := !user.isAdmin() || r.URL.Query().Get("visibility") == "student"
 	search := r.URL.Query().Get("search")
 	orderBy := r.URL.Query().Get("order_by")
 	page, perPage := srv.getPaginationInfo(r)
