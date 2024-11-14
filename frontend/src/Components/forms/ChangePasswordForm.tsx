@@ -2,16 +2,23 @@ import { useState } from 'react';
 import { SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
 import PrimaryButton from '../../Components/PrimaryButton';
-import { TextInput } from '../../Components/inputs/TextInput';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { DropdownInput, TextInput } from '../inputs';
 import { useAuth } from '@/useAuth';
 import API from '@/api/api';
-import { AuthResponse, Facility, ServerResponseOne, UserRole } from '@/common';
+import {
+    AuthResponse,
+    Facility,
+    ServerResponseOne,
+    UserRole,
+    Timezones
+} from '@/common';
 import { useLoaderData } from 'react-router-dom';
 interface Inputs {
     password: string;
     confirm: string;
     facility_name: string;
+    timezone: string;
 }
 
 export default function ChangePasswordForm() {
@@ -168,6 +175,14 @@ export default function ChangePasswordForm() {
                             Valid facility name
                         </p>
                     </div>
+                    <DropdownInput
+                        label="Timezone"
+                        register={register}
+                        interfaceRef="timezone"
+                        required
+                        errors={errors}
+                        enumType={Timezones}
+                    />
                 </>
             )}
 
