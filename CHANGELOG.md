@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.0.3] - 2024-11-10
+## [0.0.4] - 2024-11-15
 
 ### 🚀 Features
 
@@ -24,12 +24,20 @@ All notable changes to this project will be documented in this file.
 - Add facility context switch and ui
 - Add toast context to reduce code duplication
 - Add facility management
+- Brightspace integration  (#473)
 - Brightspace data model
 - Add Programs page to UI and seed program tags (#471)
 - Create-department-wide-program-464 (#477)
 - Add GetUsers, IntoImportUsers in provider-middleware
 - Add video download capabilities
 - Add manual retry to video downloads
+- Add logic for the integration of brightspace milestones (#483)
+- Create new program & mark department-wide (#485)
+- Add timzone dropdown to system admin initial change password form
+- Create feature access level checkboxes (#501)
+- Impl import activity for course for BrightspaceService
+- Feature flag and create system_admin role
+- Finish feature flagging
 
 ### 🐛 Bug Fixes
 
@@ -92,6 +100,12 @@ All notable changes to this project will be documented in this file.
 - Modify anonymous struct to correctly parse http response
 - Resource mgmt detects when no changes happen
 - Ensure video key updates and handle UI issues
+- Prevent kiwix from downloading/uploading thumbnails if they exist
+- Updating users wasn't working correctly and tooltips were clipped (#481)
+- Add facility management link back to navbar
+- Multiple imports from merge conflict broke build
+- Add frontend validation to user creation form to allow spaces in names (#502)
+- Github action to use bastion host
 
 ### 🚜 Refactor
 
@@ -104,6 +118,7 @@ All notable changes to this project will be documented in this file.
 - Completed heroIcon component replacement on the studentManagement and AdminManagement  pages
 - Completed heroIcon component replacement on the ProviderCard.tsx
 - Completed heroIcon component replacement on the PageNav.tsx
+- Removed nested components from the ResourceManagement.tsx (#500)
 
 ### 📚 Documentation
 

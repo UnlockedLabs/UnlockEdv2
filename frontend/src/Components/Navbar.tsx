@@ -199,12 +199,17 @@ export default function Navbar({
                                         </li>
                                     </>
                                 )}
-                                <li>
-                                    <Link to="/open-content/libraries">
-                                        <ULIComponent icon={BookOpenIcon} />
-                                        Open Content
-                                    </Link>
-                                </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.OpenContentAccess
+                                ) && (
+                                    <li>
+                                        <Link to="/open-content/libraries">
+                                            <ULIComponent icon={BookOpenIcon} />
+                                            Open Content
+                                        </Link>
+                                    </li>
+                                )}
                             </>
                         )}
                     </div>
