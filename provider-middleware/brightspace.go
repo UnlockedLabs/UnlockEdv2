@@ -151,7 +151,7 @@ func (srv *BrightspaceService) getBrightspaceBulkData(pluginName, zipFileName st
 }
 
 func (srv *BrightspaceService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
-	csvFile, err := srv.getBrightspaceBulkData("Users", "Users.zip")
+	csvFile, err := srv.getBrightspaceBulkData("Users", "users/Users.zip")
 	if err != nil {
 		log.Errorf("error attempting to get bulk data for Brightspace courses, error is: %v", err)
 		return nil, err
@@ -164,7 +164,7 @@ func (srv *BrightspaceService) GetUsers(db *gorm.DB) ([]models.ImportUser, error
 	log.WithFields(fields).Info("importing users from provider using csv file")
 	for _, bsUser := range bsUsers {
 		if strings.ToUpper(bsUser.IsActive) == "TRUE" {
-			if db.Where("provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, bsUser.UserId).First(&models.ProviderUserMapping{}).Error == nil {
+			if db.Where("provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, bsUser.UserId).First(&models.ProviderUserMapping{}).RowsAffected > 0 {
 				continue
 			}
 			user := srv.IntoImportUser(bsUser)
@@ -176,19 +176,36 @@ func (srv *BrightspaceService) GetUsers(db *gorm.DB) ([]models.ImportUser, error
 }
 
 func (srv *BrightspaceService) ImportCourses(db *gorm.DB) error {
-	csvFile, err := srv.getBrightspaceBulkData("Organizational Units", "OrganizationalUnits.zip")
+	contentObjCsvFile, err := srv.getBrightspaceBulkData("Content Objects", "courses/ContentObjects.zip")
+	if err != nil {
+		log.Errorf("error attempting to get bulk data for Brightspace content objects for importing activities, error is: %v", err)
+		return err
+	}
+	organizationalCsvFile, err := srv.getBrightspaceBulkData("Organizational Units", "courses/OrganizationalUnits.zip")
 	if err != nil {
 		log.Errorf("error attempting to get bulk data for Brightspace courses, error is: %v", err)
 		return err
 	}
 	bsCourses := []BrightspaceCourse{}
-	readCSV(&bsCourses, csvFile)
-	cleanUpFiles(csvFile)
-	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportCourses", "csvFile": csvFile}
+	readCSV(&bsCourses, organizationalCsvFile)
+	contentObjects := []BrightspaceContentObject{}
+	readCSV(&contentObjects, contentObjCsvFile)
+	totalProgressMilestonesMap := make(map[string]int)
+	for _, obj := range contentObjects {
+		if value, ok := totalProgressMilestonesMap[obj.OrgUnitId]; ok {
+			totalProgressMilestonesMap[obj.OrgUnitId] = value + 1
+		} else {
+			totalProgressMilestonesMap[obj.OrgUnitId] = 1
+		}
+	}
+	cleanUpFiles(organizationalCsvFile, contentObjCsvFile)
+	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportCourses", "organizationalCsvFile": organizationalCsvFile, "contentObjCsvFile": contentObjCsvFile}
 	log.WithFields(fields).Info("importing courses from provider using csv file")
 	for _, bsCourse := range bsCourses {
-		if strings.ToUpper(bsCourse.IsActive) == "TRUE" && strings.ToUpper(bsCourse.IsDeleted) == "FALSE" && bsCourse.Type == "Course Offering" {
-			if db.Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, bsCourse.OrgUnitId).First(&models.Course{}).Error == nil {
+		if strings.ToUpper(bsCourse.IsActive) == "TRUE" && strings.ToUpper(bsCourse.IsDeleted) == "FALSE" && bsCourse.Type == "Course Offering" && totalProgressMilestonesMap[bsCourse.OrgUnitId] > 0 {
+			bsCourse.TotalContentCount = totalProgressMilestonesMap[bsCourse.OrgUnitId]
+			if db.Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, bsCourse.OrgUnitId).First(&models.Course{}).RowsAffected > 0 {
+				srv.updateTotalProgress(db, bsCourse.TotalContentCount, bsCourse.OrgUnitId)
 				continue
 			}
 			log.Infof("importing course named %v with external id %v", bsCourse.Name, bsCourse.OrgUnitId)
@@ -202,6 +219,14 @@ func (srv *BrightspaceService) ImportCourses(db *gorm.DB) error {
 	return nil
 }
 
+func (srv *BrightspaceService) updateTotalProgress(db *gorm.DB, totalProgressMilestones int, externalId string) {
+	if db.Where("provider_platform_id = ? AND external_id = ? AND total_progress_milestones = ?", srv.ProviderPlatformID, externalId, totalProgressMilestones).First(&models.Course{}).RowsAffected == 0 {
+		if err := db.Model(&models.Course{}).Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, externalId).Update("total_progress_milestones", totalProgressMilestones).Error; err != nil {
+			log.Errorln("error updating course total_progress_milestones in db, error is: ", err) //just logging the error if it occurs, logic will continue
+		}
+	}
+}
+
 func (srv *BrightspaceService) ImportMilestones(course map[string]interface{}, users []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	usersMap := make(map[string]uint)
 	for _, user := range users {
@@ -212,7 +237,7 @@ func (srv *BrightspaceService) ImportMilestones(course map[string]interface{}, u
 		usersMap: usersMap,
 	}
 	if !srv.IsDownloaded {
-		cleanUpCsvFiles()
+		cleanUpCsvFiles("milestones")
 	}
 	err := importBSEnrollmentMilestones(srv, paramObj, db)
 	if err != nil {
@@ -236,30 +261,31 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 	case true:
 		csvFile = srv.CsvFileMap["enrollments"]
 	case false:
-		csvFile, err := srv.getBrightspaceBulkData("User Enrollments", "UserEnrollments.zip")
+		csvFile, err := srv.getBrightspaceBulkData("User Enrollments", "milestones/UserEnrollments.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace enrollments, error is: %v", err)
 			return err
 		}
 		srv.CsvFileMap["enrollments"] = csvFile
+		log.Infof("successfully downloaded and unzipped %v for importing enrollment milestones", csvFile)
 	}
 	bsEnrollments := []BrightspaceEnrollment{}
 	readCSV(&bsEnrollments, csvFile)
 	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportMilestones.importBSEnrollmentMilestones", "csvFile": csvFile}
-	log.WithFields(fields).Info("importing courses from provider using csv file")
+	log.WithFields(fields).Info("importing enrollment milestones from provider using csv file")
 	course := po.course
 	usersMap := po.usersMap
 	courseId := uint(course["course_id"].(float64))
 	externalCourseId := course["external_course_id"].(string)
-	filteredBSEnrollments := findSlice(bsEnrollments, func(bsCourse BrightspaceEnrollment) bool {
-		return bsCourse.OrgUnitId == externalCourseId
+	filteredBSEnrollments := findSlice(bsEnrollments, func(bsEnrollment BrightspaceEnrollment) bool {
+		return bsEnrollment.OrgUnitId == externalCourseId && usersMap[bsEnrollment.UserId] != 0
 	})
 	var id string
 	var userId uint
-	for _, bsCourse := range filteredBSEnrollments {
-		id = bsCourse.OrgUnitId
-		userId = usersMap[bsCourse.UserId]
-		if db.Where("user_id = ? AND course_id = ? AND external_id = ?", usersMap[bsCourse.UserId], courseId, id).First(&models.Milestone{}).Error == nil {
+	for _, bsEnrollment := range filteredBSEnrollments {
+		id = bsEnrollment.getCompositeKeyId()
+		userId = usersMap[bsEnrollment.UserId]
+		if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
 			continue
 		}
 		milestone := models.Milestone{
@@ -282,24 +308,24 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 	case true:
 		csvFile = srv.CsvFileMap["assignments"]
 	case false:
-		csvFile, err := srv.getBrightspaceBulkData("Assignment Submissions", "AssignmentSubmissions.zip")
+		csvFile, err := srv.getBrightspaceBulkData("Assignment Submissions", "milestones/AssignmentSubmissions.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace assignment submissions, error is: %v", err)
 			return err
 		}
 		srv.CsvFileMap["assignments"] = csvFile
+		log.Infof("successfully downloaded and unzipped %v for importing assignment submission milestones", csvFile)
 	}
-	log.Infof("successfully downloaded and unzipped %v for importing user enrollments", csvFile)
 	bsAssignments := []BrightspaceAssignmentSubmission{}
 	readCSV(&bsAssignments, csvFile)
 	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportMilestones.importBSAssignmentSubmissionMilestones", "csvFile": csvFile}
-	log.WithFields(fields).Info("importing courses from provider using csv file")
+	log.WithFields(fields).Info("importing assignment submission/graded milestones from provider using csv file")
 	course := po.course
 	usersMap := po.usersMap
 	courseId := uint(course["course_id"].(float64))
 	externalCourseId := course["external_course_id"].(string)
 	filteredBSAssignments := findSlice(bsAssignments, func(bsAssignment BrightspaceAssignmentSubmission) bool {
-		return bsAssignment.OrgUnitId == externalCourseId
+		return bsAssignment.OrgUnitId == externalCourseId && usersMap[bsAssignment.UserId] != 0
 	})
 	var id string
 	var userId uint
@@ -310,12 +336,12 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 		userId = usersMap[bsAssignment.UserId]
 		switch strings.ToUpper(bsAssignment.IsGraded) {
 		case "TRUE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).RowsAffected > 0 {
 				addAssignmentMilestoneIfNotExists(db, userId, courseId, bsAssignment)
 				continue
 			}
 		case "FALSE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
 				continue
 			}
 		}
@@ -347,24 +373,24 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 	case true:
 		csvFile = srv.CsvFileMap["quizzes"]
 	case false:
-		csvFile, err := srv.getBrightspaceBulkData("Quiz Attempts", "QuizAttempts.zip")
+		csvFile, err := srv.getBrightspaceBulkData("Quiz Attempts", "milestones/QuizAttempts.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace quiz attempts, error is: %v", err)
 			return err
 		}
 		srv.CsvFileMap["quizzes"] = csvFile
+		log.Infof("successfully downloaded and unzipped %v for importing quiz submissions", csvFile)
 	}
-	log.Infof("successfully downloaded and unzipped %v for importing quiz submissions", csvFile)
 	bsQuizes := []BrightspaceQuizSubmission{}
 	readCSV(&bsQuizes, csvFile)
 	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportMilestones.importBSQuizSubmissionMilestones", "csvFile": csvFile}
-	log.WithFields(fields).Info("importing milestones from provider using csv file")
+	log.WithFields(fields).Info("importing quiz submission/graded milestones from provider using csv file")
 	course := po.course
 	usersMap := po.usersMap
 	courseId := uint(course["course_id"].(float64))
 	externalCourseId := course["external_course_id"].(string)
 	filteredBSQuizes := findSlice(bsQuizes, func(bsQuiz BrightspaceQuizSubmission) bool {
-		return bsQuiz.OrgUnitId == externalCourseId && bsQuiz.IsDeleted == "False" //todo
+		return bsQuiz.OrgUnitId == externalCourseId && strings.ToUpper(bsQuiz.IsDeleted) == "FALSE" && usersMap[bsQuiz.UserId] != 0
 	})
 	var id string
 	var userId uint
@@ -375,12 +401,12 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 		userId = usersMap[bsQuiz.UserId]
 		switch strings.ToUpper(bsQuiz.IsGraded) {
 		case "TRUE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).RowsAffected > 0 {
 				addQuizMilestoneIfNotExists(db, userId, courseId, bsQuiz)
 				continue
 			}
 		case "FALSE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
 				continue
 			}
 		}
@@ -406,7 +432,7 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 }
 
 func addAssignmentMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsAssignment BrightspaceAssignmentSubmission) {
-	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsAssignment.getCompositeKeyId()).First(&models.Milestone{}).Error != nil {
+	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsAssignment.getCompositeKeyId()).First(&models.Milestone{}).RowsAffected == 0 {
 		milestone := models.Milestone{
 			UserID:      userId,
 			CourseID:    courseId,
@@ -421,7 +447,7 @@ func addAssignmentMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsAss
 }
 
 func addQuizMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsQuiz BrightspaceQuizSubmission) {
-	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsQuiz.AttemptId).First(&models.Milestone{}).Error != nil {
+	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsQuiz.AttemptId).First(&models.Milestone{}).RowsAffected == 0 {
 		milestone := models.Milestone{
 			UserID:      userId,
 			CourseID:    courseId,
@@ -435,9 +461,89 @@ func addQuizMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsQuiz Brig
 	}
 }
 
-func (srv *BrightspaceService) ImportActivityForCourse(coursePair map[string]interface{}, db *gorm.DB) error {
-	fmt.Println("ImportActivityForCourse...")
+func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interface{}, db *gorm.DB) error {
+	if !srv.IsDownloaded {
+		cleanUpCsvFiles("activities")
+	}
+	var contentObjCsvFile string
+	var userProgressCsvFile string
+	switch srv.IsDownloaded {
+	case true:
+		contentObjCsvFile = srv.CsvFileMap["contentobjs"]
+		userProgressCsvFile = srv.CsvFileMap["contentprogress"]
+	case false:
+		contentObjCsvFile, err := srv.getBrightspaceBulkData("Content Objects", "activities/ContentObjects.zip")
+		if err != nil {
+			log.Errorf("error attempting to get bulk data for Brightspace content objects for importing activities, error is: %v", err)
+			return err
+		}
+		userProgressCsvFile, err := srv.getBrightspaceBulkData("Content User Progress", "activities/ContentUserProgress.zip")
+		if err != nil {
+			log.Errorf("error attempting to get bulk data for Brightspace content user progress for importing activities, error is: %v", err)
+			return err
+		}
+		srv.CsvFileMap["contentobjs"] = contentObjCsvFile
+		srv.CsvFileMap["contentprogress"] = userProgressCsvFile
+		srv.IsDownloaded = true
+	}
+	courseId := uint(course["course_id"].(float64))
+	externalCourseId := course["external_course_id"].(string)
+	bsContentDtoMap := srv.getUsersActivity(db, externalCourseId, contentObjCsvFile, userProgressCsvFile)
+	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportActivityForCourse", "contentObjCsvFile": contentObjCsvFile, "userProgressCsvFile": userProgressCsvFile}
+	log.WithFields(fields).Info("importing activities from provider using csv file")
+	for userId, bsUserContentDtos := range bsContentDtoMap {
+		for _, bsDto := range bsUserContentDtos {
+			var acts []map[string]interface{}
+			if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, bsDto.ExternalId).First(&acts).RowsAffected > 0 {
+				continue
+			}
+			if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userId, courseId, models.ContentInteraction, bsDto.TotalTime, bsDto.ExternalId).Error; err != nil {
+				log.WithFields(log.Fields{"user_id": userId, "course_id": courseId, "error": err}).Error("Failed to create activity using brightspace data")
+				continue
+			}
+		}
+	}
 	return nil
+}
+
+func (srv *BrightspaceService) getUsersActivity(db *gorm.DB, externalCourseId, contentObjCsvFile, userProgressCsvFile string) map[uint][]BrightspaceUserContentDto {
+	bsContentDtoMap := make(map[uint][]BrightspaceUserContentDto)
+	bsContentObjects := []BrightspaceContentObject{}
+	readCSV(&bsContentObjects, contentObjCsvFile)
+	filteredContentObjs := findSlice(bsContentObjects, func(bsContentObj BrightspaceContentObject) bool { //get content objects for the course being iterate
+		return bsContentObj.OrgUnitId == externalCourseId && bsContentObj.IsDeleted == "0"
+	})
+	if len(filteredContentObjs) < 1 {
+		log.Infof("no content objects found for the course with external id of %s", externalCourseId)
+		return bsContentDtoMap
+	}
+	bsContentUserProgress := []BrightspaceContentUserProgress{}
+	readCSV(&bsContentUserProgress, userProgressCsvFile)
+	for _, contentUser := range bsContentUserProgress { //separate by user
+		var userId uint //filter out the users
+		if err := db.Model(&models.ProviderUserMapping{}).Select("user_id").First(&userId, "external_user_id = ? and provider_platform_id = ?", contentUser.UserId, srv.ProviderPlatformID).Error; err != nil {
+			log.Errorln("error finding brightspace user by external id in ImportActivityForCourse")
+			continue
+		}
+		contentObjsByUser := findSlice(filteredContentObjs, func(bsContentObj BrightspaceContentObject) bool { //get content objects for the course being iterated
+			return bsContentObj.ContentObjectId == contentUser.ContentObjectId
+		})
+		if _, ok := bsContentDtoMap[userId]; !ok && len(contentObjsByUser) > 0 {
+			bsContentDtoMap[userId] = []BrightspaceUserContentDto{}
+		}
+		for _, contentObj := range contentObjsByUser {
+			dto := BrightspaceUserContentDto{
+				OrgUnitId:         contentObj.OrgUnitId,
+				ContentObjectId:   contentObj.ContentObjectId,
+				TotalTime:         contentUser.TotalTime,
+				Title:             contentObj.Title,
+				ContentObjectType: contentObj.ContentObjectType,
+				ExternalId:        contentUser.getCompositeKeyId(),
+			}
+			bsContentDtoMap[userId] = append(bsContentDtoMap[userId], dto)
+		}
+	}
+	return bsContentDtoMap
 }
 
 func (srv *BrightspaceService) GetJobParams() *map[string]interface{} {
