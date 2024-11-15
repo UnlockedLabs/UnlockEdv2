@@ -3,13 +3,13 @@ import {
     ProviderPlatform,
     ToastState,
     UserRole
-} from '../../common';
+} from '@/common.ts';
 import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
-import { DropdownInput } from '../inputs/DropdownInput';
-import { SubmitButton } from '../inputs/SubmitButton';
+import { DropdownInput } from '@/Components/inputs';
+import { SubmitButton } from '@/Components/inputs';
 import API from '@/api/api';
 
 interface Inputs {
@@ -18,7 +18,6 @@ interface Inputs {
     username: string;
     role: UserRole;
 }
-
 interface Form {
     user: Inputs;
     provider_platforms: number[];
@@ -61,7 +60,7 @@ export default function AddUserForm({
                     setError('username', {
                         type: 'custom',
                         message:
-                            'First/Last and Username must contain letters and numbers only'
+                            'Username must contain only letters and numbers'
                     });
                     break;
                 }
@@ -117,6 +116,11 @@ export default function AddUserForm({
                     length={25}
                     errors={errors}
                     register={register}
+                    pattern={{
+                        value: /^[A-Za-z\s]+$/,
+                        message:
+                            'First name can only contain letters and spaces'
+                    }}
                 />
                 <TextInput
                     label={'Last Name'}
@@ -125,7 +129,13 @@ export default function AddUserForm({
                     length={25}
                     errors={errors}
                     register={register}
+                    pattern={{
+                        value: /^[A-Za-z\s]+$/,
+                        message: 'Last name can only contain letters and spaces'
+                    }}
                 />
+                {/*Proper regEx applied for expected validation*/}
+                {/*Backend error handling throws: "Username must contain only letters and numbers"*/}
                 <TextInput
                     label={'Username'}
                     interfaceRef={'username'}
@@ -133,14 +143,20 @@ export default function AddUserForm({
                     length={50}
                     errors={errors}
                     register={register}
+                    pattern={{
+                        value: /^[A-Za-z0-9]+$/,
+                        message:
+                            'Username can only contain letters and numbers without spaces'
+                    }}
                 />
+
                 <DropdownInput
                     label={'Role'}
                     interfaceRef={'role'}
-                    required
                     errors={errors}
                     register={register}
                     enumType={UserRole}
+                    required={true}
                 />
                 <br />
                 {providers?.map((provider: ProviderPlatform) => (
