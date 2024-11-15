@@ -295,7 +295,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 }
 
 func validateUser(user *models.User) string {
-	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) }) {
+	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsNumber(r) }) {
 		return "alphanum"
 	} else if strings.ContainsFunc(user.NameFirst, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsSpace(r) }) {
 		return "alphanum"
