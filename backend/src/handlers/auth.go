@@ -108,7 +108,7 @@ func isAuthRoute(r *http.Request) bool {
 
 func (srv *Server) UserIsAdmin(r *http.Request) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return slices.Contains(models.AdminRoles, claims.Role)
+	return claims.isAdmin()
 }
 
 func (srv *Server) canViewUserData(r *http.Request, id int) bool {
@@ -155,6 +155,9 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	traits["created_at"] = user.CreatedAt
 	traits["name_first"] = user.NameFirst
 	traits["name_last"] = user.NameLast
+	if traits["feature_access"] == nil || len(srv.features) == 0 {
+		traits["feature_access"] = []models.FeatureAccess{}
+	}
 	return writeJsonResponse(w, http.StatusOK, traits)
 }
 

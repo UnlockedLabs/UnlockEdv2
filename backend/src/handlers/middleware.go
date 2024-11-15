@@ -65,10 +65,9 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 		resourceID := r.PathValue("id")
 		var library models.Library
 		tx := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID)
-		switch user.Role {
-		case models.Admin:
+		if user.isAdmin() {
 			tx = tx.First(&library)
-		default:
+		} else {
 			tx = tx.First(&library, "visibility_status = true")
 		}
 		if err := tx.Error; err != nil {
@@ -101,7 +100,7 @@ func corsMiddleware(next http.Handler) http.HandlerFunc {
 func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel ...models.FeatureAccess) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !srv.hasFeatureAccess(accessLevel...) {
-			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
+			srv.errorResponse(w, http.StatusUnauthorized, "Feature not enabled")
 			return
 		}
 		next.ServeHTTP(w, r)

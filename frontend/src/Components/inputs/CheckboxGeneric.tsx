@@ -1,24 +1,22 @@
-import { ChangeEvent } from 'react';
-
 interface CheckboxProps {
     name: string;
     label: string;
-    checked: boolean;
-    onChange: (checked: boolean) => void;
+    checked: boolean | undefined;
+    onChange: (checked: boolean, which: string) => void;
 }
 
-export default function CheckboxGenric({
+export default function CheckboxGeneric({
     name,
     label,
     checked,
     onChange
 }: CheckboxProps) {
-    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-        onChange(event.target.checked);
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(event.target.checked, name);
     };
 
     return (
-        <div className="form-control">
+        <div>
             <label className="label cursor-pointer gap-2">
                 <input
                     name={name}

@@ -8,7 +8,10 @@ CREATE TYPE feature AS ENUM (
 CREATE TABLE public.feature_flags (
     id SERIAL PRIMARY KEY,
     name feature NOT NULL UNIQUE,
-    enabled BOOLEAN NOT NULL DEFAULT FALSE
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 INSERT INTO public.feature_flags (name, enabled)
 VALUES
@@ -16,7 +19,7 @@ VALUES
     ('provider_platforms', TRUE),
     ('program_management', TRUE);
 CREATE INDEX idx_feature_flags_name ON public.feature_flags USING btree (name);
-
+CREATE INDEX idx_feature_flags_deleted_at ON public.feature_flags USING btree (deleted_at);
 CREATE TABLE public.user_roles (
 	name VARCHAR(64) PRIMARY KEY 
 );

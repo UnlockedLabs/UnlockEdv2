@@ -5,7 +5,11 @@ export enum UserRole {
     Admin = 'admin',
     Student = 'student'
 }
-
+export enum FeatureAccess {
+    ProviderAccess = 'provider_platforms',
+    OpenContentAccess = 'open_content',
+    ProgramAccess = 'program_management'
+}
 export const INIT_KRATOS_LOGIN_FLOW = '/self-service/login/browser';
 export interface User {
     id: number;
@@ -18,8 +22,24 @@ export interface User {
     created_at: string;
     updated_at: string;
     facility_name?: string;
-    [key: string]: number | string | boolean | undefined;
+    feature_access: FeatureAccess[];
+    [key: string]: number | string | boolean | undefined | FeatureAccess[];
 }
+export const providerRoutes = [
+    'provider-user-management',
+    'provider-platform-management',
+    'my-courses',
+    'course-catalogue',
+    'course-catalog-admin'
+];
+
+export const openContentRoutes = [
+    'open-content',
+    'open-content-management',
+    'viewer'
+];
+
+export const programRoutes = ['programs', 'program-management'];
 
 export interface Video {
     id: number;

@@ -130,8 +130,12 @@ func newServer() *Server {
 		OryClient: ory.NewAPIClient(oryConfig()),
 		Client:    &http.Client{},
 		nats:      conn,
-		features:  models.AllFeatures,
 	}
+	features, err := server.Db.GetFeatureAccess()
+	if err != nil {
+		log.Fatal("Failed to fetch feature flags")
+	}
+	server.features = features
 	err = server.setupBucket()
 	if err != nil {
 		log.Errorf("Failed to setup JetStream KV store: %v", err)

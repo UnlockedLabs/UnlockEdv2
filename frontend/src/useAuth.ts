@@ -9,7 +9,8 @@ import {
     OrySessionWhoami,
     ServerResponseOne,
     User,
-    UserRole
+    UserRole,
+    FeatureAccess
 } from './common';
 import API from './api/api';
 import axios from 'axios';
@@ -80,6 +81,10 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
     } catch {
         return { flow_id: '', challenge: '', csrf_token: '' };
     }
+};
+
+export const hasFeature = (user: User, axx: FeatureAccess): boolean => {
+    return user.feature_access.includes(axx);
 };
 
 export const checkDefaultFacility: LoaderFunction = async () => {
