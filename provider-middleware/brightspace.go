@@ -164,7 +164,7 @@ func (srv *BrightspaceService) GetUsers(db *gorm.DB) ([]models.ImportUser, error
 	log.WithFields(fields).Info("importing users from provider using csv file")
 	for _, bsUser := range bsUsers {
 		if strings.ToUpper(bsUser.IsActive) == "TRUE" {
-			if db.Where("provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, bsUser.UserId).First(&models.ProviderUserMapping{}).Error == nil {
+			if db.Where("provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, bsUser.UserId).First(&models.ProviderUserMapping{}).RowsAffected > 0 {
 				continue
 			}
 			user := srv.IntoImportUser(bsUser)
@@ -204,7 +204,7 @@ func (srv *BrightspaceService) ImportCourses(db *gorm.DB) error {
 	for _, bsCourse := range bsCourses {
 		if strings.ToUpper(bsCourse.IsActive) == "TRUE" && strings.ToUpper(bsCourse.IsDeleted) == "FALSE" && bsCourse.Type == "Course Offering" && totalProgressMilestonesMap[bsCourse.OrgUnitId] > 0 {
 			bsCourse.TotalContentCount = totalProgressMilestonesMap[bsCourse.OrgUnitId]
-			if db.Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, bsCourse.OrgUnitId).First(&models.Course{}).Error == nil {
+			if db.Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, bsCourse.OrgUnitId).First(&models.Course{}).RowsAffected > 0 {
 				srv.updateTotalProgress(db, bsCourse.TotalContentCount, bsCourse.OrgUnitId)
 				continue
 			}
@@ -220,8 +220,8 @@ func (srv *BrightspaceService) ImportCourses(db *gorm.DB) error {
 }
 
 func (srv *BrightspaceService) updateTotalProgress(db *gorm.DB, totalProgressMilestones int, externalId string) {
-	if db.Where("provider_platform_id = ? AND external_id = ? AND total_progress_milestones = ?", srv.ProviderPlatformID, externalId, totalProgressMilestones).First(&models.Course{}).Error != nil {
-		if err := db.Table("courses as c").Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, externalId).Update("total_progress_milestones", totalProgressMilestones).Error; err != nil {
+	if db.Where("provider_platform_id = ? AND external_id = ? AND total_progress_milestones = ?", srv.ProviderPlatformID, externalId, totalProgressMilestones).First(&models.Course{}).RowsAffected == 0 {
+		if err := db.Model(&models.Course{}).Where("provider_platform_id = ? AND external_id = ?", srv.ProviderPlatformID, externalId).Update("total_progress_milestones", totalProgressMilestones).Error; err != nil {
 			log.Errorln("error updating course total_progress_milestones in db, error is: ", err) //just logging the error if it occurs, logic will continue
 		}
 	}
@@ -285,7 +285,7 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 	for _, bsEnrollment := range filteredBSEnrollments {
 		id = bsEnrollment.getCompositeKeyId()
 		userId = usersMap[bsEnrollment.UserId]
-		if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).Error == nil {
+		if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
 			continue
 		}
 		milestone := models.Milestone{
@@ -336,12 +336,12 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 		userId = usersMap[bsAssignment.UserId]
 		switch strings.ToUpper(bsAssignment.IsGraded) {
 		case "TRUE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).RowsAffected > 0 {
 				addAssignmentMilestoneIfNotExists(db, userId, courseId, bsAssignment)
 				continue
 			}
 		case "FALSE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
 				continue
 			}
 		}
@@ -401,12 +401,12 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 		userId = usersMap[bsQuiz.UserId]
 		switch strings.ToUpper(bsQuiz.IsGraded) {
 		case "TRUE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, gradedId).First(&models.Milestone{}).RowsAffected > 0 {
 				addQuizMilestoneIfNotExists(db, userId, courseId, bsQuiz)
 				continue
 			}
 		case "FALSE":
-			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).Error == nil {
+			if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
 				continue
 			}
 		}
@@ -432,7 +432,7 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 }
 
 func addAssignmentMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsAssignment BrightspaceAssignmentSubmission) {
-	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsAssignment.getCompositeKeyId()).First(&models.Milestone{}).Error != nil {
+	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsAssignment.getCompositeKeyId()).First(&models.Milestone{}).RowsAffected == 0 {
 		milestone := models.Milestone{
 			UserID:      userId,
 			CourseID:    courseId,
@@ -447,7 +447,7 @@ func addAssignmentMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsAss
 }
 
 func addQuizMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsQuiz BrightspaceQuizSubmission) {
-	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsQuiz.AttemptId).First(&models.Milestone{}).Error != nil {
+	if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, bsQuiz.AttemptId).First(&models.Milestone{}).RowsAffected == 0 {
 		milestone := models.Milestone{
 			UserID:      userId,
 			CourseID:    courseId,
@@ -494,7 +494,7 @@ func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interfa
 	for userId, bsUserContentDtos := range bsContentDtoMap {
 		for _, bsDto := range bsUserContentDtos {
 			var acts []map[string]interface{}
-			if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, bsDto.ExternalId).First(&acts).Error == nil {
+			if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, bsDto.ExternalId).First(&acts).RowsAffected > 0 {
 				continue
 			}
 			if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userId, courseId, models.ContentInteraction, bsDto.TotalTime, bsDto.ExternalId).Error; err != nil {
