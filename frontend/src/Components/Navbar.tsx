@@ -151,11 +151,11 @@ export default function Navbar({
                                 <li>
                                     <Link to="/facilities-management">
                                         <ULIComponent
-                                            icon={BuildingOffice2Icon}
+                                            icon={RectangleStackIcon}
                                         />
-                                        Facilities
+                                        Programs
                                     </Link>
-                                </li>
+                                </li> */}
                             </>
                         ) : (
                             <>
