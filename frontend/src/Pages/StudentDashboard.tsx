@@ -6,7 +6,7 @@ import convertSeconds from '@/Components/ConvertSeconds';
 import ResourcesSideBar from '@/Components/ResourcesSideBar';
 import WeekActivityChart from '@/Components/WeeklyActivity';
 import Error from './Error';
-import { useLoaderData, useNavigate } from 'react-router-dom';
+import { Link, useLoaderData, useNavigate } from 'react-router-dom';
 import {
     AcademicCapIcon,
     ArrowRightIcon,
@@ -54,13 +54,13 @@ export default function StudentDashboard() {
                         Looking for more content to engage with? Browse courses
                         offered at your facility.
                     </p>
-                    <a
+                    <Link
+                        to="/course-catalog"
                         className="flex flex-row gap-1 body-small text-teal-3 mt-2"
-                        onClick={() => navigate(`/course-catalog`)}
                     >
                         Explore courses
                         <ArrowRightIcon className="w-4" />
-                    </a>
+                    </Link>
                 </div>
             </div>
         );

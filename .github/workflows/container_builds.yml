@@ -30,6 +30,7 @@ jobs:
             count=$(git diff --name-only HEAD~1 | grep "^${path}" | wc -l)
             changes+="${path}:${count},"
           done
+          changes="${changes%,}"
           echo "changes=${changes}" >> $GITHUB_OUTPUT
 
       - name: Debug changes
@@ -39,10 +40,10 @@ jobs:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
+    outputs:
+      deployments: ${{ steps.build-images.outputs.deployments }}
     env:
       CHANGES: ${{ needs.setup-env.outputs.changes }}
-    outputs:
-      deployments: ${{ steps.determine-deployments.outputs.deployments }}
 
     steps:
       - name: Checkout code
@@ -64,61 +65,95 @@ jobs:
 
       - id: build-images
         run: |
-         deployments=()
-         for entry in ${{ needs.setup-env.outputs.changes }}; do
-           path=$(echo $entry | cut -d':' -f1)
-           count=$(echo $entry | cut -d':' -f2)
-           if [[ $count -ne 0 ]]; then
-             case $path in
-               "frontend/")
-                 echo "Building frontend image"
-                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:latest --push frontend/.
-                 deployments+=("frontend")
-                 ;;
-               "backend/")
-                 echo "Building backend image"
-                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest --push -f backend/Dockerfile .
-                 deployments+=("server")
-                 ;;
-               "provider-middleware/")
-                 echo "Building middleware image"
-                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
-                 deployments+=("provider-service")
-                 ;;
-               "backend/tasks")
-                 echo "Building scheduler image"
-                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
-                 deployments+=("cron-tasks")
-                 ;;
-             esac
-           fi
-         done
-         echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
+          echo "CHANGES: $CHANGES"
+          deployments=()
+          IFS=',' read -ra entries <<< "$CHANGES"
+          for entry in "${entries[@]}"; do
+            if [ -z "$entry" ]; then
+              continue
+            fi
+            path=$(echo "$entry" | cut -d':' -f1)
+            count=$(echo "$entry" | cut -d':' -f2)
+            if [[ $count -ne 0 ]]; then
+              case $path in
+                "frontend/")
+                  echo "Building frontend image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:latest --push frontend/.
+                  deployments+=("frontend")
+                  ;;
+                "backend/")
+                  echo "Building backend image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest --push -f backend/Dockerfile .
+                  deployments+=("server")
+                  ;;
+                "provider-middleware/")
+                  echo "Building middleware image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
+                  deployments+=("provider-service")
+                  ;;
+                "backend/tasks")
+                  echo "Building scheduler image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
+                  deployments+=("cron-tasks")
+                  ;;
+              esac
+            fi
+          done
+          echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
 
   restart-deployments:
-      if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
-      needs: build-and-push
-      runs-on: ubuntu-latest
-      env:
-        BASTION_HOST: ${{ secrets.BASTION_HOST }}
-        SSH_KEY: ${{ secrets.SSH_KEY }}
+    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    env:
+      SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
+      BASTION_HOST: ${{ secrets.BASTION_HOST }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
 
-      steps:
-        - name: Restart Deployments
-          run: |
-            deployments="${{ needs.build-and-push.outputs.deployments }}"
-            if [[ -z "$deployments" ]]; then
-              echo "No deployments need restarting."
-              exit 0
-            fi
-            if [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
-              CONTEXT="demo"
-            elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
-              CONTEXT="staging"
-            else
-              echo "Unknown branch: ${GITHUB_REF}. No deployments restarted."
-              exit 1
-            fi
-            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$BASTION_HOST" "bash -s" <<EOF
-              rollout.sh $CONTEXT $deployments
-            EOF
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: us-west-2
+          mask-aws-account-id: true
+
+      - name: Get Runner Public IP
+        id: get_runner_ip
+        run: |
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          echo "Runner IP: $RUNNER_IP"
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
+
+      - name: Add Runner IP to Security Group
+        run: |
+          echo "Adding runner IP $RUNNER_IP to security group $SECURITY_GROUP_ID"
+          aws ec2 authorize-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 22 --cidr ${RUNNER_IP}/32
+
+      - name: Restart Deployments
+        env:
+          RUNNER_IP: ${{ env.RUNNER_IP }}
+        run: |
+          deployments="${{ needs.build-and-push.outputs.deployments }}"
+          if [[ -z "$deployments" ]]; then
+            echo "No deployments need restarting."
+            exit 0
+          fi
+          if [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+            CONTEXT="demo"
+          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            CONTEXT="staging"
+          else
+            echo "Unknown branch: ${GITHUB_REF}. No deployments restarted."
+            exit 1
+          fi
+          mkdir -p ~/.ssh && echo "$SSH_KEY" | base64 -d > ~/.ssh/id_rsa && chmod 400 ~/.ssh/id_rsa
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$BASTION_HOST" "bash -s" <<EOF
+            rollout.sh $CONTEXT $deployments
+          EOF
+
+      - name: Remove Runner IP from Security Group
+        run: |
+          shred -u ~/.ssh/id_rsa || rm -f ~/.ssh/id_rsa
+          echo "Removing runner IP $RUNNER_IP from security group"
+          aws ec2 revoke-security-group-ingress --group-id $SECURITY_GROUP_ID --protocol tcp --port 22 --cidr ${RUNNER_IP}/32
