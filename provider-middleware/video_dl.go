@@ -141,7 +141,7 @@ func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 					logger().Errorf("error decoding video json: %v", err)
 					return
 				}
-				if _, _, err := yt.fetchAndSaveInitialVideoInfo(ctx, video.Url); err != nil {
+				if _, _, err := yt.fetchAndSaveInitialVideoInfo(ctx, video.Url, true); err != nil {
 					logger().Errorf("error fetching video info: %v", err)
 				}
 			}
@@ -339,7 +339,7 @@ func (yt *VideoService) addVideos(ctx context.Context) error {
 				if videoExists {
 					return
 				}
-				result, vid, err := yt.fetchAndSaveInitialVideoInfo(ctx, url)
+				result, vid, err := yt.fetchAndSaveInitialVideoInfo(ctx, url, false)
 				if err != nil {
 					logger().Errorf("Error fetching video info: %v", err)
 					return
@@ -382,7 +382,7 @@ func (yt *VideoService) incrementFailedAttempt(ctx context.Context, vid *models.
 	return yt.db.WithContext(ctx).Create(&attempt).Error
 }
 
-func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl string) (*goutubedl.Result, *models.Video, error) {
+func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl string, avail bool) (*goutubedl.Result, *models.Video, error) {
 	result, err := goutubedl.New(ctx, vidUrl, goutubedl.Options{
 		Type:     goutubedl.TypeAny,
 		DebugLog: logger(),
@@ -400,13 +400,17 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 		Title:                 result.Info.Title,
 		Description:           stripUrlsFromDescription(result.Info.Description),
 		ChannelTitle:          &result.Info.Channel,
-		Availability:          models.VideoProcessing,
 		YoutubeID:             result.Info.ID,
 		VisibilityStatus:      false,
 		Url:                   vidUrl,
 		ThumbnailUrl:          thumbnail,
 		Duration:              int(result.Info.Duration),
 		OpenContentProviderID: yt.OpenContentProviderID,
+	}
+	if avail {
+		vid.Availability = models.VideoAvailable
+	} else {
+		vid.Availability = models.VideoProcessing
 	}
 	if err := yt.db.WithContext(ctx).Create(vid).Error; err != nil {
 		logger().Errorln(err)
