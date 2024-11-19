@@ -1,40 +1,23 @@
-import { BookmarkIcon } from '@heroicons/react/24/solid';
-import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
 import LightGreenPill from './pill-labels/LightGreenPill';
 import RedPill from './pill-labels/RedPill';
 import YellowPill from './pill-labels/YellowPill';
 import GreyPill from './pill-labels/GreyPill';
-import { MouseEvent } from 'react';
 import {
     CourseCatalogue,
     OutcomePillType,
     PillTagType,
     ViewType
 } from '@/common';
-import API from '@/api/api';
 
 export default function CatalogCourseCard({
     course,
-    callMutate,
     view
 }: {
     course: CourseCatalogue;
-    callMutate: () => void;
     view?: ViewType;
 }) {
     const coverImage = course.thumbnail_url;
     const course_type: PillTagType = course.course_type as PillTagType;
-
-    function updateFavorite(e: MouseEvent) {
-        e.preventDefault();
-        API.put<null, object>(`courses/${course.course_id}/save`, {})
-            .then(() => {
-                callMutate();
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-    }
 
     let coursePill: JSX.Element = <RedPill>Permission Only</RedPill>;
     if (course_type == PillTagType.Open)
@@ -43,16 +26,6 @@ export default function CatalogCourseCard({
         coursePill = <RedPill>Permission Only</RedPill>;
     if (course_type == PillTagType.SelfPaced)
         coursePill = <YellowPill>Self-Paced</YellowPill>;
-
-    let bookmark: JSX.Element;
-    if (course.is_favorited)
-        bookmark = <BookmarkIcon className="h-5 text-primary-yellow" />;
-    else
-        bookmark = (
-            <BookmarkIconOutline
-                className={`h-5 ${view == ViewType.List ? 'text-header-text' : 'text-white'}`}
-            />
-        );
 
     const outcomeTypes: OutcomePillType[] = course.outcome_types
         .split(',')
@@ -80,7 +53,6 @@ export default function CatalogCourseCard({
             >
                 <div className="flex flex-col justify-between gap-3">
                     <div className="flex flex-row gap-3 items-center">
-                        <div onClick={(e) => updateFavorite(e)}>{bookmark}</div>
                         <h2>{course.course_name}</h2>
                         <p className="body">|</p>
                         <p className="body">{course.provider_name}</p>
@@ -96,12 +68,6 @@ export default function CatalogCourseCard({
     } else {
         return (
             <div className="card card-compact bg-base-teal overflow-hidden relative">
-                <div
-                    className="absolute top-2 right-2"
-                    onClick={(e) => updateFavorite(e)}
-                >
-                    {bookmark}
-                </div>
                 <a
                     href={course.external_url}
                     target="_blank"

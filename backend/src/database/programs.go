@@ -12,7 +12,7 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64, []models.Program, error) {
+func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId uint) (int64, []models.Program, error) {
 	content := []models.Program{}
 	total := int64(0)
 	if len(tags) > 0 {
@@ -26,23 +26,39 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string) (int64
 			}
 		}
 
-		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities").Find(&content, "id IN (?)", query).Count(&total)
+		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities").Preload("Favorites", "user_id = ?", userId).Find(&content, "id IN (?)", query)
 		if search != "" {
 			tx = tx.Where("name LIKE ?", "%"+search+"%")
+		}
+		if err := tx.Count(&total).Error; err != nil {
+			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 		if err := tx.Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 	} else {
-		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities")
+		tx := db.Model(&models.Program{}).
+			Preload("Tags").
+			Preload("Facilities").
+			Preload("Favorites", "user_id = ?", userId)
 		if search != "" {
 			tx = tx.Where("name LIKE ?", "%"+search+"%").Count(&total)
 		}
-		if err := tx.Find(&content).Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
+		if err := tx.Count(&total).Error; err != nil {
+			return 0, nil, newGetRecordsDBError(err, "programs")
+		}
+		if err := tx.Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 	}
-	return total, content, nil
+	programs := iterMap(func(prog models.Program) models.Program {
+		if len(prog.Favorites) > 0 {
+			prog.IsFavorited = true
+			return prog
+		}
+		return prog
+	}, content)
+	return total, programs, nil
 }
 
 func (db *DB) CreateProgram(content *models.Program) error {

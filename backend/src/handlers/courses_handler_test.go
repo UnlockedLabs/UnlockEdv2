@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"net/http/httptest"
 	"slices"
 	"strconv"
 	"testing"
@@ -76,41 +75,6 @@ func TestHandleShowCourse(t *testing.T) {
 			}
 			if diff := cmp.Diff(&course, &data.Data); diff != "" {
 				t.Errorf("handler returned unexpected response body: %v", diff)
-			}
-		})
-	}
-}
-
-func TestHandleFavoriteCourse(t *testing.T) {
-	httpTests := []httpTest{
-		{"TestUserCanToggleFavoriteCourseOnOff", "student", map[string]any{"id": "4", "message": "Favorite updated successfully"}, http.StatusOK, ""},
-		{"TestAdminCanToggleFavoriteCourseOnOff", "admin", map[string]any{"id": "4", "message": "Favorite updated successfully"}, http.StatusOK, ""},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPut, "/api/courses/{id}/save", nil)
-			if err != nil {
-				t.Fatalf("unable to create new request, error is %v", err)
-			}
-			req.SetPathValue("id", test.mapKeyValues["id"].(string))
-			handler := getHandlerByRole(server.handleFavoriteCourse, test.role)
-			rr := executeRequest(t, req, handler, test)
-			if test.expectedStatusCode == http.StatusOK {
-				received := rr.Body.String()
-				data := models.Resource[struct{}]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal response error is %v", err)
-				}
-				if data.Message != test.mapKeyValues["message"] {
-					t.Errorf("handler returned wrong body: got %v want %v", data.Message, test.mapKeyValues["message"])
-				}
-				//special case here, execute another request to toggle the user's favorite
-				req.SetPathValue("id", test.mapKeyValues["id"].(string))
-				rr = httptest.NewRecorder()
-				handler.ServeHTTP(rr, req)
-				if status := rr.Code; status != http.StatusNoContent {
-					t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusNoContent)
-				}
 			}
 		})
 	}

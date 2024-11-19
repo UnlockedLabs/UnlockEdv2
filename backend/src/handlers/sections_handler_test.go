@@ -274,7 +274,7 @@ func TestHandleDeleteSection(t *testing.T) {
 
 func getProgramSection(facilityId uint) map[string]any {
 	form := make(map[string]any)
-	_, programs, err := server.Db.GetProgram(1, 10, nil, "")
+	_, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
 	if err != nil {
 		form["err"] = err
 	}
@@ -286,7 +286,7 @@ func getProgramSection(facilityId uint) map[string]any {
 }
 func getProgramId() map[string]any {
 	form := make(map[string]any)
-	_, programs, err := server.Db.GetProgram(1, 10, nil, "")
+	_, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
 	if err != nil {
 		form["err"] = err
 	}
@@ -296,7 +296,7 @@ func getProgramId() map[string]any {
 
 func getSectionId() map[string]any {
 	form := make(map[string]any)
-	_, programs, err := server.Db.GetProgram(1, 10, nil, "")
+	_, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
 	if err != nil {
 		form["err"] = err
 	}

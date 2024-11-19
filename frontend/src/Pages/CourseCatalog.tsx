@@ -17,10 +17,9 @@ export default function CourseCatalog() {
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [order, setOrder] = useState('asc');
-    const { data, error, mutate } = useSWR<
-        ServerResponse<CourseCatalogue>,
-        AxiosError
-    >(`/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`);
+    const { data, error } = useSWR<ServerResponse<CourseCatalogue>, AxiosError>(
+        `/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`
+    );
     const courseData = data?.data as CourseCatalogue[];
 
     function handleSearch(newSearch: string) {
@@ -64,7 +63,6 @@ export default function CourseCatalog() {
                         return (
                             <CatalogCourseCard
                                 course={course}
-                                callMutate={() => void mutate()}
                                 view={activeView}
                                 key={course.course_id}
                             />

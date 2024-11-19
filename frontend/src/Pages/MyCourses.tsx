@@ -20,7 +20,6 @@ export default function MyCourses() {
     const tabs: Tab[] = [
         { name: 'Current', value: 'in_progress' },
         { name: 'Completed', value: 'completed' },
-        { name: 'Favorited', value: 'is_favorited' },
         { name: 'All', value: 'all' }
     ];
 
@@ -31,7 +30,7 @@ export default function MyCourses() {
     const [activeTab, setActiveTab] = useState<Tab>(tabs[0]);
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
 
-    const { data, mutate, isLoading, error } = useSWR<
+    const { data, isLoading, error } = useSWR<
         ServerResponse<UserCoursesInfo>,
         AxiosError
     >(
@@ -96,9 +95,6 @@ export default function MyCourses() {
                             <EnrolledCourseCard
                                 course={course}
                                 view={activeView}
-                                callMutate={() => {
-                                    void mutate();
-                                }}
                                 key={index}
                             />
                         );

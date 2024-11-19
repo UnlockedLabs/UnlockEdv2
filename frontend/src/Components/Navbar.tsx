@@ -167,7 +167,7 @@ export default function Navbar({
                                 </li>
                                 {hasFeature(
                                     user,
-                                    FeatureAccess.ProgramAccess
+                                    FeatureAccess.ProviderAccess
                                 ) && (
                                     <>
                                         <li>
@@ -204,6 +204,19 @@ export default function Navbar({
                                         <Link to="/open-content/libraries">
                                             <ULIComponent icon={BookOpenIcon} />
                                             Open Content
+                                        </Link>
+                                    </li>
+                                )}
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.ProgramAccess
+                                ) && (
+                                    <li>
+                                        <Link to="/programs">
+                                            <ULIComponent
+                                                icon={DocumentTextIcon}
+                                            />
+                                            Programs
                                         </Link>
                                     </li>
                                 )}

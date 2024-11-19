@@ -7,9 +7,11 @@ type Program struct {
 	CreditType    string `json:"credit_type" gorm:"not null" validate:"required,max=50"`
 	ProgramStatus string `json:"program_status" gorm:"not null" validate:"required,max=50"`
 	ProgramType   string `json:"program_type" gorm:"not null" validate:"required,max=50"`
+	IsFavorited   bool   `json:"is_favorited" gorm:"-"`
 
-	Tags       []ProgramTag `json:"tags" gorm:"foreignKey:ProgramID;references:ID"`
-	Facilities []Facility   `json:"facilities" gorm:"many2many:facilities_programs;"`
+	Tags       []ProgramTag      `json:"tags" gorm:"foreignKey:ProgramID;references:ID"`
+	Facilities []Facility        `json:"facilities" gorm:"many2many:facilities_programs;"`
+	Favorites  []ProgramFavorite `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 }
 
 func (Program) TableName() string { return "programs" }
