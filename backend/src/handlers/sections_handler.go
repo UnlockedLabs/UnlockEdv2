@@ -7,13 +7,16 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerSectionsRoutes() {
-	srv.Mux.Handle("GET /api/programs/{id}/sections", srv.applyMiddleware(srv.handleGetSectionsForProgram))
-	srv.Mux.Handle("GET /api/program-sections/{section_id}", srv.applyMiddleware(srv.handleGetSection))
-	srv.Mux.Handle("GET /api/program-sections", srv.applyMiddleware(srv.handleIndexSectionsForFacility))
-	srv.Mux.Handle("POST /api/programs/{id}/sections", srv.applyAdminMiddleware(srv.handleCreateSection))
-	srv.Mux.Handle("PATCH /api/program-sections/{id}", srv.applyAdminMiddleware(srv.handleUpdateSection))
-	srv.Mux.Handle("DELETE /api/program-sections/{section_id}", srv.applyAdminMiddleware(srv.handleDeleteSection))
+func (srv *Server) registerSectionsRoutes() []routeDef {
+	axx := []models.FeatureAccess{models.ProgramAccess}
+	return []routeDef{
+		{"GET /api/programs/{id}/sections", srv.handleGetSectionsForProgram, false, axx},
+		{"GET /api/program-sections/{section_id}", srv.handleGetSection, false, axx},
+		{"GET /api/program-sections", srv.handleIndexSectionsForFacility, false, axx},
+		{"POST /api/programs/{id}/sections", srv.handleCreateSection, true, axx},
+		{"PATCH /api/program-sections/{id}", srv.handleUpdateSection, true, axx},
+		{"DELETE /api/program-sections/{section_id}", srv.handleDeleteSection, true, axx},
+	}
 }
 
 func (srv *Server) handleGetSectionsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {

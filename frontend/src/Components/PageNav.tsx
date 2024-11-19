@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import {
     Bars3Icon,
     BuildingOffice2Icon,
     HomeIcon
 } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { Facility, UserRole } from '@/common';
+import { Facility } from '@/common';
 import { useLoaderData } from 'react-router-dom';
 import API from '@/api/api';
 import { usePathValue } from '@/Context/PathValueCtx';
@@ -107,7 +107,7 @@ export default function PageNav({
                     ))}
                 </ul>
             </div>
-            {user?.role == UserRole.Admin ? (
+            {user && isAdministrator(user) ? (
                 <ul className="menu menu-horizontal px-1">
                     <li>
                         <details

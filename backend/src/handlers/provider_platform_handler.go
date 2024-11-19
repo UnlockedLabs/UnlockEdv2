@@ -8,12 +8,15 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerProviderPlatformRoutes() {
-	srv.Mux.Handle("GET /api/provider-platforms", srv.applyAdminMiddleware(srv.handleIndexProviders))
-	srv.Mux.Handle("GET /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleShowProvider))
-	srv.Mux.Handle("POST /api/provider-platforms", srv.applyAdminMiddleware(srv.handleCreateProvider))
-	srv.Mux.Handle("PATCH /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleUpdateProvider))
-	srv.Mux.Handle("DELETE /api/provider-platforms/{id}", srv.applyAdminMiddleware(srv.handleDeleteProvider))
+func (srv *Server) registerProviderPlatformRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/provider-platforms", srv.handleIndexProviders, true, axx},
+		{"GET /api/provider-platforms/{id}", srv.handleShowProvider, true, axx},
+		{"POST /api/provider-platforms", srv.handleCreateProvider, true, axx},
+		{"PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, true, axx},
+		{"DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, true, axx},
+	}
 }
 
 func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {

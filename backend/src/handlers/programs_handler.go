@@ -8,13 +8,16 @@ import (
 	"strings"
 )
 
-func (srv *Server) registerProgramsRoutes() {
-	srv.Mux.Handle("GET /api/programs", srv.applyMiddleware(srv.handleIndexPrograms))
-	srv.Mux.Handle("GET /api/programs/{id}", srv.applyMiddleware(srv.handleShowProgram))
-	srv.Mux.Handle("POST /api/programs", srv.applyAdminMiddleware(srv.handleCreateProgram))
-	srv.Mux.Handle("DELETE /api/programs/{id}", srv.applyAdminMiddleware(srv.handleDeleteProgram))
-	srv.Mux.Handle("PATCH /api/programs/{id}", srv.applyAdminMiddleware(srv.handleUpdateProgram))
-	srv.Mux.Handle("PUT /api/programs/{id}/save", srv.applyMiddleware(srv.handleFavoriteProgram))
+func (srv *Server) registerProgramsRoutes() []routeDef {
+	axx := []models.FeatureAccess{models.ProgramAccess}
+	return []routeDef{
+		{"GET /api/programs", srv.handleIndexPrograms, false, axx},
+		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx},
+		{"POST /api/programs", srv.handleCreateProgram, true, axx},
+		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
+		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
+		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx},
+	}
 }
 
 /*

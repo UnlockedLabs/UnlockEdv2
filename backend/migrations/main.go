@@ -83,7 +83,8 @@ func MigrateFresh(db *sql.DB) {
 	}
 
 	flushNats(conn)
-	database.SeedDefaultData(gormDb, false)
+	DB := database.NewDB(gormDb)
+	DB.SeedDefaultData(false)
 	log.Println("Database successfully migrated from fresh state.")
 	log.Println("\033[31mIf the server is running, you MUST restart it\033[0m")
 }

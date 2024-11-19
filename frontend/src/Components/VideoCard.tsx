@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
+import { AdminRoles } from '@/useAuth';
 
 export default function VideoCard({
     video,
@@ -67,7 +68,7 @@ export default function VideoCard({
                     : 'cursor-pointer border-3 border-red-500'
             }`}
         >
-            {role === UserRole.Student && (
+            {!AdminRoles.includes(role) && (
                 <div
                     className="tooltip tooltip-top absolute right-2 top-2 w-6 h-6"
                     data-tip="Favorite video"
@@ -104,7 +105,7 @@ export default function VideoCard({
                           `Video currently unavailable.
                            May be in the process of downloading, Please check back later`)}
                 </p>
-                {role === UserRole.Admin &&
+                {AdminRoles.includes(role) &&
                     (videoIsAvailable(video) ? (
                         <VisibleHiddenToggle
                             visible={visible}

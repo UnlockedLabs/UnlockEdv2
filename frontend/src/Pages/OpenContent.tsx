@@ -1,9 +1,9 @@
-import { OpenContentProviderType, UserRole, Tab } from '@/common';
+import { OpenContentProviderType, Tab } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function OpenContent() {
     const { setPathVal } = usePathValue();
@@ -36,7 +36,7 @@ export default function OpenContent() {
         <div className="px-8 pb-4">
             <div className="flex flex-row justify-between">
                 <h1>Open Content</h1>
-                {user?.role === UserRole.Admin && (
+                {user && isAdministrator(user) && (
                     <button
                         className="button border border-primary bg-transparent text-body-text"
                         onClick={() =>

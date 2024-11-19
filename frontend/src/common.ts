@@ -1,12 +1,16 @@
 import { ReactNode } from 'react';
 
 export enum UserRole {
+    SystemAdmin = 'system_admin',
     Admin = 'admin',
     Student = 'student'
 }
-
+export enum FeatureAccess {
+    ProviderAccess = 'provider_platforms',
+    OpenContentAccess = 'open_content',
+    ProgramAccess = 'program_management'
+}
 export const INIT_KRATOS_LOGIN_FLOW = '/self-service/login/browser';
-export const DEFAULT_ADMIN_ID = 1;
 export interface User {
     id: number;
     name_first: string;
@@ -18,18 +22,24 @@ export interface User {
     created_at: string;
     updated_at: string;
     facility_name?: string;
-    [key: string]: number | string | boolean | undefined;
+    feature_access: FeatureAccess[];
+    [key: string]: number | string | boolean | undefined | FeatureAccess[];
 }
+export const providerRoutes = [
+    'provider-user-management',
+    'provider-platform-management',
+    'my-courses',
+    'course-catalogue',
+    'course-catalog-admin'
+];
 
-export const getDashboard = (user?: User): string => {
-    if (!user) {
-        return INIT_KRATOS_LOGIN_FLOW;
-    } else {
-        return user.role === UserRole.Admin
-            ? '/admin-dashboard'
-            : '/student-dashboard';
-    }
-};
+export const openContentRoutes = [
+    'open-content',
+    'open-content-management',
+    'viewer'
+];
+
+export const programRoutes = ['programs', 'program-management'];
 
 export interface Video {
     id: number;

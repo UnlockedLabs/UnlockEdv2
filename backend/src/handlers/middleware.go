@@ -3,55 +3,47 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"context"
-	"crypto/sha256"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"time"
-
-	"github.com/google/uuid"
-	"github.com/nats-io/nats.go"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
-	CsrfTokenCtx contextKey = "csrf_token"
-	timeWindow              = time.Minute
-	maxRequests  int        = 50
-	libraryKey   contextKey = "library"
-	videoKey     contextKey = "video"
+	libraryKey contextKey = "library"
+	videoKey   contextKey = "video"
 	// rate limit is 50 requests from a unique user in a minute
 )
 
-func (srv *Server) applyMiddleware(h HttpFunc) http.Handler {
+func (srv *Server) applyMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
-		srv.handleError(h))
+		srv.checkFeatureAccessMiddleware(
+			srv.handleError(h), accessLevel...))
 }
 
-func (srv *Server) applyAdminMiddleware(h HttpFunc) http.Handler {
+func (srv *Server) applyAdminMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
 		srv.adminMiddleware(
-			srv.handleError(h)))
+			srv.checkFeatureAccessMiddleware(
+				srv.handleError(h), accessLevel...)))
 }
 
 func (srv *Server) applyStandardMiddleware(next http.Handler) http.Handler {
-	return srv.prometheusMiddleware(srv.setCsrfTokenMiddleware(
-		srv.rateLimitMiddleware(
-			srv.authMiddleware(
-				next))))
+	return srv.prometheusMiddleware(
+		srv.authMiddleware(
+			next))
 }
 
 func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(ClaimsKey).(*Claims)
+		if !srv.hasFeatureAccess(models.OpenContentAccess) {
+			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
+			return
+		}
 		resourceID := r.PathValue("id")
 		var video models.Video
 		tx := srv.Db.Model(&models.Video{}).Where("id = ?", resourceID)
-		user := r.Context().Value(ClaimsKey).(*Claims)
-		switch user.Role {
-		case models.Admin:
+		if user.isAdmin() {
 			tx = tx.First(&video)
-		default:
+		} else {
 			tx = tx.First(&video, "visibility_status = true AND availability = 'available'")
 		}
 		if err := tx.Error; err != nil {
@@ -65,14 +57,17 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 	return srv.applyStandardMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(ClaimsKey).(*Claims)
+		if !srv.hasFeatureAccess(models.OpenContentAccess) {
+			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
+			return
+		}
 		resourceID := r.PathValue("id")
 		var library models.Library
 		tx := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID)
-		user := r.Context().Value(ClaimsKey).(*Claims)
-		switch user.Role {
-		case models.Admin:
+		if user.isAdmin() {
 			tx = tx.First(&library)
-		default:
+		} else {
 			tx = tx.First(&library, "visibility_status = true")
 		}
 		if err := tx.Error; err != nil {
@@ -102,136 +97,12 @@ func corsMiddleware(next http.Handler) http.HandlerFunc {
 	}
 }
 
-func (srv *Server) setCsrfTokenMiddleware(next http.Handler) http.Handler {
+func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel ...models.FeatureAccess) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fields := log.Fields{"handler": "setCsrfTokenMiddleware"}
-		bucket := srv.buckets[CsrfToken]
-		checkExists, err := r.Cookie("unlocked_csrf_token")
-		if err == nil {
-			fields["csrf_token"] = checkExists.Value
-			// now we check if the token is validjA
-			val, err := bucket.Get(checkExists.Value)
-			if err != nil {
-				srv.clearKratosCookies(w, r)
-				if !isAuthRoute(r) {
-					http.Redirect(w, r, fmt.Sprintf("%s/browser?return_to=%s", LoginEndpoint, r.URL.Path), http.StatusSeeOther)
-					log.WithFields(fields).Traceln("CSRF token is invalid, redirecting user")
-					return
-				}
-			} else {
-				log.WithFields(fields).Traceln("CSRF token is valid")
-				ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(val.Value()))
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-		}
-		uniqueId := uuid.NewString()
-		http.SetCookie(w, &http.Cookie{
-			Name:     "unlocked_csrf_token",
-			Value:    uniqueId,
-			Expires:  time.Now().Add(24 * time.Hour),
-			HttpOnly: true,
-			Secure:   true,
-			Path:     "/",
-		})
-		_, err = bucket.Put(uniqueId, []byte(time.Now().Add(24*time.Hour).String()))
-		if err != nil {
-			log.WithFields(fields).Errorf("Failed to set CSRF token: %v", err)
-			srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
+		if !srv.hasFeatureAccess(accessLevel...) {
+			srv.errorResponse(w, http.StatusUnauthorized, "Feature not enabled")
 			return
 		}
-		ctx := context.WithValue(r.Context(), CsrfTokenCtx, string(uniqueId))
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
-}
-
-func (srv *Server) rateLimitMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fields := log.Fields{"handler": "rateLimitMiddleware"}
-		kv := srv.buckets[RateLimit]
-		hashedValue, err := getUniqueRequestInfo(r)
-		if err != nil {
-			log.WithFields(fields).Errorf("Failed to get unique request info: %v", err)
-			srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
-			return
-		}
-		value, err := kv.Get(hashedValue)
-		if err != nil {
-			// create a new requestInfo
-			reqInfo := &requestInfo{
-				Count:     1,
-				Timestamp: time.Now(),
-			}
-			if err := putRequestInfo(kv, hashedValue, reqInfo); err != nil {
-				log.WithFields(fields).Errorf("Failed to marshal request info: %v", err)
-				srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
-				return
-			}
-			next.ServeHTTP(w, r)
-			return
-		} else {
-			var reqInfo requestInfo
-			if err := json.Unmarshal(value.Value(), &reqInfo); err != nil {
-				log.WithFields(fields).Errorf("Failed to unmarshal request info: %v", err)
-				srv.errorResponse(w, http.StatusInternalServerError, "failed to decode request info")
-				return
-			}
-			if time.Since(reqInfo.Timestamp) > timeWindow {
-				reqInfo.Count = 0
-				reqInfo.Timestamp = time.Now()
-			} else {
-				reqInfo.Count++
-				if reqInfo.Count > maxRequests {
-					srv.errorResponse(w, http.StatusTooManyRequests, "rate limit exceeded")
-					return
-				}
-			}
-			if err := putRequestInfo(kv, hashedValue, &reqInfo); err != nil {
-				log.WithFields(fields).Errorf("Failed to marshal request info: %v", err)
-				srv.errorResponse(w, http.StatusInternalServerError, "failed to write CSRF token")
-				return
-			}
-			next.ServeHTTP(w, r)
-			return
-		}
-	})
-}
-
-func putRequestInfo(kv nats.KeyValue, key string, reqInfo *requestInfo) error {
-	bytes, err := json.Marshal(reqInfo)
-	if err != nil {
-		return err
-	}
-	if _, err := kv.Put(key, bytes); err != nil {
-		return err
-	}
-	return nil
-}
-
-type requestInfo struct {
-	Count     int       `json:"count"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
-func getUniqueRequestInfo(r *http.Request) (string, error) {
-	csrf, ok := r.Context().Value(CsrfTokenCtx).(string)
-	if !ok {
-		return "", errors.New("CSRF token not found")
-	}
-	uniq := r.Header.Get("X-Real-IP")
-	if uniq == "" {
-		uniq = r.Header.Get("X-Forwarded-For")
-		if uniq == "" {
-			uniq = r.RemoteAddr
-		}
-	}
-	unique := r.Header.Get("User-Agent") + uniq + csrf
-	hashedValue := shaHashValue(unique)
-	return hashedValue, nil
-}
-
-func shaHashValue(value string) string {
-	hash := sha256.New()
-	hash.Write([]byte(value))
-	return fmt.Sprintf("%x", hash.Sum(nil))
 }

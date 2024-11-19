@@ -8,11 +8,14 @@ import (
 	"strings"
 )
 
-func (srv *Server) registerOpenContentRoutes() {
-	srv.Mux.Handle("GET /api/open-content", srv.applyMiddleware(srv.handleIndexOpenContent))
-	srv.Mux.Handle("PUT /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleToggleOpenContent))
-	srv.Mux.Handle("PATCH /api/open-content/{id}", srv.applyAdminMiddleware(srv.handleUpdateOpenContentProvider))
-	srv.Mux.Handle("POST /api/open-content", srv.applyAdminMiddleware(srv.handleCreateOpenContent))
+func (srv *Server) registerOpenContentRoutes() []routeDef {
+	axx := models.Feature(models.OpenContentAccess)
+	return []routeDef{
+		{"GET /api/open-content", srv.handleIndexOpenContent, false, axx},
+		{"PUT /api/open-content/{id}", srv.handleToggleOpenContent, true, axx},
+		{"PATCH /api/open-content/{id}", srv.handleUpdateOpenContentProvider, true, axx},
+		{"POST /api/open-content", srv.handleCreateOpenContent, true, axx},
+	}
 }
 
 func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -10,8 +10,12 @@ WORKDIR /app
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o provider-service provider-middleware/.
 
+
 FROM alpine:3.20.3 as final
-RUN apk add --no-cache ca-certificates python3 py3-pip && pip install --break-system-packages requests brotli websockets certifi yt-dlp[default,curl-cffi]
+WORKDIR /app
+RUN apk add --no-cache ca-certificates python3 py3-pip && \
+pip install --break-system-packages requests brotli websockets certifi yt-dlp[default,curl-cffi] && \
+mkdir -p $HOME/.config/yt-dlp
 
 COPY --from=builder /app/provider-service /usr/bin/
 COPY --from=ffmpeg /ffmpeg /ffprobe /usr/bin

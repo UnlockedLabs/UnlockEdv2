@@ -1,4 +1,3 @@
-import { UserRole } from '@/common';
 import Brand from './Brand';
 import {
     AcademicCapIcon,
@@ -14,13 +13,16 @@ import {
     ArrowRightEndOnRectangleIcon,
     SunIcon,
     MoonIcon,
-    UserCircleIcon
+    UserCircleIcon,
+    DocumentTextIcon,
+    BuildingOffice2Icon
 } from '@heroicons/react/24/solid';
-import { useAuth, handleLogout } from '@/useAuth';
+import { handleLogout, hasFeature, isAdministrator, useAuth } from '@/useAuth';
 import ULIComponent from './ULIComponent';
 import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
+import { FeatureAccess, UserRole } from '@/common';
 
 export default function Navbar({
     isPinned,
@@ -29,8 +31,10 @@ export default function Navbar({
     isPinned: boolean;
     onTogglePin: () => void;
 }) {
-    const { user } = useAuth();
-
+    const { user, setUser } = useAuth();
+    if (!user) {
+        return null;
+    }
     return (
         <div className="w-60 min-w-[240px] flex flex-col bg-background group h-screen">
             <div className="hidden lg:flex self-end py-6 mr-4">
@@ -64,7 +68,7 @@ export default function Navbar({
             <div className="h-full">
                 <ul className="menu h-full flex flex-col justify-between">
                     <div>
-                        {user?.role == UserRole.Admin ? (
+                        {user && isAdministrator(user) ? (
                             <>
                                 {/* admin view */}
                                 <li className="mt-16">
@@ -85,28 +89,67 @@ export default function Navbar({
                                         Admins
                                     </Link>
                                 </li>
-                                <li>
-                                    <Link to="/open-content-management/libraries">
-                                        <ULIComponent icon={BookOpenIcon} />
-                                        Open Content
-                                    </Link>
-                                </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.OpenContentAccess
+                                ) && (
+                                    <>
+                                        <li>
+                                            <Link to="/open-content-management/libraries">
+                                                <ULIComponent
+                                                    icon={BookOpenIcon}
+                                                />
+                                                Open Content
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
                                 <li>
                                     <Link to="/resources-management">
                                         <ULIComponent icon={ArchiveBoxIcon} />
                                         Resources
                                     </Link>
                                 </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.ProviderAccess
+                                ) && (
+                                    <>
+                                        <li>
+                                            <Link to="/provider-platform-management">
+                                                <ULIComponent
+                                                    icon={RectangleStackIcon}
+                                                />
+                                                Platforms
+                                            </Link>
+                                        </li>
+                                        <li className="">
+                                            <Link to="/course-catalog-admin">
+                                                <ULIComponent
+                                                    icon={
+                                                        BuildingStorefrontIcon
+                                                    }
+                                                />
+                                                Course Catalog
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.ProgramAccess
+                                ) && (
+                                    <li>
+                                        <Link to="/programs">
+                                            <ULIComponent
+                                                icon={DocumentTextIcon}
+                                            />
+                                            Programs
+                                        </Link>
+                                    </li>
+                                )}
                                 <li>
-                                    <Link to="/provider-platform-management">
-                                        <ULIComponent
-                                            icon={RectangleStackIcon}
-                                        />
-                                        Platforms
-                                    </Link>
-                                </li>
-                                {/* <li>
-                                    <Link to="/programs">
+                                    <Link to="/facilities-management">
                                         <ULIComponent
                                             icon={RectangleStackIcon}
                                         />
@@ -123,32 +166,50 @@ export default function Navbar({
                                         Dashboard
                                     </Link>
                                 </li>
-                                <li>
-                                    <Link to="/my-courses">
-                                        <ULIComponent icon={BookOpenIcon} /> My
-                                        Courses
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/my-progress">
-                                        <ULIComponent icon={TrophyIcon} /> My
-                                        Progress
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/open-content/libraries">
-                                        <ULIComponent icon={BookOpenIcon} />
-                                        Open Content
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/course-catalog">
-                                        <ULIComponent
-                                            icon={BuildingStorefrontIcon}
-                                        />
-                                        Course Catalog
-                                    </Link>
-                                </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.ProgramAccess
+                                ) && (
+                                    <>
+                                        <li>
+                                            <Link to="/my-courses">
+                                                <ULIComponent
+                                                    icon={BookOpenIcon}
+                                                />{' '}
+                                                My Courses
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link to="/course-catalog">
+                                                <ULIComponent
+                                                    icon={
+                                                        BuildingStorefrontIcon
+                                                    }
+                                                />
+                                                Course Catalog
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link to="/my-progress">
+                                                <ULIComponent
+                                                    icon={TrophyIcon}
+                                                />{' '}
+                                                My Progress
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.OpenContentAccess
+                                ) && (
+                                    <li>
+                                        <Link to="/open-content/libraries">
+                                            <ULIComponent icon={BookOpenIcon} />
+                                            Open Content
+                                        </Link>
+                                    </li>
+                                )}
                             </>
                         )}
                     </div>
@@ -177,49 +238,14 @@ export default function Navbar({
                                     />
                                 </label>
                             </li>
-                            <div className="divider mt-0 mb-0"></div>
-                            <li tabIndex={0} className="collapse ">
-                                <label>Feature Access Levels</label>
-
-                                <ul
-                                    tabIndex={0}
-                                    className="collapse-content menu bg-grey-2 dark:bg-grey-1 rounded-box text-xs"
-                                >
-                                    <li>
-                                        <FeatureLevelCheckboxes />
-                                    </li>
-                                    {/* <li>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                name="access_level"
-                                                value={'Open Content'}
-                                            />
-                                            Open Content
-                                        </label>
-                                    </li>
-                                    <li>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                name="access_level"
-                                                value={'Open Content'}
-                                            />
-                                            Provider Platform Integrations
-                                        </label>
-                                    </li>
-                                    <li>
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                name="access_level"
-                                                value={'Open Content'}
-                                            />
-                                            Program Management
-                                        </label>
-                                    </li> */}
-                                </ul>
-                            </li>
+                            {user && user.role === UserRole.SystemAdmin && (
+                                <li>
+                                    <FeatureLevelCheckboxes
+                                        features={user.feature_access ?? []}
+                                        setUser={setUser}
+                                    />
+                                </li>
+                            )}
                             <li className="self-center">
                                 <button
                                     onClick={() => {

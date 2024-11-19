@@ -8,10 +8,13 @@ import (
 	"os"
 )
 
-func (srv *Server) registerOidcRoutes() {
-	srv.Mux.Handle("GET /api/oidc/clients", srv.applyAdminMiddleware(srv.handleGetAllClients))
-	srv.Mux.Handle("POST /api/oidc/clients", srv.applyAdminMiddleware(srv.handleRegisterClient))
-	srv.Mux.Handle("GET /api/oidc/clients/{id}", srv.applyAdminMiddleware(srv.handleGetOidcClient))
+func (srv *Server) registerOidcRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/oidc/clients", srv.handleGetAllClients, true, axx},
+		{"POST /api/oidc/clients", srv.handleRegisterClient, true, axx},
+		{"GET /api/oidc/clients/{id}", srv.handleGetOidcClient, true, axx},
+	}
 }
 
 func (srv *Server) handleGetAllClients(w http.ResponseWriter, r *http.Request, log sLog) error {

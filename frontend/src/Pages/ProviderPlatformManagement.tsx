@@ -9,7 +9,8 @@ import {
     ProviderPlatform,
     ServerResponse,
     ToastState,
-    ProviderPlatformState
+    ProviderPlatformState,
+    FeatureAccess
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState } from 'react';
@@ -18,8 +19,13 @@ import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
+import { hasFeature, useAuth } from '@/useAuth';
 
 export default function ProviderPlatformManagement() {
+    const { user } = useAuth();
+    if (!user || !hasFeature(user, FeatureAccess.ProviderAccess)) {
+        return null;
+    }
     const addProviderModal = useRef<HTMLDialogElement>(null);
     const editProviderModal = useRef<HTMLDialogElement>(null);
     const [editProvider, setEditProvider] = useState<

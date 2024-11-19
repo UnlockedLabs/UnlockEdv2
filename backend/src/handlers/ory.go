@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -13,8 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (srv *Server) registerOryRoutes() {
-	srv.Mux.Handle("DELETE /api/identities/sync", srv.applyAdminMiddleware(srv.handleDeleteAllKratosIdentities))
+func (srv *Server) registerOryRoutes() []routeDef {
+	return []routeDef{{"DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities, true, models.Feature()}}
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {

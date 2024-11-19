@@ -6,8 +6,10 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerOutcomesRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/outcomes", srv.applyMiddleware(srv.handleGetOutcomes))
+func (srv *Server) registerOutcomesRoutes() []routeDef {
+	return []routeDef{
+		{"GET /api/users/{id}/outcomes", srv.handleGetOutcomes, false, models.Feature(models.ProviderAccess)},
+	}
 }
 
 /****

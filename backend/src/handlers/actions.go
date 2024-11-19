@@ -13,10 +13,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (srv *Server) registerActionsRoutes() {
+func (srv *Server) registerActionsRoutes() []routeDef {
 	// returns the users for mapping on the client
-	srv.Mux.Handle("GET /api/actions/provider-platforms/{id}/get-users", srv.applyMiddleware(srv.handleGetUsers))
-	srv.Mux.Handle("POST /api/actions/provider-platforms/{id}/import-users", srv.applyMiddleware(srv.handleImportUsers))
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, true, axx},
+		{"POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, true, axx},
+	}
 }
 
 type CachedProviderUsers struct {

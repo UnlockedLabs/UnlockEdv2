@@ -6,10 +6,13 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerCoursesRoutes() {
-	srv.Mux.Handle("GET /api/courses", srv.applyAdminMiddleware(srv.handleIndexCourses))
-	srv.Mux.Handle("GET /api/courses/{id}", srv.applyMiddleware(srv.handleShowCourse))
-	srv.Mux.Handle("PUT /api/courses/{id}/save", srv.applyMiddleware(srv.handleFavoriteCourse))
+func (srv *Server) registerCoursesRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/courses", srv.handleIndexCourses, true, axx},
+		{"GET /api/courses/{id}", srv.handleShowCourse, false, axx},
+		{"PUT /api/courses/{id}/save", srv.handleFavoriteCourse, true, axx},
+	}
 }
 
 /*
