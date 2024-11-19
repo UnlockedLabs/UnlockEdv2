@@ -174,10 +174,7 @@ export default function AdminManagement() {
                         />
                     </div>
 
-                    <div
-                        className="tooltip tooltip-left"
-                        data-tip="Add Administrator"
-                    >
+                    <div className="tooltip tooltip-left" data-tip="Add Admin">
                         <button
                             className="btn btn-primary btn-sm text-base-teal"
                             onClick={() => addUserModal.current?.showModal()}
@@ -303,7 +300,7 @@ export default function AdminManagement() {
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
-                item="Administrator"
+                item="Admin"
                 form={
                     <AddUserForm
                         onSuccess={onAddUserSuccess}
@@ -314,7 +311,7 @@ export default function AdminManagement() {
             <Modal
                 ref={editUserModal}
                 type={ModalType.Edit}
-                item="Administrator"
+                item="Admin"
                 form={
                     targetUser ? (
                         <EditUserForm
@@ -329,7 +326,7 @@ export default function AdminManagement() {
             <Modal
                 ref={deleteUserModal}
                 type={ModalType.Confirm}
-                item="Delete Administrator"
+                item="Delete Admin"
                 form={
                     <DeleteForm
                         item="User"

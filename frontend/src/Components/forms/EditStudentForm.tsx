@@ -1,8 +1,9 @@
-import { ServerResponseOne, User, UserRole } from '@/common.ts';
+import { ServerResponseOne, User, UserRole } from '../../common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
-import { SubmitButton } from '@/Components/inputs';
+import { DropdownInput } from '../inputs/DropdownInput';
+import { SubmitButton } from '../inputs/SubmitButton';
 import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
@@ -125,8 +126,14 @@ export default function EditUserForm({
                     errors={errors}
                     register={register}
                 />
-                {/* Hidden input for role */}
-                <input type="hidden" {...register('role')} />
+                <DropdownInput
+                    label={'Role'}
+                    interfaceRef={'role'}
+                    required
+                    errors={errors}
+                    register={register}
+                    enumType={UserRole}
+                />
                 <SubmitButton errorMessage={errorMessage} />
             </form>
         </>
