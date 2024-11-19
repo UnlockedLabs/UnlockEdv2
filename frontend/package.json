@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "tsc -b && vite build",
-        "lint-staged": "oxlint src && eslint --fix src",
+        "lint-staged": "eslint --fix src",
         "lint": "eslint .",
         "preview": "vite preview",
         "prepare": "cd .. && husky frontend/.husky"
@@ -16,7 +16,6 @@
         "axios": "^1.6.8",
         "daisyui": "^4.10.5",
         "eslint-plugin-prettier": "^5.2.1",
-        "oxlint": "^0.3.2",
         "path": "^0.12.7",
         "postcss": "^8.4.38",
         "prettier": "^3.2.5",

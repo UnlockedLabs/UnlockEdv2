@@ -7,7 +7,6 @@ import {
     ChevronDoubleLeftIcon,
     ChevronDoubleRightIcon,
     HomeIcon,
-    RectangleStackIcon,
     TrophyIcon,
     UsersIcon,
     ArrowRightEndOnRectangleIcon,
@@ -15,7 +14,9 @@ import {
     MoonIcon,
     UserCircleIcon,
     DocumentTextIcon,
-    BuildingOffice2Icon
+    FolderOpenIcon,
+    CloudIcon,
+    RectangleStackIcon
 } from '@heroicons/react/24/solid';
 import { handleLogout, hasFeature, isAdministrator, useAuth } from '@/useAuth';
 import ULIComponent from './ULIComponent';
@@ -118,7 +119,7 @@ export default function Navbar({
                                         <li>
                                             <Link to="/provider-platform-management">
                                                 <ULIComponent
-                                                    icon={RectangleStackIcon}
+                                                    icon={CloudIcon}
                                                 />
                                                 Platforms
                                             </Link>
@@ -126,9 +127,7 @@ export default function Navbar({
                                         <li className="">
                                             <Link to="/course-catalog-admin">
                                                 <ULIComponent
-                                                    icon={
-                                                        BuildingStorefrontIcon
-                                                    }
+                                                    icon={FolderOpenIcon}
                                                 />
                                                 Course Catalog
                                             </Link>
@@ -151,11 +150,11 @@ export default function Navbar({
                                 <li>
                                     <Link to="/facilities-management">
                                         <ULIComponent
-                                            icon={RectangleStackIcon}
+                                            icon={BuildingStorefrontIcon}
                                         />
-                                        Programs
+                                        Facilities
                                     </Link>
-                                </li> */}
+                                </li>
                             </>
                         ) : (
                             <>
@@ -174,7 +173,7 @@ export default function Navbar({
                                         <li>
                                             <Link to="/my-courses">
                                                 <ULIComponent
-                                                    icon={BookOpenIcon}
+                                                    icon={RectangleStackIcon}
                                                 />{' '}
                                                 My Courses
                                             </Link>
@@ -182,9 +181,7 @@ export default function Navbar({
                                         <li>
                                             <Link to="/course-catalog">
                                                 <ULIComponent
-                                                    icon={
-                                                        BuildingStorefrontIcon
-                                                    }
+                                                    icon={FolderOpenIcon}
                                                 />
                                                 Course Catalog
                                             </Link>
