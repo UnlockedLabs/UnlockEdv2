@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
+	"time"
 )
 
 func (srv *Server) registerImageRoutes() {
@@ -39,13 +39,15 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 
 func getImagePath(r *http.Request) string {
 	img := r.PathValue("id")
-	if strings.Contains(img, "..") {
-		return ""
-	}
 	return filepath.Join(os.Getenv("IMG_FILEPATH"), img)
 }
 
 func (srv *Server) handleHostPhotos(w http.ResponseWriter, r *http.Request, log sLog) error {
+	r.Header.Add("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "max-age=31536000")
+
+	expires := time.Now().AddDate(1, 0, 0).Format(http.TimeFormat)
+	w.Header().Set("Expires", expires)
 	http.ServeFile(w, r, getImagePath(r))
 	return nil
 }

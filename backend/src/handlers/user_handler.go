@@ -12,13 +12,16 @@ import (
 	"unicode"
 )
 
-func (srv *Server) registerUserRoutes() {
-	srv.Mux.Handle("GET /api/users", srv.applyAdminMiddleware(srv.handleIndexUsers))
-	srv.Mux.Handle("GET /api/users/{id}", srv.applyMiddleware(srv.handleShowUser))
-	srv.Mux.Handle("POST /api/users", srv.applyAdminMiddleware(srv.handleCreateUser))
-	srv.Mux.Handle("DELETE /api/users/{id}", srv.applyAdminMiddleware(srv.handleDeleteUser))
-	srv.Mux.Handle("PATCH /api/users/{id}", srv.applyAdminMiddleware(srv.handleUpdateUser))
-	srv.Mux.Handle("POST /api/users/student-password", srv.applyAdminMiddleware(srv.handleResetStudentPassword))
+func (srv *Server) registerUserRoutes() []routeDef {
+	axx := models.Feature()
+	return []routeDef{
+		{"GET /api/users", srv.handleIndexUsers, true, axx},
+		{"GET /api/users/{id}", srv.handleShowUser, false, axx},
+		{"POST /api/users", srv.handleCreateUser, true, axx},
+		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
+		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
+		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
+	}
 }
 
 /**
@@ -108,7 +111,7 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	if !srv.canViewUserData(r) {
+	if !srv.canViewUserData(r, id) {
 		log.warn("Unauthorized access to user data")
 		return newUnauthorizedServiceError()
 	}

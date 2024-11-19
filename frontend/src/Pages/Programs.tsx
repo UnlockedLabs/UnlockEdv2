@@ -1,14 +1,8 @@
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { useState, useRef } from 'react';
 import ProgramCard from '@/Components/ProgramCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import {
-    Program,
-    ServerResponse,
-    ViewType,
-    UserRole,
-    Facility
-} from '@/common';
+import { Program, ServerResponse, ViewType, Facility } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { AxiosError } from 'axios';
@@ -61,7 +55,7 @@ export default function Programs() {
                         activeView={activeView}
                         setActiveView={setActiveView}
                     />
-                    {user.role === UserRole.Admin && (
+                    {isAdministrator(user) && (
                         <button
                             className="button flex items-center space-x-2"
                             onClick={() => {

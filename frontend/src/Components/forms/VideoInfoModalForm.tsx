@@ -1,11 +1,6 @@
-import {
-    getVideoErrorMessage,
-    MAX_DOWNLOAD_ATTEMPTS,
-    UserRole,
-    Video
-} from '@/common';
+import { getVideoErrorMessage, MAX_DOWNLOAD_ATTEMPTS, Video } from '@/common';
 import { CloseX } from '../inputs';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export interface VideoErrorFormProps {
     video: Video;
@@ -17,7 +12,7 @@ export default function VideoInfoModalForm({
     onClose
 }: VideoErrorFormProps) {
     const { user } = useAuth();
-    if (!user || user?.role !== UserRole.Admin) {
+    if (!user || isAdministrator(user)) {
         return null;
     }
 

@@ -12,7 +12,7 @@ import Pagination from '../Components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
 import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation } from 'react-router-dom';
 
 export default function VideoContent() {
@@ -24,10 +24,7 @@ export default function VideoContent() {
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const route = useLocation();
     const adminWithStudentView = (): boolean => {
-        return (
-            !route.pathname.includes('management') &&
-            user?.role === UserRole.Admin
-        );
+        return !route.pathname.includes('management') && isAdministrator(user);
     };
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,

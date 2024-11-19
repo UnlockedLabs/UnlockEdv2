@@ -14,10 +14,7 @@ jobs:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     runs-on: ubuntu-latest
     outputs:
-      frontend_changes: ${{ steps.frontend_changes.outputs.changed }}
-      backend_changes: ${{ steps.backend_changes.outputs.changed }}
-      middleware_changes: ${{ steps.middleware_changes.outputs.changed }}
-      crontasks_changes: ${{ steps.crontasks_changes.outputs.changed }}
+      changes: ${{ steps.check-changes.outputs.changes }}
 
     steps:
       - name: Checkout code
@@ -25,30 +22,27 @@ jobs:
         with:
           fetch-depth: 3
 
-      - id: frontend_changes
+      - id: check-changes
         run: |
-          echo "changed=$(git diff --name-only HEAD~1 | grep '^frontend/' | wc -l)" >> $GITHUB_OUTPUT
-      - id: backend_changes
-        run: |
-          echo "changed=$(git diff --name-only HEAD~1 | grep '^backend/' | wc -l)" >> $GITHUB_OUTPUT
-      - id: middleware_changes
-        run: |
-          echo "changed=$(git diff --name-only HEAD~1 | grep '^provider-middleware/' | wc -l)" >> $GITHUB_OUTPUT
-      - id: crontasks_changes
-        run: |
-          echo "changed=$(git diff --name-only HEAD~1 | grep '^backend/tasks' | wc -l)" >> $GITHUB_OUTPUT
+          paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
+          changes=""
+          for path in "${paths[@]}"; do
+            count=$(git diff --name-only HEAD~1 | grep "^${path}" | wc -l)
+            changes+="${path}:${count},"
+          done
+          echo "changes=${changes}" >> $GITHUB_OUTPUT
 
-      - name: Debug outputs
-        run: |
-          echo "Frontend changes: ${{ steps.frontend_changes.outputs.changed }}"
-          echo "Backend changes: ${{ steps.backend_changes.outputs.changed }}"
-          echo "Middleware changes: ${{ steps.middleware_changes.outputs.changed }}"
-          echo "Crontasks changes: ${{ steps.crontasks_changes.outputs.changed }}"
+      - name: Debug changes
+        run: echo "${{ steps.check-changes.outputs.changes }}"
 
   build-and-push:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
+    env:
+      CHANGES: ${{ needs.setup-env.outputs.changes }}
+    outputs:
+      deployments: ${{ steps.determine-deployments.outputs.deployments }}
 
     steps:
       - name: Checkout code
@@ -68,68 +62,63 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and push frontend image
-        if: ${{ needs.setup-env.outputs.frontend_changes != '0' }} && github.ref == 'refs/heads/main'
+      - id: build-images
         run: |
-          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:latest --push frontend/.
+         deployments=()
+         for entry in ${{ needs.setup-env.outputs.changes }}; do
+           path=$(echo $entry | cut -d':' -f1)
+           count=$(echo $entry | cut -d':' -f2)
+           if [[ $count -ne 0 ]]; then
+             case $path in
+               "frontend/")
+                 echo "Building frontend image"
+                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:latest --push frontend/.
+                 deployments+=("frontend")
+                 ;;
+               "backend/")
+                 echo "Building backend image"
+                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest --push -f backend/Dockerfile .
+                 deployments+=("server")
+                 ;;
+               "provider-middleware/")
+                 echo "Building middleware image"
+                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
+                 deployments+=("provider-service")
+                 ;;
+               "backend/tasks")
+                 echo "Building scheduler image"
+                 docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
+                 deployments+=("cron-tasks")
+                 ;;
+             esac
+           fi
+         done
+         echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
 
-      - name: Build and push backend image
-        if: ${{ needs.setup-env.outputs.backend_changes != '0' }} && github.ref == 'refs/heads/main'
-        run: |
-          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest --push  -f backend/Dockerfile .
+  restart-deployments:
+      if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+      needs: build-and-push
+      runs-on: ubuntu-latest
+      env:
+        BASTION_HOST: ${{ secrets.BASTION_HOST }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
 
-      - name: Build and push middleware image
-        if: ${{ needs.setup-env.outputs.middleware_changes != '0' }} && github.ref == 'refs/heads/main'
-        run: |
-          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
-
-      - name: Build and push crontasks image
-        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }} && github.ref == 'refs/heads/main'
-        run: |
-          docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v1
-        with:
-          version: v1.21.0
-
-      - name: Set up Kubeconfig Staging
-        if: github.ref == 'refs/heads/main'
-        run: |
-          mkdir -p $HOME/.kube && touch $HOME/.kube/config
-          echo "${{ secrets.KUBECTL_CONFIG }}" | base64 -d > $HOME/.kube/config
-
-      - name: Set up Kubeconfig Demo
-        if: github.ref == 'refs/heads/demo'
-        run: |
-          mkdir -p $HOME/.kube && touch $HOME/.kube/config
-          echo "${{ secrets.KUBECTL_CONFIG_DEMO }}" | base64 -d > $HOME/.kube/config
-
-      - name: Create k8s ECR secret
-        run: |
-          kubectl delete secret ecr-secret --ignore-not-found
-          kubectl create secret docker-registry ecr-secret \
-            --docker-server=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com \
-            --docker-username=AWS \
-            --docker-password=$(aws ecr get-login-password --region us-west-2) \
-            --docker-email=none
-
-      - name: restart frontend
-        if: ${{ needs.setup-env.outputs.frontend_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment frontend
-
-      - name: restart server
-        if: ${{ needs.setup-env.outputs.backend_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment server
-
-      - name: restart provider_middleware
-        if: ${{ needs.setup-env.outputs.middleware_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment provider-service
-
-      - name: restart cron_tasks 
-        if: ${{ needs.setup-env.outputs.crontasks_changes != '0' }}
-        run: |
-          kubectl rollout restart deployment cron-tasks
+      steps:
+        - name: Restart Deployments
+          run: |
+            deployments="${{ needs.build-and-push.outputs.deployments }}"
+            if [[ -z "$deployments" ]]; then
+              echo "No deployments need restarting."
+              exit 0
+            fi
+            if [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+              CONTEXT="demo"
+            elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+              CONTEXT="staging"
+            else
+              echo "Unknown branch: ${GITHUB_REF}. No deployments restarted."
+              exit 1
+            fi
+            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$BASTION_HOST" "bash -s" <<EOF
+              rollout.sh $CONTEXT $deployments
+            EOF

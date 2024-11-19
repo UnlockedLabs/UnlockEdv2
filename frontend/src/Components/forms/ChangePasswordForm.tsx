@@ -57,9 +57,7 @@ export default function ChangePasswordForm() {
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
     const isFirstAdminLogin =
-        user?.id === 1 &&
-        user?.role === UserRole.Admin &&
-        loaderData?.name === 'Default';
+        user?.role === UserRole.SystemAdmin && loaderData?.name === 'Default';
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');

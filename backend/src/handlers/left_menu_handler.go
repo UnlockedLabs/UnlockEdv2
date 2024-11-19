@@ -6,9 +6,12 @@ import (
 	"net/http"
 )
 
-func (srv *Server) registerLeftMenuRoutes() {
-	srv.Mux.Handle("GET /api/left-menu", srv.applyMiddleware(srv.handleGetLeftMenu))
-	srv.Mux.Handle("PUT /api/left-menu", srv.applyAdminMiddleware(srv.handlePostLeftMenuLinks))
+func (srv *Server) registerLeftMenuRoutes() []routeDef {
+	axx := models.Feature()
+	return []routeDef{
+		{"GET /api/left-menu", srv.handleGetLeftMenu, false, axx},
+		{"PUT /api/left-menu", srv.handlePostLeftMenuLinks, true, axx},
+	}
 }
 
 func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request, log sLog) error {

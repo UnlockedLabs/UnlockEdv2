@@ -12,11 +12,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (srv *Server) registerOidcFlowRoutes() {
+func (srv *Server) registerLoginFlowRoutes() []routeDef {
+	/* this route is special because it requires no middleware */
 	srv.Mux.Handle("POST /api/login", srv.handleError(srv.handleLogin))
-	srv.Mux.Handle("POST /api/logout", srv.applyMiddleware(srv.handleLogout))
-	srv.Mux.Handle("POST /api/consent/accept", srv.applyMiddleware(srv.handleOidcConsent))
-	srv.Mux.Handle("POST /api/auth/refresh", srv.applyMiddleware(srv.handleRefreshAuth))
+	axx := models.Feature()
+	return []routeDef{
+		{"POST /api/logout", srv.handleLogout, false, axx},
+		{"POST /api/consent/accept", srv.handleOidcConsent, false, axx},
+		{"POST /api/auth/refresh", srv.handleRefreshAuth, false, axx},
+	}
 }
 
 const (
@@ -122,13 +126,7 @@ func getKratosRedirect(resp *http.Response) (map[string]string, error) {
 		if !ok || reset {
 			respBody["redirect_to"] = "/reset-password"
 		} else {
-			role := traits["role"].(string)
-			switch models.UserRole(role) {
-			case models.Admin:
-				respBody["redirect_to"] = "/admin-dashboard"
-			case models.Student:
-				respBody["redirect_to"] = "/student-dashboard"
-			}
+			respBody["redirect_to"] = AuthCallbackRoute
 		}
 	default:
 		return nil, errors.New("invalid login")

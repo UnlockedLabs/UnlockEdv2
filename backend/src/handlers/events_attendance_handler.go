@@ -1,14 +1,18 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
 )
 
-func (srv *Server) registerAttendanceRoutes() {
-	srv.Mux.Handle("GET /api/program-sections/{id}/attendees", srv.applyAdminMiddleware(srv.handleGetAttendeesForSection))
-	srv.Mux.Handle("POST /api/events/{id}/attendees/{user_id}", srv.applyAdminMiddleware(srv.handleLogAttendeeForEvent))
-	srv.Mux.Handle("DELETE /api/events/{id}/attendees/{user_id}", srv.applyAdminMiddleware(srv.handleDeleteAttendee))
+func (srv *Server) registerAttendanceRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/program-sections/{id}/attendees", srv.handleGetAttendeesForSection, true, axx},
+		{"POST /api/events/{id}/attendees/{user_id}", srv.handleLogAttendeeForEvent, true, axx},
+		{"DELETE /api/events/{id}/attendees/{user_id}", srv.handleDeleteAttendee, true, axx},
+	}
 }
 
 func (srv *Server) handleGetAttendeesForSection(w http.ResponseWriter, r *http.Request, log sLog) error {

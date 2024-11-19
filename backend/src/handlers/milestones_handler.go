@@ -9,11 +9,14 @@ import (
 	"strconv"
 )
 
-func (srv *Server) registerMilestonesRoutes() {
-	srv.Mux.Handle("GET /api/milestones", srv.applyMiddleware(srv.handleIndexMilestones))
-	srv.Mux.Handle("POST /api/milestones", srv.applyAdminMiddleware(srv.handleCreateMilestone))
-	srv.Mux.Handle("DELETE /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleDeleteMilestone))
-	srv.Mux.Handle("PATCH /api/milestones/{id}", srv.applyAdminMiddleware(srv.handleUpdateMilestone))
+func (srv *Server) registerMilestonesRoutes() []routeDef {
+	axx := []models.FeatureAccess{models.ProviderAccess}
+	return []routeDef{
+		{"GET /api/milestones", srv.handleIndexMilestones, false, axx},
+		{"POST /api/milestones", srv.handleCreateMilestone, true, axx},
+		{"DELETE /api/milestones/{id}", srv.handleDeleteMilestone, true, axx},
+		{"PATCH /api/milestones/{id}", srv.handleUpdateMilestone, true, axx},
+	}
 }
 
 func (srv *Server) handleIndexMilestones(w http.ResponseWriter, r *http.Request, log sLog) error {

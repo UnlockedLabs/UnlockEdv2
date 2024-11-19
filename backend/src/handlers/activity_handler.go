@@ -1,14 +1,18 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"errors"
 	"net/http"
 	"strconv"
 )
 
-func (srv *Server) registerActivityRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/daily-activity", srv.applyMiddleware(srv.handleGetDailyActivityByUserID))
-	srv.Mux.Handle("GET /api/courses/{id}/activity", srv.applyAdminMiddleware(srv.handleGetCourseActivity))
+func (srv *Server) registerActivityRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/users/{id}/daily-activity", srv.handleGetDailyActivityByUserID, false, axx},
+		{"GET /api/courses/{id}/activity", srv.handleGetCourseActivity, true, axx},
+	}
 }
 
 /****
@@ -20,10 +24,10 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	log.add("userId", userID)
-	requestingUser := int(srv.userIdFromRequest(r))
-	if requestingUser != userID && !srv.UserIsAdmin(r) {
-		log.add("requestingUser", requestingUser)
+	if !srv.canViewUserData(r, userID) {
+		user := r.Context().Value(ClaimsKey).(*Claims)
+		log.add("requesting_user", user.UserID)
+		log.error("non admin requesting to view other student activities")
 		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
 	}
 	yearStr := r.URL.Query().Get("year")

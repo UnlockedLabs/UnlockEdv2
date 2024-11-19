@@ -1,18 +1,12 @@
 import Calendar, { TileArgs } from 'react-calendar';
 import API from '@/api/api.ts';
 import { MouseEvent, useEffect, useRef, useState } from 'react';
-import {
-    Event,
-    EventCalendar,
-    ModalType,
-    parseDuration,
-    UserRole
-} from '@/common';
+import { Event, EventCalendar, ModalType, parseDuration } from '@/common';
 import '@/css/app.css';
 import { OnArgs } from 'node_modules/react-calendar/dist/cjs';
 import Modal from './Modal';
 import EditEventForm from './forms/EditEventForm.tsx';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 function CalendarComponent() {
     const user = useAuth().user;
@@ -33,10 +27,9 @@ function CalendarComponent() {
 
     useEffect(() => {
         if (user == undefined) return;
-        const url =
-            user.role === UserRole.Admin
-                ? 'admin-calendar'
-                : 'student-calendar';
+        const url = isAdministrator(user)
+            ? 'admin-calendar'
+            : 'student-calendar';
         API.get<EventCalendar>(
             `${url}?month=${date.getMonth() + 1}&year=${date.getFullYear()}`
         )
@@ -138,7 +131,7 @@ function CalendarComponent() {
                                         <strong>Duration:</strong>{' '}
                                         {parseDuration(event.duration)}
                                     </p>
-                                    {user?.role === UserRole.Admin && (
+                                    {isAdministrator(user) && (
                                         <button
                                             onClick={(e) =>
                                                 openEditModal(e, event)

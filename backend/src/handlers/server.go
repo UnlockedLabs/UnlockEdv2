@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -26,45 +27,69 @@ type Server struct {
 	Client    *http.Client
 	nats      *nats.Conn
 	buckets   map[string]nats.KeyValue
+	features  []models.FeatureAccess
+}
+
+type routeDef struct {
+	routeMethod string
+	handler     HttpFunc
+	admin       bool
+	features    []models.FeatureAccess
+}
+
+func (srv *Server) register(routes func() []routeDef) {
+	for _, route := range routes() {
+		if route.admin {
+			srv.Mux.Handle(route.routeMethod, srv.applyAdminMiddleware(route.handler, route.features...))
+		} else {
+			srv.Mux.Handle(route.routeMethod, srv.applyMiddleware(route.handler, route.features...))
+		}
+	}
 }
 
 /**
 * Register all API routes here
 **/
 func (srv *Server) RegisterRoutes() {
-	srv.registerAuthRoutes()
-	srv.registerUserRoutes()
-	srv.registerProviderPlatformRoutes()
-	srv.registerProviderMappingRoutes()
-	srv.registerActionsRoutes()
-	srv.registerLeftMenuRoutes()
-	srv.registerImageRoutes()
-	srv.registerCoursesRoutes()
-	srv.registerMilestonesRoutes()
-	srv.registerOutcomesRoutes()
-	srv.registerActivityRoutes()
-	srv.registerOidcRoutes()
-	srv.registerDashboardRoutes()
-	srv.registerOidcFlowRoutes()
-	srv.registerProviderUserRoutes()
-	srv.registerOryRoutes()
-	srv.registerFacilitiesRoutes()
-	srv.registerOpenContentRoutes()
-	srv.registerLibraryRoutes()
+	/* register special routes */
 	srv.registerProxyRoutes()
-	srv.registerProgramsRoutes()
-	srv.registerSectionsRoutes()
-	srv.registerSectionEventsRoutes()
-	srv.registerProgramSectionEnrollmentssRoutes()
-	srv.registerAttendanceRoutes()
-	srv.registerVideoRoutes()
+	srv.registerImageRoutes()
+	srv.Mux.Handle("/api/metrics", promhttp.Handler())
 	srv.Mux.HandleFunc("/api/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("OK")); err != nil {
 			log.Errorln("Error writing healthcheck response: ", err)
 			return
 		}
 	})
-	srv.Mux.Handle("/api/metrics", promhttp.Handler())
+	for _, route := range []func() []routeDef{
+		srv.registerLoginFlowRoutes,
+		srv.registerAuthRoutes,
+		srv.registerUserRoutes,
+		srv.registerProviderPlatformRoutes,
+		srv.registerProviderMappingRoutes,
+		srv.registerActionsRoutes,
+		srv.registerLeftMenuRoutes,
+		srv.registerCoursesRoutes,
+		srv.registerMilestonesRoutes,
+		srv.registerOutcomesRoutes,
+		srv.registerActivityRoutes,
+		srv.registerOidcRoutes,
+		srv.registerDashboardRoutes,
+		srv.registerProviderUserRoutes,
+		srv.registerOryRoutes,
+		srv.registerFacilitiesRoutes,
+		srv.registerOpenContentRoutes,
+		srv.registerLibraryRoutes,
+		srv.registerProgramsRoutes,
+		srv.registerSectionsRoutes,
+		srv.registerSectionEventsRoutes,
+		srv.registerProgramSectionEnrollmentsRoutes,
+		srv.registerAttendanceRoutes,
+		srv.registerVideoRoutes,
+		srv.registerFeatureFlagRoutes,
+	} {
+		srv.register(route)
+	}
 }
 
 func init() {
@@ -106,6 +131,11 @@ func newServer() *Server {
 		Client:    &http.Client{},
 		nats:      conn,
 	}
+	features, err := server.Db.GetFeatureAccess()
+	if err != nil {
+		log.Fatal("Failed to fetch feature flags")
+	}
+	server.features = features
 	err = server.setupBucket()
 	if err != nil {
 		log.Errorf("Failed to setup JetStream KV store: %v", err)
@@ -119,10 +149,13 @@ func newServer() *Server {
 
 func newTestingServer() *Server {
 	db := database.InitDB(true)
-	return &Server{Db: db,
+	features := models.AllFeatures
+	return &Server{
+		Db:        db,
 		Mux:       http.NewServeMux(),
 		OryClient: nil,
 		Client:    nil,
+		features:  features,
 	}
 }
 
@@ -154,8 +187,6 @@ func oryConfig() *ory.Configuration {
 
 const (
 	CachedUsers string = "cache_users"
-	RateLimit   string = "rate_limit"
-	CsrfToken   string = "csrf_token"
 )
 
 func (srv *Server) setupBucket() error {
@@ -165,7 +196,7 @@ func (srv *Server) setupBucket() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, RateLimit, CsrfToken} {
+	for _, bucket := range []string{CachedUsers} {
 		kv, err := js.KeyValue(bucket)
 		if err == nats.ErrBucketNotFound {
 			kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
@@ -180,6 +211,15 @@ func (srv *Server) setupBucket() error {
 	}
 	srv.buckets = buckets
 	return nil
+}
+
+func (srv *Server) hasFeatureAccess(axx ...models.FeatureAccess) bool {
+	for _, a := range axx {
+		if !slices.Contains(srv.features, a) {
+			return false
+		}
+	}
+	return true
 }
 
 func (srv *Server) checkForAdminInKratos() (string, error) {
@@ -260,7 +300,7 @@ func (srv *Server) syncKratosAdminDB() error {
 		return nil
 	} else {
 		// the admin acct exists in kratos already
-		user, err := srv.Db.GetUserByID(1)
+		user, err := srv.Db.GetSystemAdmin()
 		if err != nil {
 			log.Fatal("this should never happen, we just created the user")
 		}
@@ -274,9 +314,9 @@ func (srv *Server) syncKratosAdminDB() error {
 }
 
 func (srv *Server) setupDefaultAdminInKratos() error {
-	user, err := srv.Db.GetUserByID(1)
+	user, err := srv.Db.GetSystemAdmin()
 	if err != nil {
-		database.SeedDefaultData(srv.Db.DB, false)
+		srv.Db.SeedDefaultData(false)
 		return srv.setupDefaultAdminInKratos()
 		// rerun after seeding the default user
 	}

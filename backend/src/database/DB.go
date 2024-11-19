@@ -25,6 +25,10 @@ import (
 
 type DB struct{ *gorm.DB }
 
+func NewDB(db *gorm.DB) *DB {
+	return &DB{db}
+}
+
 func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	for _, char := range fl.Field().String() {
 		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) {
@@ -82,16 +86,17 @@ func InitDB(isTesting bool) *DB {
 		}
 		log.Println("Connected to the PostgreSQL database via GORM")
 	}
-	database := &DB{gormDb}
-	SeedDefaultData(gormDb, isTesting)
+	DB := &DB{gormDb}
+	DB.SeedDefaultData(isTesting)
 	if isTesting {
-		database.SeedTestData()
+		DB.SeedTestData()
 	}
-	return database
+	return DB
 }
 
 func MigrateTesting(db *gorm.DB) {
 	var TableList = []interface{}{
+		&models.Role{},
 		&models.User{},
 		&models.ProviderPlatform{},
 		&models.ProviderUserMapping{},
@@ -126,7 +131,7 @@ func MigrateTesting(db *gorm.DB) {
 	}
 }
 
-func SeedDefaultData(db *gorm.DB, isTesting bool) {
+func (db *DB) SeedDefaultData(isTesting bool) {
 	var count int64
 	if err := db.Model(models.User{}).Where("id = ?", fmt.Sprintf("%d", 1)).Count(&count).Error; err != nil {
 		log.Fatal("db transaction failed getting admin user")
@@ -134,6 +139,14 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 	if count == 0 {
 		if err := db.Model(models.Facility{}).Where("id = ?", fmt.Sprintf("%d", 1)).Count(&count).Error; err != nil {
 			log.Fatal("db transaction failed getting default facility")
+		}
+		if isTesting {
+			roles := []models.Role{{Name: "admin"}, {Name: "student"}, {Name: "system_admin"}}
+			for _, role := range roles {
+				if err := db.Create(&role).Error; err != nil {
+					log.Fatalf("Failed to create role: %v", err)
+				}
+			}
 		}
 		defaultFacility := models.Facility{
 			Name:     "Default",
@@ -148,7 +161,7 @@ func SeedDefaultData(db *gorm.DB, isTesting bool) {
 			NameFirst:  "Super",
 			NameLast:   "Admin",
 			Email:      "admin@unlocked.v2",
-			Role:       "admin",
+			Role:       models.SystemAdmin,
 			FacilityID: 1,
 		}
 		log.Printf("Creating user: %v", user)

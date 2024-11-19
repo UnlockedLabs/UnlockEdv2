@@ -8,11 +8,11 @@ import {
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import {
-    DEFAULT_ADMIN_ID,
     ModalType,
     ServerResponseMany,
     ToastState,
-    User
+    User,
+    UserRole
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
 import EditUserForm from '@/Components/forms/EditUserForm';
@@ -59,7 +59,7 @@ export default function AdminManagement() {
     }
 
     const deleteUser = async () => {
-        if (targetUser?.id === DEFAULT_ADMIN_ID) {
+        if (targetUser?.role === UserRole.SystemAdmin) {
             toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
@@ -134,15 +134,17 @@ export default function AdminManagement() {
     };
     const getUserIconData = {
         'data-tip': (user: User) => {
-            return user.id === DEFAULT_ADMIN_ID
+            return user.role === UserRole.SystemAdmin
                 ? 'Cannot Delete'
                 : 'Delete Admin';
         },
         icon: (user: User) => {
-            return user.id === DEFAULT_ADMIN_ID ? LockClosedIcon : TrashIcon;
+            return user.role === UserRole.SystemAdmin
+                ? LockClosedIcon
+                : TrashIcon;
         },
         onClick: (user: User) => {
-            return user.id === DEFAULT_ADMIN_ID
+            return user.role === UserRole.SystemAdmin
                 ? undefined
                 : () => {
                       setTargetUser(user);

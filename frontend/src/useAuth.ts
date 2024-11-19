@@ -5,11 +5,12 @@ import {
     AuthResponse,
     INIT_KRATOS_LOGIN_FLOW,
     Facility,
-    getDashboard,
     OryFlow,
     OrySessionWhoami,
     ServerResponseOne,
-    User
+    User,
+    UserRole,
+    FeatureAccess
 } from './common';
 import API from './api/api';
 import axios from 'axios';
@@ -22,6 +23,26 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(
     undefined
 );
+
+export const AdminRoles = [UserRole.SystemAdmin, UserRole.Admin];
+
+export const getDashboard = (user?: User): string => {
+    if (!user) {
+        return INIT_KRATOS_LOGIN_FLOW;
+    } else {
+        return isAdministrator(user)
+            ? '/admin-dashboard'
+            : '/student-dashboard';
+    }
+};
+
+export const isAdministrator = (user: User | undefined): boolean => {
+    return user !== undefined && AdminRoles.includes(user.role);
+};
+
+export const isStudent = (user: User): boolean => {
+    return !AdminRoles.includes(user.role);
+};
 
 export const SESSION_URL = '/sessions/whoami';
 export const KRATOS_CHECK_FLOW_URL = '/self-service/login/flows?id=';
@@ -60,6 +81,10 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
     } catch {
         return { flow_id: '', challenge: '', csrf_token: '' };
     }
+};
+
+export const hasFeature = (user: User, axx: FeatureAccess): boolean => {
+    return user.feature_access.includes(axx);
 };
 
 export const checkDefaultFacility: LoaderFunction = async () => {

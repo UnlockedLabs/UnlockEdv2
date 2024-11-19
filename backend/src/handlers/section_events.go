@@ -9,12 +9,15 @@ import (
 	"time"
 )
 
-func (srv *Server) registerSectionEventsRoutes() {
-	srv.Mux.Handle("GET /api/admin-calendar", srv.applyAdminMiddleware(srv.handleGetAdminCalendar))
-	srv.Mux.Handle("GET /api/student-calendar", srv.applyMiddleware(srv.handleGetStudentCalendar))
-	srv.Mux.Handle("GET /api/student-attendance", srv.applyMiddleware(srv.handleGetStudentAttendanceData))
-	srv.Mux.Handle("PUT /api/events/{event_id}", srv.applyAdminMiddleware(srv.handleEventOverride))
-	srv.Mux.Handle("POST /api/program-sections/{id}/events", srv.applyAdminMiddleware(srv.handleCreateEvent))
+func (srv *Server) registerSectionEventsRoutes() []routeDef {
+	axx := []models.FeatureAccess{models.ProgramAccess}
+	return []routeDef{
+		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx},
+		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx},
+		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx},
+		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx},
+		{"POST /api/program-sections/{id}/events", srv.handleCreateEvent, true, axx},
+	}
 }
 
 func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request, log sLog) error {

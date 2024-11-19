@@ -1,22 +1,26 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/models"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func (srv *Server) registerDashboardRoutes() {
-	srv.Mux.Handle("GET /api/users/{id}/student-dashboard", srv.applyMiddleware(srv.handleStudentDashboard))
-	srv.Mux.Handle("GET /api/users/{id}/admin-dashboard", srv.applyAdminMiddleware(srv.handleAdminDashboard))
-	srv.Mux.Handle("GET /api/users/{id}/catalogue", srv.applyMiddleware(srv.handleUserCatalogue))
-	srv.Mux.Handle("GET /api/users/{id}/courses", srv.applyMiddleware(srv.handleUserCourses))
+func (srv *Server) registerDashboardRoutes() []routeDef {
+	axx := models.Feature(models.ProviderAccess)
+	return []routeDef{
+		{"GET /api/users/{id}/student-dashboard", srv.handleStudentDashboard, false, models.Feature()},
+		{"GET /api/users/{id}/admin-dashboard", srv.handleAdminDashboard, true, models.Feature()},
+		{"GET /api/users/{id}/catalogue", srv.handleUserCatalogue, false, axx},
+		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
+	}
 }
 
 func (srv *Server) handleStudentDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
 	faciltiyId := srv.getFacilityID(r)
 	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
+	if err != nil || !srv.canViewUserData(r, userId) {
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId, faciltiyId)
@@ -47,7 +51,7 @@ func (srv *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, 
 **/
 func (srv *Server) handleUserCatalogue(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
+	if err != nil || !srv.canViewUserData(r, userId) {
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	tags := r.URL.Query()["tags"]
@@ -72,7 +76,7 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	log.add("user_id", userId)
-	if !srv.canViewUserData(r) {
+	if !srv.canViewUserData(r, userId) {
 		return newForbiddenServiceError(err, "You do not have permission to view this user's courses")
 	}
 	order := r.URL.Query().Get("order")

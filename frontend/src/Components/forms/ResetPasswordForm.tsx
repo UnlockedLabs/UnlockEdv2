@@ -1,11 +1,7 @@
-import {
-    ResetPasswordResponse,
-    ServerResponseOne,
-    User,
-    UserRole
-} from '@/common';
+import { ResetPasswordResponse, ServerResponseOne, User } from '@/common';
 import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
+import { isAdministrator } from '@/useAuth';
 
 interface ResetPasswordFormProps {
     onCancel: (message: string, is_err: boolean) => void;
@@ -37,7 +33,7 @@ export default function ResetPasswordForm({
     return (
         <div>
             <CloseX close={() => onCancel('', false)} />
-            {user?.role == UserRole.Admin ? (
+            {isAdministrator(user) ? (
                 <p className="font-bold text-error py-4 pb-8">
                     You may only reset the password for non-administrator
                     accounts.

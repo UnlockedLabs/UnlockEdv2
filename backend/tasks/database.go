@@ -62,6 +62,7 @@ func (jr *JobRunner) intoOpenContentTask(cj *models.CronJob, provId uint, task *
 	task.Parameters = params
 	return nil
 }
+
 func (jr *JobRunner) createIfNotExists(cj models.JobType) (*models.CronJob, error) {
 	job := models.CronJob{Name: string(cj)}
 	if err := jr.db.Model(&models.CronJob{}).Where("name = ?", cj).FirstOrCreate(&job).Error; err != nil {

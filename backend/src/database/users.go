@@ -35,7 +35,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	tx := db.Model(&models.User{})
 	switch role {
 	case "admin":
-		tx = tx.Where("role = 'admin'")
+		tx = tx.Where("role IN ('admin', 'system_admin')")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
@@ -60,7 +60,7 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 	tx := db.Model(&models.User{})
 	switch role {
 	case "admin":
-		tx = tx.Where("role = 'admin'")
+		tx = tx.Where("role IN ('admin', 'system_admin')")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
@@ -100,6 +100,14 @@ func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	var user models.User
 	if err := db.First(&user, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "users")
+	}
+	return &user, nil
+}
+
+func (db *DB) GetSystemAdmin() (*models.User, error) {
+	var user models.User
+	if err := db.First(&user, "role = 'system_admin'").Error; err != nil {
+		return nil, newNotFoundDBError(err, "system admin")
 	}
 	return &user, nil
 }

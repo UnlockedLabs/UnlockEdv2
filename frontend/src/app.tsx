@@ -1,7 +1,12 @@
 import '@/bootstrap';
 import '@/css/app.css';
 import React from 'react';
-import { Outlet, RouterProvider, createBrowserRouter } from 'react-router-dom';
+import {
+    Navigate,
+    Outlet,
+    RouterProvider,
+    createBrowserRouter
+} from 'react-router-dom';
 import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
@@ -26,9 +31,10 @@ import {
     checkDefaultFacility,
     checkExistingFlow,
     checkRole,
+    hasFeature,
+    isAdministrator,
     useAuth
 } from '@/useAuth';
-import { UserRole } from '@/common';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/Context/PathValueCtx';
@@ -42,6 +48,7 @@ import { ToastProvider } from './Context/ToastCtx.tsx';
 import VideoViewer from './Components/VideoEmbedViewer.tsx';
 import VideoContent from './Components/VideoContent.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement.tsx';
+import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
 
 const WithAuth: React.FC = () => {
     return (
@@ -59,12 +66,27 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!user) {
         return;
     }
-    return user.role === UserRole.Admin ? (
+    return isAdministrator(user) ? (
         <div>{children}</div>
     ) : (
         <UnauthorizedNotFound which="unauthorized" />
     );
 };
+
+function ProtectedRoute({
+    allowedFeatures
+}: {
+    allowedFeatures: FeatureAccess[];
+}) {
+    const { user } = useAuth();
+    if (!user) {
+        return <Navigate to={`${INIT_KRATOS_LOGIN_FLOW}`} />;
+    }
+    if (!allowedFeatures.every((feat) => hasFeature(user, feat))) {
+        return <Navigate to="/authcallback" />;
+    }
+    return <Outlet />;
+}
 
 function WithAdmin() {
     return (
@@ -119,78 +141,121 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'my-courses',
-                        element: <MyCourses />,
-                        handle: { title: 'My Courses', path: ['my-courses'] }
-                    },
-                    {
-                        path: 'my-progress',
-                        element: <MyProgress />,
-                        handle: { title: 'My Progress', path: ['my-progress'] }
-                    },
-                    {
-                        path: 'course-catalog',
-                        element: <CourseCatalog />,
-                        handle: {
-                            title: 'Course Catalog',
-                            path: ['course-catalog']
-                        }
-                    },
-                    {
-                        path: 'programs',
-                        element: <Programs />,
-                        loader: getFacilities,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Programs',
-                            path: ['programs']
-                        }
-                    },
-                    {
-                        path: 'open-content',
-                        element: <OpenContent />,
-                        handle: {
-                            title: 'Open Content',
-                            path: ['open-content', ':kind']
-                        },
+                        path: '',
+                        element: (
+                            <ProtectedRoute
+                                allowedFeatures={[
+                                    FeatureAccess.OpenContentAccess
+                                ]}
+                            />
+                        ),
                         children: [
                             {
-                                path: 'libraries',
-                                element: <LibraryLayout />,
+                                path: 'open-content',
+                                element: <OpenContent />,
+                                handle: {
+                                    title: 'Open Content',
+                                    path: ['open-content', ':kind']
+                                },
+                                children: [
+                                    {
+                                        path: 'libraries',
+                                        element: <LibraryLayout />,
+                                        errorElement: <Error />,
+                                        handle: {
+                                            title: 'Libraries',
+                                            path: ['open-content', 'libraries']
+                                        }
+                                    },
+                                    {
+                                        path: 'videos',
+                                        element: <VideoContent />,
+                                        errorElement: <Error />,
+                                        handle: {
+                                            title: 'Videos',
+                                            path: ['open-content', 'videos']
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                path: 'viewer/libraries/:id',
+                                element: <LibraryViewer />,
                                 errorElement: <Error />,
                                 handle: {
-                                    title: 'Libraries',
-                                    path: ['open-content', 'libraries']
+                                    title: 'Library Viewer',
+                                    path: [
+                                        'viewer',
+                                        'libraries',
+                                        ':library_name'
+                                    ]
                                 }
                             },
                             {
-                                path: 'videos',
-                                element: <VideoContent />,
+                                path: 'viewer/videos/:id',
+                                element: <VideoViewer />,
                                 errorElement: <Error />,
                                 handle: {
-                                    title: 'Videos',
-                                    path: ['open-content', 'videos']
+                                    title: 'Video Viewer',
+                                    path: ['viewer', 'videos', ':video_name']
                                 }
                             }
                         ]
                     },
                     {
-                        path: 'viewer/libraries/:id',
-                        element: <LibraryViewer />,
+                        path: '',
+                        element: (
+                            <ProtectedRoute
+                                allowedFeatures={[FeatureAccess.ProviderAccess]}
+                            />
+                        ),
                         errorElement: <Error />,
-                        handle: {
-                            title: 'Library Viewer',
-                            path: ['viewer', 'libraries', ':library_name']
-                        }
+                        children: [
+                            {
+                                path: 'my-courses',
+                                element: <MyCourses />,
+                                handle: {
+                                    title: 'My Courses',
+                                    path: ['my-courses']
+                                }
+                            },
+                            {
+                                path: 'my-progress',
+                                element: <MyProgress />,
+                                handle: {
+                                    title: 'My Progress',
+                                    path: ['my-progress']
+                                }
+                            },
+                            {
+                                path: 'course-catalog',
+                                element: <CourseCatalog />,
+                                handle: {
+                                    title: 'Course Catalog',
+                                    path: ['course-catalog']
+                                }
+                            }
+                        ]
                     },
                     {
-                        path: 'viewer/videos/:id',
-                        element: <VideoViewer />,
+                        path: '',
+                        element: (
+                            <ProtectedRoute
+                                allowedFeatures={[FeatureAccess.ProgramAccess]}
+                            />
+                        ),
                         errorElement: <Error />,
-                        handle: {
-                            title: 'Video Viewer',
-                            path: ['viewer', 'videos', ':video_name']
-                        }
+                        children: [
+                            {
+                                path: 'programs',
+                                element: <Programs />,
+                                loader: getFacilities,
+                                handle: {
+                                    title: 'Programs',
+                                    path: ['programs']
+                                }
+                            }
+                        ]
                     }
                 ]
             },
@@ -247,25 +312,42 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'provider-platform-management',
-                        element: <ProviderPlatformManagement />,
+                        path: '',
+                        element: (
+                            <ProtectedRoute
+                                allowedFeatures={[FeatureAccess.ProviderAccess]}
+                            />
+                        ),
                         errorElement: <Error />,
-                        handle: {
-                            title: 'Provider Platform Management',
-                            path: ['provider-platform-management']
-                        }
-                    },
-                    {
-                        path: 'provider-users/:id',
-                        element: <ProviderUserManagement />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Provider User Management',
-                            path: [
-                                'provider-platforms',
-                                ':provider_platform_name'
-                            ]
-                        }
+                        children: [
+                            {
+                                path: 'provider-platform-management',
+                                element: <ProviderPlatformManagement />,
+                                handle: {
+                                    title: 'Provider Platform Management',
+                                    path: ['provider-platform-management']
+                                }
+                            },
+                            {
+                                path: 'provider-users/:id',
+                                element: <ProviderUserManagement />,
+                                handle: {
+                                    title: 'Provider User Management',
+                                    path: [
+                                        'provider-platforms',
+                                        ':provider_platform_name'
+                                    ]
+                                }
+                            },
+                            {
+                                path: 'course-catalog-admin',
+                                element: <CourseCatalog />,
+                                handle: {
+                                    title: 'Course Catalog',
+                                    path: ['course-catalog']
+                                }
+                            }
+                        ]
                     },
                     {
                         path: 'facilities-management',
@@ -273,44 +355,50 @@ const router = createBrowserRouter([
                         handle: {
                             title: 'Facilities Management',
                             path: ['facilities-management']
-                        },
-                        errorElement: <Error />
+                        }
                     },
                     {
-                        path: 'open-content-management',
-                        element: <OpenContentManagement />,
-                        handle: {
-                            title: 'Open Content Management',
-                            path: ['open-content-management', ':kind']
-                        },
+                        path: '',
+                        element: (
+                            <ProtectedRoute
+                                allowedFeatures={[
+                                    FeatureAccess.OpenContentAccess
+                                ]}
+                            />
+                        ),
+                        errorElement: <Error />,
                         children: [
                             {
-                                path: 'libraries',
-                                element: <LibraryLayout />,
-                                errorElement: <Error />,
+                                path: 'open-content-management',
+                                element: <OpenContentManagement />,
                                 handle: {
-                                    title: 'Libraries',
-                                    path: ['open-content', 'libraries']
-                                }
-                            },
-                            {
-                                path: 'videos',
-                                element: <VideoManagement />,
-                                handle: {
-                                    title: 'Videos',
-                                    path: ['open-content-management', 'videos']
-                                }
-                            },
-                            {}
+                                    title: 'Open Content Management',
+                                    path: ['open-content-management', ':kind']
+                                },
+                                children: [
+                                    {
+                                        path: 'libraries',
+                                        element: <LibraryLayout />,
+                                        errorElement: <Error />,
+                                        handle: {
+                                            title: 'Libraries',
+                                            path: ['open-content', 'libraries']
+                                        }
+                                    },
+                                    {
+                                        path: 'videos',
+                                        element: <VideoManagement />,
+                                        handle: {
+                                            title: 'Videos',
+                                            path: [
+                                                'open-content-management',
+                                                'videos'
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
                         ]
-                    },
-                    {
-                        path: 'course-catalog-admin',
-                        element: <CourseCatalog />,
-                        handle: {
-                            title: 'Course Catalog',
-                            path: ['course-catalog']
-                        }
                     },
                     {
                         path: '*',

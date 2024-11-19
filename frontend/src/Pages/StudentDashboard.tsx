@@ -1,6 +1,6 @@
 import CourseCard from '@/Components/EnrolledCourseCard';
 import CurrentlyEnrolledClass from '@/Components/CurrentlyEnrolledClass';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import useSWR from 'swr';
 import convertSeconds from '@/Components/ConvertSeconds';
 import ResourcesSideBar from '@/Components/ResourcesSideBar';
@@ -17,8 +17,7 @@ import {
     OpenContentProvider,
     RecentCourse,
     ServerResponse,
-    StudentDashboardJoin,
-    UserRole
+    StudentDashboardJoin
 } from '@/common';
 import { AxiosError } from 'axios';
 
@@ -28,7 +27,7 @@ export default function StudentDashboard() {
     const navigate = useNavigate();
     if (!user) {
         return;
-    } else if (user?.role === UserRole.Admin) {
+    } else if (isAdministrator(user)) {
         navigate('/admin-dashboard');
         return;
     }
