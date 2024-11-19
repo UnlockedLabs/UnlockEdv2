@@ -46,7 +46,7 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching video")
 	}
-	if user.Role != models.Admin && !video.VisibilityStatus || video.Availability != models.VideoAvailable {
+	if !user.isAdmin() && !video.VisibilityStatus || video.Availability != models.VideoAvailable {
 		return newForbiddenServiceError(errors.New("video not visible"), "you are not authorized to view this content")
 	}
 	return writeJsonResponse(w, http.StatusOK, video)
