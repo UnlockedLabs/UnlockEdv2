@@ -187,16 +187,16 @@ func (db *DB) UpdateUser(user *models.User) error {
 	return nil
 }
 
-func (db *DB) ToggleUserFavorite(user_id uint, id uint) (bool, error) {
+func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 	var favRemoved bool
-	var favorite models.UserFavorite
-	if db.First(&favorite, "user_id = ? AND course_id = ?", user_id, id).Error == nil {
-		if err := db.Delete(&favorite).Error; err != nil {
+	var favorite models.ProgramFavorite
+	if db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
+		if err := db.Unscoped().Delete(&favorite).Error; err != nil {
 			return favRemoved, newDeleteDBError(err, "favorites")
 		}
 		favRemoved = true
 	} else {
-		favorite = models.UserFavorite{UserID: user_id, CourseID: id}
+		favorite = models.ProgramFavorite{UserID: user_id, ProgramID: id}
 		if err := db.Create(&favorite).Error; err != nil {
 			return favRemoved, newCreateDBError(err, "error creating favorites")
 		}

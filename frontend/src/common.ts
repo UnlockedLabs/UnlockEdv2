@@ -406,7 +406,6 @@ export interface UserCourses {
     provider_platform_name: string;
     external_url: string;
     course_progress: number;
-    is_favorited: boolean;
     total_time: number;
     grade?: string;
     alt_name?: string;
@@ -421,7 +420,6 @@ export interface CourseCatalogue {
     external_url: string;
     course_type: string;
     description: string;
-    is_favorited: boolean;
     outcome_types: string;
 }
 
@@ -592,7 +590,6 @@ export interface RecentCourse {
     provider_platform_name: string;
     external_url: string;
     id?: number;
-    is_favorited?: boolean;
     total_time?: number;
 }
 

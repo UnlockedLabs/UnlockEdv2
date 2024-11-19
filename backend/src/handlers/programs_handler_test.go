@@ -254,7 +254,7 @@ func TestHandleFavoriteProgram(t *testing.T) {
 }
 
 func getAllPrograms() map[string]any {
-	total, programs, err := server.Db.GetProgram(1, 10, nil, "")
+	total, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
 	form := make(map[string]any)
 	form["programs"] = programs
 	form["err"] = err
@@ -263,7 +263,7 @@ func getAllPrograms() map[string]any {
 }
 
 func getProgramsBySearch(tags string, search string) map[string]any {
-	total, programs, err := server.Db.GetProgram(1, 10, strings.Split(tags, ","), search)
+	total, programs, err := server.Db.GetProgram(1, 10, strings.Split(tags, ","), search, 1)
 	form := make(map[string]any)
 	form["programs"] = programs
 	form["err"] = err

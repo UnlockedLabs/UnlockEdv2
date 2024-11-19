@@ -4,6 +4,7 @@ import LightGreenPill from './pill-labels/LightGreenPill';
 import { MouseEvent } from 'react';
 import { Facility, Program, ViewType } from '@/common';
 import API from '@/api/api';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function ProgramCard({
     program,
@@ -14,6 +15,7 @@ export default function ProgramCard({
     callMutate: () => void;
     view?: ViewType;
 }) {
+    const { user } = useAuth();
     function updateFavorite(e: MouseEvent) {
         e.preventDefault();
         API.put(`programs/${program.id}/save`, {})
@@ -31,13 +33,16 @@ export default function ProgramCard({
             .join(', ');
     };
 
-    const bookmark: JSX.Element = program.is_favorited ? (
-        <BookmarkIcon className="h-5 text-primary-yellow" />
-    ) : (
-        <BookmarkIconOutline
-            className={`h-5 ${view === ViewType.List ? 'text-header-text' : ' text-grey-3'}`}
-        />
-    );
+    let bookmark: JSX.Element = <></>;
+    if (user && !isAdministrator(user)) {
+        bookmark = program.is_favorited ? (
+            <BookmarkIcon className="h-5 text-primary-yellow" />
+        ) : (
+            <BookmarkIconOutline
+                className={`h-5 ${view === ViewType.List ? 'text-header-text' : ' text-grey-3'}`}
+            />
+        );
+    }
 
     const tagPills = program.tags.map((tag) => (
         <LightGreenPill key={tag.id}>{tag.value.toString()}</LightGreenPill>

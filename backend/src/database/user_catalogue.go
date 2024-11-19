@@ -15,16 +15,14 @@ type UserCatalogueJoin struct {
 	ExternalURL  string `json:"external_url"`
 	CourseType   string `json:"course_type"`
 	Description  string `json:"description"`
-	IsFavorited  bool   `json:"is_favorited"`
 	OutcomeTypes string `json:"outcome_types"`
 }
 
 func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) ([]UserCatalogueJoin, error) {
 	catalogue := []UserCatalogueJoin{}
 	tx := db.Table("courses c").
-		Select("c.id as course_id, c.thumbnail_url, c.name as course_name, pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types, f.user_id IS NOT NULL as is_favorited").
+		Select("c.id as course_id, c.thumbnail_url, c.name as course_name, pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types").
 		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
-		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = ?", userId).
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
 	for i, tag := range tags {
@@ -53,7 +51,6 @@ type UserCourses struct {
 	ProviderName   string  `json:"provider_platform_name"`
 	ExternalURL    string  `json:"external_url"`
 	CourseProgress float64 `json:"course_progress"`
-	IsFavorited    bool    `json:"is_favorited"`
 	TotalTime      uint    `json:"total_time"`
 }
 
@@ -70,7 +67,6 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 		"course_name":     "c.name",
 		"provider_name":   "pp.name",
 		"course_progress": "course_progress",
-		"is_favorited":    "is_favorited",
 		"total_time":      "a.total_time",
 	}
 	dbField, ok := fieldMap[orderBy]
@@ -82,7 +78,6 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 	tx := db.Table("courses c").
 		Select(`c.id, c.thumbnail_url,
     c.name as course_name, pp.name as provider_name, c.external_url,
-    f.user_id IS NOT NULL as is_favorited,
     CASE
         WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.course_id = c.id AND o.user_id = ?) THEN 100
         WHEN c.total_progress_milestones = 0 THEN 0
@@ -100,7 +95,6 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 			) a on a.course_id = c.id
         			and a.user_id = m.user_id
         			and a.RN = 1`).
-		Joins("LEFT JOIN favorites f ON f.course_id = c.id AND f.user_id = m.user_id").
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = m.user_id").
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
@@ -113,8 +107,6 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 	for i, tag := range tags {
 		var query string
 		switch tag {
-		case "is_favorited":
-			query = "f.user_id IS NOT NULL"
 		case "completed":
 			query = "o.type IS NOT NULL"
 		case "in_progress":
@@ -127,7 +119,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 		}
 	}
 
-	tx.Group("c.id, c.name, c.thumbnail_url, pp.name, c.external_url, f.user_id, a.total_time")
+	tx.Group("c.id, c.name, c.thumbnail_url, pp.name, c.external_url, a.total_time")
 	err := tx.Scan(&courses).Error
 	if err != nil {
 		return nil, 0, 0, NewDBError(err, "error getting user programs")

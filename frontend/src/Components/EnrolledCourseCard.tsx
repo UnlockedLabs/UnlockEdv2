@@ -1,45 +1,26 @@
-import {
-    CheckCircleIcon,
-    ClockIcon,
-    StarIcon
-} from '@heroicons/react/24/solid';
-import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, ClockIcon } from '@heroicons/react/24/solid';
 import ProgressBar from './ProgressBar';
-import React from 'react';
-import API from '@/api/api';
 import { CourseStatus, RecentCourse, UserCourses, ViewType } from '@/common';
 
-// this might also want to live within courses, as the type of course it is (ie currently enrolled, completed, favorited, pending)
+// this might also want to live within courses, as the type of course it is (ie currently enrolled, completed, pending)
 // recent would probably be a boolean, which would only need to be accessed on the homepage
 
 export interface CourseCard {
     course: UserCourses | RecentCourse;
     recent?: boolean;
     view?: ViewType;
-    callMutate?: () => void;
 }
 
 export default function EnrolledCourseCard({
     course,
     recent,
-    view,
-    callMutate
+    view
 }: CourseCard) {
     const coverImage = course.thumbnail_url;
     const url = course.external_url;
     let status: CourseStatus | null = null;
     if (course.course_progress == 100) status = CourseStatus.Completed;
 
-    function updateFavorite(e: React.MouseEvent) {
-        e.preventDefault();
-        API.put(`courses/${course.id}/save`, {})
-            .then(() => {
-                if (callMutate) callMutate();
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-    }
     if (view == ViewType.List) {
         return (
             <a
@@ -49,14 +30,6 @@ export default function EnrolledCourseCard({
                 rel="noopener noreferrer"
             >
                 <div className="flex flex-row gap-3 items-center">
-                    <div onClick={(e) => updateFavorite(e)}>
-                        {!recent &&
-                            (course.is_favorited ? (
-                                <StarIcon className="h-5 text-primary-yellow"></StarIcon>
-                            ) : (
-                                <StarIconOutline className="h-5 text-header-text"></StarIconOutline>
-                            ))}
-                    </div>
                     <h2>{course.course_name}</h2>
                     <p className="body">|</p>
                     <p className="body">{course.provider_platform_name}</p>
@@ -83,17 +56,6 @@ export default function EnrolledCourseCard({
             <div
                 className={`card card-compact ${recent ? 'bg-inner-background' : 'bg-base-teal'} overflow-hidden relative`}
             >
-                <div
-                    className="absolute top-2 right-2"
-                    onClick={(e) => updateFavorite(e)}
-                >
-                    {!recent &&
-                        (course.is_favorited ? (
-                            <StarIcon className="h-5 text-primary-yellow"></StarIcon>
-                        ) : (
-                            <StarIconOutline className="h-5 text-white"></StarIconOutline>
-                        ))}
-                </div>
                 <a href={url} target="_blank" rel="noopener noreferrer">
                     <figure className="h-[124px]">
                         {coverImage !== '' ? (

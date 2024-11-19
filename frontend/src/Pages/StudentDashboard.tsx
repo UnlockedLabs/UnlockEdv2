@@ -173,9 +173,11 @@ export default function StudentDashboard() {
                                             }
                                         )
                                     ) : (
-                                        <p className="body-small">
-                                            No activity to show.
-                                        </p>
+                                        <tr className="body-small">
+                                            <td className="text-center">
+                                                No activity to show.
+                                            </td>
+                                        </tr>
                                     )}
                                 </tbody>
                             </table>

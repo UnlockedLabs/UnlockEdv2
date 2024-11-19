@@ -241,7 +241,7 @@ func getNewMilestoneModelAndForm() (models.Milestone, map[string]any, error) {
 
 func getNewMilestoneForm() map[string]any {
 	form := make(map[string]any)
-	_, courses, err := server.Db.GetProgram(1, 10, nil, "")
+	_, courses, err := server.Db.GetCourse(1, 10, "")
 	if err != nil {
 		form["err"] = err
 	}

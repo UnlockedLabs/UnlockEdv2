@@ -21,12 +21,15 @@ func (LeftMenuLink) TableName() string {
 	return "left_menu_links"
 }
 
-type UserFavorite struct {
-	ID       uint `gorm:"primaryKey" json:"-"`
-	UserID   uint `json:"user_id"`
-	CourseID uint `json:"course_id"`
+type ProgramFavorite struct {
+	ID        uint `gorm:"primaryKey" json:"-"`
+	UserID    uint `json:"user_id"`
+	ProgramID uint `json:"program_id"`
+
+	User    *User    `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Program *Program `json:"program,omitempty" gorm:"foreignKey:ProgramID;constraint:OnDelete CASCADE"`
 }
 
-func (UserFavorite) TableName() string {
-	return "favorites"
+func (ProgramFavorite) TableName() string {
+	return "program_favorites"
 }

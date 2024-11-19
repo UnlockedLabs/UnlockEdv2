@@ -40,11 +40,11 @@ type User struct {
 	FacilityID uint     `json:"facility_id"`
 
 	/* foreign keys */
-	Mappings        []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	FavoriteVideos  []VideoFavorite       `json:"favorite_videos,omitempty" goem:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	FavoriteCourses []UserFavorite        `json:"favorite_courses,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Facility        *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
-	UserRole        *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
+	Mappings         []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	FavoriteVideos   []VideoFavorite       `json:"favorite_videos,omitempty" goem:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	FavoritePrograms []ProgramFavorite     `json:"favorite_programs,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Facility         *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
+	UserRole         *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
 }
 
 type ImportUser struct {
