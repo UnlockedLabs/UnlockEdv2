@@ -31,6 +31,6 @@ CREATE INDEX idx_open_content_activities_content_id_open_content_provider_id_fac
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE open_content_activities;
-DROP TABLE open_content_urls;
+DROP TABLE IF EXISTS open_content_activities CASCADE;
+DROP TABLE IF EXISTS open_content_urls CASCADE;
 -- +goose StatementEnd
