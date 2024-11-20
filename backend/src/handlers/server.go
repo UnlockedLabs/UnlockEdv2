@@ -187,6 +187,7 @@ func oryConfig() *ory.Configuration {
 
 const (
 	CachedUsers string = "cache_users"
+	LibraryPaths string = "library_paths"
 )
 
 func (srv *Server) setupBucket() error {
@@ -196,7 +197,7 @@ func (srv *Server) setupBucket() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers} {
+	for _, bucket := range []string{CachedUsers, LibraryPaths} {
 		kv, err := js.KeyValue(bucket)
 		if err == nats.ErrBucketNotFound {
 			kv, err = js.CreateKeyValue(&nats.KeyValueConfig{

@@ -3,7 +3,12 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"context"
+	"encoding/json"
 	"net/http"
+	"regexp"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -11,6 +16,9 @@ const (
 	videoKey   contextKey = "video"
 	// rate limit is 50 requests from a unique user in a minute
 )
+
+// regular expression used below for filtering open_content_urls
+var resourceRegExpression = regexp.MustCompile(`\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|ttf|map|webp|otf|vtt|webm|json|woff2|pdf)(\?|%3F|$)`)
 
 func (srv *Server) applyMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
@@ -62,21 +70,71 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 			http.Redirect(w, r, AuthCallbackRoute, http.StatusSeeOther)
 			return
 		}
+		libraryBucket := srv.buckets[LibraryPaths]
 		resourceID := r.PathValue("id")
-		var library models.Library
-		tx := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID)
-		if user.isAdmin() {
-			tx = tx.First(&library)
-		} else {
-			tx = tx.First(&library, "visibility_status = true")
+		entry, err := libraryBucket.Get(resourceID)
+		var proxyParams models.LibraryProxyPO
+		if err == nil { //found in bucket going to use cached slice of bytes
+			err = json.Unmarshal(entry.Value(), &proxyParams)
+			if err != nil {
+				log.Warnf("issue unmarshaling LibraryProxyPO from nats bucket, error is: %v", err)
+			}
 		}
-		if err := tx.Error; err != nil {
-			srv.errorResponse(w, http.StatusNotFound, "Library not found or visibility is not enabled")
+		var library models.Library
+		if err != nil { //check if there was an error
+			if srv.Db.Debug().Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID).First(&library).RowsAffected == 0 {
+				srv.errorResponse(w, http.StatusNotFound, "Library not found.")
+				return
+			}
+			proxyParams = models.LibraryProxyPO{
+				ID:                    library.ID,
+				Path:                  library.Path,
+				BaseUrl:               library.OpenContentProvider.BaseUrl,
+				OpenContentProviderID: library.OpenContentProvider.ID,
+				VisibilityStatus:      library.VisibilityStatus,
+			}
+			marshaledParams, marshErr := json.Marshal(proxyParams)
+			if marshErr != nil {
+				log.Warnf("issue marshaling LibraryProxyPO, error is: %v", marshErr)
+			}
+			if marshErr != nil {
+				if _, err := libraryBucket.Put(resourceID, marshaledParams); err != nil {
+					log.Warnf("issue putting LibraryProxyPO into bucket, error is: %v", err)
+				}
+			}
+		}
+		if !user.isAdmin() && !proxyParams.VisibilityStatus {
+			srv.errorResponse(w, http.StatusNotFound, "Visibility is not enabled")
 			return
 		}
-		ctx := context.WithValue(r.Context(), libraryKey, &library)
+		urlString := r.URL.String()
+		if !resourceRegExpression.MatchString(urlString) && !strings.Contains(urlString, "iframe") {
+			activity := models.OpenContentActivity{
+				OpenContentProviderID: proxyParams.OpenContentProviderID,
+				FacilityID:            user.FacilityID,
+				UserID:                user.UserID,
+				ContentID:             proxyParams.ID,
+			}
+			srv.createActivity(urlString, activity)
+		}
+		ctx := context.WithValue(r.Context(), libraryKey, &proxyParams)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}))
+}
+
+func (srv *Server) createActivity(urlString string, activity models.OpenContentActivity) {
+	url := models.OpenContentUrl{}
+	if srv.Db.Where("content_url = ?", urlString).First(&url).RowsAffected == 0 {
+		url.ContentURL = urlString
+		if err := srv.Db.Create(&url).Error; err != nil {
+			log.Warn("unable to create content url for activity")
+			return
+		}
+	}
+	activity.OpenContentUrlID = url.ID
+	if err := srv.Db.Create(&activity).Error; err != nil {
+		log.Warn("unable to create content activity for url, ", urlString)
+	}
 }
 
 func corsMiddleware(next http.Handler) http.HandlerFunc {

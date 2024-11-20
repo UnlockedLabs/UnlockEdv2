@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/nats-io/nats.go"
 )
 
 func (srv *Server) registerLibraryRoutes() []routeDef {
@@ -55,9 +58,43 @@ func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newInvalidIdServiceError(err, "library id")
 	}
-	if err := srv.Db.ToggleLibraryVisibility(id); err != nil {
+	library, err := srv.Db.ToggleLibraryVisibility(id)
+	if err != nil {
 		log.add("library_id", id)
 		return newDatabaseServiceError(err)
 	}
+	if srv.buckets != nil { //make sure to update value in bucket if exists
+		libraryBucket := srv.buckets[LibraryPaths]
+		updateLibraryBucket(libraryBucket, r.PathValue("id"), library, log)
+	}
 	return writeJsonResponse(w, http.StatusOK, "Library visibility updated successfully")
+}
+
+func updateLibraryBucket(libraryBucket nats.KeyValue, key string, library models.Library, log sLog) {
+	var proxyParams models.LibraryProxyPO
+	entry, err := libraryBucket.Get(key)
+	if err == nil {
+		err = json.Unmarshal(entry.Value(), &proxyParams)
+		if err != nil {
+			log.warn("unable to unmarshal value from LibaryPaths bucket")
+			return
+		}
+		proxyParams.VisibilityStatus = library.VisibilityStatus
+	} else { //build a one for the bucket
+		proxyParams = models.LibraryProxyPO{
+			ID:                    library.ID,
+			Path:                  library.Path,
+			BaseUrl:               library.OpenContentProvider.BaseUrl,
+			OpenContentProviderID: library.OpenContentProvider.ID,
+			VisibilityStatus:      library.VisibilityStatus,
+		}
+	}
+	marshaledParams, err := json.Marshal(proxyParams)
+	if err != nil {
+		log.warn("unable to marshal value to put into the LibaryPaths bucket")
+		return
+	}
+	if _, err := libraryBucket.Put(key, marshaledParams); err != nil {
+		log.warnf("unable to update value within LibaryPaths bucket, error is %v", err)
+	}
 }

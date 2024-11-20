@@ -116,6 +116,8 @@ func MigrateTesting(db *gorm.DB) {
 		&models.ProgramFavorite{},
 		&models.Facility{},
 		&models.OpenContentProvider{},
+		&models.OpenContentUrl{},
+		&models.OpenContentActivity{},
 		&models.CronJob{},
 		&models.RunnableTask{},
 		&models.Library{},

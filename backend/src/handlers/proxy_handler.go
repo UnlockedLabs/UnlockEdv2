@@ -25,7 +25,7 @@ func (srv *Server) registerProxyRoutes() {
 }
 
 func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Request) {
-	library, ok := r.Context().Value(libraryKey).(*models.Library)
+	library, ok := r.Context().Value(libraryKey).(*models.LibraryProxyPO)
 	if !ok {
 		srv.errorResponse(w, http.StatusNotFound, "Library context not found")
 		return
@@ -34,7 +34,7 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 	if assetPath != "" && assetPath != "/" {
 		assetPath = strings.TrimPrefix(assetPath, library.Path)
 	}
-	targetURL, err := url.JoinPath(library.OpenContentProvider.BaseUrl, library.Path, assetPath)
+	targetURL, err := url.JoinPath(library.BaseUrl, library.Path, assetPath)
 	if err != nil {
 		srv.errorResponse(w, http.StatusBadRequest, "Malformed request to build targetURL")
 		return
@@ -64,6 +64,11 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 			},
 		},
 		ModifyResponse: func(res *http.Response) error {
+			//MAKE SURE TO NOT CACHE MAIN HTML CONTENT | WE MAY NEED TO ADD OTHER CONTENT TYPE TO NOT CACHE
+			contentType := res.Header.Get("Content-Type")
+			if contentType == "text/html" || contentType == "" {
+				res.Header.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+			}
 			if res.StatusCode == http.StatusFound || res.StatusCode == http.StatusSeeOther || res.StatusCode == http.StatusMovedPermanently {
 				location := res.Header.Get("Location")
 				if location != "" {

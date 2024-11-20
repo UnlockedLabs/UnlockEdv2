@@ -15,3 +15,11 @@ type Library struct {
 }
 
 func (Library) TableName() string { return "libraries" }
+
+type LibraryProxyPO struct {
+	ID                    uint
+	OpenContentProviderID uint
+	Path                  string
+	BaseUrl               string
+	VisibilityStatus      bool
+}
