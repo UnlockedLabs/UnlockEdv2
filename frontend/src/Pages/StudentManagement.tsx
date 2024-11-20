@@ -148,8 +148,8 @@ export default function StudentManagement() {
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
-                                'Account Created v ': 'created_at desc',
-                                'Account Created ^ ': 'created_at asc'
+                                'Account Created &#8595; ': 'created_at desc',
+                                'Account Created &#8593; ': 'created_at asc'
                             }}
                         />
                     </div>

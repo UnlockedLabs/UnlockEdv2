@@ -23,7 +23,7 @@ interface Form {
 }
 interface AddUserFormProps {
     onSuccess: (psw: string, msg: string, err: ToastState) => void;
-    userRole: UserRole; // New prop to receive the role
+    userRole: UserRole;
 }
 
 export default function AddUserForm({ onSuccess, userRole }: AddUserFormProps) {
@@ -39,7 +39,6 @@ export default function AddUserForm({ onSuccess, userRole }: AddUserFormProps) {
         formState: { errors }
     } = useForm<Inputs>();
 
-    // Set the role value when the component mounts
     useEffect(() => {
         setValue('role', userRole);
     }, [setValue, userRole]);

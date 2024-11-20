@@ -1,9 +1,9 @@
-import { ServerResponseOne, User, UserRole } from '../../common';
+import { ServerResponseOne, User, UserRole } from '@/common.ts';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput } from '../inputs/TextInput';
-import { DropdownInput } from '../inputs/DropdownInput';
-import { SubmitButton } from '../inputs/SubmitButton';
+import { DropdownInput } from '@/Components/inputs';
+import { SubmitButton } from '@/Components/inputs';
 import { CloseX } from '../inputs/CloseX';
 import API from '@/api/api';
 
