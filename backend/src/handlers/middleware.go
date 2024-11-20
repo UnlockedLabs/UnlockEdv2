@@ -115,26 +115,11 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 				UserID:                user.UserID,
 				ContentID:             proxyParams.ID,
 			}
-			srv.createActivity(urlString, activity)
+			srv.Db.CreateContentActivity(urlString, &activity)
 		}
 		ctx := context.WithValue(r.Context(), libraryKey, &proxyParams)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}))
-}
-
-func (srv *Server) createActivity(urlString string, activity models.OpenContentActivity) {
-	url := models.OpenContentUrl{}
-	if srv.Db.Where("content_url = ?", urlString).First(&url).RowsAffected == 0 {
-		url.ContentURL = urlString
-		if err := srv.Db.Create(&url).Error; err != nil {
-			log.Warn("unable to create content url for activity")
-			return
-		}
-	}
-	activity.OpenContentUrlID = url.ID
-	if err := srv.Db.Create(&activity).Error; err != nil {
-		log.Warn("unable to create content activity for url, ", urlString)
-	}
 }
 
 func corsMiddleware(next http.Handler) http.HandlerFunc {
