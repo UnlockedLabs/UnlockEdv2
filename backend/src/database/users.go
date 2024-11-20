@@ -29,24 +29,29 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	offset := (page - 1) * itemsPerPage
 	var count int64
 	var users []models.User
-	if err := db.Model(&models.User{}).Where("facility_id = ?", facilityId).Count(&count).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "users")
-	}
-	tx := db.Model(&models.User{})
+
+	tx := db.Model(&models.User{}).Where("facility_id = ?", facilityId)
 	switch role {
 	case "admin":
-		tx = tx.Where("role IN ('admin', 'system_admin')")
+		tx = tx.Where("role = 'admin'")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
+
+	if err := tx.Count(&count).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "users")
+	}
+
 	tx = tx.Order(getValidOrder(order))
-	if err := tx.Find(&users, "facility_id = ?", facilityId).
-		Offset(offset).
+
+	if err := tx.Offset(offset).
 		Limit(itemsPerPage).
+		Find(&users).
 		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
+
 	log.Tracef("found %d users", count)
 	return count, users, nil
 }
