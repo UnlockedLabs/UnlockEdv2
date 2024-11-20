@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-
-	"github.com/nats-io/nats.go"
 )
 
 func (srv *Server) registerLibraryRoutes() []routeDef {
@@ -58,20 +56,20 @@ func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.
 	if err != nil {
 		return newInvalidIdServiceError(err, "library id")
 	}
-	library, err := srv.Db.ToggleLibraryVisibility(id)
+	library, err := srv.Db.ToggleVisibilityAndRetrieveLibrary(id)
 	if err != nil {
 		log.add("library_id", id)
 		return newDatabaseServiceError(err)
 	}
 	if srv.buckets != nil { //make sure to update value in bucket if exists
-		libraryBucket := srv.buckets[LibraryPaths]
-		updateLibraryBucket(libraryBucket, r.PathValue("id"), library, log)
+		srv.updateLibraryBucket(r.PathValue("id"), library, log)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Library visibility updated successfully")
 }
 
-func updateLibraryBucket(libraryBucket nats.KeyValue, key string, library models.Library, log sLog) {
+func (srv *Server) updateLibraryBucket(key string, library *models.Library, log sLog) {
 	var proxyParams models.LibraryProxyPO
+	libraryBucket := srv.buckets[LibraryPaths]
 	entry, err := libraryBucket.Get(key)
 	if err == nil {
 		err = json.Unmarshal(entry.Value(), &proxyParams)
