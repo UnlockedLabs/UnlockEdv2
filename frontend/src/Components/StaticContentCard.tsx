@@ -1,4 +1,4 @@
-import ExternalLink from './ExternalLink';
+import InternalLink from './InternalLink';
 
 interface StaticContentCardProps {
     title: string;
@@ -28,7 +28,7 @@ export default function StaticContentCard({
                 <h3 className="card-title text-sm">{title}</h3>
                 <p className="body-small">{description}</p>
 
-                <ExternalLink url={linkUrl}>{linkText}</ExternalLink>
+                <InternalLink url={linkUrl}>{linkText}</InternalLink>
             </div>
         </div>
     );
