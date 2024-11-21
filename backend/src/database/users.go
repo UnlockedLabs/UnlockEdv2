@@ -33,7 +33,7 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	tx := db.Model(&models.User{}).Where("facility_id = ?", facilityId)
 	switch role {
 	case "admin":
-		tx = tx.Where("role = 'admin'")
+		tx = tx.Where("role IN ('admin', 'system_admin')")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
@@ -42,9 +42,8 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
 
-	tx = tx.Order(getValidOrder(order))
-
-	if err := tx.Offset(offset).
+	if err := tx.Order(getValidOrder(order)).
+		Offset(offset).
 		Limit(itemsPerPage).
 		Find(&users).
 		Error; err != nil {
