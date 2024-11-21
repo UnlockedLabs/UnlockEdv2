@@ -30,7 +30,8 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	if srv.UserIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, showHidden, search, providerId)
+	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
+	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, providerId, userID, showHidden, search)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

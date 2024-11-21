@@ -1,7 +1,7 @@
 import {
     FilterLibraries,
     FilterLibrariesAdmin,
-    Library,
+    LibraryDto,
     ServerResponseMany,
     UserRole
 } from '@/common';
@@ -55,7 +55,7 @@ export default function LibaryLayout({
         mutate: mutateLibraries,
         error: librariesError,
         isLoading: librariesLoading
-    } = useSWR<ServerResponseMany<Library>, AxiosError>(
+    } = useSWR<ServerResponseMany<LibraryDto>, AxiosError>(
         `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${getVisibility()}&search=${searchTerm}`
     );
     const librariesMeta = libraries?.meta ?? {

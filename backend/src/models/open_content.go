@@ -42,6 +42,28 @@ type OpenContentUrl struct {
 
 func (OpenContentUrl) TableName() string { return "open_content_urls" }
 
+type OpenContentFavorite struct {
+	ID                    uint      `json:"id"`
+	ContentID             uint      `json:"content_id"`
+	Name                  string    `json:"name"`
+	Type                  string    `json:"type"`
+	ThumbnailUrl          string    `json:"thumbnail_url"`
+	Description           string    `json:"description"`
+	VisibilityStatus      bool      `json:"visibility_status"`
+	OpenContentProviderID uint      `json:"open_content_provider_id"`
+	ProviderName          string    `json:"provider_name,omitempty"`
+	ChannelTitle          string    `json:"channel_title,omitempty"`
+	CreatedAt             time.Time `json:"created_at"`
+}
+
+type OpenContentParams struct {
+	UserID                uint   `json:"user_id"`
+	ContentID             uint   `json:"content_id"`
+	OpenContentProviderID uint   `json:"open_content_provider_id"`
+	Name                  string `json:"name"`
+	ContentUrl            string `json:"content_url"`
+}
+
 const (
 	KolibriThumbnailUrl string = "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg"
 	Kiwix               string = "Kiwix"

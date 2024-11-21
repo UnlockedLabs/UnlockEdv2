@@ -12,8 +12,8 @@ import API from '@/api/api';
 import { KeyedMutator } from 'swr';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
-import { BookmarkIcon } from '@heroicons/react/24/solid';
-import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
+import { StarIcon } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { AdminRoles } from '@/useAuth';
 
 export default function VideoCard({
@@ -58,8 +58,8 @@ export default function VideoCard({
 
     let bookmark: JSX.Element;
     if (video.video_favorites && video.video_favorites.length > 0) {
-        bookmark = <BookmarkIcon className="h-5 text-primary-yellow" />;
-    } else bookmark = <BookmarkIconOutline className={`h-5 text-black`} />;
+        bookmark = <StarIcon className="h-5 text-primary-yellow" />;
+    } else bookmark = <StarIconOutline className={`h-5 `} />;
     return (
         <div
             className={`card overflow-visible ${
@@ -101,9 +101,9 @@ export default function VideoCard({
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
                     {videoIsAvailable(video)
                         ? video?.description
-                        : (getVideoErrorMessage(video) ??
+                        : getVideoErrorMessage(video) ??
                           `Video currently unavailable.
-                           May be in the process of downloading, Please check back later`)}
+                           May be in the process of downloading, Please check back later`}
                 </p>
                 {AdminRoles.includes(role) &&
                     (videoIsAvailable(video) ? (

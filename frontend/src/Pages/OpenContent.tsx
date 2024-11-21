@@ -10,26 +10,49 @@ export default function OpenContent() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const route = useLocation();
-    const tab = route.pathname.split('/')[2] ?? 'libraries';
+    const currentTabValue =
+        route.pathname.split('/')[2]?.toLowerCase() ?? 'libraries';
+
+    const tabOptions: Record<string, Tab> = {
+        libraries: { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
+        videos: { name: OpenContentProviderType.VIDEOS, value: 'Videos' },
+        favorites: { name: 'Favorites', value: 'Favorites' }
+    };
+
     const [activeTab, setActiveTab] = useState<Tab>(
-        tab.toLowerCase() === 'libraries'
-            ? {
-                  name: 'Kiwix',
-                  value: 'Libraries'
-              }
-            : { name: 'Videos', value: 'Videos' }
+        tabOptions[currentTabValue]
     );
+
     useEffect(() => {
-        setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
-    }, [activeTab]);
-    const tabs = [
+        const newTab = tabOptions[currentTabValue] || tabOptions.libraries;
+        setActiveTab(tabOptions[currentTabValue] || tabOptions.libraries);
+        setPathVal([
+            {
+                path_id: ':kind',
+                value: newTab.value as string
+            }
+        ]);
+    }, [route.pathname]);
+
+    const tabs: Tab[] = [
         { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
-        { name: OpenContentProviderType.VIDEOS, value: 'Videos' }
+        { name: OpenContentProviderType.VIDEOS, value: 'Videos' },
+        { name: 'Favorites', value: 'Favorites' }
     ];
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
-        navigate(`/open-content/${tab.value}`);
+        navigate(`/open-content/${String(tab.value).toLowerCase()}`);
+    };
+    const handleReturnToAdminView = () => {
+        if (currentTabValue === 'favorites') {
+            navigate('/open-content-management/libraries');
+        } else if (
+            currentTabValue === 'libraries' ||
+            currentTabValue === 'videos'
+        ) {
+            navigate('/open-content-management/' + currentTabValue);
+        }
     };
 
     return (
@@ -39,11 +62,7 @@ export default function OpenContent() {
                 {user && isAdministrator(user) && (
                     <button
                         className="button border border-primary bg-transparent text-body-text"
-                        onClick={() =>
-                            navigate(
-                                `/open-content-management/${activeTab.value}`
-                            )
-                        }
+                        onClick={() => handleReturnToAdminView()}
                     >
                         Return to Admin View
                     </button>
@@ -52,7 +71,9 @@ export default function OpenContent() {
             <TabView
                 tabs={tabs}
                 activeTab={activeTab}
-                setActiveTab={handlePageChange}
+                setActiveTab={(tab) => {
+                    void handlePageChange(tab);
+                }}
             />
             <div className="flex flex-row gap-4 pt-8 pb-8">
                 <Outlet />
