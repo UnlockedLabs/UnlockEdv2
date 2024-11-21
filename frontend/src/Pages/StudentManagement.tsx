@@ -15,7 +15,6 @@ import {
     UserRole
 } from '@/common';
 import AddUserForm from '@/Components/forms/AddUserForm';
-import EditUserForm from '@/Components/forms/EditUserForm';
 import Modal from '@/Components/Modal';
 import DeleteForm from '@/Components/DeleteForm';
 import ResetPasswordForm from '@/Components/forms/ResetPasswordForm';
@@ -28,6 +27,7 @@ import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
+import EditUserForm from '@/Components/forms/EditUserForm';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -147,8 +147,8 @@ export default function StudentManagement() {
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
-                                'Account Created ↓ ': 'created_at desc',
-                                'Account Created ↑ ': 'created_at asc'
+                                'Account Created &#8595; ': 'created_at desc',
+                                'Account Created &#8593; ': 'created_at asc'
                             }}
                         />
                     </div>
@@ -284,7 +284,12 @@ export default function StudentManagement() {
                 ref={addUserModal}
                 type={ModalType.Add}
                 item="Student"
-                form={<AddUserForm onSuccess={onAddUserSuccess} />}
+                form={
+                    <AddUserForm
+                        onSuccess={onAddUserSuccess}
+                        userRole={UserRole.Student}
+                    />
+                }
             />
             <Modal
                 ref={editUserModal}
