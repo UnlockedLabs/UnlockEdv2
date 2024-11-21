@@ -16,6 +16,17 @@ type Library struct {
 
 func (Library) TableName() string { return "libraries" }
 
+func (lib *Library) IntoProxyPO() *LibraryProxyPO {
+	proxyParams := LibraryProxyPO{
+		ID:                    lib.ID,
+		Path:                  lib.Path,
+		BaseUrl:               lib.OpenContentProvider.BaseUrl,
+		OpenContentProviderID: lib.OpenContentProvider.ID,
+		VisibilityStatus:      lib.VisibilityStatus,
+	}
+	return &proxyParams
+}
+
 type LibraryProxyPO struct {
 	ID                    uint
 	OpenContentProviderID uint

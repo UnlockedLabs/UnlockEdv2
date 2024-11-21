@@ -46,7 +46,7 @@ func (db *DB) GetLibraryByID(id int) (*models.Library, error) {
 
 func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int) (*models.Library, error) {
 	var library models.Library
-	if err := db.Find(&library, "id = ?", id).Error; err != nil {
+	if err := db.Preload("OpenContentProvider").Find(&library, "id = ?", id).Error; err != nil {
 		log.Errorln("Unable to find library with that ID")
 		return nil, newNotFoundDBError(err, "libraries")
 	}

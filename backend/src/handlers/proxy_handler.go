@@ -68,6 +68,7 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 			contentType := res.Header.Get("Content-Type")
 			if contentType == "text/html" || contentType == "" {
 				res.Header.Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+				res.Header.Set("Pragma", "no-cache") //setting this in case HTTP/1.1 is not supported
 			}
 			if res.StatusCode == http.StatusFound || res.StatusCode == http.StatusSeeOther || res.StatusCode == http.StatusMovedPermanently {
 				location := res.Header.Get("Location")

@@ -73,7 +73,7 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 		libraryBucket := srv.buckets[LibraryPaths]
 		resourceID := r.PathValue("id")
 		entry, err := libraryBucket.Get(resourceID)
-		var proxyParams models.LibraryProxyPO
+		var proxyParams *models.LibraryProxyPO
 		if err == nil { //found in bucket going to use cached slice of bytes
 			err = json.Unmarshal(entry.Value(), &proxyParams)
 			if err != nil {
@@ -82,17 +82,11 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 		}
 		var library models.Library
 		if err != nil { //check if there was an error
-			if srv.Db.Debug().Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID).First(&library).RowsAffected == 0 {
+			if srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID).First(&library).RowsAffected == 0 {
 				srv.errorResponse(w, http.StatusNotFound, "Library not found.")
 				return
 			}
-			proxyParams = models.LibraryProxyPO{
-				ID:                    library.ID,
-				Path:                  library.Path,
-				BaseUrl:               library.OpenContentProvider.BaseUrl,
-				OpenContentProviderID: library.OpenContentProvider.ID,
-				VisibilityStatus:      library.VisibilityStatus,
-			}
+			proxyParams = library.IntoProxyPO()
 			marshaledParams, marshErr := json.Marshal(proxyParams)
 			if marshErr != nil {
 				log.Warnf("issue marshaling LibraryProxyPO, error is: %v", marshErr)
@@ -117,7 +111,7 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 			}
 			srv.Db.CreateContentActivity(urlString, &activity)
 		}
-		ctx := context.WithValue(r.Context(), libraryKey, &proxyParams)
+		ctx := context.WithValue(r.Context(), libraryKey, proxyParams)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}))
 }

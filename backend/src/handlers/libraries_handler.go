@@ -68,7 +68,7 @@ func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.
 }
 
 func (srv *Server) updateLibraryBucket(key string, library *models.Library, log sLog) {
-	var proxyParams models.LibraryProxyPO
+	var proxyParams *models.LibraryProxyPO
 	libraryBucket := srv.buckets[LibraryPaths]
 	entry, err := libraryBucket.Get(key)
 	if err == nil {
@@ -79,13 +79,7 @@ func (srv *Server) updateLibraryBucket(key string, library *models.Library, log 
 		}
 		proxyParams.VisibilityStatus = library.VisibilityStatus
 	} else { //build a one for the bucket
-		proxyParams = models.LibraryProxyPO{
-			ID:                    library.ID,
-			Path:                  library.Path,
-			BaseUrl:               library.OpenContentProvider.BaseUrl,
-			OpenContentProviderID: library.OpenContentProvider.ID,
-			VisibilityStatus:      library.VisibilityStatus,
-		}
+		proxyParams = library.IntoProxyPO()
 	}
 	marshaledParams, err := json.Marshal(proxyParams)
 	if err != nil {
