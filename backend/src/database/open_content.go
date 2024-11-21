@@ -53,3 +53,18 @@ func (db *DB) FindKolibriInstance() (*models.ProviderPlatform, error) {
 	}
 	return &kolibri, nil
 }
+
+func (db *DB) CreateContentActivity(urlString string, activity *models.OpenContentActivity) {
+	url := models.OpenContentUrl{}
+	if db.Where("content_url = ?", urlString).First(&url).RowsAffected == 0 {
+		url.ContentURL = urlString
+		if err := db.Create(&url).Error; err != nil {
+			log.Warn("unable to create content url for activity")
+			return
+		}
+	}
+	activity.OpenContentUrlID = url.ID
+	if err := db.Create(&activity).Error; err != nil {
+		log.Warn("unable to create content activity for url, ", urlString)
+	}
+}

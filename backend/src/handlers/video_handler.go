@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -49,6 +50,14 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 	if !user.isAdmin() && !video.VisibilityStatus || video.Availability != models.VideoAvailable {
 		return newForbiddenServiceError(errors.New("video not visible"), "you are not authorized to view this content")
 	}
+	videoViewerUrl := fmt.Sprintf("/viewer/videos/%d", video.ID)
+	activity := models.OpenContentActivity{
+		OpenContentProviderID: video.OpenContentProviderID,
+		FacilityID:            user.FacilityID,
+		UserID:                user.UserID,
+		ContentID:             video.ID,
+	}
+	srv.Db.CreateContentActivity(videoViewerUrl, &activity)
 	return writeJsonResponse(w, http.StatusOK, video)
 }
 
