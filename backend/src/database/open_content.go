@@ -105,7 +105,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
 		Select(`
             fav.id,
             fav.name,
-            'library' as type,
+            'library' as content_type,
             fav.content_id,
             lib.image_url as thumbnail_url,
             ocp.description,
@@ -130,7 +130,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
 		Select(`
             vf.id,
             videos.title as name,
-            'video' as type,
+            'video' as content_type,
             vf.video_id as content_id,
             videos.thumbnail_url,
             videos.description,

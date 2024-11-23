@@ -11,7 +11,7 @@ export default function FavoritesPage() {
     const [perPage, setPerPage] = useState(12);
     const [pageQuery, setPageQuery] = useState(1);
 
-    const { data, error, isLoading } = useSWR<
+    const { data, error, mutate, isLoading } = useSWR<
         ServerResponseMany<OpenContentFavorite>,
         AxiosError
     >(
@@ -30,15 +30,16 @@ export default function FavoritesPage() {
     };
 
     return (
-        <div className="  p-8 ">
-            <h1>My Favorites</h1>
+        <div className="w-full p-8 ">
+            My Favorites
             <div className="grid grid-cols-4 gap-6">
                 {favorites.map((favorite) => (
                     <FavoriteCard
-                        key={favorite.content_id}
+                        key={`${favorite.open_content_provider_id}-${favorite.content_id}-${favorite.name}`}
                         pageQuery={pageQuery}
                         perPage={perPage}
                         favorite={favorite}
+                        mutate={mutate}
                     />
                 ))}
             </div>

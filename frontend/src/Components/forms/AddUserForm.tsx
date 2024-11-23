@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
-import { DropdownInput } from '@/Components/inputs';
 import { SubmitButton } from '@/Components/inputs';
 import API from '@/api/api';
 
@@ -22,12 +21,12 @@ interface Form {
     user: Inputs;
     provider_platforms: number[];
 }
-
-export default function AddUserForm({
-    onSuccess
-}: {
+interface AddUserFormProps {
     onSuccess: (psw: string, msg: string, err: ToastState) => void;
-}) {
+    userRole: UserRole;
+}
+
+export default function AddUserForm({ onSuccess, userRole }: AddUserFormProps) {
     const [errorMessage, setErrorMessage] = useState('');
     const [providers, setProviders] = useState<ProviderPlatform[]>([]);
     const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
@@ -36,16 +35,22 @@ export default function AddUserForm({
         register,
         handleSubmit,
         setError,
+        setValue,
         formState: { errors }
     } = useForm<Inputs>();
 
+    useEffect(() => {
+        setValue('role', userRole);
+    }, [setValue, userRole]);
+
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
+
         const response = await API.post<NewUserResponse, Form>('users', {
             user: data,
             provider_platforms: selectedProviders
         });
-        console.log('form response: ', response);
+
         if (!response.success) {
             const msg = response.message.trim();
             switch (msg) {
@@ -73,7 +78,7 @@ export default function AddUserForm({
         reset();
         onSuccess(
             (response.data as NewUserResponse).temp_password,
-            'User created successfully with temporary password',
+            `${userRole.charAt(0).toUpperCase() + userRole.slice(1)} created successfully with temporary password`,
             ToastState.success
         );
     };
@@ -134,8 +139,6 @@ export default function AddUserForm({
                         message: 'Last name can only contain letters and spaces'
                     }}
                 />
-                {/*Proper regEx applied for expected validation*/}
-                {/*Backend error handling throws: "Username must contain only letters and numbers"*/}
                 <TextInput
                     label={'Username'}
                     interfaceRef={'username'}
@@ -150,14 +153,8 @@ export default function AddUserForm({
                     }}
                 />
 
-                <DropdownInput
-                    label={'Role'}
-                    interfaceRef={'role'}
-                    errors={errors}
-                    register={register}
-                    enumType={UserRole}
-                    required={true}
-                />
+                <input type="hidden" {...register('role')} />
+
                 <br />
                 {providers?.map((provider: ProviderPlatform) => (
                     <div

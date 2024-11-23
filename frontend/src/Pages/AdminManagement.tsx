@@ -169,16 +169,13 @@ export default function AdminManagement() {
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
-                                'Account Created ↓ ': 'created_at desc',
-                                'Account Created ↑ ': 'created_at asc'
+                                'Account Created &#8595; ': 'created_at desc',
+                                'Account Created &#8593; ': 'created_at asc'
                             }}
                         />
                     </div>
 
-                    <div
-                        className="tooltip tooltip-left"
-                        data-tip="Add Administrator"
-                    >
+                    <div className="tooltip tooltip-left" data-tip="Add Admin">
                         <button
                             className="btn btn-primary btn-sm text-base-teal"
                             onClick={() => addUserModal.current?.showModal()}
@@ -304,8 +301,13 @@ export default function AdminManagement() {
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
-                item="User"
-                form={<AddUserForm onSuccess={onAddUserSuccess} />}
+                item="Admin"
+                form={
+                    <AddUserForm
+                        onSuccess={onAddUserSuccess}
+                        userRole={UserRole.Admin}
+                    />
+                }
             />
             <Modal
                 ref={editUserModal}

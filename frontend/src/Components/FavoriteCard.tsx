@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { StarIcon as SolidStar } from '@heroicons/react/24/solid';
-import { mutate } from 'swr';
+import { KeyedMutator } from 'swr';
 import { ToastState, OpenContentFavorite, ServerResponseMany } from '@/common';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
@@ -9,9 +9,10 @@ interface FavoriteCardProps {
     favorite: OpenContentFavorite;
     pageQuery: number;
     perPage: number;
+    mutate: KeyedMutator<ServerResponseMany<OpenContentFavorite>>;
 }
 
-const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite }) => {
+const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, mutate }) => {
     const navigate = useNavigate();
     const { toaster } = useToast();
 
@@ -22,16 +23,16 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite }) => {
         const state = {
             subLink: favorite.content_url
         };
-        if (favorite.type === 'video') {
+        if (favorite.content_type === 'video') {
             navigate(`/viewer/videos/${favorite.content_id}`);
-        } else if (favorite.type === 'library') {
+        } else if (favorite.content_type === 'library') {
             navigate(`/viewer/libraries/${favorite.content_id}`, { state });
         }
     };
 
     const handleUnfavorite = async () => {
         const endpoint =
-            favorite.type === 'video'
+            favorite.content_type === 'video'
                 ? `videos/${favorite.content_id}/favorite`
                 : `open-content/${favorite.content_id}/save`;
 
@@ -51,44 +52,14 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite }) => {
         const response = await API.put(endpoint, payload);
         if (response.success) {
             toaster(`${name} removed from favorites`, ToastState.success);
-
-            await mutate(
-                (key: string | null | undefined): boolean => {
-                    if (typeof key === 'string') {
-                        return key.includes('open-content/favorites');
-                    }
-                    return false;
-                },
-                (
-                    cachedData:
-                        | ServerResponseMany<OpenContentFavorite>
-                        | undefined
-                ) => {
-                    if (!cachedData) return;
-
-                    const newFavorites = cachedData.data.filter(
-                        (item: OpenContentFavorite) =>
-                            item.content_id !== favorite.content_id
-                    );
-
-                    return {
-                        ...cachedData,
-                        data: newFavorites
-                    };
-                },
-                false
-            );
-
-            if (favorite.type === 'library') {
-                await mutate('/api/libraries');
-            }
+            await mutate();
         } else {
             toaster('Failed to unfavorite', ToastState.error);
         }
     };
     return (
         <div
-            className={`card w-60 h-40  p-4 space-y-2 ${
+            className={`card  p-4 space-y-2 ${
                 favorite.visibility_status
                     ? 'bg-grey-2 cursor-not-allowed'
                     : 'bg-inner-background cursor-pointer'
@@ -111,7 +82,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite }) => {
             />
             <h3 className="body text-center line-clamp-1">{favorite.name}</h3>
             <p className="body-small text-center">
-                {favorite.type === 'video'
+                {favorite.content_type === 'video'
                     ? favorite.channel_title
                     : favorite.provider_name}
             </p>

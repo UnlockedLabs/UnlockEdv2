@@ -454,7 +454,7 @@ export interface OpenContentFavorite {
     content_id: number;
     content_url: string;
     name: string;
-    type: 'library' | 'video';
+    content_type: 'library' | 'video';
     thumbnail_url: string;
     description: string;
     visibility_status: boolean;

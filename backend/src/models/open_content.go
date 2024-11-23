@@ -46,7 +46,7 @@ type OpenContentFavorite struct {
 	ID                    uint      `json:"id"`
 	ContentID             uint      `json:"content_id"`
 	Name                  string    `json:"name"`
-	Type                  string    `json:"type"`
+	ContentType           string    `json:"content_type"`
 	ThumbnailUrl          string    `json:"thumbnail_url"`
 	Description           string    `json:"description"`
 	VisibilityStatus      bool      `json:"visibility_status"`
