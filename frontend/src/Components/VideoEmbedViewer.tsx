@@ -12,7 +12,7 @@ export default function VideoViewer() {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const { setPathVal } = usePathValue();
     const [video, setVideo] = useState<Video | undefined>();
-    const [link, setLink] = useState<string | undefined>();
+
     useEffect(() => {
         const fetchVideoData = async () => {
             const resp = (await API.get(
@@ -26,22 +26,6 @@ export default function VideoViewer() {
                         value: resp.data.channel_title
                     }
                 ]);
-                try {
-                    const response = await fetch(
-                        `/videos/${resp.data.youtube_id}`,
-                        {
-                            method: 'HEAD'
-                        }
-                    );
-                    if (!response.ok) {
-                        setLink(`/videos/${resp.data.id}`);
-                    } else {
-                        setLink(`/videos/${resp.data.youtube_id}`);
-                    }
-                } catch (error) {
-                    console.error(error);
-                    setLink(`/videos/${resp.data.id}`);
-                }
                 setVideo(resp.data);
             } else {
                 setError(resp.message);
@@ -82,7 +66,7 @@ export default function VideoViewer() {
                                     height="auto"
                                     controls
                                     onError={handleError}
-                                    src={link}
+                                    src={`/api/proxy/videos/${video?.id}`}
                                 >
                                     Your browser does not support the video tag.
                                 </video>

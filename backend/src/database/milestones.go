@@ -22,7 +22,7 @@ func (db *DB) GetMilestonesByCourseID(page, perPage, id int) (int64, []models.Mi
 	content := []models.Milestone{}
 	total := int64(0)
 	_ = db.Model(&models.Milestone{}).Where("course_id = ?", id).Count(&total)
-	if err := db.Where("course_id = ?", id).Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
+	if err := db.Where("course_id = ?", id).Limit(perPage).Offset(calcOffset(page, perPage)).Find(&content).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
 	return total, content, nil
@@ -62,7 +62,7 @@ func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, [
 		}
 		query = query.Order(orderBy)
 	}
-	query = query.Limit(perPage).Offset((page - 1) * perPage)
+	query = query.Limit(perPage).Offset(calcOffset(page, perPage))
 	if err := query.Find(&content).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "milestones")
 	}
@@ -79,7 +79,7 @@ func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []Milesto
 		Where("user_id = ?", id).
 		Count(&total).
 		Limit(perPage).
-		Offset((page - 1) * perPage).
+		Offset(calcOffset(page, perPage)).
 		Find(&content).
 		Error
 	if err != nil {

@@ -78,11 +78,6 @@ export function videoIsAvailable(vid: Video): boolean {
     return vid.availability === 'available';
 }
 
-export interface UserWithMappings {
-    User: User;
-    logins: ProviderMapping[];
-}
-
 export interface OrySessionWhoami {
     active: boolean;
     authenticated_at: string;

@@ -22,14 +22,16 @@ func getValidOrder(order string) string {
 	}
 	return order
 }
-func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order string, search string, role string) (int64, []models.User, error) {
-	if search != "" {
-		return db.SearchCurrentUsers(page, itemsPerPage, facilityId, order, search, role)
-	}
-	offset := (page - 1) * itemsPerPage
-	var count int64
-	var users []models.User
 
+func calcOffset(page, itemsPerPage int) int {
+	return (page - 1) * itemsPerPage
+}
+
+func (db *DB) GetCurrentUsers(page, perPage int, facilityId uint, order string, search string, role string) (int64, []models.User, error) {
+	if search != "" {
+		return db.SearchCurrentUsers(page, perPage, facilityId, order, search, role)
+	}
+	var count int64
 	tx := db.Model(&models.User{}).Where("facility_id = ?", facilityId)
 	switch role {
 	case "admin":
@@ -37,44 +39,41 @@ func (db *DB) GetCurrentUsers(page, itemsPerPage int, facilityId uint, order str
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
-
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
-
+	users := make([]models.User, 0, perPage)
 	if err := tx.Order(getValidOrder(order)).
-		Offset(offset).
-		Limit(itemsPerPage).
+		Offset(calcOffset(page, perPage)).
+		Limit(perPage).
 		Find(&users).
 		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
-
-	log.Tracef("found %d users", count)
 	return count, users, nil
 }
 
-func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order, search string, role string) (int64, []models.User, error) {
-	var users []models.User
+func (db *DB) SearchCurrentUsers(page, perPage int, facilityId uint, order, search string, role string) (int64, []models.User, error) {
 	var count int64
-	offset := (page - 1) * itemsPerPage
 	search = strings.TrimSpace(search)
 	likeSearch := "%" + strings.ToLower(search) + "%"
-	tx := db.Model(&models.User{})
+	tx := db.Model(&models.User{}).Where("facility_id = ?", facilityId)
 	switch role {
 	case "admin":
 		tx = tx.Where("role IN ('admin', 'system_admin')")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
+	tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?", likeSearch, likeSearch, likeSearch)
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "users")
 	}
+	users := make([]models.User, 0, count)
 	if err := tx.Order(getValidOrder(order)).
-		Find(&users, "facility_id = ? AND (LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?)", facilityId, likeSearch, likeSearch, likeSearch).
-		Offset(offset).
-		Limit(itemsPerPage).
+		Find(&users).
+		Offset(calcOffset(page, perPage)).
+		Limit(perPage).
 		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
 		return 0, nil, newGetRecordsDBError(err, "users")
@@ -84,24 +83,27 @@ func (db *DB) SearchCurrentUsers(page, itemsPerPage int, facilityId uint, order,
 		if len(split) > 1 {
 			first := "%" + split[0] + "%"
 			last := "%" + split[1] + "%"
-			if err := db.Model(&models.User{}).
+			tx := db.Model(&models.User{}).
 				Where("facility_id = ?", facilityId).
-				Where("(LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?)", first, last, last, first).
-				Order(order).
-				Offset(offset).
-				Limit(itemsPerPage).
+				Where("(LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?)", first, last, last, first)
+			if err := tx.Count(&count).Error; err != nil {
+				log.Printf("Error fetching users: %v", err)
+				return 0, nil, newGetRecordsDBError(err, "users")
+			}
+			if err := tx.Order(order).
+				Offset(calcOffset(page, perPage)).
+				Limit(perPage).
 				Find(&users).Error; err != nil {
 				log.Printf("Error fetching users: %v", err)
 				return 0, nil, newGetRecordsDBError(err, "users")
 			}
 		}
 	}
-	log.Printf("found %d users", count)
 	return count, users, nil
 }
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
-	var user models.User
+	user := models.User{}
 	if err := db.First(&user, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "users")
 	}
@@ -109,34 +111,11 @@ func (db *DB) GetUserByID(id uint) (*models.User, error) {
 }
 
 func (db *DB) GetSystemAdmin() (*models.User, error) {
-	var user models.User
+	user := models.User{}
 	if err := db.First(&user, "role = 'system_admin'").Error; err != nil {
 		return nil, newNotFoundDBError(err, "system admin")
 	}
 	return &user, nil
-}
-
-type UserWithLogins struct {
-	User   models.User
-	Logins []models.ProviderUserMapping `json:"logins"`
-}
-
-func (db *DB) GetUsersWithLogins(page, per_page int, facilityId uint) (int64, []UserWithLogins, error) {
-	var users []models.User
-	var count int64
-	if err := db.Model(&models.User{}).
-		Offset((page-1)*per_page).Limit(per_page).Count(&count).Find(&users, "facility_id = ?", facilityId).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "users")
-	}
-	var userWithLogins []UserWithLogins
-	for _, user := range users {
-		var logins []models.ProviderUserMapping
-		if err := db.Model(&models.ProviderUserMapping{}).Find(&logins, "user_id = ?", user.ID).Error; err != nil {
-			return 0, nil, newGetRecordsDBError(err, "provider_user_mappings")
-		}
-		userWithLogins = append(userWithLogins, UserWithLogins{User: user, Logins: logins})
-	}
-	return count, userWithLogins, nil
 }
 
 func (db *DB) CreateUser(user *models.User) error {
@@ -194,14 +173,13 @@ func (db *DB) UpdateUser(user *models.User) error {
 func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 	var favRemoved bool
 	var favorite models.ProgramFavorite
-	if db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).Error == nil {
+	if db.First(&favorite, "user_id = ? AND program_id = ?", user_id, id).RowsAffected > 0 {
 		if err := db.Unscoped().Delete(&favorite).Error; err != nil {
 			return favRemoved, newDeleteDBError(err, "favorites")
 		}
 		favRemoved = true
 	} else {
-		favorite = models.ProgramFavorite{UserID: user_id, ProgramID: id}
-		if err := db.Create(&favorite).Error; err != nil {
+		if err := db.Create(&models.ProgramFavorite{UserID: user_id, ProgramID: id}).Error; err != nil {
 			return favRemoved, newCreateDBError(err, "error creating favorites")
 		}
 	}

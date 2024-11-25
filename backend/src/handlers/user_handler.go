@@ -30,21 +30,17 @@ func (srv *Server) registerUserRoutes() []routeDef {
 func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	include := r.URL.Query()["include"]
-	if slices.Contains(include, "logins") {
-		return srv.handleGetUsersWithLogins(w, r.WithContext(r.Context()), log)
-	}
 	if slices.Contains(include, "only_unmapped") {
 		providerId := r.URL.Query().Get("provider_id")
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 	}
 	order := r.URL.Query().Get("order_by")
-	search := strings.ToLower(r.URL.Query().Get("search"))
-	search = strings.TrimSpace(search)
+	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	role := r.URL.Query().Get("role")
 	facilityId := srv.getFacilityID(r)
 	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId, order, search, role)
 	if err != nil {
-		log.add("facilityId", facilityId)
+		log.add("facility_id", facilityId)
 		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
@@ -69,8 +65,8 @@ func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 	}
 	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, provID, search, facilityId)
 	if err != nil {
-		log.add("providerId", providerId)
-		log.add("facilityId", facilityId)
+		log.add("provider_id", providerId)
+		log.add("facility_id", facilityId)
 		return newDatabaseServiceError(err)
 	}
 	last := srv.calculateLast(total, perPage)
@@ -81,25 +77,6 @@ func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request
 		Total:       total,
 	}
 	log.infof("Total users to return: %d", total)
-	return writePaginatedResponse(w, http.StatusOK, users, paginationData)
-}
-
-func (srv *Server) handleGetUsersWithLogins(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.add("subhandlerCall", "HandleGetUsersWithLogins")
-	facilityId := srv.getFacilityID(r)
-	page, perPage := srv.getPaginationInfo(r)
-	total, users, err := srv.Db.GetUsersWithLogins(page, perPage, facilityId)
-	if err != nil {
-		log.add("facilityId", facilityId)
-		return newDatabaseServiceError(err)
-	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
 	return writePaginatedResponse(w, http.StatusOK, users, paginationData)
 }
 

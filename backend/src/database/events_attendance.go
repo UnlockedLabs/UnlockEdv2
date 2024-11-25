@@ -22,7 +22,7 @@ func (db *DB) GetAttendees(page, perPage int, params url.Values, sectionId int) 
 	}
 	attendance := make([]models.ProgramSectionEventAttendance, 0)
 	total := int64(0)
-	err := tx.Count(&total).Limit(perPage).Offset((page - 1) * perPage).Find(&attendance).Error
+	err := tx.Count(&total).Limit(perPage).Offset(calcOffset(page, perPage)).Find(&attendance).Error
 	if err != nil {
 		return nil, newGetRecordsDBError(err, "section_event_attendance")
 	}
