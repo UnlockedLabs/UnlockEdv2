@@ -96,11 +96,11 @@ export default function Navbar({
                                 ) && (
                                     <>
                                         <li>
-                                            <Link to="/open-content-management/libraries">
+                                            <Link to="/knowledge-center-management/libraries">
                                                 <ULIComponent
                                                     icon={BookOpenIcon}
                                                 />
-                                                Open Content
+                                                Knowledge Center Management
                                             </Link>
                                         </li>
                                     </>
@@ -201,9 +201,9 @@ export default function Navbar({
                                     FeatureAccess.OpenContentAccess
                                 ) && (
                                     <li>
-                                        <Link to="/open-content/libraries">
+                                        <Link to="/knowledge-center/libraries">
                                             <ULIComponent icon={BookOpenIcon} />
-                                            Open Content
+                                            Knowledge Center
                                         </Link>
                                     </li>
                                 )}
