@@ -18,6 +18,7 @@ func (srv *Server) registerVideoRoutes() []routeDef {
 		{"GET /api/videos/{id}", srv.handleGetVideoById, false, axx},
 		{"POST /api/videos", srv.handlePostVideos, true, axx},
 		{"PUT /api/videos/{id}/{action}", srv.handleVideoAction, true, axx},
+		{"PUT /api/videos/{id}/favorite", srv.handleFavoriteVideo, false, axx},
 		{"DELETE /api/videos/{id}", srv.handleDeleteVideo, true, axx},
 	}
 }
@@ -152,6 +153,26 @@ func (srv *Server) handleDeleteVideo(w http.ResponseWriter, r *http.Request, log
 		return newInternalServerServiceError(err, "error deleting video")
 	}
 	return writeJsonResponse(w, http.StatusOK, "video deleted")
+}
+
+func (srv *Server) handleFavoriteVideo(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
+	vidId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "video_id")
+	}
+
+	isFavorited, err := srv.Db.FavoriteVideo(vidId, userID)
+	if err != nil {
+		return newInternalServerServiceError(err, "error favoriting video")
+	}
+	msg := ""
+	if isFavorited {
+		msg = "video added to favorites"
+	} else {
+		msg = "video removed from favorites"
+	}
+	return writeJsonResponse(w, http.StatusOK, msg)
 }
 
 func getAddVideoNatsMsg(videoUrls []string, provider *models.OpenContentProvider) (*nats.Msg, error) {

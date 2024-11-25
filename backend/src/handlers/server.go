@@ -186,7 +186,7 @@ func oryConfig() *ory.Configuration {
 }
 
 const (
-	CachedUsers string = "cache_users"
+	CachedUsers  string = "cache_users"
 	LibraryPaths string = "library_paths"
 )
 

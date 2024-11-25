@@ -49,6 +49,7 @@ import VideoViewer from './Components/VideoEmbedViewer.tsx';
 import VideoContent from './Components/VideoContent.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
+import FavoritesPage from './Pages/Favorites.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -174,6 +175,15 @@ const router = createBrowserRouter([
                                         handle: {
                                             title: 'Videos',
                                             path: ['open-content', 'videos']
+                                        }
+                                    },
+                                    {
+                                        path: 'favorites',
+                                        element: <FavoritesPage />,
+                                        errorElement: <Error />,
+                                        handle: {
+                                            title: 'Favorites',
+                                            path: ['open-content', 'favorites']
                                         }
                                     }
                                 ]
