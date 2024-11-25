@@ -100,10 +100,9 @@ export default function VideoManagement() {
 
     return (
         <div>
-            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-8">
-                <h1>Video Management</h1>
+            <div className="flex flex-col gap-8">
                 <div className="flex justify-between">
-                    <div className="flex flex-row gap-x-2">
+                    <div className="flex flex-row gap-4">
                         <SearchBar
                             searchTerm={searchTerm}
                             changeCallback={handleChange}
@@ -120,7 +119,7 @@ export default function VideoManagement() {
                         />
                     </div>
                     <button
-                        className="button"
+                        className="button items-center"
                         onClick={() => addVideoModal.current?.showModal()}
                     >
                         <PlusCircleIcon className="w-4 my-auto" />

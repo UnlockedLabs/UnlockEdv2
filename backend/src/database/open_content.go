@@ -193,12 +193,14 @@ func (db *DB) GetTopUserOpenContent(id int) ([]models.OpenContentItem, error) {
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN videos v ON v.id = oca.content_id AND v.open_content_provider_id = oca.open_content_provider_id AND v.visibility_status = TRUE").
 			Where("oca.user_id = ?", id).
-			Group("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id"),
+			Group("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id").
+			Having("count(v.id) > 0"),
 		db.Select("l.name, l.path as url, l.image_url as thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as type, count(l.id) as visits").
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id AND l.visibility_status = TRUE").
 			Where("oca.user_id = ?", id).
-			Group("l.name, l.path, l.image_url, l.open_content_provider_id, l.id"),
+			Group("l.name, l.path, l.image_url, l.open_content_provider_id, l.id").
+			Having("count(l.id) > 0"),
 	).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "open_content_items")
 	}
