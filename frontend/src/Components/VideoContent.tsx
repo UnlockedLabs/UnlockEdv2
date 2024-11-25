@@ -53,56 +53,51 @@ export default function VideoContent() {
     };
 
     return (
-        <div>
-            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-8">
-                <h1>Videos</h1>
-                <div className="flex justify-between">
-                    <div className="flex flex-row gap-x-2">
-                        <SearchBar
-                            searchTerm={searchTerm}
-                            changeCallback={handleChange}
-                        />
-                        <DropdownControl
-                            label="Order by"
-                            setState={setSortQuery}
-                            enumType={{
-                                'Title (A-Z)': 'title ASC',
-                                'Title (Z-A)': 'title DESC',
-                                'Date Added ↓': 'created_at DESC',
-                                'Date Added ↑': 'created_at ASC',
-                                Favorited: 'favorited'
-                            }}
-                        />
-                    </div>
-                </div>
-                <div className="grid grid-cols-4 gap-6">
-                    {videoData.map((video) => (
-                        <VideoCard
-                            key={video.id}
-                            video={video}
-                            mutate={mutate}
-                            role={UserRole.Student}
-                        />
-                    ))}
-                </div>
-                {!isLoading && !error && meta && (
-                    <div className="flex justify-center">
-                        <Pagination
-                            meta={meta}
-                            setPage={setPageQuery}
-                            setPerPage={handleSetPerPage}
-                        />
-                    </div>
-                )}
-                {error && (
-                    <span className="text-center text-error">
-                        Failed to load videos.
-                    </span>
-                )}
-                {!isLoading && !error && videoData.length === 0 && (
-                    <span className="text-center text-warning">No results</span>
-                )}
+        <div className="flex flex-col gap-8">
+            <div className="flex flex-row gap-4">
+                <SearchBar
+                    searchTerm={searchTerm}
+                    changeCallback={handleChange}
+                />
+                <DropdownControl
+                    label="Order by"
+                    setState={setSortQuery}
+                    enumType={{
+                        'Title (A-Z)': 'title ASC',
+                        'Title (Z-A)': 'title DESC',
+                        'Date Added ↓': 'created_at DESC',
+                        'Date Added ↑': 'created_at ASC',
+                        Favorited: 'favorited'
+                    }}
+                />
             </div>
+            <div className="grid grid-cols-4 gap-6">
+                {videoData.map((video) => (
+                    <VideoCard
+                        key={video.id}
+                        video={video}
+                        mutate={mutate}
+                        role={UserRole.Student}
+                    />
+                ))}
+            </div>
+            {!isLoading && !error && meta && (
+                <div className="flex justify-center">
+                    <Pagination
+                        meta={meta}
+                        setPage={setPageQuery}
+                        setPerPage={handleSetPerPage}
+                    />
+                </div>
+            )}
+            {error && (
+                <span className="text-center text-error">
+                    Failed to load videos.
+                </span>
+            )}
+            {!isLoading && !error && videoData.length === 0 && (
+                <span className="text-center text-warning">No results</span>
+            )}
         </div>
     );
 }

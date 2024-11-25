@@ -77,7 +77,7 @@ export default function LibaryLayout({
     }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
     return (
-        <div className="px-8">
+        <div className="flex flex-col gap-8">
             <div className="flex flex-row gap-4">
                 <SearchBar
                     searchTerm={searchTerm}
@@ -97,7 +97,7 @@ export default function LibaryLayout({
                     />
                 )}
             </div>
-            <div className="grid grid-cols-4 pb-8 pt-8 gap-6">
+            <div className="grid grid-cols-4 gap-6">
                 {libraries?.data.map((library) => (
                     <LibraryCard
                         key={library.id}

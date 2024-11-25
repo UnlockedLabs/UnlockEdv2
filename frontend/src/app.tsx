@@ -133,18 +133,6 @@ const router = createBrowserRouter([
                         loader: checkRole
                     },
                     {
-                        path: 'student-dashboard',
-                        element: <StudentDashboard />,
-                        loader: getRightSidebarData,
-                        handle: { title: 'Dashboard', path: ['dashboard'] }
-                    },
-                    {
-                        path: 'open-content-dashboard',
-                        element: <OpenContentLevelDashboard />,
-                        loader: getOpenContentDashboardData,
-                        handle: { title: 'Dashboard', path: ['dashboard'] }
-                    },
-                    {
                         path: 'consent',
                         element: <Consent />,
                         handle: {
@@ -162,6 +150,15 @@ const router = createBrowserRouter([
                             />
                         ),
                         children: [
+                            {
+                                path: 'open-content-dashboard',
+                                element: <OpenContentLevelDashboard />,
+                                loader: getOpenContentDashboardData,
+                                handle: {
+                                    title: 'Dashboard',
+                                    path: ['dashboard']
+                                }
+                            },
                             {
                                 path: 'open-content',
                                 element: <OpenContent />,
@@ -233,6 +230,15 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
+                                path: 'student-dashboard',
+                                element: <StudentDashboard />,
+                                loader: getRightSidebarData,
+                                handle: {
+                                    title: 'Dashboard',
+                                    path: ['dashboard']
+                                }
+                            },
+                            {
                                 path: 'my-courses',
                                 element: <MyCourses />,
                                 handle: {
@@ -268,6 +274,15 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
+                                path: 'student-dashboard',
+                                element: <StudentDashboard />,
+                                loader: getRightSidebarData,
+                                handle: {
+                                    title: 'Dashboard',
+                                    path: ['dashboard']
+                                }
+                            },
+                            {
                                 path: 'programs',
                                 element: <Programs />,
                                 loader: getFacilities,
@@ -296,15 +311,6 @@ const router = createBrowserRouter([
                 element: <AuthenticatedLayout />,
                 loader: getFacilities,
                 children: [
-                    {
-                        path: 'admin-dashboard',
-                        element: <AdminDashboard />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Admin Dashboard',
-                            path: ['admin-dashboard']
-                        }
-                    },
                     {
                         path: 'student-management',
                         element: <StudentManagement />,
@@ -341,6 +347,15 @@ const router = createBrowserRouter([
                         ),
                         errorElement: <Error />,
                         children: [
+                            {
+                                path: 'admin-dashboard',
+                                element: <AdminDashboard />,
+                                errorElement: <Error />,
+                                handle: {
+                                    title: 'Admin Dashboard',
+                                    path: ['admin-dashboard']
+                                }
+                            },
                             {
                                 path: 'provider-platform-management',
                                 element: <ProviderPlatformManagement />,
@@ -389,6 +404,15 @@ const router = createBrowserRouter([
                         ),
                         errorElement: <Error />,
                         children: [
+                            {
+                                path: 'open-content-dashboard',
+                                element: <OpenContentLevelDashboard />,
+                                loader: getOpenContentDashboardData,
+                                handle: {
+                                    title: 'Dashboard',
+                                    path: ['dashboard']
+                                }
+                            },
                             {
                                 path: 'open-content-management',
                                 element: <OpenContentManagement />,

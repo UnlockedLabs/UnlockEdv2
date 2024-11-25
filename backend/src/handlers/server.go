@@ -79,7 +79,6 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerOryRoutes,
 		srv.registerFacilitiesRoutes,
 		srv.registerOpenContentRoutes,
-		srv.registerOpenContentActivityRoutes,
 		srv.registerLibraryRoutes,
 		srv.registerProgramsRoutes,
 		srv.registerSectionsRoutes,
@@ -88,6 +87,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerAttendanceRoutes,
 		srv.registerVideoRoutes,
 		srv.registerFeatureFlagRoutes,
+		srv.registerOpenContentActivityRoutes,
 	} {
 		srv.register(route)
 	}

@@ -79,7 +79,7 @@ export default function LibraryCard({
             <div className="flex p-4 gap-2 border-b-2">
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img
-                        src={library.thumbnail_url ?? ''}
+                        src={library.image_url ?? ''}
                         alt={`${library.name} thumbnail`}
                     />
                 </figure>
@@ -89,7 +89,7 @@ export default function LibraryCard({
                 <div onClick={(e: MouseEvent) => void toggleFavorite(e)}>
                     <ULIComponent
                         tooltipClassName={'absolute right-2 top-2 z-100'}
-                        iconClassName={`w-6 h-6 ${library.is_favorited ? 'text-primary-yellow' : ''}`}
+                        iconClassName={`w-5 h-5 ${library.is_favorited ? 'text-primary-yellow' : ''}`}
                         icon={library.is_favorited ? StarIcon : StarIconOutline}
                         dataTip="Favorite Library"
                     />

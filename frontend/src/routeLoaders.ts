@@ -12,10 +12,11 @@ import { fetchUser } from './useAuth';
 
 export const getOpenContentDashboardData: LoaderFunction = async () => {
     const user = await fetchUser();
+    if (!user) return;
     const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
         await Promise.all([
             API.get(`left-menu`),
-            API.get(`open-content/activity/${user?.id}`),
+            API.get(`open-content/activity/${user.id}`),
             API.get(`open-content/activity`),
             API.get(`open-content/favorites`)
         ]);

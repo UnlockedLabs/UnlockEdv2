@@ -8,13 +8,14 @@ export default function OpenContentCardRow({
 }) {
     const navigate = useNavigate();
     function redirectToViewer() {
-        if ('url' in content) {
-            if (content.type === 'video') {
-                navigate(`/viewer/videos/${content.content_id}`);
-            } else if (content.type === 'library') {
-                navigate(`/viewer/libraries/${content.content_id}`);
-            }
-        }
+        const isFavorite = !('url' in content);
+        const type = isFavorite ? content.content_type : content.type;
+        const basePath =
+            type === 'video'
+                ? `/viewer/videos/${content.content_id}`
+                : `/viewer/libraries/${content.content_id}`;
+
+        navigate(basePath);
     }
 
     return (

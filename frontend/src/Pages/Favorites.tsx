@@ -30,8 +30,7 @@ export default function FavoritesPage() {
     };
 
     return (
-        <div className="w-full p-8 ">
-            My Favorites
+        <div className="flex flex-col gap-8">
             <div className="grid grid-cols-4 gap-6">
                 {favorites.map((favorite) => (
                     <FavoriteCard
@@ -53,7 +52,7 @@ export default function FavoritesPage() {
                 <p>No favorites found.</p>
             )}
             {!isLoading && !error && meta && (
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center">
                     <Pagination
                         meta={meta}
                         setPage={setPageQuery}

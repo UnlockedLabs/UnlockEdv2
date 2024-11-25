@@ -72,24 +72,24 @@ export default function Navbar({
                         {user && isAdministrator(user) ? (
                             <>
                                 {/* admin view */}
-                                <li className="mt-16">
-                                    <Link to="/admin-dashboard">
-                                        <ULIComponent icon={HomeIcon} />
-                                        Dashboard
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/student-management">
-                                        <ULIComponent icon={AcademicCapIcon} />
-                                        Students
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/admin-management">
-                                        <ULIComponent icon={UsersIcon} />
-                                        Admins
-                                    </Link>
-                                </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.OpenContentAccess
+                                ) && user.feature_access.length === 1 ? (
+                                    <li className="mt-16">
+                                        <Link to="/open-content-dashboard">
+                                            <ULIComponent icon={HomeIcon} />
+                                            Dashboard
+                                        </Link>
+                                    </li>
+                                ) : (
+                                    <li className="mt-16">
+                                        <Link to="/admin-dashboard">
+                                            <ULIComponent icon={HomeIcon} />
+                                            Dashboard
+                                        </Link>
+                                    </li>
+                                )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
@@ -105,12 +105,6 @@ export default function Navbar({
                                         </li>
                                     </>
                                 )}
-                                <li>
-                                    <Link to="/resources-management">
-                                        <ULIComponent icon={ArchiveBoxIcon} />
-                                        Resources
-                                    </Link>
-                                </li>
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess
@@ -148,6 +142,24 @@ export default function Navbar({
                                     </li>
                                 )}
                                 <li>
+                                    <Link to="/student-management">
+                                        <ULIComponent icon={AcademicCapIcon} />
+                                        Students
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/admin-management">
+                                        <ULIComponent icon={UsersIcon} />
+                                        Admins
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/resources-management">
+                                        <ULIComponent icon={ArchiveBoxIcon} />
+                                        Resources
+                                    </Link>
+                                </li>
+                                <li>
                                     <Link to="/facilities-management">
                                         <ULIComponent
                                             icon={BuildingStorefrontIcon}
@@ -158,13 +170,24 @@ export default function Navbar({
                             </>
                         ) : (
                             <>
-                                {/* student view */}
-                                <li className="mt-16">
-                                    <Link to="/student-dashboard">
-                                        <ULIComponent icon={HomeIcon} />
-                                        Dashboard
-                                    </Link>
-                                </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.OpenContentAccess
+                                ) && user.feature_access.length === 1 ? (
+                                    <li className="mt-16">
+                                        <Link to="/open-content-dashboard">
+                                            <ULIComponent icon={HomeIcon} />
+                                            Dashboard
+                                        </Link>
+                                    </li>
+                                ) : (
+                                    <li className="mt-16">
+                                        <Link to="/student-dashboard">
+                                            <ULIComponent icon={HomeIcon} />
+                                            Dashboard
+                                        </Link>
+                                    </li>
+                                )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess
