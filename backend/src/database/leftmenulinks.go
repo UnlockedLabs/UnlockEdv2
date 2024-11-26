@@ -6,9 +6,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetLeftMenuLinks() ([]models.LeftMenuLink, error) {
+func (db *DB) GetLeftMenuLinks(limit int) ([]models.LeftMenuLink, error) {
 	var links []models.LeftMenuLink
-	if err := db.Find(&links).Error; err != nil {
+	if err := db.Model(&models.LeftMenuLink{}).Limit(limit).Find(&links).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "left_menu_links")
 	}
 	return links, nil
