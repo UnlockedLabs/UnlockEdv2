@@ -63,7 +63,7 @@ export default function FeatureLevelCheckboxes({
         toaster(resp.message, ToastState.success);
         const user = await fetchUser();
         setUser(user);
-        navigate('/admin-dashboard');
+        navigate('/student-activity');
     };
 
     return (

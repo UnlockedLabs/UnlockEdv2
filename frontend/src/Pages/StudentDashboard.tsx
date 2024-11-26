@@ -28,7 +28,7 @@ export default function StudentDashboard() {
     if (!user) {
         return;
     } else if (isAdministrator(user)) {
-        navigate('/admin-dashboard');
+        navigate('/student-activity');
         return;
     }
     const { data, error, isLoading } = useSWR<

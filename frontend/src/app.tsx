@@ -128,10 +128,10 @@ const router = createBrowserRouter([
                         loader: checkRole
                     },
                     {
-                        path: 'student-dashboard',
+                        path: 'my-learning',
                         element: <StudentDashboard />,
                         loader: getOpenContentProviders,
-                        handle: { title: 'Dashboard', path: ['dashboard'] }
+                        handle: { title: 'My Learning', path: ['my-learning'] }
                     },
                     {
                         path: 'consent',
@@ -289,30 +289,30 @@ const router = createBrowserRouter([
                 loader: getFacilities,
                 children: [
                     {
-                        path: 'admin-dashboard',
+                        path: 'student-activity',
                         element: <AdminDashboard />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Admin Dashboard',
-                            path: ['admin-dashboard']
+                            title: 'Student Activity',
+                            path: ['student-activity']
                         }
                     },
                     {
-                        path: 'student-management',
+                        path: 'students',
                         element: <StudentManagement />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Student Management',
-                            path: ['student-management']
+                            title: 'Students',
+                            path: ['students']
                         }
                     },
                     {
-                        path: 'admin-management',
+                        path: 'admins',
                         element: <AdminManagement />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Admin Management',
-                            path: ['admin-management']
+                            title: 'Admins',
+                            path: ['admins']
                         }
                     },
                     {
@@ -334,11 +334,11 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
-                                path: 'provider-platform-management',
+                                path: 'learning-platforms',
                                 element: <ProviderPlatformManagement />,
                                 handle: {
-                                    title: 'Provider Platform Management',
-                                    path: ['provider-platform-management']
+                                    title: 'Learning Platforms',
+                                    path: ['learning-platforms']
                                 }
                             },
                             {

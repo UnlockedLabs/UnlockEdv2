@@ -73,19 +73,19 @@ export default function Navbar({
                             <>
                                 {/* admin view */}
                                 <li className="mt-16">
-                                    <Link to="/admin-dashboard">
+                                    <Link to="/student-activity">
                                         <ULIComponent icon={HomeIcon} />
-                                        Dashboard
+                                        Student Activity
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/student-management">
+                                    <Link to="/students">
                                         <ULIComponent icon={AcademicCapIcon} />
                                         Students
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/admin-management">
+                                    <Link to="/admins">
                                         <ULIComponent icon={UsersIcon} />
                                         Admins
                                     </Link>
@@ -117,11 +117,11 @@ export default function Navbar({
                                 ) && (
                                     <>
                                         <li>
-                                            <Link to="/provider-platform-management">
+                                            <Link to="/learning-platforms">
                                                 <ULIComponent
                                                     icon={CloudIcon}
                                                 />
-                                                Platforms
+                                                Learning Platforms
                                             </Link>
                                         </li>
                                         <li className="">
@@ -160,9 +160,9 @@ export default function Navbar({
                             <>
                                 {/* student view */}
                                 <li className="mt-16">
-                                    <Link to="/student-dashboard">
+                                    <Link to="/my-learning">
                                         <ULIComponent icon={HomeIcon} />
-                                        Dashboard
+                                        My Learning
                                     </Link>
                                 </li>
                                 {hasFeature(

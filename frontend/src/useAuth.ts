@@ -30,9 +30,7 @@ export const getDashboard = (user?: User): string => {
     if (!user) {
         return INIT_KRATOS_LOGIN_FLOW;
     } else {
-        return isAdministrator(user)
-            ? '/admin-dashboard'
-            : '/student-dashboard';
+        return isAdministrator(user) ? '/student-activity' : '/my-learning';
     }
 };
 
