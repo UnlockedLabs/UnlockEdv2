@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 func (srv *Server) registerLeftMenuRoutes() []routeDef {
@@ -16,7 +17,12 @@ func (srv *Server) registerLeftMenuRoutes() []routeDef {
 
 func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request, log sLog) error {
 	log.info("GET: /api/left-menu")
-	links, err := srv.Db.GetLeftMenuLinks()
+	var limit int
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		limit = -1
+	}
+	links, err := srv.Db.GetLeftMenuLinks(limit)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"slices"
 	"testing"
@@ -11,18 +12,19 @@ import (
 
 func TestHandleGetLeftMenu(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetLeftMenuAsAdmin", "admin", nil, http.StatusOK, ""},
-		{"TestGetLeftMenuAsUser", "student", nil, http.StatusOK, ""},
+		{"TestGetLeftMenuAsAdmin", "admin", map[string]any{"limit": -1}, http.StatusOK, ""},
+		{"TestGetLeftMenuAsUser", "student", map[string]any{"limit": -1}, http.StatusOK, ""},
+		{"TestGetLeftMenuWithLimitAsUser", "student", map[string]any{"limit": 5}, http.StatusOK, "?limit=5"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/api/left-menu", nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/left-menu%v", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRole(server.handleGetLeftMenu, test.role)
 			rr := executeRequest(t, req, handler, test)
-			menuLinks, err := server.Db.GetLeftMenuLinks()
+			menuLinks, err := server.Db.GetLeftMenuLinks(test.mapKeyValues["limit"].(int))
 			if err != nil {
 				t.Fatalf("unable to retrieve menu links, error is %v", err)
 			}
@@ -64,7 +66,7 @@ func TestHandlePostLeftMenuLinks(t *testing.T) {
 			handler := getHandlerByRoleWithMiddleware(server.handlePostLeftMenuLinks, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusCreated {
-				menuLinks, err := server.Db.GetLeftMenuLinks()
+				menuLinks, err := server.Db.GetLeftMenuLinks(-1)
 				if err != nil {
 					t.Errorf("failed to retrieve menu links, error is %v", err)
 				}
