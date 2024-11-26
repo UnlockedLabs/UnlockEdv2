@@ -30,7 +30,8 @@ export default function FavoritesPage() {
     };
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="w-full p-8 ">
+            My Favorites
             <div className="grid grid-cols-4 gap-6">
                 {favorites.map((favorite) => (
                     <FavoriteCard
@@ -49,7 +50,7 @@ export default function FavoritesPage() {
                 </p>
             )}
             {!isLoading && !error && favorites.length === 0 && (
-                <p>No favorites found.</p>
+                <h2>No favorites found.</h2>
             )}
             {!isLoading && !error && meta && (
                 <div className="flex justify-center">

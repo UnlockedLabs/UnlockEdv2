@@ -30,7 +30,7 @@ func TestHandleIndexLibraries(t *testing.T) {
 			handler := getHandlerByRole(server.handleIndexLibraries, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				_, expectedLibraries, err := server.Db.GetAllLibraries(test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int), test.mapKeyValues["provider_id"].(int), test.mapKeyValues["user_id"].(uint), test.mapKeyValues["facility_id"].(uint), test.mapKeyValues["visibility"].(string), test.mapKeyValues["search"].(string))
+				_, expectedLibraries, err := server.Db.GetAllLibraries(test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int), test.mapKeyValues["user_id"].(uint), test.mapKeyValues["facility_id"].(uint), test.mapKeyValues["visibility"].(string), "created_at DESC", test.mapKeyValues["search"].(string))
 				if err != nil {
 					t.Fatalf("unable to get libraries, error is %v", err)
 				}

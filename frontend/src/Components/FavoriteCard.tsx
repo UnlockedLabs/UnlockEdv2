@@ -20,13 +20,10 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, mutate }) => {
         if (favorite.visibility_status) {
             return;
         }
-        const state = {
-            subLink: favorite.content_url
-        };
         if (favorite.content_type === 'video') {
             navigate(`/viewer/videos/${favorite.content_id}`);
         } else if (favorite.content_type === 'library') {
-            navigate(`/viewer/libraries/${favorite.content_id}`, { state });
+            navigate(`/viewer/libraries/${favorite.content_id}`);
         }
     };
 
@@ -34,24 +31,11 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, mutate }) => {
         const endpoint =
             favorite.content_type === 'video'
                 ? `videos/${favorite.content_id}/favorite`
-                : `open-content/${favorite.content_id}/save`;
+                : `libraries/${favorite.content_id}/favorite`;
 
-        const { name, open_content_provider_id } = favorite;
-
-        if (!name || !open_content_provider_id) {
-            throw new Error('Favorite data is incomplete.');
-        }
-
-        const payload = {
-            name,
-            content_id: favorite.content_id,
-            open_content_provider_id,
-            content_url: `/api/proxy/libraries/${favorite.content_id}/`
-        };
-
-        const response = await API.put(endpoint, payload);
+        const response = await API.put(endpoint, {});
         if (response.success) {
-            toaster(`${name} removed from favorites`, ToastState.success);
+            toaster(`removed from favorites`, ToastState.success);
             await mutate();
         } else {
             toaster('Failed to unfavorite', ToastState.error);

@@ -95,11 +95,11 @@ func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, 
 	if err := db.WithContext(ctx).
 		Where(&models.Library{ExternalID: models.StringPtr(entry.ID)}).
 		Assign(models.Library{
-			Path:        library.Path,
-			Name:        library.Name,
-			Description: library.Description,
-			Language:    library.Language,
-			ImageUrl:    library.ImageUrl,
+			Path:         library.Path,
+			Name:         library.Name,
+			Description:  library.Description,
+			Language:     library.Language,
+			ThumbnailUrl: library.ThumbnailUrl,
 		}).
 		FirstOrCreate(&library).Error; err != nil {
 		logger().Errorln("Error updating or inserting library: ", err)

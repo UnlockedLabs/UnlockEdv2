@@ -710,12 +710,10 @@ export interface Library {
     url: string;
     visibility_status: boolean;
     open_content_provider: OpenContentProvider;
-    is_favorited: boolean;
+    favorites: LibraryFavorites[];
 }
 
-export interface LibraryDto {
-    description: string | null;
-    external_id: string | null;
+export interface LibraryFavorites {
     id: number;
     image_url: string | null;
     language: string | null;
@@ -725,12 +723,13 @@ export interface LibraryDto {
     url: string;
     visibility_status: boolean;
     is_favorited: boolean;
-    is_featured: boolean;
     open_content_provider_name: string;
     base_url: string;
     thumbnail_url: string | null;
     currently_enabled: boolean;
     open_content_provider_description: string | null;
+    user_id: number;
+    library_id: number;
 }
 
 export interface Program {
@@ -766,11 +765,18 @@ export interface ToastProps {
 export enum FilterLibraries {
     'All Libraries' = 'all'
 }
-export enum FilterLibrariesAdmin {
+export enum LibraryAdminVisibility {
     'All Libraries' = 'all',
     'Visible' = 'visible',
     'Hidden' = 'hidden',
     'Featured' = 'featured'
+}
+
+export enum FilterLibrariesAdmin {
+    'Most Favorited' = 'most_favorited',
+    'Least Favorited' = 'least_favorited',
+    'Newest' = 'created_at DESC',
+    'Oldest' = 'created_at ASC'
 }
 
 export enum Timezones {

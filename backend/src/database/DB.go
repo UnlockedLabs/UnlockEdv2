@@ -406,12 +406,8 @@ func (db *DB) SeedTestData() {
 				}
 				if i%2 == 0 && j == 0 { //just the first one should be favorited
 					libraryFavorite := models.LibraryFavorite{
-						UserID:                user.ID,
-						ContentID:             library[i].ID,
-						OpenContentUrlID:      url.ID,
-						Name:                  library[i].Name,
-						VisibilityStatus:      true,
-						OpenContentProviderID: library[i].OpenContentProviderID,
+						UserID:    user.ID,
+						LibraryID: library[i].ID,
 					}
 					if err := db.Create(&libraryFavorite).Error; err != nil {
 						log.Fatalf("Failed to create favorite library: %v", err)

@@ -12,17 +12,15 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/libraries", srv.handleIndexLibraries, false, axx},
 		{"GET /api/libraries/{id}", srv.handleGetLibrary, false, axx},
-		{"PUT /api/libraries/{id}", srv.handleToggleLibraryVisibility, true, axx},
+		{"PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, true, axx},
+		{"PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, false, axx},
 	}
 }
 
 func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
-	providerId, err := strconv.Atoi(r.URL.Query().Get("provider_id"))
-	if err != nil {
-		providerId = 0
-	}
+	orderBy := r.URL.Query().Get("order_by")
 	showHidden := "visible"
 	if !srv.UserIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
@@ -30,9 +28,8 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	if srv.UserIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
-	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
-	facilityID := r.Context().Value(ClaimsKey).(*Claims).FacilityID
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, providerId, userID, facilityID, showHidden, search)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, claims.UserID, claims.FacilityID, showHidden, orderBy, search)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -91,4 +88,16 @@ func (srv *Server) updateLibraryBucket(key string, library *models.Library, log 
 	if _, err := libraryBucket.Put(key, marshaledParams); err != nil {
 		log.warnf("unable to update value within LibaryPaths bucket, error is %v", err)
 	}
+}
+
+func (srv *Server) handleToggleFavoriteLibrary(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
+	libraryID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInternalServerServiceError(err, "error converting content id to int")
+	}
+	if err := srv.Db.ToggleLibraryFavorite(userID, libraryID); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Favorite toggled successfully")
 }

@@ -84,7 +84,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerProviderUserRoutes,
 		srv.registerOryRoutes,
 		srv.registerFacilitiesRoutes,
-		//	srv.registerOpenContentRoutes,
+		srv.registerOpenContentRoutes,
 		srv.registerLibraryRoutes,
 		srv.registerProgramsRoutes,
 		srv.registerSectionsRoutes,
@@ -360,9 +360,8 @@ func (srv *Server) getFacilityID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).FacilityID
 }
 
-func (srv *Server) userIdFromRequest(r *http.Request) uint {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.UserID
+func (srv *Server) getUserID(r *http.Request) uint {
+	return r.Context().Value(ClaimsKey).(*Claims).UserID
 }
 
 type TestClaims string

@@ -1,6 +1,6 @@
 import { useState, MouseEvent } from 'react';
 import VisibleHiddenToggle from './VisibleHiddenToggle';
-import { LibraryDto, ServerResponseMany, ToastState, UserRole } from '@/common';
+import { Library, ServerResponseMany, ToastState, UserRole } from '@/common';
 import API from '@/api/api';
 import { KeyedMutator } from 'swr';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +17,8 @@ export default function LibraryCard({
     mutate,
     role
 }: {
-    library: LibraryDto;
-    mutate: KeyedMutator<ServerResponseMany<LibraryDto>>;
+    library: Library;
+    mutate: KeyedMutator<ServerResponseMany<Library>>;
     role: UserRole;
 }) {
     const { toaster } = useToast();
@@ -34,7 +34,7 @@ export default function LibraryCard({
 
     const handleToggleVisibility = async () => {
         const response = await API.put<null, object>(
-            `libraries/${library.id}`,
+            `libraries/${library.id}/toggle`,
             {}
         );
         if (response.success) {
@@ -44,37 +44,18 @@ export default function LibraryCard({
             toaster(response.message, ToastState.error);
         }
     };
-    const openContentProviderName =
-        library?.open_content_provider_name.charAt(0).toUpperCase() +
-        library?.open_content_provider_name.slice(1);
 
-    async function toggleLibraryAction(e: MouseEvent) {
+    async function toggleLibraryFavorite(e: MouseEvent) {
         e.stopPropagation();
-        const endpoint = `open-content/${library.id}/${AdminRoles.includes(role) ? 'feature' : 'save'}`;
-        await API.put(endpoint, {
-            name: library.name,
-            content_id: library.id,
-            open_content_provider_id: library.open_content_provider_id,
-            content_url: `/api/proxy/libraries/${library.id}/`
-        }).then((resp) => {
-            if (resp.success) {
-                if (AdminRoles.includes(role)) {
-                    library.is_featured = !library.is_featured;
-                } else {
-                    library.is_favorited = !library.is_favorited;
-                }
-                toaster(
-                    AdminRoles.includes(role)
-                        ? library.is_featured
-                            ? 'Library featured'
-                            : 'Library unfeatured'
-                        : library.is_favorited
-                          ? 'Library favorited'
-                          : 'Library unfavorited',
-                    ToastState.success
-                );
-            }
-        });
+        const resp = await API.put<null, object>(
+            `libraries/${library.id}/favorite`,
+            {}
+        );
+        toaster(
+            resp.message,
+            resp.success ? ToastState.success : ToastState.error
+        );
+        void mutate();
     }
 
     return (
@@ -85,25 +66,25 @@ export default function LibraryCard({
             <div className="flex p-4 gap-2 border-b-2">
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img
-                        src={library.image_url ?? ''}
-                        alt={`${library.name} thumbnail`}
+                        src={library.thumbnail_url ?? ''}
+                        alt={`${library.title} thumbnail`}
                     />
                 </figure>
-                <h3 className="w-3/4 body my-auto">{library.name}</h3>
+                <h3 className="w-3/4 body my-auto">{library.title}</h3>
             </div>
             <div
                 className="absolute right-2 top-2 z-100"
-                onClick={(e) => void toggleLibraryAction(e)}
+                onClick={(e) => void toggleLibraryFavorite(e)}
             >
                 <ULIComponent
                     tooltipClassName="absolute right-2 top-2 z-100"
-                    iconClassName={`w-6 h-6 ${AdminRoles.includes(role) ? (library.is_featured ? 'text-primary-yellow' : '') : library.is_favorited ? 'text-primary-yellow' : ''}`}
+                    iconClassName={`w-6 h-6 ${AdminRoles.includes(role) ? (library.favorites.length > 0 ? 'text-primary-yellow' : '') : library.favorites.length > 0 ? 'text-primary-yellow' : ''}`}
                     icon={
                         AdminRoles.includes(role)
-                            ? library.is_featured
+                            ? library.favorites.length > 0
                                 ? FlagIcon
                                 : FlagIconOutline
-                            : library.is_favorited
+                            : library.favorites.length > 0
                               ? StarIcon
                               : StarIconOutline
                     }
@@ -114,8 +95,9 @@ export default function LibraryCard({
                     }
                 />
             </div>
+
             <div className="p-4 space-y-2">
-                <p className="body-small">{openContentProviderName}</p>
+                <p className="body-small">{'Kiwix'}</p>
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
                     {library?.description}
                 </p>

@@ -34,32 +34,30 @@ export default function FeatureLevelCheckboxes({
         }
     ]);
 
-    const getCheckboxChecked = (kind: string) => {
+    const getCheckboxChecked = (kind: string): boolean => {
         const checkboxState = checkboxStates.find(
             (state) => state.kind === kind
         );
         return checkboxState ? checkboxState.checked : false;
     };
 
-    const handleChange = (checked: boolean, which: string) => {
-        console.log('Checkbox changed:', which, 'Checked:', checked);
-        setCheckboxStates((prevStates) =>
-            prevStates.map((state) =>
-                state.kind === which ? { ...state, checked } : state
-            )
-        );
-        void handleFeatureToggle(which);
-    };
-    const handleFeatureToggle = async (feature: string) => {
+    const handleFeatureToggle = async (
+        checked: boolean,
+        feature: string
+    ): Promise<void> => {
         const resp = await API.put<null, object>(
             `auth/features/${feature}`,
             {}
         );
         if (!resp.success) {
-            console.error('error toggling feature', resp.message);
-            toaster(resp.message, ToastState.error);
+            toaster(resp.message ?? 'error toggling feature', ToastState.error);
             return;
         }
+        setCheckboxStates((prevStates) =>
+            prevStates.map((state) =>
+                state.kind === feature ? { ...state, checked } : state
+            )
+        );
         toaster(resp.message, ToastState.success);
         const user = await fetchUser();
         setUser(user);
@@ -72,19 +70,19 @@ export default function FeatureLevelCheckboxes({
                 name="open_content"
                 label="Open Content"
                 checked={getCheckboxChecked(FeatureAccess.OpenContentAccess)}
-                onChange={handleChange}
+                onChange={handleFeatureToggle}
             />
             <CheckboxGeneric
                 name="provider_platforms"
                 label="Provider Platform Integrations"
                 checked={getCheckboxChecked(FeatureAccess.ProviderAccess)}
-                onChange={handleChange}
+                onChange={handleFeatureToggle}
             />
             <CheckboxGeneric
                 name="program_management"
                 label="Program Management"
                 checked={getCheckboxChecked(FeatureAccess.ProgramAccess)}
-                onChange={handleChange}
+                onChange={handleFeatureToggle}
             />
         </>
     );
