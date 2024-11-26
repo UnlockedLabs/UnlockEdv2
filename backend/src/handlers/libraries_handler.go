@@ -31,7 +31,8 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 		showHidden = r.URL.Query().Get("visibility")
 	}
 	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, providerId, userID, showHidden, search)
+	facilityID := r.Context().Value(ClaimsKey).(*Claims).FacilityID
+	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, providerId, userID, facilityID, showHidden, search)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

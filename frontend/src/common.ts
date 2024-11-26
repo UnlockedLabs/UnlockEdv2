@@ -730,6 +730,7 @@ export interface LibraryDto {
     url: string;
     visibility_status: boolean;
     is_favorited: boolean;
+    is_featured: boolean;
     open_content_provider_name: string;
     base_url: string;
     thumbnail_url: string | null;
@@ -773,7 +774,8 @@ export enum FilterLibraries {
 export enum FilterLibrariesAdmin {
     'All Libraries' = 'all',
     'Visible' = 'visible',
-    'Hidden' = 'hidden'
+    'Hidden' = 'hidden',
+    'Featured' = 'featured'
 }
 
 export enum Timezones {

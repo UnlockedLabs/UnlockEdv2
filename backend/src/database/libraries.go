@@ -7,13 +7,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllLibraries(page, perPage, providerId int, userId uint, visibility, search string) (int64, []models.LibraryDto, error) {
+func (db *DB) GetAllLibraries(page, perPage, providerId int, userId, facilityID uint, visibility, search string) (int64, []models.LibraryDto, error) {
 	var libraries []models.LibraryDto
 	var total int64
 	offset := (page - 1) * perPage
 	tx := db.Table("libraries lib").
 		Select(`lib.id, lib.open_content_provider_id, lib.external_id, lib.name, lib.language, 
             lib.description, lib.path, lib.image_url, lib.visibility_status, ocf.id IS NOT NULL as is_favorited, 
+            foc.id IS NOT NULL as is_featured,
             ocp.base_url, ocp.thumbnail, ocp.currently_enabled, ocp.description as open_content_provider_desc, 
             ocp.name as open_content_provider_name`).
 		Joins(`join open_content_providers ocp on ocp.id = lib.open_content_provider_id 
@@ -27,6 +28,8 @@ func (db *DB) GetAllLibraries(page, perPage, providerId int, userId uint, visibi
                 ) ocf on ocf.content_id = lib.id
                     and ocf.open_content_provider_id = ocp.id 
                     and ocf.user_id = ?`, userId).
+		Joins(`left join featured_open_content foc on foc.content_id = lib.id and foc.open_content_provider_id = lib.open_content_provider_id 
+        and foc.facility_id = ? and foc.deleted_at IS NULL`, facilityID).
 		Where("lib.deleted_at IS NULL").
 		Order("lib.created_at DESC")
 	visibility = strings.ToLower(visibility)
@@ -35,6 +38,9 @@ func (db *DB) GetAllLibraries(page, perPage, providerId int, userId uint, visibi
 	}
 	if visibility == "visible" {
 		tx = tx.Where("lib.visibility_status = true")
+	}
+	if visibility == "featured" {
+		tx = tx.Where("foc.id IS NOT NULL")
 	}
 	if search != "" {
 		search = "%" + strings.ToLower(search) + "%"

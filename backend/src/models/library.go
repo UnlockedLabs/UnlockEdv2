@@ -60,6 +60,7 @@ type LibraryDto struct {
 	ImageUrl         *string `json:"image_url"`
 	VisibilityStatus bool    `json:"visibility_status"`
 	IsFavorited      bool    `json:"is_favorited"`
+	IsFeatured       bool    `json:"is_featured"`
 
 	//open_content_provider
 	OpenContentProviderID   uint   `json:"open_content_provider_id"`

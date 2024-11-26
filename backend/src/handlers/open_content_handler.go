@@ -17,6 +17,8 @@ func (srv *Server) registerOpenContentRoutes() []routeDef {
 		{"POST /api/open-content", srv.handleCreateOpenContent, true, axx},
 		{"PUT /api/open-content/{id}/save", srv.handleToggleFavoriteOpenContent, false, axx},
 		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx},
+		{"PUT /api/open-content/{id}/feature", srv.handleToggleFeatureLibrary, true, axx},
+		{"GET /api/open-content/featured", srv.handleGetFacilityFeaturedOpenContent, false, axx},
 	}
 }
 
@@ -86,12 +88,11 @@ func (srv *Server) handleToggleFavoriteOpenContent(w http.ResponseWriter, r *htt
 	}
 	defer r.Body.Close()
 
-	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
 	contentID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInternalServerServiceError(err, "error converting content id to int")
 	}
-	reqBody.UserID = uint(userID)
+	reqBody.UserID = srv.userIdFromRequest(r)
 	reqBody.ContentID = uint(contentID)
 	if _, err := srv.Db.ToggleLibraryFavorite(&reqBody); err != nil {
 		return newDatabaseServiceError(err)
@@ -100,9 +101,39 @@ func (srv *Server) handleToggleFavoriteOpenContent(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) handleGetUserFavoriteOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
 	page, perPage := srv.getPaginationInfo(r)
-	total, favorites, err := srv.Db.GetUserFavorites(userID, page, perPage)
+	total, favorites, err := srv.Db.GetUserFavorites(srv.userIdFromRequest(r), page, perPage)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	meta := models.NewPaginationInfo(page, perPage, total)
+	return writePaginatedResponse(w, http.StatusOK, favorites, meta)
+}
+
+func (srv *Server) handleToggleFeatureLibrary(w http.ResponseWriter, r *http.Request, log sLog) error {
+	contentID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInternalServerServiceError(err, "error converting content id to int")
+	}
+	var reqBody models.OpenContentParams
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	defer r.Body.Close()
+
+	reqBody.UserID = srv.userIdFromRequest(r)
+	reqBody.ContentID = uint(contentID)
+	reqBody.FacilityID = srv.getFacilityID(r)
+	if err := srv.Db.ToggleFeaturedLibrary(&reqBody); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Featured content toggled successfully")
+}
+
+func (srv *Server) handleGetFacilityFeaturedOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityID := srv.getFacilityID(r)
+	page, perPage := srv.getPaginationInfo(r)
+	total, favorites, err := srv.Db.GetFacilityFeaturedOpenContent(facilityID, page, perPage)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

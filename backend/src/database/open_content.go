@@ -206,3 +206,54 @@ func (db *DB) GetTopUserOpenContent(id int) ([]models.OpenContentItem, error) {
 	}
 	return content, nil
 }
+
+func (db *DB) ToggleFeaturedLibrary(contentParams *models.OpenContentParams) error {
+	var feat_library models.FeaturedOpenContent
+	if db.Model(&models.FeaturedOpenContent{}).Where("content_id = ? AND open_content_provider_id = ? AND facility_id = ?", contentParams.ContentID, contentParams.OpenContentProviderID, contentParams.FacilityID).First(&feat_library).RowsAffected > 0 {
+		if err := db.Unscoped().Model(&models.FeaturedOpenContent{}).Delete(&feat_library).Error; err != nil {
+			return newNotFoundDBError(err, "featured_open_content")
+		}
+	} else {
+		newFeat := models.FeaturedOpenContent{
+			ContentID:             contentParams.ContentID,
+			OpenContentProviderID: contentParams.OpenContentProviderID,
+			FacilityID:            contentParams.FacilityID,
+		}
+		if err := db.Create(&newFeat).Error; err != nil {
+			return newCreateDBError(err, "featured_open_content")
+		}
+		if err := db.Model(&models.Library{}).Where("id = ? AND open_content_provider_id = ?", contentParams.ContentID, contentParams.OpenContentProviderID).Update("visibility_status", true).Error; err != nil {
+			return newUpdateDBError(err, "libraries")
+		}
+	}
+	return nil
+}
+
+func (db *DB) GetFacilityFeaturedOpenContent(facilityID uint, page, perPage int) (int64, []models.OpenContentFavorite, error) {
+	var feat_libraries []models.OpenContentFavorite
+	if err := db.Table("featured_open_content foc").
+		Select(`
+            foc.id,
+            lib.name as name,
+            'library' as content_type,
+            foc.content_id,
+            lib.image_url as thumbnail_url,
+            ocp.description,
+            NOT lib.visibility_status AS visibility_status,
+            foc.open_content_provider_id,
+            ocp.name AS provider_name,
+            foc.created_at
+        `).
+		Joins(`JOIN open_content_providers ocp ON ocp.id = foc.open_content_provider_id
+                AND ocp.currently_enabled = true 
+                AND ocp.deleted_at IS NULL`).
+		Joins(`JOIN libraries lib ON lib.id = foc.content_id 
+                AND foc.open_content_provider_id = ocp.id`).
+		Where("foc.facility_id = ? AND foc.deleted_at IS NULL", facilityID).
+		Order("foc.created_at desc").Offset((page - 1) * perPage).Limit(perPage).
+		Scan(&feat_libraries).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "open_content_favorites")
+	}
+	total := int64(len(feat_libraries))
+	return total, feat_libraries, nil
+}

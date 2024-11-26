@@ -42,6 +42,17 @@ type OpenContentUrl struct {
 
 func (OpenContentUrl) TableName() string { return "open_content_urls" }
 
+type FeaturedOpenContent struct {
+	DatabaseFields
+	ContentID             uint `gorm:"not null" json:"content_id"`
+	OpenContentProviderID uint `gorm:"not null" json:"open_content_provider_id"`
+	FacilityID            uint `gorm:"not null" json:"facility_id"`
+
+	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
+}
+
+func (FeaturedOpenContent) TableName() string { return "featured_open_content" }
+
 type OpenContentFavorite struct {
 	ID                    uint      `json:"id"`
 	ContentID             uint      `json:"content_id"`
@@ -62,6 +73,7 @@ type OpenContentParams struct {
 	OpenContentProviderID uint   `json:"open_content_provider_id"`
 	Name                  string `json:"name"`
 	ContentUrl            string `json:"content_url"`
+	FacilityID            uint   `json:"facility_id"`
 }
 
 type OpenContentItem struct {

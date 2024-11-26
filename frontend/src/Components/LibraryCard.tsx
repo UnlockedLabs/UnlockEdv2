@@ -9,6 +9,8 @@ import { AdminRoles } from '@/useAuth';
 import ULIComponent from '@/Components/ULIComponent';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import { FlagIcon } from '@heroicons/react/24/solid';
+import { FlagIcon as FlagIconOutline } from '@heroicons/react/24/outline';
 
 export default function LibraryCard({
     library,
@@ -21,7 +23,6 @@ export default function LibraryCard({
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
-    const [favorited, setFavorited] = useState<boolean>(library.is_favorited);
     const navigate = useNavigate();
 
     function changeVisibility(visibilityStatus: boolean) {
@@ -47,28 +48,33 @@ export default function LibraryCard({
         library?.open_content_provider_name.charAt(0).toUpperCase() +
         library?.open_content_provider_name.slice(1);
 
-    async function toggleFavorite(e: MouseEvent) {
+    async function toggleLibraryAction(e: MouseEvent) {
         e.stopPropagation();
-        await API.put(`open-content/${library.id}/save`, {
+        const endpoint = `open-content/${library.id}/${AdminRoles.includes(role) ? 'feature' : 'save'}`;
+        await API.put(endpoint, {
             name: library.name,
             content_id: library.id,
             open_content_provider_id: library.open_content_provider_id,
             content_url: `/api/proxy/libraries/${library.id}/`
-        })
-            .then((resp) => {
-                if (resp.success) {
-                    setFavorited(!favorited);
-                    library.is_favorited = !favorited;
-                    toaster(
-                        favorited
-                            ? 'Removed from favorites.'
-                            : 'Added to favorites',
-                        ToastState.success
-                    );
+        }).then((resp) => {
+            if (resp.success) {
+                if (AdminRoles.includes(role)) {
+                    library.is_featured = !library.is_featured;
+                } else {
+                    library.is_favorited = !library.is_favorited;
                 }
-            })
-            .catch((error) => console.error(error));
-        void mutate();
+                toaster(
+                    AdminRoles.includes(role)
+                        ? library.is_featured
+                            ? 'Library featured'
+                            : 'Library unfeatured'
+                        : library.is_favorited
+                          ? 'Library favorited'
+                          : 'Library unfavorited',
+                    ToastState.success
+                );
+            }
+        });
     }
 
     return (
@@ -85,17 +91,29 @@ export default function LibraryCard({
                 </figure>
                 <h3 className="w-3/4 body my-auto">{library.name}</h3>
             </div>
-            {!AdminRoles.includes(role) && (
-                <div onClick={(e: MouseEvent) => void toggleFavorite(e)}>
-                    <ULIComponent
-                        tooltipClassName={'absolute right-2 top-2 z-100'}
-                        iconClassName={`w-5 h-5 ${library.is_favorited ? 'text-primary-yellow' : ''}`}
-                        icon={library.is_favorited ? StarIcon : StarIconOutline}
-                        dataTip="Favorite Library"
-                    />
-                </div>
-            )}
-
+            <div
+                className="absolute right-2 top-2 z-100"
+                onClick={(e) => void toggleLibraryAction(e)}
+            >
+                <ULIComponent
+                    tooltipClassName="absolute right-2 top-2 z-100"
+                    iconClassName={`w-6 h-6 ${AdminRoles.includes(role) ? (library.is_featured ? 'text-primary-yellow' : '') : library.is_favorited ? 'text-primary-yellow' : ''}`}
+                    icon={
+                        AdminRoles.includes(role)
+                            ? library.is_featured
+                                ? FlagIcon
+                                : FlagIconOutline
+                            : library.is_favorited
+                              ? StarIcon
+                              : StarIconOutline
+                    }
+                    dataTip={
+                        AdminRoles.includes(role)
+                            ? 'Feature Library'
+                            : 'Favorite Library'
+                    }
+                />
+            </div>
             <div className="p-4 space-y-2">
                 <p className="body-small">{openContentProviderName}</p>
                 <p className="body-small h-[40px] leading-5 line-clamp-2">
