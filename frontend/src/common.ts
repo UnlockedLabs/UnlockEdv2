@@ -620,15 +620,6 @@ export interface RecentActivity {
     delta: number;
 }
 
-export type Link = Record<string, string>;
-
-export interface Resource {
-    id: number;
-    name: string;
-    links: Link[];
-    rank: number;
-}
-
 export interface Announcement {
     course_name: string;
     title: string;
@@ -760,11 +751,6 @@ export interface OpenContentProvider {
     thumbnail_url: string | null;
     currently_enabled: boolean;
     description: string | null;
-}
-
-export interface ToastProps {
-    state: ToastState;
-    message: string;
 }
 
 export enum FilterLibraries {
