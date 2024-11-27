@@ -41,6 +41,15 @@ export const openContentRoutes = [
 
 export const programRoutes = ['programs', 'program-management'];
 
+export interface OpenContentProvider {
+    id: number;
+    name: string;
+    base_url: string;
+    thumbnail_url: string | null;
+    currently_enabled: boolean;
+    description: string | null;
+}
+
 export interface Video {
     id: number;
     title: string;
@@ -58,6 +67,7 @@ export interface Video {
     video_download_attempts: VideoDownloadAttempt[];
     video_favorites: VideoFavorites[];
 }
+
 export interface VideoFavorites {
     user_id: number;
     video_id: number;
@@ -431,6 +441,16 @@ export interface UserCourses {
     end_dt?: Date;
 }
 
+export enum ModalType {
+    Edit = 'Edit',
+    Add = 'Add',
+    Show = 'Show',
+    Associate = 'Associate',
+    Confirm = 'Confirm',
+    Register = 'Register',
+    Blank = '',
+    Delete = 'Delete'
+}
 export interface CourseCatalogue {
     key: [number, string, boolean];
     course_id: number;
@@ -646,6 +666,11 @@ export interface RecentActivity {
     delta: number;
 }
 
+export interface Tab {
+    name: string;
+    value: string | number;
+}
+
 export type Link = Record<string, string>;
 
 export interface Resource {
@@ -663,6 +688,23 @@ export interface HelpfulLinkAndSort {
 export interface HelpfulLink {
     id: number;
     title: string;
+    description: string;
+    url: string;
+    visibility_status: boolean;
+    open_content_provider_id: number;
+    facility_id: number;
+}
+
+export interface Resource {
+    id: number;
+    name: string;
+    links: Link[];
+    rank: number;
+}
+
+export interface HelpfulLink {
+    id: number;
+    name: string;
     description: string;
     url: string;
     visibility_status: boolean;
@@ -708,17 +750,6 @@ export interface ModalProps {
     form: ReactNode | undefined;
 }
 
-export enum ModalType {
-    Edit = 'Edit',
-    Add = 'Add',
-    Show = 'Show',
-    Associate = 'Associate',
-    Confirm = 'Confirm',
-    Register = 'Register',
-    Blank = '',
-    Delete = 'Delete'
-}
-
 export enum OutcomePillType {
     Certificate = 'certificate',
     CollegeCredit = 'college_credit'
@@ -738,11 +769,6 @@ export enum CourseStatus {
 export enum ViewType {
     Grid = 'Grid',
     List = 'List'
-}
-
-export interface Tab {
-    name: string;
-    value: string | number;
 }
 
 export interface Library {
@@ -793,15 +819,6 @@ export interface Program {
 export interface ProgramTag {
     id: string;
     value: number;
-}
-
-export interface OpenContentProvider {
-    id: number;
-    name: string;
-    base_url: string;
-    thumbnail_url: string | null;
-    currently_enabled: boolean;
-    description: string | null;
 }
 
 export enum FilterLibraries {

@@ -17,9 +17,16 @@ export default function OpenContentManagement() {
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === tab) ?? tabOptions[0]
     );
+
     useEffect(() => {
         setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
     }, [activeTab]);
+
+    //const tabs = [
+    //    { name: OpenContentProviderType.KIWIX, value: 'libraries' },
+    //    { name: OpenContentProviderType.VIDEOS, value: 'videos' },
+    //    { name: OpenContentProviderType.LINKS, value: 'helpful-links' }
+    //];
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
