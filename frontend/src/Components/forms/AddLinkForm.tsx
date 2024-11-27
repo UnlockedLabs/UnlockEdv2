@@ -5,8 +5,8 @@ import { CloseX } from '../inputs/CloseX';
 import { TextAreaInput } from '../inputs';
 import { useToast } from '@/Context/ToastCtx';
 import { ToastState } from '@/common';
-
 import API from '@/api/api';
+
 interface Inputs {
     title: string;
     url: string;
