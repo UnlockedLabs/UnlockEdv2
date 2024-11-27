@@ -9,20 +9,20 @@ export default function OpenContentManagement() {
     const navigate = useNavigate();
     const route = useLocation();
     const tab = route.pathname.split('/')[2] ?? 'libraries';
-    const [activeTab, setActiveTab] = useState<Tab>(
-        tab.toLowerCase() === 'libraries'
-            ? {
-                  name: 'Kiwix',
-                  value: 'Libraries'
-              }
-            : { name: 'Videos', value: 'Videos' }
-    );
+    const tabOptions: Record<string, Tab> = {
+        libraries: { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
+        videos: { name: OpenContentProviderType.VIDEOS, value: 'Videos' },
+        links: { name: OpenContentProviderType.LINKS, value: 'Helpful Links' }
+    };
+    const [activeTab, setActiveTab] = useState<Tab>(tabOptions[tab]);
     useEffect(() => {
         setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
     }, [activeTab]);
+
     const tabs = [
-        { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
-        { name: OpenContentProviderType.VIDEOS, value: 'Videos' }
+        { name: OpenContentProviderType.KIWIX, value: 'libraries' },
+        { name: OpenContentProviderType.VIDEOS, value: 'videos' },
+        { name: OpenContentProviderType.LINKS, value: 'helpful-links' }
     ];
 
     const handlePageChange = (tab: Tab) => {

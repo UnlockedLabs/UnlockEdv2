@@ -1,28 +1,36 @@
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { SubmitButton } from '../inputs/SubmitButton';
-import { TextInput } from '../inputs/TextInput';
-import { CloseX } from '../inputs/CloseX';
-import { TextAreaInput } from '../inputs';
+import { CloseX, SubmitButton, TextAreaInput, TextInput } from '../inputs';
+import { HelpfulLink } from '@/common';
+
 interface Inputs {
-    title: string;
+    name: string;
     url: string;
+    description: string;
 }
 
-export default function AddLinkForm({
+export default function EditLinkForm({
+    link,
     onSuccess
 }: {
-    onSuccess: (title: string, url: string) => void;
+    link: HelpfulLink;
+    onSuccess: () => void;
 }) {
     const {
         register,
         handleSubmit,
         reset,
         formState: { errors }
-    } = useForm<Inputs>();
+    } = useForm<Inputs>({
+        values: {
+            name: link.name,
+            url: link.url,
+            description: link.description
+        }
+    });
 
-    const onSubmit: SubmitHandler<Inputs> = (data) => {
-        onSuccess(data.title, data.url);
-        reset();
+    const onSubmit: SubmitHandler<Inputs> = () => {
+        onSuccess();
+        return;
     };
 
     return (
@@ -30,13 +38,12 @@ export default function AddLinkForm({
             <CloseX close={() => reset()} />
             <form
                 onSubmit={(e) => {
-                    const func = handleSubmit(onSubmit);
-                    void func(e);
+                    void handleSubmit(onSubmit)(e);
                 }}
             >
                 <TextInput
-                    label="Title"
-                    interfaceRef="title"
+                    label="Name"
+                    interfaceRef="name"
                     required
                     length={25}
                     errors={errors}

@@ -492,7 +492,8 @@ export enum ProviderPlatformState {
 
 export enum OpenContentProviderType {
     KIWIX = 'Libraries',
-    VIDEOS = 'Videos'
+    VIDEOS = 'Videos',
+    LINKS = 'Helpful Links'
 }
 
 export enum ProviderPlatformType {
@@ -645,6 +646,26 @@ export interface RecentActivity {
     delta: number;
 }
 
+export type Link = Record<string, string>;
+
+export interface Resource {
+    id: number;
+    name: string;
+    links: Link[];
+    rank: number;
+}
+
+export interface HelpfulLink {
+    id: number;
+    name: string;
+    description: string;
+    url: string;
+    visibility_status: boolean;
+    open_content_provider_id: number;
+    facility_id: number;
+}
+
+>>>>>>> 52d7ef1 (feat: add frontend helpful links)
 export interface Announcement {
     course_name: string;
     title: string;
