@@ -56,6 +56,7 @@ import FavoritesPage from './Pages/Favorites.tsx';
 import OpenContentLevelDashboard from './Pages/OpenContentLevelDashboard.tsx';
 import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
 import OperationalInsightsPage from './Pages/OperationalInsights.tsx';
+import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
 
 const WithAuth: React.FC = () => {
     return (

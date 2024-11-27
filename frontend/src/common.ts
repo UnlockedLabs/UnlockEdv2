@@ -655,14 +655,9 @@ export interface Resource {
     rank: number;
 }
 
-export interface HelpfulLinkAndSort {
-    helpful_links: HelpfulLink[];
-    sort_order: string;
-    meta: PaginationMeta;
-}
 export interface HelpfulLink {
     id: number;
-    title: string;
+    name: string;
     description: string;
     url: string;
     visibility_status: boolean;
