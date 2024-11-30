@@ -165,7 +165,6 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Accept", "image/*")
-
 	resp, err := yt.Client.Do(req)
 	if err != nil {
 		logger().Errorf("error fetching thumbnail image from URL: %v", err)
@@ -176,17 +175,15 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 		logger().Errorf("failed to fetch thumbnail image: received %v response", resp.Status)
 		return "", fmt.Errorf("failed to fetch thumbnail image: %v", resp.Status)
 	}
-
 	imgData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger().Errorf("error reading thumbnail image: %v", err)
 		return "", err
 	}
-
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	filename := yt_id + ".jpg"
 
+	filename := yt_id + ".jpg"
 	part, err := writer.CreateFormFile("file", filename)
 	if err != nil {
 		return "", err
@@ -195,8 +192,7 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 	if err != nil {
 		return "", err
 	}
-	fields := map[string]string{"filename": filename, "size": fmt.Sprintf("%d", len(imgData)), "type": "image/jpg"}
-	for key, value := range fields {
+	for key, value := range map[string]string{"filename": filename, "size": fmt.Sprintf("%d", len(imgData)), "type": "image/jpg"} {
 		err = writer.WriteField(key, value)
 		if err != nil {
 			return "", err
@@ -207,15 +203,12 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 		logger().Errorf("error closing writer: %v", err)
 		return "", err
 	}
-
-	uploadURL := os.Getenv("APP_URL") + "/upload"
-	req, err = http.NewRequest(http.MethodPost, uploadURL, body)
+	req, err = http.NewRequest(http.MethodPost, os.Getenv("APP_URL")+"/upload", body)
 	if err != nil {
 		logger().Errorf("error creating upload request: %v", err)
 		return "", err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-
 	uploadResp, err := yt.Client.Do(req)
 	if err != nil {
 		logger().Errorf("error sending upload request: %v", err)
