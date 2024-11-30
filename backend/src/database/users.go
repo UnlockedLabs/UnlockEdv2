@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"errors"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -184,4 +185,108 @@ func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 		}
 	}
 	return favRemoved, nil
+}
+
+func (db *DB) IncrementUserLogin(username string) error {
+	log.Printf("Incrementing login count for %s", username)
+	user, err := db.GetUserByUsername(username)
+	if err != nil {
+		log.Errorf("Error getting user by username: %v", err)
+		return newGetRecordsDBError(err, "users")
+	}
+	if err := db.Debug().Exec(
+		`INSERT INTO login_metrics (user_id, total, last_login) 
+		 VALUES (?, 1, CURRENT_TIMESTAMP) 
+		 ON CONFLICT (user_id) DO UPDATE 
+		 SET total = login_metrics.total + 1, last_login = CURRENT_TIMESTAMP`,
+		user.ID).Error; err != nil {
+		log.Errorf("Error incrementing login count: %v", err)
+		return newUpdateDBError(err, "login_metrics")
+	}
+	now := time.Now()
+	rounded := now.Truncate(time.Hour)
+
+	if err := db.Debug().Exec(
+		`INSERT INTO login_activity (time_interval, facility_id, total_logins)
+		 VALUES (?, ?, ?)
+		 ON CONFLICT (time_interval, facility_id)
+		 DO UPDATE SET total_logins = login_activity.total_logins + 1`,
+		rounded, user.FacilityID, 1).Error; err != nil {
+		log.Errorf("Error incrementing login activity: %v", err)
+		return newUpdateDBError(err, "login_activity")
+	}
+
+	log.Printf("FINISHED Incremented login count for %s", username)
+	return nil
+}
+
+func (db *DB) GetNumberOfActiveUsersForTimePeriod(active bool, days int, facilityId *uint) (int64, error) {
+	var count int64
+	daysAgo := time.Now().AddDate(0, 0, -days)
+	join := "JOIN login_metrics on users.id = login_metrics.user_id AND login_metrics.last_login "
+	if active {
+		join += "> ?"
+	} else {
+		join += "< ?"
+	}
+	tx := db.Model(&models.User{}).Joins(join, daysAgo).Where("role = 'student'")
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&count).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "users")
+	}
+	return count, nil
+}
+
+func (db *DB) NewUsersInTimePeriod(days int, facilityId *uint) (int64, error) {
+	var count int64
+	daysAgo := time.Now().AddDate(0, 0, -days)
+	tx := db.Model(&models.User{}).Where("created_at >= ? AND role NOT IN ('system_admin', 'admin')", daysAgo)
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&count).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "users")
+	}
+	return count, nil
+}
+
+func (db *DB) GetTotalLogins(days int, facilityId *uint) (int64, error) {
+	var total int64
+	daysAgo := time.Now().AddDate(0, 0, -days)
+	tx := db.Model(&models.LoginActivity{}).Select("SUM(total_logins)").Where("time_interval >= ?", daysAgo)
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Scan(&total).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "login_activity")
+	}
+	return total, nil
+}
+
+func (db *DB) GetTotalUsers(facilityId *uint) (int64, error) {
+	var total int64
+	tx := db.Model(&models.User{}).Where("role NOT IN ('admin', 'system_admin')")
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&total).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "users")
+	}
+	return total, nil
+}
+
+func (db *DB) GetLoginActivity(days int, facilityID *uint) ([]models.LoginActivity, error) {
+	acitvity := make([]models.LoginActivity, 0, 3)
+	daysAgo := time.Now().AddDate(0, 0, -days)
+	if err := db.Raw(`SELECT time_interval, total_logins
+						FROM login_activity
+						WHERE time_interval >= ?
+						ORDER BY total_logins DESC
+						LIMIT 3;`, daysAgo).
+		Scan(&acitvity).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "login_activity")
+	}
+	return acitvity, nil
 }

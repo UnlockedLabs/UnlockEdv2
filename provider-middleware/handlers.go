@@ -38,7 +38,7 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
 	}
 	for _, sub := range subscriptions {
-		_, err := sh.nats.Subscribe(sub.topic, func(msg *nats.Msg) {
+		_, err := sh.nats.QueueSubscribe(sub.topic, "middleware", func(msg *nats.Msg) {
 			go sub.fn(sh.ctx, msg)
 		})
 		if err != nil {

@@ -26,7 +26,6 @@ type ProviderServiceInterface interface {
 
 	ImportActivityForCourse(coursePair map[string]interface{}, db *gorm.DB) error
 
-	// TODO: GetOutcomes()
 	GetJobParams() *map[string]interface{}
 }
 

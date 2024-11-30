@@ -15,8 +15,9 @@ import {
     DocumentTextIcon,
     FolderOpenIcon,
     CloudIcon,
+    RssIcon,
     RectangleStackIcon,
-    RssIcon
+    CogIcon
 } from '@heroicons/react/24/solid';
 import { handleLogout, hasFeature, isAdministrator, useAuth } from '@/useAuth';
 import Modal from '@/Components/Modal';
@@ -132,6 +133,12 @@ export default function Navbar({
                                         </li>
                                     </>
                                 )}
+                                <li>
+                                    <Link to="/operational-insights">
+                                        <ULIComponent icon={CogIcon} />
+                                        Operational Insights
+                                    </Link>
+                                </li>
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess

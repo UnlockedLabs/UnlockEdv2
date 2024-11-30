@@ -342,6 +342,37 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
+export interface ResourceCategory {
+    id: number;
+    name: string;
+    links: ResourceLink[];
+    rank: number;
+}
+
+export interface LoginMetrics {
+    active_users: number;
+    total_logins: number;
+    logins_per_day: number;
+    percent_active: number;
+    percent_inactive: number;
+    total_users: number;
+    facility: string;
+    new_residents_added: number;
+    peak_login_times: LoginActivity[];
+}
+
+export interface LoginActivity {
+    time_interval: string;
+    total_logins: number;
+    facility_id: number;
+}
+
+export type ResourceLink = Record<string, string>;
+
+export type EditableResourceCollection = ResourceCategory & {
+    isModified: boolean;
+};
+>>>>>>> 72c9fe0 (feat: add layer 0 operational insights page w/ charts for user data)
 export interface OidcClient {
     client_id: string;
     client_secret: string;

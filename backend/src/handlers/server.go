@@ -147,7 +147,7 @@ func newServer() *Server {
 	server.features = features
 	err = server.setupNatsKvBuckets()
 	if err != nil {
-		log.Errorf("Failed to setup JetStream KV store: %v", err)
+		log.Fatalf("Failed to setup JetStream KV store: %v", err)
 	}
 	server.initAwsConfig(ctx)
 	server.RegisterRoutes()
@@ -212,6 +212,7 @@ const (
 	CachedUsers  string = "cache_users"
 	LibraryPaths string = "library_paths"
 	OAuthState   string = "oauth_state"
+	LoginMetrics string = "login_metrics"
 )
 
 func (srv *Server) setupNatsKvBuckets() error {
@@ -221,21 +222,22 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths, OAuthState} {
+	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState} {
 		kv, err := js.KeyValue(bucket)
-		if err == nats.ErrBucketNotFound {
-			switch bucket {
-			case OAuthState:
-				kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
-					Bucket:  bucket,
-					History: 1,
-					TTL:     10 * time.Minute, //expire (time-to-live)
-				})
-			default:
-				kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
-					Bucket: bucket,
-				})
+		if err != nil {
+			cfg := &nats.KeyValueConfig{
+				Bucket:  bucket,
+				History: 1,
 			}
+			switch bucket {
+			case CachedUsers:
+				cfg.TTL = time.Hour * 1
+			case LoginMetrics:
+				cfg.TTL = time.Hour * 24
+			case OAuthState:
+				cfg.TTL = time.Minute * 10
+			}
+			kv, err = js.CreateKeyValue(cfg)
 			if err != nil {
 				log.Errorf("Error creating JetStream KV store: %v", err)
 				return err

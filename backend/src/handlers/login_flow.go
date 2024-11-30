@@ -77,6 +77,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
+	err = s.Db.IncrementUserLogin(form.Username)
+	if err != nil {
+		log.error("Error incrementing user login count", err)
+		return newDatabaseServiceError(err)
+	}
 	return writeJsonResponse(w, http.StatusOK, redirect)
 }
 

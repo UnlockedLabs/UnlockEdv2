@@ -54,7 +54,7 @@ import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
 import FavoritesPage from './Pages/Favorites.tsx';
 import OpenContentLevelDashboard from './Pages/OpenContentLevelDashboard.tsx';
-import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
+import OperationalInsightsPage from './Pages/OperationalInsights.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -314,9 +314,19 @@ const router = createBrowserRouter([
         element: <WithAdmin />,
         children: [
             {
+                id: 'admin',
                 element: <AuthenticatedLayout />,
                 loader: getFacilities,
                 children: [
+                    {
+                        path: 'operational-insights',
+                        element: <OperationalInsightsPage />,
+                        errorElement: <Error />,
+                        handle: {
+                            title: 'Operational Insights',
+                            path: ['operational-insights']
+                        }
+                    },
                     {
                         path: 'student-management',
                         element: <StudentManagement />,
