@@ -16,7 +16,6 @@ func (srv *Server) registerLeftMenuRoutes() []routeDef {
 }
 
 func (srv *Server) handleGetLeftMenu(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.info("GET: /api/left-menu")
 	var limit int
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
