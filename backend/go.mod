@@ -20,14 +20,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/teambition/rrule-go v1.8.2
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-<<<<<<< HEAD
-||||||| parent of 72c9fe0 (feat: add layer 0 operational insights page w/ charts for user data)
-	gorm.io/datatypes v1.2.0
-=======
-	golang.org/x/oauth2 v0.24.0
-	gorm.io/datatypes v1.2.0
->>>>>>> 72c9fe0 (feat: add layer 0 operational insights page w/ charts for user data)
-	gorm.io/driver/postgres v1.5.9
+	golang.org/x/oauth2 v0.21.0
+	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.11
 )
 
