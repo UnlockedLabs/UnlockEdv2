@@ -44,7 +44,7 @@ export default function OpenContentManagement() {
                 activeTab={activeTab}
                 setActiveTab={handlePageChange}
             />
-            <div className="flex flex-row gap-4 pt-8 pb-8">
+            <div className="flex flex-col gap-8 py-8">
                 <Outlet />
             </div>
         </div>

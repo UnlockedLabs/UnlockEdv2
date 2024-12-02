@@ -53,7 +53,7 @@ export default function HelpfulLinksManagement() {
     }
 
     return (
-        <div className="w-full flex flex-col gap-8">
+        <>
             <div className="flex flex-row justify-between">
                 {/* searcha nd sort */}
                 {/* TO DO: make this a common enum? */}
@@ -124,6 +124,6 @@ export default function HelpfulLinksManagement() {
                     />
                 }
             />
-        </div>
+        </>
     );
 }

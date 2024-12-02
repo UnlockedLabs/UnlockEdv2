@@ -665,7 +665,6 @@ export interface HelpfulLink {
     facility_id: number;
 }
 
->>>>>>> 52d7ef1 (feat: add frontend helpful links)
 export interface Announcement {
     course_name: string;
     title: string;
