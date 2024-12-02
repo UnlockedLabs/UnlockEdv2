@@ -1,6 +1,7 @@
 import { HelpfulLink, ModalType } from '@/common';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import AddLinkForm from '@/Components/forms/AddLinkForm';
+import DeleteForm from '@/Components/DeleteForm';
 import EditLinkForm from '@/Components/forms/EditLinkForm';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Modal from '@/Components/Modal';
@@ -32,6 +33,7 @@ const helpfulLinks: HelpfulLink[] = [
 export default function HelpfulLinksManagement() {
     const addLinkModal = useRef<HTMLDialogElement>(null);
     const editLinkModal = useRef<HTMLDialogElement>(null);
+    const deleteLinkModal = useRef<HTMLDialogElement>(null);
     const [currentLink, setCurrentLink] = useState<HelpfulLink>();
 
     // grab the data
@@ -41,9 +43,13 @@ export default function HelpfulLinksManagement() {
         // close modal
     }
 
-    function showEditLink(link: HelpfulLink) {
+    function showModifyLink(link: HelpfulLink, type: ModalType) {
         setCurrentLink(link);
-        editLinkModal.current?.showModal();
+        if (type === ModalType.Edit) {
+            editLinkModal.current?.showModal();
+        } else if (type === ModalType.Delete) {
+            deleteLinkModal.current?.showModal();
+        }
     }
 
     return (
@@ -61,7 +67,7 @@ export default function HelpfulLinksManagement() {
                 />
                 {/* add links button */}
                 <div
-                    className="button my-auto"
+                    className="button my-auto cursor-pointer"
                     onClick={() => {
                         addLinkModal.current?.showModal();
                     }}
@@ -77,7 +83,7 @@ export default function HelpfulLinksManagement() {
                         <HelpfulLinkCard
                             key={index}
                             link={link}
-                            showEditLink={showEditLink}
+                            showModal={showModifyLink}
                         />
                     );
                 })}
@@ -102,6 +108,20 @@ export default function HelpfulLinksManagement() {
                     ) : (
                         <div>No link selected!</div>
                     )
+                }
+            />
+            <Modal
+                ref={deleteLinkModal}
+                type={ModalType.Delete}
+                item={'Helpful Link'}
+                form={
+                    <DeleteForm
+                        item={'Helpful Link'}
+                        onCancel={() => {
+                            setCurrentLink(undefined);
+                        }}
+                        onSuccess={updateLinks}
+                    />
                 }
             />
         </div>

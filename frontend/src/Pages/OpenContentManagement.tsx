@@ -9,21 +9,17 @@ export default function OpenContentManagement() {
     const navigate = useNavigate();
     const route = useLocation();
     const tab = route.pathname.split('/')[2] ?? 'libraries';
-    const tabOptions: Record<string, Tab> = {
-        libraries: { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
-        videos: { name: OpenContentProviderType.VIDEOS, value: 'Videos' },
-        links: { name: OpenContentProviderType.LINKS, value: 'Helpful Links' }
-    };
-    const [activeTab, setActiveTab] = useState<Tab>(tabOptions[tab]);
-    useEffect(() => {
-        setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
-    }, [activeTab]);
-
-    const tabs = [
+    const tabOptions: Tab[] = [
         { name: OpenContentProviderType.KIWIX, value: 'libraries' },
         { name: OpenContentProviderType.VIDEOS, value: 'videos' },
         { name: OpenContentProviderType.LINKS, value: 'helpful-links' }
     ];
+    const [activeTab, setActiveTab] = useState<Tab>(
+        tabOptions.find((t) => t.value === tab) ?? tabOptions[0]
+    );
+    useEffect(() => {
+        setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
+    }, [activeTab]);
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
@@ -44,7 +40,7 @@ export default function OpenContentManagement() {
                 </button>
             </div>
             <TabView
-                tabs={tabs}
+                tabs={tabOptions}
                 activeTab={activeTab}
                 setActiveTab={handlePageChange}
             />

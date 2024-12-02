@@ -711,7 +711,8 @@ export enum ModalType {
     Associate = 'Associate',
     Confirm = 'Confirm',
     Register = 'Register',
-    Blank = ''
+    Blank = '',
+    Delete = 'Delete'
 }
 
 export enum OutcomePillType {

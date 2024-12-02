@@ -1,4 +1,4 @@
-import { HelpfulLink } from '@/common';
+import { HelpfulLink, ModalType } from '@/common';
 import VisibleHiddenToggle from '../VisibleHiddenToggle';
 import { useState } from 'react';
 import ULIComponent from '../ULIComponent';
@@ -6,10 +6,10 @@ import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 export default function HelpfulLinkCard({
     link,
-    showEditLink
+    showModal
 }: {
     link: HelpfulLink;
-    showEditLink: () => void;
+    showModal: (link: HelpfulLink, type: ModalType) => void;
 }) {
     const [visible] = useState(link.visibility_status);
     function changeVisibility() {
@@ -19,8 +19,16 @@ export default function HelpfulLinkCard({
     return (
         <div className="card p-4 space-y-2">
             <div className="flex flex-row gap-2 justify-end">
-                <ULIComponent icon={PencilSquareIcon} onClick={showEditLink} />
-                <ULIComponent icon={TrashIcon} />
+                <ULIComponent
+                    icon={PencilSquareIcon}
+                    iconClassName={'cursor-pointer'}
+                    onClick={() => showModal(link, ModalType.Edit)}
+                />
+                <ULIComponent
+                    icon={TrashIcon}
+                    iconClassName={'cursor-pointer'}
+                    onClick={() => showModal(link, ModalType.Delete)}
+                />
             </div>
             <h3 className="body">{link.name}</h3>
             <p className="body line-clamp-2 h-10">{link.description}</p>
