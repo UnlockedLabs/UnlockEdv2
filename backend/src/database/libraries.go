@@ -7,22 +7,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllLibraries(page, perPage int, userId, facilityID uint, visibility, orderBy, search string) (int64, []models.Library, error) {
+func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string) (int64, []models.Library, error) {
 	var total int64
 	libraries := make([]models.Library, 0, perPage)
-
 	tx := db.Model(&models.Library{}).
 		Preload("OpenContentProvider")
-
 	visibility = strings.ToLower(visibility)
 
 	switch strings.ToLower(visibility) {
 	case "featured":
-		tx = tx.Preload("Favorites", "library_favorites.user_id IN (SELECT id from users where role IN ('admin', 'system_admin') AND facility_id = ?)", facilityID)
+		tx = tx.Preload("Favorites", "facility_id = ?", facilityId).Joins("JOIN library_favorites l ON l.library_id = libraries.id AND l.facility_id IS NOT NULL").Where("visibility_status = true")
 	case "visible":
-		tx = tx.Preload("Favorites", "library_favorites.user_id = ?", userId).Where("visibility_status = false")
+		tx = tx.Preload("Favorites", "user_id = ?", userId).Where("visibility_status = true")
 	case "hidden":
-		tx = tx.Where("visibility_status = true")
+		tx = tx.Preload("Favorites", "user_id = ?", userId).Where("visibility_status = false")
+	case "all":
+		tx = tx.Preload("Favorites", "facility_id = ?", facilityId)
 	}
 
 	if search != "" {
@@ -44,12 +44,18 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityID uint, visibi
 			Joins("LEFT JOIN library_favorites ON libraries.id = library_favorites.library_id").
 			Group("libraries.id").
 			Order("favorite_count ASC")
+	} else {
+		tx = tx.Order(orderBy)
 	}
 
 	if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Find(&libraries).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")
 	}
-
+	for i := range libraries {
+		if libraries[i].Favorites == nil {
+			libraries[i].Favorites = []models.LibraryFavorite{}
+		}
+	}
 	return total, libraries, nil
 }
 

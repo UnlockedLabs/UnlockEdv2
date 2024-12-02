@@ -10,9 +10,14 @@ interface FavoriteCardProps {
     pageQuery: number;
     perPage: number;
     mutate: KeyedMutator<ServerResponseMany<OpenContentFavorite>>;
+    isAdminInStudentView: boolean;
 }
 
-const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, mutate }) => {
+const FavoriteCard: React.FC<FavoriteCardProps> = ({
+    favorite,
+    mutate,
+    isAdminInStudentView
+}) => {
     const navigate = useNavigate();
     const { toaster } = useToast();
 
@@ -50,15 +55,17 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ favorite, mutate }) => {
             }`}
             onClick={favorite.visibility_status ? undefined : handleCardClick}
         >
-            <div
-                className="absolute top-2 right-2 cursor-pointer"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    void handleUnfavorite();
-                }}
-            >
-                <SolidStar className="w-5 text-primary-yellow" />
-            </div>
+            {!isAdminInStudentView && (
+                <div
+                    className="absolute top-2 right-2 cursor-pointer"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        void handleUnfavorite();
+                    }}
+                >
+                    <SolidStar className="w-5 text-primary-yellow" />
+                </div>
+            )}
             <img
                 src={favorite.thumbnail_url}
                 alt={favorite.name}

@@ -38,11 +38,13 @@ type LibraryProxyPO struct {
 
 type LibraryFavorite struct {
 	DatabaseFields
-	UserID    uint `gorm:"not null" json:"user_id"`
-	LibraryID uint `gorm:"not null" json:"library_id"`
+	UserID     uint  `gorm:"not null" json:"user_id"`
+	LibraryID  uint  `gorm:"not null" json:"library_id"`
+	FacilityID *uint `json:"facility_id"`
 
-	User    *User    `gorm:"foreignKey:UserID" json:"-"`
-	Library *Library `gorm:"foreignKey:LibraryID" json:"-"`
+	Facility *Facility `gorm:"foreignKey:FacilityID" json:"-"`
+	User     *User     `gorm:"foreignKey:UserID" json:"-"`
+	Library  *Library  `gorm:"foreignKey:LibraryID" json:"-"`
 }
 
 func (LibraryFavorite) TableName() string { return "library_favorites" }

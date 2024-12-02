@@ -99,8 +99,8 @@ export default function VideoManagement() {
     };
 
     return (
-        <div>
-            <div className="flex flex-col gap-8">
+        <>
+            <div className="w-full flex flex-col p-8 gap-8">
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-4">
                         <SearchBar
@@ -192,6 +192,6 @@ export default function VideoManagement() {
                     />
                 </div>
             )}
-        </div>
+        </>
     );
 }

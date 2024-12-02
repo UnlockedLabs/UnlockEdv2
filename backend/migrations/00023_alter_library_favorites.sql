@@ -7,6 +7,9 @@ ALTER TABLE public.library_favorites
 	DROP COLUMN visibility_status,
 	DROP COLUMN open_content_url_id,
 	DROP COLUMN open_content_provider_id;
+ALTER TABLE public.library_favorites ADD COLUMN facility_id INTEGER DEFAULT NULL REFERENCES public.facilities(id);
+CREATE UNIQUE INDEX idx_facility_library_user ON library_favorites (library_id, facility_id) WHERE facility_id IS NOT NULL;
+
 ALTER TABLE public.library_favorites ADD CONSTRAINT uni_user_lib_id UNIQUE(user_id, library_id);
 ALTER TABLE public.video_favorites ADD CONSTRAINT uni_user_vid_id UNIQUE(user_id, video_id);
 ALTER TABLE public.libraries RENAME COLUMN image_url TO thumbnail_url;

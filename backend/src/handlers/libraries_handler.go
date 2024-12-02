@@ -91,12 +91,17 @@ func (srv *Server) updateLibraryBucket(key string, library *models.Library, log 
 }
 
 func (srv *Server) handleToggleFavoriteLibrary(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	libraryID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInternalServerServiceError(err, "error converting content id to int")
 	}
-	if err := srv.Db.ToggleLibraryFavorite(userID, libraryID); err != nil {
+	var facilityID *uint = nil
+	if srv.UserIsAdmin(r) {
+		// an admin toggling this will save the facilityID as a 'featured' library for that facility
+		facilityID = &claims.FacilityID
+	}
+	if err := srv.Db.ToggleLibraryFavorite(claims.UserID, facilityID, libraryID); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Favorite toggled successfully")

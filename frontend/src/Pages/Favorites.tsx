@@ -4,7 +4,7 @@ import { OpenContentFavorite, ServerResponseMany } from '@/common';
 import Pagination from '@/Components/Pagination';
 import { AxiosError } from 'axios';
 import FavoriteCard from '@/Components/FavoriteCard';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function FavoritesPage() {
     const { user } = useAuth();
@@ -20,7 +20,6 @@ export default function FavoritesPage() {
             : null,
         { shouldRetryOnError: false }
     );
-
     const favorites = data?.data ?? [];
     const meta = data?.meta;
 
@@ -30,8 +29,7 @@ export default function FavoritesPage() {
     };
 
     return (
-        <div className="w-full p-8 ">
-            My Favorites
+        <div className="w-full p-8 gap-8">
             <div className="grid grid-cols-4 gap-6">
                 {favorites.map((favorite) => (
                     <FavoriteCard
@@ -40,6 +38,7 @@ export default function FavoritesPage() {
                         perPage={perPage}
                         favorite={favorite}
                         mutate={mutate}
+                        isAdminInStudentView={isAdministrator(user)}
                     />
                 ))}
             </div>
