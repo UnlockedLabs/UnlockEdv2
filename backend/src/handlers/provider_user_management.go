@@ -74,12 +74,12 @@ type ImportUserResponse struct {
 	Error        string `json:"error"`
 }
 
-func stripNonAlphaChars(str string) string {
+func stripNonAlphaChars(str string, keepCharacter func(char rune) bool) string {
 	return strings.Map(func(r rune) rune {
-		if !unicode.IsLetter(r) {
-			return -1
+		if keepCharacter(r) {
+			return r
 		}
-		return r
+		return -1
 	}, str)
 }
 
@@ -108,12 +108,20 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		return newJSONReqBodyServiceError(err)
 	}
 	toReturn := make([]ImportUserResponse, 0)
+	var (
+		isLetterOrNumber = func(char rune) bool {
+			return unicode.IsLetter(char) || unicode.IsDigit(char)
+		}
+		isLetterOrSpace = func(char rune) bool {
+			return unicode.IsLetter(char) || unicode.IsSpace(char)
+		}
+	)
 	for _, user := range users.Users {
 		newUser := models.User{
-			Username:   stripNonAlphaChars(user.Username),
+			Username:   stripNonAlphaChars(user.Username, isLetterOrNumber),
 			Email:      user.Email,
-			NameFirst:  stripNonAlphaChars(user.NameFirst),
-			NameLast:   stripNonAlphaChars(user.NameLast),
+			NameFirst:  stripNonAlphaChars(user.NameFirst, isLetterOrSpace),
+			NameLast:   stripNonAlphaChars(user.NameLast, isLetterOrSpace),
 			FacilityID: facilityId,
 			Role:       models.Student,
 		}

@@ -95,13 +95,14 @@ services:
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
-      - APP_URL=http://server:8080 
+      - APP_URL=http://server:8080
     networks:
       - intranet
     volumes:
       - logs:/logs
       - ./frontend/public/videos:/videos
-      - ./:/app 
+      - ./:/app
+      - csvs:/csvs
     ports:
       - 8081:8081
     restart: unless-stopped 
@@ -263,7 +264,12 @@ volumes:
       type: none
       o: bind
       device: ./config
-
+  csvs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./csvs
   logs:
     driver: local
     driver_opts:

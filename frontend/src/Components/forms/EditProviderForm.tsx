@@ -1,7 +1,9 @@
 import {
     ProviderPlatform,
+    ProviderResponse,
     ProviderPlatformState,
     ProviderPlatformType,
+    ServerResponseOne,
     ToastState
 } from '@/common';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
@@ -76,12 +78,16 @@ export default function EditProviderForm({
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         const cleanData = diffFormData(data, provider);
         setErrorMessage('');
-        const response = await API.patch(
+        const response = (await API.patch<ProviderResponse, Partial<ProviderPlatform>>(
             `provider-platforms/${provider?.id}`,
             cleanData
-        );
+        )) as ServerResponseOne<ProviderResponse>;
         if (!response.success) {
             onSuccess(ToastState.error, 'Failed to update provider platform');
+            return;
+        }
+        if(response.data.oauth2Url){
+            window.location.href = response.data.oauth2Url;
             return;
         }
         reset();
