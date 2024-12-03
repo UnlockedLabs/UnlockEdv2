@@ -38,11 +38,11 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string) (int64,
 
 	return total, links, nil
 }
-func (db *DB) AddHelpfulLink(link models.HelpfulLink) error {
+func (db *DB) AddHelpfulLink(link *models.HelpfulLink) error {
 	if db.Where("url = ?", link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
 		return NewDBError(fmt.Errorf("Link already exists"), "helpful_links")
 	}
-	if err := db.Create(&link).Error; err != nil {
+	if err := db.Create(link).Error; err != nil {
 		return newCreateDBError(err, "helpful_links")
 	}
 	return nil

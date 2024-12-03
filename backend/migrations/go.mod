@@ -8,8 +8,8 @@ require (
 	github.com/nats-io/nats.go v1.37.0
 	github.com/ory/kratos-client-go v1.2.0
 	github.com/pressly/goose/v3 v3.22.0
-	gorm.io/driver/postgres v1.5.9
-	gorm.io/gorm v1.25.11
+	gorm.io/driver/postgres v1.5.11
+	gorm.io/gorm v1.25.12
 )
 
 require (

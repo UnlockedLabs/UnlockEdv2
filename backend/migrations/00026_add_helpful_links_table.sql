@@ -7,7 +7,7 @@ CREATE TABLE public.helpful_links (
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone, 
     visibility_status boolean DEFAULT true,
-    thumbnail_url CHARACTER VARYING(255) NOT NULL,
+    thumbnail_url CHARACTER VARYING(255),
     description CHARACTER VARYING(255) NOT NULL,
     title CHARACTER VARYING(255) NOT NULL,
     url CHARACTER VARYING(255) NOT NULL,
