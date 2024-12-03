@@ -42,23 +42,23 @@ export default function OpenContent() {
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
-        navigate(`/open-content/${String(tab.value).toLowerCase()}`);
+        navigate(`/knowledge-center/${String(tab.value).toLowerCase()}`);
     };
     const handleReturnToAdminView = () => {
         if (currentTabValue === 'favorites') {
-            navigate('/open-content-management/libraries');
+            navigate('/knowledge-center-management/libraries');
         } else if (
             currentTabValue === 'libraries' ||
             currentTabValue === 'videos'
         ) {
-            navigate('/open-content-management/' + currentTabValue);
+            navigate('/knowledge-center-management/' + currentTabValue);
         }
     };
 
     return (
         <div className="px-8 pb-4">
             <div className="flex flex-row justify-between">
-                <h1>Open Content</h1>
+                <h1>Knowledge Center</h1>
                 {user && isAdministrator(user) && (
                     <button
                         className="button border border-primary bg-transparent text-body-text"

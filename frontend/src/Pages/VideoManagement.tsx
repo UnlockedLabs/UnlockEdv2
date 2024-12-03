@@ -50,7 +50,7 @@ export default function VideoManagement() {
         return null;
     }
     if (user.role === UserRole.Student) {
-        navigate('/open-content/videos', { replace: true });
+        navigate('/knowledge-center/videos', { replace: true });
     }
 
     const pollVideos = (delay: number) => {
@@ -60,7 +60,6 @@ export default function VideoManagement() {
                 setPolling(false);
                 return;
             }
-            console.log('****polling****');
             delay *= 2;
             setTimeout((delay: number) => pollVideos(delay), delay, delay);
         });
