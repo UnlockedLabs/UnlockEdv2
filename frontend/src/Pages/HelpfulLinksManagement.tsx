@@ -8,7 +8,6 @@ import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import AddLinkForm from '@/Components/forms/AddLinkForm';
 import DeleteForm from '@/Components/DeleteForm';
 import EditLinkForm from '@/Components/forms/EditLinkForm';
-import DropdownControl from '@/Components/inputs/DropdownControl';
 import Modal from '@/Components/Modal';
 import SearchBar from '@/Components/inputs/SearchBar';
 import Pagination from '@/Components/Pagination';
@@ -19,6 +18,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import API from '@/api/api';
+import SortByPills from '@/Components/pill-labels/SortByPills';
 
 export default function HelpfulLinksManagement() {
     const addLinkModal = useRef<HTMLDialogElement>(null);
@@ -78,23 +78,58 @@ export default function HelpfulLinksManagement() {
         <>
             <div className="flex flex-row justify-between">
                 {/* TO DO: make this a common enum? */}
-                <SearchBar
-                    searchTerm={searchTerm}
-                    changeCallback={handleChange}
-                />
-                <DropdownControl
-                    label="Order by"
-                    setState={setSortQuery}
-                    enumType={{
-                        'Date Added ↓': 'created_at DESC',
-                        'Date Added ↑': 'created_at ASC',
-                        'Title (A-Z)': 'title ASC',
-                        'Title (Z-A)': 'title DESC'
-                    }}
-                />
+                <div className="flex flex-row gap-2 items-center">
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        changeCallback={handleChange}
+                    />
+                    <h3 className="ml-2">Order:</h3>
+                    <SortByPills
+                        selected={false}
+                        label={{
+                            name: 'Date Added ↓',
+                            value: 'created_at DESC'
+                        }}
+                        updateSort={setSortQuery}
+                    />
+                    <SortByPills
+                        selected={false}
+                        label={{
+                            name: 'Date Added ↑',
+                            value: 'created_at ASC'
+                        }}
+                        updateSort={setSortQuery}
+                    />
+                    <SortByPills
+                        selected={true}
+                        label={{
+                            name: 'Title (A-Z)',
+                            value: 'title ASC'
+                        }}
+                        updateSort={setSortQuery}
+                    />
+                    <SortByPills
+                        selected={false}
+                        label={{
+                            name: 'Title (Z-A)',
+                            value: 'title DESC'
+                        }}
+                        updateSort={setSortQuery}
+                    />
+                    {/* <DropdownControl
+                        label="Order by"
+                        setState={setSortQuery}
+                        enumType={{
+                            'Date Added ↓': 'created_at DESC',
+                            'Date Added ↑': 'created_at ASC',
+                            'Title (A-Z)': 'title ASC',
+                            'Title (Z-A)': 'title DESC'
+                        }}
+                    /> */}
+                </div>
                 {/* add links button */}
                 <div
-                    className="button my-auto cursor-pointer"
+                    className="button cursor-pointer items-center"
                     onClick={() => {
                         addLinkModal.current?.showModal();
                     }}
