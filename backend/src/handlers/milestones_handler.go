@@ -26,7 +26,7 @@ func (srv *Server) handleIndexMilestones(w http.ResponseWriter, r *http.Request,
 	var milestones []database.MilestoneResponse
 	err := error(nil)
 	total := int64(0)
-	if !srv.UserIsAdmin(r) {
+	if !userIsAdmin(r) {
 		userId := srv.getUserID(r)
 		total, milestones, err = srv.Db.GetMilestonesForUser(page, perPage, userId)
 		if err != nil {
