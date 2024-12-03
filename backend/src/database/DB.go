@@ -100,7 +100,7 @@ func MigrateTesting(db *gorm.DB) {
 		&models.User{},
 		&models.ProviderPlatform{},
 		&models.ProviderUserMapping{},
-		&models.LeftMenuLink{},
+		&models.HelpfulLink{},
 		&models.Course{},
 		&models.Program{},
 		&models.ProgramTag{},
@@ -173,7 +173,7 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 			log.Fatalf("Failed to create user: %v", err)
 		}
 
-		links := []models.LeftMenuLink{}
+		links := []models.HelpfulLink{}
 		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
 			log.Fatalf("Failed to unmarshal default left menu links: %v", err)
 		}

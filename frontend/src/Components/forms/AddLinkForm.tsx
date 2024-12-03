@@ -3,6 +3,10 @@ import { SubmitButton } from '../inputs/SubmitButton';
 import { TextInput } from '../inputs/TextInput';
 import { CloseX } from '../inputs/CloseX';
 import { TextAreaInput } from '../inputs';
+import { useToast } from '@/Context/ToastCtx';
+import { ToastState } from '@/common';
+
+import API from '@/api/api';
 interface Inputs {
     title: string;
     url: string;
@@ -19,9 +23,16 @@ export default function AddLinkForm({
         reset,
         formState: { errors }
     } = useForm<Inputs>();
+    const { toaster } = useToast();
 
-    const onSubmit: SubmitHandler<Inputs> = (data) => {
-        onSuccess(data.title, data.url);
+    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+        const response = await API.put(`helpful-links`, data);
+        if (response.success) {
+            toaster(response.message, ToastState.success);
+            onSuccess(data.title, data.url);
+        } else {
+            toaster(response.message || 'An error occurred', ToastState.error);
+        }
         reset();
     };
 

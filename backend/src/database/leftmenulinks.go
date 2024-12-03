@@ -2,30 +2,79 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-
-	log "github.com/sirupsen/logrus"
+	"fmt"
 )
 
-func (db *DB) GetLeftMenuLinks(limit int) ([]models.LeftMenuLink, error) {
-	var links []models.LeftMenuLink
-	if err := db.Model(&models.LeftMenuLink{}).Limit(limit).Find(&links).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "left_menu_links")
-	}
-	return links, nil
-}
+func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string) (int64, []models.HelpfulLink, error) {
+	var links []models.HelpfulLink
+	tx := db.Model(&models.HelpfulLink{})
+	var total int64
 
-func (db *DB) DeleteAllLinks() error {
-	if err := db.Exec("DELETE FROM left_menu_links").Error; err != nil {
-		return newDeleteDBError(err, "left_menu_links")
+	validOrder := map[string]bool{
+		"title ASC":       true,
+		"title DESC":      true,
+		"created_at ASC":  true,
+		"created_at DESC": true,
+	}
+
+	if search != "" {
+		search = "%" + search + "%"
+		tx = tx.Where("LOWER(title) LIKE ?", search)
+	}
+
+	if valid, ok := validOrder[orderBy]; ok && valid {
+		tx = tx.Order(orderBy)
+	} else {
+		tx = tx.Order("created_at DESC")
+	}
+
+	if err := tx.Count(&total).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "helpful_links")
+	}
+
+	offset := (page - 1) * perPage
+	if err := tx.Offset(offset).Limit(perPage).Find(&links).Error; err != nil {
+		return 0, nil, newGetRecordsDBError(err, "helpful_links")
+	}
+
+	return total, links, nil
+}
+func (db *DB) AddHelpfulLink(link models.HelpfulLink) error {
+	if db.Where("url = ?", link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
+		return NewDBError(fmt.Errorf("Link already exists"), "helpful_links")
+	}
+	if err := db.Create(&link).Error; err != nil {
+		return newCreateDBError(err, "helpful_links")
 	}
 	return nil
 }
 
-func (db *DB) CreateFreshLeftMenuLinks(links []models.LeftMenuLink) error {
-	if err := db.Create(&links).Error; err != nil {
-		log.Errorf("Error creating links: %v", err)
-		return newCreateDBError(err, "left_menu_links")
+func (db *DB) DeleteLink(id uint) error {
+	var link models.HelpfulLink
+	if err := db.Model(&models.HelpfulLink{}).Where("id = ?", id).First(&link).Error; err != nil {
+		return newGetRecordsDBError(err, "helpful_links")
 	}
-	log.Infof("Left-Menu-Links created")
+	if err := db.Unscoped().Delete(&link).Error; err != nil {
+		return newDeleteDBError(err, "helpful_links")
+	}
+	return nil
+}
+
+func (db *DB) EditLink(id uint, link models.HelpfulLink) error {
+	if err := db.Model(&models.HelpfulLink{}).Where("id = ?", id).Updates(link).Error; err != nil {
+		return newUpdateDBError(err, "helpful_links")
+	}
+	return nil
+}
+
+func (db *DB) ToggleVisibilityStatus(id int) error {
+	var link models.HelpfulLink
+	if err := db.Model(&models.HelpfulLink{}).Where("id = ?", id).First(&link).Error; err != nil {
+		return newGetRecordsDBError(err, "helpful_links")
+	}
+	link.VisibilityStatus = !link.VisibilityStatus
+	if err := db.Save(&link).Error; err != nil {
+		return newUpdateDBError(err, "helpful_links")
+	}
 	return nil
 }

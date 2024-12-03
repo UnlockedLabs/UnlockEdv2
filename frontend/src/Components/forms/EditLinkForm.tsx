@@ -1,6 +1,8 @@
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, SubmitButton, TextAreaInput, TextInput } from '../inputs';
-import { HelpfulLink } from '@/common';
+import { HelpfulLink, ToastState } from '@/common';
+import { useToast } from '@/Context/ToastCtx';
+import API from '@/api/api';
 
 interface Inputs {
     name: string;
@@ -28,8 +30,18 @@ export default function EditLinkForm({
         }
     });
 
-    const onSubmit: SubmitHandler<Inputs> = () => {
-        onSuccess();
+    const { toaster } = useToast();
+    const onSubmit: SubmitHandler<Inputs> = async (data) => {
+        const response = await API.patch(`helpful-links/${link.id}/edit`, data);
+        if (response.success) {
+            toaster(response.message, ToastState.success);
+            onSuccess();
+        } else {
+            toaster(
+                response.message || 'An error occurred during update',
+                ToastState.error
+            );
+        }
         return;
     };
 

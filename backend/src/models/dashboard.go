@@ -1,24 +1,17 @@
 package models
 
-import (
-	"gorm.io/datatypes"
-	"gorm.io/gorm"
-)
-
-type LeftMenuLink struct {
-	ID    int            `gorm:"primaryKey" json:"-"`
-	Name  string         `gorm:"size:255;not null" json:"name"`
-	Rank  int            `gorm:"default:1" json:"rank"`
-	Links datatypes.JSON `json:"links" gorm:"jsonb"`
+type HelpfulLink struct {
+	DatabaseFields
+	Title                 string `gorm:"size:255;not null" json:"title"`
+	Description           string `gorm:"size:255;not null" json:"description"`
+	Url                   string `gorm:"size:255;not null" json:"url"`
+	VisibilityStatus      bool   `gorm:"default:true" json:"visibility_status"`
+	OpenContentProviderID uint   `json:"open_content_provider_id"`
+	FacilityID            uint   `json:"facility_id"`
 }
 
-func (link *LeftMenuLink) BeforeCreate(tx *gorm.DB) error {
-	link.ID = 0
-	return nil
-}
-
-func (LeftMenuLink) TableName() string {
-	return "left_menu_links"
+func (HelpfulLink) TableName() string {
+	return "helpful_links"
 }
 
 type ProgramFavorite struct {

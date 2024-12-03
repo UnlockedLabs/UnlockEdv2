@@ -1,8 +1,11 @@
-import { HelpfulLink, ModalType } from '@/common';
+import { HelpfulLink, ModalType, ToastState } from '@/common';
+import API from '@/api/api';
 import VisibleHiddenToggle from '../VisibleHiddenToggle';
 import { useState } from 'react';
 import ULIComponent from '../ULIComponent';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+
+import { useToast } from '@/Context/ToastCtx';
 
 export default function HelpfulLinkCard({
     link,
@@ -11,11 +14,29 @@ export default function HelpfulLinkCard({
     link: HelpfulLink;
     showModal: (link: HelpfulLink, type: ModalType) => void;
 }) {
-    const [visible] = useState(link.visibility_status);
-    function changeVisibility() {
-        // api put call
-        return;
+    const [visible, setVisible] = useState<boolean>(link.visibility_status);
+    const { toaster } = useToast();
+    function changeVisibility(visibilityStatus: boolean) {
+        if (visibilityStatus == !visible) {
+            setVisible(visibilityStatus);
+            void handleToggleVisibility();
+        }
     }
+
+    console.log(link.id);
+    console.log('whole link: ', link);
+    const handleToggleVisibility = async () => {
+        const response = await API.put<null, object>(
+            `/helpful-links/toggle/${link.id}`,
+            {}
+        );
+        if (response.success) {
+            toaster(response.message, ToastState.success);
+        } else {
+            toaster(response.message, ToastState.error);
+        }
+    };
+
     return (
         <div className="card p-4 space-y-2">
             <div className="flex flex-row gap-2 justify-end">
