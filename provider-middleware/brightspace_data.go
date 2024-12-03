@@ -210,6 +210,7 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		ProviderPlatformID:      srv.ProviderPlatformID,
 		ExternalID:              bsCourse.OrgUnitId,
 		Name:                    bsCourse.Name,
+		AltName:                 bsCourse.Code,
 		OutcomeTypes:            "completion",
 		ThumbnailURL:            imgPath,
 		Type:                    "fixed_enrollment", //open to discussion
