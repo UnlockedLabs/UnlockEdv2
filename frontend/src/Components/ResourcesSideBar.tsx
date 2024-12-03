@@ -11,16 +11,16 @@ export default function ResourcesSideBar() {
     const getUrl = (prov: OpenContentProvider): string => {
         switch (prov.name.toLowerCase()) {
             case 'kiwix':
-                return '/open-content/libraries';
+                return '/knowledge-center/libraries';
             case 'youtube':
-                return '/open-content/videos';
+                return '/knowledge-center/videos';
         }
-        return '/open-content/libraries';
+        return '/knowledge-center/libraries';
     };
     return (
         <div className="min-[1400px]:min-w-[300px] bg-background border-l border-grey-1">
             <div className="p-4 space-y-4">
-                <h2>Open Content</h2>
+                <h2>Knowledge Center</h2>
                 {providers?.map((provider: OpenContentProvider) => {
                     return (
                         <StaticContentCard

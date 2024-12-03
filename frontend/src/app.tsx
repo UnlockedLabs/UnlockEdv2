@@ -151,7 +151,7 @@ const router = createBrowserRouter([
                         ),
                         children: [
                             {
-                                path: 'open-content-dashboard',
+                                path: 'knowledge-center-dashboard',
                                 element: <OpenContentLevelDashboard />,
                                 loader: getOpenContentDashboardData,
                                 handle: {
@@ -160,11 +160,11 @@ const router = createBrowserRouter([
                                 }
                             },
                             {
-                                path: 'open-content',
+                                path: 'knowledge-center',
                                 element: <OpenContent />,
                                 handle: {
-                                    title: 'Open Content',
-                                    path: ['open-content', ':kind']
+                                    title: 'Knowledge Center',
+                                    path: ['knowledge-center', ':kind']
                                 },
                                 children: [
                                     {
@@ -173,7 +173,10 @@ const router = createBrowserRouter([
                                         errorElement: <Error />,
                                         handle: {
                                             title: 'Libraries',
-                                            path: ['open-content', 'libraries']
+                                            path: [
+                                                'knowledge-center',
+                                                'libraries'
+                                            ]
                                         }
                                     },
                                     {
@@ -182,7 +185,7 @@ const router = createBrowserRouter([
                                         errorElement: <Error />,
                                         handle: {
                                             title: 'Videos',
-                                            path: ['open-content', 'videos']
+                                            path: ['knowledge-center', 'videos']
                                         }
                                     },
                                     {
@@ -191,7 +194,10 @@ const router = createBrowserRouter([
                                         errorElement: <Error />,
                                         handle: {
                                             title: 'Favorites',
-                                            path: ['open-content', 'favorites']
+                                            path: [
+                                                'knowledge-center',
+                                                'favorites'
+                                            ]
                                         }
                                     }
                                 ]
@@ -405,7 +411,7 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
-                                path: 'open-content-dashboard',
+                                path: 'knowledge-center-dashboard',
                                 element: <OpenContentLevelDashboard />,
                                 loader: getOpenContentDashboardData,
                                 handle: {
@@ -414,11 +420,11 @@ const router = createBrowserRouter([
                                 }
                             },
                             {
-                                path: 'open-content-management',
+                                path: 'knowledge-center-management',
                                 element: <OpenContentManagement />,
                                 handle: {
-                                    title: 'Open Content Management',
-                                    path: ['open-content-management', ':kind']
+                                    title: 'Knowledge Center',
+                                    path: ['knowledge-center', ':kind']
                                 },
                                 children: [
                                     {
@@ -427,7 +433,10 @@ const router = createBrowserRouter([
                                         errorElement: <Error />,
                                         handle: {
                                             title: 'Libraries',
-                                            path: ['open-content', 'libraries']
+                                            path: [
+                                                'knowledge-center-management',
+                                                'libraries'
+                                            ]
                                         }
                                     },
                                     {
@@ -436,7 +445,7 @@ const router = createBrowserRouter([
                                         handle: {
                                             title: 'Videos',
                                             path: [
-                                                'open-content-management',
+                                                'knowledge-center-management',
                                                 'videos'
                                             ]
                                         }
