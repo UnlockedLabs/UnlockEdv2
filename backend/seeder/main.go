@@ -80,10 +80,10 @@ func seedTestData(db *gorm.DB) {
 		{
 			Name:      "Brightspace",
 			BaseUrl:   "https://unlocked.brightspacedemo.com",
-			AccountID: "db43ef62-1e97-48a1-832e-7eb81da41e63", //clientID
+			AccountID: "testing_client_id_replace_me", //clientID
 			Type:      models.Brightspace,
 			State:     models.Disabled,
-			AccessKey: "HoYRWo-yTg7tFJ_9T_1FEQx8FXWP2UKtvr8j7sQidII;rt.us-east-1.vWqeE6yvAqOI-Vy5dWZbf6S6aOl4e3udhtG-50r7Z88", //ClientSecret;refresh-token
+			AccessKey: "testing_client_secret_replace_me", //ClientSecret;refresh-token
 		}}
 	for idx := range platforms {
 		if err := db.Create(&platforms[idx]).Error; err != nil {
