@@ -100,22 +100,15 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 	return writeJsonResponse(w, http.StatusOK, user)
 }
 
-type NewUserResponse struct {
-	TempPassword string      `json:"temp_password"`
-	User         models.User `json:"user"`
-}
-
-type CreateUserRequest struct {
-	User      models.User `json:"user"`
-	Providers []int       `json:"provider_platforms"`
-}
-
 /**
 * POST: /api/users
 * TODO: transactional
 **/
 func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
-	reqForm := CreateUserRequest{}
+	reqForm := struct {
+		User      models.User `json:"user"`
+		Providers []int       `json:"provider_platforms"`
+	}{}
 	err := json.NewDecoder(r.Body).Decode(&reqForm)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -132,8 +125,6 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if userNameExists {
 		return newBadRequestServiceError(err, "userexists")
 	}
-	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username)
-
 	err = srv.Db.CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -141,17 +132,20 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	for _, providerID := range reqForm.Providers {
 		provider, err := srv.Db.GetProviderPlatformByID(providerID)
 		if err != nil {
-			log.add("providerID", providerID)
+			log.add("provider_id", providerID)
 			log.error("Error getting provider platform by id createProviderUserAccount")
 			return newDatabaseServiceError(err)
 		}
 		if err = srv.createAndRegisterProviderUserAccount(provider, &reqForm.User); err != nil {
-			log.add("providerID", providerID)
+			log.add("provider_id", providerID)
 			log.error("Error creating provider user account for provider: ", provider.Name)
 		}
 	}
 	tempPw := reqForm.User.CreateTempPassword()
-	response := NewUserResponse{
+	response := struct {
+		TempPassword string      `json:"temp_password"`
+		User         models.User `json:"user"`
+	}{
 		User:         reqForm.User,
 		TempPassword: tempPw,
 	}
@@ -190,7 +184,7 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	if !srv.isTesting(r) {
 		if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
-			log.add("KratosID", user.KratosID)
+			log.add("Kratos_id", user.KratosID)
 			return newInternalServerServiceError(err, "error deleting user in kratos")
 		}
 	}
@@ -237,19 +231,17 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	return writeJsonResponse(w, http.StatusOK, toUpdate)
 }
 
-type TempPasswordRequest struct {
-	UserID uint `json:"user_id"`
-}
-
 func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
-	temp := TempPasswordRequest{}
+	temp := struct {
+		UserID uint `json:"user_id"`
+	}{}
 	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	defer r.Body.Close()
 	response := make(map[string]string)
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
-	log.add("temp.UserID", temp.UserID)
+	log.add("student.user_id", temp.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -266,7 +258,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		claims.PasswordReset = true
 		if !srv.isTesting(r) {
 			if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
-				log.add("claims.UserID", claims.UserID)
+				log.add("claims.user_id", claims.UserID)
 				return newInternalServerServiceError(err, err.Error())
 			}
 		}
