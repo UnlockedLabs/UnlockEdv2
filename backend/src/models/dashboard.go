@@ -10,7 +10,6 @@ type HelpfulLink struct {
 	Description           string `gorm:"size:255;not null" json:"description"`
 	Url                   string `gorm:"size:255;not null" json:"url"`
 	VisibilityStatus      bool   `gorm:"default:true" json:"visibility_status"`
-	ThumbnailUrl          string `gorm:"size:255" json:"thumbnail_url"`
 	OpenContentProviderID uint   `json:"open_content_provider_id"`
 	FacilityID            uint   `json:"facility_id"`
 }

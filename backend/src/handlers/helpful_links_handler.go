@@ -62,7 +62,7 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 	defer r.Body.Close()
 	facilityID := srv.getFacilityID(r)
 	link.FacilityID = facilityID
-	if err := srv.Db.AddHelpfulLink(link); err != nil {
+	if err := srv.Db.AddHelpfulLink(&link); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Link added successfully")
