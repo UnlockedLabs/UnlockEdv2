@@ -9,6 +9,7 @@ import (
 func (srv *Server) registerFeatureFlagRoutes() []routeDef {
 	return []routeDef{
 		{"PUT /api/auth/features/{feature}", srv.handleToggleFeatureFlag, true, models.Feature()},
+		{"POST /api/auth/demo-seed", srv.handleRunDemoSeed, true, models.Feature()},
 	}
 }
 
@@ -30,4 +31,16 @@ func (srv *Server) handleToggleFeatureFlag(w http.ResponseWriter, r *http.Reques
 	}
 	srv.features = features
 	return writeJsonResponse(w, http.StatusOK, "feature toggled successfully")
+}
+
+func (srv *Server) handleRunDemoSeed(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.info("running seeder for demo environment")
+	if !userIsSystemAdmin(r) {
+		return newUnauthorizedServiceError()
+	}
+	err := srv.Db.RunOrResetDemoSeed(srv.getFacilityID(r))
+	if err != nil {
+		return newInternalServerServiceError(err, "unable to run demo seed")
+	}
+	return writeJsonResponse(w, http.StatusOK, "demo seed ran successfully")
 }

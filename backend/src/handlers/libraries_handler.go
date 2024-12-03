@@ -22,10 +22,10 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	search := r.URL.Query().Get("search")
 	orderBy := r.URL.Query().Get("order_by")
 	showHidden := "visible"
-	if !srv.UserIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
+	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
 	}
-	if srv.UserIsAdmin(r) {
+	if userIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -97,7 +97,7 @@ func (srv *Server) handleToggleFavoriteLibrary(w http.ResponseWriter, r *http.Re
 		return newInternalServerServiceError(err, "error converting content id to int")
 	}
 	var facilityID *uint = nil
-	if srv.UserIsAdmin(r) {
+	if userIsAdmin(r) {
 		// an admin toggling this will save the facilityID as a 'featured' library for that facility
 		facilityID = &claims.FacilityID
 	}
