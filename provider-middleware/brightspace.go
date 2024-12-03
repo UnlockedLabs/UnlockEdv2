@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -16,11 +17,12 @@ import (
 )
 
 const (
-	CsvDownloadPath     = "csvs"
 	TokenEndpoint       = "https://auth.brightspace.com/core/connect/token"
 	DataSetsEndpoint    = "https://unlocked.brightspacedemo.com/d2l/api/lp/%s/dataExport/bds/list"
 	DataDownloadEnpoint = "https://unlocked.brightspacedemo.com/d2l/api/lp/%s/dataExport/bds/download/%s"
 )
+
+var CsvDownloadPath = os.Getenv("BRIGHTSPACE_TEMP_DIR")
 
 type BrightspaceService struct {
 	ProviderPlatformID uint
@@ -41,6 +43,9 @@ func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 	keysSplit := strings.Split(provider.AccessKey, ";")
 	if len(keysSplit) < 2 {
 		return nil, errors.New("unable to find refresh token, unable to intialize BrightspaceService")
+	}
+	if _, err := os.Stat(CsvDownloadPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("unable to find csv download directory path %s, unable to intialize BrightspaceService", CsvDownloadPath)
 	}
 	brightspaceService := BrightspaceService{
 		ProviderPlatformID: provider.ID,
