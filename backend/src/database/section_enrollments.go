@@ -31,7 +31,7 @@ func (db *DB) GetEnrollmentsForSection(page, perPage, sectionId int) (int64, []m
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	if err := tx.Find(&content).Limit(page).Offset((page - 1) * perPage).Error; err != nil {
+	if err := tx.Find(&content).Limit(page).Offset(calcOffset(page, perPage)).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
 	return total, content, nil
@@ -47,7 +47,7 @@ func (db *DB) GetProgramSectionEnrollmentsForFacility(page, perPage int, facilit
 	_ = tx.Count(&total)
 
 	if err := tx.Limit(perPage).
-		Offset((page - 1) * perPage).
+		Offset(calcOffset(page, perPage)).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
@@ -96,7 +96,7 @@ func (db *DB) GetProgramSectionEnrollmentssForProgram(page, perPage, facilityID,
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
 	if err := tx.Limit(perPage).
-		Offset((page - 1) * perPage).
+		Offset(calcOffset(page, perPage)).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "program section enrollments")
 	}
@@ -118,7 +118,7 @@ func (db *DB) GetProgramSectionEnrollmentsAttendance(page, perPage, id int) (int
 		return 0, nil, newNotFoundDBError(err, "section event")
 	}
 	if err := tx.Limit(perPage).
-		Offset((page - 1) * perPage).
+		Offset(calcOffset(page, perPage)).
 		Find(&content).Error; err != nil {
 		return 0, nil, newNotFoundDBError(err, "section event attendance")
 	}

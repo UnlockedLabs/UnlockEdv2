@@ -1,9 +1,10 @@
 import {
     FilterLibraries,
-    FilterLibrariesAdmin,
-    LibraryDto,
+    LibraryAdminVisibility,
+    Library,
     ServerResponseMany,
-    UserRole
+    UserRole,
+    FilterLibrariesAdmin
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -29,8 +30,9 @@ export default function LibaryLayout({
         FilterLibraries['All Libraries']
     );
     const [filterLibrariesAdmin, setFilterLibrariesAdmin] = useState<string>(
-        FilterLibrariesAdmin['All Libraries']
+        LibraryAdminVisibility['All Libraries']
     );
+    const [orderBy, setOrderBy] = useState<string>(FilterLibrariesAdmin.Newest);
     let role = user.role;
     if (studentView) {
         role = UserRole.Student;
@@ -41,7 +43,7 @@ export default function LibaryLayout({
     const adminWithStudentView = (): boolean => {
         return !route.pathname.includes('management') && isAdministrator(user);
     };
-    const getVisibility = (): string => {
+    const getFilter = (): string => {
         return adminWithStudentView()
             ? 'visible'
             : isAdministrator(user)
@@ -55,8 +57,8 @@ export default function LibaryLayout({
         mutate: mutateLibraries,
         error: librariesError,
         isLoading: librariesLoading
-    } = useSWR<ServerResponseMany<LibraryDto>, AxiosError>(
-        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${getVisibility()}&search=${searchTerm}`
+    } = useSWR<ServerResponseMany<Library>, AxiosError>(
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=${adminWithStudentView() || isAdministrator(user) ? orderBy : ''}&visibility=${getFilter()}&search=${searchTerm}`
     );
     const librariesMeta = libraries?.meta ?? {
         total: 0,
@@ -77,7 +79,7 @@ export default function LibaryLayout({
     }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="w-full flex flex-col p-8 gap-8">
             <div className="flex flex-row gap-4">
                 <SearchBar
                     searchTerm={searchTerm}
@@ -90,11 +92,18 @@ export default function LibaryLayout({
                         setState={setFilterLibraries}
                     />
                 ) : (
-                    <DropdownControl
-                        label="Filter by"
-                        enumType={FilterLibrariesAdmin}
-                        setState={setFilterLibrariesAdmin}
-                    />
+                    <>
+                        <DropdownControl
+                            label="Show"
+                            enumType={LibraryAdminVisibility}
+                            setState={setFilterLibrariesAdmin}
+                        />
+                        <DropdownControl
+                            label="Filter by"
+                            enumType={FilterLibrariesAdmin}
+                            setState={setOrderBy}
+                        />
+                    </>
                 )}
             </div>
             <div className="grid grid-cols-4 gap-6">
@@ -104,6 +113,7 @@ export default function LibaryLayout({
                         library={library}
                         mutate={mutateLibraries}
                         role={adminWithStudentView() ? UserRole.Student : role}
+                        isAdminInStudentView={adminWithStudentView()}
                     />
                 ))}
             </div>

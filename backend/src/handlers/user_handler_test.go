@@ -17,8 +17,6 @@ import (
 func TestHandleIndexUsers(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetUsersAsAdmin", "admin", getDBUsersAsUser(), http.StatusOK, ""},
-		{"TestGetUsersAsUser", "student", getDBUsersWithLogins(), http.StatusUnauthorized, ""},
-		{"TestGetUsersWithLogins", "admin", getDBUsersWithLogins(), http.StatusOK, "?include=logins"},
 		{"TestGetUnmappedUsers", "admin", getDBUnmappedUsers(), http.StatusOK, "?include=only_unmapped&provider_id=1"},
 		{"TestAssertFacilityContext", "admin", getDBUsers(), http.StatusOK, ""},
 	}
@@ -296,14 +294,6 @@ func cleanupAddedUser() {
 }
 func getDBUsersAsUser() map[string]any {
 	total, _, dbErr := server.Db.GetCurrentUsers(1, 10, 1, "", "", "")
-	form := make(map[string]any)
-	form["total"] = total
-	form["dbErr"] = dbErr
-	return form
-}
-
-func getDBUsersWithLogins() map[string]any {
-	total, _, dbErr := server.Db.GetUsersWithLogins(1, 10, 1)
 	form := make(map[string]any)
 	form["total"] = total
 	form["dbErr"] = dbErr

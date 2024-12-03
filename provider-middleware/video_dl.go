@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/wader/goutubedl"
 	"gorm.io/gorm"
 )
@@ -34,18 +34,20 @@ type VideoService struct {
 	Body                  *map[string]interface{}
 	db                    *gorm.DB
 	bucketName            string
-	s3Svc                 *s3.S3
+	s3Svc                 *s3.Client
 }
 
 func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body *map[string]interface{}) *VideoService {
 	// in development, this needs to remain empty unless you have s3 access
 	bucketName := os.Getenv("S3_BUCKET_NAME")
-	var svc *s3.S3 = nil
+	var svc *s3.Client = nil
 	if bucketName != "" {
-		sess := session.Must(session.NewSession(&aws.Config{
-			Region: aws.String(os.Getenv("AWS_REGION")),
-		}))
-		svc = s3.New(sess)
+		logger().Info("s3 bucket found, creating client")
+		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithClientLogMode(aws.LogRequest|aws.LogResponseWithBody), config.WithRegion("us-west-2"))
+		if err != nil {
+			logger().Fatal(err)
+		}
+		svc = s3.NewFromConfig(cfg)
 	}
 	return &VideoService{
 		BaseUrl:               prov.BaseUrl,
@@ -59,33 +61,38 @@ func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body *map[st
 }
 
 func (yt *VideoService) uploadFileToS3(ctx context.Context, file *os.File, video *models.Video) error {
+	logger().Infof("Uploading to bucket: %s, key: %s", yt.bucketName, video.GetS3KeyMp4())
 	uploadParams := &s3.PutObjectInput{
 		Bucket:      aws.String(yt.bucketName),
 		Key:         aws.String(video.GetS3KeyMp4()),
 		Body:        file,
 		ContentType: aws.String("video/mp4"),
 	}
-	_, err := yt.s3Svc.PutObjectWithContext(ctx, uploadParams)
+
+	output, err := yt.s3Svc.PutObject(ctx, uploadParams)
 	if err != nil {
 		logger().Errorf("error uploading file to s3: %v", err)
 		return err
 	}
+	logger().Infof("Successfully uploaded file to %s/%s with ETAG: %s", yt.bucketName, video.GetS3KeyMp4(), *output.ETag)
 	videoBytes, err := json.Marshal(video)
 	if err != nil {
 		logger().Errorf("error marshalling video: %v", err)
 		return err
 	}
+	logger().Infof("Uploading to bucket: %s, key: %s", yt.bucketName, video.GetS3KeyJson())
 	uploadJson := &s3.PutObjectInput{
 		Bucket:      aws.String(yt.bucketName),
 		Key:         aws.String(video.GetS3KeyJson()),
 		Body:        bytes.NewReader(videoBytes),
 		ContentType: aws.String("application/json"),
 	}
-	_, err = yt.s3Svc.PutObjectWithContext(ctx, uploadJson)
+	jsonOutput, err := yt.s3Svc.PutObject(ctx, uploadJson)
 	if err != nil {
 		logger().Errorf("error uploading file to s3: %v", err)
 		return err
 	}
+	logger().Infof("Successfully uploaded file to %s/%s with ETAG: %s", yt.bucketName, video.GetS3KeyJson(), *jsonOutput.ETag)
 	return nil
 }
 
@@ -95,20 +102,19 @@ func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 		return nil
 	}
 	input := &s3.ListObjectsV2Input{
-		Bucket: aws.String(yt.bucketName),
+		Bucket:    aws.String(yt.bucketName),
+		Delimiter: aws.String("/videos/"),
 	}
 	var jsonFiles []string
 
-	err := yt.s3Svc.ListObjectsV2PagesWithContext(ctx, input, func(page *s3.ListObjectsV2Output, lastPage bool) bool {
-		for _, item := range page.Contents {
-			if strings.HasSuffix(*item.Key, ".json") {
-				jsonFiles = append(jsonFiles, *item.Key)
-			}
-		}
-		return true
-	})
+	page, err := yt.s3Svc.ListObjectsV2(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to list objects in bucket %s: %w", yt.bucketName, err)
+	}
+	for _, item := range page.Contents {
+		if strings.HasSuffix(*item.Key, ".json") {
+			jsonFiles = append(jsonFiles, *item.Key)
+		}
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(len(jsonFiles))
@@ -127,7 +133,7 @@ func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 					logger().Infof("video with youtube_id %v already exists", ytId)
 					return
 				}
-				obj, err := yt.s3Svc.GetObject(&s3.GetObjectInput{
+				obj, err := yt.s3Svc.GetObject(ctx, &s3.GetObjectInput{
 					Bucket: aws.String(yt.bucketName),
 					Key:    aws.String(key),
 				})
@@ -288,7 +294,7 @@ func (vs *VideoService) videoExistsInS3(ctx context.Context, ytId string) bool {
 		Bucket: aws.String(vs.bucketName),
 		Key:    aws.String(fmt.Sprintf("/videos/%s.mp4", ytId)),
 	}
-	_, err := vs.s3Svc.HeadObjectWithContext(ctx, input)
+	_, err := vs.s3Svc.HeadObject(ctx, input)
 	return err == nil
 }
 

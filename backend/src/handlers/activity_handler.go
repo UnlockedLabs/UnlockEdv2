@@ -25,8 +25,7 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	if !srv.canViewUserData(r, userID) {
-		user := r.Context().Value(ClaimsKey).(*Claims)
-		log.add("requesting_user", user.UserID)
+		log.add("requesting_user", srv.getUserID(r))
 		log.error("non admin requesting to view other student activities")
 		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
 	}

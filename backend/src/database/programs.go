@@ -13,7 +13,7 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 }
 
 func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId uint) (int64, []models.Program, error) {
-	content := []models.Program{}
+	content := make([]models.Program, 0, perPage)
 	total := int64(0)
 	if len(tags) > 0 {
 		// look in program_tags for programs matching this tag
@@ -33,7 +33,7 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId
 		if err := tx.Count(&total).Error; err != nil {
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
-		if err := tx.Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
+		if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 	} else {
@@ -47,7 +47,7 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId
 		if err := tx.Count(&total).Error; err != nil {
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
-		if err := tx.Limit(perPage).Offset((page - 1) * perPage).Find(&content).Error; err != nil {
+		if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Find(&content).Error; err != nil {
 			return 0, nil, newGetRecordsDBError(err, "programs")
 		}
 	}
