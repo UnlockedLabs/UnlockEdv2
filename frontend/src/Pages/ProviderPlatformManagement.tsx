@@ -178,7 +178,7 @@ export default function ProviderPlatformManagement() {
     return (
         <div>
             <div className="px-8 py-4">
-                <h1>Provider Platforms</h1>
+                <h1>Learning Platforms</h1>
                 <div className="flex flex-row justify-between">
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}
@@ -190,7 +190,7 @@ export default function ProviderPlatformManagement() {
                         }}
                     >
                         <PlusCircleIcon className="w-4 my-auto" />
-                        Add Provider
+                        Add Learning Platform
                     </button>
                 </div>
                 <table className="table-2">
@@ -227,7 +227,7 @@ export default function ProviderPlatformManagement() {
                             })
                         ) : (
                             <tr>
-                                <td>No provider platforms</td>
+                                <td>No learning platforms</td>
                             </tr>
                         )}
                     </tbody>

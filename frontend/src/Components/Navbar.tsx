@@ -6,14 +6,12 @@ import {
     ChevronDoubleLeftIcon,
     ChevronDoubleRightIcon,
     HomeIcon,
-    TrophyIcon,
     UsersIcon,
     ArrowRightEndOnRectangleIcon,
     SunIcon,
     MoonIcon,
     UserCircleIcon,
     DocumentTextIcon,
-    FolderOpenIcon,
     CloudIcon,
     RssIcon,
     RectangleStackIcon,
@@ -103,26 +101,27 @@ export default function Navbar({
                                 {hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
-                                ) && user.feature_access.length === 1 ? (
-                                    <li className="mt-16">
-                                        <Link to="/knowledge-center-dashboard">
-                                            <ULIComponent icon={HomeIcon} />
-                                            Dashboard
-                                        </Link>
-                                    </li>
-                                ) : (
-                                    <li className="mt-16">
-                                        <Link to="/admin-dashboard">
-                                            <ULIComponent icon={HomeIcon} />
-                                            Dashboard
-                                        </Link>
-                                    </li>
-                                )}
-                                {hasFeature(
-                                    user,
-                                    FeatureAccess.OpenContentAccess
                                 ) && (
                                     <>
+                                        {user.feature_access.length === 1 ? (
+                                            <li className="mt-16">
+                                                <Link to="/knowledge-center-dashboard">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    Dashboard
+                                                </Link>
+                                            </li>
+                                        ) : (
+                                            <li className="mt-16">
+                                                <Link to="/admin-dashboard">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    Dashboard
+                                                </Link>
+                                            </li>
+                                        )}
                                         <li>
                                             <Link to="/knowledge-center-management/libraries">
                                                 <ULIComponent
@@ -133,31 +132,17 @@ export default function Navbar({
                                         </li>
                                     </>
                                 )}
-                                <li>
-                                    <Link to="/operational-insights">
-                                        <ULIComponent icon={CogIcon} />
-                                        Operational Insights
-                                    </Link>
-                                </li>
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess
                                 ) && (
                                     <>
                                         <li>
-                                            <Link to="/provider-platform-management">
+                                            <Link to="/learning-platforms">
                                                 <ULIComponent
                                                     icon={CloudIcon}
                                                 />
-                                                Platforms
-                                            </Link>
-                                        </li>
-                                        <li className="">
-                                            <Link to="/course-catalog-admin">
-                                                <ULIComponent
-                                                    icon={FolderOpenIcon}
-                                                />
-                                                Course Catalog
+                                                Learning Platforms
                                             </Link>
                                         </li>
                                     </>
@@ -166,29 +151,58 @@ export default function Navbar({
                                     user,
                                     FeatureAccess.ProgramAccess
                                 ) && (
-                                    <li>
-                                        <Link to="/programs">
-                                            <ULIComponent
-                                                icon={DocumentTextIcon}
-                                            />
-                                            Programs
-                                        </Link>
-                                    </li>
+                                    <>
+                                        <li>
+                                            <Link to="/programs">
+                                                <ULIComponent
+                                                    icon={DocumentTextIcon}
+                                                />
+                                                Programs
+                                            </Link>
+                                        </li>
+                                    </>
                                 )}
                                 <li>
-                                    <Link to="/student-management">
+                                    <Link to="/operational-insights">
+                                        <ULIComponent icon={CogIcon} />
+                                        Operational Insights
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/students">
                                         <ULIComponent icon={AcademicCapIcon} />
                                         Students
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/admin-management">
+                                    <Link to="/admins">
+                                        <ULIComponent icon={UsersIcon} />
+                                        Admins
+                                    </Link>
+                                </li>
+
+                                <li>
+                                    <Link to="/facilities">
+                                        <ULIComponent
+                                            icon={BuildingStorefrontIcon}
+                                        />
+                                        Facilities
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/students">
+                                        <ULIComponent icon={AcademicCapIcon} />
+                                        Students
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/admins">
                                         <ULIComponent icon={UsersIcon} />
                                         Admins
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link to="/facilities-management">
+                                    <Link to="/facilities">
                                         <ULIComponent
                                             icon={BuildingStorefrontIcon}
                                         />
@@ -198,51 +212,58 @@ export default function Navbar({
                             </>
                         ) : (
                             <>
+                                {/* student view */}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
-                                ) && user.feature_access.length === 1 ? (
-                                    <li className="mt-16">
-                                        <Link to="/knowledge-center-dashboard">
-                                            <ULIComponent icon={HomeIcon} />
-                                            Dashboard
-                                        </Link>
-                                    </li>
-                                ) : (
-                                    <li className="mt-16">
-                                        <Link to="/student-dashboard">
-                                            <ULIComponent icon={HomeIcon} />
-                                            Dashboard
-                                        </Link>
-                                    </li>
+                                ) && (
+                                    <>
+                                        {user.feature_access.length === 1 ? (
+                                            <li className="mt-16">
+                                                <Link to="/knowledge-center-dashboard">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    Dashboard
+                                                </Link>
+                                            </li>
+                                        ) : (
+                                            <li className="mt-16">
+                                                <Link to="/student-dashboard">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    Dashboard
+                                                </Link>
+                                            </li>
+                                        )}
+                                        <li>
+                                            <Link to="/open-content/libraries">
+                                                <ULIComponent
+                                                    icon={BookOpenIcon}
+                                                />
+                                                Open Content
+                                            </Link>
+                                        </li>
+                                    </>
                                 )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess
                                 ) && (
                                     <>
+                                        <li className="mt-16">
+                                            <Link to="/student-activity">
+                                                <ULIComponent icon={HomeIcon} />
+                                                My Learning
+                                            </Link>
+                                        </li>
                                         <li>
                                             <Link to="/my-courses">
                                                 <ULIComponent
                                                     icon={RectangleStackIcon}
                                                 />{' '}
                                                 My Courses
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="/course-catalog">
-                                                <ULIComponent
-                                                    icon={FolderOpenIcon}
-                                                />
-                                                Course Catalog
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="/my-progress">
-                                                <ULIComponent
-                                                    icon={TrophyIcon}
-                                                />{' '}
-                                                My Progress
                                             </Link>
                                         </li>
                                     </>

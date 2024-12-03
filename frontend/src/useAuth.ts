@@ -35,7 +35,7 @@ export const getDashboard = (user?: User): string => {
         } else {
             return isAdministrator(user)
                 ? '/admin-dashboard'
-                : '/student-dashboard';
+                : '/student-activity';
         }
     }
 };
