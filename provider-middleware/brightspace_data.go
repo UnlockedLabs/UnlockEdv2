@@ -46,6 +46,8 @@ type BrightspaceCourse struct {
 	IsActive          string `csv:"IsActive"`
 	IsDeleted         string `csv:"IsDeleted"`
 	OrgUnitTypeId     string `csv:"OrgUnitTypeId"`
+	StartDate         string `csv:"StartDate"`
+	EndDate           string `csv:"EndDate"`
 	TotalContentCount int
 }
 
@@ -170,7 +172,14 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		Type:                    "fixed_enrollment",                             //open to discussion
 		Description:             "Brightspace Managed Course: " + bsCourse.Name, //WIP
 		TotalProgressMilestones: uint(bsCourse.TotalContentCount),
-		ExternalURL:             srv.BaseURL + "/" + "d2l/le/sequenceLauncher/" + bsCourse.OrgUnitId + "/View",//WIP
+		ExternalURL:             srv.BaseURL + "/" + "d2l/le/sequenceLauncher/" + bsCourse.OrgUnitId + "/View", //WIP
+	}
+	datePattern := "2006-01-02T15:04:05.000Z"
+	if bsCourse.StartDate != "" {
+		course.StartDt = parseDate(bsCourse.StartDate, datePattern)
+	}
+	if bsCourse.EndDate != "" {
+		course.EndDt = parseDate(bsCourse.EndDate, datePattern)
 	}
 	return &course
 }

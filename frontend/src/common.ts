@@ -404,6 +404,8 @@ export interface UserCourses {
     total_time: number;
     grade?: string;
     alt_name?: string;
+    start_dt?: Date;
+    end_dt?: Date;
 }
 
 export interface CourseCatalogue {
@@ -416,6 +418,8 @@ export interface CourseCatalogue {
     course_type: string;
     description: string;
     outcome_types: string;
+    start_dt?: Date;
+    end_dt?: Date;
 }
 
 export interface Milestone {
@@ -598,6 +602,8 @@ export interface RecentCourse {
     external_url: string;
     id?: number;
     total_time?: number;
+    start_dt?: Date;
+    end_dt?: Date;
 }
 
 export interface CourseMilestones {
