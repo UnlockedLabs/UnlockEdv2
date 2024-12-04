@@ -2,6 +2,7 @@ import {
     OpenContentFavorite,
     OpenContentItem,
     UserRole,
+    ServerResponseOne,
     HelpfulLink
 } from '@/common';
 import OpenContentCard from '@/Components/cards/OpenContentCard';
@@ -31,21 +32,14 @@ export default function OpenContentLevelDashboard() {
         }
     }
     async function handleHelpfulLinkClick(id: number): Promise<void> {
-        const response = await API.put<{ url: string }, null>(
-            `/helpful-links/activity/${id}`,
-            null
-        );
-        if (response.success) {
-            if (Array.isArray(response.data)) {
-                console.error('unexpected response data');
-            } else if (response.data?.url) {
-                window.open(response.data.url, '_blank');
-            } else {
-                console.error('unexpected response data');
-            }
+        const resp = (await API.put<{ url: string }, object>(
+            `helpful-links/activity/${id}`,
+            {}
+        )) as ServerResponseOne<{ url: string }>;
+        if (resp.success) {
+            window.open(resp.data.url, '_blank');
         }
     }
-
     return (
         <div className="flex flex-row h-full">
             {/* main section */}

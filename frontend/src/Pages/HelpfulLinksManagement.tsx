@@ -50,11 +50,12 @@ export default function HelpfulLinksManagement() {
     async function deleteLink(id: number | undefined) {
         const response = await API.delete(`helpful-links/${id}`);
         if (response.success) {
-            toaster(response.message, ToastState.success);
             updateLinks();
-        } else {
-            toaster(response.message, ToastState.error);
         }
+        toaster(
+            response.message,
+            response.success ? ToastState.success : ToastState.error
+        );
         deleteLinkModal.current?.close();
     }
 
@@ -84,12 +85,13 @@ export default function HelpfulLinksManagement() {
             { sort_order: string }
         >('helpful-links/sort', { sort_order: sort });
         if (response.success) {
-            toaster(response.message, ToastState.success);
             globalSortOrder = sort;
             void mutate();
-        } else {
-            toaster(response.message, ToastState.error);
         }
+        toaster(
+            response.message,
+            response.success ? ToastState.success : ToastState.error
+        );
     }
 
     const sortPills = [
