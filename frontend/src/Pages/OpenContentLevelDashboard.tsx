@@ -39,6 +39,7 @@ export default function OpenContentLevelDashboard() {
             navigate(`/knowledge-center-management/libraries`);
         }
     }
+
     async function handleHelpfulLinkClick(id: number): Promise<void> {
         const resp = (await API.put<{ url: string }, object>(
             `helpful-links/activity/${id}`,
@@ -46,8 +47,10 @@ export default function OpenContentLevelDashboard() {
         )) as ServerResponseOne<{ url: string }>;
         if (resp.success) {
             window.open(resp.data.url, '_blank');
+            navigate(`/knowledge-center-management/libraries`);
         }
     }
+
     return (
         <div className="flex flex-row h-full">
             {/* main section */}

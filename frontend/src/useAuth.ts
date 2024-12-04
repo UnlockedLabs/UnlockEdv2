@@ -87,8 +87,8 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
     }
 };
 
-export const hasFeature = (user: User, axx: FeatureAccess): boolean => {
-    return user.feature_access.includes(axx);
+export const hasFeature = (user: User, ...axx: FeatureAccess[]): boolean => {
+    return axx.every((ax) => user.feature_access.includes(ax));
 };
 
 export const checkDefaultFacility: LoaderFunction = async () => {
@@ -166,3 +166,52 @@ export async function handleLogout(): Promise<void> {
         console.log('Logout failed', error);
     }
 }
+
+const accessValues: Map<FeatureAccess, number> = new Map<FeatureAccess, number>(
+    [
+        [FeatureAccess.OpenContentAccess, 1],
+        [FeatureAccess.ProviderAccess, 2],
+        [FeatureAccess.ProgramAccess, 3]
+    ]
+);
+
+const accessLinks = [
+    '/knowledge-center-dashboard',
+    '/student-activity',
+    '/admin-dashboard'
+];
+
+export const getDashboardLink = (user: User) => {
+    if (isAdministrator(user)) {
+        const maxFeature = user.feature_access
+            .map((ax) => accessValues.get(ax))
+            .sort((a, b) => (a && b ? a > b : a))
+            .pop();
+        if (maxFeature) {
+            return accessLinks[maxFeature - 1];
+        } else {
+            switch (user.feature_access.length) {
+                case 0:
+                    return '/student-activity';
+                case 1:
+                    switch (user.feature_access[0]) {
+                        case FeatureAccess.OpenContentAccess:
+                            return '/knowledge-center-dashboard';
+                        default:
+                            return '/student-activity';
+                    }
+                case 2:
+                    switch (true) {
+                        case !hasFeature(user, FeatureAccess.OpenContentAccess):
+                            return '/student-activity';
+                        case !hasFeature(user, FeatureAccess.ProviderAccess):
+                            return '/knowledge-center-dashboard';
+                        default:
+                            return '/student-activity';
+                    }
+                default:
+                    return '/student-activity';
+            }
+        }
+    }
+};

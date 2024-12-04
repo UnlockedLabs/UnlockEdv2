@@ -155,8 +155,8 @@ const router = createBrowserRouter([
                                 element: <OpenContentLevelDashboard />,
                                 loader: getOpenContentDashboardData,
                                 handle: {
-                                    title: 'Dashboard',
-                                    path: ['dashboard']
+                                    title: 'Knowledge Center Dashboard',
+                                    path: ['knowledge-center-dashboard']
                                 }
                             },
                             {
@@ -436,7 +436,7 @@ const router = createBrowserRouter([
                                         handle: {
                                             title: 'Libraries',
                                             path: [
-                                                'knowledge-center-management',
+                                                'knowledge-center',
                                                 'libraries'
                                             ]
                                         }
@@ -446,10 +446,7 @@ const router = createBrowserRouter([
                                         element: <VideoManagement />,
                                         handle: {
                                             title: 'Videos',
-                                            path: [
-                                                'knowledge-center-management',
-                                                'videos'
-                                            ]
+                                            path: ['knowledge-center', 'videos']
                                         }
                                     },
                                     {
@@ -458,7 +455,7 @@ const router = createBrowserRouter([
                                         handle: {
                                             title: 'Helpful Links',
                                             path: [
-                                                'knowledge-center-management',
+                                                'knowledge-center',
                                                 'helpful-links'
                                             ]
                                         }
