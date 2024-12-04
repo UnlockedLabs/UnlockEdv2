@@ -59,7 +59,7 @@ func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Librar
 		Language:              models.StringPtr(entry.Language),
 		Description:           models.StringPtr(entry.Summary),
 		Path:                  url,
-		ImageUrl:              models.StringPtr(thumbnailURL),
+		ThumbnailUrl:          models.StringPtr(thumbnailURL),
 		VisibilityStatus:      false,
 	}
 }

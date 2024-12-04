@@ -3,6 +3,7 @@ package handlers
 import (
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"context"
 	"encoding/json"
 	"math"
 	"net/http"
@@ -13,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,6 +31,9 @@ type Server struct {
 	nats      *nats.Conn
 	buckets   map[string]nats.KeyValue
 	features  []models.FeatureAccess
+	s3        *s3.Client
+	presigner *s3.PresignClient
+	s3Bucket  string
 }
 
 type routeDef struct {
@@ -121,6 +127,7 @@ func NewServer(isTesting bool) *Server {
 }
 
 func newServer() *Server {
+	ctx := context.Background()
 	conn, err := setupNats()
 	if err != nil {
 		log.Errorf("Failed to connect to NATS: %v", err)
@@ -137,15 +144,29 @@ func newServer() *Server {
 		log.Fatal("Failed to fetch feature flags")
 	}
 	server.features = features
-	err = server.setupBucket()
+	err = server.setupNatsKvBuckets()
 	if err != nil {
 		log.Errorf("Failed to setup JetStream KV store: %v", err)
 	}
+	server.initAwsConfig(ctx)
 	server.RegisterRoutes()
 	if err := server.setupDefaultAdminInKratos(); err != nil {
 		log.Fatal("Error setting up default admin in Kratos")
 	}
 	return &server
+}
+
+func (srv *Server) initAwsConfig(ctx context.Context) {
+	bucket := os.Getenv("S3_BUCKET_NAME")
+	if bucket != "" {
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		srv.s3 = s3.NewFromConfig(cfg)
+		srv.presigner = s3.NewPresignClient(srv.s3)
+		srv.s3Bucket = bucket
+	}
 }
 
 func newTestingServer() *Server {
@@ -191,7 +212,7 @@ const (
 	LibraryPaths string = "library_paths"
 )
 
-func (srv *Server) setupBucket() error {
+func (srv *Server) setupNatsKvBuckets() error {
 	js, err := srv.nats.JetStream()
 	if err != nil {
 		log.Fatalf("Error initializing JetStream: %v", err)
@@ -339,9 +360,8 @@ func (srv *Server) getFacilityID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).FacilityID
 }
 
-func (srv *Server) userIdFromRequest(r *http.Request) uint {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return claims.UserID
+func (srv *Server) getUserID(r *http.Request) uint {
+	return r.Context().Value(ClaimsKey).(*Claims).UserID
 }
 
 type TestClaims string

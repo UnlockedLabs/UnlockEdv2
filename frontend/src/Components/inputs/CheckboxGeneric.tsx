@@ -2,7 +2,7 @@ interface CheckboxProps {
     name: string;
     label: string;
     checked: boolean | undefined;
-    onChange: (checked: boolean, which: string) => void;
+    onChange: (checked: boolean, which: string) => Promise<void>;
 }
 
 export default function CheckboxGeneric({
@@ -12,7 +12,7 @@ export default function CheckboxGeneric({
     onChange
 }: CheckboxProps) {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        onChange(event.target.checked, name);
+        void onChange(event.target.checked, name);
     };
 
     return (

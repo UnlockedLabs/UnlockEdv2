@@ -17,7 +17,7 @@ type DailyActivity struct {
 }
 
 func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, error) {
-	var activities []models.Activity
+	activities := make([]models.Activity, 0, 365)
 	var startDate time.Time
 	var endDate time.Time
 
@@ -35,7 +35,7 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 	}
 
 	// Combine activities based on date
-	dailyActivities := make(map[time.Time]DailyActivity)
+	dailyActivities := make(map[time.Time]DailyActivity, 365)
 	for _, activity := range activities {
 		date := activity.CreatedAt.Truncate(24 * time.Hour)
 		if dailyActivity, ok := dailyActivities[date]; ok {
@@ -86,10 +86,13 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 }
 
 func (db *DB) GetActivityByCourseID(page, perPage, courseID int) (int64, []models.Activity, error) {
-	var activities []models.Activity
+	activities := make([]models.Activity, 0, perPage)
 	var count int64
-	_ = db.Model(&models.Activity{}).Where("course_id = ?", courseID).Count(&count)
-	if err := db.Where("course_id = ?", courseID).Offset((page - 1) * perPage).Limit(perPage).Find(&activities).Error; err != nil {
+	tx := db.Model(&models.Activity{}).Where("course_id = ?", courseID)
+	if err := tx.Count(&count).Error; err != nil {
+		return count, nil, newGetRecordsDBError(err, "activities")
+	}
+	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&activities).Error; err != nil {
 		return count, nil, newGetRecordsDBError(err, "activities")
 	}
 	return count, activities, nil
@@ -136,14 +139,12 @@ RETURNS:
 
 	type UserDashboardJoin struct {
 		Enrollments    []CurrentEnrollment `json:"enrollments"`
-		RecentCourses [3]RecentCourse    `json:"recent_courses"`
+		RecentCourses  [3]RecentCourse     `json:"recent_courses"`
 		WeekActivity   []RecentActivity    `json:"week_activity"`
 	}
-
-For the users dashboard. TODO:  We have to cache this so we aren't running on each visit to home
 */
 func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserDashboardJoin, error) {
-	var recentCourses []models.RecentCourse
+	recentCourses := make([]models.RecentCourse, 0, 3)
 	// first get the users 3 most recently interacted with courses
 	//
 	// get the users 3 most recent courses. progress: # of milestones where type = "assignment_submission" && status = "complete" || "graded" +
@@ -175,7 +176,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 
 	dashboard := models.UserDashboardJoin{}
 	// TOP PROGRAMS
-	var topCourses []string
+	topCourses := make([]string, 0, 6)
 	err = db.Table("activities a").
 		Select("c.name as course_name").
 		Joins("JOIN courses c ON a.course_id = c.id").

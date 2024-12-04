@@ -68,8 +68,7 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "videos")
 	}
-	offset := (page - 1) * perPage
-	if err := tx.Offset(offset).Limit(perPage).Find(&videos).Error; err != nil {
+	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&videos).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "videos")
 	}
 	return total, videos, nil

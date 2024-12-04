@@ -51,7 +51,7 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID int, userSearch []s
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, NewDBError(err, "error counting unmapped users")
 	}
-	if err := tx.Offset((page - 1) * perPage).Limit(perPage).Find(&users).Error; err != nil {
+	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&users).Error; err != nil {
 		return 0, nil, NewDBError(err, "error getting unmapped users")
 	}
 	return total, users, nil

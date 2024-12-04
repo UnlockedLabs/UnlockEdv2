@@ -26,7 +26,7 @@ func (db *DB) GetSectionsForFacility(page, perPage int, facilityId uint, search 
 	if search != "" {
 		tx = tx.Where("name LIKE ?", "%"+search+"%")
 	}
-	if err := tx.Count(&total).Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
+	if err := tx.Count(&total).Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "program sections")
 	}
 	return total, content, nil

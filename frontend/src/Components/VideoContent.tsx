@@ -53,7 +53,7 @@ export default function VideoContent() {
     };
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="w-full flex flex-col p-8 gap-8">
             <div className="flex flex-row gap-4">
                 <SearchBar
                     searchTerm={searchTerm}

@@ -62,6 +62,7 @@ type OpenContentParams struct {
 	OpenContentProviderID uint   `json:"open_content_provider_id"`
 	Name                  string `json:"name"`
 	ContentUrl            string `json:"content_url"`
+	FacilityID            uint   `json:"facility_id"`
 }
 
 type OpenContentItem struct {

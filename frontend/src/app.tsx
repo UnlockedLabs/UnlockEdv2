@@ -424,11 +424,9 @@ const router = createBrowserRouter([
                                 path: 'knowledge-center-management',
                                 element: <OpenContentManagement />,
                                 handle: {
-                                    title: 'Knowledge Center Management',
-                                    path: [
-                                        'knowledge-center-management',
-                                        ':kind'
-                                    ]
+
+                                    title: 'Knowledge Center',
+                                    path: ['knowledge-center', ':kind']
                                 },
                                 children: [
                                     {
@@ -438,7 +436,7 @@ const router = createBrowserRouter([
                                         handle: {
                                             title: 'Libraries',
                                             path: [
-                                                'knowledge-center',
+                                                'knowledge-center-management',
                                                 'libraries'
                                             ]
                                         }

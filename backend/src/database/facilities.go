@@ -9,9 +9,8 @@ import (
 
 func (db *DB) GetAllFacilities(page, itemsPerPage int) (int64, []models.Facility, error) {
 	var total int64
-	offset := (page - 1) * itemsPerPage
 	var facilities []models.Facility
-	if err := db.Model(&models.Facility{}).Count(&total).Limit(itemsPerPage).Offset(offset).Find(&facilities).Error; err != nil {
+	if err := db.Model(&models.Facility{}).Count(&total).Limit(itemsPerPage).Offset(calcOffset(page, itemsPerPage)).Find(&facilities).Error; err != nil {
 		return total, nil, newGetRecordsDBError(err, "facilities")
 	}
 	return total, facilities, nil

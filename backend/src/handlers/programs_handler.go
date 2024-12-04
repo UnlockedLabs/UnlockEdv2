@@ -30,7 +30,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
  */
 func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
-	userId := srv.userIdFromRequest(r)
+	userId := srv.getUserID(r)
 	search := r.URL.Query().Get("search")
 	tags := r.URL.Query()["tags"]
 	var tagsSplit []string
@@ -150,7 +150,7 @@ func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	user_id := srv.userIdFromRequest(r)
+	user_id := srv.getUserID(r)
 	favoriteRemoved, err := srv.Db.ToggleProgramFavorite(user_id, uint(id))
 	if err != nil {
 		log.add("programId", id)

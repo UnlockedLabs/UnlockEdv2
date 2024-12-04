@@ -24,10 +24,10 @@ type Video struct {
 }
 
 func (vid *Video) GetS3KeyMp4() string {
-	return fmt.Sprintf("/videos/%s.mp4", vid.YoutubeID)
+	return fmt.Sprintf("videos/%s.mp4", vid.YoutubeID)
 }
 func (vid *Video) GetS3KeyJson() string {
-	return fmt.Sprintf("/videos/%s.json", vid.YoutubeID)
+	return fmt.Sprintf("videos/%s.json", vid.YoutubeID)
 }
 
 type VideoFavorite struct {

@@ -18,7 +18,7 @@ func (db *DB) GetSectionEvents(page, perPage, sectionId int) (int64, []models.Pr
 	content := []models.ProgramSectionEvent{}
 	total := int64(0)
 	if err := db.Model(&models.ProgramSectionEvent{}).Preload("Overrides").Find(&content).Count(&total).
-		Limit(perPage).Offset((page - 1) * perPage).Error; err != nil {
+		Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "program_section_events")
 	}
 	return total, content, nil

@@ -100,11 +100,11 @@ export default function Navbar({
                                 {user.feature_access.length === 0 && (
                                     <>
                                         <li>
-                                            <Link to="/resources-management">
+                                            <Link to="/knowledge-center-management/libraries">
                                                 <ULIComponent
                                                     icon={ArchiveBoxIcon}
                                                 />
-                                                Resources
+                                                Knowledge Center
                                             </Link>
                                         </li>
                                     </>

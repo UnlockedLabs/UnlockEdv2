@@ -40,7 +40,7 @@ export default function OpenContentLevelDashboard() {
                 <h2> Pick Up Where You Left Off</h2>
                 <div className="grid grid-cols-2 gap-6">
                     <div className="card card-row-padding flex flex-col gap-3">
-                        <h2>Your Top Open Content</h2>
+                        <h2>Your Content</h2>
                         {topUserContent.map((item: OpenContentItem) => {
                             return (
                                 <OpenContentCard
@@ -59,12 +59,12 @@ export default function OpenContentLevelDashboard() {
                                     iconClassName="w-5 h-5"
                                     icon={ArrowTopRightOnSquareIcon}
                                 />
-                                <h3>Explore open content offered</h3>
+                                <h3>Explore content offered</h3>
                             </div>
                         )}
                     </div>
                     <div className="card card-row-padding flex flex-col gap-3">
-                        <h2>Popular Open Content</h2>
+                        <h2>Popular Knowledge-Center Content</h2>
                         {topFacilityContent.map((item: OpenContentItem) => {
                             return (
                                 <OpenContentCard
