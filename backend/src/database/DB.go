@@ -190,7 +190,24 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 	}
 }
 
-const defaultLeftMenuLinks = `[{"name":"Unlocked Labs","rank":1,"links":[{"Unlocked Labs Website":"http:\/\/www.unlockedlabs.org\/"},{"Unlocked Labs LinkedIn":"https:\/\/www.linkedin.com\/company\/labs-unlocked\/"}],"created_at":null,"updated_at":null}]`
+const defaultLeftMenuLinks = `[{
+			"title": "Unlocked Labs",
+			"description": "Unlocked Labs website",
+			"url": "https://unlockedlabs.org",
+			"visibility_status": true,
+	        "thumbnail_url": "https://unlockedlabs.org/favicon.ico",
+			"open_content_provider_id": 1,
+			"facility_id": 1
+		},
+	    {
+	    "title": "Google",
+	    "description": "Google search engine",
+	    "url": "https://www.google.com",
+	    "visibility_status": true,
+	    "open_content_provider_id": 1,
+	    "thumbnail_url": "https://www.google.com/favicon.ico",
+	    "facility_id": 1
+	    }]`
 
 func (db *DB) SeedTestData() {
 	facilitiesFile, err := os.ReadFile("test_data/facilities.json")

@@ -5,7 +5,7 @@ import { useToast } from '@/Context/ToastCtx';
 import API from '@/api/api';
 
 interface Inputs {
-    name: string;
+    title: string;
     url: string;
     description: string;
 }
@@ -24,7 +24,7 @@ export default function EditLinkForm({
         formState: { errors }
     } = useForm<Inputs>({
         values: {
-            name: link.name,
+            title: link.title,
             url: link.url,
             description: link.description
         }

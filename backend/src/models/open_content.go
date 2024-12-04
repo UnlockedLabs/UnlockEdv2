@@ -75,16 +75,20 @@ type OpenContentItem struct {
 }
 
 const (
-	KolibriThumbnailUrl string = "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg"
-	Kiwix               string = "Kiwix"
-	KolibriDescription  string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
-	KiwixThumbnailURL   string = "/kiwix.jpg"
-	KiwixDescription    string = "Kiwix is an offline reader that allows you to host a wide array of educational content."
-	KiwixLibraryUrl     string = "https://library.kiwix.org"
-	YoutubeThumbnail    string = "/youtube.png"
-	Youtube             string = "Youtube"
-	YoutubeApi          string = "https://www.googleapis.com/youtube/v3/videos"
-	YoutubeDescription  string = "Hand pick videos to be available to students from youtube URL's"
+	KolibriThumbnailUrl     string = "https://learningequality.org/static/assets/kolibri-ecosystem-logos/blob-logo.svg"
+	Kiwix                   string = "Kiwix"
+	KolibriDescription      string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
+	KiwixThumbnailURL       string = "/kiwix.jpg"
+	KiwixDescription        string = "Kiwix is an offline reader that allows you to host a wide array of educational content."
+	KiwixLibraryUrl         string = "https://library.kiwix.org"
+	YoutubeThumbnail        string = "/youtube.png"
+	Youtube                 string = "Youtube"
+	YoutubeApi              string = "https://www.googleapis.com/youtube/v3/videos"
+	YoutubeDescription      string = "Hand pick videos to be available to students from youtube URL's"
+	HelpfulLinks            string = "HelpfulLinks"
+	HelpfulLinksThumbnail   string = "/ul-logo.png"
+	HelpfulLinksUrl         string = ""
+	HelpfulLinksDescription string = "Hand picked helpful links for users"
 )
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {

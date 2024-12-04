@@ -4,8 +4,9 @@ import {
     Facility,
     OpenContentItem,
     OpenContentProvider,
-    ResourceCategory,
-    ServerResponse
+    ServerResponse,
+    HelpfulLink,
+    HelpfulLinkAndSort
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -15,14 +16,16 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
     if (!user) return;
     const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
         await Promise.all([
-            API.get(`left-menu`),
+            API.get(`helpful-links`),
             API.get(`open-content/activity/${user.id}`),
             API.get(`open-content/activity`),
             API.get(`open-content/favorites`)
         ]);
 
-    const resourcesData = resourcesResp.success
-        ? (resourcesResp.data as ResourceCategory[])
+    const links = resourcesResp.data as HelpfulLinkAndSort;
+    console.log('resourcesResp', resourcesResp.data as HelpfulLinkAndSort);
+    const helpfulLinks = resourcesResp.success
+        ? (links.helpful_links)
         : [];
     const topUserOpenContent = userContentResp.success
         ? (userContentResp.data as OpenContentItem[])
@@ -35,7 +38,7 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
         : [];
 
     return json({
-        resources: resourcesData,
+        helpfulLinks: helpfulLinks,
         topUserContent: topUserOpenContent,
         topFacilityContent: topFacilityOpenContent,
         favorites: favoriteOpenContent
@@ -44,12 +47,12 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
 
 export const getRightSidebarData: LoaderFunction = async () => {
     const [resourcesResp, openContentResp] = await Promise.all([
-        API.get(`left-menu`),
+        API.get(`helpful-links`),
         API.get(`open-content`)
     ]);
 
     const resourcesData = resourcesResp.success
-        ? (resourcesResp.data as ResourceCategory[])
+        ? (resourcesResp.data as HelpfulLink[])
         : [];
     const openContentData = openContentResp.success
         ? (openContentResp.data as OpenContentProvider[])
