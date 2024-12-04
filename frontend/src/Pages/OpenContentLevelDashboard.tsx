@@ -24,9 +24,9 @@ export default function OpenContentLevelDashboard() {
 
     function navigateToOpenContent() {
         if (user?.role == UserRole.Student) {
-            navigate(`/open-content/libraries`);
+            navigate(`/knowledge-center/libraries`);
         } else {
-            navigate(`/open-content-management/libraries`);
+            navigate(`/knowledge-center-management/libraries`);
         }
     }
 

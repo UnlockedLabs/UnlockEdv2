@@ -31,7 +31,7 @@ export const getDashboard = (user?: User): string => {
         return INIT_KRATOS_LOGIN_FLOW;
     } else {
         if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
-            return '/open-content-dashboard';
+            return '/knowledge-center-dashboard';
         } else {
             return isAdministrator(user)
                 ? '/admin-dashboard'

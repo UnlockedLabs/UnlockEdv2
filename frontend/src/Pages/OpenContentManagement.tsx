@@ -27,16 +27,18 @@ export default function OpenContentManagement() {
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
-        navigate(`/open-content-management/${tab.value}`);
+        navigate(`/knowledge-center-management/${tab.value}`);
     };
 
     return (
         <div className="px-8 pb-4">
             <div className="flex flex-row justify-between">
-                <h1>Open Content Management</h1>
+                <h1>Knowledge Center Management</h1>
                 <button
                     className="button border border-primary bg-transparent text-body-text"
-                    onClick={() => navigate(`/open-content/${activeTab.value}`)}
+                    onClick={() =>
+                        navigate(`/knowledge-center/${activeTab.value}`)
+                    }
                 >
                     Preview Student View
                 </button>

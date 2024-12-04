@@ -34,8 +34,8 @@ export const providerRoutes = [
 ];
 
 export const openContentRoutes = [
-    'open-content',
-    'open-content-management',
+    'knowledge-center',
+    'knowledge-center-management',
     'viewer'
 ];
 
