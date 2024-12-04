@@ -32,9 +32,7 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string) (int64,
 		return 0, nil, newGetRecordsDBError(err, "helpful_links")
 	}
 
-	offset := (page - 1) * perPage
-	//Pull and add calcOffset
-	if err := tx.Offset(offset).Limit(perPage).Find(&links).Error; err != nil {
+	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&links).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "helpful_links")
 	}
 

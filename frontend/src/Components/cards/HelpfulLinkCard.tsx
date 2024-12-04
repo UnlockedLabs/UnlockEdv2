@@ -31,11 +31,10 @@ export default function HelpfulLinkCard({
             `/helpful-links/toggle/${link.id}`,
             {}
         );
-        if (response.success) {
-            toaster(response.message, ToastState.success);
-        } else {
-            toaster(response.message, ToastState.error);
-        }
+        toaster(
+            response.message,
+            response.success ? ToastState.success : ToastState.error
+        );
     };
 
     if (!user) {
