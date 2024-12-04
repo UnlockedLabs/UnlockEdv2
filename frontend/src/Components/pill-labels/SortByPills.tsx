@@ -4,7 +4,7 @@ export default function SortByPills({
     isSelected
 }: {
     label: { name: string; value: string };
-    updateSort: (value: string) => void;
+    updateSort: (value: string) => Promise<void>;
     isSelected: boolean;
 }) {
     return (

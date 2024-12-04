@@ -113,7 +113,7 @@ export default function HelpfulLinksManagement() {
                         <SortByPills
                             key={label.value + label.name}
                             label={label}
-                            updateSort={() => updateGlobalSort}
+                            updateSort={updateGlobalSort}
                             isSelected={label.value === globalSortOrder}
                         />
                     ))}
