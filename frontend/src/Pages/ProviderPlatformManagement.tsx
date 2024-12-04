@@ -142,7 +142,7 @@ export default function ProviderPlatformManagement() {
     };
     const refreshToken = (provider: ProviderPlatform) => {
         const errorMsg = 'Unable to refresh token for provider for ' + provider.name;
-        API.get<ProviderResponse>(`/provider-platforms/${provider.id}/refresh`)
+        API.get<ProviderResponse>(`provider-platforms/${provider.id}/refresh`)
             .then((resp) => {
                 if (resp.success) {
                     const providerData =resp.data as ProviderResponse;
