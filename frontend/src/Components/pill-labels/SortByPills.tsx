@@ -4,8 +4,15 @@ export default function SortByPills({
     isSelected
 }: {
     label: { name: string; value: string };
+<<<<<<< HEAD
     updateSort: (value: string) => Promise<void>;
     isSelected: boolean;
+||||||| parent of ccdef3a (feat: add global sort order for admins in helpful-links)
+    updateSort: (value: string) => void;
+=======
+    updateSort: (value: string) => void;
+    isSelected: boolean;
+>>>>>>> ccdef3a (feat: add global sort order for admins in helpful-links)
 }) {
     return (
         <div
