@@ -37,7 +37,7 @@ services:
       - logs:/var/log/nginx/
     networks:
       - intranet
-    restart: unless-stopped 
+    restart: unless-stopped
     depends_on:
       kratos-migrate:
         condition: service_completed_successfully
@@ -95,16 +95,18 @@ services:
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
       - NATS_PASSWORD=dev
-      - APP_URL=http://server:8080 
+      - APP_URL=http://server:8080
+      - BRIGHTSPACE_TEMP_DIR=/csvs
     networks:
       - intranet
     volumes:
       - logs:/logs
       - ./frontend/public/videos:/videos
-      - ./:/app 
+      - ./:/app
+      - csvs:/csvs
     ports:
       - 8081:8081
-    restart: unless-stopped 
+    restart: unless-stopped
     depends_on: [server]
 
   # Scheduler + task runner for provider-middleware
@@ -127,7 +129,7 @@ services:
       - intranet
     volumes:
       - logs:/logs
-      - ./:/app 
+      - ./:/app
     depends_on: [provider-service]
 
   keto-migrate:
@@ -263,7 +265,12 @@ volumes:
       type: none
       o: bind
       device: ./config
-
+  csvs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./csvs
   logs:
     driver: local
     driver_opts:

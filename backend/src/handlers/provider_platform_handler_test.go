@@ -109,11 +109,20 @@ func TestHandleCreateProvider(t *testing.T) {
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusCreated {
 				received := rr.Body.String()
-				data := models.Resource[models.ProviderPlatform]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal resource, error is %v", err)
+				resource := models.Resource[map[string]interface{}]{}
+				if err := json.Unmarshal([]byte(received), &resource); err != nil {
+					t.Errorf("unable to unmarshal resource, error is %v", err)
 				}
-				providerPlatform, err := server.Db.GetProviderPlatformByID(int(data.Data.ID))
+				jsonStr, err := json.Marshal(resource.Data["platform"])
+				if err != nil {
+					t.Error("unable to marshal response provider platform, error is ", err)
+				}
+				var responsePlatform models.ProviderPlatform
+				err = json.Unmarshal(jsonStr, &responsePlatform)
+				if err != nil {
+					t.Error("unable to unmarshal provider platform, error is ", err)
+				}
+				providerPlatform, err := server.Db.GetProviderPlatformByID(int(responsePlatform.ID))
 				if err != nil {
 					t.Fatalf("unable to get provider platform from db, error is %v", err)
 				}
@@ -123,7 +132,7 @@ func TestHandleCreateProvider(t *testing.T) {
 						fmt.Println(err)
 					}
 				})
-				if diff := cmp.Diff(providerPlatform, &data.Data, cmpopts.IgnoreFields(models.ProviderPlatform{}, "AccessKey")); diff != "" {
+				if diff := cmp.Diff(providerPlatform, &responsePlatform, cmpopts.IgnoreFields(models.ProviderPlatform{}, "AccessKey")); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
 				}
 			}
@@ -133,8 +142,8 @@ func TestHandleCreateProvider(t *testing.T) {
 
 func TestHandleUpdateProvider(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestAdminCanUpdateFacility", "admin", getProviderPlatform(), http.StatusOK, ""},
-		{"TestUserCannotUpdateFacility", "student", nil, http.StatusUnauthorized, ""},
+		{"TestAdminCanUpdateProvider", "admin", getProviderPlatform(), http.StatusOK, ""},
+		{"TestUserCannotUpdateProvider", "student", nil, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -171,11 +180,20 @@ func TestHandleUpdateProvider(t *testing.T) {
 					t.Fatalf("unable to get provider platform from db, error is %v", err)
 				}
 				received := rr.Body.String()
-				data := models.Resource[models.ProviderPlatform]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal resource, error is %v", err)
+				resource := models.Resource[map[string]interface{}]{}
+				if err := json.Unmarshal([]byte(received), &resource); err != nil {
+					t.Errorf("unable to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(providerPlatform, &data.Data, cmpopts.IgnoreFields(models.ProviderPlatform{}, "AccessKey")); diff != "" {
+				jsonStr, err := json.Marshal(resource.Data["platform"])
+				if err != nil {
+					t.Error("unable to marshal response provider platform, error is ", err)
+				}
+				var responsePlatform models.ProviderPlatform
+				err = json.Unmarshal(jsonStr, &responsePlatform)
+				if err != nil {
+					t.Error("unable to unmarshal provider platform, error is ", err)
+				}
+				if diff := cmp.Diff(providerPlatform, &responsePlatform, cmpopts.IgnoreFields(models.ProviderPlatform{}, "AccessKey")); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
 				}
 			}

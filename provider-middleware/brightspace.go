@@ -17,11 +17,12 @@ import (
 )
 
 const (
-	CsvDownloadPath     = "csvs"
 	TokenEndpoint       = "https://auth.brightspace.com/core/connect/token"
-	DataSetsEndpoint    = "https://unlocked.brightspacedemo.com/d2l/api/lp/1.28/dataExport/bds/list"
-	DataDownloadEnpoint = "https://unlocked.brightspacedemo.com/d2l/api/lp/1.28/dataExport/bds/download/%s"
+	DataSetsEndpoint    = "https://unlocked.brightspacedemo.com/d2l/api/lp/%s/dataExport/bds/list"
+	DataDownloadEnpoint = "https://unlocked.brightspacedemo.com/d2l/api/lp/%s/dataExport/bds/download/%s"
 )
+
+var CsvDownloadPath = os.Getenv("BRIGHTSPACE_TEMP_DIR")
 
 type BrightspaceService struct {
 	ProviderPlatformID uint
@@ -43,9 +44,8 @@ func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 	if len(keysSplit) < 2 {
 		return nil, errors.New("unable to find refresh token, unable to intialize BrightspaceService")
 	}
-	scope := os.Getenv("BRIGHTSPACE_SCOPE")
-	if scope == "" {
-		return nil, errors.New("no brightspace scope found, unable to intialize BrightspaceService")
+	if _, err := os.Stat(CsvDownloadPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("unable to find csv download directory path %s, unable to intialize BrightspaceService", CsvDownloadPath)
 	}
 	brightspaceService := BrightspaceService{
 		ProviderPlatformID: provider.ID,
@@ -54,7 +54,7 @@ func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 		ClientID:           provider.AccountID,
 		ClientSecret:       keysSplit[0],
 		RefreshToken:       keysSplit[1],
-		Scope:              scope,
+		Scope:              models.BrightspaceScopes,
 		JobParams:          params,
 	}
 	data := url.Values{}
@@ -140,7 +140,7 @@ func (srv *BrightspaceService) getBrightspaceBulkData(pluginName, zipFileName st
 		return "", err
 	}
 	log.Infof("successfully retrieved plugin id %s for downloading csv file for %s", pluginId, pluginName)
-	downloadUrl := fmt.Sprintf(DataDownloadEnpoint, pluginId)
+	downloadUrl := fmt.Sprintf(DataDownloadEnpoint, models.BrightspaceApiVersion, pluginId)
 	csvFile, err := srv.downloadAndUnzipFile(zipFileName, downloadUrl)
 	if err != nil {
 		log.Errorf("error attempting to download zip file for %s using plugin id %s, error is: %v", pluginName, pluginId, err)
@@ -256,12 +256,15 @@ func (srv *BrightspaceService) ImportMilestones(course map[string]interface{}, u
 }
 
 func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *gorm.DB) error {
-	var csvFile string
+	var (
+		csvFile string
+		err     error
+	)
 	switch srv.IsDownloaded {
 	case true:
 		csvFile = srv.CsvFileMap["enrollments"]
 	case false:
-		csvFile, err := srv.getBrightspaceBulkData("User Enrollments", "milestones/UserEnrollments.zip")
+		csvFile, err = srv.getBrightspaceBulkData("User Enrollments", "milestones/UserEnrollments.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace enrollments, error is: %v", err)
 			return err
@@ -280,8 +283,10 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 	filteredBSEnrollments := findSlice(bsEnrollments, func(bsEnrollment BrightspaceEnrollment) bool {
 		return bsEnrollment.OrgUnitId == externalCourseId && usersMap[bsEnrollment.UserId] != 0
 	})
-	var id string
-	var userId uint
+	var (
+		id     string
+		userId uint
+	)
 	for _, bsEnrollment := range filteredBSEnrollments {
 		id = bsEnrollment.getCompositeKeyId()
 		userId = usersMap[bsEnrollment.UserId]
@@ -294,7 +299,7 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 			ExternalID: id,
 			Type:       models.Enrollment,
 		}
-		if err := db.Create(&milestone).Error; err != nil {
+		if err = db.Create(&milestone).Error; err != nil {
 			log.Errorln("error creating brightspace enrollment milestone in db")
 			continue
 		}
@@ -303,12 +308,15 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 }
 
 func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po milestonePO, db *gorm.DB) error {
-	var csvFile string
+	var (
+		csvFile string
+		err     error
+	)
 	switch srv.IsDownloaded {
 	case true:
 		csvFile = srv.CsvFileMap["assignments"]
 	case false:
-		csvFile, err := srv.getBrightspaceBulkData("Assignment Submissions", "milestones/AssignmentSubmissions.zip")
+		csvFile, err = srv.getBrightspaceBulkData("Assignment Submissions", "milestones/AssignmentSubmissions.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace assignment submissions, error is: %v", err)
 			return err
@@ -327,9 +335,11 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 	filteredBSAssignments := findSlice(bsAssignments, func(bsAssignment BrightspaceAssignmentSubmission) bool {
 		return bsAssignment.OrgUnitId == externalCourseId && usersMap[bsAssignment.UserId] != 0
 	})
-	var id string
-	var userId uint
-	var gradedId string
+	var (
+		id       string
+		userId   uint
+		gradedId string
+	)
 	for _, bsAssignment := range filteredBSAssignments {
 		id = bsAssignment.getCompositeKeyId() //CREATE COMPOSITE FOR UNIQUENESS
 		gradedId = strconv.Itoa(int(userId)) + bsAssignment.getGradedCompositeKeyId()
@@ -359,7 +369,7 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 			milestone.Type = models.AssignmentSubmission
 			milestone.ExternalID = id
 		}
-		if err := db.Create(&milestone).Error; err != nil {
+		if err = db.Create(&milestone).Error; err != nil {
 			log.Errorln("error creating milestone in db")
 			continue
 		}
@@ -368,12 +378,15 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 }
 
 func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, db *gorm.DB) error {
-	var csvFile string
+	var (
+		csvFile string
+		err     error
+	)
 	switch srv.IsDownloaded {
 	case true:
 		csvFile = srv.CsvFileMap["quizzes"]
 	case false:
-		csvFile, err := srv.getBrightspaceBulkData("Quiz Attempts", "milestones/QuizAttempts.zip")
+		csvFile, err = srv.getBrightspaceBulkData("Quiz Attempts", "milestones/QuizAttempts.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace quiz attempts, error is: %v", err)
 			return err
@@ -392,9 +405,11 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 	filteredBSQuizes := findSlice(bsQuizes, func(bsQuiz BrightspaceQuizSubmission) bool {
 		return bsQuiz.OrgUnitId == externalCourseId && strings.ToUpper(bsQuiz.IsDeleted) == "FALSE" && usersMap[bsQuiz.UserId] != 0
 	})
-	var id string
-	var userId uint
-	var gradedId string
+	var (
+		id       string
+		userId   uint
+		gradedId string
+	)
 	for _, bsQuiz := range filteredBSQuizes {
 		id = bsQuiz.AttemptId
 		gradedId = strconv.Itoa(int(userId)) + bsQuiz.getGradedCompositeKeyId()
@@ -423,7 +438,7 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 			milestone.Type = models.QuizSubmission
 			milestone.ExternalID = id
 		}
-		if err := db.Create(&milestone).Error; err != nil {
+		if err = db.Create(&milestone).Error; err != nil {
 			log.Errorln("error creating milestone in db")
 			continue
 		}
@@ -465,19 +480,22 @@ func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interfa
 	if !srv.IsDownloaded {
 		cleanUpCsvFiles("activities")
 	}
-	var contentObjCsvFile string
-	var userProgressCsvFile string
+	var (
+		contentObjCsvFile   string
+		userProgressCsvFile string
+		err                 error
+	)
 	switch srv.IsDownloaded {
 	case true:
 		contentObjCsvFile = srv.CsvFileMap["contentobjs"]
 		userProgressCsvFile = srv.CsvFileMap["contentprogress"]
 	case false:
-		contentObjCsvFile, err := srv.getBrightspaceBulkData("Content Objects", "activities/ContentObjects.zip")
+		contentObjCsvFile, err = srv.getBrightspaceBulkData("Content Objects", "activities/ContentObjects.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace content objects for importing activities, error is: %v", err)
 			return err
 		}
-		userProgressCsvFile, err := srv.getBrightspaceBulkData("Content User Progress", "activities/ContentUserProgress.zip")
+		userProgressCsvFile, err = srv.getBrightspaceBulkData("Content User Progress", "activities/ContentUserProgress.zip")
 		if err != nil {
 			log.Errorf("error attempting to get bulk data for Brightspace content user progress for importing activities, error is: %v", err)
 			return err
@@ -497,7 +515,7 @@ func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interfa
 			if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, bsDto.ExternalId).First(&acts).RowsAffected > 0 {
 				continue
 			}
-			if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userId, courseId, models.ContentInteraction, bsDto.TotalTime, bsDto.ExternalId).Error; err != nil {
+			if err = db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userId, courseId, models.ContentInteraction, bsDto.TotalTime, bsDto.ExternalId).Error; err != nil {
 				log.WithFields(log.Fields{"user_id": userId, "course_id": courseId, "error": err}).Error("Failed to create activity using brightspace data")
 				continue
 			}

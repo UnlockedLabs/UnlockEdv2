@@ -1,7 +1,9 @@
 import {
+    ProviderResponse,
     ProviderPlatformState,
     ProviderPlatformType,
-    ToastState
+    ToastState,
+    ServerResponseOne
 } from '@/common';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
@@ -33,12 +35,16 @@ export default function AddProviderForm({
 
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         setErrorMessage('');
-        const response = await API.post<string, ProviderInputs>(
+        const response = (await API.post<ProviderResponse, ProviderInputs>(
             'provider-platforms',
             data
-        );
+        )) as ServerResponseOne<ProviderResponse>;
         if (!response.success) {
             onSuccess(ToastState.error, 'Failed to add provider platform');
+            return;
+        }
+        if (response.data.oauth2Url) {
+            window.location.href = response.data.oauth2Url;
             return;
         }
         reset();

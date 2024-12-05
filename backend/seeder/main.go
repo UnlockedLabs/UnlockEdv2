@@ -76,6 +76,14 @@ func seedTestData(db *gorm.DB) {
 			Type:      models.Kolibri,
 			State:     models.Enabled,
 			AccessKey: "testing_key_replace_me",
+		},
+		{
+			Name:      "Brightspace",
+			BaseUrl:   "https://unlocked.brightspacedemo.com",
+			AccountID: "testing_client_id_replace_me", //clientID
+			Type:      models.Brightspace,
+			State:     models.Disabled,
+			AccessKey: "testing_client_secret_replace_me", //ClientSecret;refresh-token
 		}}
 	for idx := range platforms {
 		if err := db.Create(&platforms[idx]).Error; err != nil {
@@ -146,12 +154,15 @@ func seedTestData(db *gorm.DB) {
 		if err := testServer.HandleCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
 			log.Fatalf("unable to create test user in kratos")
 		}
+		var mapping models.ProviderUserMapping
 		for i := 0; i < len(platforms); i++ {
-			mapping := models.ProviderUserMapping{
-				UserID:             users[idx].ID,
-				ProviderPlatformID: platforms[i].ID,
-				ExternalUsername:   users[idx].Username,
-				ExternalUserID:     strconv.Itoa(idx),
+			if platforms[i].Type != models.Brightspace { //omitting brightspace here, we don't want bad users in the seeded data...we want real users
+				mapping = models.ProviderUserMapping{
+					UserID:             users[idx].ID,
+					ProviderPlatformID: platforms[i].ID,
+					ExternalUsername:   users[idx].Username,
+					ExternalUserID:     strconv.Itoa(idx),
+				}
 			}
 			if err = db.Create(&mapping).Error; err != nil {
 				log.Printf("Failed to create provider user mapping: %v", err)

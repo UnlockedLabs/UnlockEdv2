@@ -10,10 +10,11 @@ import {
     ServerResponse,
     ToastState,
     ProviderPlatformState,
-    FeatureAccess
+    FeatureAccess,
+    ProviderResponse
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import RegisterOidcClientForm from '@/Components/forms/RegisterOidcClientForm';
 import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
@@ -46,7 +47,25 @@ export default function ProviderPlatformManagement() {
     const providerData = providers?.data
         ? (providers.data as ProviderPlatform[])
         : [];
-
+        useEffect(() => {
+            const queryParams = new URLSearchParams(window.location.search);
+            const status = queryParams.get('status');
+            const message = queryParams.get('message');
+    
+            if (status && message) {
+                if (status === 'success') {
+                    toaster(message, ToastState.success);
+                } else if (status === 'error') {
+                    toaster(message, ToastState.error);
+                }
+    
+                // Clear the query parameters to avoid repeated toasts
+                const url = new URL(window.location.href);
+                url.searchParams.delete('status');
+                url.searchParams.delete('message');
+                window.history.replaceState({}, document.title, url.toString());
+            }
+        }, [toaster]);
     function resetModal() {
         setTimeout(() => {
             setEditProvider(undefined);
@@ -97,7 +116,7 @@ export default function ProviderPlatformManagement() {
             provider.state === ProviderPlatformState.ARCHIVED
                 ? 'enabled'
                 : 'archived';
-        API.patch<null, { state: string }>(
+        API.patch<ProviderResponse, { state: string }>(
             `provider-platforms/${provider.id}`,
             {
                 state: state
@@ -105,6 +124,11 @@ export default function ProviderPlatformManagement() {
         )
             .then((resp) => {
                 if (resp.success) {
+                    const providerData =resp.data as ProviderResponse;
+                    if (providerData.oauth2Url) {
+                        window.location.href = providerData.oauth2Url;
+                        return;
+                    }
                     toaster(
                         `Provider platform ${provider.name} has been ${state}.`,
                         ToastState.success
@@ -116,6 +140,24 @@ export default function ProviderPlatformManagement() {
                 toaster('Unable to toggle provider state', ToastState.error);
             });
     };
+    const refreshToken = (provider: ProviderPlatform) => {
+        const errorMsg = 'Unable to refresh token for provider for ' + provider.name;
+        API.get<ProviderResponse>(`provider-platforms/${provider.id}/refresh`)
+            .then((resp) => {
+                if (resp.success) {
+                    const providerData =resp.data as ProviderResponse;
+                    if (providerData.oauth2Url) {
+                        window.location.href = providerData.oauth2Url;
+                    }
+                }else{
+                    toaster(errorMsg, ToastState.error);
+                }
+            })
+            .catch(() => {
+                toaster(errorMsg, ToastState.error);
+            });
+    };
+
 
     const showAuthorizationInfo = (provider: ProviderPlatform) => {
         API.get<OidcClient>(`oidc/clients/${provider.oidc_id}`)
@@ -174,6 +216,7 @@ export default function ProviderPlatformManagement() {
                                         showAuthorizationInfo={() =>
                                             showAuthorizationInfo(provider)
                                         }
+                                        refreshToken={refreshToken}
                                         archiveProvider={() =>
                                             handleToggleArchiveProvider(
                                                 provider
