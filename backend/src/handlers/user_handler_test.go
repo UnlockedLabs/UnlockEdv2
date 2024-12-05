@@ -323,9 +323,9 @@ func getDBUsers() map[string]any {
 
 func getNewUserForm() map[string]any {
 	form := make(map[string]any)
-	form["username"] = "test"
-	form["name_first"] = "test"
-	form["name_last"] = "test"
+	form["username"] = "test123"
+	form["name_first"] = "te st"
+	form["name_last"] = "te st"
 	form["email"] = "test"
 	form["role"] = "admin"
 	return form

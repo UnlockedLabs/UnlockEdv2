@@ -8,10 +8,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	mrand "math/rand"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
@@ -31,6 +34,14 @@ const (
 	Disabled  ProviderPlatformState = "disabled"
 	Archived  ProviderPlatformState = "archived"
 	UuidV4Len                       = 32
+)
+
+const (
+	BrightspaceRedirectEndpointURL string = "/api/provider-platforms/callback"
+	BrightspaceAuthorizationURL    string = "https://auth.brightspace.com/oauth2/auth"
+	BrightspaceTokenURL            string = "https://auth.brightspace.com/core/connect/token"
+	BrightspaceScopes              string = "accommodations:profile:read attributes:schemas:read datahub:dataexports:download,read datasets:bds:read organizations:image:read organizations:organization:read orgunits:course:read role:detail:read users:own_profile:read users:own_pronoun:read"
+	BrightspaceApiVersion          string = "1.31"
 )
 
 type ProviderPlatform struct {
@@ -130,4 +141,50 @@ func (prov *ProviderPlatform) GetDefaultCronJobs() []JobType {
 		log.WithFields(log.Fields{"job": job, "provider": prov.Name}).Info("Job added for provider")
 	}
 	return jobs
+}
+
+// oauth2 config is currently only for the Brightspace provider, implemented a switch for other oauth2 providers to be added in the future
+func (provider *ProviderPlatform) GetOAuth2Config() *oauth2.Config {
+	var (
+		config oauth2.Config
+		secret string
+	)
+	switch provider.Type {
+	case Brightspace:
+		if strings.Contains(provider.AccessKey, ";") {
+			secret = strings.Split(provider.AccessKey, ";")[0]
+		} else {
+			secret = provider.AccessKey
+		}
+		config = oauth2.Config{
+			ClientID:     provider.AccountID,
+			ClientSecret: secret,
+			RedirectURL:  os.Getenv("APP_URL") + BrightspaceRedirectEndpointURL,
+			Scopes:       []string{BrightspaceScopes},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:   BrightspaceAuthorizationURL,
+				TokenURL:  BrightspaceTokenURL,
+				AuthStyle: oauth2.AuthStyleInHeader,
+			},
+		}
+	}
+	return &config
+}
+
+func CreateOAuth2UrlState() string {
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil { //if err then handle with custom generator
+		randomBytes = generateRandomString()
+	}
+	return base64.URLEncoding.EncodeToString(randomBytes)
+}
+
+func generateRandomString() []byte {
+	const lettersAndNumbers = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	randomBytes := make([]byte, 32)
+	generator := mrand.New(mrand.NewSource(time.Now().UnixNano())) // seed it
+	for idx := range randomBytes {
+		randomBytes[idx] = randomBytes[generator.Intn(len(lettersAndNumbers))]
+	}
+	return randomBytes
 }

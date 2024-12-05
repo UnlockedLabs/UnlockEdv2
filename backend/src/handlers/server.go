@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -210,6 +211,7 @@ func oryConfig() *ory.Configuration {
 const (
 	CachedUsers  string = "cache_users"
 	LibraryPaths string = "library_paths"
+	OAuthState   string = "oauth_state"
 )
 
 func (srv *Server) setupNatsKvBuckets() error {
@@ -219,12 +221,21 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths} {
+	for _, bucket := range []string{CachedUsers, LibraryPaths, OAuthState} {
 		kv, err := js.KeyValue(bucket)
 		if err == nats.ErrBucketNotFound {
-			kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
-				Bucket: bucket,
-			})
+			switch bucket {
+			case OAuthState:
+				kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
+					Bucket:  bucket,
+					History: 1,
+					TTL:     10 * time.Minute, //expire (time-to-live)
+				})
+			default:
+				kv, err = js.CreateKeyValue(&nats.KeyValueConfig{
+					Bucket: bucket,
+				})
+			}
 			if err != nil {
 				log.Errorf("Error creating JetStream KV store: %v", err)
 				return err

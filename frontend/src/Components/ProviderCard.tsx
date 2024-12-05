@@ -5,6 +5,7 @@ import {
     ProviderPlatformType
 } from '@/common';
 import {
+    ArrowPathIcon,
     CheckCircleIcon,
     InformationCircleIcon,
     LinkIcon,
@@ -22,12 +23,14 @@ export default function ProviderCard({
     openEditProvider,
     oidcClient,
     showAuthorizationInfo,
+    refreshToken,
     archiveProvider
 }: {
     provider: ProviderPlatform;
     openEditProvider: (prov: ProviderPlatform) => void;
     oidcClient: (prov: ProviderPlatform) => void;
     showAuthorizationInfo: (prov: ProviderPlatform) => void;
+    refreshToken: (prov: ProviderPlatform) => void; 
     archiveProvider: (prov: ProviderPlatform) => void;
 }) {
     const navigate = useNavigate();
@@ -35,7 +38,7 @@ export default function ProviderCard({
         <tr className="bg-base-teal card p-4 w-full grid-cols-4 justify-items-center">
             <td className="justify-self-start">{provider.name}</td>
             <td>
-                {provider.oidc_id !== 0 ? (
+                {provider.oidc_id !== 0 || provider.type === ProviderPlatformType.BRIGHTSPACE ? (
                     <CheckCircleIcon className="w-4" />
                 ) : (
                     <div className="w-4"></div>
@@ -56,16 +59,24 @@ export default function ProviderCard({
             <td className="flex flex-row gap-3 justify-self-end">
                 {provider.state !== ProviderPlatformState.ARCHIVED ? (
                     <>
-                        {provider.oidc_id !== 0 ? (
+                        {provider.oidc_id !== 0 || provider.type === ProviderPlatformType.BRIGHTSPACE ? (
                             <>
-                                <ULIComponent
+                                {provider.type === ProviderPlatformType.BRIGHTSPACE ? (
+                                    <ULIComponent
+                                    dataTip={'Refresh Token'}
+                                    icon={ArrowPathIcon}
+                                    onClick={() =>
+                                        refreshToken(provider)
+                                    }
+                                />
+                                ) : ( <ULIComponent
                                     dataTip={'Auth Info'}
                                     icon={InformationCircleIcon}
                                     onClick={() =>
                                         showAuthorizationInfo(provider)
                                     }
-                                />
-
+                                />)
+                                }
                                 {provider.type !==
                                     ProviderPlatformType.KOLIBRI && (
                                     <ULIComponent
