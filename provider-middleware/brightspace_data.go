@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 
 	"github.com/gocarina/gocsv"
+	"github.com/microcosm-cc/bluemonday"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,6 +25,23 @@ type DataSetPlugin struct {
 	CreatedDate  string  `json:"CreatedDate"`
 	DownloadLink string  `json:"DownloadLink"`
 	DownloadSize float64 `json:"DownloadSize"`
+}
+
+type CourseOffering struct {
+	Identifier      string   `json:"Identifier"`
+	Name            string   `json:"Name"`
+	Code            string   `json:"Code"`
+	IsActive        bool     `json:"IsActive"`
+	Path            string   `json:"Path"`
+	StartDate       string   `json:"StartDate"`
+	EndDate         string   `json:"EndDate"`
+	Description     RichText `json:"Description"`
+	CanSelfRegister bool     `json:"CanSelfRegister"`
+}
+
+type RichText struct {
+	Text string `json:"Text"` // Plaintext version of the description
+	Html string `json:"Html"` // HTML version of the description (nullable)
 }
 
 type BrightspaceUser struct {
@@ -142,15 +160,17 @@ func (srv *BrightspaceService) IntoImportUser(bsUser BrightspaceUser) *models.Im
 
 func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Course {
 	id := bsCourse.OrgUnitId
-	courseImageUrl := fmt.Sprintf(srv.BaseURL+"/d2l/api/lp/1.28/courses/%s/image", id)
+	courseImageUrl := fmt.Sprintf("%s/d2l/api/lp/%s/courses/%s/image", srv.BaseURL, models.BrightspaceApiVersion, id)
 	response, err := srv.SendRequest(courseImageUrl)
 	if err != nil {
 		log.Errorf("error executing request to retrieve image from url %v, error is %v", courseImageUrl, err)
 		return nil
 	}
 	defer response.Body.Close()
-	var imgPath string
-	var imgBytes []byte
+	var (
+		imgPath  string
+		imgBytes []byte
+	)
 	if response.StatusCode == http.StatusOK {
 		imgBytes, err = io.ReadAll(response.Body)
 		if err != nil {
@@ -163,14 +183,40 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 			}
 		}
 	}
+	courseOfferingUrl := fmt.Sprintf("%s/d2l/api/lp/%s/courses/%s", srv.BaseURL, models.BrightspaceApiVersion, id)
+	resp, err := srv.SendRequest(courseOfferingUrl)
+	if err != nil {
+		log.Errorf("error executing request to retrieve course offering from url %v, error is %v", courseOfferingUrl, err)
+		return nil
+	}
+	defer resp.Body.Close()
+	var courseDescription string
+	if resp.StatusCode == http.StatusOK {
+		var courseOffering CourseOffering
+		if err := json.NewDecoder(resp.Body).Decode(&courseOffering); err != nil {
+			log.Errorf("error decoding to response from url %v, error is: %v", courseOfferingUrl, err)
+		} else {
+			switch {
+			case courseOffering.Description.Text != "":
+				courseDescription = courseOffering.Description.Text
+			case courseOffering.Description.Html != "":
+				policy := bluemonday.StrictPolicy()
+				courseDescription = policy.Sanitize(courseOffering.Description.Html)
+			}
+		}
+	}
+	if courseDescription == "" {
+		courseDescription = fmt.Sprintf("Brightspace Managed Course: %s", bsCourse.Name)
+	}
 	course := models.Course{
 		ProviderPlatformID:      srv.ProviderPlatformID,
 		ExternalID:              bsCourse.OrgUnitId,
 		Name:                    bsCourse.Name,
+		AltName:                 bsCourse.Code,
 		OutcomeTypes:            "completion",
 		ThumbnailURL:            imgPath,
-		Type:                    "fixed_enrollment",                             //open to discussion
-		Description:             "Brightspace Managed Course: " + bsCourse.Name, //WIP
+		Type:                    "fixed_enrollment", //open to discussion
+		Description:             courseDescription,
 		TotalProgressMilestones: uint(bsCourse.TotalContentCount),
 		ExternalURL:             srv.BaseURL + "/" + "d2l/le/sequenceLauncher/" + bsCourse.OrgUnitId + "/View", //WIP
 	}
@@ -235,7 +281,7 @@ func UploadBrightspaceImage(imgBytes []byte, bsCourseId string) (string, error) 
 
 func (srv *BrightspaceService) getPluginId(pluginName string) (string, error) {
 	var pluginId string
-	resp, err := srv.SendRequest(DataSetsEndpoint)
+	resp, err := srv.SendRequest(fmt.Sprintf(DataSetsEndpoint, models.BrightspaceApiVersion))
 	if err != nil {
 		return pluginId, err
 	}

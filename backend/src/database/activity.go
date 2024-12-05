@@ -33,7 +33,6 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int) ([]DailyActivity, e
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "activities")
 	}
-
 	// Combine activities based on date
 	dailyActivities := make(map[time.Time]DailyActivity, 365)
 	for _, activity := range activities {

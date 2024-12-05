@@ -16,14 +16,21 @@ import {
     DocumentTextIcon,
     FolderOpenIcon,
     CloudIcon,
-    RectangleStackIcon
+    RectangleStackIcon,
+    RssIcon
 } from '@heroicons/react/24/solid';
 import { handleLogout, hasFeature, isAdministrator, useAuth } from '@/useAuth';
+import Modal from '@/Components/Modal';
 import ULIComponent from './ULIComponent';
 import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
-import { FeatureAccess, UserRole } from '@/common';
+import { FeatureAccess, ToastState, UserRole } from '@/common';
+import PrimaryButton from './PrimaryButton';
+import { useToast } from '@/Context/ToastCtx';
+import API from '@/api/api';
+import { useRef, useState } from 'react';
+import ConfirmSeedDemoDataForm from './forms/ConfirmSeedDemoData';
 
 export default function Navbar({
     isPinned,
@@ -36,6 +43,27 @@ export default function Navbar({
     if (!user) {
         return null;
     }
+    const { toaster } = useToast();
+    const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
+    const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
+
+    const handleSeedDemoData = async () => {
+        setSeedInProgress(true);
+        const resp = await API.post<null, object>(`auth/demo-seed`, {});
+        if (resp.success) {
+            toaster(
+                `Demo data seeded for ${user.facility_name}`,
+                ToastState.success
+            );
+            confirmSeedModal.current?.close();
+            setSeedInProgress(false);
+            return;
+        }
+        toaster('Error seeding demo data', ToastState.error);
+        confirmSeedModal.current?.close();
+        setSeedInProgress(false);
+    };
+
     return (
         <div className="w-60 min-w-[240px] flex flex-col bg-background group h-screen">
             <div className="hidden lg:flex self-end py-6 mr-4">
@@ -272,14 +300,33 @@ export default function Navbar({
                                 </label>
                             </li>
                             {user && user.role === UserRole.SystemAdmin && (
-                                <li>
-                                    <FeatureLevelCheckboxes
-                                        features={user.feature_access ?? []}
-                                        setUser={setUser}
-                                    />
-                                </li>
+                                <>
+                                    <li>
+                                        <PrimaryButton
+                                            className="self-center border-black hover:border-white"
+                                            onClick={() =>
+                                                confirmSeedModal.current?.showModal()
+                                            }
+                                        >
+                                            <ULIComponent
+                                                icon={RssIcon}
+                                                iconClassName={'w-3 h-3'}
+                                            />
+                                            Seed Demo Data
+                                        </PrimaryButton>
+                                    </li>
+                                    <div className="self-center pt-3">
+                                        <strong>Enabled Features:</strong>
+                                    </div>
+                                    <li>
+                                        <FeatureLevelCheckboxes
+                                            features={user.feature_access ?? []}
+                                            setUser={setUser}
+                                        />
+                                    </li>
+                                </>
                             )}
-                            <li className="self-center">
+                            <li className="self-center pt-5">
                                 <button
                                     onClick={() => {
                                         void handleLogout();
@@ -293,6 +340,24 @@ export default function Navbar({
                     </li>
                 </ul>
             </div>
+            {confirmSeedModal !== null && (
+                <Modal
+                    ref={confirmSeedModal}
+                    type="Confirm"
+                    item="Seed Demo Data"
+                    form={
+                        <ConfirmSeedDemoDataForm
+                            handleClose={() => {
+                                confirmSeedModal.current?.close();
+                                setSeedInProgress(false);
+                                return;
+                            }}
+                            inProgress={seedInProgress}
+                            handleSeedDemoData={handleSeedDemoData}
+                        />
+                    }
+                />
+            )}
         </div>
     );
 }

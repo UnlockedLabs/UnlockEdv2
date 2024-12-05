@@ -132,7 +132,11 @@ func TestCreateUser(t *testing.T) {
 					t.Fatalf("unable to get user from db, error is %v", err)
 				}
 				received := rr.Body.String()
-				resource := models.Resource[NewUserResponse]{}
+				type Resp struct {
+					TempPassword string      `json:"temp_password"`
+					User         models.User `json:"user"`
+				}
+				resource := models.Resource[Resp]{}
 				if err := json.Unmarshal([]byte(received), &resource); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
@@ -319,9 +323,9 @@ func getDBUsers() map[string]any {
 
 func getNewUserForm() map[string]any {
 	form := make(map[string]any)
-	form["username"] = "test"
-	form["name_first"] = "test"
-	form["name_last"] = "test"
+	form["username"] = "test123"
+	form["name_first"] = "te st"
+	form["name_last"] = "te st"
 	form["email"] = "test"
 	form["role"] = "admin"
 	return form

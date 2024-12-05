@@ -106,9 +106,13 @@ func isAuthRoute(r *http.Request) bool {
 	return slices.Contains(paths, r.URL.Path)
 }
 
-func (srv *Server) UserIsAdmin(r *http.Request) bool {
+func userIsAdmin(r *http.Request) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	return claims.isAdmin()
+}
+
+func userIsSystemAdmin(r *http.Request) bool {
+	return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
 }
 
 func (srv *Server) canViewUserData(r *http.Request, id int) bool {
