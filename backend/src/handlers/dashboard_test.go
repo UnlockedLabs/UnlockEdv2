@@ -144,6 +144,8 @@ func TestHandleUserCourses(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetAllUserCoursesAsAdmin", "admin", getUserCoursesSearch(4, "", "", "", nil), http.StatusOK, ""},
 		{"TestGetAllUserCoursesAsUser", "student", getUserCoursesSearch(4, "", "", "", nil), http.StatusOK, ""},
+		{"TestGetAllUserCoursesOrderByStartDtDescAsUser", "student", getUserCoursesSearch(4, "desc", "start_dt", "", nil), http.StatusOK, "?order=desc&order_by=start_dt"},
+		{"TestGetAllUserCoursesOrderByStopDtDescAsUser", "student", getUserCoursesSearch(4, "desc", "stop_dt", "", nil), http.StatusOK, "?order=desc&order_by=stop_dt"},
 		{"TestGetUserCoursesWithTagsAndOrderByPgNmDescAsUser", "student", getUserCoursesSearch(4, "desc", "program_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=program_name"},
 		{"TestGetUserCoursesWithTagsAndOrderByProvNmDescAsUser", "student", getUserCoursesSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
 		{"TestGetUserCoursesWithTagsAndOrderByCoursePgrDescAsUser", "student", getUserCoursesSearch(4, "desc", "course_progress", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=course_progress"},

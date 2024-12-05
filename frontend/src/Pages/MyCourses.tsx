@@ -76,7 +76,15 @@ export default function MyCourses() {
                             'Progress (ascending)':
                                 'order=asc&order_by=course_progress',
                             'Progress (descending)':
-                                'order=desc&order_by=course_progress'
+                                'order=desc&order_by=course_progress',
+                            'Start Date (ascending)':
+                                'order=asc&order_by=start_dt',
+                            'Start Date (descending)':
+                                'order=desc&order_by=start_dt',
+                            'End Date (ascending)':
+                                'order=asc&order_by=end_dt',
+                            'End Date (descending)':
+                                'order=desc&order_by=end_dt'
                         }}
                     />
                 </div>

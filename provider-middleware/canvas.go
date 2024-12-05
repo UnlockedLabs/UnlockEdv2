@@ -187,6 +187,13 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 			ThumbnailURL:            thumbnailURL,
 			TotalProgressMilestones: uint(totalMilestones),
 		}
+		datePattern := "2006-01-02T15:04:05Z"
+		if date, ok := course["start_at"].(string); ok {
+			unlockedCourse.StartDt = parseDate(date, datePattern)
+		}
+		if date, ok := course["end_at"].(string); ok {
+			unlockedCourse.EndDt = parseDate(date, datePattern)
+		}
 		if err = db.Create(&unlockedCourse).Error; err != nil {
 			log.Printf("Failed to create course: %v", err)
 			continue

@@ -5,23 +5,26 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 )
 
 type UserCatalogueJoin struct {
-	CourseID     uint   `json:"course_id"`
-	ThumbnailURL string `json:"thumbnail_url"`
-	CourseName   string `json:"course_name"`
-	ProviderName string `json:"provider_name"`
-	ExternalURL  string `json:"external_url"`
-	CourseType   string `json:"course_type"`
-	Description  string `json:"description"`
-	OutcomeTypes string `json:"outcome_types"`
+	CourseID     uint       `json:"course_id"`
+	ThumbnailURL string     `json:"thumbnail_url"`
+	CourseName   string     `json:"course_name"`
+	ProviderName string     `json:"provider_name"`
+	ExternalURL  string     `json:"external_url"`
+	CourseType   string     `json:"course_type"`
+	Description  string     `json:"description"`
+	OutcomeTypes string     `json:"outcome_types"`
+	StartDt      *time.Time `json:"start_dt"`
+	EndDt        *time.Time `json:"end_dt"`
 }
 
 func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) ([]UserCatalogueJoin, error) {
 	catalogue := []UserCatalogueJoin{}
 	tx := db.Table("courses c").
-		Select("c.id as course_id, c.thumbnail_url, c.name as course_name, pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types").
+		Select("c.id as course_id, c.thumbnail_url, c.name as course_name, pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types, c.start_dt, c.end_dt").
 		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
@@ -45,13 +48,15 @@ func (db *DB) GetUserCatalogue(userId int, tags []string, search, order string) 
 }
 
 type UserCourses struct {
-	ID             uint    `json:"id"`
-	ThumbnailURL   string  `json:"thumbnail_url"`
-	CourseName     string  `json:"course_name"`
-	ProviderName   string  `json:"provider_platform_name"`
-	ExternalURL    string  `json:"external_url"`
-	CourseProgress float64 `json:"course_progress"`
-	TotalTime      uint    `json:"total_time"`
+	ID             uint       `json:"id"`
+	ThumbnailURL   string     `json:"thumbnail_url"`
+	CourseName     string     `json:"course_name"`
+	ProviderName   string     `json:"provider_platform_name"`
+	ExternalURL    string     `json:"external_url"`
+	CourseProgress float64    `json:"course_progress"`
+	TotalTime      uint       `json:"total_time"`
+	StartDt        *time.Time `json:"start_dt"`
+	EndDt          *time.Time `json:"end_dt"`
 }
 
 func validOrder(str string) string {
@@ -68,6 +73,8 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 		"provider_name":   "pp.name",
 		"course_progress": "course_progress",
 		"total_time":      "a.total_time",
+		"start_dt":        "c.start_dt",
+		"end_dt":          "c.end_dt",
 	}
 	dbField, ok := fieldMap[orderBy]
 	if !ok {
@@ -77,7 +84,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 
 	tx := db.Table("courses c").
 		Select(`c.id, c.thumbnail_url,
-    c.name as course_name, pp.name as provider_name, c.external_url,
+    c.name as course_name, pp.name as provider_name, c.external_url, c.start_dt, c.end_dt,
     CASE
         WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.course_id = c.id AND o.user_id = ?) THEN 100
         WHEN c.total_progress_milestones = 0 THEN 0

@@ -153,6 +153,8 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
         c.alt_name,
         c.thumbnail_url,
         c.external_url,
+        c.start_dt,
+        c.end_dt,
         pp.name as provider_platform_name,
         CASE
             WHEN COUNT(o.type) > 0 THEN 100

@@ -1,20 +1,25 @@
 package models
 
+import "time"
+
 type Course struct {
 	DatabaseFields
-	ProviderPlatformID      uint              `gorm:"not null" json:"provider_platform_id"`
-	Name                    string            `gorm:"size:60" json:"name"`
-	Description             string            `gorm:"size:510" json:"description"`
-	ExternalID              string            `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
-	ThumbnailURL            string            `gorm:"size:255" json:"thumbnail_url"`
-	Type                    CourseType        `gorm:"size:255" json:"type"`
-	OutcomeTypes            string            `gorm:"size:255" json:"outcome_types"`
-	ExternalURL             string            `gorm:"size:255" json:"external_url"`
-	AltName                 string            `gorm:"size:255" json:"alt_name"`
-	TotalProgressMilestones uint              `json:"total_progress_milestones"`
-	ProviderPlatform        *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
-	Milestones              []Milestone       `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
-	Outcomes                []Outcome         `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
+	ProviderPlatformID      uint       `gorm:"not null" json:"provider_platform_id"`
+	Name                    string     `gorm:"size:60" json:"name"`
+	Description             string     `gorm:"size:510" json:"description"`
+	ExternalID              string     `gorm:"size:255" json:"external_id"` // kolibri: root, canvas: course_id
+	ThumbnailURL            string     `gorm:"size:255" json:"thumbnail_url"`
+	Type                    CourseType `gorm:"size:255" json:"type"`
+	OutcomeTypes            string     `gorm:"size:255" json:"outcome_types"`
+	ExternalURL             string     `gorm:"size:255" json:"external_url"`
+	AltName                 string     `gorm:"size:255" json:"alt_name"`
+	TotalProgressMilestones uint       `json:"total_progress_milestones"`
+	StartDt                 *time.Time `gorm:"type:date" json:"start_dt"`
+	EndDt                   *time.Time `gorm:"type:date" json:"end_dt"`
+
+	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
+	Milestones       []Milestone       `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
+	Outcomes         []Outcome         `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
 }
 
 type CourseType string
@@ -43,12 +48,14 @@ type CurrentEnrollment struct {
 }
 
 type RecentCourse struct {
-	CourseName           string `json:"course_name"`
-	CourseProgress       string `json:"course_progress"`
-	AltName              string `json:"alt_name"`
-	ThumbnailUrl         string `json:"thumbnail_url"`
-	ProviderPlatformName string `json:"provider_platform_name"`
-	ExternalUrl          string `json:"external_url"`
+	CourseName           string     `json:"course_name"`
+	CourseProgress       string     `json:"course_progress"`
+	AltName              string     `json:"alt_name"`
+	ThumbnailUrl         string     `json:"thumbnail_url"`
+	ProviderPlatformName string     `json:"provider_platform_name"`
+	ExternalUrl          string     `json:"external_url"`
+	StartDt              *time.Time `json:"start_dt"`
+	EndDt                *time.Time `json:"end_dt"`
 }
 
 type UserDashboardJoin struct {
