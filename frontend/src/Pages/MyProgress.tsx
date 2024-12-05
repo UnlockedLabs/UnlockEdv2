@@ -33,15 +33,15 @@ export default function MyProgress() {
         ? (data?.data as UserCoursesInfo)
         : ({} as UserCoursesInfo);
     const {
-        data: progData,
+        // data: progData,
         isLoading: loadingProgramData,
         error: programDataError
     } = useSWR<ServerResponse<ProgramAttendanceData>, AxiosError>(
         `/api/student-attendance`
     );
-    const userProgData = progData
-        ? (progData?.data as ProgramAttendanceData[])
-        : [];
+    // const userProgData = progData
+    //     ? (progData?.data as ProgramAttendanceData[])
+    //     : [];
 
     if (isLoading || loadingProgramData) return <div>Loading...</div>;
     if (error || programDataError) return <Error />;
@@ -89,7 +89,7 @@ export default function MyProgress() {
                         </div>
                     </div>
                     <div className="flex flex-row gap-12 mt-12">
-                        <div className="card bg-base-teal h-[531px] w-[60%] p-4 overflow-y-auto">
+                        <div className="card bg-base-teal h-[531px] w-full p-4 overflow-y-auto">
                             <div className="flex flex-row justify-between">
                                 <h2 className="mt-2">All Courses</h2>
                                 <DropdownControl
@@ -162,54 +162,6 @@ export default function MyProgress() {
                                                 </tr>
                                             );
                                         }
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="card bg-base-teal h-[531px] w-[40%] p-4 overflow-y-auto">
-                            <div className="flex flex-row gap-x-4">
-                                <h2 className="mt-2">
-                                    Program Attendance Records
-                                </h2>
-                            </div>
-                            <table className="w-auto mt-4">
-                                <thead>
-                                    <tr className="border border-x-0 border-t-0">
-                                        <th className="body text-grey-4">
-                                            Program Name
-                                        </th>
-                                        <th className="body text-grey-4">
-                                            Percentage Complete
-                                        </th>
-                                        <th className="body text-grey-4">
-                                            Attended Events
-                                        </th>
-                                        <th className="body text-grey-4">
-                                            Events Left
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="mt-4">
-                                    {userProgData?.map(
-                                        (prog: ProgramAttendanceData) => (
-                                            <tr key={prog.program_name}>
-                                                <td className="w-1/2">
-                                                    {prog.program_name}
-                                                </td>
-                                                <td className="w-1/5">
-                                                    {prog.percentage_complete.toFixed(
-                                                        2
-                                                    )}
-                                                    %
-                                                </td>
-                                                <td className="w-1/5">
-                                                    {prog.attended_events}
-                                                </td>
-                                                <td className="w-1/5">
-                                                    {prog.events_left}
-                                                </td>
-                                            </tr>
-                                        )
                                     )}
                                 </tbody>
                             </table>
