@@ -342,18 +342,6 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
-export interface ResourceCategory {
-    id: number;
-    name: string;
-    links: ResourceLink[];
-    rank: number;
-}
-
-export type ResourceLink = Record<string, string>;
-
-export type EditableResourceCollection = ResourceCategory & {
-    isModified: boolean;
-};
 export interface OidcClient {
     client_id: string;
     client_secret: string;
@@ -474,7 +462,8 @@ export enum ProviderPlatformState {
 
 export enum OpenContentProviderType {
     KIWIX = 'Libraries',
-    VIDEOS = 'Videos'
+    VIDEOS = 'Videos',
+    LINKS = 'Helpful Links'
 }
 
 export enum ProviderPlatformType {
@@ -627,6 +616,30 @@ export interface RecentActivity {
     delta: number;
 }
 
+export type Link = Record<string, string>;
+
+export interface Resource {
+    id: number;
+    name: string;
+    links: Link[];
+    rank: number;
+}
+
+export interface HelpfulLinkAndSort {
+    helpful_links: HelpfulLink[];
+    sort_order: string;
+    meta: PaginationMeta;
+}
+export interface HelpfulLink {
+    id: number;
+    title: string;
+    description: string;
+    url: string;
+    visibility_status: boolean;
+    open_content_provider_id: number;
+    facility_id: number;
+}
+
 export interface Announcement {
     course_name: string;
     title: string;
@@ -672,7 +685,8 @@ export enum ModalType {
     Associate = 'Associate',
     Confirm = 'Confirm',
     Register = 'Register',
-    Blank = ''
+    Blank = '',
+    Delete = 'Delete'
 }
 
 export enum OutcomePillType {

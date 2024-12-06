@@ -9,21 +9,17 @@ export default function OpenContentManagement() {
     const navigate = useNavigate();
     const route = useLocation();
     const tab = route.pathname.split('/')[2] ?? 'libraries';
+    const tabOptions: Tab[] = [
+        { name: OpenContentProviderType.KIWIX, value: 'libraries' },
+        { name: OpenContentProviderType.VIDEOS, value: 'videos' },
+        { name: OpenContentProviderType.LINKS, value: 'helpful-links' }
+    ];
     const [activeTab, setActiveTab] = useState<Tab>(
-        tab.toLowerCase() === 'libraries'
-            ? {
-                  name: 'Kiwix',
-                  value: 'Libraries'
-              }
-            : { name: 'Videos', value: 'Videos' }
+        tabOptions.find((t) => t.value === tab) ?? tabOptions[0]
     );
     useEffect(() => {
         setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
     }, [activeTab]);
-    const tabs = [
-        { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
-        { name: OpenContentProviderType.VIDEOS, value: 'Videos' }
-    ];
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
@@ -44,11 +40,11 @@ export default function OpenContentManagement() {
                 </button>
             </div>
             <TabView
-                tabs={tabs}
+                tabs={tabOptions}
                 activeTab={activeTab}
                 setActiveTab={handlePageChange}
             />
-            <div className="flex flex-row gap-4 pt-8 pb-8">
+            <div className="flex flex-col gap-8 py-8">
                 <Outlet />
             </div>
         </div>

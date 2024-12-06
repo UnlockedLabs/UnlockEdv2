@@ -125,6 +125,8 @@ export default function VideoManagement() {
                         Add Videos
                     </button>
                 </div>
+            </div>
+            <>
                 <div className="grid grid-cols-4 gap-6">
                     {videoData.map((video) => (
                         <VideoCard
@@ -166,31 +168,31 @@ export default function VideoManagement() {
                 {!isLoading && !error && videoData.length === 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
-            </div>
-            <Modal
-                ref={addVideoModal}
-                type={ModalType.Add}
-                item="Videos"
-                form={<AddVideosForm onSuccess={handleAddVideoSuccess} />}
-            />
-            {targetVideo && (
-                <div>
-                    <Modal
-                        ref={videoErrorModal}
-                        item="video info"
-                        form={
-                            <VideoInfoModalForm
-                                video={targetVideo}
-                                onClose={() => {
-                                    videoErrorModal.current?.close();
-                                    setTargetVideo(undefined);
-                                }}
-                            />
-                        }
-                        type={ModalType.Show}
-                    />
-                </div>
-            )}
+                <Modal
+                    ref={addVideoModal}
+                    type={ModalType.Add}
+                    item="Videos"
+                    form={<AddVideosForm onSuccess={handleAddVideoSuccess} />}
+                />
+                {targetVideo && (
+                    <div>
+                        <Modal
+                            ref={videoErrorModal}
+                            item="video info"
+                            form={
+                                <VideoInfoModalForm
+                                    video={targetVideo}
+                                    onClose={() => {
+                                        videoErrorModal.current?.close();
+                                        setTargetVideo(undefined);
+                                    }}
+                                />
+                            }
+                            type={ModalType.Show}
+                        />
+                    </div>
+                )}
+            </>
         </>
     );
 }

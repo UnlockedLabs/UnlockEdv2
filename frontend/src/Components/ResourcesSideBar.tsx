@@ -1,12 +1,12 @@
-import { OpenContentProvider, ResourceCategory } from '@/common';
+import { OpenContentProvider, HelpfulLink, UserRole } from '@/common';
 import StaticContentCard from './StaticContentCard';
-import ResourcesCategoryCard from './ResourcesCategoryCard';
 import { useLoaderData } from 'react-router-dom';
+import HelpfulLinkCard from './cards/HelpfulLinkCard';
 
 export default function ResourcesSideBar() {
     const { providers, resources } = useLoaderData() as {
         providers: OpenContentProvider[];
-        resources: ResourceCategory[];
+        resources: HelpfulLink[];
     };
     const getUrl = (prov: OpenContentProvider): string => {
         switch (prov.name.toLowerCase()) {
@@ -38,16 +38,15 @@ export default function ResourcesSideBar() {
             <div className="p-4 space-y-4">
                 <h2>Resources</h2>
                 <div className="flex flex-col gap-4">
-                    {resources?.map(
-                        (category: ResourceCategory, index: number) => {
-                            return (
-                                <ResourcesCategoryCard
-                                    key={category.id + ' ' + index}
-                                    category={category}
-                                />
-                            );
-                        }
-                    )}
+                    {resources?.map((link: HelpfulLink, index: number) => {
+                        return (
+                            <HelpfulLinkCard
+                                key={index}
+                                link={link}
+                                role={UserRole.Student}
+                            />
+                        );
+                    })}
                 </div>
             </div>
         </div>
