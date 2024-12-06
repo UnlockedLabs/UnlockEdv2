@@ -103,7 +103,7 @@ services:
       - logs:/logs
       - ./frontend/public/videos:/videos
       - ./:/app
-      - csvs:/csvs
+      - ./provider-middleware/csvs:/csvs
     ports:
       - 8081:8081
     restart: unless-stopped
