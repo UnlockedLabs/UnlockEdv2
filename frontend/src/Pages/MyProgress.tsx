@@ -32,16 +32,10 @@ export default function MyProgress() {
     const courseData = data?.data
         ? (data?.data as UserCoursesInfo)
         : ({} as UserCoursesInfo);
-    const {
-        // data: progData,
-        isLoading: loadingProgramData,
-        error: programDataError
-    } = useSWR<ServerResponse<ProgramAttendanceData>, AxiosError>(
-        `/api/student-attendance`
-    );
-    // const userProgData = progData
-    //     ? (progData?.data as ProgramAttendanceData[])
-    //     : [];
+    const { isLoading: loadingProgramData, error: programDataError } = useSWR<
+        ServerResponse<ProgramAttendanceData>,
+        AxiosError
+    >(`/api/student-attendance`);
 
     if (isLoading || loadingProgramData) return <div>Loading...</div>;
     if (error || programDataError) return <Error />;
