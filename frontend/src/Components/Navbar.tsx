@@ -7,14 +7,12 @@ import {
     ChevronDoubleLeftIcon,
     ChevronDoubleRightIcon,
     HomeIcon,
-    TrophyIcon,
     UsersIcon,
     ArrowRightEndOnRectangleIcon,
     SunIcon,
     MoonIcon,
     UserCircleIcon,
     DocumentTextIcon,
-    FolderOpenIcon,
     CloudIcon,
     RectangleStackIcon,
     RssIcon
@@ -100,31 +98,326 @@ export default function Navbar({
                         {user && isAdministrator(user) ? (
                             <>
                                 {/* admin view */}
-                                {hasFeature(
+                                {user.feature_access.length === 1 &&
+                                hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
-                                ) && user.feature_access.length === 1 ? (
+                                ) ? (
                                     <li className="mt-16">
                                         <Link to="/knowledge-center-dashboard">
                                             <ULIComponent icon={HomeIcon} />
-                                            Dashboard
+                                            Knowledge Center
                                         </Link>
                                     </li>
                                 ) : (
                                     <li className="mt-16">
                                         <Link to="/admin-dashboard">
                                             <ULIComponent icon={HomeIcon} />
-                                            Dashboard
+                                            {user.feature_access.length === 1 &&
+                                            hasFeature(
+                                                user,
+                                                FeatureAccess.ProviderAccess
+                                            )
+                                                ? 'Student Activity'
+                                                : 'Dashboard'}
                                         </Link>
                                     </li>
                                 )}
+
+                                {/* Check for 0 features selected and render the resources link if true */}
+                                {user.feature_access.length === 0 && (
+                                    <>
+                                        <li>
+                                            <Link to="/knowledge-center-management/libraries">
+                                                <ULIComponent
+                                                    icon={ArchiveBoxIcon}
+                                                />
+                                                Knowledge Center
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
+                                {/* Check each feature level individually */}
+
+                                {user.feature_access.length === 1 && (
+                                    <>
+                                        {hasFeature(
+                                            user,
+                                            FeatureAccess.OpenContentAccess
+                                        ) && (
+                                            <>
+                                                <li>
+                                                    <Link to="/knowledge-center-management/libraries">
+                                                        <ULIComponent
+                                                            icon={BookOpenIcon}
+                                                        />
+                                                        Knowledge Center
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link to="/resources-management">
+                                                        <ULIComponent
+                                                            icon={
+                                                                ArchiveBoxIcon
+                                                            }
+                                                        />
+                                                        Resources
+                                                    </Link>
+                                                </li>
+                                            </>
+                                        )}
+
+                                        {hasFeature(
+                                            user,
+                                            FeatureAccess.ProviderAccess
+                                        ) && (
+                                            <>
+                                                <li>
+                                                    <Link to="/students">
+                                                        <ULIComponent
+                                                            icon={
+                                                                AcademicCapIcon
+                                                            }
+                                                        />
+                                                        Students
+                                                    </Link>
+                                                </li>
+                                                <li>
+                                                    <Link to="/learning-platforms">
+                                                        <ULIComponent
+                                                            icon={CloudIcon}
+                                                        />
+                                                        Learning Platforms
+                                                    </Link>
+                                                </li>
+                                            </>
+                                        )}
+
+                                        {hasFeature(
+                                            user,
+                                            FeatureAccess.ProgramAccess
+                                        ) && (
+                                            <>
+                                                <li>
+                                                    <Link to="/programs">
+                                                        <ULIComponent
+                                                            icon={
+                                                                DocumentTextIcon
+                                                            }
+                                                        />
+                                                        Programs
+                                                    </Link>
+                                                </li>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                                {/* Check for pairs of feature level selections */}
+
+                                {/* feature level access is 2  oc & pi */}
+                                {user.feature_access.length === 2 &&
+                                    hasFeature(
+                                        user,
+                                        FeatureAccess.OpenContentAccess
+                                    ) &&
+                                    hasFeature(
+                                        user,
+                                        FeatureAccess.ProviderAccess
+                                    ) && (
+                                        <>
+                                            <li>
+                                                <Link to="/learning-platforms">
+                                                    <ULIComponent
+                                                        icon={CloudIcon}
+                                                    />
+                                                    Learning Platforms
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link to="/knowledge-center-management/libraries">
+                                                    <ULIComponent
+                                                        icon={BookOpenIcon}
+                                                    />
+                                                    Knowledge Center Management
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link to="/resources-management">
+                                                    <ULIComponent
+                                                        icon={ArchiveBoxIcon}
+                                                    />
+                                                    Resources
+                                                </Link>
+                                            </li>
+                                        </>
+                                    )}
+                                {/* feature level access is 2  oc & prog */}
+
+                                {user.feature_access.length === 2 &&
+                                    hasFeature(
+                                        user,
+                                        FeatureAccess.OpenContentAccess
+                                    ) &&
+                                    hasFeature(
+                                        user,
+                                        FeatureAccess.ProgramAccess
+                                    ) && (
+                                        <>
+                                            <li>
+                                                <Link to="/programs">
+                                                    <ULIComponent
+                                                        icon={DocumentTextIcon}
+                                                    />
+                                                    Programs
+                                                </Link>
+                                            </li>
+
+                                            <li>
+                                                <Link to="/knowledge-center-management/libraries">
+                                                    <ULIComponent
+                                                        icon={BookOpenIcon}
+                                                    />
+                                                    Knowledge Center Management
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link to="/resources-management">
+                                                    <ULIComponent
+                                                        icon={ArchiveBoxIcon}
+                                                    />
+                                                    Resources
+                                                </Link>
+                                            </li>
+                                        </>
+                                    )}
+
+                                {/* feature level access is 2  pi & prog */}
+                                {user.feature_access.length === 2 &&
+                                    hasFeature(
+                                        user,
+                                        FeatureAccess.ProviderAccess
+                                    ) &&
+                                    hasFeature(
+                                        user,
+                                        FeatureAccess.ProgramAccess
+                                    ) && (
+                                        <>
+                                            <li>
+                                                <Link to="/programs">
+                                                    <ULIComponent
+                                                        icon={DocumentTextIcon}
+                                                    />
+                                                    Programs
+                                                </Link>
+                                            </li>
+
+                                            <li>
+                                                <Link to="/learning-platforms">
+                                                    <ULIComponent
+                                                        icon={CloudIcon}
+                                                    />
+                                                    Learning Platforms
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link to="/resources-management">
+                                                    <ULIComponent
+                                                        icon={ArchiveBoxIcon}
+                                                    />
+                                                    Resources
+                                                </Link>
+                                            </li>
+                                        </>
+                                    )}
+                                {/* Check for all three feature levels selected */}
+                                {user.feature_access.length === 3 && (
+                                    <>
+                                        <li>
+                                            <Link to="/programs">
+                                                <ULIComponent
+                                                    icon={DocumentTextIcon}
+                                                />
+                                                Programs
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link to="/learning-platforms">
+                                                <ULIComponent
+                                                    icon={CloudIcon}
+                                                />
+                                                Learning Platforms
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link to="/knowledge-center-management/libraries">
+                                                <ULIComponent
+                                                    icon={BookOpenIcon}
+                                                />
+                                                Knowledge Center
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link to="/resources-management">
+                                                <ULIComponent
+                                                    icon={ArchiveBoxIcon}
+                                                />
+                                                Resources
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
+
+                                {/* Render static links */}
+                                <li>
+                                    <Link to="/students">
+                                        <ULIComponent icon={AcademicCapIcon} />
+                                        Students
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/admins">
+                                        <ULIComponent icon={UsersIcon} />
+                                        Admins
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/facilities">
+                                        <ULIComponent
+                                            icon={BuildingStorefrontIcon}
+                                        />
+                                        Facilities
+                                    </Link>
+                                </li>
+                            </>
+                        ) : (
+                            <>
+                                {/* student view */}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
                                 ) && (
                                     <>
+                                        {user.feature_access.length === 1 ? (
+                                            <li className="mt-16">
+                                                <Link to="/knowledge-center-dashboard">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    Knowledge Center Dashboard
+                                                </Link>
+                                            </li>
+                                        ) : (
+                                            <li className="mt-16">
+                                                <Link to="/student-activity">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    Dashboard
+                                                </Link>
+                                            </li>
+                                        )}
                                         <li>
-                                            <Link to="/knowledge-center-management/libraries">
+                                            <Link to="/knowledge-center/libraries">
                                                 <ULIComponent
                                                     icon={BookOpenIcon}
                                                 />
@@ -138,89 +431,26 @@ export default function Navbar({
                                     FeatureAccess.ProviderAccess
                                 ) && (
                                     <>
-                                        <li>
-                                            <Link to="/provider-platform-management">
-                                                <ULIComponent
-                                                    icon={CloudIcon}
-                                                />
-                                                Platforms
-                                            </Link>
-                                        </li>
-                                        <li className="">
-                                            <Link to="/course-catalog-admin">
-                                                <ULIComponent
-                                                    icon={FolderOpenIcon}
-                                                />
-                                                Course Catalog
-                                            </Link>
-                                        </li>
-                                    </>
-                                )}
-                                {hasFeature(
-                                    user,
-                                    FeatureAccess.ProgramAccess
-                                ) && (
-                                    <li>
-                                        <Link to="/programs">
-                                            <ULIComponent
-                                                icon={DocumentTextIcon}
-                                            />
-                                            Programs
-                                        </Link>
-                                    </li>
-                                )}
-                                <li>
-                                    <Link to="/student-management">
-                                        <ULIComponent icon={AcademicCapIcon} />
-                                        Students
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/admin-management">
-                                        <ULIComponent icon={UsersIcon} />
-                                        Admins
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/resources-management">
-                                        <ULIComponent icon={ArchiveBoxIcon} />
-                                        Resources
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/facilities-management">
-                                        <ULIComponent
-                                            icon={BuildingStorefrontIcon}
-                                        />
-                                        Facilities
-                                    </Link>
-                                </li>
-                            </>
-                        ) : (
-                            <>
-                                {hasFeature(
-                                    user,
-                                    FeatureAccess.OpenContentAccess
-                                ) && user.feature_access.length === 1 ? (
-                                    <li className="mt-16">
-                                        <Link to="/knowledge-center-dashboard">
-                                            <ULIComponent icon={HomeIcon} />
-                                            Dashboard
-                                        </Link>
-                                    </li>
-                                ) : (
-                                    <li className="mt-16">
-                                        <Link to="/student-dashboard">
-                                            <ULIComponent icon={HomeIcon} />
-                                            Dashboard
-                                        </Link>
-                                    </li>
-                                )}
-                                {hasFeature(
-                                    user,
-                                    FeatureAccess.ProviderAccess
-                                ) && (
-                                    <>
+                                        {user.feature_access.length === 1 ? (
+                                            <li className="mt-16">
+                                                <Link to="/student-activity">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    My Learning
+                                                </Link>
+                                            </li>
+                                        ) : (
+                                            <li>
+                                                <Link to="/student-activity">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    My Learning
+                                                </Link>
+                                            </li>
+                                        )}
+
                                         <li>
                                             <Link to="/my-courses">
                                                 <ULIComponent
@@ -229,47 +459,33 @@ export default function Navbar({
                                                 My Courses
                                             </Link>
                                         </li>
-                                        <li>
-                                            <Link to="/course-catalog">
-                                                <ULIComponent
-                                                    icon={FolderOpenIcon}
-                                                />
-                                                Course Catalog
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="/my-progress">
-                                                <ULIComponent
-                                                    icon={TrophyIcon}
-                                                />{' '}
-                                                My Progress
-                                            </Link>
-                                        </li>
                                     </>
-                                )}
-                                {hasFeature(
-                                    user,
-                                    FeatureAccess.OpenContentAccess
-                                ) && (
-                                    <li>
-                                        <Link to="/knowledge-center/libraries">
-                                            <ULIComponent icon={BookOpenIcon} />
-                                            Knowledge Center
-                                        </Link>
-                                    </li>
                                 )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProgramAccess
                                 ) && (
-                                    <li>
-                                        <Link to="/programs">
-                                            <ULIComponent
-                                                icon={DocumentTextIcon}
-                                            />
-                                            Programs
-                                        </Link>
-                                    </li>
+                                    <>
+                                        {user.feature_access.length === 1 ? (
+                                            <li className="mt-16">
+                                                <Link to="/programs">
+                                                    <ULIComponent
+                                                        icon={DocumentTextIcon}
+                                                    />
+                                                    Programs
+                                                </Link>
+                                            </li>
+                                        ) : (
+                                            <li>
+                                                <Link to="/programs">
+                                                    <ULIComponent
+                                                        icon={DocumentTextIcon}
+                                                    />
+                                                    Programs
+                                                </Link>
+                                            </li>
+                                        )}
+                                    </>
                                 )}
                             </>
                         )}
