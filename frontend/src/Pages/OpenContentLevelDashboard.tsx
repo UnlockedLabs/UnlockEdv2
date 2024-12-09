@@ -107,11 +107,11 @@ export default function OpenContentLevelDashboard() {
                     </div>
                 </div>
                 <h2>Resources</h2>
-                <div className="card card-row-padding overflow-x-scroll no-scrollbar">
+                <div className="card card-row-padding grid grid-cols-5 gap-3">
                     {helpfulLinks.map((link: HelpfulLink) => (
                         <div
                             key={link.id}
-                            className="w-[252px] cursor-pointer"
+                            className="cursor-pointer"
                             onClick={(e) => {
                                 e.preventDefault();
                                 void handleHelpfulLinkClick(link.id);
