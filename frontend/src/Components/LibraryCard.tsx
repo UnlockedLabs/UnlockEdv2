@@ -15,13 +15,11 @@ import { FlagIcon as FlagIconOutline } from '@heroicons/react/24/outline';
 export default function LibraryCard({
     library,
     mutate,
-    role,
-    isAdminInStudentView
+    role
 }: {
     library: Library;
-    mutate: KeyedMutator<ServerResponseMany<Library>>;
+    mutate?: KeyedMutator<ServerResponseMany<Library>>;
     role: UserRole;
-    isAdminInStudentView: boolean;
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
@@ -35,6 +33,7 @@ export default function LibraryCard({
     }
 
     const handleToggleVisibility = async () => {
+        if (!mutate) return;
         const response = await API.put<null, object>(
             `libraries/${library.id}/toggle`,
             {}
@@ -48,6 +47,7 @@ export default function LibraryCard({
     };
 
     async function toggleLibraryFavorite(e: MouseEvent) {
+        if (!mutate) return;
         e.stopPropagation();
         const resp = await API.put<null, object>(
             `libraries/${library.id}/favorite`,
@@ -74,7 +74,7 @@ export default function LibraryCard({
                 </figure>
                 <h3 className="w-3/4 body my-auto">{library.title}</h3>
             </div>
-            {!isAdminInStudentView && (
+            {role != UserRole.Student && (
                 <div
                     className="absolute right-2 top-2 z-100"
                     onClick={(e) => void toggleLibraryFavorite(e)}

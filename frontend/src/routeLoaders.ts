@@ -6,7 +6,8 @@ import {
     OpenContentProvider,
     ServerResponse,
     HelpfulLink,
-    HelpfulLinkAndSort
+    HelpfulLinkAndSort,
+    Library
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -14,16 +15,21 @@ import { fetchUser } from './useAuth';
 export const getOpenContentDashboardData: LoaderFunction = async () => {
     const user = await fetchUser();
     if (!user) return;
-    const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
-        await Promise.all([
-            API.get(`helpful-links?visibility=true`),
-            API.get(`open-content/activity/${user.id}`),
-            API.get(`open-content/activity`),
-            API.get(`open-content/favorites`)
-        ]);
+    const [
+        resourcesResp,
+        userContentResp,
+        facilityContentResp,
+        favoritesResp,
+        featuredResp
+    ] = await Promise.all([
+        API.get(`helpful-links?visibility=true`),
+        API.get(`open-content/activity/${user.id}`),
+        API.get(`open-content/activity`),
+        API.get(`open-content/favorites`),
+        API.get(`libraries?visibility=featured`)
+    ]);
 
     const links = resourcesResp.data as HelpfulLinkAndSort;
-    console.log('resourcesResp', resourcesResp.data as HelpfulLinkAndSort);
     const helpfulLinks = resourcesResp.success ? links.helpful_links : [];
     const topUserOpenContent = userContentResp.success
         ? (userContentResp.data as OpenContentItem[])
@@ -35,11 +41,16 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
         ? (favoritesResp.data as OpenContentFavorite[])
         : [];
 
+    const featured = featuredResp.success
+        ? (featuredResp.data as Library[])
+        : [];
+
     return json({
         helpfulLinks: helpfulLinks,
         topUserContent: topUserOpenContent,
         topFacilityContent: topFacilityOpenContent,
-        favorites: favoriteOpenContent
+        favorites: favoriteOpenContent,
+        featured: featured
     });
 };
 
