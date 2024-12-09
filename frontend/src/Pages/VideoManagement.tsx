@@ -99,100 +99,96 @@ export default function VideoManagement() {
 
     return (
         <>
-            <div className="w-full flex flex-col p-8 gap-8">
-                <div className="flex justify-between">
-                    <div className="flex flex-row gap-4">
-                        <SearchBar
-                            searchTerm={searchTerm}
-                            changeCallback={handleChange}
-                        />
-                        <DropdownControl
-                            label="Order by"
-                            setState={setSortQuery}
-                            enumType={{
-                                'Date Added ↓': 'created_at DESC',
-                                'Date Added ↑': 'created_at ASC',
-                                'Title (A-Z)': 'title ASC',
-                                'Title (Z-A)': 'title DESC'
-                            }}
-                        />
-                    </div>
-                    <button
-                        className="button items-center"
-                        onClick={() => addVideoModal.current?.showModal()}
-                    >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        Add Videos
-                    </button>
+            <div className="flex justify-between">
+                <div className="flex flex-row gap-4">
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        changeCallback={handleChange}
+                    />
+                    <DropdownControl
+                        label="Order by"
+                        setState={setSortQuery}
+                        enumType={{
+                            'Date Added ↓': 'created_at DESC',
+                            'Date Added ↑': 'created_at ASC',
+                            'Title (A-Z)': 'title ASC',
+                            'Title (Z-A)': 'title DESC'
+                        }}
+                    />
                 </div>
+                <button
+                    className="button items-center"
+                    onClick={() => addVideoModal.current?.showModal()}
+                >
+                    <PlusCircleIcon className="w-4 my-auto" />
+                    Add Videos
+                </button>
             </div>
-            <>
-                <div className="grid grid-cols-4 gap-6">
-                    {videoData.map((video) => (
-                        <VideoCard
-                            key={video.id}
-                            video={video}
-                            mutate={mutate}
-                            role={user?.role ?? UserRole.Student}
-                            handleRetryVideo={async () => {
-                                if (polling) {
-                                    toaster(
-                                        'please wait several minutes before attempting to retry newly added videos',
-                                        ToastState.error
-                                    );
-                                    return;
-                                }
-                                await handleRetryVideo(video);
-                            }}
-                            handleOpenInfo={() => {
-                                setTargetVideo(video);
-                                videoErrorModal.current?.showModal();
-                            }}
-                        />
-                    ))}
-                </div>
-                {!isLoading && !error && meta && (
-                    <div className="flex justify-center">
-                        <Pagination
-                            meta={meta}
-                            setPage={setPageQuery}
-                            setPerPage={handleSetPerPage}
-                        />
-                    </div>
-                )}
-                {error && (
-                    <span className="text-center text-error">
-                        Failed to load videos.
-                    </span>
-                )}
-                {!isLoading && !error && videoData.length === 0 && (
-                    <span className="text-center text-warning">No results</span>
-                )}
-                <Modal
-                    ref={addVideoModal}
-                    type={ModalType.Add}
-                    item="Videos"
-                    form={<AddVideosForm onSuccess={handleAddVideoSuccess} />}
-                />
-                {targetVideo && (
-                    <div>
-                        <Modal
-                            ref={videoErrorModal}
-                            item="video info"
-                            form={
-                                <VideoInfoModalForm
-                                    video={targetVideo}
-                                    onClose={() => {
-                                        videoErrorModal.current?.close();
-                                        setTargetVideo(undefined);
-                                    }}
-                                />
+            <div className="grid grid-cols-4 gap-6">
+                {videoData.map((video) => (
+                    <VideoCard
+                        key={video.id}
+                        video={video}
+                        mutate={mutate}
+                        role={user?.role ?? UserRole.Student}
+                        handleRetryVideo={async () => {
+                            if (polling) {
+                                toaster(
+                                    'please wait several minutes before attempting to retry newly added videos',
+                                    ToastState.error
+                                );
+                                return;
                             }
-                            type={ModalType.Show}
-                        />
-                    </div>
-                )}
-            </>
+                            await handleRetryVideo(video);
+                        }}
+                        handleOpenInfo={() => {
+                            setTargetVideo(video);
+                            videoErrorModal.current?.showModal();
+                        }}
+                    />
+                ))}
+            </div>
+            {!isLoading && !error && meta && (
+                <div className="flex justify-center">
+                    <Pagination
+                        meta={meta}
+                        setPage={setPageQuery}
+                        setPerPage={handleSetPerPage}
+                    />
+                </div>
+            )}
+            {error && (
+                <span className="text-center text-error">
+                    Failed to load videos.
+                </span>
+            )}
+            {!isLoading && !error && videoData.length === 0 && (
+                <span className="text-center text-warning">No results</span>
+            )}
+            <Modal
+                ref={addVideoModal}
+                type={ModalType.Add}
+                item="Videos"
+                form={<AddVideosForm onSuccess={handleAddVideoSuccess} />}
+            />
+            {targetVideo && (
+                <div>
+                    <Modal
+                        ref={videoErrorModal}
+                        item="video info"
+                        form={
+                            <VideoInfoModalForm
+                                video={targetVideo}
+                                onClose={() => {
+                                    videoErrorModal.current?.close();
+                                    setTargetVideo(undefined);
+                                }}
+                            />
+                        }
+                        type={ModalType.Show}
+                    />
+                </div>
+            )}
         </>
     );
 }
