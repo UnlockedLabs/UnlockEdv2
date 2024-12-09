@@ -16,7 +16,7 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
     if (!user) return;
     const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
         await Promise.all([
-            API.get(`helpful-links`),
+            API.get(`helpful-links?visibility=true`),
             API.get(`open-content/activity/${user.id}`),
             API.get(`open-content/activity`),
             API.get(`open-content/favorites`)
@@ -24,9 +24,7 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
 
     const links = resourcesResp.data as HelpfulLinkAndSort;
     console.log('resourcesResp', resourcesResp.data as HelpfulLinkAndSort);
-    const helpfulLinks = resourcesResp.success
-        ? (links.helpful_links)
-        : [];
+    const helpfulLinks = resourcesResp.success ? links.helpful_links : [];
     const topUserOpenContent = userContentResp.success
         ? (userContentResp.data as OpenContentItem[])
         : [];

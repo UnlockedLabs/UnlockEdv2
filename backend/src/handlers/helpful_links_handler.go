@@ -38,8 +38,12 @@ func (srv *Server) changeSortOrder(w http.ResponseWriter, r *http.Request, log s
 
 func (srv *Server) handleGetHelpfulLinks(w http.ResponseWriter, r *http.Request, log sLog) error {
 	search := r.URL.Query().Get("search")
+	onlyVisible := r.URL.Query().Get("visibility") == "true"
+	if !userIsAdmin(r) {
+		onlyVisible = true
+	}
 	page, perPage := srv.getPaginationInfo(r)
-	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, HelpfulSortOrder[srv.getFacilityID(r)])
+	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, HelpfulSortOrder[srv.getFacilityID(r)], onlyVisible)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching helpful links")
 	}

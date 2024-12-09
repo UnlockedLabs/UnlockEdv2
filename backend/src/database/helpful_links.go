@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string) (int64, []models.HelpfulLink, error) {
+func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVisible bool) (int64, []models.HelpfulLink, error) {
 	links := make([]models.HelpfulLink, 0, perPage)
 	tx := db.Model(&models.HelpfulLink{})
 	var total int64
@@ -15,6 +15,10 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string) (int64,
 		"title DESC":      true,
 		"created_at ASC":  true,
 		"created_at DESC": true,
+	}
+
+	if onlyVisible {
+		tx = tx.Where("visibility_status = ?", true)
 	}
 
 	if search != "" {
