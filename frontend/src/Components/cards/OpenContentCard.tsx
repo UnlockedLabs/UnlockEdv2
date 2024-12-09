@@ -20,7 +20,7 @@ export default function OpenContentCardRow({
 
     return (
         <div
-            className="card flex flex-row w-full gap-3 px-4 py-2"
+            className="card cursor-pointer flex flex-row w-full gap-3 px-4 py-2"
             onClick={redirectToViewer}
         >
             <div className="w-[100px]">

@@ -113,7 +113,6 @@ export default function LibaryLayout({
                         library={library}
                         mutate={mutateLibraries}
                         role={adminWithStudentView() ? UserRole.Student : role}
-                        isAdminInStudentView={adminWithStudentView()}
                     />
                 ))}
             </div>

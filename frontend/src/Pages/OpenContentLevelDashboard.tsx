@@ -1,4 +1,5 @@
 import {
+    Library,
     OpenContentFavorite,
     OpenContentItem,
     UserRole,
@@ -7,6 +8,7 @@ import {
 } from '@/common';
 import OpenContentCard from '@/Components/cards/OpenContentCard';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
+import LibraryCard from '@/Components/LibraryCard';
 import ULIComponent from '@/Components/ULIComponent';
 import { useAuth } from '@/useAuth';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
@@ -16,13 +18,19 @@ import API from '@/api/api';
 export default function OpenContentLevelDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { helpfulLinks, topUserContent, topFacilityContent, favorites } =
-        useLoaderData() as {
-            helpfulLinks: HelpfulLink[];
-            topUserContent: OpenContentItem[];
-            topFacilityContent: OpenContentItem[];
-            favorites: OpenContentFavorite[];
-        };
+    const {
+        topUserContent,
+        topFacilityContent,
+        favorites,
+        featured,
+        helpfulLinks
+    } = useLoaderData() as {
+        topUserContent: OpenContentItem[];
+        topFacilityContent: OpenContentItem[];
+        favorites: OpenContentFavorite[];
+        featured: Library[];
+        helpfulLinks: HelpfulLink[];
+    };
 
     function navigateToOpenContent() {
         if (user?.role == UserRole.Student) {
@@ -47,6 +55,18 @@ export default function OpenContentLevelDashboard() {
                 <h1 className="text-5xl">
                     Hi, {user?.name_first ?? 'Student'}!
                 </h1>
+                <h2>Featured Content</h2>
+                <div className="card card-row-padding grid grid-cols-3 gap-3">
+                    {featured.map((item: Library) => {
+                        return (
+                            <LibraryCard
+                                key={item.id}
+                                library={item}
+                                role={UserRole.Student}
+                            />
+                        );
+                    })}
+                </div>
                 <h2> Pick Up Where You Left Off</h2>
                 <div className="grid grid-cols-2 gap-6">
                     <div className="card card-row-padding flex flex-col gap-3">
@@ -61,7 +81,7 @@ export default function OpenContentLevelDashboard() {
                         })}
                         {topUserContent.length < 5 && (
                             <div
-                                className="card px-4 py-2 flex flex-row gap-2 items-center"
+                                className="card cursor-pointer px-4 py-2 flex flex-row gap-2 items-center"
                                 onClick={navigateToOpenContent}
                             >
                                 <ULIComponent
