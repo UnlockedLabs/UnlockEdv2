@@ -1,39 +1,48 @@
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { SubmitButton } from '../inputs/SubmitButton';
-import { TextInput } from '../inputs/TextInput';
-import { CloseX } from '../inputs/CloseX';
-import { TextAreaInput } from '../inputs';
+import { CloseX, SubmitButton, TextAreaInput, TextInput } from '../inputs';
+import { HelpfulLink, ToastState } from '@/common';
 import { useToast } from '@/Context/ToastCtx';
-import { ToastState } from '@/common';
 import API from '@/api/api';
 
 interface Inputs {
     title: string;
     url: string;
+    description: string;
 }
 
-export default function AddLinkForm({
+export default function EditLinkForm({
+    link,
     onSuccess
 }: {
-    onSuccess: (title: string, url: string) => void;
+    link: HelpfulLink;
+    onSuccess: () => void;
 }) {
     const {
         register,
         handleSubmit,
         reset,
         formState: { errors }
-    } = useForm<Inputs>();
-    const { toaster } = useToast();
+    } = useForm<Inputs>({
+        values: {
+            title: link.title,
+            url: link.url,
+            description: link.description
+        }
+    });
 
+    const { toaster } = useToast();
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
-        const response = await API.put(`helpful-links`, data);
+        const response = await API.patch(`helpful-links/${link.id}/edit`, data);
         if (response.success) {
             toaster(response.message, ToastState.success);
-            onSuccess(data.title, data.url);
+            onSuccess();
         } else {
-            toaster(response.message || 'An error occurred', ToastState.error);
+            toaster(
+                response.message || 'An error occurred during update',
+                ToastState.error
+            );
         }
-        reset();
+        return;
     };
 
     return (
@@ -41,13 +50,12 @@ export default function AddLinkForm({
             <CloseX close={() => reset()} />
             <form
                 onSubmit={(e) => {
-                    const func = handleSubmit(onSubmit);
-                    void func(e);
+                    void handleSubmit(onSubmit)(e);
                 }}
             >
                 <TextInput
-                    label="Title"
-                    interfaceRef="title"
+                    label="Name"
+                    interfaceRef="name"
                     required
                     length={25}
                     errors={errors}

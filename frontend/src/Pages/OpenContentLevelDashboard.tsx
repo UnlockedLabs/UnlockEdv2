@@ -1,22 +1,24 @@
 import {
     OpenContentFavorite,
     OpenContentItem,
-    ResourceCategory,
-    UserRole
+    UserRole,
+    ServerResponseOne,
+    HelpfulLink
 } from '@/common';
 import OpenContentCard from '@/Components/cards/OpenContentCard';
-import ResourcesCategoryCard from '@/Components/ResourcesCategoryCard';
+import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import ULIComponent from '@/Components/ULIComponent';
 import { useAuth } from '@/useAuth';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate } from 'react-router-dom';
+import API from '@/api/api';
 
 export default function OpenContentLevelDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { resources, topUserContent, topFacilityContent, favorites } =
+    const { helpfulLinks, topUserContent, topFacilityContent, favorites } =
         useLoaderData() as {
-            resources: ResourceCategory[];
+            helpfulLinks: HelpfulLink[];
             topUserContent: OpenContentItem[];
             topFacilityContent: OpenContentItem[];
             favorites: OpenContentFavorite[];
@@ -29,7 +31,15 @@ export default function OpenContentLevelDashboard() {
             navigate(`/knowledge-center-management/libraries`);
         }
     }
-
+    async function handleHelpfulLinkClick(id: number): Promise<void> {
+        const resp = (await API.put<{ url: string }, object>(
+            `helpful-links/activity/${id}`,
+            {}
+        )) as ServerResponseOne<{ url: string }>;
+        if (resp.success) {
+            window.open(resp.data.url, '_blank');
+        }
+    }
     return (
         <div className="flex flex-row h-full">
             {/* main section */}
@@ -77,9 +87,19 @@ export default function OpenContentLevelDashboard() {
                 </div>
                 <h2>Resources</h2>
                 <div className="card card-row-padding overflow-x-scroll no-scrollbar">
-                    {resources.map((resource: ResourceCategory) => (
-                        <div key={resource.id} className="w-[252px]">
-                            <ResourcesCategoryCard category={resource} />
+                    {helpfulLinks.map((link: HelpfulLink) => (
+                        <div
+                            key={link.id}
+                            className="w-[252px] cursor-pointer"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                void handleHelpfulLinkClick(link.id);
+                            }}
+                        >
+                            <HelpfulLinkCard
+                                link={link}
+                                role={UserRole.Student}
+                            />
                         </div>
                     ))}
                 </div>

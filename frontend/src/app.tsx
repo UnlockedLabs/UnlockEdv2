@@ -18,7 +18,6 @@ import MyProgress from '@/Pages/MyProgress';
 import CourseCatalog from '@/Pages/CourseCatalog';
 import ProviderUserManagement from '@/Pages/ProviderUserManagement';
 import Error from '@/Pages/Error';
-import ResourcesManagement from '@/Pages/ResourcesManagement';
 import UnauthorizedNotFound from '@/Pages/Unauthorized';
 import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
@@ -47,7 +46,6 @@ import {
 } from './routeLoaders.ts';
 
 import FacilityManagement from '@/Pages/FacilityManagement.tsx';
-
 import { ToastProvider } from './Context/ToastCtx.tsx';
 import VideoViewer from './Components/VideoEmbedViewer.tsx';
 import VideoContent from './Components/VideoContent.tsx';
@@ -56,6 +54,7 @@ import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
 import FavoritesPage from './Pages/Favorites.tsx';
 import OpenContentLevelDashboard from './Pages/OpenContentLevelDashboard.tsx';
 import OperationalInsightsPage from './Pages/OperationalInsights.tsx';
+import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -347,15 +346,6 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'resources-management',
-                        element: <ResourcesManagement />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Resources Management',
-                            path: ['resources-management']
-                        }
-                    },
-                    {
                         path: '',
                         element: (
                             <ProtectedRoute
@@ -458,6 +448,17 @@ const router = createBrowserRouter([
                                             path: [
                                                 'knowledge-center-management',
                                                 'videos'
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        path: 'helpful-links',
+                                        element: <HelpfulLinksManagement />,
+                                        handle: {
+                                            title: 'Helpful Links',
+                                            path: [
+                                                'open-content-management',
+                                                'helpful-links'
                                             ]
                                         }
                                     }

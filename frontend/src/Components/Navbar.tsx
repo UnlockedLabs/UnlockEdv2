@@ -1,7 +1,6 @@
 import Brand from './Brand';
 import {
     AcademicCapIcon,
-    ArchiveBoxIcon,
     BookOpenIcon,
     BuildingStorefrontIcon,
     ChevronDoubleLeftIcon,
@@ -186,12 +185,6 @@ export default function Navbar({
                                     <Link to="/admin-management">
                                         <ULIComponent icon={UsersIcon} />
                                         Admins
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link to="/resources-management">
-                                        <ULIComponent icon={ArchiveBoxIcon} />
-                                        Resources
                                     </Link>
                                 </li>
                                 <li>
