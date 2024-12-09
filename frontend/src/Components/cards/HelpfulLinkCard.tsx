@@ -1,4 +1,11 @@
-import { HelpfulLink, ModalType, ToastState, UserRole } from '@/common';
+import {
+    HelpfulLink,
+    HelpfulLinkAndSort,
+    ModalType,
+    ServerResponseOne,
+    ToastState,
+    UserRole
+} from '@/common';
 import API from '@/api/api';
 import VisibleHiddenToggle from '../VisibleHiddenToggle';
 import { useState } from 'react';
@@ -6,14 +13,17 @@ import ULIComponent from '../ULIComponent';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { AdminRoles, useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
+import { KeyedMutator } from 'swr';
 
 export default function HelpfulLinkCard({
     link,
     showModal,
+    mutate,
     role
 }: {
     link: HelpfulLink;
     showModal?: (link: HelpfulLink, type: ModalType) => void;
+    mutate?: KeyedMutator<ServerResponseOne<HelpfulLinkAndSort>>;
     role?: UserRole;
 }) {
     const [visible, setVisible] = useState<boolean>(link.visibility_status);
@@ -35,6 +45,7 @@ export default function HelpfulLinkCard({
             response.message,
             response.success ? ToastState.success : ToastState.error
         );
+        if (mutate) void mutate();
     };
 
     if (!user) {

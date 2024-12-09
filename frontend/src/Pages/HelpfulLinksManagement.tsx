@@ -140,6 +140,7 @@ export default function HelpfulLinksManagement() {
                         <HelpfulLinkCard
                             key={index}
                             link={link}
+                            mutate={mutate}
                             showModal={showModifyLink}
                         />
                     );
