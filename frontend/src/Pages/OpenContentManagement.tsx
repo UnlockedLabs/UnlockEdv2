@@ -22,16 +22,18 @@ export default function OpenContentManagement() {
         setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
     }, [activeTab]);
 
-    //const tabs = [
-    //    { name: OpenContentProviderType.KIWIX, value: 'libraries' },
-    //    { name: OpenContentProviderType.VIDEOS, value: 'videos' },
-    //    { name: OpenContentProviderType.LINKS, value: 'helpful-links' }
-    //];
-
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
         navigate(`/knowledge-center-management/${tab.value}`);
     };
+
+    function navigateToStudentView() {
+        if (activeTab.value === 'helpful-links') {
+            navigate('/knowledge-center/libraries');
+        } else {
+            navigate(`/knowledge-center/${activeTab.value}`);
+        }
+    }
 
     return (
         <div className="px-8 pb-4">
@@ -39,9 +41,7 @@ export default function OpenContentManagement() {
                 <h1>Knowledge Center Management</h1>
                 <button
                     className="button border border-primary bg-transparent text-body-text"
-                    onClick={() =>
-                        navigate(`/knowledge-center/${activeTab.value}`)
-                    }
+                    onClick={navigateToStudentView}
                 >
                     Preview Student View
                 </button>
