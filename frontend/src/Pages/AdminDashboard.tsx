@@ -11,7 +11,7 @@ import { ThemeContext } from '@/Context/ThemeContext';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
 
-export default function AdminDashboard() {
+export default function AdminLayer2() {
     const { user } = useAuth();
     const { data, error, isLoading } = useSWR<
         ServerResponse<AdminDashboardJoin>,

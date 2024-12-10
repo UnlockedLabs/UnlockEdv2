@@ -53,7 +53,7 @@ export default function VideoContent() {
     };
 
     return (
-        <div className="w-full flex flex-col p-8 gap-8">
+        <>
             <div className="flex flex-row gap-4">
                 <SearchBar
                     searchTerm={searchTerm}
@@ -98,6 +98,6 @@ export default function VideoContent() {
             {!isLoading && !error && videoData.length === 0 && (
                 <span className="text-center text-warning">No results</span>
             )}
-        </div>
+        </>
     );
 }

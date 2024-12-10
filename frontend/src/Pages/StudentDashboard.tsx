@@ -12,13 +12,13 @@ import {
 } from '@/Components/dashboard';
 import ResourcesSideBar from '@/Components/ResourcesSideBar';
 
-export default function StudentDashboard() {
+export default function StudentLayer2() {
     const { user } = useAuth();
     const navigate = useNavigate();
     if (!user) {
         return;
     } else if (isAdministrator(user)) {
-        navigate('/admin-dashboard');
+        navigate('/learning-insights');
         return;
     }
     const { data, error, isLoading } = useSWR<

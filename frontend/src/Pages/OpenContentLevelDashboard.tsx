@@ -10,12 +10,12 @@ import OpenContentCard from '@/Components/cards/OpenContentCard';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import LibraryCard from '@/Components/LibraryCard';
 import ULIComponent from '@/Components/ULIComponent';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import API from '@/api/api';
 
-export default function OpenContentLevelDashboard() {
+export default function StudentLayer1() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const {
@@ -31,14 +31,13 @@ export default function OpenContentLevelDashboard() {
         featured: Library[];
         helpfulLinks: HelpfulLink[];
     };
-
+    const nav = isAdministrator(user)
+        ? '/knowledge-center-management/libraries'
+        : '/knowledge-center/libraries';
     function navigateToOpenContent() {
-        if (user?.role == UserRole.Student) {
-            navigate(`/knowledge-center/libraries`);
-        } else {
-            navigate(`/knowledge-center-management/libraries`);
-        }
+        navigate(nav);
     }
+
     async function handleHelpfulLinkClick(id: number): Promise<void> {
         const resp = (await API.put<{ url: string }, object>(
             `helpful-links/activity/${id}`,
@@ -46,8 +45,10 @@ export default function OpenContentLevelDashboard() {
         )) as ServerResponseOne<{ url: string }>;
         if (resp.success) {
             window.open(resp.data.url, '_blank');
+            navigate(nav);
         }
     }
+
     return (
         <div className="flex flex-row h-full">
             {/* main section */}
@@ -86,10 +87,11 @@ export default function OpenContentLevelDashboard() {
                             >
                                 <ULIComponent
                                     tooltipClassName="h-12 flex items-center"
-                                    iconClassName="w-5 h-5"
                                     icon={ArrowTopRightOnSquareIcon}
                                 />
-                                <h3>Explore content offered</h3>
+                                <h3 className="body font-normal">
+                                    Explore other content offered
+                                </h3>
                             </div>
                         )}
                     </div>
@@ -106,11 +108,11 @@ export default function OpenContentLevelDashboard() {
                     </div>
                 </div>
                 <h2>Resources</h2>
-                <div className="card card-row-padding overflow-x-scroll no-scrollbar">
+                <div className="card card-row-padding grid grid-cols-5 gap-3">
                     {helpfulLinks.map((link: HelpfulLink) => (
                         <div
                             key={link.id}
-                            className="w-[252px] cursor-pointer"
+                            className="cursor-pointer"
                             onClick={(e) => {
                                 e.preventDefault();
                                 void handleHelpfulLinkClick(link.id);

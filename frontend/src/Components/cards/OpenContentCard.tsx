@@ -29,7 +29,9 @@ export default function OpenContentCardRow({
                     src={content.thumbnail_url ?? ''}
                 ></img>
             </div>
-            <h3 className="my-auto w-full">{content.name ?? 'Untitled'}</h3>
+            <h3 className="my-auto w-full body font-normal">
+                {content.name ?? 'Untitled'}
+            </h3>
         </div>
     );
 }

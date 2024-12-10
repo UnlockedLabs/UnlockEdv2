@@ -72,7 +72,7 @@ export default function LibraryCard({
                         alt={`${library.title} thumbnail`}
                     />
                 </figure>
-                <h3 className="w-3/4 body my-auto">{library.title}</h3>
+                <h3 className="w-3/4 body my-auto mr-7">{library.title}</h3>
             </div>
             {role != UserRole.Student && (
                 <div
@@ -82,7 +82,7 @@ export default function LibraryCard({
                     {/* don't display the favorite toggle when admin is viewing in student view*/}
                     <ULIComponent
                         tooltipClassName="absolute right-2 top-2 z-100"
-                        iconClassName={`w-6 h-6 ${AdminRoles.includes(role) ? (library.favorites.length > 0 ? 'text-primary-yellow' : '') : library.favorites.length > 0 ? 'text-primary-yellow' : ''}`}
+                        iconClassName={`w-6 h-6 ${library.favorites.length > 0 && 'text-primary-yellow'}`}
                         icon={
                             AdminRoles.includes(role)
                                 ? library.favorites.length > 0
