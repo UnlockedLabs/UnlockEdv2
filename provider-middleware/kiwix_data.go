@@ -211,6 +211,8 @@ func (ks *KiwixService) ParseUrls(externId string, links []Link) (string, string
 			if !ks.thumbnailExists(externId) {
 				if thumbnail, err := ks.downloadAndHostThumbnailImg(externId, link.Href); err == nil {
 					thumbnailURL = thumbnail
+				} else {
+					thumbnailURL = "/kiwix.jpg"
 				}
 			} else {
 				thumbnailURL = "/api/photos/" + externId + ".png"
