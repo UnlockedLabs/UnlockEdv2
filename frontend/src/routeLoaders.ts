@@ -21,7 +21,7 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
         favoritesResp,
         featuredResp
     ] = await Promise.all([
-        API.get(`helpful-links?visibility=true`),
+        API.get(`helpful-links?visibility=true&per_page=5`),
         API.get(`open-content/activity/${user.id}`),
         API.get(`open-content/activity`),
         API.get(`open-content/favorites`),
@@ -39,7 +39,6 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
     const favoriteOpenContent = favoritesResp.success
         ? (favoritesResp.data as OpenContentFavorite[])
         : [];
-
     const featured = featuredResp.success
         ? (featuredResp.data as Library[])
         : [];
