@@ -1,7 +1,6 @@
 package database
 
 import (
-	"UnlockEdv2/src/models"
 	"fmt"
 	"slices"
 	"strings"
