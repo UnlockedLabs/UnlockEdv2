@@ -487,8 +487,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/105",
 		"alt_name": "BOT101",
 		"total_progress_milestones": 12,
-		"start_dt": "2024-09-01",
-		"stop_dt": "2025-01-05"
+		"start_dt": "2024-09-01T00:00:00.000Z",
+		"end_dt": "2025-01-05T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -501,8 +501,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/106",
 		"alt_name": "CRJ201",
 		"total_progress_milestones": 10,
-		"start_dt": "2024-11-15",
-		"stop_dt": "2024-12-15"
+		"start_dt": "2024-11-15T00:00:00.000Z",
+		"end_dt": "2024-12-15T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -515,8 +515,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/104",
 		"alt_name": "PHI101",
 		"total_progress_milestones": 10,
-		"start_dt": "2024-10-07",
-		"stop_dt": "2025-03-04"
+		"start_dt": "2024-10-07T00:00:00.000Z",
+		"end_dt": "2025-03-04T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -529,8 +529,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/104",
 		"alt_name": "MATH301",
 		"total_progress_milestones": 10,
-		"start_dt": "2024-09-22",
-		"stop_dt": "2025-02-25"
+		"start_dt": "2024-09-22T00:00:00.000Z",
+		"end_dt": "2025-02-25T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -543,8 +543,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/106",
 		"alt_name": "CS101",
 		"total_progress_milestones": 12,
-		"start_dt": "2024-11-08",
-		"stop_dt": "2025-06-05"
+		"start_dt": "2024-11-08T00:00:00.000Z",
+		"end_dt": "2025-06-05T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -557,8 +557,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/105",
 		"alt_name": "MKT101",
 		"total_progress_milestones": 8,
-		"start_dt": "2024-10-27",
-		"stop_dt": "2025-05-05"
+		"start_dt": "2024-10-27T00:00:00.000Z",
+		"end_dt": "2025-05-05T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -571,8 +571,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/106",
 		"alt_name": "PSY101",
 		"total_progress_milestones": 8,
-		"start_dt": "2024-12-01",
-		"stop_dt": "2025-05-05"
+		"start_dt": "2024-12-01T00:00:00.000Z",
+		"end_dt": "2025-05-05T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -585,8 +585,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/105",
 		"alt_name": "ENV201",
 		"total_progress_milestones": 14,
-		"start_dt": "2024-01-15",
-		"stop_dt": "2025-05-01"
+		"start_dt": "2024-01-15T00:00:00.000Z",
+		"end_dt": "2025-05-01T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -599,8 +599,8 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/104",
 		"alt_name": "PHY101",
 		"total_progress_milestones": 11,
-		"start_dt": "2024-08-01",
-		"stop_dt": "2024-10-05"
+		"start_dt": "2024-08-01T00:00:00.000Z",
+		"end_dt": "2024-10-05T00:00:00.000Z"
 	},
 	{
 		"provider_platform_id": 1,
@@ -613,7 +613,7 @@ var coursesStr string = `
 		"external_url": "https://canvas.staging.unlockedlabs.xyz/courses/106",
 		"alt_name": "ART201",
 		"total_progress_milestones": 10,
-		"start_dt": "2025-02-01",
-		"stop_dt": "2025-06-05"
+		"start_dt": "2025-02-01T00:00:00.000Z",
+		"end_dt": "2025-06-05T00:00:00.000Z"
 	}
 ]`
