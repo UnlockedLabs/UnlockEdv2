@@ -86,10 +86,11 @@ export default function OpenContentLevelDashboard() {
                             >
                                 <ULIComponent
                                     tooltipClassName="h-12 flex items-center"
-                                    iconClassName="w-5 h-5"
                                     icon={ArrowTopRightOnSquareIcon}
                                 />
-                                <h3>Explore content offered</h3>
+                                <h3 className="body font-normal">
+                                    Explore other content offered
+                                </h3>
                             </div>
                         )}
                     </div>
