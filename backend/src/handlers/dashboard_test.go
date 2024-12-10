@@ -167,25 +167,15 @@ func TestHandleUserCourses(t *testing.T) {
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRole(server.handleUserCourses, test.role)
 			rr := executeRequest(t, req, handler, test)
-			data := models.Resource[map[string]interface{}]{}
+			data := models.Resource[database.UserCoursesInfo]{}
 			received := rr.Body.String()
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
 				t.Errorf("failed to unmarshal resource, error is %v", err)
 			}
 			if userCoursesMap["userCourses"] != nil {
-				jsonStr, err := json.Marshal(data.Data["courses"])
-				if err != nil {
-					t.Error("unable to marshal response user courses, error is ", err)
-				}
-				responseUserCourses := []database.UserCourses{}
-				err = json.Unmarshal(jsonStr, &responseUserCourses)
-				if err != nil {
-					t.Error("unable to unmarshal response user courses, error is ", err)
-				}
-				for idx, userProg := range userCoursesMap["userCourses"].([]database.UserCourses) {
-					if userProg.ID != responseUserCourses[idx].ID {
-						t.Error("user courses are out of sync and not ordered correctly")
-					}
+				courseInfo := userCoursesMap["userCourses"].(database.UserCoursesInfo)
+				if diff := cmp.Diff(&courseInfo, &data.Data); diff != "" {
+					t.Errorf("user courses are out of sync and not ordered correctly: %v", diff)
 				}
 			}
 		})
@@ -202,11 +192,9 @@ func getUserCatalogueSearch(userId int, tags []string, search, order string) map
 }
 
 func getUserCoursesSearch(userId int, order, orderBy, search string, tags []string) map[string]any {
-	userCourses, numCompleted, totalTime, err := server.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
+	userCourses, err := server.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
 	form := make(map[string]any)
 	form["userCourses"] = userCourses
-	form["numCompleted"] = numCompleted
-	form["totalTime"] = totalTime
 	form["err"] = err
 	form["id"] = strconv.Itoa(userId)
 	return form

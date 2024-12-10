@@ -197,15 +197,10 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 	if len(tags) > 0 {
 		tagsSplit = strings.Split(tags[0], ",")
 	}
-	userCourses, numCompleted, totalTime, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tagsSplit)
+	userCourses, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tagsSplit)
 	if err != nil {
 		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
-	response := map[string]interface{}{
-		"courses":       userCourses,
-		"num_completed": numCompleted,
-		"total_time":    totalTime,
-	}
-	return writeJsonResponse(w, http.StatusOK, response)
+	return writeJsonResponse(w, http.StatusOK, userCourses)
 }
