@@ -156,7 +156,7 @@ export default function AdminManagement() {
     return (
         <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-8">
-                <h1>Admin Management</h1>
+                <h1>Admins</h1>
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
                         <SearchBar

@@ -32,7 +32,7 @@ func main() {
 			log.Errorf("Task %v has no job", task.ID)
 			continue
 		}
-		_, err := scheduler.NewJob(gocron.CronJob(task.Job.Schedule, false), gocron.NewTask(runner.runTask, task))
+		_, err := scheduler.NewJob(gocron.CronJob(task.Job.Schedule, false), gocron.NewTask(runner.runTask, &task))
 		if err != nil {
 			log.Errorf("Failed to create job: %v", err)
 			continue

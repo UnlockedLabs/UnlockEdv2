@@ -61,7 +61,7 @@ export default function FeatureLevelCheckboxes({
         toaster(resp.message, ToastState.success);
         const user = await fetchUser();
         setUser(user);
-        navigate('/admin-dashboard');
+        navigate('/authcallback');
     };
 
     return (
@@ -74,13 +74,13 @@ export default function FeatureLevelCheckboxes({
             />
             <CheckboxGeneric
                 name="provider_platforms"
-                label="Provider Platform Integrations"
+                label="Connected Learning"
                 checked={getCheckboxChecked(FeatureAccess.ProviderAccess)}
                 onChange={handleFeatureToggle}
             />
             <CheckboxGeneric
                 name="program_management"
-                label="Program Management"
+                label="Program Hub"
                 checked={getCheckboxChecked(FeatureAccess.ProgramAccess)}
                 onChange={handleFeatureToggle}
             />

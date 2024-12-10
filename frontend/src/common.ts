@@ -27,7 +27,7 @@ export interface User {
 }
 export const providerRoutes = [
     'provider-user-management',
-    'provider-platform-management',
+    'learning-platforms',
     'my-courses',
     'course-catalogue',
     'course-catalog-admin'

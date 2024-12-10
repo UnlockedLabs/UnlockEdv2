@@ -26,20 +26,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 
 export const AdminRoles = [UserRole.SystemAdmin, UserRole.Admin];
 
-export const getDashboard = (user?: User): string => {
-    if (!user) {
-        return INIT_KRATOS_LOGIN_FLOW;
-    } else {
-        if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
-            return '/knowledge-center-dashboard';
-        } else {
-            return isAdministrator(user)
-                ? '/admin-dashboard'
-                : '/student-dashboard';
-        }
-    }
-};
-
 export const isAdministrator = (user: User | undefined): boolean => {
     return user !== undefined && AdminRoles.includes(user.role);
 };
@@ -59,7 +45,7 @@ export async function fetchUser(): Promise<User | undefined> {
 
 export const checkRole: LoaderFunction = async () => {
     const user = await fetchUser();
-    return redirect(getDashboard(user));
+    return redirect(getDashboardLink(user));
 };
 
 export function useAuth(): AuthContextType {
@@ -87,8 +73,8 @@ export const initFlow = async (flow: string): Promise<AuthFlow> => {
     }
 };
 
-export const hasFeature = (user: User, axx: FeatureAccess): boolean => {
-    return user.feature_access.includes(axx);
+export const hasFeature = (user: User, ...axx: FeatureAccess[]): boolean => {
+    return axx.every((ax) => user.feature_access.includes(ax));
 };
 
 export const checkDefaultFacility: LoaderFunction = async () => {
@@ -166,3 +152,35 @@ export async function handleLogout(): Promise<void> {
         console.log('Logout failed', error);
     }
 }
+
+const accessValues = new Map<FeatureAccess, number>([
+    [FeatureAccess.OpenContentAccess, 1],
+    [FeatureAccess.ProviderAccess, 2],
+    [FeatureAccess.ProgramAccess, 3]
+]);
+const adminAccessLinks = [
+    '/operational-insights', // temporary layer 0 until implemented
+    '/knowledge-insights',
+    '/learning-insights',
+    '/learning-insights' // temporary until layer 3 is implemented
+];
+
+const studentAccessLinks = [
+    '/home', // temporary layer 0 until implemented
+    '/trending-content',
+    '/learning-path', // temporary until layer 3 is implemented
+    '/learning-path' // temporary until layer 3 is implemented
+];
+
+export const getDashboardLink = (user?: User) => {
+    if (!user) return '/';
+
+    const maxFeature =
+        user?.feature_access
+            .map((ax) => accessValues.get(ax) ?? 0)
+            .sort((a, b) => a - b)
+            .pop() ?? 0;
+    return isAdministrator(user)
+        ? adminAccessLinks[maxFeature]
+        : studentAccessLinks[maxFeature];
+};
