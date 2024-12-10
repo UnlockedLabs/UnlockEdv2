@@ -26,20 +26,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 
 export const AdminRoles = [UserRole.SystemAdmin, UserRole.Admin];
 
-export const getDashboard = (user?: User): string => {
-    if (!user) {
-        return INIT_KRATOS_LOGIN_FLOW;
-    } else {
-        if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
-            return '/knowledge-center-dashboard';
-        } else {
-            return isAdministrator(user)
-                ? '/admin-dashboard'
-                : '/student-activity';
-        }
-    }
-};
-
 export const isAdministrator = (user: User | undefined): boolean => {
     return user !== undefined && AdminRoles.includes(user.role);
 };
@@ -59,7 +45,7 @@ export async function fetchUser(): Promise<User | undefined> {
 
 export const checkRole: LoaderFunction = async () => {
     const user = await fetchUser();
-    return redirect(getDashboard(user));
+    return redirect(getDashboardLink(user));
 };
 
 export function useAuth(): AuthContextType {
@@ -167,51 +153,34 @@ export async function handleLogout(): Promise<void> {
     }
 }
 
-const accessValues: Map<FeatureAccess, number> = new Map<FeatureAccess, number>(
-    [
-        [FeatureAccess.OpenContentAccess, 1],
-        [FeatureAccess.ProviderAccess, 2],
-        [FeatureAccess.ProgramAccess, 3]
-    ]
-);
-
-const accessLinks = [
-    '/knowledge-center-dashboard',
-    '/student-activity',
-    '/admin-dashboard'
+const accessValues = new Map<FeatureAccess, number>([
+    [FeatureAccess.OpenContentAccess, 1],
+    [FeatureAccess.ProviderAccess, 2],
+    [FeatureAccess.ProgramAccess, 3]
+]);
+const adminAccessLinks = [
+    '/operational-insights', // temporary layer 0 until implemented
+    '/knowledge-insights',
+    '/learning-insights',
+    '/learning-insights' // temporary until layer 3 is implemented
 ];
 
-export const getDashboardLink = (user: User) => {
-    if (isAdministrator(user)) {
-        const maxFeature = user.feature_access
-            .map((ax) => accessValues.get(ax))
-            .sort((a, b) => (a && b ? a > b : a))
-            .pop();
-        if (maxFeature) {
-            return accessLinks[maxFeature - 1];
-        } else {
-            switch (user.feature_access.length) {
-                case 0:
-                    return '/student-activity';
-                case 1:
-                    switch (user.feature_access[0]) {
-                        case FeatureAccess.OpenContentAccess:
-                            return '/knowledge-center-dashboard';
-                        default:
-                            return '/student-activity';
-                    }
-                case 2:
-                    switch (true) {
-                        case !hasFeature(user, FeatureAccess.OpenContentAccess):
-                            return '/student-activity';
-                        case !hasFeature(user, FeatureAccess.ProviderAccess):
-                            return '/knowledge-center-dashboard';
-                        default:
-                            return '/student-activity';
-                    }
-                default:
-                    return '/student-activity';
-            }
-        }
-    }
+const studentAccessLinks = [
+    '/home', // temporary layer 0 until implemented
+    '/trending-content',
+    '/learning-path', // temporary until layer 3 is implemented
+    '/learning-path' // temporary until layer 3 is implemented
+];
+
+export const getDashboardLink = (user?: User) => {
+    if (!user) return '/';
+
+    const maxFeature =
+        user?.feature_access
+            .map((ax) => accessValues.get(ax) ?? 0)
+            .sort((a, b) => a - b)
+            .pop() ?? 0;
+    return isAdministrator(user)
+        ? adminAccessLinks[maxFeature]
+        : studentAccessLinks[maxFeature];
 };

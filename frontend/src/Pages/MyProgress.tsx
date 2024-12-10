@@ -7,14 +7,8 @@ import DarkGreenPill from '@/Components/pill-labels/DarkGreenPill';
 import TealPill from '@/Components/pill-labels/TealPill';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import {
-    ProgramAttendanceData,
-    ServerResponse,
-    UserCourses,
-    UserCoursesInfo
-} from '@/common';
+import { ServerResponse, UserCourses, UserCoursesInfo } from '@/common';
 import convertSeconds from '@/Components/ConvertSeconds';
-import Error from './Error';
 
 export default function MyProgress() {
     const [sortCourses, setSortCourses] = useState<string>(
@@ -29,16 +23,13 @@ export default function MyProgress() {
         ServerResponse<UserCoursesInfo>,
         AxiosError
     >(`/api/users/${user.id}/courses?${sortCourses}`);
+
     const courseData = data?.data
         ? (data?.data as UserCoursesInfo)
         : ({} as UserCoursesInfo);
-    const { isLoading: loadingProgramData, error: programDataError } = useSWR<
-        ServerResponse<ProgramAttendanceData>,
-        AxiosError
-    >(`/api/student-attendance`);
-
-    if (isLoading || loadingProgramData) return <div>Loading...</div>;
-    if (error || programDataError) return <Error />;
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     function handleSortCourses(value: string) {
         const defaultSort = 'order=asc&order_by=course_name';
@@ -61,7 +52,7 @@ export default function MyProgress() {
     return (
         <div className="px-8 py-4">
             <h1>My Progress</h1>
-            {courseData && (
+            {!error && courseData && (
                 <>
                     <div className="mt-7 flex flex-row gap-12">
                         <div className="flex flex-col justify-between w-full">

@@ -1,20 +1,13 @@
 import { ServerResponseOne, User, UserRole } from '@/common.ts';
 import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import {
-    TextInput,
-    DropdownInput,
-    SubmitButton,
-    CloseX
-} from '@/Components/inputs';
+import { TextInput, SubmitButton, CloseX } from '@/Components/inputs';
 import API from '@/api/api';
 
 interface Inputs {
     [key: string]: string | UserRole;
     name_first: string;
     name_last: string;
-    username: string;
-    role: UserRole;
     email: string;
 }
 
@@ -36,7 +29,6 @@ export default function EditUserForm({
         defaultValues: {
             name_first: user.name_first,
             name_last: user.name_last,
-            username: user.username,
             role: user.role,
             email: user.email
         }
@@ -64,18 +56,10 @@ export default function EditUserForm({
         )) as ServerResponseOne<User>;
         if (!resp.success) {
             switch (resp.message) {
-                case 'userexists': {
-                    setError('username', {
-                        type: 'custom',
-                        message: 'Username already exists'
-                    });
-                    break;
-                }
                 case 'alphanum': {
-                    setError('username', {
+                    setError('name', {
                         type: 'custom',
-                        message:
-                            'Name + Username must contain letters and numbers only'
+                        message: 'Name must contain letters and spaces only'
                     });
                     break;
                 }
@@ -113,28 +97,12 @@ export default function EditUserForm({
                     register={register}
                 />
                 <TextInput
-                    label={'Username'}
-                    interfaceRef={'username'}
-                    required
-                    length={50}
-                    errors={errors}
-                    register={register}
-                />
-                <TextInput
                     label={'Email'}
                     interfaceRef={'email'}
                     required={false}
                     length={50}
                     errors={errors}
                     register={register}
-                />
-                <DropdownInput
-                    label={'Role'}
-                    interfaceRef={'role'}
-                    required
-                    errors={errors}
-                    register={register}
-                    enumType={UserRole}
                 />
                 <SubmitButton errorMessage={errorMessage} />
             </form>

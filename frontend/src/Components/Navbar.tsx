@@ -50,7 +50,11 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
-
+    const dashboardTitle = new Map([
+        ['/learning-insights', 'Learning'],
+        ['/knowledge-insights', 'Knowledge'],
+        ['/operational-insights', 'Operational']
+    ]);
     const handleSeedDemoData = async () => {
         setSeedInProgress(true);
         const resp = await API.post<null, object>(`auth/demo-seed`, {});
@@ -107,15 +111,21 @@ export default function Navbar({
                                 <li className="mt-16">
                                     <Link to={getDashboardLink(user)}>
                                         <ULIComponent icon={HomeIcon} />
-                                        Dashboard
+                                        {dashboardTitle.get(
+                                            getDashboardLink(user)
+                                        ) ?? 'Operational'}{' '}
+                                        Insights
                                     </Link>
                                 </li>
-                                <li>
-                                    <Link to="/operational-insights">
-                                        <ULIComponent icon={CogIcon} />
-                                        Operational Insights
-                                    </Link>
-                                </li>
+                                {/* this acts as the dashboard in the case there are no features enabled */}
+                                {user.feature_access.length > 0 && (
+                                    <li>
+                                        <Link to="/operational-insights">
+                                            <ULIComponent icon={CogIcon} />
+                                            Operational Insights
+                                        </Link>
+                                    </li>
+                                )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess
@@ -147,7 +157,7 @@ export default function Navbar({
                                         <li>
                                             <Link to="/programs">
                                                 <ULIComponent
-                                                    icon={CloudIcon}
+                                                    icon={DocumentTextIcon}
                                                 />
                                                 Programs
                                             </Link>
@@ -159,6 +169,17 @@ export default function Navbar({
                                     FeatureAccess.OpenContentAccess
                                 ) && (
                                     <>
+                                        {/* in the case where this is the only feature, this would otherwise be the dashboard */}
+                                        {user.feature_access.length > 1 && (
+                                            <li>
+                                                <Link to="/knowledge-insights">
+                                                    <ULIComponent
+                                                        icon={BookOpenIcon}
+                                                    />
+                                                    Knowledge Insights
+                                                </Link>
+                                            </li>
+                                        )}
                                         <li>
                                             <Link to="/knowledge-center-management/libraries">
                                                 <ULIComponent
@@ -205,12 +226,17 @@ export default function Navbar({
                                     FeatureAccess.ProviderAccess
                                 ) && (
                                     <>
-                                        <li className="mt-16">
-                                            <Link to="/student-activity">
-                                                <ULIComponent icon={HomeIcon} />
-                                                My Learning
-                                            </Link>
-                                        </li>
+                                        {getDashboardLink(user) !==
+                                            '/learning-path' && (
+                                            <li>
+                                                <Link to="/learning-path">
+                                                    <ULIComponent
+                                                        icon={HomeIcon}
+                                                    />
+                                                    My Learning
+                                                </Link>
+                                            </li>
+                                        )}
                                         <li>
                                             <Link to="/my-courses">
                                                 <ULIComponent
@@ -219,31 +245,55 @@ export default function Navbar({
                                                 My Courses
                                             </Link>
                                         </li>
+                                        <li>
+                                            <Link to="/my-progress">
+                                                <ULIComponent
+                                                    icon={AcademicCapIcon}
+                                                />{' '}
+                                                My Progress
+                                            </Link>
+                                        </li>
                                     </>
                                 )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
                                 ) && (
-                                    <li>
-                                        <Link to="/knowledge-center/libraries">
-                                            <ULIComponent icon={BookOpenIcon} />
-                                            Knowledge Center
-                                        </Link>
-                                    </li>
+                                    <>
+                                        {user.feature_access.length > 1 && (
+                                            <li>
+                                                <Link to="/trending-content">
+                                                    <ULIComponent
+                                                        icon={BookOpenIcon}
+                                                    />
+                                                    Trending Content
+                                                </Link>
+                                            </li>
+                                        )}
+                                        <li>
+                                            <Link to="/knowledge-center/libraries">
+                                                <ULIComponent
+                                                    icon={BookOpenIcon}
+                                                />
+                                                Knowledge Center
+                                            </Link>
+                                        </li>
+                                    </>
                                 )}
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProgramAccess
                                 ) && (
-                                    <li>
-                                        <Link to="/programs">
-                                            <ULIComponent
-                                                icon={DocumentTextIcon}
-                                            />
-                                            Programs
-                                        </Link>
-                                    </li>
+                                    <>
+                                        <li>
+                                            <Link to="/programs">
+                                                <ULIComponent
+                                                    icon={DocumentTextIcon}
+                                                />
+                                                Programs
+                                            </Link>
+                                        </li>
+                                    </>
                                 )}
                             </>
                         )}

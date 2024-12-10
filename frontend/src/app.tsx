@@ -37,8 +37,7 @@ import {
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/Context/PathValueCtx';
-import AdminDashboard from './Pages/AdminDashboard.tsx';
-import StudentDashboard from './Pages/StudentDashboard.tsx';
+import AdminLayer2 from './Pages/AdminDashboard.tsx';
 import {
     getFacilities,
     getOpenContentDashboardData,
@@ -52,9 +51,11 @@ import VideoContent from './Components/VideoContent.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
 import FavoritesPage from './Pages/Favorites.tsx';
-import OpenContentLevelDashboard from './Pages/OpenContentLevelDashboard.tsx';
+import StudentLayer1 from './Pages/OpenContentLevelDashboard.tsx';
 import OperationalInsightsPage from './Pages/OperationalInsights.tsx';
 import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
+import StudentLayer0 from './Pages/StudentLayer0.tsx';
+import StudentLayer2 from './Pages/StudentDashboard.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -141,6 +142,14 @@ const router = createBrowserRouter([
                         }
                     },
                     {
+                        path: 'home',
+                        element: <StudentLayer0 />,
+                        handle: {
+                            title: 'UnlockEd',
+                            path: ['home']
+                        }
+                    },
+                    {
                         path: '',
                         element: (
                             <ProtectedRoute
@@ -151,12 +160,12 @@ const router = createBrowserRouter([
                         ),
                         children: [
                             {
-                                path: 'knowledge-center-dashboard',
-                                element: <OpenContentLevelDashboard />,
+                                path: 'trending-content',
+                                element: <StudentLayer1 />,
                                 loader: getOpenContentDashboardData,
                                 handle: {
-                                    title: 'Knowledge Center Dashboard',
-                                    path: ['knowledge-center-dashboard']
+                                    title: 'Trending Content',
+                                    path: ['trending-content']
                                 }
                             },
                             {
@@ -236,12 +245,12 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
-                                path: 'student-activity',
-                                element: <StudentDashboard />,
+                                path: 'learning-path',
+                                element: <StudentLayer2 />,
                                 loader: getRightSidebarData,
                                 handle: {
-                                    title: 'Student Activity',
-                                    path: ['student-activity']
+                                    title: 'Learning Path',
+                                    path: ['learning-path']
                                 }
                             },
                             {
@@ -271,15 +280,6 @@ const router = createBrowserRouter([
                         ),
                         errorElement: <Error />,
                         children: [
-                            {
-                                path: 'student-activity',
-                                element: <StudentDashboard />,
-                                loader: getRightSidebarData,
-                                handle: {
-                                    title: 'Student Activity',
-                                    path: ['student-activity']
-                                }
-                            },
                             {
                                 path: 'programs',
                                 element: <Programs />,
@@ -338,6 +338,14 @@ const router = createBrowserRouter([
                         }
                     },
                     {
+                        path: 'facilities',
+                        element: <FacilityManagement />,
+                        handle: {
+                            title: 'Facilities',
+                            path: ['facilities']
+                        }
+                    },
+                    {
                         path: '',
                         element: (
                             <ProtectedRoute
@@ -347,12 +355,12 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
-                                path: 'admin-dashboard',
-                                element: <AdminDashboard />,
+                                path: 'learning-insights',
+                                element: <AdminLayer2 />,
                                 errorElement: <Error />,
                                 handle: {
-                                    title: 'Student Activity',
-                                    path: ['admin-dashboard']
+                                    title: 'Learning Insights',
+                                    path: ['learning-insights']
                                 }
                             },
                             {
@@ -381,25 +389,8 @@ const router = createBrowserRouter([
                                     title: 'Course Catalog',
                                     path: ['course-catalog']
                                 }
-                            },
-                            {
-                                path: 'student-activity',
-                                element: <StudentDashboard />,
-                                loader: getRightSidebarData,
-                                handle: {
-                                    title: 'Student Activity',
-                                    path: ['student-activity']
-                                }
                             }
                         ]
-                    },
-                    {
-                        path: 'facilities',
-                        element: <FacilityManagement />,
-                        handle: {
-                            title: 'Facilities',
-                            path: ['facilities']
-                        }
                     },
                     {
                         path: '',
@@ -413,12 +404,12 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         children: [
                             {
-                                path: 'knowledge-center-dashboard',
-                                element: <OpenContentLevelDashboard />,
+                                path: 'knowledge-insights',
+                                element: <StudentLayer1 />,
                                 loader: getOpenContentDashboardData,
                                 handle: {
-                                    title: 'Dashboard',
-                                    path: ['dashboard']
+                                    title: 'Knowledge Insights',
+                                    path: ['knowledge-insights']
                                 }
                             },
                             {

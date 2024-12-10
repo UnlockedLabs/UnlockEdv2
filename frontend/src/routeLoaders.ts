@@ -5,7 +5,6 @@ import {
     OpenContentItem,
     OpenContentProvider,
     ServerResponse,
-    HelpfulLink,
     HelpfulLinkAndSort,
     Library
 } from './common';
@@ -61,7 +60,7 @@ export const getRightSidebarData: LoaderFunction = async () => {
     ]);
 
     const resourcesData = resourcesResp.success
-        ? (resourcesResp.data as HelpfulLink[])
+        ? (resourcesResp.data as HelpfulLinkAndSort).helpful_links
         : [];
     const openContentData = openContentResp.success
         ? (openContentResp.data as OpenContentProvider[])

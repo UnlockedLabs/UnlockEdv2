@@ -10,12 +10,12 @@ import OpenContentCard from '@/Components/cards/OpenContentCard';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import LibraryCard from '@/Components/LibraryCard';
 import ULIComponent from '@/Components/ULIComponent';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import API from '@/api/api';
 
-export default function OpenContentLevelDashboard() {
+export default function StudentLayer1() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const {
@@ -31,13 +31,11 @@ export default function OpenContentLevelDashboard() {
         featured: Library[];
         helpfulLinks: HelpfulLink[];
     };
-
+    const nav = isAdministrator(user)
+        ? '/knowledge-center-management/libraries'
+        : '/knowledge-center/libraries';
     function navigateToOpenContent() {
-        if (user?.role == UserRole.Student) {
-            navigate(`/knowledge-center/libraries`);
-        } else {
-            navigate(`/knowledge-center-management/libraries`);
-        }
+        navigate(nav);
     }
 
     async function handleHelpfulLinkClick(id: number): Promise<void> {
@@ -47,7 +45,7 @@ export default function OpenContentLevelDashboard() {
         )) as ServerResponseOne<{ url: string }>;
         if (resp.success) {
             window.open(resp.data.url, '_blank');
-            navigate(`/knowledge-center-management/libraries`);
+            navigate(nav);
         }
     }
 

@@ -6,6 +6,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (db *DB) GetOpenContent(all bool) ([]models.OpenContentProvider, error) {
+	tx := db.Model(&models.OpenContentProvider{})
+	if !all {
+		tx = tx.Where("currently_enabled = ?", true)
+	}
+	openContent := make([]models.OpenContentProvider, 0, 3)
+	if err := tx.Find(&openContent).Error; err != nil {
+		return nil, newNotFoundDBError(err, "open_content_providers")
+	}
+	return openContent, nil
+}
+
 func (db *DB) FindKolibriInstance() (*models.ProviderPlatform, error) {
 	kolibri := models.ProviderPlatform{}
 	if err := db.First(&kolibri, "type = ?", "kolibri").Error; err != nil {
