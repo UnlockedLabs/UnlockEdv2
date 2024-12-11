@@ -36,12 +36,12 @@ const OperationalInsights = () => {
     const metrics = data?.data;
 
     return (
-        <div className="p-8">
+        <div className="p-6">
             {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
                 <>
-                    <div className="p-4">
+                    <div className="">
                         <button
                             className="button"
                             onClick={() => setResetCache(!resetCache)}
