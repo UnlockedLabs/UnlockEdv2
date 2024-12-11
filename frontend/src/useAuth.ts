@@ -165,7 +165,7 @@ const adminAccessLinks = [
     '/learning-insights' // temporary until layer 3 is implemented
 ];
 
-const studentAccessLinks = [
+export const studentAccessLinks = [
     '/home', // temporary layer 0 until implemented
     '/trending-content',
     '/learning-path', // temporary until layer 3 is implemented
