@@ -51,7 +51,7 @@ type Link struct {
 }
 
 const (
-	MinImgSize = 2048
+	MinImgSize = 150
 )
 
 func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Library {
@@ -113,8 +113,8 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 
 	var filename string
 	if len(imgData) < MinImgSize {
-		logger().Errorf("thumbnail image is too small: %d bytes", len(imgData))
-		return "kiwix.jpg", nil
+		logger().Errorf("thumbnail image %s is too small: %d bytes", lib, len(imgData))
+		return "/kiwix.jpg", nil
 	} else {
 		filename = lib + ".png"
 	}
