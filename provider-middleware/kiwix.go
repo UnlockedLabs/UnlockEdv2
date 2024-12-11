@@ -90,7 +90,7 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 }
 
 func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, entry Entry, providerId uint) error {
-	logger().Infoln("Attempting to update existing Kiwix Libraries.")
+	logger().Infof("Attempting to insert or update library from Kiwix: %v", entry.Title)
 	library := ks.IntoLibrary(entry, providerId)
 	if err := db.WithContext(ctx).
 		Where(&models.Library{ExternalID: models.StringPtr(entry.ID)}).
