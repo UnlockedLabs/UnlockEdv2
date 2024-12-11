@@ -218,7 +218,7 @@ export default function Navbar({
                                 <li className="mt-16">
                                     <Link to={getDashboardLink(user)}>
                                         <ULIComponent icon={HomeIcon} />
-                                        Dashboard
+                                        Learning Path
                                     </Link>
                                 </li>
                                 {hasFeature(
