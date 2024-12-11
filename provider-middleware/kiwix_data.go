@@ -50,6 +50,10 @@ type Link struct {
 	Type string `xml:"type,attr"`
 }
 
+const (
+	MinImgSize = 150
+)
+
 func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Library {
 	url, thumbnailURL := ks.ParseUrls(entry.Title, entry.Links)
 	return &models.Library{
@@ -107,9 +111,16 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 		return "", err
 	}
 
+	var filename string
+	if len(imgData) < MinImgSize {
+		logger().Errorf("thumbnail image %s is too small: %d bytes", lib, len(imgData))
+		return "/kiwix.jpg", nil
+	} else {
+		filename = lib + ".png"
+	}
+
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	filename := lib + ".png"
 
 	part, err := writer.CreateFormFile("file", filename)
 	if err != nil {
@@ -200,6 +211,8 @@ func (ks *KiwixService) ParseUrls(externId string, links []Link) (string, string
 			if !ks.thumbnailExists(externId) {
 				if thumbnail, err := ks.downloadAndHostThumbnailImg(externId, link.Href); err == nil {
 					thumbnailURL = thumbnail
+				} else {
+					thumbnailURL = "/kiwix.jpg"
 				}
 			} else {
 				thumbnailURL = "/api/photos/" + externId + ".png"
