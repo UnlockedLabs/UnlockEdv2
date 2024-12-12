@@ -424,6 +424,7 @@ export interface Outcome {
 }
 export interface UserCoursesInfo {
     num_completed: number;
+    num_in_progress: number;
     total_time: number;
     courses: UserCourses[];
 }

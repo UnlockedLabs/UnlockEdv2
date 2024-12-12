@@ -2,7 +2,6 @@ import { useAuth } from '@/useAuth';
 import { useState } from 'react';
 import { AxiosError } from 'axios';
 import StatsCard from '@/Components/StatsCard';
-import UserActivityMap from '@/Components/UserActivityMap';
 import DarkGreenPill from '@/Components/pill-labels/DarkGreenPill';
 import TealPill from '@/Components/pill-labels/TealPill';
 import useSWR from 'swr';
@@ -54,24 +53,24 @@ export default function MyProgress() {
             <h1>My Progress</h1>
             {!error && courseData && (
                 <>
-                    <div className="mt-7 flex flex-row gap-12">
-                        <div className="flex flex-col justify-between w-full">
-                            <StatsCard
-                                title="TOTAL TIME"
-                                number={Math.floor(
-                                    courseData.total_time / 3600
-                                ).toString()}
-                                label="hours"
-                            />
-                            <StatsCard
-                                title="COMPLETED"
-                                number={courseData.num_completed.toString()}
-                                label="courses"
-                            />
-                        </div>
-                        <div className="w-full">
-                            <UserActivityMap />
-                        </div>
+                    <div className="grid grid-cols-3 gap-4 mt-6 mb-6">
+                        <StatsCard
+                            title="TOTAL TIME"
+                            number={Math.floor(
+                                courseData.total_time / 3600
+                            ).toString()}
+                            label="hours"
+                        />
+                        <StatsCard
+                            title="COMPLETED"
+                            number={courseData.num_completed.toString()}
+                            label="courses"
+                        />
+                        <StatsCard
+                            title="IN PROGRESS"
+                            number={courseData.num_in_progress.toString()}
+                            label="courses"
+                        />
                     </div>
                     <div className="flex flex-row gap-12 mt-12">
                         <div className="card bg-base-teal h-[531px] w-full p-4 overflow-y-auto">
