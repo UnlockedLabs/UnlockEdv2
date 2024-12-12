@@ -172,6 +172,9 @@ func (jr *JobRunner) execute() {
 	}
 	log.Infof("Generated %v tasks", tasks)
 	for _, task := range tasks {
+		if task.Provider != nil && task.Provider.Type == models.Brightspace {
+			continue
+		}
 		log.Infof("Running task: %v", task.Job.Name)
 		jr.runTask(&task)
 	}
