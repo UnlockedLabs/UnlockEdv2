@@ -38,7 +38,7 @@ export function DropdownInput({
                 ))}
             </select>
             <div className="text-error text-sm">
-                {errors[interfaceRef]?.message?.toString()}
+                {errors[interfaceRef]?.message as string}
             </div>
         </label>
     );
