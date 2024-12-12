@@ -42,7 +42,8 @@ export default function LoginForm() {
             data
         )) as ServerResponseOne<AuthResponse>;
         if (resp.success) {
-            navigate(resp.data.redirect_to ?? resp.data.redirect_browser_to);
+            window.location.href =
+                resp.data.redirect_to ?? resp.data.redirect_browser_to;
             return;
         }
         setErrorMessage(true);
