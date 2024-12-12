@@ -3,8 +3,10 @@ import OperationalInsights from '@/Components/OperationalInsightsCharts';
 export default function OperationalInsightsPage() {
     return (
         <div>
-            <h1>Operational Insights</h1>
-            <OperationalInsights />
+            <div className="px-8 pb-4 mt-4">
+                <h1>Operational Insights</h1>
+                <OperationalInsights />
+            </div>
         </div>
     );
 }

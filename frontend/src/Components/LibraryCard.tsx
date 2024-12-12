@@ -74,32 +74,31 @@ export default function LibraryCard({
                 </figure>
                 <h3 className="w-3/4 body my-auto mr-7">{library.title}</h3>
             </div>
-            {role != UserRole.Student && (
-                <div
-                    className="absolute right-2 top-2 z-100"
-                    onClick={(e) => void toggleLibraryFavorite(e)}
-                >
-                    {/* don't display the favorite toggle when admin is viewing in student view*/}
-                    <ULIComponent
-                        tooltipClassName="absolute right-2 top-2 z-100"
-                        iconClassName={`w-6 h-6 ${library.favorites.length > 0 && 'text-primary-yellow'}`}
-                        icon={
-                            AdminRoles.includes(role)
-                                ? library.favorites.length > 0
-                                    ? FlagIcon
-                                    : FlagIconOutline
-                                : library.favorites.length > 0
-                                  ? StarIcon
-                                  : StarIconOutline
-                        }
-                        dataTip={
-                            AdminRoles.includes(role)
-                                ? 'Feature Library'
-                                : 'Favorite Library'
-                        }
-                    />
-                </div>
-            )}
+
+            <div
+                className="absolute right-2 top-2 z-100"
+                onClick={(e) => void toggleLibraryFavorite(e)}
+            >
+                {/* don't display the favorite toggle when admin is viewing in student view*/}
+                <ULIComponent
+                    tooltipClassName="absolute right-2 top-2 z-100"
+                    iconClassName={`w-6 h-6 ${library.favorites.length > 0 && 'text-primary-yellow'}`}
+                    icon={
+                        AdminRoles.includes(role)
+                            ? library.favorites.length > 0
+                                ? FlagIcon
+                                : FlagIconOutline
+                            : library.favorites.length > 0
+                              ? StarIcon
+                              : StarIconOutline
+                    }
+                    dataTip={
+                        AdminRoles.includes(role)
+                            ? 'Feature Library'
+                            : 'Favorite Library'
+                    }
+                />
+            </div>
 
             <div className="p-4 space-y-2">
                 <p className="body-small">{'Kiwix'}</p>
