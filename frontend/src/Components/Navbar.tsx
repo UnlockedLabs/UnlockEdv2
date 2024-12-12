@@ -22,6 +22,7 @@ import {
     handleLogout,
     hasFeature,
     isAdministrator,
+    studentAccessLinks,
     useAuth
 } from '@/useAuth';
 import Modal from '@/Components/Modal';
@@ -117,6 +118,20 @@ export default function Navbar({
                                         Insights
                                     </Link>
                                 </li>
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.OpenContentAccess
+                                ) &&
+                                    user.feature_access.length > 1 && (
+                                        <li>
+                                            <Link to="/knowledge-insights">
+                                                <ULIComponent
+                                                    icon={BookOpenIcon}
+                                                />
+                                                Knowledge Insights
+                                            </Link>
+                                        </li>
+                                    )}
                                 {/* this acts as the dashboard in the case there are no features enabled */}
                                 {user.feature_access.length > 0 && (
                                     <li>
@@ -168,27 +183,12 @@ export default function Navbar({
                                     user,
                                     FeatureAccess.OpenContentAccess
                                 ) && (
-                                    <>
-                                        {/* in the case where this is the only feature, this would otherwise be the dashboard */}
-                                        {user.feature_access.length > 1 && (
-                                            <li>
-                                                <Link to="/knowledge-insights">
-                                                    <ULIComponent
-                                                        icon={BookOpenIcon}
-                                                    />
-                                                    Knowledge Insights
-                                                </Link>
-                                            </li>
-                                        )}
-                                        <li>
-                                            <Link to="/knowledge-center-management/libraries">
-                                                <ULIComponent
-                                                    icon={BookOpenIcon}
-                                                />
-                                                Knowledge Center
-                                            </Link>
-                                        </li>
-                                    </>
+                                    <li>
+                                        <Link to="/knowledge-center-management/libraries">
+                                            <ULIComponent icon={BookOpenIcon} />
+                                            Knowledge Center
+                                        </Link>
+                                    </li>
                                 )}
                                 <li>
                                     <Link to="/students">
@@ -218,7 +218,14 @@ export default function Navbar({
                                 <li className="mt-16">
                                     <Link to={getDashboardLink(user)}>
                                         <ULIComponent icon={HomeIcon} />
-                                        Learning Path
+                                        {getDashboardLink(user) ===
+                                            studentAccessLinks[0] && 'Home'}
+                                        {getDashboardLink(user) ===
+                                            studentAccessLinks[1] &&
+                                            'Trending Content'}
+                                        {getDashboardLink(user) ===
+                                            studentAccessLinks[2] &&
+                                            'Learning Path'}
                                     </Link>
                                 </li>
                                 {hasFeature(
