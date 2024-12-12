@@ -52,7 +52,8 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
                 favorite.visibility_status
                     ? 'bg-grey-2 cursor-not-allowed'
                     : 'bg-inner-background cursor-pointer'
-            }`}
+            } tooltip `}
+            data-tip={favorite.visibility_status ? 'Unavailable Content' : ''}
             onClick={favorite.visibility_status ? undefined : handleCardClick}
         >
             {!isAdminInStudentView && (

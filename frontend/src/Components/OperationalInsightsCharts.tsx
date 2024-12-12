@@ -36,19 +36,19 @@ const OperationalInsights = () => {
     const metrics = data?.data;
 
     return (
-        <div className="p-8">
+        <div className="p-6">
             {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
                 <>
-                    <div className="p-4">
+                    <div className="">
                         <button
                             className="button"
                             onClick={() => setResetCache(!resetCache)}
                         >
                             Refresh Data
                         </button>
-                        <div className="flex flex-row gap-4">
+                        <div className="flex flex-row gap-4 pb-4">
                             <div>
                                 <label htmlFor="days" className="label">
                                     <span className="label-text">Days</span>
