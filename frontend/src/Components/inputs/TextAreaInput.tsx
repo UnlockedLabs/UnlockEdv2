@@ -39,7 +39,7 @@ export function TextAreaInput({
                 {...register(interfaceRef, options)}
             />
             <div className="text-error text-sm">
-                {errors[interfaceRef]?.message?.toString()}
+                {errors[interfaceRef]?.message as string}
             </div>
         </label>
     );

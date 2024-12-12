@@ -32,12 +32,12 @@ func initDB() *gorm.DB {
 }
 
 func (jr *JobRunner) intoProviderPlatformTask(cj *models.CronJob, provId uint, task *models.RunnableTask) error {
-	if err := jr.db.Model(&models.RunnableTask{}).Preload("Job").Preload("Provider").
+	if err := jr.db.Model(&models.RunnableTask{}).
 		Where(models.RunnableTask{ProviderPlatformID: &provId, JobID: cj.ID}).FirstOrCreate(&task).Error; err != nil {
 		log.Errorf("failed to create task for job: %v. error: %v", cj.Name, err)
 		return err
 	}
-	if err := jr.db.Model(&task).Preload("Job").Preload("Provider").First(&task).Error; err != nil {
+	if err := jr.db.Model(&models.RunnableTask{}).Preload("Job").Preload("Provider").First(&task, task.ID).Error; err != nil {
 		log.Errorf("failed to reload task for job: %v. error: %v", cj.Name, err)
 		return err
 	}
