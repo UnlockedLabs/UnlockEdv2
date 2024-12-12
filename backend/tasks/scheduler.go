@@ -151,7 +151,7 @@ func (jr *JobRunner) runTask(task *models.RunnableTask) {
 		return
 	}
 	task.Status = models.StatusRunning
-	if err := jr.db.Save(task).Error; err != nil {
+	if err := jr.db.Model(&models.RunnableTask{}).Where("id = ?", task.ID).Update("status", models.StatusRunning).Error; err != nil {
 		log.Errorf("failed to update task status: %v", err)
 		return
 	}

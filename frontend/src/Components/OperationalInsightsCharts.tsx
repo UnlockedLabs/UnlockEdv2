@@ -48,7 +48,7 @@ const OperationalInsights = () => {
                         >
                             Refresh Data
                         </button>
-                        <div className="flex flex-row gap-4">
+                        <div className="flex flex-row gap-4 pb-4">
                             <div>
                                 <label htmlFor="days" className="label">
                                     <span className="label-text">Days</span>
