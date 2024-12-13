@@ -12,7 +12,6 @@ export default function OpenContentCardRow({
             content.content_type === 'video'
                 ? `/viewer/videos/${content.content_id}`
                 : `/viewer/libraries/${content.content_id}`;
-
         navigate(basePath);
     }
 

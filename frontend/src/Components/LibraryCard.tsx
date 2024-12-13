@@ -1,9 +1,8 @@
 import { useState, MouseEvent } from 'react';
 import VisibleHiddenToggle from './VisibleHiddenToggle';
-import { Library, ServerResponseMany, ToastState, UserRole } from '@/common';
+import { Library, ToastState, UserRole } from '@/common';
 import API from '@/api/api';
-import { KeyedMutator } from 'swr';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import { AdminRoles } from '@/useAuth';
 import ULIComponent from '@/Components/ULIComponent';
@@ -15,17 +14,16 @@ import { FlagIcon as FlagIconOutline } from '@heroicons/react/24/outline';
 export default function LibraryCard({
     library,
     mutate,
-    role,
-    onFavoriteToggle
+    role
 }: {
     library: Library;
-    mutate?: KeyedMutator<ServerResponseMany<Library>>;
+    mutate?: () => void;
     role: UserRole;
-    onFavoriteToggle?: (libraryId: number, isFavorited: boolean) => void;
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
     const navigate = useNavigate();
+    const route = useLocation();
 
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
@@ -41,7 +39,7 @@ export default function LibraryCard({
             {}
         );
         if (resp.success) {
-            await mutate();
+            mutate();
         }
         toaster(
             resp.message,
@@ -57,24 +55,20 @@ export default function LibraryCard({
             {}
         );
         if (resp.success) {
-            const isFavorited = library.is_favorited;
-            onFavoriteToggle?.(library.id, isFavorited);
-            await mutate();
+            mutate();
         }
         toaster(
             resp.message,
             resp.success ? ToastState.success : ToastState.error
         );
-        await mutate();
+        mutate();
     }
 
-    const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
-        const target = e.target as HTMLElement;
-        if (target.closest('.favorite-toggle')) return;
-        navigate(`/viewer/libraries/${library.id}`);
-    };
     return (
-        <div className="card cursor-pointer" onClick={handleCardClick}>
+        <div
+            className="card cursor-pointer"
+            onClick={() => navigate(`/viewer/libraries/${library.id}`)}
+        >
             <div className="flex p-4 gap-2 border-b-2">
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img
@@ -86,28 +80,29 @@ export default function LibraryCard({
             </div>
 
             <div
-                className="absolute right-2 top-2 z-100 favorite-toggle"
+                className="absolute right-2 top-2 z-100"
                 onClick={(e) => void toggleLibraryFavorite(e)}
             >
-                {/* don't display the favorite toggle when admin is viewing in student view*/}
-                <ULIComponent
-                    tooltipClassName="absolute right-2 top-2 z-100"
-                    iconClassName={`w-6 h-6 ${library.is_favorited && 'text-primary-yellow'}`}
-                    icon={
-                        AdminRoles.includes(role)
-                            ? library.is_favorited
-                                ? FlagIcon
-                                : FlagIconOutline
-                            : library.is_favorited
-                              ? StarIcon
-                              : StarIconOutline
-                    }
-                    dataTip={
-                        AdminRoles.includes(role)
-                            ? 'Feature Library'
-                            : 'Favorite Library'
-                    }
-                />
+                {!route.pathname.includes('knowledge-insights') && (
+                    <ULIComponent
+                        tooltipClassName="absolute right-2 top-2 z-100"
+                        iconClassName={`w-6 h-6 ${library.is_favorited && 'text-primary-yellow'}`}
+                        icon={
+                            AdminRoles.includes(role)
+                                ? library.is_favorited
+                                    ? FlagIcon
+                                    : FlagIconOutline
+                                : library.is_favorited
+                                  ? StarIcon
+                                  : StarIconOutline
+                        }
+                        dataTip={
+                            AdminRoles.includes(role)
+                                ? 'Feature Library'
+                                : 'Favorite Library'
+                        }
+                    />
+                )}
             </div>
 
             <div className="p-4 space-y-2">

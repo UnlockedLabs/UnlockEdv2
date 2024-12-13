@@ -21,6 +21,10 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
 	orderBy := r.URL.Query().Get("order_by")
+	days, err := strconv.Atoi(r.URL.Query().Get("days"))
+	if err != nil {
+		days = -1
+	}
 	showHidden := "visible"
 	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
@@ -29,7 +33,7 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 		showHidden = r.URL.Query().Get("visibility")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, claims.UserID, claims.FacilityID, showHidden, orderBy, search)
+	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, claims.UserID, claims.FacilityID, showHidden, orderBy, search, days)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
