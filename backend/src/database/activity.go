@@ -159,7 +159,7 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
         CASE
             WHEN COUNT(o.type) > 0 THEN 100
             WHEN COUNT(c.total_progress_milestones) = 0 THEN 0
-            ELSE COUNT(milestones.id) * 100.0 / c.total_progress_milestones
+            ELSE COUNT(milestones.id) * 100.0 / NULLIF(c.total_progress_milestones, 0)
         END as course_progress`).
 		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Joins("LEFT JOIN milestones ON milestones.course_id = c.id AND milestones.user_id = ?", userID).

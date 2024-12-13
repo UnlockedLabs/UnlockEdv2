@@ -103,8 +103,8 @@ func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request, 
 // in the redirect url, therefore this method will only return nil as its error
 func (srv *Server) handleOAuthProviderCallback(w http.ResponseWriter, r *http.Request, log sLog) error {
 	const (
-		successRedirectUrl = "/provider-platform-management?status=success&message=Provider platform %s successfully"
-		errorRedirectUrl   = "/provider-platform-management?status=error&message=Failed to configure provider platform"
+		successRedirectUrl = "/learning-platforms?status=success&message=Provider platform %s successfully"
+		errorRedirectUrl   = "/learning-platforms?status=error&message=Failed to configure provider platform"
 	)
 	stateFromClient := r.FormValue("state")
 	if stateFromClient == "" { //state is an opaque value used by the client to maintain state between the request and callback

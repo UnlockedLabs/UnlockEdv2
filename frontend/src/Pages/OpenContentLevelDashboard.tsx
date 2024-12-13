@@ -107,7 +107,7 @@ export default function StudentLayer1() {
                         })}
                     </div>
                 </div>
-                <h2>Resources</h2>
+                <h2>Helpful Links</h2>
                 <div className="card card-row-padding grid grid-cols-5 gap-3">
                     {helpfulLinks.map((link: HelpfulLink) => (
                         <div
