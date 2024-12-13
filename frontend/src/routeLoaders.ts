@@ -1,6 +1,5 @@
 import { json, LoaderFunction } from 'react-router-dom';
 import {
-    OpenContentFavorite,
     Facility,
     OpenContentItem,
     OpenContentProvider,
@@ -37,7 +36,7 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
         ? (facilityContentResp.data as OpenContentItem[])
         : [];
     const favoriteOpenContent = favoritesResp.success
-        ? (favoritesResp.data as OpenContentFavorite[])
+        ? (favoritesResp.data as OpenContentItem[])
         : [];
     const featured = featuredResp.success
         ? (featuredResp.data as Library[])

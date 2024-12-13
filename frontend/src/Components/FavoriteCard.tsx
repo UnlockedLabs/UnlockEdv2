@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { StarIcon as SolidStar } from '@heroicons/react/24/solid';
 import { KeyedMutator } from 'swr';
-import { ToastState, OpenContentFavorite, ServerResponseMany } from '@/common';
+import { ToastState, ServerResponseMany, OpenContentItem } from '@/common';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
 
 interface FavoriteCardProps {
-    favorite: OpenContentFavorite;
+    favorite: OpenContentItem;
     pageQuery: number;
     perPage: number;
-    mutate: KeyedMutator<ServerResponseMany<OpenContentFavorite>>;
+    mutate: KeyedMutator<ServerResponseMany<OpenContentItem>>;
     isAdminInStudentView: boolean;
 }
 
@@ -68,11 +68,11 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
                 </div>
             )}
             <img
-                src={favorite.thumbnail_url}
-                alt={favorite.name}
+                src={favorite.thumbnail_url ?? '/ul-logo.png'}
+                alt={favorite.title}
                 className="h-16 mx-auto object-contain"
             />
-            <h3 className="body text-center line-clamp-1">{favorite.name}</h3>
+            <h3 className="body text-center line-clamp-1">{favorite.title}</h3>
             <p className="body-small text-center">
                 {favorite.content_type === 'video'
                     ? favorite.channel_title

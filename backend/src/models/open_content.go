@@ -42,27 +42,17 @@ type OpenContentUrl struct {
 
 func (OpenContentUrl) TableName() string { return "open_content_urls" }
 
-type OpenContentFavorite struct {
-	ID                    uint      `json:"id"`
-	ContentID             uint      `json:"content_id"`
-	Name                  string    `json:"name"`
-	ContentType           string    `json:"content_type"`
-	ThumbnailUrl          string    `json:"thumbnail_url"`
-	Description           string    `json:"description"`
-	VisibilityStatus      bool      `json:"visibility_status"`
-	OpenContentProviderID uint      `json:"open_content_provider_id"`
-	ProviderName          string    `json:"provider_name,omitempty"`
-	ChannelTitle          string    `json:"channel_title,omitempty"`
-	CreatedAt             time.Time `json:"created_at"`
-}
-
 type OpenContentItem struct {
-	Name                  string `json:"name"`
+	Title                 string `json:"title"`
 	Url                   string `json:"url"`
 	ThumbnailUrl          string `json:"thumbnail_url"`
+	Description           string `json:"description,omitempty"`
+	VisibilityStatus      bool   `json:"visibility_status,omitempty"`
 	OpenContentProviderId uint   `json:"open_content_provider_id"`
 	ContentId             uint   `json:"content_id"`
-	Type                  string `json:"type"`
+	ContentType           string `json:"content_type"`
+	ProviderName          string `json:"provider_name,omitempty"`
+	ChannelTitle          string `json:"channel_title,omitempty"`
 }
 
 const (
