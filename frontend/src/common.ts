@@ -823,7 +823,10 @@ export interface ProgramTag {
 }
 
 export enum FilterLibraries {
-    'All Libraries' = 'all'
+    'All Libraries' = 'all',
+    'Newest' = 'created_at DESC',
+    'Oldest' = 'created_at ASC',
+    'Favorited' = 'most_favorited'
 }
 export enum LibraryAdminVisibility {
     'All Libraries' = 'all',

@@ -11,16 +11,16 @@ import (
 func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 	// seeding data for demo will only seed user activity/milestones/open-content activity for existing users
 	activity := models.Activity{}
-	if err := db.Model(&models.Activity{}).Where("external_id = 'SEEDED_ACTIVITY'").First(&activity).Error; err != nil {
+	if err := db.Model(&models.Activity{}).Where("external_id = 'SEEDED_ACTIVITY'").Order("created_at DESC").First(&activity).Error; err != nil {
 		return db.RunDemoSeed(facilityId)
 	}
-	if err := db.Raw("DELETE from activities where created_at > ?", activity.CreatedAt).Error; err != nil {
+	if err := db.Raw("DELETE from activities WHERE created_at > ?", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "activities")
 	}
-	if err := db.Raw("DELETE from open_content_activities where request_ts > ?", activity.CreatedAt).Error; err != nil {
+	if err := db.Raw("DELETE from open_content_activities WHERE request_ts > ?", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "open_content_activities")
 	}
-	if err := db.Raw("DELETE from milestones where created_at > ?", activity.CreatedAt).Error; err != nil {
+	if err := db.Raw("DELETE from milestones WHERE created_at > ?", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "milestones")
 	}
 	return db.RunDemoSeed(facilityId)
@@ -51,7 +51,7 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 	}
 	sixMonthsAgo := time.Now().AddDate(0, 0, -180)
 	for _, user := range users {
-		// seed user activity for two weeks for each user
+		// seed user activity for six months for each user
 		for _, course := range courses {
 			courseTotalTime := int64(0)
 			for i := 0; i < 180; i++ {
@@ -62,12 +62,11 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 				} else {
 					externalID = uuid.NewString()
 				}
-				activity := models.Activity{CreatedAt: sixMonthsAgo.AddDate(0, 0, i).Add(time.Duration(i) * time.Minute), UserID: user.ID, CourseID: course.ID, ExternalID: externalID, Type: models.ContentInteraction, TotalTime: courseTotalTime, TimeDelta: randTime}
-				courseTotalTime += randTime
-				if err := db.Create(&activity).Error; err != nil {
+				if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", user.ID, course.ID, models.ContentInteraction, courseTotalTime, externalID).Error; err != nil {
 					continue
 				}
-				if i%5 == 0 {
+				courseTotalTime += randTime
+				if i%rand.Intn(30)+1 == 0 {
 					milestone := models.Milestone{UserID: user.ID, CourseID: course.ID, ExternalID: uuid.NewString(), Type: models.AssignmentSubmission, IsCompleted: false}
 					if err := db.Create(&milestone).Error; err != nil {
 						continue
