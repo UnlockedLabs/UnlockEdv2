@@ -52,7 +52,9 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 	sixMonthsAgo := time.Now().AddDate(0, 0, -180)
 	for _, user := range users {
 		// seed user activity for six months for each user
+		mpu := 0 // milestones per user
 		for _, course := range courses {
+			mpu = 0
 			courseTotalTime := int64(0)
 			for i := 0; i < 180; i++ {
 				randTime := rand.Int63n(500)
@@ -66,17 +68,21 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 					continue
 				}
 				courseTotalTime += randTime
-				if i%rand.Intn(30)+1 == 0 {
+				if i%(rand.Intn(30)+1) == 0 {
+					if course.TotalProgressMilestones >= uint(mpu) {
+						continue
+					}
 					milestone := models.Milestone{UserID: user.ID, CourseID: course.ID, ExternalID: uuid.NewString(), Type: models.AssignmentSubmission, IsCompleted: false}
 					if err := db.Create(&milestone).Error; err != nil {
 						continue
 					}
+					mpu++
 				}
 			}
 		}
 		for i := 0; i < 180; i++ {
 			for _, library := range libraries {
-				if i%6 == 0 {
+				if i%(rand.Intn(8)+1) == 0 {
 					activity := models.OpenContentActivity{UserID: user.ID, RequestTS: sixMonthsAgo.AddDate(0, 0, i).Add((time.Duration(i)) * time.Minute), ContentID: library.ID, OpenContentProviderID: library.OpenContentProviderID, OpenContentUrlID: uint(rand.Intn(4) + 1), FacilityID: facilityId}
 					if err := db.Create(&activity).Error; err != nil {
 						continue

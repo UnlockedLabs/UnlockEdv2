@@ -5,7 +5,6 @@ import {
     ResponsiveContainer,
     Tooltip,
     XAxis,
-    XAxisProps,
     YAxis
 } from 'recharts';
 import { ThemeContext } from '@/Context/ThemeContext';
@@ -53,27 +52,32 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
         'Sat',
         'Today'
     ];
-    const XAxisTick = (props: XAxisProps) => {
-        const { x, y, dataKey } = props;
-        if (dataKey == 'date') {
-            let day = new Date(dataKey).getDay() + 1;
-            if (new Date().getDay() == day) day = 7;
-            return (
-                <g transform={`translate(${x},${y})`}>
-                    <text
-                        x={10}
-                        y={0}
-                        dy={16}
-                        textAnchor="end"
-                        fill="#808080"
-                        transform="rotate(-35)"
-                        style={{ fontSize: 12 }}
-                    >
-                        {weekdays[day]}
-                    </text>
-                </g>
-            );
-        }
+    // yes, ik it's stupid but it works: don't ask me why
+    // eslint-disable-next-line
+    const XAxisTick = (props: any) => {
+        // eslint-disable-next-line
+        const { x, y, payload } = props;
+        // eslint-disable-next-line
+        const date = payload.value.toString() ?? '';
+        // eslint-disable-next-line
+        const day = new Date(date).getDay();
+        const isToday = new Date().getDay() === day;
+
+        return (
+            <g transform={`translate(${x},${y})`}>
+                <text
+                    x={10}
+                    y={0}
+                    dy={16}
+                    textAnchor="end"
+                    fill="#808080"
+                    transform="rotate(-35)"
+                    style={{ fontSize: 12 }}
+                >
+                    {isToday ? 'Today' : weekdays[day]}
+                </text>
+            </g>
+        );
     };
     return (
         <ResponsiveContainer>
