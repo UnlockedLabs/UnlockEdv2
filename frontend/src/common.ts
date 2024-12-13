@@ -55,7 +55,7 @@ export interface Video {
     title: string;
     description: string;
     channel_title: string;
-    youtube_id: string;
+    external_id: string;
     visibility_status: boolean;
     thumbnail_url: string;
     open_content_provider_id: number;

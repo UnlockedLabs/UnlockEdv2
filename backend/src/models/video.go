@@ -7,7 +7,7 @@ import (
 
 type Video struct {
 	DatabaseFields
-	YoutubeID             string            `json:"youtube_id" gorm:"unique"`
+	ExternalID            string            `json:"external_id" gorm:"unique"`
 	Url                   string            `json:"url" gorm:"unique"`
 	Title                 string            `json:"title" gorm:"size:255"`
 	Availability          VideoAvailability `json:"availability" gorm:"type:video_availability"`
@@ -24,10 +24,10 @@ type Video struct {
 }
 
 func (vid *Video) GetS3KeyMp4() string {
-	return fmt.Sprintf("videos/%s.mp4", vid.YoutubeID)
+	return fmt.Sprintf("videos/%s.mp4", vid.ExternalID)
 }
 func (vid *Video) GetS3KeyJson() string {
-	return fmt.Sprintf("videos/%s.json", vid.YoutubeID)
+	return fmt.Sprintf("videos/%s.json", vid.ExternalID)
 }
 
 type VideoFavorite struct {

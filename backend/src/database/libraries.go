@@ -27,7 +27,7 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
 
 	if search != "" {
 		search = "%" + strings.ToLower(search) + "%"
-		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ?", search, search)
+		tx = tx.Where("LOWER(title) LIKE ? OR LOWER(description) LIKE ?", search, search)
 	}
 
 	if err := tx.Count(&total).Error; err != nil {

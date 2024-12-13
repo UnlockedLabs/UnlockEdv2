@@ -105,35 +105,35 @@ func seedTestData(db *gorm.DB) {
 		{
 			OpenContentProviderID: kiwix.ID,
 			ExternalID:            models.StringPtr("urn:uuid:67440563-a62b-fabe-415c-4c3ee4546f78"),
-			Name:                  "TED ted connects",
+			Title:                 "TED ted connects",
 			Language:              models.StringPtr("eng,spa,ara"),
 			Description:           models.StringPtr("A collection of TED videos about ted connects"),
-			Path:                  "/content/ted_mul_ted-connects_2024-08",
+			Url:                   "/content/ted_mul_ted-connects_2024-08",
 			ThumbnailUrl:          models.StringPtr("/catalog/v2/illustration/67440563-a62b-fabe-415c-4c3ee4546f78/?size=48"),
 			VisibilityStatus:      true,
 		},
 		{
 			OpenContentProviderID: kiwix.ID,
 			ExternalID:            models.StringPtr("urn:uuid:84812c13-fa65-feb7-c206-4f22cc2e0f9a"),
-			Name:                  "Python Documentation",
+			Title:                 "Python Documentation",
 			Language:              models.StringPtr("eng"),
 			Description:           models.StringPtr("All documentation for Python"),
-			Path:                  "/content/docs.python.org_en_2024-09",
+			Url:                   "/content/docs.python.org_en_2024-09",
 			ThumbnailUrl:          models.StringPtr("/catalog/v2/illustration/84812c13-fa65-feb7-c206-4f22cc2e0f9a/?size=48"),
 			VisibilityStatus:      true,
 		},
 		{
 			OpenContentProviderID: kiwix.ID,
 			ExternalID:            models.StringPtr("urn:uuid:19e6fe12-09a9-0a38-5be4-71c0eba0a72d"),
-			Name:                  "Finiki",
+			Title:                 "Finiki",
 			Language:              models.StringPtr("eng"),
 			Description:           models.StringPtr("The Canadian financial wiki"),
-			Path:                  "/content/finiki_en_all_maxi_2024-06",
+			Url:                   "/content/finiki_en_all_maxi_2024-06",
 			ThumbnailUrl:          models.StringPtr("/catalog/v2/illustration/19e6fe12-09a9-0a38-5be4-71c0eba0a72d/?size=48"),
 			VisibilityStatus:      true,
 		}}
 	for idx := range kiwixLibraries {
-		log.Printf("Creating library %s", kiwixLibraries[idx].Name)
+		log.Printf("Creating library %s", kiwixLibraries[idx].Title)
 		if err := db.Create(&kiwixLibraries[idx]).Error; err != nil {
 			log.Printf("Failed to create library: %v", err)
 		}

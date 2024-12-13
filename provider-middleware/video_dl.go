@@ -129,8 +129,8 @@ func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 				if ytId == "" {
 					return
 				}
-				if yt.db.WithContext(ctx).Find(&models.Video{}, "youtube_id = ?", ytId).RowsAffected > 0 {
-					logger().Infof("video with youtube_id %v already exists", ytId)
+				if yt.db.WithContext(ctx).Find(&models.Video{}, "external_id = ?", ytId).RowsAffected > 0 {
+					logger().Infof("video with external_id %v already exists", ytId)
 					return
 				}
 				obj, err := yt.s3Svc.GetObject(ctx, &s3.GetObjectInput{
@@ -399,7 +399,7 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 		Title:                 result.Info.Title,
 		Description:           stripUrlsFromDescription(result.Info.Description),
 		ChannelTitle:          &result.Info.Channel,
-		YoutubeID:             result.Info.ID,
+		ExternalID:            result.Info.ID,
 		VisibilityStatus:      false,
 		Url:                   vidUrl,
 		ThumbnailUrl:          thumbnail,
