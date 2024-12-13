@@ -91,13 +91,13 @@ func seedTestData(db *gorm.DB) {
 		}
 	}
 	kiwix := models.OpenContentProvider{
-		BaseUrl:          "https://library.kiwix.org",
-		Name:             models.Kiwix,
-		Thumbnail:        "https://images.fineartamerica.com/images/artworkimages/mediumlarge/3/llamas-wearing-party-hats-in-a-circle-looking-down-john-daniels.jpg",
+		Url:              "https://library.kiwix.org",
+		Title:            models.Kiwix,
+		ThumbnailUrl:     "https://images.fineartamerica.com/images/artworkimages/mediumlarge/3/llamas-wearing-party-hats-in-a-circle-looking-down-john-daniels.jpg",
 		CurrentlyEnabled: true,
 		Description:      "Kiwix open content provider",
 	}
-	log.Printf("Creating Open Content Provider %s", kiwix.BaseUrl)
+	log.Printf("Creating Open Content Provider %s", kiwix.Url)
 	if err := db.Create(&kiwix).Error; err != nil {
 		log.Printf("Failed to create open content provider: %v", err)
 	}

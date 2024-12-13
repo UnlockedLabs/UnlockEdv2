@@ -180,8 +180,8 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			log.Fatalf("Failed to create left menu links: %v", err)
 		}
-		openContent := []models.OpenContentProvider{{Name: models.Kiwix, BaseUrl: models.KiwixLibraryUrl, CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix},
-			{Name: models.Youtube, BaseUrl: models.YoutubeApi, CurrentlyEnabled: true, Thumbnail: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
+		openContent := []models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+			{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
 		for idx := range openContent {
 			if err := db.Create(&openContent[idx]).Error; err != nil {
 				log.Fatalf("Failed to create kiwix open content provider: %v", err)
@@ -323,8 +323,8 @@ func (db *DB) SeedTestData() {
 		log.Fatalf("Failed to get users from db")
 		return
 	}
-	openContent := []models.OpenContentProvider{{Name: models.Kiwix, BaseUrl: models.KiwixLibraryUrl, CurrentlyEnabled: true, Thumbnail: models.KiwixThumbnailURL, Description: models.Kiwix},
-		{Name: models.Youtube, BaseUrl: models.YoutubeApi, CurrentlyEnabled: true, Thumbnail: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
+	openContent := []models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
 	for idx := range openContent {
 		if err := db.Create(&openContent[idx]).Error; err != nil {
 			log.Fatalf("Failed to create kiwix open content provider: %v", err)
@@ -347,11 +347,11 @@ func (db *DB) SeedTestData() {
 		log.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 	var kwixID uint //get id for kwix
-	if db.Model(&models.OpenContentProvider{}).Select("id").Where("name = ?", models.Kiwix).First(&kwixID).RowsAffected == 0 {
+	if db.Model(&models.OpenContentProvider{}).Select("id").Where("title = ?", models.Kiwix).First(&kwixID).RowsAffected == 0 {
 		log.Fatalf("Failed to get %s open_content_provider: %v", models.Kiwix, err)
 	}
 	var youtubeID uint
-	if db.Model(&models.OpenContentProvider{}).Select("id").Where("name = ?", models.Youtube).First(&youtubeID).RowsAffected == 0 {
+	if db.Model(&models.OpenContentProvider{}).Select("id").Where("title = ?", models.Youtube).First(&youtubeID).RowsAffected == 0 {
 		log.Fatalf("Failed to get %s open_content_provider: %v", models.Kiwix, err)
 	}
 	var url models.OpenContentUrl

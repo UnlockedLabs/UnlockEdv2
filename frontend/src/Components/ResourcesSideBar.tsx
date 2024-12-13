@@ -9,7 +9,7 @@ export default function ResourcesSideBar() {
         resources: HelpfulLink[];
     };
     const getUrl = (prov: OpenContentProvider): string => {
-        switch (prov.name.toLowerCase()) {
+        switch (prov.title.toLowerCase()) {
             case 'kiwix':
                 return '/knowledge-center/libraries';
             case 'youtube':
@@ -25,10 +25,10 @@ export default function ResourcesSideBar() {
                     return (
                         <StaticContentCard
                             key={provider.id}
-                            title={provider.name}
+                            title={provider.title}
                             description={provider.description ?? ''}
                             imgSrc={provider.thumbnail_url ?? ''}
-                            altText={provider.name}
+                            altText={provider.title}
                             linkUrl={getUrl(provider)}
                             linkText={`Explore Content`}
                         />

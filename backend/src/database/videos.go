@@ -14,7 +14,7 @@ func (db *DB) GetVideoByID(id int) (*models.Video, error) {
 
 func (db *DB) GetVideoProvider() (*models.OpenContentProvider, error) {
 	var provider models.OpenContentProvider
-	if err := db.First(&provider, "name = ?", models.Youtube).Error; err != nil {
+	if err := db.First(&provider, "title = ?", models.Youtube).Error; err != nil {
 		return nil, newNotFoundDBError(err, "open_content_providers")
 	}
 	return &provider, nil

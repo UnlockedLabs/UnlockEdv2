@@ -10,9 +10,9 @@ import (
 
 type OpenContentProvider struct {
 	DatabaseFields
-	Name             string `gorm:"size:255"  json:"name"`
-	BaseUrl          string `gorm:"size:255;not null" json:"base_url"`
-	Thumbnail        string `json:"thumbnail_url"`
+	Title            string `gorm:"size:255"  json:"title"`
+	Url              string `gorm:"size:255;not null" json:"url"`
+	ThumbnailUrl     string `json:"thumbnail_url"`
 	CurrentlyEnabled bool   `json:"currently_enabled"`
 	Description      string `json:"description"`
 
@@ -56,15 +56,6 @@ type OpenContentFavorite struct {
 	CreatedAt             time.Time `json:"created_at"`
 }
 
-type OpenContentParams struct {
-	UserID                uint   `json:"user_id"`
-	ContentID             uint   `json:"content_id"`
-	OpenContentProviderID uint   `json:"open_content_provider_id"`
-	Name                  string `json:"name"`
-	ContentUrl            string `json:"content_url"`
-	FacilityID            uint   `json:"facility_id"`
-}
-
 type OpenContentItem struct {
 	Name                  string `json:"name"`
 	Url                   string `json:"url"`
@@ -92,11 +83,11 @@ const (
 )
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
-	if cp.Name == Youtube && cp.BaseUrl == "" {
-		cp.BaseUrl = YoutubeApi
+	if cp.Title == Youtube && cp.Url == "" {
+		cp.Url = YoutubeApi
 	}
-	if cp.BaseUrl != "" && !strings.HasPrefix(cp.BaseUrl, "http") {
-		cp.BaseUrl = fmt.Sprintf("https://%s", cp.BaseUrl)
+	if cp.Url != "" && !strings.HasPrefix(cp.Url, "http") {
+		cp.Url = fmt.Sprintf("https://%s", cp.Url)
 	}
 	return nil
 }

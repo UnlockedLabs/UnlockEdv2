@@ -43,8 +43,8 @@ export const programRoutes = ['programs', 'program-management'];
 
 export interface OpenContentProvider {
     id: number;
-    name: string;
-    base_url: string;
+    title: string;
+    url: string;
     thumbnail_url: string | null;
     currently_enabled: boolean;
     description: string | null;

@@ -92,7 +92,7 @@ func (db *DB) GetLinkFromId(id uint) (*models.HelpfulLink, error) {
 
 func (db *DB) GetHelpfulLinkOpenContentProviderId() (uint, error) {
 	var provider models.OpenContentProvider
-	if err := db.Model(&models.OpenContentProvider{}).Where("name = ?", "HelpfulLinks").First(&provider).Error; err != nil {
+	if err := db.Model(&models.OpenContentProvider{}).Where("title = ?", "HelpfulLinks").First(&provider).Error; err != nil {
 		return 0, newGetRecordsDBError(err, "open_content_providers")
 	}
 	return provider.ID, nil
