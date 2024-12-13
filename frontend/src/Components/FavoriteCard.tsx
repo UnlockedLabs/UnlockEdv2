@@ -22,7 +22,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
     const { toaster } = useToast();
 
     const handleCardClick = () => {
-        if (favorite.visibility_status) {
+        if (!favorite.visibility_status) {
             return;
         }
         if (favorite.content_type === 'video') {
@@ -50,11 +50,13 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
         <div
             className={`card  p-4 space-y-2 ${
                 favorite.visibility_status
-                    ? 'bg-grey-2 cursor-not-allowed'
-                    : 'bg-inner-background cursor-pointer'
+                    ? 'bg-inner-background cursor-pointer'
+                    : 'bg-grey-2 cursor-not-allowed'
             } tooltip `}
-            data-tip={favorite.visibility_status ? 'Unavailable Content' : ''}
-            onClick={favorite.visibility_status ? undefined : handleCardClick}
+            {...(!favorite.visibility_status && {
+                'data-tip': 'Unavailable Content'
+            })}
+            onClick={favorite.visibility_status ? handleCardClick : undefined}
         >
             {!isAdminInStudentView && (
                 <div
