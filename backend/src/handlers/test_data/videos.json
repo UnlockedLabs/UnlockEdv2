@@ -1,6 +1,6 @@
 [
 	{
-		"youtube_id":"PL0vfts4VzfNjdPuyk9SJDIvpsOjNgU1bs",
+		"external_id":"PL0vfts4VzfNjdPuyk9SJDIvpsOjNgU1bs",
 		"url":"https:\/\/www.youtube.com\/watch?v=ZzI9JE0i6Lc&list=PL0vfts4VzfNjdPuyk9SJDIvpsOjNgU1bs",
 		"title":"For the Haters",
 		"availability":"processing",
@@ -11,7 +11,7 @@
 		"visibility_status":true
 	},
 	{
-		"youtube_id":"lkIFF4maKMU",
+		"external_id":"lkIFF4maKMU",
 		"url":"https:\/\/www.youtube.com\/watch?v=lkIFF4maKMU",
 		"title":"100+ JavaScript Concepts you Need to Know",
 		"availability":"available",
@@ -22,7 +22,7 @@
 		"visibility_status":true
 	},
 	{
-		"youtube_id":"NCLBok_C9Hg",
+		"external_id":"NCLBok_C9Hg",
 		"url":"https:\/\/www.youtube.com\/watch?v=NCLBok_C9Hg",
 		"title":"Silly Linux mistake exposes a terabyte of secret Pok\u00E9mon data",
 		"availability":"available",
@@ -33,7 +33,7 @@
 		"visibility_status":true
 	},
 	{
-		"youtube_id":"PL0vfts4VzfNjQOM9VClyL5R0LeuTxlAR3",
+		"external_id":"PL0vfts4VzfNjQOM9VClyL5R0LeuTxlAR3",
 		"url":"https:\/\/www.youtube.com\/watch?v=zDNaUi2cjv4&list=PL0vfts4VzfNjQOM9VClyL5R0LeuTxlAR3",
 		"title":"CS101",
 		"availability":"has_error",
@@ -44,7 +44,7 @@
 		"visibility_status":false
 	},
 	{
-		"youtube_id":"IELMSD2kdmk",
+		"external_id":"IELMSD2kdmk",
 		"url":"https:\/\/www.youtube.com\/watch?v=IELMSD2kdmk",
 		"title":"Apache Spark in 100 Seconds",
 		"availability":"available",
@@ -55,7 +55,7 @@
 		"visibility_status":false
 	},
 	{
-		"youtube_id":"ky5ZB-mqZKM",
+		"external_id":"ky5ZB-mqZKM",
 		"url":"https:\/\/www.youtube.com\/watch?v=ky5ZB-mqZKM",
 		"title":"AI influencers are getting filthy rich... let's build one",
 		"availability":"available",
@@ -66,7 +66,7 @@
 		"visibility_status":false
 	},
 	{
-		"youtube_id":"PL0vfts4VzfNiP4xgrtnSUbK99iXLINc9m",
+		"external_id":"PL0vfts4VzfNiP4xgrtnSUbK99iXLINc9m",
 		"url":"https:\/\/www.youtube.com\/watch?v=mAsM9c2sGjA&list=PL0vfts4VzfNiP4xgrtnSUbK99iXLINc9m",
 		"title":"First Look",
 		"availability":"processing",
@@ -77,7 +77,7 @@
 		"visibility_status":false
 	},
 	{
-		"youtube_id":"PL0vfts4VzfNjurgyRawm_e0RevgP7g1Ao",
+		"external_id":"PL0vfts4VzfNjurgyRawm_e0RevgP7g1Ao",
 		"url":"https:\/\/www.youtube.com\/watch?v=meTpMP0J5E8&list=PL0vfts4VzfNjurgyRawm_e0RevgP7g1Ao",
 		"title":"Web3",
 		"availability":"processing",

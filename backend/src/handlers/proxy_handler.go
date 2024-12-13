@@ -87,7 +87,7 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 }
 
 func (srv *Server) handleRedirectVideosLocal(w http.ResponseWriter, r *http.Request, video *models.Video) {
-	http.Redirect(w, r, fmt.Sprintf("/videos/%s.mp4", video.YoutubeID), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, fmt.Sprintf("/videos/%s.mp4", video.ExternalID), http.StatusTemporaryRedirect)
 }
 
 func (srv *Server) handleRedirectVideosS3(w http.ResponseWriter, r *http.Request) {

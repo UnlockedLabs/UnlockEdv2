@@ -95,8 +95,8 @@ func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, 
 	if err := db.WithContext(ctx).
 		Where(&models.Library{ExternalID: models.StringPtr(entry.ID)}).
 		Assign(models.Library{
-			Path:         library.Path,
-			Name:         library.Name,
+			Url:          library.Url,
+			Title:        library.Title,
 			Description:  library.Description,
 			Language:     library.Language,
 			ThumbnailUrl: library.ThumbnailUrl,

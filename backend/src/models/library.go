@@ -4,10 +4,10 @@ type Library struct {
 	DatabaseFields
 	OpenContentProviderID uint    `gorm:"not null" json:"open_content_provider_id"`
 	ExternalID            *string `json:"external_id"`
-	Name                  string  `gorm:"size:255;not null" json:"title"`
+	Title                 string  `gorm:"size:255;not null" json:"title"`
 	Language              *string `gorm:"size:255" json:"language"`
 	Description           *string `json:"description"`
-	Path                  string  `gorm:"not null" json:"url"`
+	Url                   string  `gorm:"not null" json:"url"`
 	ThumbnailUrl          *string `json:"thumbnail_url"`
 	VisibilityStatus      bool    `gorm:"default:false;not null" json:"visibility_status"`
 
@@ -20,7 +20,7 @@ func (Library) TableName() string { return "libraries" }
 func (lib *Library) IntoProxyPO() *LibraryProxyPO {
 	proxyParams := LibraryProxyPO{
 		ID:                    lib.ID,
-		Path:                  lib.Path,
+		Path:                  lib.Url,
 		BaseUrl:               lib.OpenContentProvider.Url,
 		OpenContentProviderID: lib.OpenContentProvider.ID,
 		VisibilityStatus:      lib.VisibilityStatus,

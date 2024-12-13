@@ -59,10 +59,10 @@ func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Librar
 	return &models.Library{
 		OpenContentProviderID: providerId,
 		ExternalID:            models.StringPtr(entry.ID),
-		Name:                  entry.Title,
+		Title:                 entry.Title,
 		Language:              models.StringPtr(entry.Language),
 		Description:           models.StringPtr(entry.Summary),
-		Path:                  url,
+		Url:                   url,
 		ThumbnailUrl:          models.StringPtr(thumbnailURL),
 		VisibilityStatus:      false,
 	}
