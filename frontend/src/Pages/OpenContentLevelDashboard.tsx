@@ -1,6 +1,5 @@
 import {
     Library,
-    OpenContentFavorite,
     OpenContentItem,
     UserRole,
     ServerResponseOne,
@@ -27,7 +26,7 @@ export default function StudentLayer1() {
     } = useLoaderData() as {
         topUserContent: OpenContentItem[];
         topFacilityContent: OpenContentItem[];
-        favorites: OpenContentFavorite[];
+        favorites: OpenContentItem[];
         featured: Library[];
         helpfulLinks: HelpfulLink[];
     };
@@ -131,7 +130,7 @@ export default function StudentLayer1() {
                 <h2>Favorites</h2>
                 <div className="space-y-3 w-full">
                     {favorites ? (
-                        favorites.map((favorite: OpenContentFavorite) => {
+                        favorites.map((favorite: OpenContentItem) => {
                             return (
                                 <OpenContentCard
                                     key={favorite.content_id}

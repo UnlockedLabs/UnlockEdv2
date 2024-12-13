@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import { OpenContentFavorite, ServerResponseMany } from '@/common';
+import { OpenContentItem, ServerResponseMany } from '@/common';
 import Pagination from '@/Components/Pagination';
 import { AxiosError } from 'axios';
 import FavoriteCard from '@/Components/FavoriteCard';
@@ -12,7 +12,7 @@ export default function FavoritesPage() {
     const [pageQuery, setPageQuery] = useState(1);
 
     const { data, error, mutate, isLoading } = useSWR<
-        ServerResponseMany<OpenContentFavorite>,
+        ServerResponseMany<OpenContentItem>,
         AxiosError
     >(
         user
@@ -33,7 +33,7 @@ export default function FavoritesPage() {
             <div className="grid grid-cols-4 gap-6">
                 {favorites.map((favorite) => (
                     <FavoriteCard
-                        key={`${favorite.open_content_provider_id}-${favorite.content_id}-${favorite.name}`}
+                        key={`${favorite.open_content_provider_id}-${favorite.content_id}-${favorite.title}`}
                         pageQuery={pageQuery}
                         perPage={perPage}
                         favorite={favorite}

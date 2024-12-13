@@ -492,19 +492,7 @@ export interface ProviderPlatform {
         | ProviderPlatformState
         | ProviderPlatformType;
 }
-export interface OpenContentFavorite {
-    id: number;
-    content_id: number;
-    content_url: string;
-    name: string;
-    content_type: 'library' | 'video';
-    thumbnail_url: string;
-    description: string;
-    visibility_status: boolean;
-    open_content_provider_id: number;
-    channel_title?: string;
-    provider_name?: string;
-}
+
 export enum ProviderPlatformState {
     ENABLED = 'enabled',
     DISABLED = 'disabled',
@@ -852,10 +840,14 @@ export enum Timezones {
 }
 
 export interface OpenContentItem {
-    name: string;
+    title: string;
     url: string;
     thumbnail_url: string | null;
+    description?: string;
+    visibility_status?: boolean;
     open_content_provider_id: number;
     content_id: number;
-    type: string;
+    content_type: string;
+    provider_name?: string;
+    channel_title?: string;
 }

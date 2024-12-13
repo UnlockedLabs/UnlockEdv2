@@ -63,7 +63,7 @@ func (db *DB) ToggleLibraryFavorite(userId uint, facilityId *uint, libId int) er
 	return nil
 }
 
-func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.OpenContentFavorite, error) {
+func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.OpenContentItem, error) {
 	var total int64
 	countQuery := `
         SELECT COUNT(*) FROM (
@@ -88,13 +88,13 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
 		return 0, nil, err
 	}
 
-	favorites := make([]models.OpenContentFavorite, 0, perPage)
+	favorites := make([]models.OpenContentItem, 0, perPage)
 	favoritesQuery := `
         SELECT 
-            id,
             content_type,
             content_id,
-            name,
+            title,
+			url,
             thumbnail_url,
             description,
             visibility_status,
@@ -104,17 +104,17 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             created_at
         FROM (
             SELECT
-                fav.id AS id,
                 'library' AS content_type,
                 fav.library_id AS content_id,
-                lib.title AS title,
-                lib.thumbnail_url AS thumbnail_url,
-                ocp.description AS description,
-                NOT lib.visibility_status AS visibility_status,
-                lib.open_content_provider_id AS open_content_provider_id,
+                lib.title,
+				lib.url,
+                lib.thumbnail_url,
+                ocp.description,
+                NOT lib.visibility_status,
+                lib.open_content_provider_id,
                 ocp.title AS provider_name,
                 NULL AS channel_title,
-                fav.created_at AS created_at
+                fav.created_at
             FROM library_favorites fav
             JOIN libraries lib ON lib.id = fav.library_id
             JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
@@ -125,17 +125,17 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             UNION ALL
 
             SELECT
-                vf.id AS id,
                 'video' AS content_type,
                 vf.video_id AS content_id,
-                videos.title AS name,
-                videos.thumbnail_url AS thumbnail_url,
-                videos.description AS description,
-                NOT videos.visibility_status AS visibility_status,
-                videos.open_content_provider_id AS open_content_provider_id,
+                videos.title,
+				videos.url,
+                videos.thumbnail_url,
+                videos.description,
+                NOT videos.visibility_status,
+                videos.open_content_provider_id,
                 NULL AS provider_name,
-                videos.channel_title AS channel_title,
-                vf.created_at AS created_at
+                videos.channel_title,
+                vf.created_at
             FROM video_favorites vf
             JOIN videos ON vf.video_id = videos.id
             JOIN open_content_providers ocp ON ocp.id = videos.open_content_provider_id
@@ -156,13 +156,13 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
 func (db *DB) GetTopFacilityOpenContent(id int) ([]models.OpenContentItem, error) {
 	var content []models.OpenContentItem
 	if err := db.Raw("? UNION ? ORDER BY visits DESC LIMIT 5",
-		db.Select("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id as content_id, 'video' as type, count(v.id) as visits").
+		db.Select("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id as content_id, 'video' as content_type, count(v.id) as visits").
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN videos v ON v.id = oca.content_id AND v.open_content_provider_id = oca.open_content_provider_id AND v.visibility_status = TRUE").
 			Where("oca.facility_id = ?", id).
 			Group("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id").
 			Having("count(v.id) > 0"),
-		db.Select("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as type, count(l.id) as visits").
+		db.Select("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as content_type, count(l.id) as visits").
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id AND l.visibility_status = TRUE").
 			Where("oca.facility_id = ?", id).
@@ -178,13 +178,13 @@ func (db *DB) GetTopUserOpenContent(id int) ([]models.OpenContentItem, error) {
 	var content []models.OpenContentItem
 	log.Println(id)
 	if err := db.Raw("? UNION ? ORDER BY visits DESC LIMIT 5",
-		db.Select("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id as content_id, 'video' as type, count(v.id) as visits").
+		db.Select("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id as content_id, 'video' as content_type, count(v.id) as visits").
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN videos v ON v.id = oca.content_id AND v.open_content_provider_id = oca.open_content_provider_id AND v.visibility_status = TRUE").
 			Where("oca.user_id = ?", id).
 			Group("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id").
 			Having("count(v.id) > 0"),
-		db.Select("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as type, count(l.id) as visits").
+		db.Select("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as content_type, count(l.id) as visits").
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id AND l.visibility_status = TRUE").
 			Where("oca.user_id = ?", id).

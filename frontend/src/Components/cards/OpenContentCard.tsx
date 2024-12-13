@@ -1,17 +1,15 @@
-import { OpenContentFavorite, OpenContentItem } from '@/common';
+import { OpenContentItem } from '@/common';
 import { useNavigate } from 'react-router-dom';
 
 export default function OpenContentCardRow({
     content
 }: {
-    content: OpenContentItem | OpenContentFavorite;
+    content: OpenContentItem;
 }) {
     const navigate = useNavigate();
     function redirectToViewer() {
-        const isFavorite = !('url' in content);
-        const type = isFavorite ? content.content_type : content.type;
         const basePath =
-            type === 'video'
+            content.content_type === 'video'
                 ? `/viewer/videos/${content.content_id}`
                 : `/viewer/libraries/${content.content_id}`;
 
@@ -30,7 +28,7 @@ export default function OpenContentCardRow({
                 ></img>
             </div>
             <h3 className="my-auto w-full body font-normal">
-                {content.name ?? 'Untitled'}
+                {content.title ?? 'Untitled'}
             </h3>
         </div>
     );
