@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -181,4 +182,21 @@ func (db *DB) GetTopUserOpenContent(id int) ([]models.OpenContentItem, error) {
 		return nil, newGetRecordsDBError(err, "open_content_items")
 	}
 	return content, nil
+}
+
+func (db *DB) GetTopFacilityLibraries(id int, perPage int, days int) ([]models.OpenContentItem, error) {
+	libraries := make([]models.OpenContentItem, 0, perPage)
+	daysAgo := time.Now().AddDate(0, 0, -days)
+	if err := db.Table("open_content_activities oca").
+		Select("l.title, l.url, l.thumbnail_url as thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as type, count(l.id) as visits").
+		Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id").
+		Where("oca.facility_id = ? AND oca.request_ts >= ?", id, daysAgo).
+		Group("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id").
+		Order("visits DESC").
+		Limit(perPage).
+		Find(&libraries).
+		Error; err != nil {
+		return nil, newGetRecordsDBError(err, "libraries")
+	}
+	return libraries, nil
 }

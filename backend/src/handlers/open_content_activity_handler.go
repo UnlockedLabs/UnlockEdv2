@@ -11,6 +11,7 @@ func (srv *Server) registerOpenContentActivityRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/open-content/activity", srv.handleGetTopFacilityOpenContent, false, axx},
 		{"GET /api/open-content/activity/{id}", srv.handleGetTopUserOpenContent, false, axx},
+		{"GET /api/libraries/activity", srv.handleGetTopFacilityLibraries, false, axx},
 	}
 }
 
@@ -33,4 +34,18 @@ func (srv *Server) handleGetTopUserOpenContent(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, topOpenContent)
+}
+
+func (srv *Server) handleGetTopFacilityLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facilityId := srv.getFacilityID(r)
+	_, perPage := srv.getPaginationInfo(r)
+	days, err := strconv.Atoi(r.URL.Query().Get("days"))
+	if err != nil {
+		days = 7
+	}
+	topLibraries, err := srv.Db.GetTopFacilityLibraries(int(facilityId), perPage, days)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, topLibraries)
 }

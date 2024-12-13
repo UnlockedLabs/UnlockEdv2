@@ -831,9 +831,18 @@ export enum Timezones {
     'america/phoenix' = 'America/Phoenix'
 }
 
+export enum FilterPastTime {
+    'Past 7 days' = '7',
+    'Past 30 days' = '30',
+    'Past 90 days' = '90',
+    'Past 6 months' = '182',
+    'Past year' = '365'
+}
+
 export interface OpenContentItem {
     title: string;
     url: string;
+    external_id: string | null;
     thumbnail_url: string | null;
     description?: string;
     visibility_status?: boolean;

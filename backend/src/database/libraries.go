@@ -12,7 +12,7 @@ type LibraryResponse struct {
 	IsFavorited bool `json:"is_favorited"`
 }
 
-func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string) (int64, []LibraryResponse, error) {
+func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string, days int) (int64, []LibraryResponse, error) {
 	var total int64
 	libraries := make([]LibraryResponse, 0, perPage)
 
