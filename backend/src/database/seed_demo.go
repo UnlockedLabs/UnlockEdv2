@@ -49,27 +49,32 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 			return newCreateDBError(err, "open_content_urls")
 		}
 	}
-	sixMonthsAgo := time.Now().AddDate(0, 0, -180)
+	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
 	for _, user := range users {
-		// seed user activity for six months for each user
 		mpu := 0 // milestones per user
 		for _, course := range courses {
 			mpu = 0
+			startDate := course.StartDt
+			if startDate == nil {
+				startDate = &sixMonthsAgo
+			}
+			diffTillNow := (time.Since(*startDate).Hours() / 24)
 			courseTotalTime := int64(0)
-			for i := 0; i < 180; i++ {
-				randTime := rand.Int63n(500)
+			for i := 0; i < int(diffTillNow); i++ {
+				randTime := rand.Int63n(50)
 				externalID := ""
 				if i == 0 {
 					externalID = "SEEDED_ACTIVITY"
 				} else {
 					externalID = uuid.NewString()
 				}
-				if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", user.ID, course.ID, models.ContentInteraction, courseTotalTime, externalID).Error; err != nil {
+				nDaysAgo := time.Now().AddDate(0, 0, -i)
+				if err := db.Exec("INSERT INTO activities (user_id, course_id, total_time, time_delta, type, created_at, external_id) values (?, ?, ?, ?, ?, ?, ?)", user.ID, course.ID, courseTotalTime, randTime, models.ContentInteraction, nDaysAgo, externalID).Error; err != nil {
 					continue
 				}
 				courseTotalTime += randTime
-				if i%(rand.Intn(30)+1) == 0 {
-					if course.TotalProgressMilestones >= uint(mpu) {
+				if i%(rand.Intn(8)+1) == 0 {
+					if course.TotalProgressMilestones <= uint(mpu+rand.Intn(3)) {
 						continue
 					}
 					milestone := models.Milestone{UserID: user.ID, CourseID: course.ID, ExternalID: uuid.NewString(), Type: models.AssignmentSubmission, IsCompleted: false}
