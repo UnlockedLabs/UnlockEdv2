@@ -57,7 +57,7 @@ func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, 
 			switch jobType {
 			case models.ScrapeKiwixJob:
 				job := models.CronJob{Name: string(jobType)}
-				if providers[idx].Name == models.Kiwix {
+				if providers[idx].Title == models.Kiwix {
 					task, err := jr.handleCreateOCProviderTask(&job, providers[idx].ID)
 					if err != nil {
 						log.Errorf("failed to create task: %v", err)
@@ -67,7 +67,7 @@ func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, 
 				}
 			case models.RetryVideoDownloadsJob, models.SyncVideoMetadataJob:
 				job := models.CronJob{Name: string(jobType)}
-				if providers[idx].Name == models.Youtube {
+				if providers[idx].Title == models.Youtube {
 					task, err := jr.handleCreateOCProviderTask(&job, providers[idx].ID)
 					if err != nil {
 						log.Errorf("failed to create task: %v", err)

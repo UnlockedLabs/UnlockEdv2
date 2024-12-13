@@ -50,7 +50,7 @@ func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body *map[st
 		svc = s3.NewFromConfig(cfg)
 	}
 	return &VideoService{
-		BaseUrl:               prov.BaseUrl,
+		BaseUrl:               prov.Url,
 		Client:                &http.Client{},
 		Body:                  body,
 		OpenContentProviderID: prov.ID,

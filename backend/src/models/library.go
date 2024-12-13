@@ -21,7 +21,7 @@ func (lib *Library) IntoProxyPO() *LibraryProxyPO {
 	proxyParams := LibraryProxyPO{
 		ID:                    lib.ID,
 		Path:                  lib.Path,
-		BaseUrl:               lib.OpenContentProvider.BaseUrl,
+		BaseUrl:               lib.OpenContentProvider.Url,
 		OpenContentProviderID: lib.OpenContentProvider.ID,
 		VisibilityStatus:      lib.VisibilityStatus,
 	}
