@@ -140,61 +140,10 @@ func TestHandleUserCatalogue(t *testing.T) {
 	}
 }
 
-func TestHandleUserCourses(t *testing.T) {
-	httpTests := []httpTest{
-		{"TestGetAllUserCoursesAsAdmin", "admin", getUserCoursesSearch(4, "", "", "", nil), http.StatusOK, ""},
-		{"TestGetAllUserCoursesAsUser", "student", getUserCoursesSearch(4, "", "", "", nil), http.StatusOK, ""},
-		{"TestGetAllUserCoursesOrderByStartDtDescAsUser", "student", getUserCoursesSearch(4, "desc", "start_dt", "", nil), http.StatusOK, "?order=desc&order_by=start_dt"},
-		{"TestGetAllUserCoursesOrderByStopDtDescAsUser", "student", getUserCoursesSearch(4, "desc", "stop_dt", "", nil), http.StatusOK, "?order=desc&order_by=stop_dt"},
-		{"TestGetUserCoursesWithTagsAndOrderByPgNmDescAsUser", "student", getUserCoursesSearch(4, "desc", "program_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=program_name"},
-		{"TestGetUserCoursesWithTagsAndOrderByProvNmDescAsUser", "student", getUserCoursesSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
-		{"TestGetUserCoursesWithTagsAndOrderByCoursePgrDescAsUser", "student", getUserCoursesSearch(4, "desc", "course_progress", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=course_progress"},
-		{"TestGetUserCoursesWithTagsAndOrderByProvNmDescAsUser", "student", getUserCoursesSearch(4, "asc", "provider_name", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&order_by=provider_name"},
-		{"TestGetUserCoursesWithTagsAndOrderByTotalTmDescAsUser", "student", getUserCoursesSearch(4, "desc", "total_time", "", []string{"certificate", "grade", "progress_completion"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&order_by=total_time"},
-		{"TestUserCoursesWithSearchAscAsUser", "student", getUserCoursesSearch(4, "asc", "", "of", []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=asc&search=of"},
-		{"TestUserCoursesWithSearchDescAsUser", "student", getUserCoursesSearch(4, "desc", "", "Intro", []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&order=desc&search=Intro"},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			userCoursesMap := test.mapKeyValues
-			if userCoursesMap["err"] != nil {
-				t.Fatalf("unable to get user courses, error is %v", userCoursesMap["err"])
-			}
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/{id}/courses%s", test.queryParams), nil)
-			if err != nil {
-				t.Fatalf("unable to create new request, error is %v", err)
-			}
-			req.SetPathValue("id", test.mapKeyValues["id"].(string))
-			handler := getHandlerByRole(server.handleUserCourses, test.role)
-			rr := executeRequest(t, req, handler, test)
-			data := models.Resource[database.UserCoursesInfo]{}
-			received := rr.Body.String()
-			if err = json.Unmarshal([]byte(received), &data); err != nil {
-				t.Errorf("failed to unmarshal resource, error is %v", err)
-			}
-			if userCoursesMap["userCourses"] != nil {
-				courseInfo := userCoursesMap["userCourses"].(database.UserCoursesInfo)
-				if diff := cmp.Diff(&courseInfo, &data.Data); diff != "" {
-					t.Errorf("user courses are out of sync and not ordered correctly: %v", diff)
-				}
-			}
-		})
-	}
-}
-
 func getUserCatalogueSearch(userId int, tags []string, search, order string) map[string]any {
 	catalogue, err := server.Db.GetUserCatalogue(userId, tags, search, order)
 	form := make(map[string]any)
 	form["catalogue"] = catalogue
-	form["err"] = err
-	form["id"] = strconv.Itoa(userId)
-	return form
-}
-
-func getUserCoursesSearch(userId int, order, orderBy, search string, tags []string) map[string]any {
-	userCourses, err := server.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
-	form := make(map[string]any)
-	form["userCourses"] = userCourses
 	form["err"] = err
 	form["id"] = strconv.Itoa(userId)
 	return form

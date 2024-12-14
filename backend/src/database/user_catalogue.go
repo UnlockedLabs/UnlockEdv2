@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 )
@@ -76,89 +77,123 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 	var courseInfo UserCoursesInfo
 	courses := []UserCourses{}
 	fieldMap := map[string]string{
-		"course_name":     "c.name",
-		"provider_name":   "pp.name",
+		"course_name":     "course_name",
+		"provider_name":   "provider_name",
 		"course_progress": "course_progress",
-		"total_time":      "total_time",
-		"start_dt":        "c.start_dt",
-		"end_dt":          "c.end_dt",
+		"start_dt":        "start_dt",
+		"end_dt":          "end_dt",
 	}
 	dbField, ok := fieldMap[orderBy]
 	if !ok {
-		dbField = "c.name"
+		dbField = "course_name"
 	}
 	orderStr := dbField + " " + validOrder(order)
-	tx := db.Table("courses c").
-		Select(`c.id, c.thumbnail_url,
-		c.name as course_name, pp.name as provider_name, c.external_url, c.start_dt, c.end_dt,
-		progress.course_progress,
-			sum(a.total_time) as total_time`).
-		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
-		Joins("JOIN milestones as m ON m.course_id = c.id and m.user_id = ?", userId).
-		Joins(`JOIN (Select cc.id,
-				CASE WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.course_id = cc.id AND o.user_id = ?) THEN 100
-					WHEN cc.total_progress_milestones = 0 THEN 0
-				ELSE
-				CASE WHEN (SELECT COUNT(m.id) * 100.0 / cc.total_progress_milestones
-						FROM milestones m
-						WHERE m.course_id = cc.id AND m.user_id = ?) = 100 THEN 99.999
-				ELSE (SELECT COUNT(m.id) * 100.0 / cc.total_progress_milestones
-					FROM milestones m
-					WHERE m.course_id = cc.id AND m.user_id = ?
-				) END
-				END as course_progress
-				from courses cc 
-				where cc.deleted_at IS NULL
-				) progress on progress.id = c.id`, userId, userId, userId).
-		Joins(`JOIN (select id, course_id, user_id, total_time, row_number() over (PARTITION BY course_id, user_id ORDER BY created_at DESC) AS RN 
-			from activities
-			) a on a.course_id = c.id
-			and a.user_id = m.user_id
-			and a.RN = 1`).
-		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = m.user_id").
-		Where("c.deleted_at IS NULL").
-		Where("pp.deleted_at IS NULL")
 
-	tx = tx.Order(orderStr)
-
-	if search != "" {
-		tx = tx.Where("LOWER(c.name) LIKE ?", "%"+search+"%")
-	}
-	for i, tag := range tags {
-		var query string
-		switch tag {
-		case "completed":
-			query = "o.type IS NOT NULL"
-		case "in_progress":
-			query = "o.type IS NULL"
+	var tagFilter string
+	if len(tags) > 0 {
+		tagConditions := []string{}
+		for _, tag := range tags {
+			switch tag {
+			case "completed":
+				tagConditions = append(tagConditions, "progress.course_progress = 100")
+			case "in_progress":
+				tagConditions = append(tagConditions, "progress.course_progress > 0 AND progress.course_progress < 100")
+			}
 		}
-		if i == 0 {
-			tx.Where(query)
-		} else {
-			tx.Or(query)
+		if len(tagConditions) > 0 {
+			tagFilter = "AND (" + strings.Join(tagConditions, " OR ") + ")"
 		}
 	}
-	tx.Group("c.id, c.name, c.thumbnail_url, pp.name, c.external_url, progress.course_progress")
-	err := tx.Scan(&courses).Error
+	query := `
+        WITH progress AS (
+            SELECT 
+                m.course_id,
+                m.user_id,
+                COUNT(m.id) * 100.0 / cc.total_progress_milestones AS course_progress
+            FROM milestones m
+            JOIN courses cc ON m.course_id = cc.id
+            WHERE m.user_id = ? AND cc.deleted_at IS NULL
+            GROUP BY m.course_id, m.user_id, cc.total_progress_milestones
+        ),
+        filtered_courses AS (
+            SELECT 
+                c.id, 
+                c.thumbnail_url,
+                c.name AS course_name, 
+                pp.name AS provider_name, 
+                c.external_url, 
+                c.start_dt, 
+                c.end_dt,
+                COALESCE(progress.course_progress, 0) AS course_progress
+            FROM courses c
+            LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id
+            LEFT JOIN progress ON progress.course_id = c.id AND progress.user_id = ?
+            WHERE c.deleted_at IS NULL 
+            AND pp.deleted_at IS NULL 
+            AND LOWER(c.name) LIKE ?
+            ` + tagFilter + `
+        )
+        SELECT * FROM filtered_courses
+        ORDER BY ` + orderStr
+
+	searchTerm := "%" + strings.ToLower(search) + "%"
+	err := db.Raw(query, userId, userId, searchTerm).Scan(&courses).Error
 	if err != nil {
-		return courseInfo, NewDBError(err, "error getting user programs")
+		return courseInfo, NewDBError(err, "error getting user courses")
 	}
-	var (
-		totalTime     uint
-		numCompleted  int64
-		numInProgress int64
-	)
-	for _, course := range courses {
-		totalTime += course.TotalTime
+
+	courseIds := make([]uint, len(courses))
+	for i, course := range courses {
+		courseIds[i] = course.ID
+	}
+
+	activityQuery := `
+        SELECT 
+            a.course_id,
+            MAX(a.total_time) AS total_time
+        FROM activities a
+        WHERE a.user_id = ? AND a.course_id IN (?) AND a.deleted_at IS NULL
+        GROUP BY a.course_id;
+    `
+
+	var activityTimes []struct {
+		CourseID  uint
+		TotalTime uint
+	}
+
+	if err := db.Raw(activityQuery, userId, courseIds).Scan(&activityTimes).Error; err != nil {
+		return courseInfo, NewDBError(err, "error getting activity times")
+	}
+
+	activityMap := make(map[uint]uint)
+	for _, activity := range activityTimes {
+		activityMap[activity.CourseID] = activity.TotalTime
+	}
+
+	var totalTime uint
+	var numCompleted, numInProgress int64
+	for i, course := range courses {
+		if activityTime, exists := activityMap[course.ID]; exists {
+			courses[i].TotalTime = activityTime
+			totalTime += activityTime
+		}
 		if int(course.CourseProgress) == 100 {
 			numCompleted++
 		} else {
 			numInProgress++
 		}
 	}
+	// TODO: improve this whole function
+	if orderBy == "total_time" {
+		sort.Slice(courses, func(i, j int) bool {
+			return courses[i].TotalTime > courses[j].TotalTime
+		})
+	}
+
 	courseInfo.Completed = uint(numCompleted)
 	courseInfo.InProgress = uint(numInProgress)
 	courseInfo.TotalTime = totalTime
 	courseInfo.Courses = courses
+
 	return courseInfo, nil
 }
