@@ -197,6 +197,7 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 	if len(tags) > 0 {
 		tagsSplit = strings.Split(tags[0], ",")
 	}
+	// TODO: cache this response
 	userCourses, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tagsSplit)
 	if err != nil {
 		log.add("search", search)
