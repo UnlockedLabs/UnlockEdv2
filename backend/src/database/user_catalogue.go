@@ -108,7 +108,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
             SELECT 
                 m.course_id,
                 m.user_id,
-                COUNT(m.id) * 100.0 / cc.total_progress_milestones AS course_progress
+                COUNT(m.id) * 100.0 / NULLIF(cc.total_progress_milestones, 0) AS course_progress
             FROM milestones m
             JOIN courses cc ON m.course_id = cc.id
             WHERE m.user_id = ? AND cc.deleted_at IS NULL
