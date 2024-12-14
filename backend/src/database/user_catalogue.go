@@ -97,15 +97,14 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 			case "completed":
 				tagConditions = append(tagConditions, "progress.course_progress = 100")
 			case "in_progress":
-				tagConditions = append(tagConditions, "progress.course_progress > 0 AND progress.course_progress < 100")
+				tagConditions = append(tagConditions, "progress.course_progress < 100")
 			}
 		}
 		if len(tagConditions) > 0 {
 			tagFilter = "AND (" + strings.Join(tagConditions, " OR ") + ")"
 		}
 	}
-	query := `
-        WITH progress AS (
+	query := `WITH progress AS (
             SELECT 
                 m.course_id,
                 m.user_id,
@@ -127,7 +126,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
                 COALESCE(progress.course_progress, 0) AS course_progress
             FROM courses c
             LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id
-            LEFT JOIN progress ON progress.course_id = c.id AND progress.user_id = ?
+            JOIN progress ON progress.course_id = c.id AND progress.user_id = ?
             WHERE c.deleted_at IS NULL 
             AND pp.deleted_at IS NULL 
             AND LOWER(c.name) LIKE ?
