@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 ALTER TABLE public.open_content_providers
     RENAME COLUMN name TO title;
 ALTER TABLE public.open_content_providers
@@ -17,7 +16,6 @@ ALTER TABLE public.videos
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 ALTER TABLE public.open_content_providers
     RENAME COLUMN title TO name;
 ALTER TABLE public.open_content_providers
