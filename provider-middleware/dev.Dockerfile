@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o provider-service 
 
 FROM golang:$GOLANG_VERSION-alpine3.20 as final
 WORKDIR /app
-RUN go install github.com/air-verse/air@latest && \
+RUN go install github.com/air-verse/air@v1.61.0 && \
 	apk add --no-cache ca-certificates python3 py3-pip && \
 	pip install --break-system-packages requests brotli websockets certifi yt-dlp[default,curl-cffi]
 

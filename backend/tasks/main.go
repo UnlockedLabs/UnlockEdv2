@@ -79,6 +79,8 @@ func initLogging() {
 func getCronSchedule(task *models.RunnableTask, hour int) string {
 	if task.Provider != nil && task.Provider.Type == models.Brightspace {
 		return fmt.Sprintf("0 0 %d * * 4", hour)
+	} else if task.Job.Name == string(models.PutVideoMetadataJob) {
+		return models.EverySundayAt8PM
 	} else {
 		return task.Job.Schedule
 	}

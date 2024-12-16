@@ -36,6 +36,7 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
 		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
 		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
+		{models.PutVideoMetadataJob.PubName(), sh.handlePutVideoMetadata},
 	}
 	for _, sub := range subscriptions {
 		_, err := sh.nats.QueueSubscribe(sub.topic, "middleware", func(msg *nats.Msg) {
@@ -242,6 +243,7 @@ func (sh *ServiceHandler) handleManualRetryDownload(ctx context.Context, msg *na
 func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats.Msg) {
 	logger().Infof("Retrying failed videos")
 	contxt, cancel := context.WithTimeout(ctx, VIDEO_CANCEL_TIMEOUT)
+	success := true
 	defer cancel()
 	provider, body, err := sh.getContentProvider(msg)
 	if err != nil {
@@ -252,15 +254,16 @@ func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats
 	err = ytService.retryFailedVideos(contxt)
 	if err != nil {
 		logger().Errorf("error retrying failed videos: %v", err)
-		return
+		success = false
 	}
-	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), true)
+	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), success)
 }
 
 func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats.Msg) {
 	logger().Infof("Syncing video metadata")
 	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
 	defer cancel()
+	success := true
 	provider, body, err := sh.getContentProvider(msg)
 	if err != nil {
 		logger().Errorf("error fetching provider from msg parameters %v", err)
@@ -270,9 +273,28 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 	err = ytService.syncVideoMetadataFromS3(contxt)
 	if err != nil {
 		logger().Errorf("error syncing video metadata: %v", err)
+		success = false
+	}
+	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), success)
+}
+
+func (sh *ServiceHandler) handlePutVideoMetadata(ctx context.Context, msg *nats.Msg) {
+	logger().Infof("Putting video metadata")
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	success := true
+	provider, body, err := sh.getContentProvider(msg)
+	if err != nil {
+		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), true)
+	ytService := NewVideoService(provider, sh.db, &body)
+	err = ytService.putAllCurrentVideoMetadata(contxt)
+	if err != nil {
+		logger().Errorf("error putting video metadata: %v", err)
+		success = false
+	}
+	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), success)
 }
 
 func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {

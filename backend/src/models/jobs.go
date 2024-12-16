@@ -38,6 +38,8 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 				schedule = EveryThreeHours
 			}
 			cj.Schedule = schedule
+		case string(PutVideoMetadataJob):
+			cj.Schedule = EverySundayAt8PM
 		default:
 			cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
 		}
@@ -66,19 +68,20 @@ const (
 	GetCoursesJob    JobType = "get_courses"
 	GetActivityJob   JobType = "get_activity"
 
-	ScrapeKiwixJob         JobType = "scrape_kiwix"
-	RetryVideoDownloadsJob JobType = "retry_video_downloads"
-	RetryManualDownloadJob JobType = "retry_manual_download"
-	SyncVideoMetadataJob   JobType = "sync_video_metadata"
-	AddVideosJob           JobType = "add_videos"
-	EveryThreeHours        string  = "0 */3 * * *"
-
-	StatusPending JobStatus = "pending"
-	StatusRunning JobStatus = "running"
+	ScrapeKiwixJob         JobType   = "scrape_kiwix"
+	RetryVideoDownloadsJob JobType   = "retry_video_downloads"
+	RetryManualDownloadJob JobType   = "retry_manual_download"
+	SyncVideoMetadataJob   JobType   = "sync_video_metadata"
+	PutVideoMetadataJob    JobType   = "put_video_metadata"
+	AddVideosJob           JobType   = "add_videos"
+	EveryThreeHours        string    = "0 */3 * * *"
+	EverySundayAt8PM       string    = "0 20 * * 7"
+	StatusPending          JobStatus = "pending"
+	StatusRunning          JobStatus = "running"
 )
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
-var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
+var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob, PutVideoMetadataJob}
 
 func (jt JobType) PubName() string {
 	return fmt.Sprintf("tasks.%s", string(jt))
@@ -87,7 +90,7 @@ func (jt JobType) PubName() string {
 func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]interface{}, error) {
 	var skip bool
 	switch jt {
-	case RetryVideoDownloadsJob, SyncVideoMetadataJob, ScrapeKiwixJob:
+	case RetryVideoDownloadsJob, SyncVideoMetadataJob, PutVideoMetadataJob, ScrapeKiwixJob:
 		return map[string]interface{}{
 			"job_id":                   jobId,
 			"job_type":                 jt,
