@@ -12,11 +12,18 @@ import ULIComponent from '@/Components/ULIComponent';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
+import { useState, useEffect } from 'react';
 import API from '@/api/api';
 
 export default function StudentLayer1() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { mutate } = useSWR('', {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false
+    });
+    const [featuredLibraries, setFeaturedLibraries] = useState<Library[]>([]);
     const {
         topUserContent,
         topFacilityContent,
@@ -30,6 +37,9 @@ export default function StudentLayer1() {
         featured: Library[];
         helpfulLinks: HelpfulLink[];
     };
+    useEffect(() => {
+        setFeaturedLibraries(featured);
+    }, [featured]);
     const nav = isAdministrator(user)
         ? '/knowledge-center-management/libraries'
         : '/knowledge-center/libraries';
@@ -47,7 +57,29 @@ export default function StudentLayer1() {
             navigate(nav);
         }
     }
-
+    const updateFeaturedData = (libraryId: number, isFavorited: boolean) => {
+        const updatedFeatured = featuredLibraries.map((lib) => {
+            if (lib.id === libraryId) {
+                return {
+                    ...lib,
+                    favorites: isFavorited
+                        ? [
+                              {
+                                  id: libraryId,
+                                  image_url: lib.thumbnail_url,
+                                  language: lib.language,
+                                  name: lib.title,
+                                  open_content_provider_id:
+                                      lib.open_content_provider_id
+                              }
+                          ]
+                        : []
+                };
+            }
+            return lib;
+        }) as Library[];
+        setFeaturedLibraries(updatedFeatured);
+    };
     return (
         <div className="flex flex-row h-full">
             {/* main section */}
@@ -57,12 +89,23 @@ export default function StudentLayer1() {
                 </h1>
                 <h2>Featured Content</h2>
                 <div className="card card-row-padding grid grid-cols-3 gap-3">
-                    {featured.map((item: Library) => {
+                    {featuredLibraries.map((item: Library) => {
                         return (
                             <LibraryCard
                                 key={item.id}
                                 library={item}
                                 role={UserRole.Student}
+                                mutate={mutate}
+                                onFavoriteToggle={(libraryId, isFavorited) => {
+                                    void updateFeaturedData(
+                                        libraryId,
+                                        isFavorited
+                                    );
+                                    void mutate({
+                                        ...featured,
+                                        data: featuredLibraries
+                                    });
+                                }}
                             />
                         );
                     })}
