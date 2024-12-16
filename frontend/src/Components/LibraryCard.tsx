@@ -15,11 +15,13 @@ import { FlagIcon as FlagIconOutline } from '@heroicons/react/24/outline';
 export default function LibraryCard({
     library,
     mutate,
-    role
+    role,
+    onFavoriteToggle
 }: {
     library: Library;
     mutate?: KeyedMutator<ServerResponseMany<Library>>;
     role: UserRole;
+    onFavoriteToggle?: (libraryId: number, isFavorited: boolean) => void;
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
@@ -34,16 +36,17 @@ export default function LibraryCard({
 
     const handleToggleVisibility = async () => {
         if (!mutate) return;
-        const response = await API.put<null, object>(
+        const resp = await API.put<null, object>(
             `libraries/${library.id}/toggle`,
             {}
         );
-        if (response.success) {
-            toaster(response.message, ToastState.success);
+        if (resp.success) {
             await mutate();
-        } else {
-            toaster(response.message, ToastState.error);
         }
+        toaster(
+            resp.message,
+            resp.success ? ToastState.success : ToastState.error
+        );
     };
 
     async function toggleLibraryFavorite(e: MouseEvent) {
@@ -53,6 +56,11 @@ export default function LibraryCard({
             `libraries/${library.id}/favorite`,
             {}
         );
+        if (resp.success) {
+            const isFavorited = library.favorites.length === 0;
+            onFavoriteToggle?.(library.id, isFavorited);
+            await mutate();
+        }
         toaster(
             resp.message,
             resp.success ? ToastState.success : ToastState.error
@@ -60,11 +68,13 @@ export default function LibraryCard({
         void mutate();
     }
 
+    const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.favorite-toggle')) return;
+        navigate(`/viewer/libraries/${library.id}`);
+    };
     return (
-        <div
-            className="card cursor-pointer"
-            onClick={() => navigate(`/viewer/libraries/${library.id}`)}
-        >
+        <div className="card cursor-pointer" onClick={handleCardClick}>
             <div className="flex p-4 gap-2 border-b-2">
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img
@@ -76,7 +86,7 @@ export default function LibraryCard({
             </div>
 
             <div
-                className="absolute right-2 top-2 z-100"
+                className="absolute right-2 top-2 z-100 favorite-toggle"
                 onClick={(e) => void toggleLibraryFavorite(e)}
             >
                 {/* don't display the favorite toggle when admin is viewing in student view*/}
