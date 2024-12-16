@@ -2,12 +2,13 @@ root = "."
 tmp_dir = "bin"
 
 [build]
-cmd = "go build -o ./bin/main backend/cmd/main.go"
-bin = "bin/main"
-include_dir = ["backend"]
+cmd = "go build -o ./bin/main /app/backend/cmd/main.go"
+bin = "./bin/main"
+include_dir = ["./backend"]
 include_file = []
 exclude_file = []
-exclude_regex = ["_test\\.go"]
+exclude_ext = [".tsx", ".ts", ".json"]
+exclude_regex = ["_test\\.go", "frontend/.*", "provider-middleware/.*"]
 exclude_unchanged = true
 # Follow symlink for directories
 follow_symlink = true

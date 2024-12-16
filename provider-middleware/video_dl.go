@@ -96,6 +96,51 @@ func (yt *VideoService) uploadFileToS3(ctx context.Context, file *os.File, video
 	return nil
 }
 
+func (yt *VideoService) putAllCurrentVideoMetadata(ctx context.Context) error {
+	if yt.s3Svc == nil {
+		logger().Info("no s3 client found, skipping sync")
+		return nil
+	}
+	videos := make([]models.Video, 0, 25)
+	if err := yt.db.WithContext(ctx).Find(&videos).Error; err != nil {
+		logger().Errorf("error fetching videos: %v", err)
+		return err
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(len(videos))
+	for _, video := range videos {
+		go func(video models.Video) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				logger().Info("context cancelled, stopping putting video metadata")
+				return
+			default:
+				videoBytes, err := json.Marshal(video)
+				if err != nil {
+					logger().Errorf("error marshalling video: %v", err)
+				}
+				input := &s3.PutObjectInput{
+					Bucket: aws.String(yt.bucketName),
+					Body:   bytes.NewReader(videoBytes),
+					Key:    aws.String(video.GetS3KeyJson()),
+				}
+				resp, err := yt.s3Svc.PutObject(ctx, input)
+				if err != nil {
+					logger().Errorf("error putting object: %v", err)
+					return
+				}
+				if resp.ETag == nil {
+					logger().Error("etag is nil")
+					return
+				}
+				logger().Infof("successfully put object with etag: %s", *resp.ETag)
+			}
+		}(video)
+	}
+	return nil
+}
+
 func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 	if yt.s3Svc == nil {
 		logger().Info("no s3 client found, skipping sync")
@@ -117,6 +162,9 @@ func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 		}
 	}
 	wg := sync.WaitGroup{}
+	if len(jsonFiles) == 0 {
+		return nil
+	}
 	wg.Add(len(jsonFiles))
 	for _, key := range jsonFiles {
 		go func(key string) {
