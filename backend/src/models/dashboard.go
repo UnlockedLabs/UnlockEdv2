@@ -20,7 +20,7 @@ func (HelpfulLink) TableName() string {
 func (hl *HelpfulLink) BeforeCreate(tx *gorm.DB) error {
 	var id int
 	if hl.OpenContentProviderID == 0 {
-		if err := tx.Table("open_content_providers").Select("id").Where("name = ? ", HelpfulLinks).Scan(&id).Error; err != nil {
+		if err := tx.Table("open_content_providers").Select("id").Where("title = ? ", HelpfulLinks).Scan(&id).Error; err != nil {
 			return err
 		}
 		hl.OpenContentProviderID = uint(id)
