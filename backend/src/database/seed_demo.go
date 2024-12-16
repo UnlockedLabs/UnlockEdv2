@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 const seededActivity = "SEEDED_ACTIVITY"
@@ -13,17 +14,20 @@ const seededActivity = "SEEDED_ACTIVITY"
 func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 	// seeding data for demo will only seed user activity/milestones/open-content activity for existing users
 	activity := models.Activity{}
-	if err := db.Model(&models.Activity{}).Where("external_id = ?", seededActivity).Order("created_at DESC").First(&activity).Error; err != nil {
+	if err := db.Model(&models.Activity{}).Where("external_id = ?", seededActivity).Order("created_at").First(&activity).Error; err != nil {
 		return db.RunDemoSeed(facilityId)
 	}
-	if err := db.Raw("DELETE from activities WHERE created_at > ?", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from activities where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "activities")
 	}
-	if err := db.Raw("DELETE from open_content_activities WHERE request_ts > ?", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from open_content_activities where date(request_ts) >= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "open_content_activities")
 	}
-	if err := db.Raw("DELETE from milestones WHERE created_at > ?", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from milestones where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "milestones")
+	}
+	if err := db.Exec("DELETE from outcomes where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
+		return newDeleteDBError(err, "outcomes")
 	}
 	return db.RunDemoSeed(facilityId)
 }
@@ -32,6 +36,11 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 	users := []models.User{}
 	if err := db.Find(&users, "facility_id = ?", facilityId).Error; err != nil {
 		return newGetRecordsDBError(err, "users")
+	}
+
+	//just update courses total progress where they are equal to 0
+	if err := db.Model(&models.Course{}).Where("total_progress_milestones = 0").Update("total_progress_milestones", 40).Error; err != nil {
+		log.Infof("no courses needed to be updated") //just logging the message
 	}
 
 	courses := []models.Course{}
@@ -57,7 +66,8 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 		}
 		contentUrls = newContentUrls
 	}
-
+	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
+	completedNumCount := 0
 	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
 	for _, user := range users {
 		enrolledCourses := randomSubset(courses, len(courses)/2)
@@ -93,10 +103,24 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 						UserID: user.ID, CourseID: course.ID, ExternalID: uuid.NewString(),
 						Type: models.AssignmentSubmission, IsCompleted: rand.Intn(2) == 0,
 					}
+					milestone.CreatedAt = createdAt
 					if err := db.Create(&milestone).Error; err != nil {
 						continue
 					}
 					milestonesPerUser++
+					if uint(milestonesPerUser) == course.TotalProgressMilestones && completedNumCount != 3 {
+						//add outcome here
+						outcome := models.Outcome{
+							UserID:   user.ID,
+							CourseID: course.ID,
+							Type:     models.OutcomeType(outcomes[rand.Intn(len(outcomes))]),
+						}
+						outcome.CreatedAt = createdAt
+						if err := db.Create(&outcome).Error; err != nil {
+							continue
+						}
+						completedNumCount++
+					}
 				}
 			}
 		}
