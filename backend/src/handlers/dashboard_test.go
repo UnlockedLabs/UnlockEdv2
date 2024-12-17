@@ -102,14 +102,14 @@ func TestHandleAdminDashboard(t *testing.T) {
 	}
 }
 
-func TestHandleUserCatalogue(t *testing.T) {
+func TestHandleUserCatalog(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetAllUserCatalogueAsAdmin", "admin", getUserCatalogueSearch(4, nil, "", ""), http.StatusOK, ""},
-		{"TestGetAllUserCatalogueAsUser", "student", getUserCatalogueSearch(4, nil, "", ""), http.StatusOK, ""},
-		{"TestGetUserCatalogueWithTagsAndOrderDescAsUser", "student", getUserCatalogueSearch(4, []string{"certificate", "grade", "progress_completion"}, "", "desc"), http.StatusOK, "?tags=certificate,grade,progress_completion&search=&order=desc"},
-		{"TestGetUserCatalogueWithTagsAndOrderAscAsUser", "student", getUserCatalogueSearch(4, []string{"certificate"}, "", "asc"), http.StatusOK, "?tags=certificate&search=&order=asc"},
-		{"TestUserCatalogueWithTagsAndSearchAscAsUser", "student", getUserCatalogueSearch(4, []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}, "of", "asc"), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&search=of&order=asc"},
-		{"TestUserCatalogueWithSearchDescAsUser", "student", getUserCatalogueSearch(4, nil, "intro", "desc"), http.StatusOK, "?search=intro&order=desc"},
+		{"TestGetAllUserCatalogAsAdmin", "admin", getUserCatalogSearch(4, nil, "", ""), http.StatusOK, ""},
+		{"TestGetAllUserCatalogAsUser", "student", getUserCatalogSearch(4, nil, "", ""), http.StatusOK, ""},
+		{"TestGetUserCatalogWithTagsAndOrderDescAsUser", "student", getUserCatalogSearch(4, []string{"certificate", "grade", "progress_completion"}, "", "desc"), http.StatusOK, "?tags=certificate,grade,progress_completion&search=&order=desc"},
+		{"TestGetUserCatalogWithTagsAndOrderAscAsUser", "student", getUserCatalogSearch(4, []string{"certificate"}, "", "asc"), http.StatusOK, "?tags=certificate&search=&order=asc"},
+		{"TestUserCatalogWithTagsAndSearchAscAsUser", "student", getUserCatalogSearch(4, []string{"certificate", "grade", "progress_completion", "pathway_completion", "college_credit"}, "of", "asc"), http.StatusOK, "?tags=certificate,grade,progress_completion,pathway_completion,college_credit&search=of&order=asc"},
+		{"TestUserCatalogWithSearchDescAsUser", "student", getUserCatalogSearch(4, nil, "intro", "desc"), http.StatusOK, "?search=intro&order=desc"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -117,20 +117,20 @@ func TestHandleUserCatalogue(t *testing.T) {
 			if catelogueMap["err"] != nil {
 				t.Fatalf("unable to retrieve user catelogue, error is %v", catelogueMap["err"])
 			}
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/{id}/catalogue%s", test.queryParams), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/users/{id}/catalog%s", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
-			handler := getHandlerByRole(server.handleUserCatalogue, test.role)
+			handler := getHandlerByRole(server.handleUserCatalog, test.role)
 			rr := executeRequest(t, req, handler, test)
-			data := models.Resource[[]database.UserCatalogueJoin]{}
+			data := models.Resource[[]database.UserCatalogJoin]{}
 			received := rr.Body.String()
 			if err = json.Unmarshal([]byte(received), &data); err != nil {
 				t.Errorf("unable to unmarshal resource, error is %v", err)
 			}
 			if catelogueMap["catelogue"] != nil {
-				for idx, catelogue := range catelogueMap["catelogue"].([]database.UserCatalogueJoin) {
+				for idx, catelogue := range catelogueMap["catelogue"].([]database.UserCatalogJoin) {
 					if catelogue.CourseID != data.Data[idx].CourseID {
 						t.Error("user catelogues are out of sync and not ordered correctly")
 					}
@@ -140,10 +140,10 @@ func TestHandleUserCatalogue(t *testing.T) {
 	}
 }
 
-func getUserCatalogueSearch(userId int, tags []string, search, order string) map[string]any {
-	catalogue, err := server.Db.GetUserCatalogue(userId, tags, search, order)
+func getUserCatalogSearch(userId int, tags []string, search, order string) map[string]any {
+	catalog, err := server.Db.GetUserCatalog(userId, tags, search, order)
 	form := make(map[string]any)
-	form["catalogue"] = catalogue
+	form["catalog"] = catalog
 	form["err"] = err
 	form["id"] = strconv.Itoa(userId)
 	return form

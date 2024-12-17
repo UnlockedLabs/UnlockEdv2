@@ -18,7 +18,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		{"GET /api/login-metrics", srv.handleLoginMetrics, true, models.Feature()},
 		{"GET /api/users/{id}/student-dashboard", srv.handleStudentDashboard, false, models.Feature()},
 		{"GET /api/users/{id}/admin-dashboard", srv.handleAdminDashboard, true, models.Feature()},
-		{"GET /api/users/{id}/catalogue", srv.handleUserCatalogue, false, axx},
+		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
 		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
 	}
 }
@@ -151,13 +151,13 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 }
 
 /**
-* GET: /api/users/{id}/catalogue
+* GET: /api/users/{id}/catalog
 * @Query Params:
 * tag: any number of tags to filter by
 * ?tag=some_tag&tag=another_tag
 * provider_id: provider id to filter by
 **/
-func (srv *Server) handleUserCatalogue(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleUserCatalog(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || !srv.canViewUserData(r, userId) {
 		return newInvalidIdServiceError(err, "user ID")
@@ -169,13 +169,13 @@ func (srv *Server) handleUserCatalogue(w http.ResponseWriter, r *http.Request, l
 	}
 	search := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("search")))
 	order := r.URL.Query().Get("order")
-	userCatalogue, err := srv.Db.GetUserCatalogue(userId, tagsSplit, search, order)
+	userCatalog, err := srv.Db.GetUserCatalog(userId, tagsSplit, search, order)
 	if err != nil {
 		log.add("userId", userId)
 		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, userCatalogue)
+	return writeJsonResponse(w, http.StatusOK, userCatalog)
 }
 
 func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -193,12 +193,8 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 	search = strings.ToLower(search)
 	search = strings.TrimSpace(search)
 	tags := r.URL.Query()["tags"]
-	var tagsSplit []string
-	if len(tags) > 0 {
-		tagsSplit = strings.Split(tags[0], ",")
-	}
 	// TODO: cache this response
-	userCourses, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tagsSplit)
+	userCourses, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
 	if err != nil {
 		log.add("search", search)
 		return newDatabaseServiceError(err)
