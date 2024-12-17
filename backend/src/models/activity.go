@@ -35,6 +35,17 @@ func (Activity) TableName() string {
 	return "activities"
 }
 
+type UserCourseActivityTotals struct {
+	UserID    uint       `gorm:"primaryKey" json:"user_id"`
+	CourseID  uint       `gorm:"primaryKey" json:"course_id"`
+	TotalTime int64      `json:"total_time"`
+	LastTS    *time.Time `json:"last_ts"`
+}
+
+func (UserCourseActivityTotals) TableName() string {
+	return "user_course_activity_totals"
+}
+
 type ImportActivity struct {
 	ExternalUserID   string `json:"external_user_id"`
 	ExternalCourseID string `json:"external_course_id"`

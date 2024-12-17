@@ -59,8 +59,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
 	}
 
 	favorites := make([]models.OpenContentItem, 0, perPage)
-	favoritesQuery := `
-    SELECT 
+	favoritesQuery := `SELECT 
         content_type,
         content_id,
         title,
@@ -113,11 +112,28 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             AND ocp.deleted_at IS NULL
         WHERE f.user_id = ? AND f.deleted_at IS NULL
             AND f.content_id IN (SELECT id FROM videos where visibility_status = true AND availability = 'available')
+       UNION ALL 
+
+        SELECT
+            'helpful_link' AS content_type,
+            f.content_id AS content_id,
+            hl.title,
+            hl.url,
+            hl.thumbnail_url,
+            hl.description,
+            hl.visibility_status,
+            hl.open_content_provider_id AS open_content_provider_id,
+            NULL AS provider_name,
+            NULL AS channel_title,
+            f.created_at
+        FROM open_content_favorites f
+        JOIN helpful_links hl ON hl.id = f.content_id
+        WHERE f.user_id = ? AND f.deleted_at IS NULL
+	      AND f.content_id IN (SELECT id from helpful_links WHERE visibility_status = true)
     ) AS all_favorites
     ORDER BY created_at DESC
-    LIMIT ? OFFSET ?;
-`
-	if err := db.Raw(favoritesQuery, userID, userID, perPage, calcOffset(page, perPage)).Scan(&favorites).Error; err != nil {
+    LIMIT ? OFFSET ?`
+	if err := db.Raw(favoritesQuery, userID, userID, userID, perPage, calcOffset(page, perPage)).Scan(&favorites).Error; err != nil {
 		return 0, nil, err
 	}
 

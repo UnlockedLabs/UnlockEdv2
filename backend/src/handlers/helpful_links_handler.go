@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
@@ -17,6 +19,7 @@ func (srv *Server) registerLeftMenuRoutes() []routeDef {
 		{"DELETE /api/helpful-links/{id}", srv.handleDeleteLink, true, axx},
 		{"PUT /api/helpful-links/activity/{id}", srv.handleAddUserActivity, false, axx},
 		{"PUT /api/helpful-links/sort", srv.changeSortOrder, true, axx},
+		{"PUT /api/helpful-links/favorite/{id}", srv.handleFavoriteLink, false, axx},
 	}
 }
 
@@ -42,16 +45,17 @@ func (srv *Server) handleGetHelpfulLinks(w http.ResponseWriter, r *http.Request,
 	if !userIsAdmin(r) {
 		onlyVisible = true
 	}
+	userID := srv.getUserID(r)
 	page, perPage := srv.getPaginationInfo(r)
-	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, HelpfulSortOrder[srv.getFacilityID(r)], onlyVisible)
+	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, HelpfulSortOrder[srv.getFacilityID(r)], onlyVisible, userID)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching helpful links")
 	}
 	meta := models.NewPaginationInfo(page, perPage, total)
 	respSort := struct {
-		SortOrder string                `json:"sort_order"`
-		Links     []models.HelpfulLink  `json:"helpful_links"`
-		Meta      models.PaginationMeta `json:"meta"`
+		SortOrder string                     `json:"sort_order"`
+		Links     []database.HelpfulLinkResp `json:"helpful_links"`
+		Meta      models.PaginationMeta      `json:"meta"`
 	}{SortOrder: HelpfulSortOrder[srv.getFacilityID(r)], Links: links, Meta: meta}
 
 	return writeJsonResponse(w, http.StatusOK, respSort)
@@ -66,6 +70,8 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 	defer r.Body.Close()
 	facilityID := srv.getFacilityID(r)
 	link.FacilityID = facilityID
+	link.ThumbnailUrl = srv.getFavicon(link.Url)
+	log.infof("Adding helpful link icon %s", link.ThumbnailUrl)
 	if err := srv.Db.AddHelpfulLink(&link); err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -137,4 +143,38 @@ func (srv *Server) handleAddUserActivity(w http.ResponseWriter, r *http.Request,
 	return writeJsonResponse(w, http.StatusOK, map[string]string{
 		"url": link.Url,
 	})
+}
+
+func (srv *Server) handleFavoriteLink(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	userID := claims.UserID
+	linkID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "Invalid id")
+	}
+	facilityID := &claims.FacilityID
+	if !userIsAdmin(r) {
+		facilityID = nil
+	}
+	link, err := srv.Db.GetLinkFromId(uint(linkID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if _, err := srv.Db.FavoriteOpenContent(int(userID), link.OpenContentProviderID, uint(linkID), facilityID); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Link favorite toggled successfully")
+}
+
+func (srv *Server) getFavicon(link string) string {
+	baseUrl, err := url.Parse(link)
+	if err != nil {
+		return "/ul-icon.png"
+	}
+	maybeIcon := baseUrl.Scheme + "://" + baseUrl.Host + "/favicon.ico"
+	resp, err := srv.Client.Head(maybeIcon)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return "/ul-icon.png"
+	}
+	return maybeIcon
 }
