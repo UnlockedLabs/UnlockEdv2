@@ -679,9 +679,11 @@ export interface HelpfulLink {
     title: string;
     description: string;
     url: string;
+    thumbnail_url?: string;
     visibility_status: boolean;
     open_content_provider_id: number;
     facility_id: number;
+    is_favorited: boolean;
 }
 
 export interface Resource {
@@ -689,16 +691,6 @@ export interface Resource {
     name: string;
     links: Link[];
     rank: number;
-}
-
-export interface HelpfulLink {
-    id: number;
-    name: string;
-    description: string;
-    url: string;
-    visibility_status: boolean;
-    open_content_provider_id: number;
-    facility_id: number;
 }
 
 export interface Announcement {

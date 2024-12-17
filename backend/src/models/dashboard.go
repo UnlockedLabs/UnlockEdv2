@@ -11,12 +11,15 @@ type HelpfulLink struct {
 	Url                   string `gorm:"size:255;not null" json:"url"`
 	VisibilityStatus      bool   `gorm:"default:true" json:"visibility_status"`
 	OpenContentProviderID uint   `json:"open_content_provider_id"`
+	ThumbnailUrl          string `gorm:"size:255;" json:"thumbnail_url"`
 	FacilityID            uint   `json:"facility_id"`
+	IsFavorited           bool   `json:"is_favorited"`
 }
 
 func (HelpfulLink) TableName() string {
 	return "helpful_links"
 }
+
 func (hl *HelpfulLink) BeforeCreate(tx *gorm.DB) error {
 	var id int
 	if hl.OpenContentProviderID == 0 {
@@ -26,6 +29,19 @@ func (hl *HelpfulLink) BeforeCreate(tx *gorm.DB) error {
 		hl.OpenContentProviderID = uint(id)
 	}
 	return nil
+}
+
+type HelpfulLinkFavorite struct {
+	DatabaseFields
+	UserID    uint `json:"user_id"`
+	ContentID uint `json:"content_id"`
+
+	User        *User        `gorm:"foreignKey:UserID" json:"-"`
+	HelpfulLink *HelpfulLink `gorm:"foreignKey:ContentID" json:"-"`
+}
+
+func (HelpfulLinkFavorite) TableName() string {
+	return "helpful_link_favorites"
 }
 
 type ProgramFavorite struct {

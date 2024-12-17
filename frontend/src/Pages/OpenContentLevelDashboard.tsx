@@ -3,7 +3,8 @@ import {
     OpenContentItem,
     UserRole,
     ServerResponseOne,
-    HelpfulLink
+    HelpfulLink,
+    HelpfulLinkAndSort
 } from '@/common';
 import OpenContentCard from '@/Components/cards/OpenContentCard';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
@@ -23,6 +24,7 @@ export default function StudentLayer1() {
         revalidateOnFocus: false,
         revalidateOnReconnect: false
     });
+
     const [featuredLibraries, setFeaturedLibraries] = useState<Library[]>([]);
     const {
         topUserContent,
@@ -37,9 +39,36 @@ export default function StudentLayer1() {
         featured: Library[];
         helpfulLinks: HelpfulLink[];
     };
+
+    const { data: helpfulLinksData, mutate: mutateHelpfulLinks } = useSWR<
+        ServerResponseOne<HelpfulLinkAndSort>
+    >('api/helpful-links', {
+        fallbackData: {
+            type: 'one',
+            data: {
+                helpful_links: helpfulLinks,
+                sort_order: '',
+                meta: {
+                    total: helpfulLinks.length,
+                    current_page: 1,
+                    last_page: 1,
+                    per_page: helpfulLinks.length
+                }
+            },
+            success: true,
+            message: ''
+        },
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false
+    });
+
+    const [localHelpfulLinks, setLocalHelpfulLinks] =
+        useState<HelpfulLink[]>(helpfulLinks);
     useEffect(() => {
         setFeaturedLibraries(featured);
-    }, [featured]);
+        setLocalHelpfulLinks(helpfulLinks);
+    }, [featured, helpfulLinks]);
+
     const nav = isAdministrator(user)
         ? '/knowledge-center-management/libraries'
         : '/knowledge-center/libraries';
@@ -151,18 +180,55 @@ export default function StudentLayer1() {
                 </div>
                 <h2>Helpful Links</h2>
                 <div className="card card-row-padding grid grid-cols-5 gap-3">
-                    {helpfulLinks.map((link: HelpfulLink) => (
+                    {localHelpfulLinks.map((link: HelpfulLink) => (
                         <div
-                            key={link.id}
+                            key={link.id + link.title}
                             className="cursor-pointer"
                             onClick={(e) => {
-                                e.preventDefault();
-                                void handleHelpfulLinkClick(link.id);
+                                if (
+                                    !(e.target as HTMLElement).closest(
+                                        '.favorite-toggle'
+                                    )
+                                ) {
+                                    e.preventDefault();
+                                    void handleHelpfulLinkClick(link.id);
+                                }
                             }}
                         >
                             <HelpfulLinkCard
                                 link={link}
                                 role={UserRole.Student}
+                                mutate={mutateHelpfulLinks}
+                                onFavoriteToggle={(linkId, isFavorited) => {
+                                    const updatedLinks = localHelpfulLinks.map(
+                                        (link: HelpfulLink) =>
+                                            link.id === linkId
+                                                ? {
+                                                      ...link,
+                                                      is_favorited: isFavorited
+                                                  }
+                                                : link
+                                    );
+                                    setLocalHelpfulLinks(updatedLinks);
+                                    void mutateHelpfulLinks({
+                                        type: 'one',
+                                        data: {
+                                            helpful_links: updatedLinks,
+                                            sort_order:
+                                                helpfulLinksData?.data
+                                                    .sort_order ?? '',
+                                            meta: helpfulLinksData?.data
+                                                .meta ?? {
+                                                total: updatedLinks.length,
+                                                current_page: 1,
+                                                last_page: 1,
+                                                per_page: updatedLinks.length
+                                            }
+                                        },
+                                        success: true,
+                                        message: ''
+                                    });
+                                }}
                             />
                         </div>
                     ))}
@@ -176,7 +242,11 @@ export default function StudentLayer1() {
                         favorites.map((favorite: OpenContentItem) => {
                             return (
                                 <OpenContentCard
-                                    key={favorite.content_id}
+                                    key={
+                                        favorite.content_id +
+                                        favorite.title +
+                                        favorite.open_content_provider_id
+                                    }
                                     content={favorite}
                                 />
                             );

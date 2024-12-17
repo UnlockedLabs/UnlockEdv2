@@ -17,6 +17,7 @@ func (srv *Server) registerLeftMenuRoutes() []routeDef {
 		{"DELETE /api/helpful-links/{id}", srv.handleDeleteLink, true, axx},
 		{"PUT /api/helpful-links/activity/{id}", srv.handleAddUserActivity, false, axx},
 		{"PUT /api/helpful-links/sort", srv.changeSortOrder, true, axx},
+		{"PUT /api/helpful-links/favorite/{id}", srv.handleFavoriteLink, false, axx},
 	}
 }
 
@@ -42,8 +43,9 @@ func (srv *Server) handleGetHelpfulLinks(w http.ResponseWriter, r *http.Request,
 	if !userIsAdmin(r) {
 		onlyVisible = true
 	}
+	userID := srv.getUserID(r)
 	page, perPage := srv.getPaginationInfo(r)
-	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, HelpfulSortOrder[srv.getFacilityID(r)], onlyVisible)
+	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, HelpfulSortOrder[srv.getFacilityID(r)], onlyVisible, userID)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching helpful links")
 	}
@@ -135,4 +137,16 @@ func (srv *Server) handleAddUserActivity(w http.ResponseWriter, r *http.Request,
 	return writeJsonResponse(w, http.StatusOK, map[string]string{
 		"url": link.Url,
 	})
+}
+
+func (srv *Server) handleFavoriteLink(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userID := srv.getUserID(r)
+	linkID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "Invalid id")
+	}
+	if err := srv.Db.ToggleLinkFavorite(userID, uint(linkID)); err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Link favorite toggled successfully")
 }
