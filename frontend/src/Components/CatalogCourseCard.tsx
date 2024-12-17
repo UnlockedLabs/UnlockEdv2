@@ -3,7 +3,7 @@ import RedPill from './pill-labels/RedPill';
 import YellowPill from './pill-labels/YellowPill';
 import GreyPill from './pill-labels/GreyPill';
 import {
-    CourseCatalogue,
+    CourseCatalogResponse,
     OutcomePillType,
     PillTagType,
     ViewType
@@ -13,7 +13,7 @@ export default function CatalogCourseCard({
     course,
     view
 }: {
-    course: CourseCatalogue;
+    course: CourseCatalogResponse;
     view?: ViewType;
 }) {
     const coverImage = course.thumbnail_url;
@@ -44,23 +44,29 @@ export default function CatalogCourseCard({
             <GreyPill key={'outcome' + course.course_id}>{pillLabel}</GreyPill>
         );
     });
-    const courseStartDt = course.start_dt ? new Date(course.start_dt) : course.start_dt;
+    const courseStartDt = course.start_dt
+        ? new Date(course.start_dt)
+        : course.start_dt;
     const courseEndDt = course.end_dt ? new Date(course.end_dt) : course.end_dt;
-    const courseStartDtStr = courseStartDt ? courseStartDt.toLocaleDateString('en-US', 
-        {
-            year: 'numeric',
-            month: '2-digit',
-            day: 'numeric'
-        })
-     : ""
-     const courseEndDtStr = courseEndDt ? courseEndDt.toLocaleDateString('en-US', 
-        {
-            year: 'numeric',
-            month: '2-digit',
-            day: 'numeric'
-        })
-     : "";
-    const finalDateStr = " • " + courseStartDtStr + (courseStartDt || courseEndDt ? " - " : "") + courseEndDtStr
+    const courseStartDtStr = courseStartDt
+        ? courseStartDt.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: 'numeric'
+          })
+        : '';
+    const courseEndDtStr = courseEndDt
+        ? courseEndDt.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: 'numeric'
+          })
+        : '';
+    const finalDateStr =
+        ' • ' +
+        courseStartDtStr +
+        (courseStartDt || courseEndDt ? ' - ' : '') +
+        courseEndDtStr;
     if (view == ViewType.List) {
         return (
             <a
@@ -72,7 +78,10 @@ export default function CatalogCourseCard({
                     <div className="flex flex-row gap-3 items-center">
                         <h2>{course.course_name}</h2>
                         <p className="body">|</p>
-                        <p className="body">{course.provider_name}{finalDateStr}</p>
+                        <p className="body">
+                            {course.provider_name}
+                            {finalDateStr}
+                        </p>
                         {coursePill}
                         {outcomePills}
                     </div>
@@ -104,7 +113,10 @@ export default function CatalogCourseCard({
                     </figure>
                     <div className="card-body gap-0.5">
                         {/* this should be the school or course that offers the course */}
-                        <p className="text-xs">{course.provider_name}{finalDateStr}</p>
+                        <p className="text-xs">
+                            {course.provider_name}
+                            {finalDateStr}
+                        </p>
                         <h3 className="card-title text-sm">
                             {course.course_name}
                         </h3>
