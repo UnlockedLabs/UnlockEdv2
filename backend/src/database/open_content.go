@@ -90,63 +90,81 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
 
 	favorites := make([]models.OpenContentItem, 0, perPage)
 	favoritesQuery := `
-        SELECT 
-            content_type,
-            content_id,
-            title,
-			url,
-            thumbnail_url,
-            description,
-            visibility_status,
-            open_content_provider_id,
-            provider_name,
-            channel_title,
-            created_at
-        FROM (
-            SELECT
-                'library' AS content_type,
-                fav.library_id AS content_id,
-                lib.title,
-				lib.url,
-                lib.thumbnail_url,
-                ocp.description,
-                lib.visibility_status,
-                lib.open_content_provider_id,
-                ocp.title AS provider_name,
-                NULL AS channel_title,
-                fav.created_at
-            FROM library_favorites fav
-            JOIN libraries lib ON lib.id = fav.library_id
-            JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
-                AND ocp.currently_enabled = true 
-                AND ocp.deleted_at IS NULL
-            WHERE fav.user_id = ? AND fav.deleted_at IS NULL
-
-            UNION ALL
-
-            SELECT
-                'video' AS content_type,
-                vf.video_id AS content_id,
-                videos.title,
-				videos.url,
-                videos.thumbnail_url,
-                videos.description,
-                videos.visibility_status,
-                videos.open_content_provider_id,
-                NULL AS provider_name,
-                videos.channel_title,
-                vf.created_at
-            FROM video_favorites vf
-            JOIN videos ON vf.video_id = videos.id
-            JOIN open_content_providers ocp ON ocp.id = videos.open_content_provider_id
-                AND ocp.currently_enabled = true 
-                AND ocp.deleted_at IS NULL
-            WHERE vf.user_id = ? AND vf.deleted_at IS NULL
-        ) AS all_favorites
-        ORDER BY created_at DESC
-        LIMIT ? OFFSET ?
+    SELECT 
+        content_type,
+        content_id,
+        title,
+        url,
+        thumbnail_url,
+        description,
+        visibility_status,
+        open_content_provider_id,
+        provider_name,
+        channel_title,
+        created_at
+    FROM (
+        SELECT
+            'library' AS content_type,
+            fav.library_id AS content_id,
+            lib.title,
+            lib.url,
+            lib.thumbnail_url,
+            ocp.description,
+            lib.visibility_status,
+            lib.open_content_provider_id,
+            ocp.title AS provider_name,
+            NULL AS channel_title,
+            fav.created_at
+        FROM library_favorites fav
+        JOIN libraries lib ON lib.id = fav.library_id
+        JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
+            AND ocp.currently_enabled = true 
+            AND ocp.deleted_at IS NULL
+        WHERE fav.user_id = ? AND fav.deleted_at IS NULL
+        
+        UNION ALL
+        
+        SELECT
+            'video' AS content_type,
+            vf.video_id AS content_id,
+            videos.title,
+            videos.url,
+            videos.thumbnail_url,
+            videos.description,
+            videos.visibility_status,
+            videos.open_content_provider_id,
+            NULL AS provider_name,
+            videos.channel_title,
+            vf.created_at
+        FROM video_favorites vf
+        JOIN videos ON vf.video_id = videos.id
+        JOIN open_content_providers ocp ON ocp.id = videos.open_content_provider_id
+            AND ocp.currently_enabled = true 
+            AND ocp.deleted_at IS NULL
+        WHERE vf.user_id = ? AND vf.deleted_at IS NULL
+        
+        UNION ALL
+        
+        SELECT
+            'helpful_link' AS content_type,
+            hlf.content_id AS content_id,
+            hl.title,
+            hl.url,
+            '/ul-logo.png' AS thumbnail_url ,
+            hl.description,
+            hl.visibility_status,
+            hl.open_content_provider_id AS open_content_provider_id,
+            NULL AS provider_name,
+            NULL AS channel_title,
+            hlf.created_at
+        FROM helpful_link_favorites hlf
+        JOIN helpful_links hl ON hl.id = hlf.content_id
+        WHERE hlf.user_id = ? AND hlf.deleted_at IS NULL
+    ) AS all_favorites
+    ORDER BY created_at DESC
+    LIMIT ? OFFSET ?
     `
-	if err := db.Raw(favoritesQuery, userID, userID, perPage, calcOffset(page, perPage)).Scan(&favorites).Error; err != nil {
+	if err := db.Raw(favoritesQuery, userID, userID, userID, perPage, calcOffset(page, perPage)).Scan(&favorites).Error; err != nil {
 		return 0, nil, err
 	}
 

@@ -29,6 +29,8 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
             navigate(`/viewer/videos/${favorite.content_id}`);
         } else if (favorite.content_type === 'library') {
             navigate(`/viewer/libraries/${favorite.content_id}`);
+        } else if (favorite.content_type === 'helpful_link') {
+            window.open(favorite.url, '_blank');
         }
     };
 
@@ -36,8 +38,9 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
         const endpoint =
             favorite.content_type === 'video'
                 ? `videos/${favorite.content_id}/favorite`
-                : `libraries/${favorite.content_id}/favorite`;
-
+                : favorite.content_type === 'helpful_link'
+                  ? `helpful-links/favorite/${favorite.content_id}`
+                  : `libraries/${favorite.content_id}/favorite`;
         const response = await API.put(endpoint, {});
         if (response.success) {
             toaster(`removed from favorites`, ToastState.success);

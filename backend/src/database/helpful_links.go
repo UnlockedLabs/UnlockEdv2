@@ -5,9 +5,13 @@ import (
 	"fmt"
 )
 
-func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVisible bool) (int64, []models.HelpfulLink, error) {
+func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVisible bool, userID uint) (int64, []models.HelpfulLink, error) {
 	links := make([]models.HelpfulLink, 0, perPage)
-	tx := db.Model(&models.HelpfulLink{})
+
+	subQuery := db.Model(&models.HelpfulLinkFavorite{}).
+		Select("1").
+		Where("helpful_link_favorites.content_id = helpful_links.id AND helpful_link_favorites.user_id = ? AND helpful_link_favorites.deleted_at IS NULL", userID)
+	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited", subQuery)
 	var total int64
 
 	validOrder := map[string]bool{
@@ -96,4 +100,24 @@ func (db *DB) GetHelpfulLinkOpenContentProviderId() (uint, error) {
 		return 0, newGetRecordsDBError(err, "open_content_providers")
 	}
 	return provider.ID, nil
+}
+
+func (db *DB) ToggleLinkFavorite(userID, contentID uint) error {
+	var link models.HelpfulLink
+	if err := db.Model(&models.HelpfulLink{}).Where("id = ?", contentID).First(&link).Error; err != nil {
+		return newNotFoundDBError(err, "helpful_links")
+	}
+	tx := db.Model(&models.HelpfulLinkFavorite{}).Where("content_id = ? AND user_id = ?", contentID, userID)
+	if err := tx.First(&models.HelpfulLinkFavorite{}).Error; err == nil {
+		if err := db.Unscoped().Delete(&models.HelpfulLinkFavorite{}, tx).Error; err != nil {
+			return newNotFoundDBError(err, "helpful_link_favorites")
+		}
+		return nil
+	} else {
+		fav := models.HelpfulLinkFavorite{UserID: userID, ContentID: contentID}
+		if err := db.Create(&fav).Error; err != nil {
+			return newCreateDBError(err, "helpful_link_favorites")
+		}
+	}
+	return nil
 }
