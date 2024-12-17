@@ -14,19 +14,19 @@ const seededActivity = "SEEDED_ACTIVITY"
 func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 	// seeding data for demo will only seed user activity/milestones/open-content activity for existing users
 	activity := models.Activity{}
-	if err := db.Model(&models.Activity{}).Where("external_id = ?", seededActivity).Order("created_at").First(&activity).Error; err != nil {
+	if err := db.Model(&models.Activity{}).Where("external_id = ?", seededActivity).Order("created_at DESC").First(&activity).Error; err != nil {
 		return db.RunDemoSeed(facilityId)
 	}
-	if err := db.Exec("DELETE from activities where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from activities where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "activities")
 	}
-	if err := db.Exec("DELETE from open_content_activities where date(request_ts) >= date(?)", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from open_content_activities where date(request_ts) <= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "open_content_activities")
 	}
-	if err := db.Exec("DELETE from milestones where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from milestones where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "milestones")
 	}
-	if err := db.Exec("DELETE from outcomes where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
+	if err := db.Exec("DELETE from outcomes where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
 		return newDeleteDBError(err, "outcomes")
 	}
 	return db.RunDemoSeed(facilityId)
@@ -82,7 +82,7 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 			totalCourseTime := int64(0)
 
 			for day := 0; day < daysSinceStart; day++ {
-				randTime := rand.Int63n(50)
+				randTime := rand.Int63n(5000)
 				externalID := uuid.NewString()
 				if day == 0 {
 					externalID = "SEEDED_ACTIVITY"
