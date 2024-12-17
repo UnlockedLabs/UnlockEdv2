@@ -5,9 +5,18 @@ import (
 	"fmt"
 )
 
-func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVisible bool) (int64, []models.HelpfulLink, error) {
-	links := make([]models.HelpfulLink, 0, perPage)
-	tx := db.Model(&models.HelpfulLink{})
+type HelpfulLinkResp struct {
+	models.HelpfulLink
+	IsFavorited bool `json:"is_favorited"`
+}
+
+func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVisible bool, userID uint) (int64, []HelpfulLinkResp, error) {
+	links := make([]HelpfulLinkResp, 0, perPage)
+
+	subQuery := db.Table("open_content_favorites f").
+		Select("1").
+		Where("f.content_id = helpful_links.id AND f.user_id = ? AND f.deleted_at IS NULL", userID)
+	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited", subQuery)
 	var total int64
 
 	validOrder := map[string]bool{
@@ -35,13 +44,12 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "helpful_links")
 	}
-
 	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&links).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "helpful_links")
 	}
-
 	return total, links, nil
 }
+
 func (db *DB) AddHelpfulLink(link *models.HelpfulLink) error {
 	if db.Where("url = ?", link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
 		return NewDBError(fmt.Errorf("Link already exists"), "helpful_links")

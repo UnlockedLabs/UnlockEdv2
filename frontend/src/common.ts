@@ -692,6 +692,7 @@ export interface Resource {
     links: Link[];
     rank: number;
 }
+
 export interface Announcement {
     course_name: string;
     title: string;

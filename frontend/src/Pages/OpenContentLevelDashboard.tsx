@@ -3,7 +3,8 @@ import {
     OpenContentItem,
     UserRole,
     ServerResponseOne,
-    HelpfulLink
+    HelpfulLink,
+    HelpfulLinkAndSort
 } from '@/common';
 import OpenContentCard from '@/Components/cards/OpenContentCard';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
@@ -13,33 +14,28 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import API from '@/api/api';
+import { AxiosError } from 'axios';
 
 export default function StudentLayer1() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { mutate } = useSWR('', {
-        revalidateOnFocus: false,
-        revalidateOnReconnect: false
-    });
+    const { mutate } = useSWR('', {});
+
     const [featuredLibraries, setFeaturedLibraries] = useState<Library[]>([]);
-    const {
-        topUserContent,
-        topFacilityContent,
-        favorites,
-        featured,
-        helpfulLinks
-    } = useLoaderData() as {
-        topUserContent: OpenContentItem[];
-        topFacilityContent: OpenContentItem[];
-        favorites: OpenContentItem[];
-        featured: Library[];
-        helpfulLinks: HelpfulLink[];
-    };
-    useEffect(() => {
-        setFeaturedLibraries(featured);
-    }, [featured]);
+    const { topUserContent, topFacilityContent, favorites, featured } =
+        useLoaderData() as {
+            topUserContent: OpenContentItem[];
+            topFacilityContent: OpenContentItem[];
+            favorites: OpenContentItem[];
+            featured: Library[];
+        };
+    const { data: helpfulLinksData, mutate: mutateHelpfulFavs } = useSWR<
+        ServerResponseOne<HelpfulLinkAndSort>,
+        AxiosError
+    >(`api/helpful-links`);
+
     const nav = isAdministrator(user)
         ? '/knowledge-center-management/libraries'
         : '/knowledge-center/libraries';
@@ -151,21 +147,30 @@ export default function StudentLayer1() {
                 </div>
                 <h2>Helpful Links</h2>
                 <div className="card card-row-padding grid grid-cols-5 gap-3">
-                    {helpfulLinks.map((link: HelpfulLink) => (
-                        <div
-                            key={link.id}
-                            className="cursor-pointer"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                void handleHelpfulLinkClick(link.id);
-                            }}
-                        >
-                            <HelpfulLinkCard
-                                link={link}
-                                role={UserRole.Student}
-                            />
-                        </div>
-                    ))}
+                    {helpfulLinksData?.data.helpful_links.map(
+                        (link: HelpfulLink) => (
+                            <div
+                                key={link.id + link.title}
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                    if (
+                                        !(e.target as HTMLElement).closest(
+                                            '.favorite-toggle'
+                                        )
+                                    ) {
+                                        e.preventDefault();
+                                        void handleHelpfulLinkClick(link.id);
+                                    }
+                                }}
+                            >
+                                <HelpfulLinkCard
+                                    link={link}
+                                    role={UserRole.Student}
+                                    mutate={mutateHelpfulFavs}
+                                />
+                            </div>
+                        )
+                    )}
                 </div>
             </div>
             {/* right sidebar */}
@@ -176,7 +181,11 @@ export default function StudentLayer1() {
                         favorites.map((favorite: OpenContentItem) => {
                             return (
                                 <OpenContentCard
-                                    key={favorite.content_id}
+                                    key={
+                                        favorite.content_id +
+                                        favorite.title +
+                                        favorite.open_content_provider_id
+                                    }
                                     content={favorite}
                                 />
                             );

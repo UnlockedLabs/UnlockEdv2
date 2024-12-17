@@ -8,23 +8,27 @@ import {
 } from '@/common';
 import API from '@/api/api';
 import VisibleHiddenToggle from '../VisibleHiddenToggle';
-import { useState } from 'react';
+import { useState, MouseEvent } from 'react';
 import ULIComponent from '../ULIComponent';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { AdminRoles, useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import { KeyedMutator } from 'swr';
+import { StarIcon } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 
 export default function HelpfulLinkCard({
     link,
     showModal,
     mutate,
-    role
+    role,
+    onFavoriteToggle
 }: {
     link: HelpfulLink;
     showModal?: (link: HelpfulLink, type: ModalType) => void;
     mutate?: KeyedMutator<ServerResponseOne<HelpfulLinkAndSort>>;
     role?: UserRole;
+    onFavoriteToggle?: (linkID: number, isFavorited: boolean) => void;
 }) {
     const [visible, setVisible] = useState<boolean>(link.visibility_status);
     const { toaster } = useToast();
@@ -52,6 +56,25 @@ export default function HelpfulLinkCard({
         return null;
     }
 
+    async function toggleLinkFavorite(e: MouseEvent) {
+        if (!mutate) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const resp = await API.put<null, object>(
+            `helpful-links/favorite/${link.id}`,
+            {}
+        );
+        if (resp.success) {
+            const isFavorited = !link.is_favorited;
+            onFavoriteToggle?.(link.id, isFavorited);
+            await mutate();
+        }
+        toaster(
+            resp.message,
+            resp.success ? ToastState.success : ToastState.error
+        );
+        void mutate();
+    }
     return (
         <div className="card p-4 space-y-2">
             {AdminRoles.includes(role ?? user.role) &&
@@ -69,7 +92,19 @@ export default function HelpfulLinkCard({
                         />
                     </div>
                 )}
-            <img src={link.thumbnail_url} alt={link.title} className="h-15" />
+            {AdminRoles.includes(role ?? UserRole.Student) && (
+                <div
+                    className="right-1 top-1 z-100 favorite-toggle"
+                    onClick={(e) => void toggleLinkFavorite(e)}
+                >
+                    <ULIComponent
+                        tooltipClassName="absolute right-2 top-2 z-100"
+                        iconClassName={`w-6 h-6 cursor-pointer ${link.is_favorited ? 'text-primary-yellow' : ''}`}
+                        icon={link.is_favorited ? StarIcon : StarIconOutline}
+                    />
+                </div>
+            )}
+            <img src={link.thumbnail_url} alt={link.title} className="w-10" />
             <h3 className="body">{link.title}</h3>
             <p className="body line-clamp-2 h-10">{link.description}</p>
 
