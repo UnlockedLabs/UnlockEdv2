@@ -4,6 +4,7 @@ import {
     UserRole,
     ServerResponseOne,
     HelpfulLink,
+    HelpfulLinkAndSort,
     ServerResponseMany
 } from '@/common';
 import OpenContentCard from '@/Components/cards/OpenContentCard';
@@ -19,12 +20,10 @@ import { AxiosError } from 'axios';
 export default function StudentLayer1() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { topUserContent, topFacilityContent, helpfulLinks } =
-        useLoaderData() as {
-            topUserContent: OpenContentItem[];
-            topFacilityContent: OpenContentItem[];
-            helpfulLinks: HelpfulLink[];
-        };
+    const { topUserContent, topFacilityContent } = useLoaderData() as {
+        topUserContent: OpenContentItem[];
+        topFacilityContent: OpenContentItem[];
+    };
     const { data: featured, mutate: mutateFeatLibs } = useSWR<
         ServerResponseMany<Library>,
         AxiosError
@@ -33,6 +32,10 @@ export default function StudentLayer1() {
         ServerResponseMany<OpenContentItem>,
         AxiosError
     >('api/open-content/favorites');
+    const { data: helpfulLinks, mutate: mutateHelpfulFavs } = useSWR<
+        ServerResponseOne<HelpfulLinkAndSort>,
+        AxiosError
+    >(`api/helpful-links`);
 
     function navigateToOpenContent() {
         navigate('/knowledge-center/libraries');
@@ -80,23 +83,26 @@ export default function StudentLayer1() {
                 </div>
                 <h2>Helpful Links</h2>
                 <div
-                    className={`card card-row-padding grid grid-cols-${helpfulLinks.length} gap-3`}
+                    className={`card card-row-padding grid grid-cols-${helpfulLinks?.data.helpful_links.length} gap-3`}
                 >
-                    {helpfulLinks.map((link: HelpfulLink) => (
-                        <div
-                            key={link.id}
-                            className="cursor-pointer"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                void handleHelpfulLinkClick(link.id);
-                            }}
-                        >
-                            <HelpfulLinkCard
-                                link={link}
-                                role={UserRole.Student}
-                            />
-                        </div>
-                    ))}
+                    {helpfulLinks?.data.helpful_links.map(
+                        (link: HelpfulLink) => (
+                            <div
+                                key={link.id + link.url}
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    void handleHelpfulLinkClick(link.id);
+                                }}
+                            >
+                                <HelpfulLinkCard
+                                    link={link}
+                                    role={UserRole.Student}
+                                    mutate={mutateHelpfulFavs}
+                                />
+                            </div>
+                        )
+                    )}
                 </div>
             </div>
             {/* right sidebar */}
