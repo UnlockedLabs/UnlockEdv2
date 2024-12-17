@@ -61,7 +61,6 @@ export default function LibraryCard({
             resp.message,
             resp.success ? ToastState.success : ToastState.error
         );
-        mutate();
     }
 
     return (
