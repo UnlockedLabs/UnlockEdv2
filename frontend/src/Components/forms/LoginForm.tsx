@@ -1,9 +1,4 @@
-import {
-    useLoaderData,
-    Form,
-    useNavigation,
-    useNavigate
-} from 'react-router-dom';
+import { useLoaderData, Form, useNavigation } from 'react-router-dom';
 import { TextInput } from '@/Components/inputs/TextInput';
 import InputError from '@/Components/inputs/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -22,7 +17,6 @@ interface Inputs {
 
 export default function LoginForm() {
     const loaderData = useLoaderData() as AuthFlow;
-    const navigate = useNavigate();
     const navigation = useNavigation();
     const processing = navigation.state === 'submitting';
     const [user, setUser] = useState<string | undefined>(undefined);
@@ -50,7 +44,7 @@ export default function LoginForm() {
     };
     useEffect(() => {
         if (loaderData.redirect_to) {
-            navigate(loaderData.redirect_to);
+            window.location.href = loaderData.redirect_to;
             return;
         }
         if (loaderData.identifier) {

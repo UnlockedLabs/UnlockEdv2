@@ -206,9 +206,11 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 				DATE(a.created_at) as date,
 				SUM(a.time_delta) as time_delta`).
 		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("JOIN milestones m ON m.course_id = c.id AND m.user_id = ?", userID).
 		Joins("JOIN activities a ON a.course_id = c.id").
-		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userID).
+		Joins("LEFT JOIN outcomes o ON o.course_id = c.id").
 		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
+		Where("m.type = 'enrollment'").
 		Where("o.type IS NULL").
 		Group("c.id, DATE(a.created_at), pp.name").
 		Find(&results).Error
