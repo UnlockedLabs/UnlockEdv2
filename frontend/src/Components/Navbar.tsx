@@ -22,7 +22,6 @@ import {
     handleLogout,
     hasFeature,
     isAdministrator,
-    studentAccessLinks,
     useAuth
 } from '@/useAuth';
 import Modal from '@/Components/Modal';
@@ -51,10 +50,15 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
-    const dashboardTitle = new Map([
+    const dashboardTitleAdmin = new Map([
         ['/learning-insights', 'Learning'],
         ['/knowledge-insights', 'Knowledge'],
         ['/operational-insights', 'Operational']
+    ]);
+    const dashboardTitleStudent = new Map([
+        ['/trending-content', 'Trending Content'],
+        ['/learning-path', 'Learning Path'],
+        ['/program-tracker', 'Program Tracker']
     ]);
     const handleSeedDemoData = async () => {
         setSeedInProgress(true);
@@ -112,7 +116,7 @@ export default function Navbar({
                                 <li className="mt-16">
                                     <Link to={getDashboardLink(user)}>
                                         <ULIComponent icon={HomeIcon} />
-                                        {dashboardTitle.get(
+                                        {dashboardTitleAdmin.get(
                                             getDashboardLink(user)
                                         ) ?? 'Operational'}{' '}
                                         Insights
@@ -218,14 +222,9 @@ export default function Navbar({
                                 <li className="mt-16">
                                     <Link to={getDashboardLink(user)}>
                                         <ULIComponent icon={HomeIcon} />
-                                        {getDashboardLink(user) ===
-                                            studentAccessLinks[0] && 'Home'}
-                                        {getDashboardLink(user) ===
-                                            studentAccessLinks[1] &&
-                                            'Trending Content'}
-                                        {getDashboardLink(user) ===
-                                            studentAccessLinks[2] &&
-                                            'Learning Path'}
+                                        {dashboardTitleStudent.get(
+                                            getDashboardLink(user)
+                                        ) ?? 'Home'}
                                     </Link>
                                 </li>
                                 {hasFeature(

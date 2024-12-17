@@ -3,11 +3,12 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string) (int64, []models.Library, error) {
+func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string, days int) (int64, []models.Library, error) {
 	var total int64
 	libraries := make([]models.Library, 0, perPage)
 	tx := db.Model(&models.Library{}).
@@ -16,7 +17,13 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
 
 	switch strings.ToLower(visibility) {
 	case "featured":
-		tx = tx.Preload("Favorites", "facility_id = ?", facilityId).Joins("JOIN library_favorites l ON l.library_id = libraries.id AND l.facility_id IS NOT NULL").Where("visibility_status = true")
+		tx = tx.Preload("Favorites", "facility_id = ?", facilityId).Joins("JOIN library_favorites l ON l.library_id = libraries.id AND l.facility_id IS NOT NULL")
+		if days > 0 {
+			daysAgo := time.Now().AddDate(0, 0, -days)
+			tx = tx.Where("created_at >= ?", daysAgo) // we should show hidden and vis libraries on dashboard
+		} else {
+			tx = tx.Where("visibility_status = true")
+		}
 	case "visible":
 		tx = tx.Preload("Favorites", "user_id = ?", userId).Where("visibility_status = true")
 	case "hidden":

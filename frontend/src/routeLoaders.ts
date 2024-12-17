@@ -10,22 +10,16 @@ import {
 import API from './api/api';
 import { fetchUser } from './useAuth';
 
-export const getOpenContentDashboardData: LoaderFunction = async () => {
+export const getStudentLevel1Data: LoaderFunction = async () => {
     const user = await fetchUser();
     if (!user) return;
-    const [
-        resourcesResp,
-        userContentResp,
-        facilityContentResp,
-        favoritesResp,
-        featuredResp
-    ] = await Promise.all([
-        API.get(`helpful-links?visibility=true&per_page=5`),
-        API.get(`open-content/activity/${user.id}`),
-        API.get(`open-content/activity`),
-        API.get(`open-content/favorites`),
-        API.get(`libraries?visibility=featured`)
-    ]);
+    const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
+        await Promise.all([
+            API.get(`helpful-links?visibility=true&per_page=5`),
+            API.get(`open-content/activity/${user.id}`),
+            API.get(`open-content/activity`),
+            API.get(`open-content/favorites`)
+        ]);
 
     const links = resourcesResp.data as HelpfulLinkAndSort;
     const helpfulLinks = resourcesResp.success ? links.helpful_links : [];
@@ -38,15 +32,25 @@ export const getOpenContentDashboardData: LoaderFunction = async () => {
     const favoriteOpenContent = favoritesResp.success
         ? (favoritesResp.data as OpenContentItem[])
         : [];
-    const featured = featuredResp.success
-        ? (featuredResp.data as Library[])
-        : [];
 
     return json({
         helpfulLinks: helpfulLinks,
         topUserContent: topUserOpenContent,
         topFacilityContent: topFacilityOpenContent,
-        favorites: favoriteOpenContent,
+        favorites: favoriteOpenContent
+    });
+};
+
+export const getAdminLevel1Data: LoaderFunction = async () => {
+    const [featuredResp] = await Promise.all([
+        API.get(`libraries?visibility=featured`)
+    ]);
+
+    const featured = featuredResp.success
+        ? (featuredResp.data as Library[])
+        : [];
+
+    return json({
         featured: featured
     });
 };

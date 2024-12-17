@@ -78,6 +78,10 @@ export default function LibaryLayout({
         setPageQuery(1);
     }, [filterLibrariesAdmin, filterLibraries, searchTerm]);
 
+    function updateLibrary() {
+        void mutateLibraries();
+    }
+
     return (
         <>
             <div className="flex flex-row gap-4">
@@ -111,7 +115,7 @@ export default function LibaryLayout({
                     <LibraryCard
                         key={library.id}
                         library={library}
-                        mutate={mutateLibraries}
+                        mutate={updateLibrary}
                         role={adminWithStudentView() ? UserRole.Student : role}
                     />
                 ))}

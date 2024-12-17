@@ -37,11 +37,12 @@ import {
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
 import { PathValueProvider } from '@/Context/PathValueCtx';
-import AdminLayer2 from './Pages/AdminDashboard.tsx';
+import AdminLayer2 from './Pages/AdminLayer2.tsx';
 import {
+    getAdminLevel1Data,
     getFacilities,
-    getOpenContentDashboardData,
-    getRightSidebarData
+    getRightSidebarData,
+    getStudentLevel1Data
 } from './routeLoaders.ts';
 
 import FacilityManagement from '@/Pages/FacilityManagement.tsx';
@@ -51,11 +52,12 @@ import VideoContent from './Components/VideoContent.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement.tsx';
 import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
 import FavoritesPage from './Pages/Favorites.tsx';
-import StudentLayer1 from './Pages/OpenContentLevelDashboard.tsx';
+import StudentLayer1 from './Pages/StudentLayer1.tsx';
 import OperationalInsightsPage from './Pages/OperationalInsights.tsx';
 import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
 import StudentLayer0 from './Pages/StudentLayer0.tsx';
 import StudentLayer2 from './Pages/StudentDashboard.tsx';
+import AdminLayer1 from './Pages/AdminLayer1.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -162,7 +164,7 @@ const router = createBrowserRouter([
                             {
                                 path: 'trending-content',
                                 element: <StudentLayer1 />,
-                                loader: getOpenContentDashboardData,
+                                loader: getStudentLevel1Data,
                                 handle: {
                                     title: 'Trending Content',
                                     path: ['trending-content']
@@ -405,8 +407,8 @@ const router = createBrowserRouter([
                         children: [
                             {
                                 path: 'knowledge-insights',
-                                element: <StudentLayer1 />,
-                                loader: getOpenContentDashboardData,
+                                element: <AdminLayer1 />,
+                                loader: getAdminLevel1Data,
                                 handle: {
                                     title: 'Knowledge Insights',
                                     path: ['knowledge-insights']
