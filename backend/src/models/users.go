@@ -40,12 +40,12 @@ type User struct {
 	FacilityID uint     `json:"facility_id"`
 
 	/* foreign keys */
-	Mappings         []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	FavoriteVideos   []VideoFavorite       `json:"favorite_videos,omitempty" goem:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	FavoritePrograms []ProgramFavorite     `json:"favorite_programs,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
-	Facility         *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
-	UserRole         *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
-	LoginCount       *LoginMetrics         `json:"login_count,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Mappings             []ProviderUserMapping `json:"mappings,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Enrollments          []UserEnrollment      `json:"enrollments,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	OpenContentFavorites []OpenContentFavorite `json:"favorites,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Facility             *Facility             `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete SET NULL"`
+	UserRole             *Role                 `json:"-" gorm:"foreignKey:Role;constraint:OnDelete SET NULL"`
+	LoginCount           *LoginMetrics         `json:"login_count,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
 }
 
 type ImportUser struct {

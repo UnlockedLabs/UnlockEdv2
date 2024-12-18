@@ -218,19 +218,12 @@ func importEnrollmentMilestones(ks *KolibriService, paramObj milestonePO, db *go
 	}
 	courseId := uint(course["course_id"].(float64))
 	for _, enrollment := range enrollments {
-		id := enrollment["milestone_ex_id"].(string)
-		if db.Where("user_id = ? AND course_id = ? AND external_id = ?", usersMap[enrollment["user_id"].(string)], courseId, id).First(&models.Milestone{}).Error == nil {
-			continue
-		}
-		milestone := models.Milestone{
-			UserID:     usersMap[enrollment["user_id"].(string)],
-			CourseID:   courseId,
-			ExternalID: id,
-			Type:       models.Enrollment,
-		}
-		if err := db.Create(&milestone).Error; err != nil {
-			log.Errorln("error creating milestone in db")
-			continue
+		userID := usersMap[enrollment["user_id"].(string)]
+		if db.Model(&models.UserEnrollment{}).First(&models.UserEnrollment{}, "user_id = ? AND course_id = ?", userID, courseId).RowsAffected == 0 {
+			if err := db.Create(&models.UserEnrollment{UserID: userID, CourseID: uint(courseId)}).Error; err != nil {
+				log.WithFields(log.Fields{"userId": userID, "course_id": courseId, "error": err}).Error("Failed to create enrollment")
+				continue
+			}
 		}
 	}
 	return nil
@@ -325,7 +318,7 @@ func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interf
 			"h5p":      models.ContentInteraction,
 			"topic":    models.CourseInteraction,
 		}
-		time, err := strconv.ParseFloat(activity.TimeSpent, 64)
+		timeSpent, err := strconv.ParseFloat(activity.TimeSpent, 64)
 		if err != nil {
 			log.Errorln("error parsing time spent in ImportActivityForCourse")
 			continue
@@ -339,7 +332,7 @@ func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interf
 		if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, activity.ID).First(&acts).Error == nil {
 			continue
 		}
-		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", user_id, courseId, kind, time, activity.ID).Error; err != nil {
+		if err := db.Exec("CALL insert_daily_activity_kolibri(?, ?, ?, ?, ?, ?)", user_id, courseId, kind, timeSpent, activity.ID, time.Now()).Error; err != nil {
 			log.WithFields(log.Fields{"userId": user_id, "course_id": courseId, "error": err}).Error("Failed to create activity")
 			continue
 		}

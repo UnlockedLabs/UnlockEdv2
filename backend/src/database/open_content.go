@@ -42,110 +42,81 @@ func (db *DB) CreateContentActivity(urlString string, activity *models.OpenConte
 	}
 }
 
-// facilityID will be nil if non-admin user, facilityID == 'featured'
-func (db *DB) ToggleLibraryFavorite(userId uint, facilityId *uint, libId int) error {
-	tx := db.Model(&models.LibraryFavorite{}).Where("library_id = ?", libId)
-	if facilityId != nil {
-		tx = tx.Where("facility_id = ?", facilityId)
-	} else {
-		tx = tx.Where("facility_id IS NULL AND user_id = ?", userId)
-	}
-	if err := tx.First(&models.LibraryFavorite{}).Error; err == nil {
-		if err := db.Unscoped().Delete(&models.LibraryFavorite{}, tx).Error; err != nil {
-			return newNotFoundDBError(err, "library_favorites")
-		}
-		return nil
-	}
-	fav := models.LibraryFavorite{UserID: userId, LibraryID: uint(libId), FacilityID: facilityId}
-	if err := db.Create(&fav).Error; err != nil {
-		return newCreateDBError(err, "library_favorites")
-	}
-	return nil
-}
-
 func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.OpenContentItem, error) {
 	var total int64
-	countQuery := `
-        SELECT COUNT(*) FROM (
-            SELECT fav.id
-            FROM library_favorites fav
-            JOIN libraries lib ON lib.id = fav.library_id
+	countQuery := `SELECT COUNT(*) FROM (
+            SELECT fav.content_id
+            FROM open_content_favorites fav
+            JOIN libraries lib ON lib.id = fav.content_id
             JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
                 AND ocp.currently_enabled = true 
                 AND ocp.deleted_at IS NULL
             WHERE fav.user_id = ? AND fav.deleted_at IS NULL
-            UNION ALL
-            SELECT vf.id
-            FROM video_favorites vf
-            JOIN videos ON vf.video_id = videos.id
-            JOIN open_content_providers ocp ON ocp.id = videos.open_content_provider_id
-                AND ocp.currently_enabled = true 
-                AND ocp.deleted_at IS NULL
-            WHERE vf.user_id = ? AND vf.deleted_at IS NULL
         ) AS total_favorites
     `
-	if err := db.Raw(countQuery, userID, userID).Scan(&total).Error; err != nil {
+	if err := db.Raw(countQuery, userID).Scan(&total).Error; err != nil {
 		return 0, nil, err
 	}
 
 	favorites := make([]models.OpenContentItem, 0, perPage)
 	favoritesQuery := `
-        SELECT 
-            content_type,
-            content_id,
-            title,
-			url,
-            thumbnail_url,
-            description,
-            visibility_status,
-            open_content_provider_id,
-            provider_name,
-            channel_title,
-            created_at
-        FROM (
-            SELECT
-                'library' AS content_type,
-                fav.library_id AS content_id,
-                lib.title,
-				lib.url,
-                lib.thumbnail_url,
-                ocp.description,
-                lib.visibility_status,
-                lib.open_content_provider_id,
-                ocp.title AS provider_name,
-                NULL AS channel_title,
-                fav.created_at
-            FROM library_favorites fav
-            JOIN libraries lib ON lib.id = fav.library_id
-            JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
-                AND ocp.currently_enabled = true 
-                AND ocp.deleted_at IS NULL
-            WHERE fav.user_id = ? AND fav.deleted_at IS NULL
+    SELECT 
+        content_type,
+        content_id,
+        title,
+        url,
+        thumbnail_url,
+        description,
+        visibility_status,
+        open_content_provider_id,
+        provider_name,
+        channel_title,
+        created_at
+    FROM (
+        SELECT
+            'library' AS content_type,
+            f.content_id,
+            lib.title,
+            lib.url,
+            lib.thumbnail_url,
+            ocp.description,
+            lib.visibility_status,
+            lib.open_content_provider_id,
+            ocp.title AS provider_name,
+            NULL AS channel_title,
+            f.created_at
+        FROM open_content_favorites f
+        JOIN libraries lib ON lib.id = f.content_id
+        JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
+            AND ocp.currently_enabled = TRUE
+            AND ocp.deleted_at IS NULL
+        WHERE f.user_id = ? AND f.deleted_at IS NULL
+            AND f.content_id IN (SELECT id FROM libraries where visibility_status = true)
+        UNION ALL
 
-            UNION ALL
-
-            SELECT
-                'video' AS content_type,
-                vf.video_id AS content_id,
-                videos.title,
-				videos.url,
-                videos.thumbnail_url,
-                videos.description,
-                videos.visibility_status,
-                videos.open_content_provider_id,
-                NULL AS provider_name,
-                videos.channel_title,
-                vf.created_at
-            FROM video_favorites vf
-            JOIN videos ON vf.video_id = videos.id
-            JOIN open_content_providers ocp ON ocp.id = videos.open_content_provider_id
-                AND ocp.currently_enabled = true 
-                AND ocp.deleted_at IS NULL
-            WHERE vf.user_id = ? AND vf.deleted_at IS NULL
-        ) AS all_favorites
-        ORDER BY created_at DESC
-        LIMIT ? OFFSET ?
-    `
+        SELECT
+            'video' AS content_type,
+            f.content_id,
+            videos.title,
+            videos.url,
+            videos.thumbnail_url,
+            videos.description,
+            videos.visibility_status,
+            videos.open_content_provider_id,
+            NULL AS provider_name,
+            videos.channel_title,
+            f.created_at
+        FROM open_content_favorites f
+        JOIN videos ON videos.id = f.content_id
+        JOIN open_content_providers ocp ON ocp.id = videos.open_content_provider_id
+            AND ocp.currently_enabled = TRUE
+            AND ocp.deleted_at IS NULL
+        WHERE f.user_id = ? AND f.deleted_at IS NULL
+            AND f.content_id IN (SELECT id FROM videos where visibility_status = true AND availability = 'available')
+    ) AS all_favorites
+    ORDER BY created_at DESC
+    LIMIT ? OFFSET ?;
+`
 	if err := db.Raw(favoritesQuery, userID, userID, perPage, calcOffset(page, perPage)).Scan(&favorites).Error; err != nil {
 		return 0, nil, err
 	}

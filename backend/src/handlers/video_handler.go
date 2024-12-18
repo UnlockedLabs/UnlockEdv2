@@ -63,13 +63,14 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 }
 
 const (
-	FavoriteVideoAction    = "favorite"
+	FeatureVideoAction     = "feature"
 	ToggleVisibilityAction = "visibility"
 	RetryVideoAction       = "retry"
 )
 
 func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	userID, facilityID := claims.UserID, claims.FacilityID
 	vidId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
@@ -80,8 +81,8 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 	}
 	switch r.PathValue("action") {
 
-	case FavoriteVideoAction:
-		isFavorited, err := srv.Db.FavoriteVideo(vidId, userID)
+	case FeatureVideoAction: // this is an admin only action, so pass the facilityID to 'feature' the content
+		isFavorited, err := srv.Db.FavoriteOpenContent(vidId, video.OpenContentProviderID, userID, &facilityID)
 		if err != nil {
 			return newInternalServerServiceError(err, "error favoriting video")
 		}
@@ -161,8 +162,11 @@ func (srv *Server) handleFavoriteVideo(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
-
-	isFavorited, err := srv.Db.FavoriteVideo(vidId, userID)
+	video, err := srv.Db.GetVideoByID(vidId)
+	if err != nil {
+		return newInvalidIdServiceError(err, "video_id")
+	}
+	isFavorited, err := srv.Db.FavoriteOpenContent(vidId, userID, video.OpenContentProviderID, nil)
 	if err != nil {
 		return newInternalServerServiceError(err, "error favoriting video")
 	}

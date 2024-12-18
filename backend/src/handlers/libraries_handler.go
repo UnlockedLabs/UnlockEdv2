@@ -101,7 +101,11 @@ func (srv *Server) handleToggleFavoriteLibrary(w http.ResponseWriter, r *http.Re
 		// an admin toggling this will save the facilityID as a 'featured' library for that facility
 		facilityID = &claims.FacilityID
 	}
-	if err := srv.Db.ToggleLibraryFavorite(claims.UserID, facilityID, libraryID); err != nil {
+	library, err := srv.Db.GetLibraryByID(libraryID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if _, err := srv.Db.FavoriteOpenContent(libraryID, library.OpenContentProviderID, claims.UserID, facilityID); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Favorite toggled successfully")

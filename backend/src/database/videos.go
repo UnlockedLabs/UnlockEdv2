@@ -20,27 +20,38 @@ func (db *DB) GetVideoProvider() (*models.OpenContentProvider, error) {
 	return &provider, nil
 }
 
-func (db *DB) FavoriteVideo(vidID int, userID uint) (bool, error) {
-	fav := models.VideoFavorite{
-		VideoID: uint(vidID),
-		UserID:  userID,
+func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facilityID *uint) (bool, error) {
+	fav := models.OpenContentFavorite{
+		ContentID:             uint(contentID),
+		OpenContentProviderID: ocpID,
+		UserID:                userID,
+		FacilityID:            facilityID,
 	}
-	if db.Where("video_id = ? AND user_id = ?", vidID, userID).First(&models.VideoFavorite{}).RowsAffected > 0 {
-		if err := db.Where("video_id = ? AND user_id = ?", vidID, userID).Delete(&fav).Error; err != nil {
+
+	tx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
+	if facilityID != nil {
+		tx = tx.Where("facility_id = ?", facilityID)
+	}
+	if tx.First(&models.OpenContentFavorite{}).RowsAffected > 0 {
+		delTx := db.Where("content_id = ? AND user_id = ? AND open_content_provider_id = ?", contentID, userID, ocpID)
+		if facilityID != nil {
+			delTx = delTx.Where("facility_id = ?", facilityID)
+		}
+		if err := delTx.Delete(&fav).Error; err != nil {
 			return false, newDeleteDBError(err, "video_favorites")
 		}
 		return false, nil
 	} else {
 		if err := db.Create(&fav).Error; err != nil {
-			return false, newCreateDBError(err, "video_favorites")
+			return false, newCreateDBError(err, "open_content_favorites")
 		}
+		return true, nil
 	}
-	return true, nil
 }
 
 func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy string, userID uint) (int64, []models.Video, error) {
 	var videos []models.Video
-	tx := db.Model(&models.Video{}).Preload("Attempts").Preload("Favorites", "user_id = ?", userID)
+	tx := db.Model(&models.Video{}).Preload("Attempts")
 	var total int64
 	validOrder := map[string]bool{
 		"title ASC":       true,
@@ -58,7 +69,8 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 	}
 	if valid, ok := validOrder[orderBy]; ok && valid {
 		if orderBy == "favorited" {
-			tx = tx.Joins("LEFT JOIN video_favorites ON video_favorites.video_id = videos.id").Group("videos.id").Order("COUNT(video_favorites.id) DESC")
+			tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
+				Group("videos.id").Order("COUNT(f.id) DESC")
 		} else {
 			tx = tx.Order(orderBy)
 		}

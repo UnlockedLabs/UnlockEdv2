@@ -121,10 +121,10 @@ func MigrateTesting(db *gorm.DB) {
 		&models.CronJob{},
 		&models.RunnableTask{},
 		&models.Library{},
-		&models.LibraryFavorite{},
 		&models.Video{},
 		&models.VideoDownloadAttempt{},
-		&models.VideoFavorite{},
+		&models.OpenContentFavorite{},
+		&models.UserEnrollment{},
 	}
 	for _, table := range TableList {
 		log.Printf("Migrating %T table...", table)
@@ -383,10 +383,11 @@ func (db *DB) SeedTestData() {
 			}
 			time.Sleep(time.Millisecond * 1)
 		}
-		if i%2 == 0 { //just going to favorite every other video
-			favoriteVideo := models.VideoFavorite{
-				UserID:  user.ID,
-				VideoID: videos[i].ID,
+		if i%3 == 0 { //just going to favorite every third video
+			favoriteVideo := models.OpenContentFavorite{
+				UserID:                user.ID,
+				ContentID:             videos[i].ID,
+				OpenContentProviderID: youtubeID,
 			}
 			if err := db.Create(&favoriteVideo).Error; err != nil {
 				log.Fatalf("Failed to create favorite video: %v", err)
@@ -421,9 +422,10 @@ func (db *DB) SeedTestData() {
 					log.Fatalf("Failed to create open content activity: %v", err)
 				}
 				if i%2 == 0 && j == 0 { //just the first one should be favorited
-					libraryFavorite := models.LibraryFavorite{
-						UserID:    user.ID,
-						LibraryID: library[i].ID,
+					libraryFavorite := models.OpenContentFavorite{
+						UserID:                user.ID,
+						ContentID:             library[i].ID,
+						OpenContentProviderID: kwixID,
 					}
 					if err := db.Create(&libraryFavorite).Error; err != nil {
 						log.Fatalf("Failed to create favorite library: %v", err)
@@ -444,14 +446,11 @@ func (db *DB) SeedTestData() {
 		}
 		for jdx := range courses {
 			// all test courses are open_enrollment
-			enrollment := models.Milestone{
-				CourseID:    courses[jdx].ID,
-				Type:        models.Enrollment,
-				UserID:      dbUsers[idx].ID,
-				IsCompleted: true,
-				ExternalID:  fmt.Sprintf("%d", rand.Intn(1000000)),
+			enrollment := models.UserEnrollment{
+				CourseID: courses[jdx].ID,
+				UserID:   dbUsers[idx].ID,
 			}
-			enrollment.CreatedAt = courses[jdx].CreatedAt
+			enrollment.CreatedAt = &courses[jdx].CreatedAt
 			if err := db.Create(&enrollment).Error; err != nil {
 				log.Printf("Failed to create enrollment milestone: %v", err)
 				continue

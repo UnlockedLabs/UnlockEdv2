@@ -20,7 +20,7 @@ type Video struct {
 
 	Provider  *OpenContentProvider   `json:"open_content_provider" gorm:"foreignKey:OpenContentProviderID"`
 	Attempts  []VideoDownloadAttempt `json:"video_download_attempts" gorm:"foreignKey:VideoID"`
-	Favorites []VideoFavorite        `json:"video_favorites" gorm:"foreignKey:VideoID"`
+	Favorites []OpenContentFavorite  `json:"video_favorites" gorm:"-"`
 }
 
 func (vid *Video) GetS3KeyMp4() string {
@@ -28,15 +28,6 @@ func (vid *Video) GetS3KeyMp4() string {
 }
 func (vid *Video) GetS3KeyJson() string {
 	return fmt.Sprintf("videos/%s.json", vid.ExternalID)
-}
-
-type VideoFavorite struct {
-	DatabaseFields
-	UserID  uint `json:"user_id" gorm:"not null"`
-	VideoID uint `json:"video_id" gorm:"not null"`
-
-	User  *User  `json:"user" gorm:"foreignKey:UserID"`
-	Video *Video `json:"video" gorm:"foreignKey:VideoID"`
 }
 
 func (vid *Video) HasRecentAttempt() bool {

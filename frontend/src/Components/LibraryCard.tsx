@@ -57,7 +57,7 @@ export default function LibraryCard({
             {}
         );
         if (resp.success) {
-            const isFavorited = library.favorites.length === 0;
+            const isFavorited = library.is_favorited;
             onFavoriteToggle?.(library.id, isFavorited);
             await mutate();
         }
@@ -92,13 +92,13 @@ export default function LibraryCard({
                 {/* don't display the favorite toggle when admin is viewing in student view*/}
                 <ULIComponent
                     tooltipClassName="absolute right-2 top-2 z-100"
-                    iconClassName={`w-6 h-6 ${library.favorites.length > 0 && 'text-primary-yellow'}`}
+                    iconClassName={`w-6 h-6 ${library.is_favorited && 'text-primary-yellow'}`}
                     icon={
                         AdminRoles.includes(role)
-                            ? library.favorites.length > 0
+                            ? library.is_favorited
                                 ? FlagIcon
                                 : FlagIconOutline
-                            : library.favorites.length > 0
+                            : library.is_favorited
                               ? StarIcon
                               : StarIconOutline
                     }

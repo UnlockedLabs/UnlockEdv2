@@ -18,6 +18,7 @@ type Course struct {
 	EndDt                   *time.Time `gorm:"type:date" json:"end_dt"`
 
 	ProviderPlatform *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;constraint:OnDelete SET NULL" json:"-"`
+	Enrollments      []UserEnrollment  `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
 	Milestones       []Milestone       `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
 	Outcomes         []Outcome         `gorm:"foreignKey:CourseID;constraint:OnDelete SET NULL" json:"-"`
 }
@@ -33,6 +34,20 @@ const (
 func (Course) TableName() string {
 	return "courses"
 }
+
+type UserEnrollment struct {
+	UserID     uint       `json:"user_id" gorm:"primaryKey;autoIncrement:false"`
+	CourseID   uint       `json:"course_id" gorm:"primaryKey;autoIncrement:false"`
+	ExternalID string     `json:"external_id" gorm:"size:64"`
+	CreatedAt  *time.Time `json:"created_at"`
+	UpdatedAt  *time.Time `json:"updated_at"`
+	DeletedAt  *time.Time `json:"deleted_at"`
+
+	User   *User   `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+	Course *Course `json:"course,omitempty" gorm:"foreignKey:CourseID;constraint:OnDelete CASCADE"`
+}
+
+func (UserEnrollment) TableName() string { return "user_enrollments" }
 
 type RecentActivity struct {
 	Date  string  `json:"date"`
