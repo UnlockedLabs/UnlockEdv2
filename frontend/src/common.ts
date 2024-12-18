@@ -772,7 +772,7 @@ export interface Library {
     url: string;
     visibility_status: boolean;
     open_content_provider: OpenContentProvider;
-    favorites: LibraryFavorites[];
+    is_favorited: boolean;
 }
 
 export interface LibraryFavorites {

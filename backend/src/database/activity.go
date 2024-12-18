@@ -159,8 +159,8 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
         CASE
             WHEN COUNT(o.type) > 0 THEN 100
             WHEN COUNT(c.total_progress_milestones) = 0 THEN 0
-            ELSE COUNT(milestones.id) * 100.0 / NULLIF(c.total_progress_milestones, 0)
-        END as course_progress`).
+            ELSE COUNT(milestones.id) * 100.0 / NULLIF(c.total_progress_milestones, 0) 
+		END as course_progress`).
 		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Joins("LEFT JOIN milestones ON milestones.course_id = c.id AND milestones.user_id = ?", userID).
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userID).
@@ -197,22 +197,22 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	// and acitvity.total_activity_time for the last 7 days of activity where activity.user_id = userID and activity.course_id = course.id
 	results := []result{}
 
-	err = db.Table("courses c").
-		Select(`c.id as course_id,
+	err = db.Table("user_enrollments e").
+		Select(`e.course_id as course_id,
 				c.alt_name,
 				c.name,
 				pp.name as provider_platform_name,
 				c.external_url,
 				DATE(a.created_at) as date,
 				SUM(a.time_delta) as time_delta`).
+		Joins("JOIN courses c ON e.course_id = c.id").
 		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Joins("JOIN milestones m ON m.course_id = c.id AND m.user_id = ?", userID).
 		Joins("JOIN activities a ON a.course_id = c.id").
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id").
 		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
-		Where("m.type = 'enrollment'").
 		Where("o.type IS NULL").
-		Group("c.id, DATE(a.created_at), pp.name").
+		Group("c.id, e.course_id, DATE(a.created_at), pp.name").
 		Find(&results).Error
 	if err != nil {
 		log.Errorf("Query failed: %v", err)

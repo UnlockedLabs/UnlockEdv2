@@ -3,9 +3,11 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"math/rand"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,7 +36,7 @@ func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 
 func (db *DB) RunDemoSeed(facilityId uint) error {
 	users := []models.User{}
-	if err := db.Find(&users, "facility_id = ?", facilityId).Error; err != nil {
+	if err := db.Model(&models.User{}).Preload("Enrollments").Find(&users, "facility_id = ?", facilityId).Error; err != nil {
 		return newGetRecordsDBError(err, "users")
 	}
 
@@ -44,7 +46,7 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 	}
 
 	courses := []models.Course{}
-	if err := db.Find(&courses).Error; err != nil {
+	if err := db.Preload("ProviderPlatform").Find(&courses).Error; err != nil {
 		return newGetRecordsDBError(err, "courses")
 	}
 
@@ -76,8 +78,16 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 			if startDate == nil {
 				startDate = &sixMonthsAgo
 			}
-
+			if !slices.ContainsFunc(user.Enrollments, func(e models.UserEnrollment) bool {
+				return e.CourseID == course.ID
+			}) {
+				if err := db.Exec("INSERT INTO user_enrollments (user_id, course_id, external_id, created_at) VALUES (?, ?, ?, ?)",
+					user.ID, course.ID, uuid.NewString(), startDate).Error; err != nil {
+					logrus.Println(err)
+				}
+			}
 			daysSinceStart := int(time.Since(*startDate).Hours() / 24)
+			backThen := time.Now().AddDate(0, 0, -daysSinceStart)
 			milestonesPerUser := 0
 			totalCourseTime := int64(0)
 
@@ -87,15 +97,26 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 				if day == 0 {
 					externalID = "SEEDED_ACTIVITY"
 				}
-
-				createdAt := time.Now().AddDate(0, 0, -day)
-				if err := db.Exec(
-					"INSERT INTO activities (user_id, course_id, total_time, time_delta, type, created_at, external_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-					user.ID, course.ID, totalCourseTime, randTime, models.ContentInteraction, createdAt, externalID,
-				).Error; err != nil {
+				createdAt := backThen.AddDate(0, 0, day)
+				if course.ProviderPlatform == nil {
 					continue
 				}
-
+				sqlStr := ""
+				var timeToEnter int64
+				switch course.ProviderPlatform.Type {
+				case models.Kolibri:
+					sqlStr = "CALL insert_daily_activity_kolibri(?, ?, ?, ?, ?, ?)"
+					timeToEnter = randTime
+				case models.CanvasCloud, models.CanvasOSS:
+					sqlStr = "CALL insert_daily_activity_canvas(?, ?, ?, ?, ?, ?)"
+					timeToEnter = totalCourseTime
+				default:
+					continue
+				}
+				if err := db.Exec(sqlStr, user.ID, course.ID, timeToEnter, models.ContentInteraction, externalID, createdAt).
+					Error; err != nil {
+					continue
+				}
 				totalCourseTime += randTime
 
 				if day%8 == 0 && uint(milestonesPerUser) < course.TotalProgressMilestones {

@@ -290,18 +290,11 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 	for _, bsEnrollment := range filteredBSEnrollments {
 		id = bsEnrollment.getCompositeKeyId()
 		userId = usersMap[bsEnrollment.UserId]
-		if db.Where("user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).First(&models.Milestone{}).RowsAffected > 0 {
-			continue
-		}
-		milestone := models.Milestone{
-			UserID:     userId,
-			CourseID:   courseId,
-			ExternalID: id,
-			Type:       models.Enrollment,
-		}
-		if err = db.Create(&milestone).Error; err != nil {
-			log.Errorln("error creating brightspace enrollment milestone in db")
-			continue
+		if db.Model(&models.UserEnrollment{}).First(&models.UserEnrollment{}, "user_id = ? AND course_id = ? AND external_id = ?", userId, courseId, id).RowsAffected == 0 {
+			if err := db.Create(&models.UserEnrollment{UserID: userId, CourseID: uint(courseId)}).Error; err != nil {
+				log.WithFields(log.Fields{"userId": userId, "course_id": courseId, "error": err}).Error("Failed to create enrollment")
+				continue
+			}
 		}
 	}
 	return nil
@@ -515,7 +508,9 @@ func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interfa
 			if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, bsDto.ExternalId).First(&acts).RowsAffected > 0 {
 				continue
 			}
-			if err = db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userId, courseId, models.ContentInteraction, bsDto.TotalTime, bsDto.ExternalId).Error; err != nil {
+			// TODO: check if there is a timestamp we can use to get the exact time /date of the activity being entered
+			if err = db.Exec("CALL insert_daily_activity_brightspace(?, ?, ?, ?, ?, ?)",
+				userId, courseId, models.ContentInteraction, bsDto.TotalTime, bsDto.ExternalId, time.Now()).Error; err != nil {
 				log.WithFields(log.Fields{"user_id": userId, "course_id": courseId, "error": err}).Error("Failed to create activity using brightspace data")
 				continue
 			}

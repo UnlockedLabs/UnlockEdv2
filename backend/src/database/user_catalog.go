@@ -23,7 +23,8 @@ type UserCatalogJoin struct {
 func (db *DB) GetUserCatalog(userId int, tags []string, search, order string) ([]UserCatalogJoin, error) {
 	catalog := []UserCatalogJoin{}
 	tx := db.Table("courses c").
-		Select("c.id as course_id, c.thumbnail_url, c.name as course_name, pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types, c.start_dt, c.end_dt").
+		Select(`c.id as course_id, c.thumbnail_url, c.name as course_name,
+		pp.name as provider_name, c.external_url, c.type as course_type, c.description, c.outcome_types, c.start_dt, c.end_dt`).
 		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
@@ -91,8 +92,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 	tx := db.Table("courses c").
 		Select(`c.id, c.thumbnail_url,
 		c.name as course_name, pp.name as provider_name, c.external_url, c.start_dt, c.end_dt,
-		progress.course_progress,
-			a.total_time as total_time`).
+		progress.course_progress, a.total_time as total_time`).
 		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Joins("JOIN milestones as m ON m.course_id = c.id and m.user_id = ?", userId).
 		Joins(`JOIN (Select cc.id,
@@ -110,11 +110,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 				from courses cc 
 				where cc.deleted_at IS NULL
 				) progress on progress.id = c.id`, userId, userId, userId).
-		Joins(`JOIN (select id, course_id, user_id, total_time, row_number() over (PARTITION BY course_id, user_id ORDER BY created_at DESC) AS RN 
-			from activities
-			) a on a.course_id = c.id
-			and a.user_id = m.user_id
-			and a.RN = 1`).
+		Joins(`LEFT JOIN user_course_activity_totals a on a.course_id = c.id and a.user_id = m.user_id`).
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = m.user_id").
 		Where("c.deleted_at IS NULL").
 		Where("pp.deleted_at IS NULL")
@@ -138,7 +134,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 			tx.Or(query)
 		}
 	}
-	tx.Group("c.id, c.name, a.total_time, c.thumbnail_url, pp.name, c.external_url, progress.course_progress")
+	tx.Group("c.id, c.name, c.start_dt, c.end_dt, a.total_time, c.thumbnail_url, pp.name, c.external_url, progress.course_progress")
 	err := tx.Scan(&courses).Error
 	if err != nil {
 		return courseInfo, NewDBError(err, "error getting user programs")

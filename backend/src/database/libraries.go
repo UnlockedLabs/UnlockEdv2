@@ -10,52 +10,86 @@ import (
 func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string) (int64, []models.Library, error) {
 	var total int64
 	libraries := make([]models.Library, 0, perPage)
-	tx := db.Model(&models.Library{}).
-		Preload("OpenContentProvider")
+
+	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(`
+        libraries.*,
+        EXISTS (
+            SELECT 1
+            FROM open_content_favorites f
+            WHERE f.content_id = libraries.id
+              AND f.open_content_provider_id = libraries.open_content_provider_id
+              AND f.user_id = ?
+              AND f.deleted_at IS NULL
+        ) AS is_favorited`, userId)
+
 	visibility = strings.ToLower(visibility)
 
-	switch strings.ToLower(visibility) {
+	switch visibility {
 	case "featured":
-		tx = tx.Preload("Favorites", "facility_id = ?", facilityId).Joins("JOIN library_favorites l ON l.library_id = libraries.id AND l.facility_id IS NOT NULL").Where("visibility_status = true")
+		// Join with open_content_favorites, ensuring facility_id is not null (admin-specific)
+		tx = tx.Joins(`JOIN open_content_favorites f 
+			ON f.content_id = libraries.id 
+			AND f.open_content_provider_id = libraries.open_content_provider_id 
+			AND f.facility_id IS NOT NULL`).
+			Where("visibility_status = true")
 	case "visible":
-		tx = tx.Preload("Favorites", "user_id = ?", userId).Where("visibility_status = true")
+		tx = tx.Where("visibility_status = true")
 	case "hidden":
-		tx = tx.Preload("Favorites", "user_id = ?", userId).Where("visibility_status = false")
+		tx = tx.Where("visibility_status = false")
 	case "all":
-		tx = tx.Preload("Favorites", "facility_id = ?", facilityId)
+	default:
+		tx = tx.Where("visibility_status = true")
 	}
-
 	if search != "" {
 		search = "%" + strings.ToLower(search) + "%"
-		tx = tx.Where("LOWER(title) LIKE ? OR LOWER(description) LIKE ?", search, search)
+		tx = tx.Where("LOWER(libraries.title) LIKE ? OR LOWER(libraries.description) LIKE ?", search, search)
 	}
-
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")
 	}
 
-	if strings.ToLower(orderBy) == "most_favorited" {
-		tx = tx.Select("libraries.*, COUNT(library_favorites.id) AS favorite_count").
-			Joins("LEFT JOIN library_favorites ON libraries.id = library_favorites.library_id").
+	switch strings.ToLower(orderBy) {
+	case "most_favorited":
+		tx = tx.Select(`
+            libraries.*,
+            COUNT(f.id) AS favorite_count,
+            EXISTS (
+                SELECT 1
+                FROM open_content_favorites f
+                WHERE f.content_id = libraries.id
+                  AND f.open_content_provider_id = libraries.open_content_provider_id
+                  AND f.user_id = ?
+                  AND f.deleted_at IS NULL
+            ) AS is_favorited`, userId).
+			Joins(`LEFT JOIN open_content_favorites f 
+				ON f.content_id = libraries.id 
+				AND f.open_content_provider_id = libraries.open_content_provider_id`).
 			Group("libraries.id").
 			Order("favorite_count DESC")
-	} else if strings.ToLower(orderBy) == "least_favorited" {
-		tx = tx.Select("libraries.*, COUNT(library_favorites.id) AS favorite_count").
-			Joins("LEFT JOIN library_favorites ON libraries.id = library_favorites.library_id").
+	case "least_favorited":
+		tx = tx.Select(`
+            libraries.*,
+            COUNT(f.id) AS favorite_count,
+            EXISTS (
+                SELECT 1
+                FROM open_content_favorites f
+                WHERE f.content_id = libraries.id
+                  AND f.open_content_provider_id = libraries.open_content_provider_id
+                  AND f.user_id = ?
+                  AND f.deleted_at IS NULL
+            ) AS is_favorited`, userId).
+			Joins(`LEFT JOIN open_content_favorites f 
+				ON f.content_id = libraries.id 
+				AND f.open_content_provider_id = libraries.open_content_provider_id`).
 			Group("libraries.id").
 			Order("favorite_count ASC")
-	} else {
+	default:
 		tx = tx.Order(orderBy)
 	}
-
 	if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Find(&libraries).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")
 	}
-	for i := range libraries {
-		if libraries[i].Favorites == nil {
-			libraries[i].Favorites = []models.LibraryFavorite{}
-		}
-	}
+
 	return total, libraries, nil
 }
 

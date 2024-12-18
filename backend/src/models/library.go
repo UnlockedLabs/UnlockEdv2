@@ -11,8 +11,9 @@ type Library struct {
 	ThumbnailUrl          *string `json:"thumbnail_url"`
 	VisibilityStatus      bool    `gorm:"default:false;not null" json:"visibility_status"`
 
-	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
-	Favorites           []LibraryFavorite    `gorm:"foreignKey:LibraryID" json:"favorites"`
+	OpenContentProvider *OpenContentProvider  `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
+	IsFavorited         bool                  `json:"is_favorited"`
+	Favorites           []OpenContentFavorite `gorm:"-" json:"favorites"`
 }
 
 func (Library) TableName() string { return "libraries" }
@@ -35,16 +36,3 @@ type LibraryProxyPO struct {
 	BaseUrl               string
 	VisibilityStatus      bool
 }
-
-type LibraryFavorite struct {
-	DatabaseFields
-	UserID     uint  `gorm:"not null" json:"user_id"`
-	LibraryID  uint  `gorm:"not null" json:"library_id"`
-	FacilityID *uint `json:"facility_id"`
-
-	Facility *Facility `gorm:"foreignKey:FacilityID" json:"-"`
-	User     *User     `gorm:"foreignKey:UserID" json:"-"`
-	Library  *Library  `gorm:"foreignKey:LibraryID" json:"-"`
-}
-
-func (LibraryFavorite) TableName() string { return "library_favorites" }
