@@ -33,6 +33,13 @@ type OpenContentActivity struct {
 	Facility            *Facility            `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
 }
 
+type OpenContentFavorite struct {
+	UserID                uint  `gorm:"not null" json:"user_id"`
+	ContentID             uint  `gorm:"not null" json:"content_id"`
+	OpenContentProviderID uint  `gorm:"not null" json:"open_content_provider_id"`
+	FacilityID            *uint `json:"facility_id"`
+}
+
 func (OpenContentActivity) TableName() string { return "open_content_activities" }
 
 type OpenContentUrl struct {

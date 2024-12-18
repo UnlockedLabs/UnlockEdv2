@@ -88,6 +88,7 @@ func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sL
 	}
 	return writeJsonResponse(w, http.StatusOK, link)
 }
+
 func (srv *Server) handleToggleVisibilityStatus(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -99,6 +100,7 @@ func (srv *Server) handleToggleVisibilityStatus(w http.ResponseWriter, r *http.R
 	}
 	return writeJsonResponse(w, http.StatusOK, "Visibility status toggled")
 }
+
 func (srv *Server) handleDeleteLink(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
