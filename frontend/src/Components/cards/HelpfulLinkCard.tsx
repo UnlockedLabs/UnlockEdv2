@@ -69,6 +69,7 @@ export default function HelpfulLinkCard({
                         />
                     </div>
                 )}
+            <img src={link.thumbnail_url} alt={link.title} className="h-15" />
             <h3 className="body">{link.title}</h3>
             <p className="body line-clamp-2 h-10">{link.description}</p>
 
