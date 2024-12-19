@@ -12,7 +12,6 @@ type Library struct {
 	VisibilityStatus      bool    `gorm:"default:false;not null" json:"visibility_status"`
 
 	OpenContentProvider *OpenContentProvider  `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
-	IsFavorited         bool                  `json:"is_favorited"`
 	Favorites           []OpenContentFavorite `gorm:"-" json:"favorites"`
 }
 
