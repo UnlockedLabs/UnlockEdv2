@@ -29,7 +29,7 @@ export const providerRoutes = [
     'provider-user-management',
     'learning-platforms',
     'my-courses',
-    'course-catalogue',
+    'course-catalog',
     'course-catalog-admin'
 ];
 
@@ -452,7 +452,7 @@ export enum ModalType {
     Blank = '',
     Delete = 'Delete'
 }
-export interface CourseCatalogue {
+export interface CourseCatalogResponse {
     key: [number, string, boolean];
     course_id: number;
     thumbnail_url: string;
@@ -772,7 +772,7 @@ export interface Library {
     url: string;
     visibility_status: boolean;
     open_content_provider: OpenContentProvider;
-    favorites: LibraryFavorites[];
+    is_favorited: boolean;
 }
 
 export interface LibraryFavorites {

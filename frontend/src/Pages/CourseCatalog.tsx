@@ -3,7 +3,7 @@ import ToggleView from '@/Components/ToggleView';
 import { useState } from 'react';
 import CatalogCourseCard from '@/Components/CatalogCourseCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { CourseCatalogue, ServerResponse, ViewType } from '@/common';
+import { CourseCatalogResponse, ServerResponse, ViewType } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { AxiosError } from 'axios';
@@ -17,10 +17,11 @@ export default function CourseCatalog() {
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [order, setOrder] = useState('asc');
-    const { data, error } = useSWR<ServerResponse<CourseCatalogue>, AxiosError>(
-        `/api/users/${user.id}/catalogue?search=${searchTerm}&order=${order}`
-    );
-    const courseData = data?.data as CourseCatalogue[];
+    const { data, error } = useSWR<
+        ServerResponse<CourseCatalogResponse>,
+        AxiosError
+    >(`/api/users/${user.id}/catalog?search=${searchTerm}&order=${order}`);
+    const courseData = data?.data as CourseCatalogResponse[];
 
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
@@ -59,7 +60,7 @@ export default function CourseCatalog() {
                 ) : courseData?.length == 0 ? (
                     <p className="text-error">No courses to display.</p>
                 ) : (
-                    courseData?.map((course: CourseCatalogue) => {
+                    courseData?.map((course: CourseCatalogResponse) => {
                         return (
                             <CatalogCourseCard
                                 course={course}

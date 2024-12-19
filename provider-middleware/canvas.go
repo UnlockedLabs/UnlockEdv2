@@ -466,9 +466,15 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]interfac
 			log.Printf("Failed to get user: %v", err)
 			continue
 		}
+		if db.Model(&models.UserEnrollment{}).First(&models.UserEnrollment{}, "user_id = ? AND course_id = ?", userID, courseId).RowsAffected == 0 {
+			if err := db.Create(&models.UserEnrollment{UserID: userID, CourseID: uint(courseId)}).Error; err != nil {
+				log.WithFields(log.Fields{"userId": userID, "course_id": courseId, "error": err}).Error("Failed to create enrollment")
+				continue
+			}
+		}
 		totalTime := uint(enrollment["total_activity_time"].(float64))
 		// NOTE: this is calling a stored procedure to calculate the time delta
-		if err := db.Exec("SELECT insert_daily_activity(?, ?, ?, ?, ?)", userID, courseId, "course_interaction", totalTime, externalId).Error; err != nil {
+		if err := db.Exec("CALL insert_daily_activity_canvas(?, ?, ?, ?, ?, ?)", userID, courseId, "course_interaction", totalTime, externalId, time.Now()).Error; err != nil {
 			log.WithFields(log.Fields{"userId": userID, "course_id": courseId, "error": err}).Error("Failed to create activity")
 			continue
 		}
