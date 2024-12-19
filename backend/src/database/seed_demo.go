@@ -17,19 +17,21 @@ func (db *DB) RunOrResetDemoSeed(facilityId uint) error {
 	// seeding data for demo will only seed user activity/milestones/open-content activity for existing users
 	activity := models.Activity{}
 	if err := db.Model(&models.Activity{}).Where("external_id = ?", seededActivity).Order("created_at DESC").First(&activity).Error; err != nil {
-		return db.RunDemoSeed(facilityId)
-	}
-	if err := db.Exec("DELETE from activities where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
-		return newDeleteDBError(err, "activities")
-	}
-	if err := db.Exec("DELETE from open_content_activities where date(request_ts) <= date(?)", activity.CreatedAt).Error; err != nil {
-		return newDeleteDBError(err, "open_content_activities")
-	}
-	if err := db.Exec("DELETE from milestones where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
-		return newDeleteDBError(err, "milestones")
-	}
-	if err := db.Exec("DELETE from outcomes where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
-		return newDeleteDBError(err, "outcomes")
+		if err := db.Exec("DELETE from user_course_activity_totals where date(last_ts) <= date(?)", activity.CreatedAt).Error; err != nil {
+			return newDeleteDBError(err, "user_course_activity_totals")
+		}
+		if err := db.Exec("DELETE from activities where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
+			return newDeleteDBError(err, "activities")
+		}
+		if err := db.Exec("DELETE from milestones where date(created_at) >= date(?)", activity.CreatedAt).Error; err != nil {
+			return newDeleteDBError(err, "milestones")
+		}
+		if err := db.Exec("DELETE from outcomes where date(created_at) <= date(?)", activity.CreatedAt).Error; err != nil {
+			return newDeleteDBError(err, "outcomes")
+		}
+		if err := db.Exec("DELETE from open_content_activities where date(request_ts) <= date(?)", activity.CreatedAt).Error; err != nil {
+			return newDeleteDBError(err, "open_content_activities")
+		}
 	}
 	return db.RunDemoSeed(facilityId)
 }
@@ -113,7 +115,7 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 				default:
 					continue
 				}
-				if err := db.Exec(sqlStr, user.ID, course.ID, timeToEnter, models.ContentInteraction, externalID, createdAt).
+				if err := db.Exec(sqlStr, user.ID, course.ID, models.ContentInteraction, timeToEnter, externalID, createdAt).
 					Error; err != nil {
 					continue
 				}

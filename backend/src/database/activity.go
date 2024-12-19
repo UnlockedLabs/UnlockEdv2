@@ -159,12 +159,13 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
         CASE
             WHEN COUNT(o.type) > 0 THEN 100
             WHEN COUNT(c.total_progress_milestones) = 0 THEN 0
-            ELSE COUNT(milestones.id) * 100.0 / NULLIF(c.total_progress_milestones, 0) 
+            WHEN COUNT(milestones.id) * 100.0 / NULLIF(c.total_progress_milestones, 0) = 100 THEN 99.999
+			ELSE COUNT(milestones.id) * 100.0 / NULLIF(c.total_progress_milestones, 0)
 		END as course_progress`).
-		Joins("LEFT JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
-		Joins("LEFT JOIN milestones ON milestones.course_id = c.id AND milestones.user_id = ?", userID).
+		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
+		Joins("JOIN milestones ON milestones.course_id = c.id AND milestones.user_id = ?", userID).
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = ?", userID).
-		Where("c.id IN (SELECT course_id FROM activities WHERE user_id = ?)", userID).
+		Where("c.id IN (SELECT course_id FROM user_course_activity_totals WHERE user_id = ?)", userID).
 		Where("o.type IS NULL").
 		Group("c.id, c.name, c.alt_name, c.thumbnail_url, pp.name").
 		Order("MAX(milestones.created_at) DESC").
@@ -178,13 +179,13 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 	dashboard := models.UserDashboardJoin{}
 	// TOP PROGRAMS
 	topCourses := make([]string, 0, 6)
-	err = db.Table("activities a").
+	err = db.Table("user_course_activity_totals a").
 		Select("c.name as course_name").
 		Joins("JOIN courses c ON a.course_id = c.id").
 		Joins("JOIN users u ON a.user_id = u.id").
 		Where("u.facility_id = ?", facilityID).
 		Group("c.id").
-		Order("SUM(a.time_delta) DESC").
+		Order("SUM(a.total_time) DESC").
 		Limit(6).
 		Find(&topCourses).Error
 	if err != nil {
@@ -203,16 +204,18 @@ func (db *DB) GetStudentDashboardInfo(userID int, facilityID uint) (models.UserD
 				c.name,
 				pp.name as provider_platform_name,
 				c.external_url,
-				DATE(a.created_at) as date,
-				SUM(a.time_delta) as time_delta`).
+				DATE(a.last_ts) as date,
+				COALESCE(a.total_time, 0) as time_delta`).
 		Joins("JOIN courses c ON e.course_id = c.id").
 		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Joins("JOIN milestones m ON m.course_id = c.id AND m.user_id = ?", userID).
-		Joins("JOIN activities a ON a.course_id = c.id").
-		Joins("LEFT JOIN outcomes o ON o.course_id = c.id").
-		Where("a.user_id = ? AND a.created_at >= ?", userID, time.Now().AddDate(0, 0, -7)).
+		Joins(`LEFT JOIN user_course_activity_totals a on a.course_id = c.id 
+			and a.user_id = m.user_id
+			and a.last_ts >= ?`, time.Now().AddDate(0, 0, -7)).
+		Joins(`LEFT JOIN outcomes o ON o.course_id = c.id
+			and o.user_id = m.user_id`).
 		Where("o.type IS NULL").
-		Group("c.id, e.course_id, DATE(a.created_at), pp.name").
+		Group("e.course_id, c.alt_name, c.name, pp.name, c.external_url, DATE(a.last_ts), a.total_time").
 		Find(&results).Error
 	if err != nil {
 		log.Errorf("Query failed: %v", err)
