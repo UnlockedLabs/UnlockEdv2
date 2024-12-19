@@ -65,7 +65,7 @@ export default function LibraryCard({
             resp.message,
             resp.success ? ToastState.success : ToastState.error
         );
-        void mutate();
+        await mutate();
     }
 
     const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
