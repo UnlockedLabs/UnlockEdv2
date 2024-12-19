@@ -44,7 +44,7 @@ BEGIN
     INSERT INTO user_course_activity_totals (user_id, course_id, total_time, last_ts)
     VALUES (_user_id, _course_id, _total_time + prev_total_time, _created_at)
     ON CONFLICT (user_id, course_id)
-    DO UPDATE SET total_time = total_time + _total_time AND last_ts = _created_at;
+    DO UPDATE SET total_time = total_time + _total_time, last_ts = _created_at;
 
 END;
 $$;
@@ -93,7 +93,7 @@ BEGIN
     INSERT INTO user_course_activity_totals (user_id, course_id, total_time, last_ts)
     VALUES (_user_id, _course_id, _total_time, NOW())
     ON CONFLICT (user_id, course_id)
-    DO UPDATE SET total_time = _total_time AND last_ts = NOW();
+    DO UPDATE SET total_time = _total_time, last_ts = NOW();
 END;
 $$;
 
@@ -122,13 +122,13 @@ BEGIN
 
     INSERT INTO activities (user_id, course_id, type, total_time, time_delta, external_id, created_at, updated_at)
     VALUES (
-        _user_id, _course_id, _type, _total_time, _total_time - prev_total_time, _external_id, NOW(), NOW()
+        _user_id, _course_id, _type, _total_time, _total_time - prev_total_time, _external_id, _created_at, NOW()
     );
 
     INSERT INTO user_course_activity_totals (user_id, course_id, total_time, last_ts)
     VALUES (_user_id, _course_id, _total_time, NOW())
     ON CONFLICT (user_id, course_id)
-    DO UPDATE SET total_time = _total_time AND last_ts = NOW();
+    DO UPDATE SET total_time = _total_time, last_ts = NOW();
 END;
 $$;
 
