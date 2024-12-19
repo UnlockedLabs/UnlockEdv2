@@ -7,9 +7,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string) (int64, []models.Library, error) {
+type LibraryResponse struct {
+	models.Library
+	IsFavorited bool `json:"is_favorited"`
+}
+
+func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string) (int64, []LibraryResponse, error) {
 	var total int64
-	libraries := make([]models.Library, 0, perPage)
+	libraries := make([]LibraryResponse, 0, perPage)
 
 	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(`
         libraries.*,
@@ -24,14 +29,15 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
 
 	visibility = strings.ToLower(visibility)
 
+	isFeatured := false
 	switch visibility {
 	case "featured":
 		// Join with open_content_favorites, ensuring facility_id is not null (admin-specific)
 		tx = tx.Joins(`JOIN open_content_favorites f 
 			ON f.content_id = libraries.id 
 			AND f.open_content_provider_id = libraries.open_content_provider_id 
-			AND f.facility_id IS NOT NULL`).
-			Where("visibility_status = true")
+			AND f.facility_id IS NOT NULL`).Where("f.facility_id = ? AND visibility_status = true", facilityId)
+		isFeatured = true
 	case "visible":
 		tx = tx.Where("visibility_status = true")
 	case "hidden":
@@ -60,12 +66,14 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
                   AND f.open_content_provider_id = libraries.open_content_provider_id
                   AND f.user_id = ?
                   AND f.deleted_at IS NULL
-            ) AS is_favorited`, userId).
-			Joins(`LEFT JOIN open_content_favorites f 
+            ) AS is_favorited`, userId)
+		if !isFeatured {
+			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
 				ON f.content_id = libraries.id 
-				AND f.open_content_provider_id = libraries.open_content_provider_id`).
-			Group("libraries.id").
-			Order("favorite_count DESC")
+				AND f.open_content_provider_id = libraries.open_content_provider_id`)
+		}
+		tx = tx.Group("libraries.id").Order("favorite_count DESC")
+
 	case "least_favorited":
 		tx = tx.Select(`
             libraries.*,
@@ -77,11 +85,13 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
                   AND f.open_content_provider_id = libraries.open_content_provider_id
                   AND f.user_id = ?
                   AND f.deleted_at IS NULL
-            ) AS is_favorited`, userId).
-			Joins(`LEFT JOIN open_content_favorites f 
+            ) AS is_favorited`, userId)
+		if !isFeatured {
+			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
 				ON f.content_id = libraries.id 
-				AND f.open_content_provider_id = libraries.open_content_provider_id`).
-			Group("libraries.id").
+				AND f.open_content_provider_id = libraries.open_content_provider_id`)
+		}
+		tx = tx.Group("libraries.id").
 			Order("favorite_count ASC")
 	default:
 		tx = tx.Order(orderBy)
