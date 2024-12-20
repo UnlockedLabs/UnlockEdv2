@@ -83,6 +83,22 @@ const (
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob, PutVideoMetadataJob}
 
+func (jt JobType) IsVideoJob() bool {
+	switch jt {
+	case RetryVideoDownloadsJob, SyncVideoMetadataJob, PutVideoMetadataJob:
+		return true
+	}
+	return false
+}
+
+func (jt JobType) IsLibraryJob() bool {
+	switch jt {
+	case ScrapeKiwixJob:
+		return true
+	}
+	return false
+}
+
 func (jt JobType) PubName() string {
 	return fmt.Sprintf("tasks.%s", string(jt))
 }

@@ -91,7 +91,7 @@ func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId int, jobId stri
 	log.Infof("job %s succeeded?: %v \n cleaning up task", jobId, success)
 	var task models.RunnableTask
 	if err := sh.db.WithContext(ctx).Model(models.RunnableTask{}).
-		Find(&task, "(provider_platform_id = ? AND job_id = ?) OR (open_content_provider_id = ? AND job_id = ?)", provId, jobId, provId, jobId).
+		First(&task, "(provider_platform_id = ? AND job_id = ?) OR (open_content_provider_id = ? AND job_id = ?)", provId, jobId, provId, jobId).
 		Error; err != nil {
 		log.Errorf("failed to fetch task: %v", err)
 		return
