@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"os"
+	"slices"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -52,32 +53,35 @@ func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, 
 		log.Errorf("failed to fetch all open content providers: %v", err)
 		return nil, err
 	}
-	for idx := range providers {
-		for _, jobType := range models.AllContentProviderJobs {
-			switch jobType {
-			case models.ScrapeKiwixJob:
-				job := models.CronJob{Name: string(jobType)}
-				if providers[idx].Title == models.Kiwix {
-					task, err := jr.handleCreateOCProviderTask(&job, providers[idx].ID)
-					if err != nil {
-						log.Errorf("failed to create task: %v", err)
-						continue
-					}
-					otherTasks = append(otherTasks, *task)
-				}
-			case models.RetryVideoDownloadsJob, models.PutVideoMetadataJob, models.SyncVideoMetadataJob:
-				job := models.CronJob{Name: string(jobType)}
-				if providers[idx].Title == models.Youtube {
-					task, err := jr.handleCreateOCProviderTask(&job, providers[idx].ID)
-					if err != nil {
-						log.Errorf("failed to create task: %v", err)
-						continue
-					}
-					otherTasks = append(otherTasks, *task)
-				}
-			default:
+	vidProvider := slices.IndexFunc(providers, func(p models.OpenContentProvider) bool {
+		return p.Title == models.Youtube
+	})
+	libProvider := slices.IndexFunc(providers, func(p models.OpenContentProvider) bool {
+		return p.Title == models.Kiwix
+	})
+	for _, jobType := range models.AllContentProviderJobs {
+		if jobType.IsLibraryJob() {
+			if libProvider == -1 {
 				continue
 			}
+			job := models.CronJob{Name: string(jobType)}
+			task, err := jr.handleCreateOCProviderTask(&job, providers[libProvider].ID)
+			if err != nil {
+				log.Errorf("failed to create task: %v", err)
+				continue
+			}
+			otherTasks = append(otherTasks, *task)
+		} else if jobType.IsVideoJob() {
+			if vidProvider == -1 {
+				continue
+			}
+			job := models.CronJob{Name: string(jobType)}
+			task, err := jr.handleCreateOCProviderTask(&job, providers[vidProvider].ID)
+			if err != nil {
+				log.Errorf("failed to create task: %v", err)
+				continue
+			}
+			otherTasks = append(otherTasks, *task)
 		}
 	}
 	return otherTasks, nil
@@ -92,36 +96,8 @@ func (jr *JobRunner) generateProviderTasks() ([]models.RunnableTask, error) {
 	log.Infof("Found %d active providers", len(providers))
 	tasksToRun := make([]models.RunnableTask, 0)
 	for _, provider := range providers {
-		var courses []models.Course
-		if err := jr.db.Find(&courses, "provider_platform_id = ?", provider.ID).Error; err != nil {
-			log.Errorf("failed to fetch courses for provider %d: %v", provider.ID, err)
-			continue
-		}
-		firstRun := false
-		if len(courses) == 0 {
-			getCoursesJob, err := jr.createIfNotExists(models.GetCoursesJob)
-			if err != nil {
-				log.Errorf("failed to create GetCoursesJob: %v", err)
-				continue
-			}
-			getCoursesTask := models.RunnableTask{JobID: getCoursesJob.ID, ProviderPlatformID: &provider.ID, Status: models.StatusPending}
-			err = jr.intoProviderPlatformTask(getCoursesJob, provider.ID, &getCoursesTask)
-			if err != nil {
-				log.Errorf("failed to create GetCoursesTask: %v", err)
-				continue
-			}
-			firstRun = true
-			err = jr.fetchInitialProviderCourses(&provider, getCoursesJob.ID, &getCoursesTask)
-			if err != nil {
-				log.Errorf("failed to fetch initial provider courses: %v", err)
-				continue
-			}
-		}
 		provJobs := provider.GetDefaultCronJobs()
 		for _, jobType := range provJobs {
-			if jobType == models.GetCoursesJob && firstRun {
-				continue
-			}
 			created, err := jr.createIfNotExists(jobType)
 			if err != nil {
 				log.Errorf("failed to create job: %v", err)
