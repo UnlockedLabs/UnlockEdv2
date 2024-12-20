@@ -67,19 +67,8 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 	params := *service.GetJobParams()
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
-	err = service.ImportCourses(sh.db)
-	if err != nil {
-		sh.cleanupJob(contxt, providerPlatformId, jobId, false)
-		logger().Println("error importing kolibri courses", err)
-		return
-	}
-	finished := nats.NewMsg("tasks.get_courses.completed")
-	finished.Data = []byte(`{"job_id": "` + jobId + `"}`)
-	err = sh.nats.PublishMsg(finished)
-	if err != nil {
-		logger().Errorln("Failed to publish message to NATS")
-	}
-	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
+	success := service.ImportCourses(sh.db) != nil
+	sh.cleanupJob(contxt, providerPlatformId, jobId, success)
 }
 
 func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.Msg) {
@@ -92,14 +81,8 @@ func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.M
 	}
 	jobId := body["job_id"].(string)
 	kiwixService := NewKiwixService(provider, &body)
-	err = kiwixService.ImportLibraries(contxt, sh.db)
-	if err != nil {
-		logger().Errorf("error importing libraries from msg %v", err)
-		sh.cleanupJob(contxt, int(provider.ID), jobId, false)
-		return
-	}
-
-	sh.cleanupJob(contxt, int(provider.ID), jobId, true)
+	success := kiwixService.ImportLibraries(contxt, sh.db) != nil
+	sh.cleanupJob(contxt, int(provider.ID), jobId, success)
 }
 
 /**
@@ -146,6 +129,7 @@ func (sh *ServiceHandler) handleMilestonesForCourseUser(ctx context.Context, msg
 	logger().Println("initiating GetMilestonesForCourseUser milestones")
 	params := *service.GetJobParams()
 	courses := extractArrayMap(params, "courses")
+	success := true
 	users := extractArrayMap(params, "user_mappings")
 	jobId := params["job_id"].(string)
 	lastRunStr := params["last_run"].(string)
@@ -164,12 +148,13 @@ func (sh *ServiceHandler) handleMilestonesForCourseUser(ctx context.Context, msg
 			err = service.ImportMilestones(course, users, sh.db, lastRun)
 			time.Sleep(TIMEOUT_WAIT * time.Second) // to avoid rate limiting with the provider
 			if err != nil {
+				success = false
 				logger().Errorf("Failed to retrieve milestones: %v", err)
 				continue
 			}
 		}
 	}
-	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
+	sh.cleanupJob(contxt, providerPlatformId, jobId, success)
 }
 
 func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nats.Msg) {
@@ -180,6 +165,7 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 		logger().WithFields(logrus.Fields{"error": err.Error()}).Error("Failed to initialize service")
 		return
 	}
+	success := true
 	params := *service.GetJobParams()
 	logger().Println("params for activity job: ", params)
 	courses := extractArrayMap(params, "courses")
@@ -193,13 +179,13 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 		default:
 			err = service.ImportActivityForCourse(course, sh.db)
 			if err != nil {
-				sh.cleanupJob(contxt, providerPlatformId, jobId, false)
+				success = false
 				logger().Errorf("failed to get course activity: %v", err)
 				continue
 			}
 		}
 	}
-	sh.cleanupJob(contxt, providerPlatformId, jobId, true)
+	sh.cleanupJob(contxt, providerPlatformId, jobId, success)
 }
 
 func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {

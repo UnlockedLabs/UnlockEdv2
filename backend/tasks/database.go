@@ -2,12 +2,10 @@ package main
 
 import (
 	"UnlockEdv2/src/models"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -94,37 +92,4 @@ func (jr *JobRunner) handleCreateOCProviderTask(job *models.CronJob, providerId 
 		return nil, err
 	}
 	return &task, nil
-}
-
-func (jr *JobRunner) fetchInitialProviderCourses(prov *models.ProviderPlatform, jobId string, task *models.RunnableTask) error {
-	done := make(chan bool)
-	sub, err := jr.nats.Subscribe("tasks.get_courses.completed", func(msg *nats.Msg) {
-		var completedParams map[string]interface{}
-		if err := json.Unmarshal(msg.Data, &completedParams); err != nil {
-			log.Errorf("failed to unmarshal completion message: %v", err)
-			return
-		}
-		if completedParams["job_id"] == jobId && completedParams["provider_platform_id"] == prov.ID {
-			done <- true
-		}
-	})
-	if err != nil {
-		log.Errorf("failed to subscribe to completion subject: %v", err)
-		return err
-	}
-	defer func() {
-		err := sub.Unsubscribe()
-		if err != nil {
-			log.Errorf("failed to unsubscribe from completion subject: %v", err)
-		}
-	}()
-	jr.runTask(task)
-	select {
-	case <-done:
-		log.Info("Course fetching job completed. Continuing with the rest of the jobs...")
-	case <-time.After(WaitTime):
-		log.Error("Timeout waiting for course fetching job to complete")
-		return fmt.Errorf("timeout waiting for course fetching job to complete")
-	}
-	return nil
 }
