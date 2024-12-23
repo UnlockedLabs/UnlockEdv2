@@ -9,33 +9,19 @@ import (
 )
 
 func main() {
-	file := os.Stdout
-	defer file.Close()
 	if err := godotenv.Load(); err != nil {
 		log.Info("no .env file found, using default env variables")
 	}
 	env := os.Getenv("APP_ENV")
 	testing := (env == "testing")
-	initLogging(env, file)
+	initLogging()
 	newServer := server.NewServer(testing)
 	newServer.ListenAndServe()
 }
 
-func initLogging(env string, file *os.File) {
-	var err error
-	prod := (env == "prod" || env == "production")
-	if prod {
-		file, err = os.OpenFile("logs/server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("Failed to open log file: %v", err)
-		}
-		log.SetFormatter(&log.JSONFormatter{})
-	} else {
-		log.SetFormatter(&log.TextFormatter{ForceColors: true})
-	}
-	level := parseLogLevel()
-	log.SetLevel(level)
-	log.SetOutput(file)
+func initLogging() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetLevel(parseLogLevel())
 }
 
 func parseLogLevel() log.Level {

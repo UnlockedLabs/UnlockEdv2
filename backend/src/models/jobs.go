@@ -35,7 +35,7 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 		case string(RetryVideoDownloadsJob):
 			schedule := os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
 			if schedule == "" {
-				schedule = EveryThreeHours
+				schedule = EveryDaytimeHour
 			}
 			cj.Schedule = schedule
 		case string(PutVideoMetadataJob):
@@ -74,7 +74,7 @@ const (
 	SyncVideoMetadataJob   JobType   = "sync_video_metadata"
 	PutVideoMetadataJob    JobType   = "put_video_metadata"
 	AddVideosJob           JobType   = "add_videos"
-	EveryThreeHours        string    = "0 */3 * * *"
+	EveryDaytimeHour       string    = "0 6-20 * * *"
 	EverySundayAt8PM       string    = "0 20 * * 7"
 	StatusPending          JobStatus = "pending"
 	StatusRunning          JobStatus = "running"
