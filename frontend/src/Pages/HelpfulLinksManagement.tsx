@@ -3,7 +3,8 @@ import {
     ModalType,
     ServerResponseOne,
     ToastState,
-    HelpfulLinkAndSort
+    HelpfulLinkAndSort,
+    UserRole
 } from '@/common';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import AddLinkForm from '@/Components/forms/AddLinkForm';
@@ -13,15 +14,17 @@ import Modal from '@/Components/Modal';
 import SearchBar from '@/Components/inputs/SearchBar';
 import Pagination from '@/Components/Pagination';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useToast } from '@/Context/ToastCtx';
 import { useDebounceValue } from 'usehooks-ts';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import API from '@/api/api';
 import SortByPills from '@/Components/pill-labels/SortByPills';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function HelpfulLinksManagement() {
+    const { user } = useAuth();
     const addLinkModal = useRef<HTMLDialogElement>(null);
     const editLinkModal = useRef<HTMLDialogElement>(null);
     const deleteLinkModal = useRef<HTMLDialogElement>(null);
@@ -59,7 +62,12 @@ export default function HelpfulLinksManagement() {
         deleteLinkModal.current?.close();
     }
 
-    function showModifyLink(link: HelpfulLink, type: ModalType) {
+    function showModifyLink(
+        link: HelpfulLink,
+        type: ModalType,
+        e: React.MouseEvent
+    ) {
+        e.stopPropagation();
         setCurrentLink(link);
         if (type === ModalType.Edit) {
             editLinkModal.current?.showModal();
@@ -140,8 +148,13 @@ export default function HelpfulLinksManagement() {
                         <HelpfulLinkCard
                             key={index}
                             link={link}
-                            mutate={mutate}
+                            mutate={updateLinks}
                             showModal={showModifyLink}
+                            role={
+                                isAdministrator(user)
+                                    ? UserRole.Admin
+                                    : UserRole.Student
+                            }
                         />
                     );
                 })}

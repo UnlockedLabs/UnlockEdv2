@@ -10,7 +10,6 @@ import {
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import { useAuth } from '@/useAuth';
 import { useLoaderData, useNavigate } from 'react-router-dom';
-import API from '@/api/api';
 import { FeaturedContent } from '@/Components/dashboard';
 import TopContentList from '@/Components/dashboard/TopContentList';
 import useSWR from 'swr';
@@ -44,17 +43,7 @@ export default function StudentLayer1() {
     function updateFavorites() {
         void mutateFavLibs();
         void mutateFeatLibs();
-    }
-
-    async function handleHelpfulLinkClick(id: number): Promise<void> {
-        const resp = (await API.put<{ url: string }, object>(
-            `helpful-links/activity/${id}`,
-            {}
-        )) as ServerResponseOne<{ url: string }>;
-        if (resp.success) {
-            window.open(resp.data.url, '_blank');
-            navigate('/knowledge-center/libraries');
-        }
+        void mutateHelpfulFavs();
     }
 
     return (
@@ -87,20 +76,11 @@ export default function StudentLayer1() {
                 >
                     {helpfulLinks?.data.helpful_links.map(
                         (link: HelpfulLink) => (
-                            <div
-                                key={link.id + link.url}
-                                className="cursor-pointer"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    void handleHelpfulLinkClick(link.id);
-                                }}
-                            >
-                                <HelpfulLinkCard
-                                    link={link}
-                                    role={UserRole.Student}
-                                    mutate={mutateHelpfulFavs}
-                                />
-                            </div>
+                            <HelpfulLinkCard
+                                link={link}
+                                role={UserRole.Student}
+                                mutate={updateFavorites}
+                            />
                         )
                     )}
                 </div>

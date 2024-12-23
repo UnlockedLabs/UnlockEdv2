@@ -28,11 +28,7 @@ export default function OpenContentManagement() {
     };
 
     function navigateToStudentView() {
-        if (activeTab.value === 'helpful-links') {
-            navigate('/knowledge-center/libraries');
-        } else {
-            navigate(`/knowledge-center/${activeTab.value}`);
-        }
+        navigate(`/knowledge-center/${activeTab.value}`);
     }
 
     return (
