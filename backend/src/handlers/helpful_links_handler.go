@@ -160,7 +160,7 @@ func (srv *Server) handleFavoriteLink(w http.ResponseWriter, r *http.Request, lo
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if _, err := srv.Db.FavoriteOpenContent(int(userID), link.OpenContentProviderID, uint(linkID), facilityID); err != nil {
+	if _, err := srv.Db.FavoriteOpenContent(int(linkID), link.OpenContentProviderID, uint(userID), facilityID); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Link favorite toggled successfully")
@@ -169,12 +169,12 @@ func (srv *Server) handleFavoriteLink(w http.ResponseWriter, r *http.Request, lo
 func (srv *Server) getFavicon(link string) string {
 	baseUrl, err := url.Parse(link)
 	if err != nil {
-		return "/ul-icon.png"
+		return "/ul-logo.png"
 	}
 	maybeIcon := baseUrl.Scheme + "://" + baseUrl.Host + "/favicon.ico"
 	resp, err := srv.Client.Head(maybeIcon)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		return "/ul-icon.png"
+		return "/ul-logo.png"
 	}
 	return maybeIcon
 }

@@ -10,35 +10,20 @@ export default function OpenContent() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const route = useLocation();
-    const currentTabValue =
-        route.pathname.split('/')[2]?.toLowerCase() ?? 'libraries';
-
-    const tabOptions: Record<string, Tab> = {
-        libraries: { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
-        videos: { name: OpenContentProviderType.VIDEOS, value: 'Videos' },
-        favorites: { name: 'Favorites', value: 'Favorites' }
-    };
-
+    const currentTabValue = route.pathname.split('/')[2] ?? 'libraries';
+    const tabOptions: Tab[] = [
+        { name: OpenContentProviderType.KIWIX, value: 'libraries' },
+        { name: OpenContentProviderType.VIDEOS, value: 'videos' },
+        { name: OpenContentProviderType.LINKS, value: 'helpful-links' },
+        { name: 'Favorites', value: 'favorites' }
+    ];
     const [activeTab, setActiveTab] = useState<Tab>(
-        tabOptions[currentTabValue]
+        tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]
     );
 
     useEffect(() => {
-        const newTab = tabOptions[currentTabValue] || tabOptions.libraries;
-        setActiveTab(tabOptions[currentTabValue] || tabOptions.libraries);
-        setPathVal([
-            {
-                path_id: ':kind',
-                value: newTab.value as string
-            }
-        ]);
-    }, [route.pathname]);
-
-    const tabs: Tab[] = [
-        { name: OpenContentProviderType.KIWIX, value: 'Libraries' },
-        { name: OpenContentProviderType.VIDEOS, value: 'Videos' },
-        { name: 'Favorites', value: 'Favorites' }
-    ];
+        setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
+    }, [activeTab]);
 
     const handlePageChange = (tab: Tab) => {
         setActiveTab(tab);
@@ -49,7 +34,8 @@ export default function OpenContent() {
             navigate('/knowledge-center-management/libraries');
         } else if (
             currentTabValue === 'libraries' ||
-            currentTabValue === 'videos'
+            currentTabValue === 'videos' ||
+            currentTabValue === 'helpful-links'
         ) {
             navigate('/knowledge-center-management/' + currentTabValue);
         }
@@ -69,7 +55,7 @@ export default function OpenContent() {
                 )}
             </div>
             <TabView
-                tabs={tabs}
+                tabs={tabOptions}
                 activeTab={activeTab}
                 setActiveTab={(tab) => {
                     void handlePageChange(tab);
