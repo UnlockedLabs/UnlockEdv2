@@ -103,37 +103,7 @@ func main() {
 
 func initLogging() *log.Logger {
 	var logger = log.New()
-	var file *os.File
-	var err error
-	env := os.Getenv("APP_ENV")
-	if env == "production" || env == "prod" {
-		file, err = os.OpenFile("logs/provider-middleware.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			file, err = os.Create("logs/provider-middleware.log")
-			if err != nil {
-				log.Fatalf("Failed to create log file: %v", err)
-			}
-		}
-	} else {
-		file = os.Stdout
-	}
-	logger.SetOutput(file)
 	logger.SetFormatter(&log.JSONFormatter{})
-	if os.Getenv("LOG_LEVEL") == "" {
-		switch env {
-		case "prod", "production":
-			log.SetLevel(log.InfoLevel)
-		case "dev", "development":
-			log.SetLevel(log.TraceLevel)
-		default:
-			log.SetLevel(log.DebugLevel)
-		}
-	} else {
-		level, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
-		if err != nil {
-			log.SetLevel(log.DebugLevel)
-		}
-		logger.SetLevel(level)
-	}
+	logger.SetLevel(log.InfoLevel)
 	return logger
 }

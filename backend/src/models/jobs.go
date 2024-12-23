@@ -74,7 +74,7 @@ const (
 	SyncVideoMetadataJob   JobType   = "sync_video_metadata"
 	PutVideoMetadataJob    JobType   = "put_video_metadata"
 	AddVideosJob           JobType   = "add_videos"
-	EveryThreeHours        string    = "0 */3 * * *"
+	EveryThreeHours        string    = "0 6-20 * * *"
 	EverySundayAt8PM       string    = "0 20 * * 7"
 	StatusPending          JobStatus = "pending"
 	StatusRunning          JobStatus = "running"

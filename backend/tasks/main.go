@@ -54,31 +54,22 @@ func main() {
 
 func initLogging() {
 	env := os.Getenv("APP_ENV")
-	var err error
-	var file *os.File
 	if env == "development" {
 		log.SetFormatter(&log.TextFormatter{})
-		file = os.Stdout
 	} else {
 		log.SetFormatter(&log.JSONFormatter{})
-		file, err = os.OpenFile("logs/cron.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		level, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
 		if err != nil {
-			log.Error("Failed to log to file, using default stderr")
-			file = os.Stdout
+			log.Error("Failed to parse log level, using default info")
+			level = log.DebugLevel
 		}
+		log.SetLevel(level)
 	}
-	log.SetOutput(file)
-	level, err := log.ParseLevel(os.Getenv("LOG_LEVEL"))
-	if err != nil {
-		log.Error("Failed to parse log level, using default info")
-		level = log.DebugLevel
-	}
-	log.SetLevel(level)
 }
 
 func getCronSchedule(task *models.RunnableTask, hour int) string {
 	if task.Provider != nil && task.Provider.Type == models.Brightspace {
-		return fmt.Sprintf("0 0 %d * * 4", hour)
+		return fmt.Sprintf("0 %d * * 4", hour)
 	} else if task.Job.Name == string(models.PutVideoMetadataJob) {
 		return models.EverySundayAt8PM
 	} else {
