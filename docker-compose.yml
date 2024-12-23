@@ -85,7 +85,7 @@ services:
       context: .
       dockerfile: provider-middleware/dev.Dockerfile
     environment:
-      - APP_ENV=production
+      - APP_ENV=dev
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=unlocked
