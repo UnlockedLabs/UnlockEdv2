@@ -58,6 +58,7 @@ import HelpfulLinksManagement from './Pages/HelpfulLinksManagement.tsx';
 import StudentLayer0 from './Pages/StudentLayer0.tsx';
 import StudentLayer2 from './Pages/StudentDashboard.tsx';
 import AdminLayer1 from './Pages/AdminLayer1.tsx';
+import HelpfulLinks from './Pages/HelpfulLinks.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -197,6 +198,17 @@ const router = createBrowserRouter([
                                         handle: {
                                             title: 'Videos',
                                             path: ['knowledge-center', 'videos']
+                                        }
+                                    },
+                                    {
+                                        path: 'helpful-links',
+                                        element: <HelpfulLinks />,
+                                        handle: {
+                                            title: 'Helpful Links',
+                                            path: [
+                                                'knowledge-center',
+                                                'helpful-links'
+                                            ]
                                         }
                                     },
                                     {
