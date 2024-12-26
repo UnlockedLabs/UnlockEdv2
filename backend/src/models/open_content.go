@@ -34,6 +34,7 @@ type OpenContentActivity struct {
 }
 
 type OpenContentFavorite struct {
+	DatabaseFields
 	UserID                uint  `gorm:"not null" json:"user_id"`
 	ContentID             uint  `gorm:"not null" json:"content_id"`
 	OpenContentProviderID uint  `gorm:"not null" json:"open_content_provider_id"`
