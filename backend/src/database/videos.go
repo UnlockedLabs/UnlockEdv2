@@ -27,8 +27,8 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 		UserID:                userID,
 		FacilityID:            facilityID,
 	}
-
-	tx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
+	//use Unscoped method to ignore soft deletions
+	tx := db.Unscoped().Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
 	if facilityID != nil {
 		tx = tx.Where("facility_id = ?", facilityID)
 	}
@@ -37,7 +37,7 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 		if facilityID != nil {
 			delTx = delTx.Where("facility_id = ?", facilityID)
 		}
-		if err := delTx.Delete(&fav).Error; err != nil {
+		if err := delTx.Unscoped().Delete(&fav).Error; err != nil {
 			return false, newDeleteDBError(err, "video_favorites")
 		}
 		return false, nil
@@ -51,7 +51,16 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 
 func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy string, userID uint) (int64, []models.Video, error) {
 	var videos []models.Video
-	tx := db.Model(&models.Video{}).Preload("Attempts")
+	tx := db.Model(&models.Video{}).Preload("Attempts").Select(`
+	videos.*,
+	EXISTS (
+		SELECT 1
+		FROM open_content_favorites f
+		WHERE f.content_id = videos.id
+		  AND f.open_content_provider_id = videos.open_content_provider_id
+		  AND f.user_id = ?
+		  AND f.deleted_at IS NULL
+	) AS is_favorited`, userID)
 	var total int64
 	validOrder := map[string]bool{
 		"title ASC":       true,

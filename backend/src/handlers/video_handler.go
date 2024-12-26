@@ -166,7 +166,7 @@ func (srv *Server) handleFavoriteVideo(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
-	isFavorited, err := srv.Db.FavoriteOpenContent(vidId, userID, video.OpenContentProviderID, nil)
+	isFavorited, err := srv.Db.FavoriteOpenContent(vidId, video.OpenContentProviderID, userID, nil)
 	if err != nil {
 		return newInternalServerServiceError(err, "error favoriting video")
 	}

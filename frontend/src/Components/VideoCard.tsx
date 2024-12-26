@@ -57,7 +57,7 @@ export default function VideoCard({
     };
 
     let bookmark: JSX.Element;
-    if (video.video_favorites && video.video_favorites.length > 0) {
+    if (video.is_favorited) {
         bookmark = <StarIcon className="h-5 text-primary-yellow" />;
     } else bookmark = <StarIconOutline className={`h-5 `} />;
     return (
