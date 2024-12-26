@@ -28,7 +28,7 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 		FacilityID:            facilityID,
 	}
 	//use Unscoped method to ignore soft deletions
-	tx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
+	tx := db.Unscoped().Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
 	if facilityID != nil {
 		tx = tx.Where("facility_id = ?", facilityID)
 	}
@@ -37,7 +37,7 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 		if facilityID != nil {
 			delTx = delTx.Where("facility_id = ?", facilityID)
 		}
-		if err := delTx.Delete(&fav).Error; err != nil {
+		if err := delTx.Unscoped().Delete(&fav).Error; err != nil {
 			return false, newDeleteDBError(err, "video_favorites")
 		}
 		return false, nil
