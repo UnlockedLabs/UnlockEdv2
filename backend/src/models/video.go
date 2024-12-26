@@ -17,7 +17,6 @@ type Video struct {
 	VisibilityStatus      bool              `json:"visibility_status" gorm:"not null;default:false"`
 	ThumbnailUrl          string            `json:"thumbnail_url" gorm:"size:255"`
 	OpenContentProviderID uint              `json:"open_content_provider_id" gorm:"not null"`
-	IsFavorited           bool              `json:"is_favorited"`
 
 	Provider  *OpenContentProvider   `json:"open_content_provider" gorm:"foreignKey:OpenContentProviderID"`
 	Attempts  []VideoDownloadAttempt `json:"video_download_attempts" gorm:"foreignKey:VideoID"`
