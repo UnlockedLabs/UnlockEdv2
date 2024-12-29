@@ -34,12 +34,11 @@ type OpenContentActivity struct {
 }
 
 type OpenContentFavorite struct {
-	UserID                uint           `gorm:"not null" json:"user_id"`
-	ContentID             uint           `gorm:"not null" json:"content_id"`
-	OpenContentProviderID uint           `gorm:"not null" json:"open_content_provider_id"`
-	FacilityID            *uint          `json:"facility_id"`
-	CreatedAt             time.Time      `json:"created_at"`
-	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
+	UserID                uint      `gorm:"not null" json:"user_id"`
+	ContentID             uint      `gorm:"not null" json:"content_id"`
+	OpenContentProviderID uint      `gorm:"not null" json:"open_content_provider_id"`
+	FacilityID            *uint     `json:"facility_id"`
+	CreatedAt             time.Time `json:"created_at"`
 }
 
 func (OpenContentActivity) TableName() string { return "open_content_activities" }

@@ -64,7 +64,6 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 		WHERE f.content_id = videos.id
 		  AND f.open_content_provider_id = videos.open_content_provider_id
 		  AND f.user_id = ?
-		  AND f.deleted_at IS NULL
 	) AS is_favorited`, userID)
 	var total int64
 	validOrder := map[string]bool{

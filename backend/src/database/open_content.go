@@ -66,7 +66,7 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 			AND ocp.deleted_at IS NULL
 		JOIN libraries lib ON lib.open_content_provider_id = ocp.id 
 			AND lib.id = f.content_id
-		WHERE f.user_id = ? AND f.deleted_at IS NULL
+		WHERE f.user_id = ?
 			AND f.content_id IN (SELECT id FROM libraries where visibility_status = true)
 	),
 	ordered_videos AS (
@@ -89,7 +89,7 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 			AND ocp.deleted_at IS NULL
 		JOIN videos ON videos.open_content_provider_id = ocp.id
 			AND videos.id = f.content_id
-		WHERE f.user_id = ? AND f.deleted_at IS NULL
+		WHERE f.user_id = ?
 			AND f.content_id IN (SELECT id FROM videos where visibility_status = true AND availability = 'available')
 	),
 	ordered_helpful_links AS (
@@ -112,7 +112,7 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 				AND ocp.deleted_at IS NULL
 		JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
 				AND hl.id = f.content_id
-		WHERE f.user_id = ? AND f.deleted_at IS NULL
+		WHERE f.user_id = ?
 		AND f.content_id IN (SELECT id from helpful_links WHERE visibility_status = true)
 	)
 	SELECT 
@@ -149,7 +149,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
                 AND ocp.currently_enabled = true
                 AND ocp.deleted_at IS NULL
-            WHERE fav.user_id = ? AND fav.deleted_at IS NULL
+            WHERE fav.user_id = ?
         ) AS total_favorites
     `
 	if err := db.Raw(countQuery, userID).Scan(&total).Error; err != nil {
@@ -187,7 +187,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             AND ocp.deleted_at IS NULL
         JOIN libraries lib ON lib.open_content_provider_id = ocp.id 
             AND lib.id = f.content_id
-        WHERE f.user_id = ? AND f.deleted_at IS NULL
+        WHERE f.user_id = ?
             AND f.content_id IN (SELECT id FROM libraries where visibility_status = true)
         UNION ALL
 
@@ -209,7 +209,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             AND ocp.deleted_at IS NULL
         JOIN videos ON videos.open_content_provider_id = ocp.id
             AND videos.id = f.content_id
-        WHERE f.user_id = ? AND f.deleted_at IS NULL
+        WHERE f.user_id = ?
             AND f.content_id IN (SELECT id FROM videos where visibility_status = true AND availability = 'available')
        UNION ALL
 
@@ -231,7 +231,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
             AND ocp.deleted_at IS NULL
         JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
             AND hl.id = f.content_id
-        WHERE f.user_id = ? AND f.deleted_at IS NULL
+        WHERE f.user_id = ?
           AND f.content_id IN (SELECT id from helpful_links WHERE visibility_status = true)
     ) AS all_favorites
     ORDER BY created_at DESC

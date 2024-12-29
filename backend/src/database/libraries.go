@@ -24,7 +24,6 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
             WHERE f.content_id = libraries.id
               AND f.open_content_provider_id = libraries.open_content_provider_id
               AND f.user_id = ?
-              AND f.deleted_at IS NULL
         ) AS is_favorited`, userId)
 
 	visibility = strings.ToLower(visibility)
@@ -65,7 +64,6 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
                 WHERE f.content_id = libraries.id
                   AND f.open_content_provider_id = libraries.open_content_provider_id
                   AND f.user_id = ?
-                  AND f.deleted_at IS NULL
             ) AS is_favorited`, userId)
 		if !isFeatured {
 			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
@@ -84,7 +82,6 @@ func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibi
                 WHERE f.content_id = libraries.id
                   AND f.open_content_provider_id = libraries.open_content_provider_id
                   AND f.user_id = ?
-                  AND f.deleted_at IS NULL
             ) AS is_favorited`, userId)
 		if !isFeatured {
 			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
