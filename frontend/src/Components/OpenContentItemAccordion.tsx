@@ -15,27 +15,24 @@ export default function OpenContentItemAccordion({
 }: {
     items: OpenContentItem[];
 }) {
-    const contentMap: OpenContentItemMap = {};
-    items.forEach((item) => {
-        let sectionKey;
-        switch (item.content_type) {
-            case 'video':
-                sectionKey = 'Videos';
-                break;
-            case 'library':
-                sectionKey = 'Libraries';
-                break;
-            case 'helpful_link':
-                sectionKey = 'Helpful Links';
-                break;
-            default:
-                sectionKey = 'All Others';
-                break;
+    const contentMap: OpenContentItemMap = {
+        Libraries: items.filter((item) => item.content_type === 'library'),
+        Videos: items.filter((item) => item.content_type === 'video'),
+        'Helpful Links': items.filter(
+            (item) => item.content_type === 'helpful_link'
+        ),
+        'All Others': items.filter(
+            (item) =>
+                !['library', 'video', 'helpful_link'].includes(
+                    item.content_type
+                )
+        )
+    };
+    //getting rid of the empty lists
+    Object.keys(contentMap).forEach((title) => {
+        if (contentMap[title].length < 1) {
+            delete contentMap[title];
         }
-        if (!contentMap[sectionKey]) {
-            contentMap[sectionKey] = [];
-        }
-        contentMap[sectionKey].push(item);
     });
     const [activeKey, setActiveKey] = useState<string | null>(null);
     const toggleAccordion = (key: string) => {
