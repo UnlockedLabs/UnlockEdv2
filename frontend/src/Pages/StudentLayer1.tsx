@@ -7,7 +7,6 @@ import {
     HelpfulLinkAndSort,
     ServerResponseMany
 } from '@/common';
-import OpenContentCard from '@/Components/cards/OpenContentCard';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import { useAuth } from '@/useAuth';
 import { useLoaderData, useNavigate } from 'react-router-dom';
@@ -16,6 +15,7 @@ import { FeaturedContent } from '@/Components/dashboard';
 import TopContentList from '@/Components/dashboard/TopContentList';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
+import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
 
 export default function StudentLayer1() {
     const { user } = useAuth();
@@ -31,7 +31,7 @@ export default function StudentLayer1() {
     const { data: favorites, mutate: mutateFavLibs } = useSWR<
         ServerResponseMany<OpenContentItem>,
         AxiosError
-    >('api/open-content/favorites');
+    >('api/open-content/favorite-groupings');
     const { data: helpfulLinks, mutate: mutateHelpfulFavs } = useSWR<
         ServerResponseOne<HelpfulLinkAndSort>,
         AxiosError
@@ -109,15 +109,8 @@ export default function StudentLayer1() {
             <div className="min-w-[300px] border-l border-grey-1 flex flex-col gap-6 px-6 py-4">
                 <h2>Favorites</h2>
                 <div className="space-y-3 w-full">
-                    {favorites ? (
-                        favorites.data.map((favorite: OpenContentItem) => {
-                            return (
-                                <OpenContentCard
-                                    key={favorite.content_id}
-                                    content={favorite}
-                                />
-                            );
-                        })
+                    {favorites?.data && favorites.data.length > 0 ? (
+                        <OpenContentItemAccordion items={favorites.data} />
                     ) : (
                         <div>No Favorites</div>
                     )}

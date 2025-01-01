@@ -9,8 +9,9 @@ import (
 func (srv *Server) registerOpenContentRoutes() []routeDef {
 	axx := models.Feature(models.OpenContentAccess)
 	return []routeDef{
-		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx},
 		{"GET /api/open-content", srv.handleIndexOpenContent, false, axx},
+		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx},
+		{"GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx},
 	}
 }
 
@@ -35,4 +36,12 @@ func (srv *Server) handleGetUserFavoriteOpenContent(w http.ResponseWriter, r *ht
 	}
 	meta := models.NewPaginationInfo(page, perPage, total)
 	return writePaginatedResponse(w, http.StatusOK, favorites, meta)
+}
+
+func (srv *Server) handleGetUserFavoriteOpenContentGroupings(w http.ResponseWriter, r *http.Request, log sLog) error {
+	favorites, err := srv.Db.GetUserFavoriteGroupings(srv.getUserID(r))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, favorites)
 }

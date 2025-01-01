@@ -15,7 +15,7 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 
 	subQuery := db.Table("open_content_favorites f").
 		Select("1").
-		Where("f.content_id = helpful_links.id AND f.user_id = ? AND f.deleted_at IS NULL", userID)
+		Where("f.content_id = helpful_links.id AND f.user_id = ?", userID)
 	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited", subQuery)
 	var total int64
 

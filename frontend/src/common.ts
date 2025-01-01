@@ -63,6 +63,7 @@ export interface Video {
     duration: number;
     created_at: string;
     updated_at: string;
+    is_favorited: boolean;
     open_content_provider?: OpenContentProvider;
     video_download_attempts: VideoDownloadAttempt[];
     video_favorites: VideoFavorites[];
