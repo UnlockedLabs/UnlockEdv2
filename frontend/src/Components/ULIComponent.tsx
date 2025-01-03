@@ -4,7 +4,7 @@ interface ULIComponentProps {
     tooltipClassName?: string; //for applying classes other than 'tooltip'
     iconClassName?: string; //for applying classes other than 'w-4 h-4'
     dataTip?: string;
-    onClick?: () => void;
+    onClick?: (e?: React.MouseEvent) => void;
     onMouseDown?: () => void;
     icon: React.ForwardRefExoticComponent<
         React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> & {
