@@ -68,7 +68,7 @@ export default function FeatureLevelCheckboxes({
         <>
             <CheckboxGeneric
                 name="open_content"
-                label="Knowledge Center"
+                label="Knowledge Base"
                 checked={getCheckboxChecked(FeatureAccess.OpenContentAccess)}
                 onChange={handleFeatureToggle}
             />
