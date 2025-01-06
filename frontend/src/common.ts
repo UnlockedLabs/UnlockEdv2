@@ -499,10 +499,11 @@ export enum ProviderPlatformState {
     ARCHIVED = 'archived'
 }
 
-export enum OpenContentProviderType {
+export enum OpenContentTabs {
     KIWIX = 'Libraries',
     VIDEOS = 'Videos',
-    LINKS = 'Helpful Links'
+    LINKS = 'Helpful Links',
+    FAVORITES = 'Favorites'
 }
 
 export enum ProviderPlatformType {
