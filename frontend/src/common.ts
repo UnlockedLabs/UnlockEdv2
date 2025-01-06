@@ -536,6 +536,20 @@ export enum ProgramType {
     THERAPEUTIC = 'THERAPEUTIC'
 }
 
+export interface LearningInsight {
+    course_name: string;
+    total_students_enrolled: number;
+    // completion_rate: number
+    activity_hours: number;
+}
+
+export interface AdminLayer2Join {
+    total_courses_offered: number;
+    total_students_enrolled: number;
+    total_hourly_activity: number;
+    learningInsights: LearningInsight[];
+}
+
 export interface AdminDashboardJoin {
     monthly_activity: RecentActivity[];
     weekly_active_users: number;

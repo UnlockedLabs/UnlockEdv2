@@ -102,6 +102,41 @@ func TestHandleAdminDashboard(t *testing.T) {
 	}
 }
 
+func TestHandleAdminLayer2(t *testing.T) {
+	httpTests := []httpTest{
+		{"TestAdminDashboardAsAdmin", "admin", map[string]any{"id": "1"}, http.StatusOK, ""},
+		{"TestAdminDashboardAsUser", "student", map[string]any{"id": "4"}, http.StatusUnauthorized, ""},
+	}
+	for _, test := range httpTests {
+		t.Run(test.testName, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/admin-layer2", nil)
+			if err != nil {
+				t.Fatalf("unable to create new request, error is %v", err)
+			}
+			req.SetPathValue("id", test.mapKeyValues["id"].(string))
+			handler := getHandlerByRoleWithMiddleware(server.handleAdminLayer2, test.role)
+			rr := executeRequest(t, req, handler, test)
+			id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
+			if test.expectedStatusCode == http.StatusOK {
+
+				id := uint(id)
+				dashboard, err := server.Db.GetAdminLayer2Info(&id)
+				if err != nil {
+					t.Fatalf("unable to get admin-layer-2, error is %v", err)
+				}
+				received := rr.Body.String()
+				resource := models.Resource[models.AdminLayer2Join]{}
+				if err := json.Unmarshal([]byte(received), &resource); err != nil {
+					t.Errorf("failed to unmarshal resource, error is %v", err)
+				}
+				if diff := cmp.Diff(&dashboard, &resource.Data); diff != "" {
+					t.Errorf("handler returned unexpected response body: %v", diff)
+				}
+			}
+		})
+	}
+}
+
 func TestHandleUserCatalog(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetAllUserCatalogAsAdmin", "admin", getUserCatalogSearch(4, nil, "", ""), http.StatusOK, ""},

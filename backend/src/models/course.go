@@ -103,6 +103,20 @@ type AdminDashboardJoin struct {
 	TopCourseActivity   []CourseActivity   `json:"top_course_activity"`
 }
 
+type LearningInsight struct {
+	CourseName            string `json:"course_name"`
+	TotalStudentsEnrolled int64  `json:"total_students_enrolled"`
+	// CompletionRate float32 `json:"completion_rate"`
+	ActivityHours int64 `json:"activity_hours"`
+}
+
+type AdminLayer2Join struct {
+	TotalCoursesOffered   int64             `json:"total_courses_offered"`
+	TotalStudentsEnrolled int64             `json:"total_students_enrolled"`
+	TotalHourlyActivity   int64             `json:"total_hourly_activity"`
+	LearningInsights      []LearningInsight `json:"learning_insights"`
+}
+
 type CourseMilestones struct {
 	Name       string `json:"name"`
 	Milestones int    `json:"milestones"`

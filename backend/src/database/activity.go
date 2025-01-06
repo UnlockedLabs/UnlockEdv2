@@ -356,3 +356,76 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	return dashboard, nil
 }
+
+func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, error) {
+	var adminLayer2 models.AdminLayer2Join
+
+	// total courses
+	// TODO: find the link between coures and facility
+	err := db.Table("courses c").
+		Select("COUNT(DISTINCT c.id) as total_courses_offered").
+		// Where("something to link to here = ?", facilityID).
+		Find(&adminLayer2.TotalCoursesOffered).Error
+	if err != nil {
+		return adminLayer2, NewDBError(err, "error getting admin dashboard info")
+	}
+
+	// total_students_enrolled
+	subQry := db.Table("courses c").
+		Select("COUNT(DISTINCT m.user_id) AS students_enrolled, c.name").
+		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
+		Joins("inner join users u on m.user_id = u.id").
+		Where("m.type = ? and u.role = ?", "enrollment", "student")
+
+	if facilityID != nil {
+		subQry = subQry.Where(" u.facility_id = ?", facilityID)
+	}
+
+	subQry = subQry.Group("c.name")
+
+	err = db.Table("(?) as sub", subQry).
+		Select("CASE WHEN SUM(students_enrolled) IS NULL THEN 0 ELSE SUM(students_enrolled) end AS students_enrolled").
+		Scan(&adminLayer2.TotalStudentsEnrolled).Debug().Error
+
+	if err != nil {
+		return adminLayer2, NewDBError(err, "error getting total_students_enrolled dashboard info")
+	}
+
+	// total_hourly_activity
+	subQry = db.Table("users u").
+		Select("CASE WHEN SUM(a.total_time) IS NULL THEN 0 ELSE ROUND(SUM(a.total_time)/3600, 0) END AS total_time").
+		Joins("LEFT JOIN activities a ON u.id = a.user_id").
+		Where("u.role = ?", "student")
+
+	if facilityID != nil {
+		subQry = subQry.Where(" u.facility_id = ?", facilityID)
+	}
+	subQry = subQry.Group("u.id")
+
+	err = subQry.Find(&adminLayer2.TotalHourlyActivity).Error
+
+	if err != nil {
+		return adminLayer2, NewDBError(err, "error getting admin dashboard info")
+	}
+
+	// learning_insights
+	// TODO: add the completion percentage
+	err = db.Table("courses c").
+		Select(`
+			c.name AS course_name,
+			COUNT(DISTINCT CASE WHEN m.type = 'enrollment' THEN u.id END) AS total_students_enrolled,
+			COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS activity_hours`).
+		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
+		Joins("LEFT JOIN users u ON m.user_id = u.id").
+		Joins("LEFT JOIN activities a ON u.id = a.user_id").
+		Where("u.role = ?", "student").
+		Group("c.name").
+		Order("c.name").
+		Find(&adminLayer2.LearningInsights).Error
+
+	if err != nil {
+		return adminLayer2, NewDBError(err, "error getting learning insight table info")
+	}
+
+	return adminLayer2, nil
+}

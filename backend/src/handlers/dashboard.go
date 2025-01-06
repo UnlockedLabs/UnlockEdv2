@@ -18,6 +18,7 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		{"GET /api/login-metrics", srv.handleLoginMetrics, true, models.Feature()},
 		{"GET /api/users/{id}/student-dashboard", srv.handleStudentDashboard, false, models.Feature()},
 		{"GET /api/users/{id}/admin-dashboard", srv.handleAdminDashboard, true, models.Feature()},
+		{"GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2, true, models.Feature()},
 		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
 		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
 	}
@@ -45,6 +46,34 @@ func (srv *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, 
 		log.add("facilityId", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
+	return writeJsonResponse(w, http.StatusOK, adminDashboard)
+}
+
+func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log sLog) error {
+	facility := r.URL.Query().Get("facility")
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var facilityId *uint
+	// Logic goes here for facility
+	switch facility {
+	case "all":
+		facilityId = nil
+	case "":
+		facilityId = &claims.FacilityID
+	default:
+		facilityIdInt, err := strconv.Atoi(facility)
+		if err != nil {
+			return newInvalidIdServiceError(err, "facility")
+		}
+		ref := uint(facilityIdInt)
+		facilityId = &ref
+	}
+
+	adminDashboard, err := srv.Db.GetAdminLayer2Info(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return newDatabaseServiceError(err)
+	}
+
 	return writeJsonResponse(w, http.StatusOK, adminDashboard)
 }
 
