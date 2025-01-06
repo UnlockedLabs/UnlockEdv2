@@ -1,4 +1,4 @@
-import { OpenContentProviderType, Tab } from '@/common';
+import { OpenContentTabs, Tab } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
@@ -12,10 +12,10 @@ export default function OpenContent() {
     const route = useLocation();
     const currentTabValue = route.pathname.split('/')[2] ?? 'libraries';
     const tabOptions: Tab[] = [
-        { name: OpenContentProviderType.KIWIX, value: 'libraries' },
-        { name: OpenContentProviderType.VIDEOS, value: 'videos' },
-        { name: OpenContentProviderType.LINKS, value: 'helpful-links' },
-        { name: 'Favorites', value: 'favorites' }
+        { name: OpenContentTabs.KIWIX, value: 'libraries' },
+        { name: OpenContentTabs.VIDEOS, value: 'videos' },
+        { name: OpenContentTabs.LINKS, value: 'helpful-links' },
+        { name: OpenContentTabs.FAVORITES, value: 'favorites' }
     ];
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]

@@ -6,7 +6,6 @@ import {
 } from '@/common';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import { AxiosError } from 'axios';
-import { useEffect } from 'react';
 import useSWR from 'swr';
 
 export default function HelpfulLinks() {
@@ -21,9 +20,6 @@ export default function HelpfulLinks() {
     function updateFavorites() {
         void mutateHelpfulFavs();
     }
-    useEffect(() => {
-        console.log(helpfulLinks?.data.helpful_links);
-    }, [helpfulLinks]);
     return (
         <div className="grid grid-cols-4 gap-6">
             {helpfulLinks?.data?.helpful_links.map((link: HelpfulLink) => (
