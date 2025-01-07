@@ -361,17 +361,25 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	var adminLayer2 models.AdminLayer2Join
 
 	// total courses
-	// TODO: find the link between coures and facility
-	err := db.Table("courses c").
-		Select("COUNT(DISTINCT c.id) as total_courses_offered").
-		// Where("something to link to here = ?", facilityID).
+	subQry :=db.Table("courses c").
+	Select("COUNT(DISTINCT c.id) as total_courses_offered").
+	Joins("inner join user_enrollments ue on c.id = ue.course_id").
+	Joins("inner join users u on ue.user_id = u.id")
+
+	if facilityID != nil {
+		subQry = subQry.Where("u.facility_id = ?", facilityID)
+		subQry = subQry.Group("u.facility_id")
+	}
+
+	err := db.Table("(?) as sub", subQry). 	
 		Find(&adminLayer2.TotalCoursesOffered).Error
+
 	if err != nil {
 		return adminLayer2, NewDBError(err, "error getting admin dashboard info")
 	}
 
 	// total_students_enrolled
-	subQry := db.Table("courses c").
+	subQry = db.Table("courses c").
 		Select("COUNT(DISTINCT m.user_id) AS students_enrolled, c.name").
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
 		Joins("inner join users u on m.user_id = u.id").
@@ -411,8 +419,7 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	// learning_insights
 	// TODO: add the completion percentage
 	err = db.Table("courses c").
-		Select(`ROW_NUMBER() over (order by c."name") as idx,
-			c.name AS course_name,
+		Select(`c.name AS course_name,
 			COUNT(DISTINCT u.id) AS total_students_enrolled,
 			COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS activity_hours`).
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").

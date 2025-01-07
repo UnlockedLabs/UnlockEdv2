@@ -154,11 +154,14 @@ export default function AdminLayer2() {
                                     </thead>
                                     <tbody className="flex flex-col gap-4 mt-4">
                                         {layer2_metrics.learning_insights?.map(
-                                            (insight: LearningInsight) => {
+                                            (
+                                                insight: LearningInsight,
+                                                index: number
+                                            ) => {
                                                 return (
                                                     <tr
                                                         className="flex flex-row justify-between body-small items-center"
-                                                        key={insight.index}
+                                                        key={index}
                                                     >
                                                         <td className="w-1/2">
                                                             {
