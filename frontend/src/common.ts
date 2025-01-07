@@ -539,7 +539,7 @@ export enum ProgramType {
 export interface LearningInsight {
     course_name: string;
     total_students_enrolled: number;
-    // completion_rate: number
+    completion_rate: number;
     activity_hours: number;
 }
 

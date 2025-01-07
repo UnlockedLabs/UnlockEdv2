@@ -174,7 +174,9 @@ export default function AdminLayer2() {
                                                             }
                                                         </td>
                                                         <td className="w-1/5">
-                                                            78%
+                                                            {
+                                                                insight.completion_rate
+                                                            }
                                                         </td>
                                                         <td className="w-1/5">
                                                             {

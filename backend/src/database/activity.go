@@ -361,17 +361,17 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	var adminLayer2 models.AdminLayer2Join
 
 	// total courses
-	subQry :=db.Table("courses c").
-	Select("COUNT(DISTINCT c.id) as total_courses_offered").
-	Joins("inner join user_enrollments ue on c.id = ue.course_id").
-	Joins("inner join users u on ue.user_id = u.id")
+	subQry := db.Table("courses c").
+		Select("COUNT(DISTINCT c.id) as total_courses_offered").
+		Joins("inner join user_enrollments ue on c.id = ue.course_id").
+		Joins("inner join users u on ue.user_id = u.id")
 
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
 		subQry = subQry.Group("u.facility_id")
 	}
 
-	err := db.Table("(?) as sub", subQry). 	
+	err := db.Table("(?) as sub", subQry).
 		Find(&adminLayer2.TotalCoursesOffered).Error
 
 	if err != nil {
@@ -418,16 +418,24 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 
 	// learning_insights
 	// TODO: add the completion percentage
+	subQry = db.Table("outcomes o").
+		Select("o.course_id, COUNT(o.id) AS outcome_count").
+		Group("o.course_id")
+
+	// Main query with subquery join
 	err = db.Table("courses c").
-		Select(`c.name AS course_name,
+		Select(`
+			c.name AS course_name,
 			COUNT(DISTINCT u.id) AS total_students_enrolled,
-			COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS activity_hours`).
+			subqry.outcome_count / CAST(c.total_progress_milestones AS float) * 100.0 AS completion_rate,
+			COALESCE(ROUND(SUM(a.total_time) / 3600, 0), 0) AS activity_hours
+		`).
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
 		Joins("LEFT JOIN users u ON m.user_id = u.id").
 		Joins("LEFT JOIN activities a ON u.id = a.user_id").
+		Joins("INNER JOIN (?) AS subqry ON m.course_id = subqry.course_id", subQry).
 		Where("u.role = ?", "student").
-		Group("c.name").
-		Order("c.name").
+		Group("c.name, completion_rate").
 		Find(&adminLayer2.LearningInsights).Error
 
 	if err != nil {
