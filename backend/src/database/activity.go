@@ -375,7 +375,7 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 		Select("COUNT(DISTINCT m.user_id) AS students_enrolled, c.name").
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
 		Joins("inner join users u on m.user_id = u.id").
-		Where("m.type = ? and u.role = ?", "enrollment", "student")
+		Where("u.role = ?", "student")
 
 	if facilityID != nil {
 		subQry = subQry.Where(" u.facility_id = ?", facilityID)
@@ -413,7 +413,7 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	err = db.Table("courses c").
 		Select(`
 			c.name AS course_name,
-			COUNT(DISTINCT CASE WHEN m.type = 'enrollment' THEN u.id END) AS total_students_enrolled,
+			COUNT(DISTINCT u.id) AS total_students_enrolled,
 			COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS activity_hours`).
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
 		Joins("LEFT JOIN users u ON m.user_id = u.id").
