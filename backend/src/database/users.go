@@ -194,7 +194,7 @@ func (db *DB) IncrementUserLogin(username string) error {
 		log.Errorf("Error getting user by username: %v", err)
 		return newGetRecordsDBError(err, "users")
 	}
-	if err := db.Debug().Exec(
+	if err := db.Exec(
 		`INSERT INTO login_metrics (user_id, total, last_login) 
 		 VALUES (?, 1, CURRENT_TIMESTAMP) 
 		 ON CONFLICT (user_id) DO UPDATE 
@@ -206,7 +206,7 @@ func (db *DB) IncrementUserLogin(username string) error {
 	now := time.Now()
 	rounded := now.Truncate(time.Hour)
 
-	if err := db.Debug().Exec(
+	if err := db.Exec(
 		`INSERT INTO login_activity (time_interval, facility_id, total_logins)
 		 VALUES (?, ?, ?)
 		 ON CONFLICT (time_interval, facility_id)
@@ -239,17 +239,25 @@ func (db *DB) GetNumberOfActiveUsersForTimePeriod(active bool, days int, facilit
 	return count, nil
 }
 
-func (db *DB) NewUsersInTimePeriod(days int, facilityId *uint) (int64, error) {
-	var count int64
+func (db *DB) NewUsersInTimePeriod(days int, facilityId *uint) (int64, int64, error) {
+	var admin_count int64
+	var user_count int64
 	daysAgo := time.Now().AddDate(0, 0, -days)
 	tx := db.Model(&models.User{}).Where("created_at >= ? AND role NOT IN ('system_admin', 'admin')", daysAgo)
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
-	if err := tx.Count(&count).Error; err != nil {
-		return 0, newGetRecordsDBError(err, "users")
+	if err := tx.Count(&user_count).Error; err != nil {
+		return 0, 0, newGetRecordsDBError(err, "users")
 	}
-	return count, nil
+	tx = db.Model(&models.User{}).Where("created_at >= ? AND role NOT IN ('student', 'system_admin')", daysAgo)
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&admin_count).Error; err != nil {
+		return 0, 0, newGetRecordsDBError(err, "users")
+	}
+	return user_count, admin_count, nil
 }
 
 func (db *DB) GetTotalLogins(days int, facilityId *uint) (int64, error) {
@@ -265,16 +273,24 @@ func (db *DB) GetTotalLogins(days int, facilityId *uint) (int64, error) {
 	return total, nil
 }
 
-func (db *DB) GetTotalUsers(facilityId *uint) (int64, error) {
-	var total int64
+func (db *DB) GetTotalUsers(facilityId *uint) (int64, int64, error) {
+	var totalResidents int64
+	var totalAdmins int64
 	tx := db.Model(&models.User{}).Where("role NOT IN ('admin', 'system_admin')")
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, newGetRecordsDBError(err, "users")
+	if err := tx.Count(&totalResidents).Error; err != nil {
+		return 0, 0, newGetRecordsDBError(err, "users")
 	}
-	return total, nil
+	tx = db.Model(&models.User{}).Where("role NOT IN ('student', 'system_admin')")
+	if facilityId != nil {
+		tx = tx.Where("facility_id = ?", *facilityId)
+	}
+	if err := tx.Count(&totalAdmins).Error; err != nil {
+		return 0, 0, newGetRecordsDBError(err, "users")
+	}
+	return totalResidents, totalAdmins, nil
 }
 
 func (db *DB) GetLoginActivity(days int, facilityID *uint) ([]models.LoginActivity, error) {

@@ -197,7 +197,7 @@ export default function Navbar({
                                 <li>
                                     <Link to="/students">
                                         <ULIComponent icon={AcademicCapIcon} />
-                                        Students
+                                        Residents
                                     </Link>
                                 </li>
                                 <li>

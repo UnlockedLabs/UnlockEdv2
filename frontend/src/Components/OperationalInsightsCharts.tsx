@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
-import API from '@/api/api';
 import { Facility, LoginMetrics, ServerResponseOne } from '@/common';
 import StatsCard from './StatsCard';
-import PeakLoginTimesChart from './PeakLoginTimesChart';
 import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
 
 const OperationalInsights = () => {
-    const [facilities, setFacilities] = useState<Facility[]>();
     const [facility, setFacility] = useState('all');
     const [days, setDays] = useState(7);
     const [resetCache, setResetCache] = useState(false);
@@ -20,37 +17,34 @@ const OperationalInsights = () => {
     >(
         `/api/login-metrics?facility=${facility}&days=${days}&reset=${resetCache}`
     );
+    const { data: facilitiesData } =
+        useSWR<ServerResponseOne<Facility[]>>('/api/facilities');
 
     useEffect(() => {
         void mutate();
     }, [facility, days, resetCache]);
 
-    useEffect(() => {
-        const fetchFacilities = async () => {
-            const response = await API.get<Facility>('facilities');
-            setFacilities(response.data as Facility[]);
-        };
-        void fetchFacilities();
-    }, []);
+    const facilities = facilitiesData?.data;
 
     const metrics = data?.data;
+    console.log('Here is the metrics: ', metrics);
+
+    const totalUsers =
+        (metrics?.total_residents ?? 0) + (metrics?.total_admins ?? 0);
 
     return (
-        <div className="p-6">
+        <div className="p-6 max-w-full overflow-x-hidden">
             {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
                 <>
-                    <div className="">
-                        <button
-                            className="button"
-                            onClick={() => setResetCache(!resetCache)}
-                        >
-                            Refresh Data
-                        </button>
-                        <div className="flex flex-row gap-4 pb-4">
+                    <div className="flex items-end justify-between pb-4">
+                        <div className="flex flex-row gap-4">
                             <div>
-                                <label htmlFor="days" className="label">
+                                <label
+                                    htmlFor="days"
+                                    className="label  leading-tight"
+                                >
                                     <span className="label-text">Days</span>
                                 </label>
                                 <select
@@ -91,62 +85,85 @@ const OperationalInsights = () => {
                                 </select>
                             </div>
                         </div>
+                        <button
+                            className="button "
+                            onClick={() => setResetCache(!resetCache)}
+                        >
+                            Refresh Data
+                        </button>
                     </div>
+
                     <div className="grid grid-cols-3 gap-4 mb-6">
                         <StatsCard
                             title="Total Users"
-                            number={metrics.total_users.toString()}
-                            label="users"
+                            number={totalUsers.toString()}
+                            label="Users"
+                            tooltip="Total number of admins and residents in the facility"
                         />
                         <StatsCard
                             title="Active Users"
                             number={metrics.active_users.toString()}
                             label={`${(
-                                (metrics.active_users / metrics.total_users) *
+                                (metrics.active_users / totalUsers) *
                                 100
                             ).toFixed(2)}% of total`}
+                            tooltip={`Number of users who have logged in in the last ${days} days`}
                         />
                         <StatsCard
                             title="Inactive Users"
                             number={(
-                                metrics.total_users - metrics.active_users
+                                totalUsers - metrics.active_users
                             ).toString()}
-                            label="users"
+                            label={
+                                totalUsers - metrics.active_users === 1
+                                    ? 'User'
+                                    : 'Users'
+                            }
+                            tooltip={`Number of users who have not logged in in the last ${days} days`}
                         />
                         <StatsCard
-                            title="Total Logins"
-                            number={metrics.total_logins.toString()}
-                            label="logins"
-                        />
-                        <StatsCard
-                            title="Logins per Day"
-                            number={metrics.logins_per_day.toString()}
-                            label="logins/day"
+                            title="New Admins Added"
+                            number={metrics.new_admins_added.toString()}
+                            label={
+                                metrics.new_admins_added === 1
+                                    ? 'Admin'
+                                    : 'Admins'
+                            }
+                            tooltip={`Number of new admins added in the last ${days} days`}
                         />
                         <StatsCard
                             title="New Residents Added"
                             number={metrics.new_residents_added.toString()}
-                            label="residents"
+                            label={
+                                metrics.new_residents_added === 1
+                                    ? 'Resident'
+                                    : 'Residents'
+                            }
+                            tooltip={`Number of new residents added in the last ${days} days`}
+                        />
+                        <StatsCard
+                            title="Total Logins"
+                            number={metrics.total_logins.toString()}
+                            label={
+                                metrics.total_logins === 1 ? 'Login' : 'Logins'
+                            }
+                            tooltip={`Total number of logins in the last ${days} days`}
                         />
                     </div>
-                    <div className="card card-row-padding mb-30">
-                        <div className="flex flex-row gap-6">
-                            <div className="flex-1">
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <PeakLoginTimesChart
-                                        peak_login_times={
-                                            metrics?.peak_login_times
-                                        }
-                                    />
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="flex-1">
-                                <ResponsiveContainer width="100%" height={350}>
+
+                    <div className="card card-row-padding overflow-hidden">
+                        <h1 className="">Peak Login Times</h1>
+                        <div className=" items-stretch gap-12 px-10 pt-10 ">
+                            <div className="w-full h-[500px] overflow-visible">
+                                <ResponsiveContainer
+                                    className="w-full h-full overflow-visible"
+                                    width="100%"
+                                    height="100%"
+                                    debounce={500}
+                                >
                                     <EngagementRateGraph
-                                        active={metrics?.active_users}
-                                        inactive={
-                                            metrics.total_users -
-                                            metrics.active_users
+                                        peak_login_times={
+                                            metrics?.peak_login_times || []
                                         }
                                     />
                                 </ResponsiveContainer>
