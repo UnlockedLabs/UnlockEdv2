@@ -78,12 +78,14 @@ export default function OpenContentItemAccordion({
                             activeKey === title ? 'max-h-[800px]' : 'max-h-0'
                         }`}
                     >
-                        {contentItems.map((item) => (
-                            <OpenContentCard
-                                key={item.content_id}
-                                content={item}
-                            />
-                        ))}
+                        <div className="flex flex-col gap-4">
+                            {contentItems.map((item) => (
+                                <OpenContentCard
+                                    key={item.content_id}
+                                    content={item}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
             ))}

@@ -86,7 +86,7 @@ export default function StudentLayer1() {
                 </div>
             </div>
             {/* right sidebar */}
-            <div className="min-w-[300px] border-l border-grey-1 flex flex-col gap-6 px-6 py-4">
+            <div className="min-w-[390px] border-l border-grey-1 flex flex-col gap-6 px-6 py-4">
                 <h2>Favorites</h2>
                 <div className="space-y-3 w-full">
                     {favorites?.data && favorites.data.length > 0 ? (
