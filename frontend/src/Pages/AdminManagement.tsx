@@ -235,7 +235,7 @@ export default function AdminManagement() {
                                                 <div className="flex space-x-4">
                                                     <ULIComponent
                                                         dataTip={'Edit Admin'}
-                                                        tooltipClassName="tooltip-left"
+                                                        tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             editUserModal.current?.showModal();
@@ -246,7 +246,7 @@ export default function AdminManagement() {
                                                         dataTip={
                                                             'Reset Password'
                                                         }
-                                                        tooltipClassName="tooltip-left"
+                                                        tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(user);
                                                             resetUserPasswordModal.current?.showModal();
@@ -259,7 +259,7 @@ export default function AdminManagement() {
                                                         dataTip={getUserIconData[
                                                             'data-tip'
                                                         ](user)}
-                                                        tooltipClassName="tooltip-left"
+                                                        tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={getUserIconData.onClick(
                                                             user
                                                         )}
