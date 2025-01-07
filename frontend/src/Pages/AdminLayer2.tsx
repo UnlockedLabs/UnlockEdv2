@@ -153,29 +153,30 @@ export default function AdminLayer2() {
                                         </tr>
                                     </thead>
                                     <tbody className="flex flex-col gap-4 mt-4">
-                                        {layer2_metrics.learningInsights?.map(
-                                            (
-                                                insight: LearningInsight,
-                                                index: number
-                                            ) => {
+                                        {layer2_metrics.learning_insights?.map(
+                                            (insight: LearningInsight) => {
                                                 return (
                                                     <tr
                                                         className="flex flex-row justify-between body-small items-center"
-                                                        key={index}
+                                                        key={insight.index}
                                                     >
                                                         <td className="w-1/2">
                                                             {
                                                                 insight.course_name
                                                             }
                                                         </td>
-                                                        <td className="w-1/2">
-                                                            500
+                                                        <td className="w-1/5">
+                                                            {
+                                                                insight.total_students_enrolled
+                                                            }
                                                         </td>
-                                                        <td className="w-1/2">
+                                                        <td className="w-1/5">
                                                             78%
                                                         </td>
-                                                        <td className="w-1/2">
-                                                            5675657
+                                                        <td className="w-1/5">
+                                                            {
+                                                                insight.activity_hours
+                                                            }
                                                         </td>
                                                     </tr>
                                                 );

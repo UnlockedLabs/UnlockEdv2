@@ -537,6 +537,7 @@ export enum ProgramType {
 }
 
 export interface LearningInsight {
+    index: number;
     course_name: string;
     total_students_enrolled: number;
     // completion_rate: number
@@ -547,7 +548,7 @@ export interface AdminLayer2Join {
     total_courses_offered: number;
     total_students_enrolled: number;
     total_hourly_activity: number;
-    learningInsights: LearningInsight[];
+    learning_insights: LearningInsight[];
 }
 
 export interface AdminDashboardJoin {

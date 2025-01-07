@@ -411,7 +411,7 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	// learning_insights
 	// TODO: add the completion percentage
 	err = db.Table("courses c").
-		Select(`
+		Select(`ROW_NUMBER() over (order by c."name") as idx,
 			c.name AS course_name,
 			COUNT(DISTINCT u.id) AS total_students_enrolled,
 			COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS activity_hours`).
