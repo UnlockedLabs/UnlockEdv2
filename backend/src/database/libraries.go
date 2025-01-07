@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -12,20 +13,29 @@ type LibraryResponse struct {
 	IsFavorited bool `json:"is_favorited"`
 }
 
-func (db *DB) GetAllLibraries(page, perPage int, userId, facilityId uint, visibility, orderBy, search string, days int) (int64, []LibraryResponse, error) {
-	var total int64
+func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin bool) (int64, []LibraryResponse, error) {
+	var (
+		total    int64
+		criteria string
+		id       uint
+	)
 	libraries := make([]LibraryResponse, 0, perPage)
-
-	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(`
+	//added the below to display featuring flags for all admins per facility
+	selectIsFavoriteOrIsFeatured := `
         libraries.*,
         EXISTS (
             SELECT 1
             FROM open_content_favorites f
             WHERE f.content_id = libraries.id
               AND f.open_content_provider_id = libraries.open_content_provider_id
-              AND f.user_id = ?
-        ) AS is_favorited`, userId)
+			  AND %s) AS is_favorited`
 
+	if isAdmin {
+		criteria, id = "f.facility_id = ?", facilityId
+	} else {
+		criteria, id = "f.user_id = ?", userId
+	}
+	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), id)
 	visibility = strings.ToLower(visibility)
 
 	isFeatured := false
