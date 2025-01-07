@@ -854,3 +854,7 @@ export interface OpenContentItem {
     provider_name?: string;
     channel_title?: string;
 }
+export interface TitleHandler {
+    title: string;
+    path?: string[];
+}

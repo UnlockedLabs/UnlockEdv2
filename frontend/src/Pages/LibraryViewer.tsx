@@ -58,9 +58,9 @@ export default function LibraryViewer() {
                         </div>
                     ) : src != '' ? (
                         <iframe
-                            sandbox="allow-scripts allow-same-origin"
+                            sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
                             className="w-full h-screen pt-4"
-                            id="library-viewer"
+                            id="library-viewer-iframe"
                             src={src}
                         />
                     ) : (
