@@ -63,10 +63,9 @@ export default function CatalogCourseCard({
           })
         : '';
     const finalDateStr =
-        ' • ' +
-        courseStartDtStr +
-        (courseStartDt || courseEndDt ? ' - ' : '') +
-        courseEndDtStr;
+        courseStartDt || courseEndDt
+            ? ' • ' + courseStartDtStr + ' - ' + courseEndDtStr
+            : '';
     if (view == ViewType.List) {
         return (
             <a
@@ -113,13 +112,13 @@ export default function CatalogCourseCard({
                     </figure>
                     <div className="card-body gap-0.5">
                         {/* this should be the school or course that offers the course */}
-                        <p className="text-xs">
-                            {course.provider_name}
-                            {finalDateStr}
-                        </p>
                         <h3 className="card-title text-sm">
                             {course.course_name}
                         </h3>
+                        <p className="text-xs h-6">
+                            {course.provider_name}
+                            {finalDateStr}
+                        </p>
                         <p className="body-small line-clamp-2">
                             {course.description}
                         </p>

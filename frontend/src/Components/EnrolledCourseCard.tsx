@@ -20,23 +20,28 @@ export default function EnrolledCourseCard({
     const url = course.external_url;
     let status: CourseStatus | null = null;
     if (course.course_progress == 100) status = CourseStatus.Completed;
-    const courseStartDt = course.start_dt ? new Date(course.start_dt) : course.start_dt;
+    const courseStartDt = course.start_dt
+        ? new Date(course.start_dt)
+        : course.start_dt;
     const courseEndDt = course.end_dt ? new Date(course.end_dt) : course.end_dt;
-    const courseStartDtStr = courseStartDt ? courseStartDt.toLocaleDateString('en-US', 
-        {
-            year: 'numeric',
-            month: '2-digit',
-            day: 'numeric'
-        })
-     : ""
-     const courseEndDtStr = courseEndDt ? courseEndDt.toLocaleDateString('en-US', 
-        {
-            year: 'numeric',
-            month: '2-digit',
-            day: 'numeric'
-        })
-     : "";
-    const finalDateStr = " • " + courseStartDtStr + (courseStartDt || courseEndDt ? " - " : "") + courseEndDtStr
+    const courseStartDtStr = courseStartDt
+        ? courseStartDt.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: 'numeric'
+          })
+        : '';
+    const courseEndDtStr = courseEndDt
+        ? courseEndDt.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: 'numeric'
+          })
+        : '';
+    const finalDateStr =
+        courseStartDt || courseEndDt
+            ? ' • ' + courseStartDtStr + ' - ' + courseEndDtStr
+            : '';
     if (view == ViewType.List) {
         return (
             <a
@@ -48,7 +53,10 @@ export default function EnrolledCourseCard({
                 <div className="flex flex-row gap-3 items-center">
                     <h2>{course.course_name}</h2>
                     <p className="body">|</p>
-                    <p className="body">{course.provider_platform_name}{finalDateStr}</p>
+                    <p className="body">
+                        {course.provider_platform_name}
+                        {finalDateStr}
+                    </p>
                 </div>
                 {status === CourseStatus.Completed ? (
                     <div className="flex flex-row gap-2 body-small text-teal-3">
@@ -86,13 +94,14 @@ export default function EnrolledCourseCard({
                         )}
                     </figure>
                     <div className="card-body gap-0.5">
-                        <p className="text-xs line-clamp-2">
-                            {course.provider_platform_name}{finalDateStr}
-                        </p>
-                        <h3 className="card-title text-sm h-10 line-clamp-2">
+                        <h3 className="card-title text-sm line-clamp-2">
                             {course.alt_name && course.alt_name + ' - '}
                             {course.course_name}
                         </h3>
+                        <p className="text-xs h-10 line-clamp-2">
+                            {course.provider_platform_name}
+                            {finalDateStr}
+                        </p>
                         <div className="mt-3 justify-end">
                             {status == CourseStatus.Completed ? (
                                 <div className="flex flex-row gap-2 body-small text-teal-3">
