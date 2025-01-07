@@ -2,21 +2,12 @@ import { useState } from 'react';
 import DropdownControl from './inputs/DropdownControl';
 import useSWR from 'swr';
 import { useAuth } from '@/useAuth';
-import { ServerResponse } from '@/common';
+import { ActivityMapData, ServerResponse } from '@/common';
 import convertSeconds from './ConvertSeconds';
 import { AxiosError } from 'axios';
 
-interface ActivityMapData {
-    date: string;
-    total_time: string;
-    quartile: number;
-}
 const SECONDS_IN_HOUR = 3600;
 const DAYS_IN_WEEK = 7;
-
-interface Activities {
-    activities: ActivityMapData[];
-}
 
 /* interface for dynamically generated year options */
 type ValidYears = Record<string, string>;
@@ -57,12 +48,12 @@ export default function UserActivityMap() {
     const [dropdownValDesc, setDropdownValDesc] = useState('the past year');
 
     const { data, error, isLoading } = useSWR<
-        ServerResponse<Activities>,
+        ServerResponse<ActivityMapData[]>,
         AxiosError
     >(
         `/api/users/${user.id}/daily-activity${dropdownValDesc !== 'the past year' ? '?year=' + dropdownValDesc.trim() : ''}`
     );
-    const activityData = data?.data ? (data.data as Activities).activities : [];
+    const activityData = data?.data ? (data.data as ActivityMapData[]) : [];
 
     const generateYearOptions = () => {
         const years: ValidYears = { 'Past year': 'Past year' };

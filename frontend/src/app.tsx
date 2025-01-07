@@ -41,7 +41,7 @@ import AdminLayer2 from './Pages/AdminLayer2.tsx';
 import {
     getAdminLevel1Data,
     getFacilities,
-    getRightSidebarData,
+    getStudentLayer2Data,
     getStudentLevel1Data
 } from './routeLoaders.ts';
 
@@ -264,7 +264,7 @@ const router = createBrowserRouter([
                             {
                                 path: 'learning-path',
                                 element: <StudentLayer2 />,
-                                loader: getRightSidebarData,
+                                loader: getStudentLayer2Data,
                                 handle: {
                                     title: 'Learning Path',
                                     path: ['learning-path']

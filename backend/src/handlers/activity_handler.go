@@ -30,6 +30,7 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
 	}
 	yearStr := r.URL.Query().Get("year")
+	pastWeek := r.URL.Query().Get("past_week") == "true"
 	var year int
 	if yearStr != "" {
 		year, err = strconv.Atoi(yearStr)
@@ -37,7 +38,7 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 			return newInvalidQueryParamServiceError(err, "year")
 		}
 	}
-	activities, err := srv.Db.GetDailyActivityByUserID(userID, year)
+	activities, err := srv.Db.GetDailyActivityByUserID(userID, year, pastWeek)
 	if err != nil {
 		log.add("year", yearStr)
 		return newDatabaseServiceError(err)

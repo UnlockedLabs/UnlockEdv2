@@ -1,16 +1,10 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import useSWR from 'swr';
 import WeekActivityChart from '@/Components/WeeklyActivity';
-import Error from './Error';
-import { useNavigate } from 'react-router-dom';
-import { ServerResponse, StudentDashboardJoin } from '@/common';
-import { AxiosError } from 'axios';
-import {
-    CurrentlyEnrolledCourses,
-    ResidentRecentCourses,
-    ResidentWeeklyActivityTable
-} from '@/Components/dashboard';
-import ResourcesSideBar from '@/Components/ResourcesSideBar';
+import { useLoaderData, useNavigate } from 'react-router-dom';
+import { ActivityMapData, RecentActivity, RecentCourse } from '@/common';
+import CourseCard from '@/Components/EnrolledCourseCard';
+import { ResidentWeeklyActivityTable } from '@/Components/dashboard';
+import { useState } from 'react';
 
 export default function StudentLayer2() {
     const { user } = useAuth();
@@ -21,38 +15,56 @@ export default function StudentLayer2() {
         navigate('/learning-insights');
         return;
     }
-    const { data, error, isLoading } = useSWR<
-        ServerResponse<StudentDashboardJoin>,
-        AxiosError
-    >(`/api/users/${user?.id}/student-dashboard`);
-    const userData = data?.data as StudentDashboardJoin;
+    const { courses, week_activity } = useLoaderData() as {
+        courses: RecentCourse[];
+        week_activity: ActivityMapData[];
+    };
+    const [expanded, setExpanded] = useState<boolean>(false);
+    const slice = expanded ? courses.length : 4;
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <Error />;
+    const recentActivities: RecentActivity[] = week_activity.map(
+        (activity) => ({
+            date: activity.date,
+            delta: Number(activity.total_time)
+        })
+    );
+
+    console.log(courses);
 
     return (
-        <div className="flex flex-row">
-            {/* main section */}
-            <div className="w-full flex flex-col gap-6 px-6 pb-4">
-                <h1 className="text-5xl">
-                    Hi, {user.name_first ?? 'Student'}!
-                </h1>
-                <h2> Pick Up Where You Left Off</h2>
-                <div className="card card-row-padding">
-                    <ResidentRecentCourses userData={userData} />
+        <div className="w-full flex flex-col gap-6 px-6 pb-4">
+            <h1 className="text-5xl">Hi, {user.name_first ?? 'Student'}!</h1>
+            <h2> Pick Up Where You Left Off</h2>
+            <div className="card card-row-padding flex flex-col gap-3">
+                <div className="gap-3 grid grid-cols-4">
+                    {courses
+                        .slice(0, slice)
+                        .map((course: RecentCourse, index: number) => {
+                            return (
+                                <CourseCard
+                                    course={course}
+                                    recent
+                                    key={index}
+                                />
+                            );
+                        })}
                 </div>
-                <div className="flex flex-row gap-12">
-                    <div className="w-1/2 h-[254px] bg-base-teal card">
-                        <h2 className="mt-4 ml-4">My Activity</h2>
-                        <WeekActivityChart data={userData?.week_activity} />
-                    </div>
-                    <ResidentWeeklyActivityTable userData={userData} />
-                </div>
-                <h2>Currently Enrolled Classes</h2>
-                <CurrentlyEnrolledCourses userData={userData} />
+                {courses.length > 4 && (
+                    <button
+                        className="flex justify-end text-teal-3 hover:text-teal-4 body"
+                        onClick={() => setExpanded(!expanded)}
+                    >
+                        {expanded ? 'See less' : 'See all courses'}
+                    </button>
+                )}
             </div>
-            {/* right sidebar */}
-            <ResourcesSideBar />
+            <div className="flex flex-row gap-12">
+                <div className="w-1/2 h-[254px] bg-base-teal card">
+                    <h2 className="mt-4 ml-4">My Activity</h2>
+                    <WeekActivityChart data={recentActivities} />
+                </div>
+                <ResidentWeeklyActivityTable courses={courses} />
+            </div>
         </div>
     );
 }

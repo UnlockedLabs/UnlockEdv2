@@ -42,26 +42,16 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
         result[6 - i] = entry;
     }
 
-    const weekdays = [
-        'Sun',
-        'Mon',
-        'Tues',
-        'Wed',
-        'Thurs',
-        'Fri',
-        'Sat',
-        'Today'
-    ];
-    // yes, ik it's stupid but it works: don't ask me why
-    // eslint-disable-next-line
+    const weekdays = ['Sun', 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat'];
+
+    //eslint-disable-next-line
     const XAxisTick = (props: any) => {
         // eslint-disable-next-line
         const { x, y, payload } = props;
-        // eslint-disable-next-line
-        const date = payload.value.toString() ?? '';
-        // eslint-disable-next-line
-        const day = new Date(date).getDay();
-        const isToday = new Date().getDay() === day;
+        //eslint-disable-next-line
+        const date = payload.value.toString();
+        //eslint-disable-next-line
+        const day = (new Date(date).getDay() + 1) % 7;
 
         return (
             <g transform={`translate(${x},${y})`}>
@@ -74,7 +64,7 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
                     transform="rotate(-35)"
                     style={{ fontSize: 12 }}
                 >
-                    {isToday ? 'Today' : weekdays[day]}
+                    {weekdays[day]}
                 </text>
             </g>
         );
@@ -86,7 +76,18 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
                 margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
             >
                 <CartesianGrid stroke={gridColor} />
-                <XAxis dataKey={'date'} tick={<XAxisTick />} />
+                <XAxis
+                    dataKey={'date'}
+                    tick={
+                        <XAxisTick
+                            x={0}
+                            y={0}
+                            payload={{
+                                value: ''
+                            }}
+                        />
+                    }
+                />
                 <YAxis
                     dataKey={'delta'}
                     label={{

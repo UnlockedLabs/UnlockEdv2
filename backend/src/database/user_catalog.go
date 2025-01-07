@@ -58,6 +58,7 @@ type UserCourses struct {
 	ID             uint       `json:"id"`
 	ThumbnailURL   string     `json:"thumbnail_url"`
 	CourseName     string     `json:"course_name"`
+	Description    string     `json:"description"`
 	ProviderName   string     `json:"provider_platform_name"`
 	ExternalURL    string     `json:"external_url"`
 	CourseProgress float64    `json:"course_progress"`
@@ -83,6 +84,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 		"total_time":      "total_time",
 		"start_dt":        "c.start_dt",
 		"end_dt":          "c.end_dt",
+		"recent_activity": "a.last_ts",
 	}
 	dbField, ok := fieldMap[orderBy]
 	if !ok {
@@ -91,7 +93,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 	orderStr := dbField + " " + validOrder(order)
 	tx := db.Table("courses c").
 		Select(`c.id, c.thumbnail_url,
-		c.name as course_name, pp.name as provider_name, c.external_url, c.start_dt, c.end_dt,
+		c.name as course_name, c.description, pp.name as provider_name, c.external_url, c.start_dt, c.end_dt,
 		progress.course_progress, a.total_time as total_time`).
 		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
 		Joins("JOIN milestones as m ON m.course_id = c.id and m.user_id = ?", userId).
@@ -134,7 +136,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 			tx.Or(query)
 		}
 	}
-	tx.Group("c.id, c.name, c.start_dt, c.end_dt, a.total_time, c.thumbnail_url, pp.name, c.external_url, progress.course_progress")
+	tx.Group("c.id, c.name, c.description, c.start_dt, c.end_dt, a.total_time, c.thumbnail_url, pp.name, c.external_url, progress.course_progress, a.last_ts")
 	err := tx.Scan(&courses).Error
 	if err != nil {
 		return courseInfo, NewDBError(err, "error getting user programs")

@@ -16,26 +16,10 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
 		{"GET /api/login-metrics", srv.handleLoginMetrics, true, models.Feature()},
-		{"GET /api/users/{id}/student-dashboard", srv.handleStudentDashboard, false, models.Feature()},
 		{"GET /api/users/{id}/admin-dashboard", srv.handleAdminDashboard, true, models.Feature()},
 		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
 		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
 	}
-}
-
-func (srv *Server) handleStudentDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
-	faciltiyId := srv.getFacilityID(r)
-	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || !srv.canViewUserData(r, userId) {
-		return newInvalidIdServiceError(err, "user ID")
-	}
-	studentDashboard, err := srv.Db.GetStudentDashboardInfo(userId, faciltiyId)
-	if err != nil {
-		log.add("faciltiyId", faciltiyId)
-		log.add("userId", userId)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, studentDashboard)
 }
 
 func (srv *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {

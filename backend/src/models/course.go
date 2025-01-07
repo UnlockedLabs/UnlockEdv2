@@ -54,32 +54,6 @@ type RecentActivity struct {
 	Delta float64 `json:"delta"`
 }
 
-type CurrentEnrollment struct {
-	AltName              string `json:"alt_name"`
-	Name                 string `json:"name"`
-	ProviderPlatformName string `json:"provider_platform_name"`
-	ExternalURL          string `json:"external_url"`
-	TotalTime            int64  `json:"total_activity_time"`
-}
-
-type RecentCourse struct {
-	CourseName           string     `json:"course_name"`
-	CourseProgress       string     `json:"course_progress"`
-	AltName              string     `json:"alt_name"`
-	ThumbnailUrl         string     `json:"thumbnail_url"`
-	ProviderPlatformName string     `json:"provider_platform_name"`
-	ExternalUrl          string     `json:"external_url"`
-	StartDt              *time.Time `json:"start_dt"`
-	EndDt                *time.Time `json:"end_dt"`
-}
-
-type UserDashboardJoin struct {
-	Enrollments   []CurrentEnrollment `json:"enrollments"`
-	RecentCourses []RecentCourse      `json:"recent_courses"`
-	TopCourses    []string            `json:"top_courses"`
-	WeekActivity  []RecentActivity    `json:"week_activity"`
-}
-
 type ImportCourse struct {
 	ProviderPlatformID      int      `json:"provider_platform_id"`
 	Name                    string   `json:"name"`

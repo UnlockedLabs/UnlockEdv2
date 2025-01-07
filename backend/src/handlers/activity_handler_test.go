@@ -13,9 +13,10 @@ import (
 
 func TestHandleGetDailyActivityByUserID(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetGetDailyActivityByUserIDAsAdmin", "admin", map[string]any{"id": "4", "year": 2023}, http.StatusOK, "?year=2023"},
-		{"TestGetDailyActivityByUserIDAsUser", "student", map[string]any{"id": "4", "year": 2023}, http.StatusOK, "?year=2023"},
-		{"TestGetDailyActivityByAnotherUserIDAsDifferentUser", "student", map[string]any{"id": "5", "year": 2023}, http.StatusForbidden, "?year=2023"},
+		{"TestGetGetDailyActivityByUserIDAsAdmin", "admin", map[string]any{"id": "4", "year": 2023, "pastWeek": false}, http.StatusOK, "?year=2023"},
+		{"TestGetDailyActivityByUserIDAsUser", "student", map[string]any{"id": "4", "year": 2023, "pastWeek": false}, http.StatusOK, "?year=2023"},
+		{"TestGetDailyActivityByAnotherUserIDAsDifferentUser", "student", map[string]any{"id": "5", "year": 2023, "pastWeek": false}, http.StatusForbidden, "?year=2023"},
+		{"TestGetWeeklyActivity", "student", map[string]any{"id": "4", "year": 0, "pastWeek": true}, http.StatusOK, "?past_week=true"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -28,7 +29,7 @@ func TestHandleGetDailyActivityByUserID(t *testing.T) {
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
-				dailyActivities, err := server.Db.GetDailyActivityByUserID(id, test.mapKeyValues["year"].(int))
+				dailyActivities, err := server.Db.GetDailyActivityByUserID(id, test.mapKeyValues["year"].(int), test.mapKeyValues["pastWeek"].(bool))
 				if err != nil {
 					t.Fatal("unable to get daily activities by user id and year, error is ", err)
 				}

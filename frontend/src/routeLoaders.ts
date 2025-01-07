@@ -2,10 +2,11 @@ import { json, LoaderFunction } from 'react-router-dom';
 import {
     Facility,
     OpenContentItem,
-    OpenContentProvider,
     ServerResponse,
     HelpfulLinkAndSort,
-    Library
+    Library,
+    UserCoursesInfo,
+    ActivityMapData
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -55,20 +56,21 @@ export const getAdminLevel1Data: LoaderFunction = async () => {
     });
 };
 
-export const getRightSidebarData: LoaderFunction = async () => {
-    const [resourcesResp, openContentResp] = await Promise.all([
-        API.get(`helpful-links`),
-        API.get(`open-content`)
+export const getStudentLayer2Data: LoaderFunction = async () => {
+    const user = await fetchUser();
+    if (!user) return;
+    const [coursesResp, activityResp] = await Promise.all([
+        API.get(`users/${user.id}/courses?order=desc&order_by=recent_activity`),
+        API.get(`users/${user.id}/daily-activity?past_week=true`)
     ]);
 
-    const resourcesData = resourcesResp.success
-        ? (resourcesResp.data as HelpfulLinkAndSort).helpful_links
-        : [];
-    const openContentData = openContentResp.success
-        ? (openContentResp.data as OpenContentProvider[])
-        : [];
+    const courses = coursesResp.data as UserCoursesInfo;
+    const activity = activityResp.data as { activities: ActivityMapData[] };
 
-    return json({ resources: resourcesData, providers: openContentData });
+    return json({
+        courses: courses.courses,
+        week_activity: activity.activities
+    });
 };
 
 export const getFacilities: LoaderFunction = async () => {

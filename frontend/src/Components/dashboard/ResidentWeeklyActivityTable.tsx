@@ -1,10 +1,10 @@
-import { CurrentEnrollment, StudentDashboardJoin } from '@/common';
+import { RecentCourse } from '@/common';
 import convertSeconds from '../ConvertSeconds';
 
 export default function ResidentWeeklyActivityTable({
-    userData
+    courses
 }: {
-    userData: StudentDashboardJoin;
+    courses: RecentCourse[];
 }) {
     return (
         <div className="w-1/2 h-[254px] bg-base-teal card">
@@ -18,11 +18,11 @@ export default function ResidentWeeklyActivityTable({
                         </tr>
                     </thead>
                     <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
-                        {userData.enrollments ? (
-                            userData?.enrollments?.map(
-                                (course: CurrentEnrollment, index: number) => {
+                        {courses ? (
+                            courses.map(
+                                (course: RecentCourse, index: number) => {
                                     const totalTime = convertSeconds(
-                                        course.total_activity_time
+                                        course.total_time ?? 0
                                     );
                                     return (
                                         <tr
@@ -30,7 +30,7 @@ export default function ResidentWeeklyActivityTable({
                                             key={index}
                                         >
                                             <td className="body-small">
-                                                {course.name}
+                                                {course.course_name}
                                             </td>
                                             <td className="body-small">
                                                 {totalTime.number +
