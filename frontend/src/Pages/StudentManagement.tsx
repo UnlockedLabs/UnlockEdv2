@@ -158,7 +158,7 @@ export default function StudentManagement() {
                         data-tip="Add Student"
                     >
                         <button
-                            className="btn btn-primary btn-sm text-base-teal"
+                            className="button "
                             onClick={() => addUserModal.current?.showModal()}
                         >
                             <PlusCircleIcon className="w-4 my-auto" />

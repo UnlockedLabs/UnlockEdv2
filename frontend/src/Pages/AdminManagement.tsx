@@ -4,7 +4,7 @@ import {
     ArrowPathRoundedSquareIcon,
     LockClosedIcon,
     TrashIcon,
-    PencilIcon,
+    PencilSquareIcon,
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import {
@@ -177,7 +177,7 @@ export default function AdminManagement() {
 
                     <div className="tooltip tooltip-left" data-tip="Add Admin">
                         <button
-                            className="btn btn-primary btn-sm text-base-teal"
+                            className="button"
                             onClick={() => addUserModal.current?.showModal()}
                         >
                             <PlusCircleIcon className="w-4 my-auto" />
@@ -240,7 +240,7 @@ export default function AdminManagement() {
                                                             setTargetUser(user);
                                                             editUserModal.current?.showModal();
                                                         }}
-                                                        icon={PencilIcon}
+                                                        icon={PencilSquareIcon}
                                                     />
                                                     <ULIComponent
                                                         dataTip={
