@@ -14,7 +14,7 @@ export default function ResidentWeeklyActivityTable({
                     <thead>
                         <tr className="flex flex-row justify-between border border-x-0 border-t-0 mt-2">
                             <th className="body text-grey-4">Course Name</th>
-                            <th className="body text-grey-4">Hours Spent</th>
+                            <th className="body text-grey-4">Time Spent</th>
                         </tr>
                     </thead>
                     <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
