@@ -81,11 +81,11 @@ export default function FacilityManagement() {
             .then((response) => {
                 if (response.success) {
                     toaster(
-                        'Facility successfully deleted.',
+                        'Facility successfully deleted',
                         ToastState.success
                     );
                 } else {
-                    toaster('Error deleting Facility.', ToastState.success);
+                    toaster('Error deleting facility', ToastState.success);
                 }
             })
             .catch(() => {

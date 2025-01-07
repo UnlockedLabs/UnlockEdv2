@@ -46,12 +46,13 @@ export default function VideoCard({
             {}
         );
         if (response.success) {
-            if (toaster) toaster(response.message, ToastState.success);
+            toaster('Video state updated successfully', ToastState.success);
             await mutate();
         } else {
-            if (toaster) toaster(response.message, ToastState.error);
+            toaster('Video state failed to update', ToastState.error);
         }
     };
+
     const toMinutes = (duration: number): string => {
         return `${Math.round(duration / 60)} min`;
     };

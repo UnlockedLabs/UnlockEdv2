@@ -78,11 +78,11 @@ export default function VideoManagement() {
             {}
         );
         if (response.success) {
-            toaster(response.message, ToastState.success);
+            toaster('Video uploaded successfully', ToastState.success);
             setPolling(true);
             setTimeout(() => pollVideos(1000), 1000);
         } else {
-            toaster(response.message, ToastState.error);
+            toaster('Error uploading video', ToastState.error);
         }
     };
 
@@ -134,7 +134,7 @@ export default function VideoManagement() {
                         handleRetryVideo={async () => {
                             if (polling) {
                                 toaster(
-                                    'please wait several minutes before attempting to retry newly added videos',
+                                    'Please wait several minutes before attempting to retry newly added videos',
                                     ToastState.error
                                 );
                                 return;

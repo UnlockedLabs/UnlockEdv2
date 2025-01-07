@@ -38,38 +38,29 @@ export default function HelpfulLinkCard({
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
             setVisible(visibilityStatus);
-            void handleToggleVisibility();
+            void handleToggleAction('toggle');
         }
     }
 
-    const handleToggleVisibility = async () => {
+    const handleToggleAction = async (
+        action: 'favorite' | 'toggle',
+        e?: React.MouseEvent
+    ) => {
+        if (e) e.stopPropagation();
         const response = await API.put<null, object>(
-            `helpful-links/toggle/${link.id}`,
+            `helpful-links/${action}/${link.id}`,
             {}
         );
-        toaster(
-            response.message,
-            response.success ? ToastState.success : ToastState.error
-        );
-        if (mutate) void mutate();
-    };
-
-    async function toggleLinkFavorite(e: React.MouseEvent) {
-        if (!mutate) {
-            toaster('Error updating favorite status', ToastState.error);
-            return;
+        if (response.success) {
+            toaster(
+                'Helpful link state updated successfully',
+                ToastState.success
+            );
+            if (mutate) mutate();
+        } else {
+            toaster('Helpful link state failed to update', ToastState.error);
         }
-        e.stopPropagation();
-        const resp = await API.put<null, object>(
-            `helpful-links/favorite/${link.id}`,
-            {}
-        );
-        toaster(
-            resp.message,
-            resp.success ? ToastState.success : ToastState.error
-        );
-        mutate();
-    }
+    };
 
     async function handleHelpfulLinkClick(id: number): Promise<void> {
         const resp = (await API.put<{ url: string }, object>(
@@ -113,7 +104,7 @@ export default function HelpfulLinkCard({
                     iconClassName={`absolute right-1 w-6 h-6 cursor-pointer ${link.is_favorited ? 'text-primary-yellow' : ''}`}
                     icon={link.is_favorited ? StarIcon : StarIconOutline}
                     onClick={(e) => {
-                        if (e) void toggleLinkFavorite(e);
+                        if (e) void handleToggleAction('favorite', e);
                     }}
                 />
             )}

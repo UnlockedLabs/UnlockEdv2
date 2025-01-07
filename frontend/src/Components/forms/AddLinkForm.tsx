@@ -28,10 +28,10 @@ export default function AddLinkForm({
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const response = await API.put(`helpful-links`, data);
         if (response.success) {
-            toaster(response.message, ToastState.success);
+            toaster('Helpful link added successfully', ToastState.success);
             onSuccess(data.title, data.url);
         } else {
-            toaster(response.message || 'An error occurred', ToastState.error);
+            toaster('Error adding helpful link', ToastState.error);
         }
         reset();
     };

@@ -28,39 +28,26 @@ export default function LibraryCard({
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
             setVisible(visibilityStatus);
-            void handleToggleVisibility();
+            void handleToggleAction('toggle');
         }
     }
 
-    const handleToggleVisibility = async () => {
+    async function handleToggleAction(
+        action: 'favorite' | 'toggle',
+        e?: MouseEvent
+    ) {
         if (!mutate) return;
+        if (e) e.stopPropagation();
         const resp = await API.put<null, object>(
-            `libraries/${library.id}/toggle`,
+            `libraries/${library.id}/${action}`,
             {}
         );
         if (resp.success) {
             mutate();
+            toaster('Library state updated successfully', ToastState.success);
+        } else {
+            toaster('Library state failed to update', ToastState.error);
         }
-        toaster(
-            resp.message,
-            resp.success ? ToastState.success : ToastState.error
-        );
-    };
-
-    async function toggleLibraryFavorite(e: MouseEvent) {
-        if (!mutate) return;
-        e.stopPropagation();
-        const resp = await API.put<null, object>(
-            `libraries/${library.id}/favorite`,
-            {}
-        );
-        if (resp.success) {
-            mutate();
-        }
-        toaster(
-            resp.message,
-            resp.success ? ToastState.success : ToastState.error
-        );
     }
 
     return (
@@ -80,7 +67,7 @@ export default function LibraryCard({
 
             <div
                 className="absolute right-2 top-2 z-100"
-                onClick={(e) => void toggleLibraryFavorite(e)}
+                onClick={(e) => void handleToggleAction('favorite', e)}
             >
                 {!route.pathname.includes('knowledge-insights') && (
                     <ULIComponent

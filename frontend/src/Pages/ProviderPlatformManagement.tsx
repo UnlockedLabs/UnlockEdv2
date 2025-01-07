@@ -47,25 +47,25 @@ export default function ProviderPlatformManagement() {
     const providerData = providers?.data
         ? (providers.data as ProviderPlatform[])
         : [];
-        useEffect(() => {
-            const queryParams = new URLSearchParams(window.location.search);
-            const status = queryParams.get('status');
-            const message = queryParams.get('message');
-    
-            if (status && message) {
-                if (status === 'success') {
-                    toaster(message, ToastState.success);
-                } else if (status === 'error') {
-                    toaster(message, ToastState.error);
-                }
-    
-                // Clear the query parameters to avoid repeated toasts
-                const url = new URL(window.location.href);
-                url.searchParams.delete('status');
-                url.searchParams.delete('message');
-                window.history.replaceState({}, document.title, url.toString());
+    useEffect(() => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const status = queryParams.get('status');
+        const message = queryParams.get('message');
+
+        if (status && message) {
+            if (status === 'success') {
+                toaster(message, ToastState.success);
+            } else if (status === 'error') {
+                toaster(message, ToastState.error);
             }
-        }, [toaster]);
+
+            // Clear the query parameters to avoid repeated toasts
+            const url = new URL(window.location.href);
+            url.searchParams.delete('status');
+            url.searchParams.delete('message');
+            window.history.replaceState({}, document.title, url.toString());
+        }
+    }, [toaster]);
     function resetModal() {
         setTimeout(() => {
             setEditProvider(undefined);
@@ -99,9 +99,9 @@ export default function ProviderPlatformManagement() {
         openOidcClientModal.current?.close();
         setEditProvider(undefined);
         if (!response && state === ToastState.success) {
-            toaster('OIDC client registered successfully.', state);
+            toaster('OIDC client registered successfully', state);
         } else if (!response && state === ToastState.error) {
-            toaster('Failed to register OIDC client.', state);
+            toaster('Failed to register OIDC client', state);
         } else {
             setOidcClient(response.data as OidcClient);
             openOidcRegistrationModal.current?.showModal();
@@ -111,6 +111,7 @@ export default function ProviderPlatformManagement() {
             toaster(response.message, state);
         }
     };
+
     const handleToggleArchiveProvider = (provider: ProviderPlatform) => {
         const state =
             provider.state === ProviderPlatformState.ARCHIVED
@@ -124,13 +125,13 @@ export default function ProviderPlatformManagement() {
         )
             .then((resp) => {
                 if (resp.success) {
-                    const providerData =resp.data as ProviderResponse;
+                    const providerData = resp.data as ProviderResponse;
                     if (providerData.oauth2Url) {
                         window.location.href = providerData.oauth2Url;
                         return;
                     }
                     toaster(
-                        `Provider platform ${provider.name} has been ${state}.`,
+                        `Provider platform ${provider.name} has been ${state}`,
                         ToastState.success
                     );
                     void mutate();
@@ -141,15 +142,16 @@ export default function ProviderPlatformManagement() {
             });
     };
     const refreshToken = (provider: ProviderPlatform) => {
-        const errorMsg = 'Unable to refresh token for provider for ' + provider.name;
+        const errorMsg =
+            'Unable to refresh token for provider for ' + provider.name;
         API.get<ProviderResponse>(`provider-platforms/${provider.id}/refresh`)
             .then((resp) => {
                 if (resp.success) {
-                    const providerData =resp.data as ProviderResponse;
+                    const providerData = resp.data as ProviderResponse;
                     if (providerData.oauth2Url) {
                         window.location.href = providerData.oauth2Url;
                     }
-                }else{
+                } else {
                     toaster(errorMsg, ToastState.error);
                 }
             })
@@ -157,7 +159,6 @@ export default function ProviderPlatformManagement() {
                 toaster(errorMsg, ToastState.error);
             });
     };
-
 
     const showAuthorizationInfo = (provider: ProviderPlatform) => {
         API.get<OidcClient>(`oidc/clients/${provider.oidc_id}`)
@@ -169,7 +170,7 @@ export default function ProviderPlatformManagement() {
             })
             .catch(() => {
                 toaster(
-                    'unable to fetch authorization info for provider',
+                    'Unable to fetch authorization info for provider',
                     ToastState.error
                 );
             });

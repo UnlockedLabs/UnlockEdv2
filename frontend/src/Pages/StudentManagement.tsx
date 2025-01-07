@@ -71,7 +71,7 @@ export default function StudentManagement() {
             : ToastState.error;
         const message = response.success
             ? 'User deleted successfully'
-            : response.message;
+            : 'Failed to delete user';
         deleteUserModal.current?.close();
         toaster(message, toastType);
         resetModal();
@@ -113,7 +113,7 @@ export default function StudentManagement() {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
-        toaster('Password Successfully Reset', ToastState.success);
+        toaster('Password successfully reset', ToastState.success);
     };
 
     const handleShowPasswordClose = () => {
