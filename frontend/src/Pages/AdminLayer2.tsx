@@ -151,7 +151,10 @@ export default function AdminLayer2() {
                                                     }
                                                 </td>
                                                 <td className="w-1/5">
-                                                    {insight.completion_rate}
+                                                    {insight.completion_rate.toFixed(
+                                                        2
+                                                    )}
+                                                    %
                                                 </td>
                                                 <td className="justify-self-end">
                                                     {insight.activity_hours}
