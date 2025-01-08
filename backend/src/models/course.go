@@ -104,10 +104,10 @@ type AdminDashboardJoin struct {
 }
 
 type LearningInsight struct {
-	CourseName            string `json:"course_name"`
-	TotalStudentsEnrolled int64  `json:"total_students_enrolled"`
-	CompletionRate float32 `json:"completion_rate"`
-	ActivityHours int64 `json:"activity_hours"`
+	CourseName            string  `json:"course_name"`
+	TotalStudentsEnrolled int64   `json:"total_students_enrolled"`
+	CompletionRate        float32 `json:"completion_rate"`
+	ActivityHours         int64   `json:"activity_hours"`
 }
 
 type AdminLayer2Join struct {

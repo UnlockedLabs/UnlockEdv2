@@ -118,79 +118,50 @@ export default function AdminLayer2() {
                         />
                     </div>
                     <div className="card card-row-padding mb-30">
-                        <div className="flex flex-row gap-12">
-                            <div className="card bg-base-teal h-[531px] w-full p-4 overflow-y-auto">
-                                <div className="flex flex-row justify-between">
-                                    <h2 className="mt-2">Course Metrics</h2>
-                                    {/* <DropdownControl
-                                        label="Sort by"
-                                        customCallback={handleSortCourses}
-                                        enumType={{
-                                            Name: 'order=asc&order_by=course_name',
-                                            'Completed Only': 'completed',
-                                            'In Progress Only': 'in_progress',
-                                            'Total time':
-                                                'order=desc&order_by=total_time'
-                                            //"Grade": "order=asc&order_by=grade",
-                                        }}
-                                    /> */}
-                                </div>
-                                <table className="w-full mt-4">
-                                    <thead>
-                                        <tr className="flex flex-row justify-between border border-x-0 border-t-0 body text-grey-4 text-left">
-                                            <th className="w-1/2">
-                                                Course Name
-                                            </th>
-                                            <th className="w-1/5">
-                                                # Students Enrolled
-                                            </th>
-                                            <th className="w-1/5">
-                                                Completion Rate
-                                            </th>
-                                            <th className="w-1/5">
-                                                Total Activity Hours
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="flex flex-col gap-4 mt-4">
-                                        {layer2_metrics.learning_insights?.map(
-                                            (
-                                                insight: LearningInsight,
-                                                index: number
-                                            ) => {
-                                                return (
-                                                    <tr
-                                                        className="flex flex-row justify-between body-small items-center"
-                                                        key={index}
-                                                    >
-                                                        <td className="w-1/2">
-                                                            {
-                                                                insight.course_name
-                                                            }
-                                                        </td>
-                                                        <td className="w-1/5">
-                                                            {
-                                                                insight.total_students_enrolled
-                                                            }
-                                                        </td>
-                                                        <td className="w-1/5">
-                                                            {
-                                                                insight.completion_rate
-                                                            }
-                                                        </td>
-                                                        <td className="w-1/5">
-                                                            {
-                                                                insight.activity_hours
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <table className="table-2 mb-4">
+                            <thead>
+                                <tr className="grid-col-4 px-4">
+                                    <th className="justify-self-start">
+                                        Course Name
+                                    </th>
+                                    <th># Students Enrolled</th>
+                                    <th>Completion Rate</th>
+                                    <th className="justify-self-end pr-4">
+                                        Total Activity Hours
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="flex flex-col gap-4 mt-4">
+                                {layer2_metrics.learning_insights?.map(
+                                    (
+                                        insight: LearningInsight,
+                                        index: number
+                                    ) => {
+                                        return (
+                                            <tr
+                                                className="grid-cols-4 justify-items-center"
+                                                key={index}
+                                            >
+                                                <td className="justify-self-start">
+                                                    {insight.course_name}
+                                                </td>
+                                                <td className="w-1/5">
+                                                    {
+                                                        insight.total_students_enrolled
+                                                    }
+                                                </td>
+                                                <td className="w-1/5">
+                                                    {insight.completion_rate}
+                                                </td>
+                                                <td className="justify-self-end">
+                                                    {insight.activity_hours}
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </>
             )}

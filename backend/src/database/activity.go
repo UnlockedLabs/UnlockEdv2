@@ -363,8 +363,8 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	// total courses
 	subQry := db.Table("courses c").
 		Select("COUNT(DISTINCT c.id) as total_courses_offered").
-		Joins("inner join user_enrollments ue on c.id = ue.course_id").
-		Joins("inner join users u on ue.user_id = u.id")
+		Joins("INNER JOIN user_enrollments ue on c.id = ue.course_id").
+		Joins("INNER JOIN users u on ue.user_id = u.id")
 
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
@@ -382,7 +382,7 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	subQry = db.Table("courses c").
 		Select("COUNT(DISTINCT m.user_id) AS students_enrolled, c.name").
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
-		Joins("inner join users u on m.user_id = u.id").
+		Joins("INNER JOIN users u on m.user_id = u.id").
 		Where("u.role = ?", "student")
 
 	if facilityID != nil {
@@ -417,26 +417,34 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 	}
 
 	// learning_insights
-	// TODO: add the completion percentage
 	subQry = db.Table("outcomes o").
 		Select("o.course_id, COUNT(o.id) AS outcome_count").
 		Group("o.course_id")
 
-	// Main query with subquery join
-	err = db.Table("courses c").
+		subQry2 := db.Table("courses c").
 		Select(`
 			c.name AS course_name,
 			COUNT(DISTINCT u.id) AS total_students_enrolled,
-			subqry.outcome_count / CAST(c.total_progress_milestones AS float) * 100.0 AS completion_rate,
+			CASE 
+				WHEN MAX(subqry.outcome_count) > 0 THEN  
+					COUNT(DISTINCT u.id) / NULLIF(CAST(MAX(c.total_progress_milestones) AS float), 0) * 100.0
+				ELSE 0
+			END AS completion_rate,
 			COALESCE(ROUND(SUM(a.total_time) / 3600, 0), 0) AS activity_hours
 		`).
-		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
-		Joins("LEFT JOIN users u ON m.user_id = u.id").
-		Joins("LEFT JOIN activities a ON u.id = a.user_id").
-		Joins("INNER JOIN (?) AS subqry ON m.course_id = subqry.course_id", subQry).
-		Where("u.role = ?", "student").
-		Group("c.name, completion_rate").
-		Find(&adminLayer2.LearningInsights).Error
+			Joins("LEFT JOIN milestones m ON m.course_id = c.id").
+			Joins("LEFT JOIN users u ON m.user_id = u.id").
+			Joins("LEFT JOIN activities a ON u.id = a.user_id").
+			Joins("INNER JOIN (?) AS subqry ON m.course_id = subqry.course_id", subQry).
+			Where("u.role = ?", "student")
+
+
+	if facilityID != nil{
+		subQry2 = subQry2.Where("u.facility_id = ?", facilityID)
+	}
+	
+	err = subQry2.Group("c.name, c.total_progress_milestones").
+	Find(&adminLayer2.LearningInsights).Error
 
 	if err != nil {
 		return adminLayer2, NewDBError(err, "error getting learning insight table info")
