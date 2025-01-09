@@ -356,11 +356,8 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	return dashboard, nil
 }
-
-func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, error) {
-	var adminLayer2 models.AdminLayer2Join
-
-	// total courses
+func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
+	var totalCourses int
 	subQry := db.Table("courses c").
 		Select("COUNT(DISTINCT c.id) as total_courses_offered").
 		Joins("INNER JOIN user_enrollments ue on c.id = ue.course_id").
@@ -368,56 +365,57 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
-		subQry = subQry.Group("u.facility_id")
 	}
 
-	err := db.Table("(?) as sub", subQry).
-		Find(&adminLayer2.TotalCoursesOffered).Error
-
+	err := db.Table("(?) as sub", subQry).Find(&totalCourses).Error
 	if err != nil {
-		return adminLayer2, NewDBError(err, "error getting admin dashboard info")
+		return 0, NewDBError(err, "error getting total courses offered")
 	}
+	return totalCourses, nil
+}
 
-	// total_students_enrolled
-	subQry = db.Table("courses c").
-		Select("COUNT(DISTINCT m.user_id) AS students_enrolled, c.name").
+func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
+	var totalStudents int
+	subQry := db.Table("courses c").
+		Select("COUNT(DISTINCT m.user_id) AS students_enrolled").
 		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
 		Joins("INNER JOIN users u on m.user_id = u.id").
 		Where("u.role = ?", "student")
 
 	if facilityID != nil {
-		subQry = subQry.Where(" u.facility_id = ?", facilityID)
+		subQry = subQry.Where("u.facility_id = ?", facilityID)
 	}
 
-	subQry = subQry.Group("c.name")
-
-	err = db.Table("(?) as sub", subQry).
-		Select("CASE WHEN SUM(students_enrolled) IS NULL THEN 0 ELSE SUM(students_enrolled) end AS students_enrolled").
-		Scan(&adminLayer2.TotalStudentsEnrolled).Error
-
+	err := db.Table("(?) as sub", subQry).
+		Select("CASE WHEN SUM(students_enrolled) IS NULL THEN 0 ELSE SUM(students_enrolled) END AS students_enrolled").
+		Scan(&totalStudents).Error
 	if err != nil {
-		return adminLayer2, NewDBError(err, "error getting total_students_enrolled dashboard info")
+		return 0, NewDBError(err, "error getting total students enrolled")
 	}
+	return totalStudents, nil
+}
 
-	// total_hourly_activity
-	subQry = db.Table("users u").
+func (db *DB) GetTotalHourlyActivity(facilityID *uint) (int, error) {
+	var totalActivity int
+	subQry := db.Table("users u").
 		Select("CASE WHEN SUM(a.total_time) IS NULL THEN 0 ELSE ROUND(SUM(a.total_time)/3600, 0) END AS total_time").
 		Joins("LEFT JOIN activities a ON u.id = a.user_id").
 		Where("u.role = ?", "student")
 
 	if facilityID != nil {
-		subQry = subQry.Where(" u.facility_id = ?", facilityID)
+		subQry = subQry.Where("u.facility_id = ?", facilityID)
 	}
-	subQry = subQry.Group("u.id")
 
-	err = subQry.Find(&adminLayer2.TotalHourlyActivity).Error
-
+	err := subQry.Scan(&totalActivity).Error
 	if err != nil {
-		return adminLayer2, NewDBError(err, "error getting admin dashboard info")
+		return 0, NewDBError(err, "error getting total hourly activity")
 	}
+	return totalActivity, nil
+}
 
-	// learning_insights
-	subQry = db.Table("outcomes o").
+func (db *DB) GetLearningInsights(facilityID *uint) ([]models.LearningInsight, error) {
+	var insights []models.LearningInsight
+	subQry := db.Table("outcomes o").
 		Select("o.course_id, COUNT(o.id) AS outcome_count").
 		Group("o.course_id")
 
@@ -442,12 +440,9 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 		subQry2 = subQry2.Where("u.facility_id = ?", facilityID)
 	}
 
-	err = subQry2.Group("c.name, c.total_progress_milestones").
-		Find(&adminLayer2.LearningInsights).Error
-
+	err := subQry2.Group("c.name, c.total_progress_milestones").Find(&insights).Error
 	if err != nil {
-		return adminLayer2, NewDBError(err, "error getting learning insight table info")
+		return nil, NewDBError(err, "error getting learning insights")
 	}
-
-	return adminLayer2, nil
+	return insights, nil
 }

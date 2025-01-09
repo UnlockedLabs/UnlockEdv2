@@ -120,16 +120,35 @@ func TestHandleAdminLayer2(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 
 				id := uint(id)
-				dashboard, err := server.Db.GetAdminLayer2Info(&id)
+				totalCourses, err := server.Db.GetTotalCoursesOffered(&id)
 				if err != nil {
-					t.Fatalf("unable to get admin-layer-2, error is %v", err)
+					t.Fatalf("unable to get total courses offered, error is %v", err)
 				}
+				totalStudents, err := server.Db.GetTotalStudentsEnrolled(&id)
+				if err != nil {
+					t.Fatalf("unable to get total students enrolled, error is %v", err)
+				}
+				totalActivity, err := server.Db.GetTotalHourlyActivity(&id)
+				if err != nil {
+					t.Fatalf("unable to get total hourly activity, error is %v", err)
+				}
+				learningInsights, err := server.Db.GetLearningInsights(&id)
+				if err != nil {
+					t.Fatalf("unable to get learning insights, error is %v", err)
+				}
+				adminDashboard := models.AdminLayer2Join{
+					TotalCoursesOffered:  int64(totalCourses),
+					TotalStudentsEnrolled: int64(totalStudents),
+					TotalHourlyActivity:   int64(totalActivity),
+					LearningInsights:      learningInsights,
+				}
+
 				received := rr.Body.String()
 				resource := models.Resource[models.AdminLayer2Join]{}
 				if err := json.Unmarshal([]byte(received), &resource); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(&dashboard, &resource.Data); diff != "" {
+				if diff := cmp.Diff(&adminDashboard, &resource.Data); diff != "" {
 					t.Errorf("handler returned unexpected response body: %v", diff)
 				}
 			}

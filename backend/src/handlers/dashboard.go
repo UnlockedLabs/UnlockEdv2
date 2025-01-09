@@ -68,11 +68,37 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 		facilityId = &ref
 	}
 
-	adminDashboard, err := srv.Db.GetAdminLayer2Info(facilityId)
+	totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
 	if err != nil {
 		log.add("facilityId", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
+
+	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return newDatabaseServiceError(err)
+	}
+
+	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return newDatabaseServiceError(err)
+	}
+
+	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return newDatabaseServiceError(err)
+	}
+
+	adminDashboard := models.AdminLayer2Join{
+		TotalCoursesOffered:  int64(totalCourses),
+		TotalStudentsEnrolled: int64(totalStudents),
+		TotalHourlyActivity:   int64(totalActivity),
+		LearningInsights:      learningInsights,
+	}
+
 
 	return writeJsonResponse(w, http.StatusOK, adminDashboard)
 }
