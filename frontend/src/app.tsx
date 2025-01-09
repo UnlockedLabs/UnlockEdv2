@@ -59,12 +59,14 @@ import StudentLayer0 from './Pages/StudentLayer0.tsx';
 import StudentLayer2 from './Pages/StudentDashboard.tsx';
 import AdminLayer1 from './Pages/AdminLayer1.tsx';
 import HelpfulLinks from './Pages/HelpfulLinks.tsx';
+import { TitleManager } from './Components/TitleManager.tsx';
 
 const WithAuth: React.FC = () => {
     return (
         <AuthProvider>
             <ToastProvider>
                 <PathValueProvider>
+                    <TitleManager />
                     <Outlet />
                 </PathValueProvider>
             </ToastProvider>
@@ -104,6 +106,7 @@ function WithAdmin() {
             <ToastProvider>
                 <PathValueProvider>
                     <AdminOnly>
+                        <TitleManager />
                         <Outlet />
                     </AdminOnly>
                 </PathValueProvider>
