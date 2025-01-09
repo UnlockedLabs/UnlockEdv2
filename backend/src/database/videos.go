@@ -27,18 +27,22 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 		UserID:                userID,
 		FacilityID:            facilityID,
 	}
-	//use Unscoped method to ignore soft deletions
+	//added user id to query below to isolate favorite by user when facility id is passed in
 	tx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
 	if facilityID != nil {
 		tx = tx.Where("facility_id = ?", facilityID)
+	} else {
+		tx = tx.Where("user_id = ?", userID)
 	}
 	if tx.First(&models.OpenContentFavorite{}).RowsAffected > 0 {
-		delTx := db.Where("content_id = ? AND user_id = ? AND open_content_provider_id = ?", contentID, userID, ocpID)
+		delTx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
 		if facilityID != nil {
 			delTx = delTx.Where("facility_id = ?", facilityID)
+		} else {
+			delTx = delTx.Where("user_id = ?", userID)
 		}
 		if err := delTx.Delete(&fav).Error; err != nil {
-			return false, newDeleteDBError(err, "video_favorites")
+			return false, newDeleteDBError(err, "open_content_favorites")
 		}
 		return false, nil
 	} else {

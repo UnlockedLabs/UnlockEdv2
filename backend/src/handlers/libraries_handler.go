@@ -28,12 +28,13 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	showHidden := "visible"
 	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
-	}
-	if userIsAdmin(r) {
+	} else if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "featured" {
+		showHidden = "featured"
+	} else if userIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, claims.UserID, claims.FacilityID, showHidden, orderBy, search, days)
+	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, days, claims.UserID, claims.FacilityID, showHidden, orderBy, search, claims.isAdmin())
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

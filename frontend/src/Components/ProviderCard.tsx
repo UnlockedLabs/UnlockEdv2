@@ -30,7 +30,7 @@ export default function ProviderCard({
     openEditProvider: (prov: ProviderPlatform) => void;
     oidcClient: (prov: ProviderPlatform) => void;
     showAuthorizationInfo: (prov: ProviderPlatform) => void;
-    refreshToken: (prov: ProviderPlatform) => void; 
+    refreshToken: (prov: ProviderPlatform) => void;
     archiveProvider: (prov: ProviderPlatform) => void;
 }) {
     const navigate = useNavigate();
@@ -38,7 +38,8 @@ export default function ProviderCard({
         <tr className="bg-base-teal card p-4 w-full grid-cols-4 justify-items-center">
             <td className="justify-self-start">{provider.name}</td>
             <td>
-                {provider.oidc_id !== 0 || provider.type === ProviderPlatformType.BRIGHTSPACE ? (
+                {provider.oidc_id !== 0 ||
+                provider.type === ProviderPlatformType.BRIGHTSPACE ? (
                     <CheckCircleIcon className="w-4" />
                 ) : (
                     <div className="w-4"></div>
@@ -59,27 +60,31 @@ export default function ProviderCard({
             <td className="flex flex-row gap-3 justify-self-end">
                 {provider.state !== ProviderPlatformState.ARCHIVED ? (
                     <>
-                        {provider.oidc_id !== 0 || provider.type === ProviderPlatformType.BRIGHTSPACE ? (
+                        {provider.oidc_id !== 0 ||
+                        provider.type === ProviderPlatformType.BRIGHTSPACE ? (
                             <>
-                                {provider.type === ProviderPlatformType.BRIGHTSPACE ? (
+                                {provider.type ===
+                                ProviderPlatformType.BRIGHTSPACE ? (
                                     <ULIComponent
-                                    dataTip={'Refresh Token'}
-                                    icon={ArrowPathIcon}
-                                    onClick={() =>
-                                        refreshToken(provider)
-                                    }
-                                />
-                                ) : ( <ULIComponent
-                                    dataTip={'Auth Info'}
-                                    icon={InformationCircleIcon}
-                                    onClick={() =>
-                                        showAuthorizationInfo(provider)
-                                    }
-                                />)
-                                }
+                                        tooltipClassName="cursor-pointer"
+                                        dataTip={'Refresh Token'}
+                                        icon={ArrowPathIcon}
+                                        onClick={() => refreshToken(provider)}
+                                    />
+                                ) : (
+                                    <ULIComponent
+                                        tooltipClassName="cursor-pointer"
+                                        dataTip={'Auth Info'}
+                                        icon={InformationCircleIcon}
+                                        onClick={() =>
+                                            showAuthorizationInfo(provider)
+                                        }
+                                    />
+                                )}
                                 {provider.type !==
                                     ProviderPlatformType.KOLIBRI && (
                                     <ULIComponent
+                                        tooltipClassName="cursor-pointer"
                                         dataTip={'Manage Users'}
                                         icon={UserGroupIcon}
                                         onClick={() =>
@@ -92,17 +97,20 @@ export default function ProviderCard({
                             </>
                         ) : (
                             <ULIComponent
+                                tooltipClassName="cursor-pointer"
                                 dataTip={'Register Provider'}
                                 icon={LinkIcon}
                                 onClick={() => oidcClient(provider)}
                             />
                         )}
                         <ULIComponent
+                            tooltipClassName="cursor-pointer"
                             dataTip={'Edit Provider'}
                             icon={PencilSquareIcon}
                             onClick={() => openEditProvider(provider)}
                         />
                         <ULIComponent
+                            tooltipClassName="w-4 h-4 self-start cursor-pointer"
                             dataTip={'Disable'}
                             icon={XMarkIcon}
                             onClick={() => archiveProvider(provider)}
@@ -110,6 +118,7 @@ export default function ProviderCard({
                     </>
                 ) : (
                     <ULIComponent
+                        tooltipClassName="cursor-pointer"
                         dataTip={'Enable Provider'}
                         icon={CheckCircleIcon}
                         onClick={() => archiveProvider(provider)}

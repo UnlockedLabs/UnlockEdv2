@@ -216,7 +216,7 @@ export default function StudentManagement() {
                                                 <div className="flex space-x-4">
                                                     <ULIComponent
                                                         dataTip={'Edit Student'}
-                                                        tooltipClassName="tooltip-left"
+                                                        tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={PencilSquareIcon}
                                                         onClick={() => {
                                                             setTargetUser(user);
@@ -228,7 +228,7 @@ export default function StudentManagement() {
                                                         dataTip={
                                                             'Reset Password'
                                                         }
-                                                        tooltipClassName="tooltip-left"
+                                                        tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={
                                                             ArrowPathRoundedSquareIcon
                                                         }
@@ -242,7 +242,7 @@ export default function StudentManagement() {
                                                         dataTip={
                                                             'Delete Student'
                                                         }
-                                                        tooltipClassName="tooltip-left"
+                                                        tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={TrashIcon}
                                                         onClick={() => {
                                                             setTargetUser(user);
