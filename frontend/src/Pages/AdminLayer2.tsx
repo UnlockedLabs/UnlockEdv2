@@ -104,12 +104,12 @@ export default function AdminLayer2() {
                         <StatsCard
                             title="Total Courses Offered"
                             number={layer2_metrics.total_courses_offered.toString()}
-                            label=""
+                            label="courses"
                         />
                         <StatsCard
                             title="Total Students Enrolled"
                             number={layer2_metrics.total_students_enrolled.toString()}
-                            label={''}
+                            label={'students'}
                         />
                         <StatsCard
                             title="Total Activity Time"
@@ -120,7 +120,7 @@ export default function AdminLayer2() {
                     <div className="card card-row-padding mb-30">
                         <table className="table-2 mb-4">
                             <thead>
-                                <tr className="grid-col-4 px-4">
+                                <tr className="grid-col-4">
                                     <th className="justify-self-start">
                                         Course Name
                                     </th>
@@ -145,12 +145,12 @@ export default function AdminLayer2() {
                                                 <td className="justify-self-start">
                                                     {insight.course_name}
                                                 </td>
-                                                <td className="w-1/5">
+                                                <td>
                                                     {
                                                         insight.total_students_enrolled
                                                     }
                                                 </td>
-                                                <td className="w-1/5">
+                                                <td>
                                                     {insight.completion_rate.toFixed(
                                                         2
                                                     )}
