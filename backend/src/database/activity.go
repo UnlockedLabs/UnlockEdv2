@@ -393,7 +393,7 @@ func (db *DB) GetAdminLayer2Info(facilityID *uint) (models.AdminLayer2Join, erro
 
 	err = db.Table("(?) as sub", subQry).
 		Select("CASE WHEN SUM(students_enrolled) IS NULL THEN 0 ELSE SUM(students_enrolled) end AS students_enrolled").
-		Scan(&adminLayer2.TotalStudentsEnrolled).Debug().Error
+		Scan(&adminLayer2.TotalStudentsEnrolled).Error
 
 	if err != nil {
 		return adminLayer2, NewDBError(err, "error getting total_students_enrolled dashboard info")

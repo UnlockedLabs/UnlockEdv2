@@ -4,56 +4,27 @@ import {
     AdminLayer2Join,
     Facility,
     LearningInsight,
+    ServerResponseMany,
     ServerResponseOne
 } from '@/common';
 import useSWR from 'swr';
-// import convertSeconds from '@/Components/ConvertSeconds';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
-import { useEffect, useState } from 'react';
-import API from '@/api/api';
-// import DropdownControl from '@/Components/inputs/DropdownControl';
+import { useState } from 'react';
 
 export default function AdminLayer2() {
     const { user } = useAuth();
-    const [facilities, setFacilities] = useState<Facility[]>();
     const [facility, setFacility] = useState('all');
-    const [resetCache, setResetCache] = useState(false);
-    // const [filterCourses, setFilterCourses] = useState<number>(0);
-    // const [sortCourses, setSortCourses] = useState<string>(
-    //     'order=asc&order_by=course_name'
-    // );
+    const { data: facilities, error: errorFacilitiesFetch } = useSWR<
+        ServerResponseMany<Facility>,
+        AxiosError
+    >('/api/facilities');
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
         AxiosError
     >(`/api/users/${user?.id}/admin-layer2?facility=${facility}`);
 
-    useEffect(() => {
-        void mutate();
-    }, [facility, resetCache]);
-
-    useEffect(() => {
-        const fetchFacilities = async () => {
-            const response = await API.get<Facility>('facilities');
-            setFacilities(response.data as Facility[]);
-        };
-        void fetchFacilities();
-    }, []);
     const layer2_metrics = data?.data;
-
-    // function handleSortCourses(value: string) {
-    //     const defaultSort = 'order=asc&order_by=course_name';
-    //     if (value == 'completed') {
-    //         setFilterCourses(1);
-    //         setSortCourses(defaultSort);
-    //     } else if (value == 'in_progress') {
-    //         setFilterCourses(-1);
-    //         setSortCourses(defaultSort);
-    //     } else {
-    //         setFilterCourses(0);
-    //         setSortCourses(value);
-    //     }
-    // }
 
     if (error || isLoading || !user) return <div></div>;
     if (!isAdministrator(user)) {
@@ -65,40 +36,38 @@ export default function AdminLayer2() {
             {!data || (isLoading && <div>Loading...</div>)}
             {data && layer2_metrics && (
                 <>
-                    <div className="p-4">
+                    <div className="pb-4">
+                        <h1>Learning Insights</h1>
+                    </div>
+                    <div className="flex flex-row justify-between mb-6">
+                        <select
+                            id="facility"
+                            className="select select-bordered w-full max-w-xs"
+                            value={facility}
+                            onChange={(e) => setFacility(e.target.value)}
+                        >
+                            <option key={'all'} value={'all'}>
+                                All Facilities
+                            </option>
+                            {errorFacilitiesFetch ? (
+                                <div>Error fetching facilities</div>
+                            ) : (
+                                facilities?.data?.map((facility: Facility) => (
+                                    <option
+                                        key={facility.id}
+                                        value={facility.id}
+                                    >
+                                        {facility.name}
+                                    </option>
+                                ))
+                            )}
+                        </select>
                         <button
                             className="button"
-                            onClick={() => setResetCache(!resetCache)}
+                            onClick={() => void mutate()}
                         >
                             Refresh Data
                         </button>
-                        <div className="flex flex-row gap-4">
-                            <div>
-                                <label htmlFor="facility" className="label">
-                                    <span className="label-text">Facility</span>
-                                </label>
-                                <select
-                                    id="facility"
-                                    className="select select-bordered w-full max-w-xs"
-                                    value={facility}
-                                    onChange={(e) =>
-                                        setFacility(e.target.value)
-                                    }
-                                >
-                                    <option key={'all'} value={'all'}>
-                                        All
-                                    </option>
-                                    {facilities?.map((facility) => (
-                                        <option
-                                            key={facility.id}
-                                            value={facility.id}
-                                        >
-                                            {facility.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
                     </div>
                     <div className="grid grid-cols-3 gap-4 mb-6">
                         <StatsCard
