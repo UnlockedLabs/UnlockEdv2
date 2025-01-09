@@ -106,38 +106,47 @@ func (yt *VideoService) putAllCurrentVideoMetadata(ctx context.Context) error {
 		logger().Errorf("error fetching videos: %v", err)
 		return err
 	}
-	wg := sync.WaitGroup{}
-	wg.Add(len(videos))
+	const maxWorkers = 10
+	sem := make(chan struct{}, maxWorkers)
+
+	var wg sync.WaitGroup
 	for _, video := range videos {
+		wg.Add(1)
+		sem <- struct{}{}
 		go func(video models.Video) {
 			defer wg.Done()
+			defer func() { <-sem }()
+			vidCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel()
 			select {
-			case <-ctx.Done():
-				logger().Info("context cancelled, stopping putting video metadata")
+			case <-vidCtx.Done():
+				logger().Infof("context cancelled for video %d, stopping upload", video.ID)
 				return
 			default:
 				videoBytes, err := json.Marshal(video)
 				if err != nil {
-					logger().Errorf("error marshalling video: %v", err)
+					logger().Errorf("error marshalling video %d: %v", video.ID, err)
+					return
 				}
 				input := &s3.PutObjectInput{
 					Bucket: aws.String(yt.bucketName),
 					Body:   bytes.NewReader(videoBytes),
 					Key:    aws.String(video.GetS3KeyJson()),
 				}
-				resp, err := yt.s3Svc.PutObject(ctx, input)
+				resp, err := yt.s3Svc.PutObject(vidCtx, input)
 				if err != nil {
-					logger().Errorf("error putting object: %v", err)
+					logger().Errorf("error putting object for video %d: %v", video.ID, err)
 					return
 				}
 				if resp.ETag == nil {
-					logger().Error("etag is nil")
+					logger().Errorf("etag is nil for video %d", video.ID)
 					return
 				}
-				logger().Infof("successfully put object with etag: %s", *resp.ETag)
+				logger().Infof("successfully put object for video %d with etag: %s", video.ID, *resp.ETag)
 			}
 		}(video)
 	}
+	wg.Wait()
 	return nil
 }
 
