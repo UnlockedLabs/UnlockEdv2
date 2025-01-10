@@ -376,19 +376,16 @@ func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
 
 func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
 	var totalStudents int
-	subQry := db.Table("courses c").
-		Select("COUNT(DISTINCT m.user_id) AS students_enrolled").
-		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
-		Joins("INNER JOIN users u on m.user_id = u.id").
+	query := db.Table("user_enrollments ue").
+		Select("COUNT(DISTINCT ue.user_id) AS students_enrolled").
+		Joins("INNER JOIN users u on ue.user_id = u.id").
 		Where("u.role = ?", "student")
 
 	if facilityID != nil {
-		subQry = subQry.Where("u.facility_id = ?", facilityID)
+		query = query.Where("u.facility_id = ?", facilityID)
 	}
 
-	err := db.Table("(?) as sub", subQry).
-		Select("CASE WHEN SUM(students_enrolled) IS NULL THEN 0 ELSE SUM(students_enrolled) END AS students_enrolled").
-		Scan(&totalStudents).Error
+	err := query.Scan(&totalStudents).Error
 	if err != nil {
 		return 0, NewDBError(err, "error getting total students enrolled")
 	}

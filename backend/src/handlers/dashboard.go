@@ -53,7 +53,7 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
-	
+
 	switch facility {
 	case "all":
 		facilityId = nil
