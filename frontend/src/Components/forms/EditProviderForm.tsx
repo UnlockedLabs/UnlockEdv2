@@ -7,7 +7,7 @@ import {
     ToastState
 } from '@/common';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
@@ -78,7 +78,10 @@ export default function EditProviderForm({
     const onSubmit: SubmitHandler<ProviderInputs> = async (data) => {
         const cleanData = diffFormData(data, provider);
         setErrorMessage('');
-        const response = (await API.patch<ProviderResponse, Partial<ProviderPlatform>>(
+        const response = (await API.patch<
+            ProviderResponse,
+            Partial<ProviderPlatform>
+        >(
             `provider-platforms/${provider?.id}`,
             cleanData
         )) as ServerResponseOne<ProviderResponse>;
@@ -86,13 +89,24 @@ export default function EditProviderForm({
             onSuccess(ToastState.error, 'Failed to update provider platform');
             return;
         }
-        if(response.data.oauth2Url){
+        if (response.data.oauth2Url) {
             window.location.href = response.data.oauth2Url;
             return;
         }
         reset();
         onSuccess(ToastState.success, 'Provider platform updated successfully');
     };
+    useEffect(() => {
+        reset({
+            name: provider.name || '',
+            type: provider.type || '',
+            base_url: provider.base_url || '',
+            account_id: provider.account_id || '',
+            state: provider.state || '',
+            access_key: provider.access_key || ''
+        });
+        setAccessKey(provider.access_key || '');
+    }, [provider, reset]);
 
     function closeAndReset() {
         onSuccess(ToastState.null, '');
