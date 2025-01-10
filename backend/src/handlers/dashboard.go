@@ -89,7 +89,7 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 	key := fmt.Sprintf("%s-%d", facility, days)
 	cached, err := srv.buckets[LoginMetrics].Get(key)
 	if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
-		acitveUsers, err := srv.Db.GetNumberOfActiveUsersForTimePeriod(true, days, facilityId)
+		activeUsers, err := srv.Db.GetNumberOfActiveUsersForTimePeriod(true, days, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -97,11 +97,11 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		totalUsers, err := srv.Db.GetTotalUsers(facilityId)
+		totalResidents, totalAdmins, err := srv.Db.GetTotalUsers(facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		newAdded, err := srv.Db.NewUsersInTimePeriod(days, facilityId)
+		newResidentsAdded, newAdminsAdded, err := srv.Db.NewUsersInTimePeriod(days, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
@@ -109,29 +109,33 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		if totalUsers == 0 {
-			totalUsers = 1
+		if totalResidents+totalAdmins == 0 {
+			totalResidents = 1
 		}
 		activityMetrics := struct {
-			ActiveUsers      int64                  `json:"active_users"`
-			TotalLogins      int64                  `json:"total_logins"`
-			LoginsPerDay     int64                  `json:"logins_per_day"`
-			PercentActive    int64                  `json:"percent_active"`
-			PercentInactive  int64                  `json:"percent_inactive"`
-			TotalUsers       int64                  `json:"total_users"`
-			Facility         string                 `json:"facility,omitempty"`
-			NewStudentsAdded int64                  `json:"new_residents_added"`
-			PeakLoginTimes   []models.LoginActivity `json:"peak_login_times"`
+			ActiveUsers       int64                  `json:"active_users"`
+			TotalLogins       int64                  `json:"total_logins"`
+			LoginsPerDay      int64                  `json:"logins_per_day"`
+			PercentActive     int64                  `json:"percent_active"`
+			PercentInactive   int64                  `json:"percent_inactive"`
+			TotalResidents    int64                  `json:"total_residents"`
+			TotalAdmins       int64                  `json:"total_admins"`
+			Facility          string                 `json:"facility,omitempty"`
+			NewResidentsAdded int64                  `json:"new_residents_added"`
+			NewAdminsAdded    int64                  `json:"new_admins_added"`
+			PeakLoginTimes    []models.LoginActivity `json:"peak_login_times"`
 		}{
-			ActiveUsers:      acitveUsers,
-			TotalLogins:      totalLogins,
-			LoginsPerDay:     totalLogins / int64(days),
-			PercentActive:    acitveUsers / totalUsers * 100,
-			PercentInactive:  100 - (acitveUsers / totalUsers * 100),
-			TotalUsers:       totalUsers,
-			Facility:         facilityName,
-			NewStudentsAdded: newAdded,
-			PeakLoginTimes:   loginTimes,
+			ActiveUsers:       activeUsers,
+			TotalLogins:       totalLogins,
+			LoginsPerDay:      totalLogins / int64(days),
+			PercentActive:     activeUsers / totalResidents * 100,
+			PercentInactive:   100 - (activeUsers / totalResidents * 100),
+			TotalResidents:    totalResidents,
+			TotalAdmins:       totalAdmins,
+			Facility:          facilityName,
+			NewResidentsAdded: newResidentsAdded,
+			NewAdminsAdded:    newAdminsAdded,
+			PeakLoginTimes:    loginTimes,
 		}
 		jsonB, err := json.Marshal(models.DefaultResource(activityMetrics))
 		if err != nil {

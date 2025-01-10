@@ -366,9 +366,11 @@ export interface LoginMetrics {
     logins_per_day: number;
     percent_active: number;
     percent_inactive: number;
-    total_users: number;
+    total_residents: number;
+    total_admins: number;
     facility: string;
     new_residents_added: number;
+    new_admins_added: number;
     peak_login_times: LoginActivity[];
 }
 
