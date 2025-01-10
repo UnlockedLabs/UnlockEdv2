@@ -53,7 +53,7 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
-	// Logic goes here for facility
+	
 	switch facility {
 	case "all":
 		facilityId = nil
@@ -93,12 +93,11 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	}
 
 	adminDashboard := models.AdminLayer2Join{
-		TotalCoursesOffered:  int64(totalCourses),
+		TotalCoursesOffered:   int64(totalCourses),
 		TotalStudentsEnrolled: int64(totalStudents),
 		TotalHourlyActivity:   int64(totalActivity),
 		LearningInsights:      learningInsights,
 	}
-
 
 	return writeJsonResponse(w, http.StatusOK, adminDashboard)
 }

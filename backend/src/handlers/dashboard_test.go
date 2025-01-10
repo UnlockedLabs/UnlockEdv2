@@ -137,7 +137,7 @@ func TestHandleAdminLayer2(t *testing.T) {
 					t.Fatalf("unable to get learning insights, error is %v", err)
 				}
 				adminDashboard := models.AdminLayer2Join{
-					TotalCoursesOffered:  int64(totalCourses),
+					TotalCoursesOffered:   int64(totalCourses),
 					TotalStudentsEnrolled: int64(totalStudents),
 					TotalHourlyActivity:   int64(totalActivity),
 					LearningInsights:      learningInsights,

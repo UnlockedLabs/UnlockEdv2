@@ -367,7 +367,7 @@ func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
 	}
 
-	err := db.Table("(?) as sub", subQry).Find(&totalCourses).Error
+	err := subQry.Find(&totalCourses).Error
 	if err != nil {
 		return 0, NewDBError(err, "error getting total courses offered")
 	}
