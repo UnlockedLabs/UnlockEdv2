@@ -158,12 +158,6 @@ const accessValues = new Map<FeatureAccess, number>([
     [FeatureAccess.ProviderAccess, 2],
     [FeatureAccess.ProgramAccess, 3]
 ]);
-const adminAccessLinks = [
-    '/operational-insights', // temporary layer 0 until implemented
-    '/knowledge-insights',
-    '/learning-insights',
-    '/learning-insights' // temporary until layer 3 is implemented
-];
 
 export const studentAccessLinks = [
     '/home', // temporary layer 0 until implemented
@@ -181,6 +175,16 @@ export const getDashboardLink = (user?: User) => {
             .sort((a, b) => a - b)
             .pop() ?? 0;
     return isAdministrator(user)
-        ? adminAccessLinks[maxFeature]
+        ? getAdminLink(user)
         : studentAccessLinks[maxFeature];
+};
+
+const getAdminLink = (user: User): string => {
+    if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
+        return "/knowledge-insights";
+    }
+    if (user.feature_access.includes(FeatureAccess.ProviderAccess)) {
+        return "/learning-insights";
+    }
+    return "/operational-insights";
 };
