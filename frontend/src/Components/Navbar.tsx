@@ -15,7 +15,8 @@ import {
     CloudIcon,
     RssIcon,
     RectangleStackIcon,
-    CogIcon
+    CogIcon,
+    LightBulbIcon
 } from '@heroicons/react/24/solid';
 import {
     getDashboardLink,
@@ -50,11 +51,6 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
-    const dashboardTitleAdmin = new Map([
-        ['/learning-insights', 'Learning'],
-        ['/knowledge-insights', 'Knowledge'],
-        ['/operational-insights', 'Operational']
-    ]);
     const dashboardTitleStudent = new Map([
         ['/trending-content', 'Trending Content'],
         ['/learning-path', 'Learning Path'],
@@ -109,42 +105,41 @@ export default function Navbar({
 
             <div className="h-full">
                 <ul className="menu h-full flex flex-col justify-between">
-                    <div>
+                    <div className="mt-16">
                         {/* admin view */}
                         {user && isAdministrator(user) ? (
                             <>
-                                <li className="mt-16">
-                                    <Link to={getDashboardLink(user)}>
-                                        <ULIComponent icon={HomeIcon} />
-                                        {dashboardTitleAdmin.get(
-                                            getDashboardLink(user)
-                                        ) ?? 'Operational'}{' '}
-                                        Insights
-                                    </Link>
-                                </li>
                                 {hasFeature(
                                     user,
                                     FeatureAccess.OpenContentAccess
-                                ) &&
-                                    user.feature_access.length > 1 && (
-                                        <li>
-                                            <Link to="/knowledge-insights">
-                                                <ULIComponent
-                                                    icon={BookOpenIcon}
-                                                />
-                                                Knowledge Insights
-                                            </Link>
-                                        </li>
-                                    )}
-                                {/* this acts as the dashboard in the case there are no features enabled */}
-                                {user.feature_access.length > 0 && (
+                                ) && (
                                     <li>
-                                        <Link to="/operational-insights">
-                                            <ULIComponent icon={CogIcon} />
-                                            Operational Insights
+                                        <Link to="/knowledge-insights">
+                                            <ULIComponent icon={BookOpenIcon} />
+                                            Knowledge Insights
                                         </Link>
                                     </li>
                                 )}
+                                {hasFeature(
+                                    user,
+                                    FeatureAccess.ProviderAccess
+                                ) && (
+                                    <li>
+                                        <Link to="/learning-insights">
+                                            <ULIComponent
+                                                icon={LightBulbIcon}
+                                            />
+                                            Learning Insights
+                                        </Link>
+                                    </li>
+                                )}
+                                {/* this acts as the dashboard in the case there are no features enabled */}
+                                <li>
+                                    <Link to="/operational-insights">
+                                        <ULIComponent icon={CogIcon} />
+                                        Operational Insights
+                                    </Link>
+                                </li>
                                 {hasFeature(
                                     user,
                                     FeatureAccess.ProviderAccess
