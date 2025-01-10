@@ -55,7 +55,7 @@ export default function EditLinkForm({
             >
                 <TextInput
                     label="Name"
-                    interfaceRef="name"
+                    interfaceRef="title"
                     required
                     length={25}
                     errors={errors}

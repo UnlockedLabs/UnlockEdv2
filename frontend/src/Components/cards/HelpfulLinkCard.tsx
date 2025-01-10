@@ -14,7 +14,6 @@ import { AdminRoles } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
 
 export default function HelpfulLinkCard({
     link,
@@ -33,7 +32,6 @@ export default function HelpfulLinkCard({
 }) {
     const [visible, setVisible] = useState<boolean>(link.visibility_status);
     const { toaster } = useToast();
-    const navigate = useNavigate();
 
     function changeVisibility(visibilityStatus: boolean) {
         if (visibilityStatus == !visible) {
@@ -78,7 +76,6 @@ export default function HelpfulLinkCard({
         )) as ServerResponseOne<{ url: string }>;
         if (resp.success) {
             window.open(resp.data.url, '_blank');
-            navigate('/knowledge-center/libraries');
         }
     }
 
