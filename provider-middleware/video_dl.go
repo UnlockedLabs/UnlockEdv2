@@ -106,47 +106,28 @@ func (yt *VideoService) putAllCurrentVideoMetadata(ctx context.Context) error {
 		logger().Errorf("error fetching videos: %v", err)
 		return err
 	}
-	const maxWorkers = 10
-	sem := make(chan struct{}, maxWorkers)
-
-	var wg sync.WaitGroup
 	for _, video := range videos {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(video models.Video) {
-			defer wg.Done()
-			defer func() { <-sem }()
-			vidCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-			defer cancel()
-			select {
-			case <-vidCtx.Done():
-				logger().Infof("context cancelled for video %d, stopping upload", video.ID)
-				return
-			default:
-				videoBytes, err := json.Marshal(video)
-				if err != nil {
-					logger().Errorf("error marshalling video %d: %v", video.ID, err)
-					return
-				}
-				input := &s3.PutObjectInput{
-					Bucket: aws.String(yt.bucketName),
-					Body:   bytes.NewReader(videoBytes),
-					Key:    aws.String(video.GetS3KeyJson()),
-				}
-				resp, err := yt.s3Svc.PutObject(vidCtx, input)
-				if err != nil {
-					logger().Errorf("error putting object for video %d: %v", video.ID, err)
-					return
-				}
-				if resp.ETag == nil {
-					logger().Errorf("etag is nil for video %d", video.ID)
-					return
-				}
-				logger().Infof("successfully put object for video %d with etag: %s", video.ID, *resp.ETag)
-			}
-		}(video)
+		videoBytes, err := json.Marshal(video)
+		if err != nil {
+			logger().Errorf("error marshalling video %d: %v", video.ID, err)
+			return err
+		}
+		input := &s3.PutObjectInput{
+			Bucket: aws.String(yt.bucketName),
+			Body:   bytes.NewReader(videoBytes),
+			Key:    aws.String(video.GetS3KeyJson()),
+		}
+		resp, err := yt.s3Svc.PutObject(ctx, input)
+		if err != nil {
+			logger().Errorf("error putting object for video %d: %v", video.ID, err)
+			return err
+		}
+		if resp.ETag == nil {
+			logger().Errorf("etag is nil for video %d", video.ID)
+			return nil
+		}
+		logger().Infof("successfully put object for video %d with etag: %s", video.ID, *resp.ETag)
 	}
-	wg.Wait()
 	return nil
 }
 
