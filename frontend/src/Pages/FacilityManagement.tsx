@@ -16,6 +16,7 @@ import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
+import { useRevalidator } from 'react-router-dom';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
@@ -39,6 +40,7 @@ export default function FacilityManagement() {
     } = useSWR<ServerResponseMany<Facility>, AxiosError>(
         `/api/facilities?page=${pageQuery}&per_page=${perPage}`
     );
+    const { revalidate } = useRevalidator();
 
     const facilityData = facility?.data ?? [];
 
@@ -58,6 +60,7 @@ export default function FacilityManagement() {
         if (state && message) {
             toaster(message, state);
         }
+        revalidate();
         editFacilityModal.current?.close();
         addFacilityModal.current?.close();
         resetModal();
@@ -84,6 +87,7 @@ export default function FacilityManagement() {
                         'Facility successfully deleted.',
                         ToastState.success
                     );
+                    revalidate();
                 } else {
                     toaster('Error deleting Facility.', ToastState.success);
                 }
