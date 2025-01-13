@@ -6,7 +6,8 @@ import {
     ToastState,
     Video,
     ServerResponseMany,
-    UserRole
+    UserRole,
+    FilterLibrariesAdmin
 } from '../common';
 import AddVideosForm from '@/Components/forms/AddVideosForm';
 import Modal from '@/Components/Modal';
@@ -34,7 +35,9 @@ export default function VideoManagement() {
     const [polling, setPolling] = useState<boolean>(false);
     const [perPage, setPerPage] = useState(12);
     const [pageQuery, setPageQuery] = useState(1);
-    const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const [sortQuery, setSortQuery] = useState<string>(
+        FilterLibrariesAdmin['Date Added (Newest First)']
+    );
     const navigate = useNavigate();
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
@@ -108,12 +111,7 @@ export default function VideoManagement() {
                     <DropdownControl
                         label="Order by"
                         setState={setSortQuery}
-                        enumType={{
-                            'Date Added ↓': 'created_at DESC',
-                            'Date Added ↑': 'created_at ASC',
-                            'Title (A-Z)': 'title ASC',
-                            'Title (Z-A)': 'title DESC'
-                        }}
+                        enumType={FilterLibrariesAdmin}
                     />
                 </div>
                 <button
