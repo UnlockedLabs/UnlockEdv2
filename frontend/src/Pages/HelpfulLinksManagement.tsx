@@ -1,5 +1,6 @@
 import {
     HelpfulLink,
+    FilterLibrariesVidsandHelpfulLinksAdmin,
     ModalType,
     ServerResponseOne,
     ToastState,
@@ -20,8 +21,8 @@ import { useDebounceValue } from 'usehooks-ts';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import API from '@/api/api';
-import SortByPills from '@/Components/pill-labels/SortByPills';
 import { isAdministrator, useAuth } from '@/useAuth';
+import DropdownControl from '@/Components/inputs/DropdownControl';
 
 export default function HelpfulLinksManagement() {
     const { user } = useAuth();
@@ -33,17 +34,19 @@ export default function HelpfulLinksManagement() {
     const [pageQuery, setPageQuery] = useState<number>(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
+    const [sortQuery, setSortQuery] = useState<string>(
+        FilterLibrariesVidsandHelpfulLinksAdmin['Date Added (Newest First)']
+    );
     const { toaster } = useToast();
 
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseOne<HelpfulLinkAndSort>,
         AxiosError
     >(
-        `/api/helpful-links?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}`
+        `/api/helpful-links?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
     const helpfulLinks = data?.data.helpful_links ?? [];
     const meta = data?.data.meta;
-    let globalSortOrder = data?.data.sort_order;
 
     function updateLinks() {
         addLinkModal.current?.close();
@@ -87,28 +90,6 @@ export default function HelpfulLinksManagement() {
         void mutate();
     };
 
-    async function updateGlobalSort(sort: string) {
-        const response = await API.put<
-            { message: string },
-            { sort_order: string }
-        >('helpful-links/sort', { sort_order: sort });
-        if (response.success) {
-            globalSortOrder = sort;
-            void mutate();
-        }
-        toaster(
-            response.message,
-            response.success ? ToastState.success : ToastState.error
-        );
-    }
-
-    const sortPills = [
-        { name: 'Date Added ↓', value: 'created_at DESC' },
-        { name: 'Date Added ↑', value: 'created_at ASC' },
-        { name: 'Title (A-Z)', value: 'title ASC' },
-        { name: 'Title (Z-A)', value: 'title DESC' }
-    ];
-
     return (
         <>
             <div className="flex flex-row justify-between">
@@ -118,17 +99,11 @@ export default function HelpfulLinksManagement() {
                         searchTerm={searchTerm}
                         changeCallback={handleChange}
                     />
-                    <h3 className="ml-2">Order:</h3>
-                    {sortPills.map((label) => (
-                        <SortByPills
-                            key={label.value + label.name}
-                            label={label}
-                            updateSort={() =>
-                                void updateGlobalSort(label.value)
-                            }
-                            isSelected={label.value === globalSortOrder}
-                        />
-                    ))}
+                    <DropdownControl
+                        label="Order by"
+                        setState={setSortQuery}
+                        enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
+                    />
                 </div>
                 {/* add links button */}
                 <div

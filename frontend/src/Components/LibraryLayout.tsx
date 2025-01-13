@@ -4,7 +4,7 @@ import {
     Library,
     ServerResponseMany,
     UserRole,
-    FilterLibrariesAdmin
+    FilterLibrariesVidsandHelpfulLinksAdmin
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -33,7 +33,7 @@ export default function LibaryLayout({
         LibraryAdminVisibility['All Libraries']
     );
     const [orderBy, setOrderBy] = useState<string>(
-        FilterLibrariesAdmin['Date Added (Newest First)']
+        FilterLibrariesVidsandHelpfulLinksAdmin['Date Added (Newest First)']
     );
     let role = user.role;
     if (studentView) {
@@ -106,7 +106,7 @@ export default function LibaryLayout({
                         />
                         <DropdownControl
                             label="Filter by"
-                            enumType={FilterLibrariesAdmin}
+                            enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
                             setState={setOrderBy}
                         />
                     </>

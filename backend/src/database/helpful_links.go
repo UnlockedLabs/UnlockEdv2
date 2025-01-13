@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
+	"strings"
 )
 
 type HelpfulLinkResp struct {
@@ -19,13 +20,6 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited", subQuery)
 	var total int64
 
-	validOrder := map[string]bool{
-		"title ASC":       true,
-		"title DESC":      true,
-		"created_at ASC":  true,
-		"created_at DESC": true,
-	}
-
 	if onlyVisible {
 		tx = tx.Where("visibility_status = ?", true)
 	}
@@ -34,11 +28,11 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 		search = "%" + search + "%"
 		tx = tx.Where("LOWER(title) LIKE ?", search)
 	}
-
-	if valid, ok := validOrder[orderBy]; ok && valid {
+	switch strings.ToLower(orderBy) {
+	case "most_popular":
+		tx = tx.Order("COUNT(f.id) DESC")
+	default:
 		tx = tx.Order(orderBy)
-	} else {
-		tx = tx.Order("created_at DESC")
 	}
 
 	if err := tx.Count(&total).Error; err != nil {
@@ -52,7 +46,7 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 
 func (db *DB) AddHelpfulLink(link *models.HelpfulLink) error {
 	if db.Where("url = ?", link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
-		return NewDBError(fmt.Errorf("Link already exists"), "helpful_links")
+		return NewDBError(fmt.Errorf("link already exists"), "helpful_links")
 	}
 	if err := db.Create(link).Error; err != nil {
 		return newCreateDBError(err, "helpful_links")

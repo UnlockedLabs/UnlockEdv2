@@ -820,7 +820,7 @@ export enum LibraryAdminVisibility {
     'Featured' = 'featured'
 }
 
-export enum FilterLibrariesAdmin {
+export enum FilterLibrariesVidsandHelpfulLinksAdmin {
     'Most Popular' = 'most_popular',
     'Title (A to Z)' = 'title ASC',
     'Title (Z to A)' = 'title DESC',
