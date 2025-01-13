@@ -72,7 +72,7 @@ export default function AdminManagement() {
             : ToastState.error;
         const message = response.success
             ? 'Administrator deleted successfully'
-            : 'Failed to delete user';
+            : 'Failed to delete administrator';
         deleteUserModal.current?.close();
         toaster(message, toastType);
         resetModal();

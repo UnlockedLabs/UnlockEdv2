@@ -32,15 +32,9 @@ export default function HelpfulLinkCard({
     role: UserRole;
 }) {
     const [visible, setVisible] = useState<boolean>(link.visibility_status);
+    const [favorite, setFavorite] = useState<boolean>(link.is_favorited);
     const { toaster } = useToast();
     const navigate = useNavigate();
-
-    function changeVisibility(visibilityStatus: boolean) {
-        if (visibilityStatus == !visible) {
-            setVisible(visibilityStatus);
-            void handleToggleAction('toggle');
-        }
-    }
 
     const handleToggleAction = async (
         action: 'favorite' | 'toggle',
@@ -51,14 +45,21 @@ export default function HelpfulLinkCard({
             `helpful-links/${action}/${link.id}`,
             {}
         );
+        const actionString =
+            action == 'favorite'
+                ? favorite
+                    ? 'unfavorited'
+                    : 'favorited'
+                : visible
+                  ? 'is now hidden'
+                  : 'is now visible';
         if (response.success) {
-            toaster(
-                'Helpful link state updated successfully',
-                ToastState.success
-            );
+            toaster(`Helpful link ${actionString}`, ToastState.success);
             if (mutate) mutate();
+            if (action == 'favorite') setFavorite(!favorite);
+            else setVisible(!visible);
         } else {
-            toaster('Helpful link state failed to update', ToastState.error);
+            toaster(`Helpful link ${actionString}`, ToastState.error);
         }
     };
 
@@ -119,7 +120,7 @@ export default function HelpfulLinkCard({
             {AdminRoles.includes(role) && (
                 <VisibleHiddenToggle
                     visible={visible}
-                    changeVisibility={changeVisibility}
+                    changeVisibility={() => void handleToggleAction('toggle')}
                 />
             )}
         </div>

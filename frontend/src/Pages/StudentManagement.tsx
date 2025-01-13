@@ -113,7 +113,7 @@ export default function StudentManagement() {
         setTempPassword(psw);
         resetUserPasswordModal.current?.close();
         showUserPassword.current?.showModal();
-        toaster('Password successfully reset', ToastState.success);
+        toaster('Password reset successfully', ToastState.success);
     };
 
     const handleShowPasswordClose = () => {

@@ -54,7 +54,7 @@ export default function HelpfulLinksManagement() {
         const response = await API.delete(`helpful-links/${id}`);
         if (response.success) {
             updateLinks();
-            toaster('Deleted helpful link successfully', ToastState.success);
+            toaster('Helpful link deleted successfully', ToastState.success);
         } else {
             toaster('Error deleting helpful link', ToastState.error);
         }

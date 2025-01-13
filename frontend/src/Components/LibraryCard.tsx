@@ -22,15 +22,9 @@ export default function LibraryCard({
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
+    const [favorite, setFavorite] = useState<boolean>(library.is_favorited);
     const navigate = useNavigate();
     const route = useLocation();
-
-    function changeVisibility(visibilityStatus: boolean) {
-        if (visibilityStatus == !visible) {
-            setVisible(visibilityStatus);
-            void handleToggleAction('toggle');
-        }
-    }
 
     async function handleToggleAction(
         action: 'favorite' | 'toggle',
@@ -38,15 +32,29 @@ export default function LibraryCard({
     ) {
         if (!mutate) return;
         if (e) e.stopPropagation();
+        const actionString =
+            action == 'favorite'
+                ? favorite
+                    ? role == UserRole.Student
+                        ? 'unfavorited'
+                        : 'unfeatured'
+                    : role == UserRole.Student
+                      ? 'favorited'
+                      : 'featured'
+                : visible
+                  ? 'is now hidden'
+                  : 'is now visible';
         const resp = await API.put<null, object>(
             `libraries/${library.id}/${action}`,
             {}
         );
         if (resp.success) {
             mutate();
-            toaster('Library state updated successfully', ToastState.success);
+            toaster(`Library ${actionString}`, ToastState.success);
+            if (action == 'favorite') setFavorite(!favorite);
+            else setVisible(!visible);
         } else {
-            toaster('Library state failed to update', ToastState.error);
+            toaster(`Library {${actionString}}`, ToastState.error);
         }
     }
 
@@ -99,7 +107,9 @@ export default function LibraryCard({
                 {AdminRoles.includes(role) && (
                     <VisibleHiddenToggle
                         visible={visible}
-                        changeVisibility={changeVisibility}
+                        changeVisibility={() =>
+                            void handleToggleAction('toggle')
+                        }
                     />
                 )}
             </div>
