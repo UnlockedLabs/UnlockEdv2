@@ -64,7 +64,7 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 	}
 
 	switch strings.ToLower(orderBy) {
-	case "most_favorited":
+	case "most_popular":
 		tx = tx.Select(`
             libraries.*,
             COUNT(f.id) AS favorite_count,
@@ -82,24 +82,6 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 		}
 		tx = tx.Group("libraries.id").Order("favorite_count DESC")
 
-	case "least_favorited":
-		tx = tx.Select(`
-            libraries.*,
-            COUNT(f.id) AS favorite_count,
-            EXISTS (
-                SELECT 1
-                FROM open_content_favorites f
-                WHERE f.content_id = libraries.id
-                  AND f.open_content_provider_id = libraries.open_content_provider_id
-                  AND f.user_id = ?
-            ) AS is_favorited`, userId)
-		if !isFeatured {
-			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
-				ON f.content_id = libraries.id 
-				AND f.open_content_provider_id = libraries.open_content_provider_id`)
-		}
-		tx = tx.Group("libraries.id").
-			Order("favorite_count ASC")
 	default:
 		tx = tx.Order(orderBy)
 	}

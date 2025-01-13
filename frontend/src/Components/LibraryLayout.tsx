@@ -32,7 +32,9 @@ export default function LibaryLayout({
     const [filterLibrariesAdmin, setFilterLibrariesAdmin] = useState<string>(
         LibraryAdminVisibility['All Libraries']
     );
-    const [orderBy, setOrderBy] = useState<string>(FilterLibrariesAdmin.Newest);
+    const [orderBy, setOrderBy] = useState<string>(
+        FilterLibrariesAdmin['Date Added (Newest First)']
+    );
     let role = user.role;
     if (studentView) {
         role = UserRole.Student;

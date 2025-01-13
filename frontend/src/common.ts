@@ -812,6 +812,7 @@ export enum FilterLibraries {
     'Oldest' = 'created_at ASC',
     'Favorited' = 'most_favorited'
 }
+
 export enum LibraryAdminVisibility {
     'All Libraries' = 'all',
     'Visible' = 'visible',
@@ -820,10 +821,11 @@ export enum LibraryAdminVisibility {
 }
 
 export enum FilterLibrariesAdmin {
-    'Most Favorited' = 'most_favorited',
-    'Least Favorited' = 'least_favorited',
-    'Newest' = 'created_at DESC',
-    'Oldest' = 'created_at ASC'
+    'Most Popular' = 'most_popular',
+    'Title (A to Z)' = 'title ASC',
+    'Title (Z to A)' = 'title DESC',
+    'Date Added (Newest First)' = 'created_at DESC',
+    'Date Added  (Oldest First)' = 'created_at ASC'
 }
 
 export enum Timezones {
