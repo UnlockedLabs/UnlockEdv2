@@ -71,7 +71,7 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 		  AND f.user_id = ?
 	) AS is_favorited`, userID)
 	var total int64
-	
+
 	if onlyVisible {
 		tx = tx.Where("visibility_status = ?", true)
 	}
@@ -79,13 +79,13 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 		search = "%" + search + "%"
 		tx = tx.Where("LOWER(title) LIKE ? OR LOWER(channel_title) LIKE ?", search, search)
 	}
-	switch strings.ToLower(orderBy){
-		case "most_popular":
-			tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
+	switch strings.ToLower(orderBy) {
+	case "most_popular":
+		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
 			Group("videos.id").Order("COUNT(f.id) DESC")
 
-		default:
-			tx = tx.Order(orderBy)
+	default:
+		tx = tx.Order(orderBy)
 	}
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "videos")
