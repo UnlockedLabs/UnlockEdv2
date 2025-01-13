@@ -378,8 +378,7 @@ func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
 	var totalStudents int
 	query := db.Table("user_enrollments ue").
 		Select("COUNT(DISTINCT ue.user_id) AS students_enrolled").
-		Joins("INNER JOIN users u on ue.user_id = u.id").
-		Where("u.role = ?", "student")
+		Joins("INNER JOIN users u on ue.user_id = u.id")
 
 	if facilityID != nil {
 		query = query.Where("u.facility_id = ?", facilityID)
