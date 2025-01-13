@@ -33,7 +33,7 @@ export default function LibaryLayout({
         LibraryAdminVisibility['All Libraries']
     );
     const [orderBy, setOrderBy] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksAdmin['Date Added (Newest First)']
+        FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
     let role = user.role;
     if (studentView) {

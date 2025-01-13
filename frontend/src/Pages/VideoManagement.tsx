@@ -36,7 +36,7 @@ export default function VideoManagement() {
     const [perPage, setPerPage] = useState(12);
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksAdmin['Date Added (Newest First)']
+        FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
     const navigate = useNavigate();
     const { toaster } = useToast();

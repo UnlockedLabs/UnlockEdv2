@@ -83,7 +83,6 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 	case "most_popular":
 		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
 			Group("videos.id").Order("COUNT(f.id) DESC")
-
 	default:
 		tx = tx.Order(orderBy)
 	}

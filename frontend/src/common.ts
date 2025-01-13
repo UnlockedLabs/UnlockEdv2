@@ -821,11 +821,11 @@ export enum LibraryAdminVisibility {
 }
 
 export enum FilterLibrariesVidsandHelpfulLinksAdmin {
-    'Most Popular' = 'most_popular',
     'Title (A to Z)' = 'title ASC',
     'Title (Z to A)' = 'title DESC',
     'Date Added (Newest First)' = 'created_at DESC',
-    'Date Added  (Oldest First)' = 'created_at ASC'
+    'Date Added  (Oldest First)' = 'created_at ASC',
+    'Most Popular' = 'most_popular'
 }
 
 export enum Timezones {

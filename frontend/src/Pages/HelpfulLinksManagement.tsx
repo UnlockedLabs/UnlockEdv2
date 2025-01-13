@@ -35,7 +35,7 @@ export default function HelpfulLinksManagement() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksAdmin['Date Added (Newest First)']
+        FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
     const { toaster } = useToast();
 
