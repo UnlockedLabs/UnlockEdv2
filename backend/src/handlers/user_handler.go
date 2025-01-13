@@ -220,9 +220,8 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 	if toUpdate.Username != user.Username && user.Username != "" {
-		if srv.Db.UsernameExists(user.Username) {
-			return newBadRequestServiceError(err, "userexists")
-		}
+		// usernames are immutable
+		return newBadRequestServiceError(errors.New("username cannot be updated"), "username")
 	}
 	invalidUser := validateUser(&user)
 	if invalidUser != "" {

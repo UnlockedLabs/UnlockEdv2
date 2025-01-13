@@ -151,6 +151,7 @@ func TestCreateUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestNonAdminCannotUpdateUser", "student", getUpdateUserForm(), http.StatusUnauthorized, ""},
+		{"TestAdminCannotUpdateUsername", "admin", getUpdateUsernameForm(), http.StatusBadRequest, ""},
 		{"TestAdminCanUpdateUser", "admin", getUpdateUserForm(), http.StatusOK, ""},
 		{"TestAdminUpdateUserNameValidationFailed", "admin", getUserWithBadCharsForm(), http.StatusBadRequest, ""},
 		{"TestAdminUpdateUserNameExits", "admin", getUserWhereNameExistsAlreadyForm(), http.StatusBadRequest, ""},
@@ -367,9 +368,19 @@ func getBadUserWithNoNameForm() map[string]any {
 	return form
 }
 
-func getUpdateUserForm() map[string]any {
+func getUpdateUsernameForm() map[string]any {
 	form := make(map[string]any)
 	form["username"] = "testUpdate"
+	form["name_first"] = "testUpdate"
+	form["name_last"] = "testUpdate"
+	form["email"] = "testUpdate"
+	form["role"] = "admin"
+	return form
+}
+
+func getUpdateUserForm() map[string]any {
+	form := make(map[string]any)
+	form["username"] = ""
 	form["name_first"] = "testUpdate"
 	form["name_last"] = "testUpdate"
 	form["email"] = "testUpdate"

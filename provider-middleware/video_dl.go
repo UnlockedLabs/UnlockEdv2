@@ -43,7 +43,7 @@ func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body *map[st
 	var svc *s3.Client = nil
 	if bucketName != "" {
 		logger().Info("s3 bucket found, creating client")
-		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithClientLogMode(aws.LogRequest|aws.LogResponseWithBody), config.WithRegion("us-west-2"))
+		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithClientLogMode(aws.LogRequest|aws.LogResponseWithBody), config.WithRegion(os.Getenv("AWS_REGION")))
 		if err != nil {
 			logger().Fatal(err)
 		}
