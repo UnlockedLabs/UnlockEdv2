@@ -24,6 +24,7 @@ func TestHandleGetDailyActivityByUserID(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
+			// test
 			req.SetPathValue("id", test.mapKeyValues["id"].(string))
 			handler := getHandlerByRole(server.handleGetDailyActivityByUserID, test.role)
 			rr := executeRequest(t, req, handler, test)
