@@ -1,5 +1,5 @@
 import { Facility, ToastState, Timezones } from '@/common';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, SubmitButton, DropdownInput, TextInput } from '../inputs';
 import API from '@/api/api';
@@ -58,6 +58,13 @@ export default function EditFacilityForm({
         reset();
         onSuccess(ToastState.success, 'Facility updated successfully');
     };
+
+    useEffect(() => {
+        reset({
+            name: facility.name || '',
+            timezone: facility.timezone || ''
+        });
+    }, [facility, reset]);
 
     function closeAndReset() {
         onSuccess(ToastState.null, '');

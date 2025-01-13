@@ -1,5 +1,5 @@
 import { ServerResponseOne, User, UserRole } from '@/common.ts';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput, SubmitButton, CloseX } from '@/Components/inputs';
 import API from '@/api/api';
@@ -24,6 +24,7 @@ export default function EditUserForm({
         register,
         handleSubmit,
         setError,
+        reset,
         formState: { errors }
     } = useForm<Inputs>({
         defaultValues: {
@@ -33,6 +34,18 @@ export default function EditUserForm({
             email: user.email
         }
     });
+
+    function mapUserToInputs(user: User): Inputs {
+        return {
+            name_first: user.name_first || '',
+            name_last: user.name_last || '',
+            email: user.email || ''
+        };
+    }
+
+    useEffect(() => {
+        reset(mapUserToInputs(user));
+    }, [user, reset]);
 
     function diffFormData(formData: Inputs, currentUserData: User) {
         const changes: Partial<User> = {};
