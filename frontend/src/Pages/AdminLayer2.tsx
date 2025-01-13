@@ -1,141 +1,146 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import MilestonesBarChart from '@/Components/MilestonesBarChart';
-import ActivityChart from '@/Components/MonthActivityChart';
 import StatsCard from '@/Components/StatsCard';
-import TopProgPieChart from '@/Components/TopProgActivityPieChart';
-import { AdminDashboardJoin, CourseActivity, ServerResponse } from '@/common';
+import {
+    AdminLayer2Join,
+    Facility,
+    LearningInsight,
+    ServerResponseMany,
+    ServerResponseOne
+} from '@/common';
 import useSWR from 'swr';
-import convertSeconds from '@/Components/ConvertSeconds';
-import { useContext } from 'react';
-import { ThemeContext } from '@/Context/ThemeContext';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
+import { useState } from 'react';
 
 export default function AdminLayer2() {
     const { user } = useAuth();
-    const { data, error, isLoading } = useSWR<
-        ServerResponse<AdminDashboardJoin>,
+    const [facility, setFacility] = useState('all');
+    const { data: facilities, error: errorFacilitiesFetch } = useSWR<
+        ServerResponseMany<Facility>,
         AxiosError
-    >(`/api/users/${user?.id}/admin-dashboard`);
-    const { theme } = useContext(ThemeContext);
+    >('/api/facilities');
+    const { data, error, isLoading, mutate } = useSWR<
+        ServerResponseOne<AdminLayer2Join>,
+        AxiosError
+    >(`/api/users/${user?.id}/admin-layer2?facility=${facility}`);
+
+    const layer2_metrics = data?.data;
 
     if (error || isLoading || !user) return <div></div>;
     if (!isAdministrator(user)) {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
-    const activityData = data?.data as AdminDashboardJoin;
-    const avgActivity = convertSeconds(activityData.avg_daily_activity);
-    const totalActivity = convertSeconds(activityData.total_weekly_activity);
     return (
-        <div className="px-8 py-4">
-            <h1 className="text-5xl">{user.facility_name}</h1>
-            <div className="flex flex-row mt-12 gap-12">
-                <div className="flex flex-col gap-6 w-2/3">
-                    <div className="card h-[240px]">
-                        <h2 className="card-h-padding">
-                            Overall Platform Engagement
-                        </h2>
-                        <ActivityChart data={activityData.monthly_activity} />
+        <div className="p-8">
+            {error && <div>Error loading data</div>}
+            {!data || (isLoading && <div>Loading...</div>)}
+            {data && layer2_metrics && (
+                <>
+                    <div className="pb-4">
+                        <h1>Learning Insights</h1>
                     </div>
-                    <div className="grid grid-cols-3 gap-6">
+                    <div className="flex flex-row justify-between mb-6">
+                        <select
+                            id="facility"
+                            className="select select-bordered w-full max-w-xs"
+                            value={facility}
+                            onChange={(e) => setFacility(e.target.value)}
+                        >
+                            <option key={'all'} value={'all'}>
+                                All Facilities
+                            </option>
+                            {errorFacilitiesFetch ? (
+                                <div>Error fetching facilities</div>
+                            ) : (
+                                facilities?.data?.map((facility: Facility) => (
+                                    <option
+                                        key={facility.id}
+                                        value={facility.id}
+                                    >
+                                        {facility.name}
+                                    </option>
+                                ))
+                            )}
+                        </select>
+                        <button
+                            className="button"
+                            onClick={() => void mutate()}
+                        >
+                            Refresh Data
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
                         <StatsCard
-                            title={'ACTIVE USERS'}
-                            number={`${activityData.weekly_active_users}`}
+                            title="Total Courses Offered"
+                            number={layer2_metrics.total_courses_offered.toString()}
+                            label="courses"
+                        />
+                        <StatsCard
+                            title="Total Students Enrolled"
+                            number={layer2_metrics.total_students_enrolled.toString()}
                             label={'students'}
                         />
                         <StatsCard
-                            title={'AVG DAILY ACTIVITY'}
-                            number={avgActivity.number.toString()}
-                            label={avgActivity.label}
-                        />
-                        <StatsCard
-                            title={'TOTAL WEEK ACTIVITY'}
-                            number={totalActivity.number.toString()}
-                            label={totalActivity.label}
+                            title="Total Activity Time"
+                            number={layer2_metrics.total_hourly_activity.toLocaleString(
+                                'en-US'
+                            )}
+                            label="Hours"
                         />
                     </div>
-                    <div className="card h-[368px] p-4">
-                        <h2>Top Milestone Completion Per Course</h2>
-                        <MilestonesBarChart
-                            data={activityData.course_milestones}
-                        />
+                    <div className="card card-row-padding mb-30">
+                        <table className="table-2 mb-4">
+                            <thead>
+                                <tr className="grid-col-4">
+                                    <th className="justify-self-start">
+                                        Course Name
+                                    </th>
+                                    <th># Students Enrolled</th>
+                                    <th>Completion Rate</th>
+                                    <th className="justify-self-end pr-4">
+                                        Total Activity Hours
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="flex flex-col gap-4 mt-4">
+                                {layer2_metrics.learning_insights?.map(
+                                    (
+                                        insight: LearningInsight,
+                                        index: number
+                                    ) => {
+                                        return (
+                                            <tr
+                                                className="grid-cols-4 justify-items-center"
+                                                key={index}
+                                            >
+                                                <td className="justify-self-start">
+                                                    {insight.course_name}
+                                                </td>
+                                                <td>
+                                                    {
+                                                        insight.total_students_enrolled
+                                                    }
+                                                </td>
+                                                <td>
+                                                    {insight.completion_rate.toFixed(
+                                                        2
+                                                    )}
+                                                    %
+                                                </td>
+                                                <td className="justify-self-end">
+                                                    {insight.activity_hours.toLocaleString(
+                                                        'en-US'
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                {/* Top course engagement */}
-                <div className="card h-100 flex flex-col flex-grow justify-between overflow-auto">
-                    <h2 className="card-h-padding">Top Course Engagement</h2>
-                    <div className="">
-                        <TopProgPieChart
-                            data={activityData.top_course_activity}
-                        />
-                        <div className="px-4 pb-10">
-                            {/* TO DO: caption needs to be added */}
-                            <table className="table-2">
-                                <thead>
-                                    <tr>
-                                        <th>Course Name</th>
-                                        <th>Time Spent</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="!gap-6">
-                                    {activityData?.top_course_activity.map(
-                                        (
-                                            course: CourseActivity,
-                                            index: number
-                                        ) => {
-                                            let courseTime: string;
-                                            if (course.hours_engaged < 1)
-                                                courseTime =
-                                                    Math.round(
-                                                        course.hours_engaged *
-                                                            60
-                                                    ) + ' min';
-                                            else {
-                                                const hours = Math.floor(
-                                                    course.hours_engaged
-                                                );
-                                                const leftoverMins =
-                                                    Math.round(
-                                                        course.hours_engaged *
-                                                            60
-                                                    ) % 60;
-                                                if (leftoverMins == 0)
-                                                    courseTime = hours + ' hrs';
-                                                else
-                                                    courseTime =
-                                                        hours +
-                                                        ' hr ' +
-                                                        leftoverMins +
-                                                        ' min';
-                                            }
-                                            let legendColor =
-                                                'bg-teal-' +
-                                                (index + 1).toString();
-                                            // TO DO: temporary fix... figure out why teal-5 doesnt render immediately
-                                            if (index == 4)
-                                                legendColor =
-                                                    theme == 'light'
-                                                        ? 'bg-[#002E2A]'
-                                                        : 'bg-[#B0DFDA]';
-                                            return (
-                                                <tr key={index}>
-                                                    <td className="flex flex-row gap-2">
-                                                        <div
-                                                            className={`h-3 w-3 ${legendColor} my-auto`}
-                                                        ></div>
-                                                        {course.course_name}
-                                                    </td>
-                                                    <td>{courseTime}</td>
-                                                </tr>
-                                            );
-                                        }
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </>
+            )}
         </div>
     );
 }

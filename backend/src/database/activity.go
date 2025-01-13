@@ -356,3 +356,89 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	return dashboard, nil
 }
+func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
+	var totalCourses int
+	subQry := db.Table("courses c").
+		Select("COUNT(DISTINCT c.id) as total_courses_offered").
+		Joins("INNER JOIN user_enrollments ue on c.id = ue.course_id").
+		Joins("INNER JOIN users u on ue.user_id = u.id")
+
+	if facilityID != nil {
+		subQry = subQry.Where("u.facility_id = ?", facilityID)
+	}
+
+	err := subQry.Find(&totalCourses).Error
+	if err != nil {
+		return 0, NewDBError(err, "error getting total courses offered")
+	}
+	return totalCourses, nil
+}
+
+func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
+	var totalStudents int
+	query := db.Table("user_enrollments ue").
+		Select("COUNT(DISTINCT ue.user_id) AS students_enrolled").
+		Joins("INNER JOIN users u on ue.user_id = u.id")
+
+	if facilityID != nil {
+		query = query.Where("u.facility_id = ?", facilityID)
+	}
+
+	err := query.Scan(&totalStudents).Error
+	if err != nil {
+		return 0, NewDBError(err, "error getting total students enrolled")
+	}
+	return totalStudents, nil
+}
+
+func (db *DB) GetTotalHourlyActivity(facilityID *uint) (int, error) {
+	var totalActivity int
+	subQry := db.Table("users u").
+		Select("CASE WHEN SUM(a.total_time) IS NULL THEN 0 ELSE ROUND(SUM(a.total_time)/3600, 0) END AS total_time").
+		Joins("LEFT JOIN activities a ON u.id = a.user_id").
+		Where("u.role = ?", "student")
+
+	if facilityID != nil {
+		subQry = subQry.Where("u.facility_id = ?", facilityID)
+	}
+
+	err := subQry.Scan(&totalActivity).Error
+	if err != nil {
+		return 0, NewDBError(err, "error getting total hourly activity")
+	}
+	return totalActivity, nil
+}
+
+func (db *DB) GetLearningInsights(facilityID *uint) ([]models.LearningInsight, error) {
+	var insights []models.LearningInsight
+	subQry := db.Table("outcomes o").
+		Select("o.course_id, COUNT(o.id) AS outcome_count").
+		Group("o.course_id")
+
+	subQry2 := db.Table("courses c").
+		Select(`
+			c.name AS course_name,
+			COUNT(DISTINCT u.id) AS total_students_enrolled,
+			CASE 
+				WHEN MAX(subqry.outcome_count) > 0 THEN  
+					COUNT(DISTINCT u.id) / NULLIF(CAST(MAX(c.total_progress_milestones) AS float), 0) * 100.0
+				ELSE 0
+			END AS completion_rate,
+			COALESCE(ROUND(SUM(a.total_time) / 3600, 0), 0) AS activity_hours
+		`).
+		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
+		Joins("LEFT JOIN users u ON m.user_id = u.id").
+		Joins("LEFT JOIN activities a ON u.id = a.user_id").
+		Joins("INNER JOIN (?) AS subqry ON m.course_id = subqry.course_id", subQry).
+		Where("u.role = ?", "student")
+
+	if facilityID != nil {
+		subQry2 = subQry2.Where("u.facility_id = ?", facilityID)
+	}
+
+	err := subQry2.Group("c.name, c.total_progress_milestones").Find(&insights).Error
+	if err != nil {
+		return nil, NewDBError(err, "error getting learning insights")
+	}
+	return insights, nil
+}

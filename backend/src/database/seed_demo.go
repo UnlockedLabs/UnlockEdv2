@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	// "github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -86,7 +86,7 @@ func (db *DB) RunDemoSeed(facilityId uint) error {
 			}) {
 				if err := db.Exec("INSERT INTO user_enrollments (user_id, course_id, external_id, created_at) VALUES (?, ?, ?, ?)",
 					user.ID, course.ID, uuid.NewString(), startDate).Error; err != nil {
-					logrus.Println(err)
+					log.Println(err)
 				}
 			}
 			daysSinceStart := int(time.Since(*startDate).Hours() / 24)

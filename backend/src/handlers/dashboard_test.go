@@ -102,6 +102,60 @@ func TestHandleAdminDashboard(t *testing.T) {
 	}
 }
 
+func TestHandleAdminLayer2(t *testing.T) {
+	httpTests := []httpTest{
+		{"TestAdminDashboardAsAdmin", "admin", map[string]any{"id": "1"}, http.StatusOK, ""},
+		{"TestAdminDashboardAsUser", "student", map[string]any{"id": "4"}, http.StatusUnauthorized, ""},
+	}
+	for _, test := range httpTests {
+		t.Run(test.testName, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/admin-layer2", nil)
+			if err != nil {
+				t.Fatalf("unable to create new request, error is %v", err)
+			}
+			req.SetPathValue("id", test.mapKeyValues["id"].(string))
+			handler := getHandlerByRoleWithMiddleware(server.handleAdminLayer2, test.role)
+			rr := executeRequest(t, req, handler, test)
+			id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
+			if test.expectedStatusCode == http.StatusOK {
+
+				id := uint(id)
+				totalCourses, err := server.Db.GetTotalCoursesOffered(&id)
+				if err != nil {
+					t.Fatalf("unable to get total courses offered, error is %v", err)
+				}
+				totalStudents, err := server.Db.GetTotalStudentsEnrolled(&id)
+				if err != nil {
+					t.Fatalf("unable to get total students enrolled, error is %v", err)
+				}
+				totalActivity, err := server.Db.GetTotalHourlyActivity(&id)
+				if err != nil {
+					t.Fatalf("unable to get total hourly activity, error is %v", err)
+				}
+				learningInsights, err := server.Db.GetLearningInsights(&id)
+				if err != nil {
+					t.Fatalf("unable to get learning insights, error is %v", err)
+				}
+				adminDashboard := models.AdminLayer2Join{
+					TotalCoursesOffered:   int64(totalCourses),
+					TotalStudentsEnrolled: int64(totalStudents),
+					TotalHourlyActivity:   int64(totalActivity),
+					LearningInsights:      learningInsights,
+				}
+
+				received := rr.Body.String()
+				resource := models.Resource[models.AdminLayer2Join]{}
+				if err := json.Unmarshal([]byte(received), &resource); err != nil {
+					t.Errorf("failed to unmarshal resource, error is %v", err)
+				}
+				if diff := cmp.Diff(&adminDashboard, &resource.Data); diff != "" {
+					t.Errorf("handler returned unexpected response body: %v", diff)
+				}
+			}
+		})
+	}
+}
+
 func TestHandleUserCatalog(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetAllUserCatalogAsAdmin", "admin", getUserCatalogSearch(4, nil, "", ""), http.StatusOK, ""},
