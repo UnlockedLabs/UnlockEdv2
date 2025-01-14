@@ -49,7 +49,7 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
         // eslint-disable-next-line
         const { x, y, payload } = props;
         //eslint-disable-next-line
-        const date = payload.value.toString();
+        const date = payload.value.toString() ?? '';
         //eslint-disable-next-line
         const day = (new Date(date).getDay() + 1) % 7;
 
@@ -76,18 +76,7 @@ const WeekActivityChart = ({ data }: { data: RecentActivity[] }) => {
                 margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
             >
                 <CartesianGrid stroke={gridColor} />
-                <XAxis
-                    dataKey={'date'}
-                    tick={
-                        <XAxisTick
-                            x={0}
-                            y={0}
-                            payload={{
-                                value: ''
-                            }}
-                        />
-                    }
-                />
+                <XAxis dataKey={'date'} tick={<XAxisTick />} />
                 <YAxis
                     dataKey={'delta'}
                     label={{

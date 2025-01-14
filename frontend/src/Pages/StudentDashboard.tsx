@@ -29,8 +29,6 @@ export default function StudentLayer2() {
         })
     );
 
-    console.log(courses);
-
     return (
         <div className="w-full flex flex-col gap-6 px-6 pb-4">
             <h1 className="text-5xl">Hi, {user.name_first ?? 'Student'}!</h1>
