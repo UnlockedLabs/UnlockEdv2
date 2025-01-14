@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func (srv *Server) registerActivityRoutes() []routeDef {
@@ -17,7 +19,8 @@ func (srv *Server) registerActivityRoutes() []routeDef {
 
 /****
  * @Query Params:
- * ?year=: year (default last year)
+ * ?start_date
+ * ?end_date
  ****/
 func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userID, err := strconv.Atoi(r.PathValue("id"))
@@ -29,17 +32,17 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 		log.error("non admin requesting to view other student activities")
 		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
 	}
-	yearStr := r.URL.Query().Get("year")
-	var year int
-	if yearStr != "" {
-		year, err = strconv.Atoi(yearStr)
-		if err != nil {
-			return newInvalidQueryParamServiceError(err, "year")
-		}
-	}
-	activities, err := srv.Db.GetDailyActivityByUserID(userID, year)
+	startDate, err := time.Parse("2006-01-02", strings.Split(r.URL.Query().Get("start_date"), "T")[0])
 	if err != nil {
-		log.add("year", yearStr)
+		return newInvalidQueryParamServiceError(err, "start_date")
+	}
+	endDate, err := time.Parse("2006-01-02", strings.Split(r.URL.Query().Get("end_date"), "T")[0])
+	if err != nil {
+		return newInvalidQueryParamServiceError(err, "end_date")
+	}
+	activities, err := srv.Db.GetDailyActivityByUserID(userID, startDate, endDate)
+	if err != nil {
+		log.error("error getting daily activity by user ID")
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{

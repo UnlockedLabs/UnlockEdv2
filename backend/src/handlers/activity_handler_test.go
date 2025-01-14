@@ -8,14 +8,16 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestHandleGetDailyActivityByUserID(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetGetDailyActivityByUserIDAsAdmin", "admin", map[string]any{"id": "4", "year": 2023}, http.StatusOK, "?year=2023"},
-		{"TestGetDailyActivityByUserIDAsUser", "student", map[string]any{"id": "4", "year": 2023}, http.StatusOK, "?year=2023"},
-		{"TestGetDailyActivityByAnotherUserIDAsDifferentUser", "student", map[string]any{"id": "5", "year": 2023}, http.StatusForbidden, "?year=2023"},
+		{"TestGetDailyActivityByUserIDAsAdmin", "admin", map[string]any{"id": "4", "start_date": "2023-01-01T00:00:00Z", "end_date": "2023-01-07T00:00:00Z"}, http.StatusOK, "?start_date=2023-01-01T00:00:00Z&end_date=2023-01-07T00:00:00Z"},
+		{"TestGetDailyActivityByUserIDAsUser", "student", map[string]any{"id": "4", "start_date": "2023-01-01T00:00:00Z", "end_date": "2023-01-07T00:00:00Z"}, http.StatusOK, "?start_date=2023-01-01T00:00:00Z&end_date=2023-01-07T00:00:00Z"},
+		{"TestGetDailyActivityByAnotherUserIDAsDifferentUser", "student", map[string]any{"id": "5", "start_date": "2023-01-01T00:00:00Z", "end_date": "2023-01-07T00:00:00Z"}, http.StatusForbidden, "?start_date=2023-01-01T00:00:00Z&end_date=2023-01-07T00:00:00Z"},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -28,7 +30,15 @@ func TestHandleGetDailyActivityByUserID(t *testing.T) {
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
-				dailyActivities, err := server.Db.GetDailyActivityByUserID(id, test.mapKeyValues["year"].(int))
+				startDate, err := time.Parse("2006-01-02", strings.Split(test.mapKeyValues["start_date"].(string), "T")[0])
+				if err != nil {
+					t.Fatalf("unable to parse start date, error is %v", err)
+				}
+				endDate, err := time.Parse("2006-01-02", strings.Split(test.mapKeyValues["end_date"].(string), "T")[0])
+				if err != nil {
+					t.Fatalf("unable to parse start date, error is %v", err)
+				}
+				dailyActivities, err := server.Db.GetDailyActivityByUserID(id, startDate, endDate)
 				if err != nil {
 					t.Fatal("unable to get daily activities by user id and year, error is ", err)
 				}

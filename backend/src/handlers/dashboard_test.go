@@ -6,68 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
-
-func TestHandleStudentDashboard(t *testing.T) {
-	httpTests := []httpTest{
-		{"TestStudentDashboardAsAdmin", "admin", map[string]any{"id": "1"}, http.StatusOK, ""},
-		{"TestStudentDashboardAsUser", "student", map[string]any{"id": "4"}, http.StatusOK, ""},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/student-dashboard", nil)
-			if err != nil {
-				t.Fatalf("unable to create new request, error is %v", err)
-			}
-			req.SetPathValue("id", test.mapKeyValues["id"].(string))
-			handler := getHandlerByRole(server.handleStudentDashboard, test.role)
-			rr := executeRequest(t, req, handler, test)
-			id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
-			dashboard, err := server.Db.GetStudentDashboardInfo(id, 1)
-			if err != nil {
-				t.Fatalf("unable to get student dashboard, error is %v", err)
-			}
-			received := rr.Body.String()
-			resource := models.Resource[models.UserDashboardJoin]{}
-			if err := json.Unmarshal([]byte(received), &resource); err != nil {
-				t.Errorf("failed to unmarshal resource, error is %v", err)
-			}
-			for _, enrollment := range dashboard.Enrollments {
-				if !slices.ContainsFunc(resource.Data.Enrollments, func(enro models.CurrentEnrollment) bool {
-					return enro.Name == enrollment.Name
-				}) {
-					t.Error("enrollment not found, out of sync")
-				}
-			}
-			for _, recentCourse := range dashboard.RecentCourses {
-				if !slices.ContainsFunc(resource.Data.RecentCourses, func(course models.RecentCourse) bool {
-					return course.CourseName == recentCourse.CourseName
-				}) {
-					t.Error("recent course not found, out of sync")
-				}
-			}
-			for _, topCourse := range dashboard.TopCourses {
-				if !slices.ContainsFunc(resource.Data.TopCourses, func(course string) bool {
-					return topCourse == course
-				}) {
-					t.Error("top course not found, out of sync")
-				}
-			}
-			for _, weekAct := range dashboard.WeekActivity {
-				if !slices.ContainsFunc(resource.Data.WeekActivity, func(recentAct models.RecentActivity) bool {
-					return recentAct.Date == weekAct.Date
-				}) {
-					t.Error("week activity not found, out of sync")
-				}
-			}
-		})
-	}
-}
 
 func TestHandleAdminDashboard(t *testing.T) {
 	httpTests := []httpTest{

@@ -435,6 +435,7 @@ export interface UserCourses {
     id: number;
     thumbnail_url: string;
     course_name: string;
+    description: string;
     provider_platform_name: string;
     external_url: string;
     course_progress: number;
@@ -564,13 +565,6 @@ export interface AdminDashboardJoin {
     program_name: string;
 }
 
-export interface StudentDashboardJoin {
-    enrollments: CurrentEnrollment[];
-    recent_courses: RecentCourse[];
-    top_courses: string[];
-    week_activity: RecentActivity[];
-}
-
 export interface EventCalendar {
     month: Month;
     year: number;
@@ -647,6 +641,7 @@ export interface CurrentEnrollment {
 
 export interface RecentCourse {
     course_name: string;
+    description: string;
     course_progress: number;
     alt_name: string;
     thumbnail_url: string;
@@ -726,15 +721,6 @@ export interface YAxisTickProps {
     payload: {
         value: string;
     };
-}
-
-export interface CatalogCourseCard {
-    name: string;
-    img_url: string;
-    url: string;
-    provider_platform_name: string;
-    tags: PillTagType[];
-    saved: boolean;
 }
 
 export enum PillTagType {
@@ -875,4 +861,10 @@ export interface OpenContentItem {
 export interface TitleHandler {
     title: string;
     path?: string[];
+}
+
+export interface ActivityMapData {
+    date: string;
+    total_time: string;
+    quartile: number;
 }
