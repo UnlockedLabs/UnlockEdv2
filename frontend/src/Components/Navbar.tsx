@@ -78,7 +78,7 @@ export default function Navbar({
             <div className="hidden lg:flex self-end py-6 mr-4">
                 {isPinned ? (
                     <div
-                        className="tooltip tooltip-left"
+                        className="tooltip tooltip-left py-8 "
                         data-tip="Close sidebar"
                     >
                         <ChevronDoubleLeftIcon
@@ -99,7 +99,7 @@ export default function Navbar({
                 )}
             </div>
 
-            <Link to="/" className="mt-16">
+            <Link to="/" className="mt-14">
                 <Brand />
             </Link>
 
@@ -190,7 +190,7 @@ export default function Navbar({
                                     </li>
                                 )}
                                 <li>
-                                    <Link to="/students">
+                                    <Link to="/residents">
                                         <ULIComponent icon={AcademicCapIcon} />
                                         Residents
                                     </Link>

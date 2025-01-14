@@ -31,7 +31,7 @@ export default function CourseCatalog() {
     return (
         <div className="px-8 py-4">
             <div className="flex flex-row justify-between">
-                <h1>Course Catalog</h1>
+                <h1 className="invisible">Placeholder</h1>
                 <ToggleView
                     activeView={activeView}
                     setActiveView={setActiveView}

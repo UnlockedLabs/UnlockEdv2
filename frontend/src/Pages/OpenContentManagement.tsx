@@ -34,7 +34,7 @@ export default function OpenContentManagement() {
     return (
         <div className="px-8 pb-4">
             <div className="flex flex-row justify-between">
-                <h1>Knowledge Center Management</h1>
+                <h1 className="invisible">Placeholder</h1>
                 <button
                     className="button border border-primary bg-transparent text-body-text"
                     onClick={navigateToStudentView}

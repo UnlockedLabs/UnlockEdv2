@@ -55,7 +55,6 @@ export default function MyCourses() {
 
     return (
         <div className="px-8 py-4">
-            <h1>My Courses</h1>
             <TabView
                 tabs={tabs}
                 activeTab={activeTab}
@@ -81,8 +80,7 @@ export default function MyCourses() {
                                 'order=asc&order_by=start_dt',
                             'Start Date (descending)':
                                 'order=desc&order_by=start_dt',
-                            'End Date (ascending)':
-                                'order=asc&order_by=end_dt',
+                            'End Date (ascending)': 'order=asc&order_by=end_dt',
                             'End Date (descending)':
                                 'order=desc&order_by=end_dt'
                         }}

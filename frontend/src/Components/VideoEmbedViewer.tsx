@@ -40,7 +40,6 @@ export default function VideoViewer() {
     };
     return (
         <div className="px-8 pb-4">
-            <h1>Video Viewer</h1>
             <div className="w-2/3 pt-4 justify-center">
                 {isLoading ? (
                     <div className="flex h-screen gap-4 justify-center content-center">
