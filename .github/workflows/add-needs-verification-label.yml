@@ -4,6 +4,10 @@ on:
   project_card:
     types: [moved]
 
+permissions:
+  issues: write
+  contents: read
+
 jobs:
   add-label:
     runs-on: ubuntu-latest
