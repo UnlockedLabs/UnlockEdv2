@@ -34,13 +34,10 @@ export default function EditLinkForm({
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const response = await API.patch(`helpful-links/${link.id}/edit`, data);
         if (response.success) {
-            toaster(response.message, ToastState.success);
+            toaster('Updated helpful link successfully', ToastState.success);
             onSuccess();
         } else {
-            toaster(
-                response.message || 'An error occurred during update',
-                ToastState.error
-            );
+            toaster('Error updating helpful link', ToastState.error);
         }
         return;
     };

@@ -57,11 +57,10 @@ export default function HelpfulLinksManagement() {
         const response = await API.delete(`helpful-links/${id}`);
         if (response.success) {
             updateLinks();
+            toaster('Helpful link deleted successfully', ToastState.success);
+        } else {
+            toaster('Error deleting helpful link', ToastState.error);
         }
-        toaster(
-            response.message,
-            response.success ? ToastState.success : ToastState.error
-        );
         deleteLinkModal.current?.close();
     }
 

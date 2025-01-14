@@ -30,28 +30,33 @@ export default function VideoCard({
     handleRetryVideo?: (video: Video) => Promise<void>;
 }) {
     const [visible, setVisible] = useState<boolean>(video.visibility_status);
+    const [favorite, setFavorite] = useState<boolean>(video.is_favorited);
     const navigate = useNavigate();
     const { toaster } = useToast();
-
-    function changeVisibility(visibilityStatus: boolean) {
-        if (visibilityStatus == !visible) {
-            setVisible(visibilityStatus);
-            void handleToggleAction('visibility');
-        }
-    }
 
     const handleToggleAction = async (action: 'favorite' | 'visibility') => {
         const response = await API.put<null, object>(
             `videos/${video.id}/${action}`,
             {}
         );
+        const actionString =
+            action == 'favorite'
+                ? favorite
+                    ? 'unfavorited'
+                    : 'favorited'
+                : visible
+                  ? 'is now hidden'
+                  : 'is now visible';
         if (response.success) {
-            if (toaster) toaster(response.message, ToastState.success);
+            toaster(`Video ${actionString}`, ToastState.success);
             await mutate();
+            if (action == 'favorite') setFavorite(!favorite);
+            else setVisible(!visible);
         } else {
-            if (toaster) toaster(response.message, ToastState.error);
+            toaster(`Video ${actionString}`, ToastState.error);
         }
     };
+
     const toMinutes = (duration: number): string => {
         return `${Math.round(duration / 60)} min`;
     };
@@ -109,7 +114,9 @@ export default function VideoCard({
                     (videoIsAvailable(video) ? (
                         <VisibleHiddenToggle
                             visible={visible}
-                            changeVisibility={changeVisibility}
+                            changeVisibility={() =>
+                                void handleToggleAction('visibility')
+                            }
                         />
                     ) : handleRetryVideo ? (
                         <div>

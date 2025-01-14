@@ -22,45 +22,40 @@ export default function LibraryCard({
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
+    const [favorite, setFavorite] = useState<boolean>(library.is_favorited);
     const navigate = useNavigate();
     const route = useLocation();
 
-    function changeVisibility(visibilityStatus: boolean) {
-        if (visibilityStatus == !visible) {
-            setVisible(visibilityStatus);
-            void handleToggleVisibility();
-        }
-    }
-
-    const handleToggleVisibility = async () => {
+    async function handleToggleAction(
+        action: 'favorite' | 'toggle',
+        e?: MouseEvent
+    ) {
         if (!mutate) return;
+        if (e) e.stopPropagation();
+        const actionString =
+            action == 'favorite'
+                ? favorite
+                    ? role == UserRole.Student
+                        ? 'unfavorited'
+                        : 'unfeatured'
+                    : role == UserRole.Student
+                      ? 'favorited'
+                      : 'featured'
+                : visible
+                  ? 'is now hidden'
+                  : 'is now visible';
         const resp = await API.put<null, object>(
-            `libraries/${library.id}/toggle`,
+            `libraries/${library.id}/${action}`,
             {}
         );
         if (resp.success) {
             mutate();
+            toaster(`Library ${actionString}`, ToastState.success);
+            if (action == 'favorite') setFavorite(!favorite);
+            else setVisible(!visible);
+        } else {
+            toaster(`Library {${actionString}}`, ToastState.error);
         }
-        toaster(
-            resp.message,
-            resp.success ? ToastState.success : ToastState.error
-        );
-    };
-
-    async function toggleLibraryFavorite(e: MouseEvent) {
-        if (!mutate) return;
-        e.stopPropagation();
-        const resp = await API.put<null, object>(
-            `libraries/${library.id}/favorite`,
-            {}
-        );
-        if (resp.success) {
-            mutate();
-        }
-        toaster(
-            resp.message,
-            resp.success ? ToastState.success : ToastState.error
-        );
     }
 
     return (
@@ -80,7 +75,7 @@ export default function LibraryCard({
 
             <div
                 className="absolute right-2 top-2 z-100"
-                onClick={(e) => void toggleLibraryFavorite(e)}
+                onClick={(e) => void handleToggleAction('favorite', e)}
             >
                 {!route.pathname.includes('knowledge-insights') && (
                     <ULIComponent
@@ -112,7 +107,9 @@ export default function LibraryCard({
                 {AdminRoles.includes(role) && (
                     <VisibleHiddenToggle
                         visible={visible}
-                        changeVisibility={changeVisibility}
+                        changeVisibility={() =>
+                            void handleToggleAction('toggle')
+                        }
                     />
                 )}
             </div>

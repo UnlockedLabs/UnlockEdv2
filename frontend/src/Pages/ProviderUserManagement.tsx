@@ -80,7 +80,7 @@ export default function ProviderUserManagement() {
             window.location.reload();
         } else {
             toaster(
-                'error importing users, please check accounts',
+                'Error importing users, please check accounts',
                 ToastState.error
             );
         }
@@ -94,7 +94,7 @@ export default function ProviderUserManagement() {
             { users: usersToImport }
         );
         if (res.success) {
-            toaster(res.message, ToastState.success);
+            toaster('Users imported successfully', ToastState.success);
             setImportedUsers(res.data as UserImports[]);
             importedUsersModal.current?.showModal();
             setUsersToImport([]);
@@ -103,7 +103,7 @@ export default function ProviderUserManagement() {
         } else {
             setUsersToImport([]);
             toaster(
-                'error importing users, please check accounts',
+                'Error importing users, please check accounts',
                 ToastState.error
             );
         }

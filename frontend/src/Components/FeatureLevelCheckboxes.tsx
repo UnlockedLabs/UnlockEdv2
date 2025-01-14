@@ -50,7 +50,7 @@ export default function FeatureLevelCheckboxes({
             {}
         );
         if (!resp.success) {
-            toaster(resp.message ?? 'error toggling feature', ToastState.error);
+            toaster('Error toggling feature', ToastState.error);
             return;
         }
         setCheckboxStates((prevStates) =>
@@ -58,7 +58,7 @@ export default function FeatureLevelCheckboxes({
                 state.kind === feature ? { ...state, checked } : state
             )
         );
-        toaster(resp.message, ToastState.success);
+        toaster('Feature toggled successfully', ToastState.success);
         const user = await fetchUser();
         setUser(user);
         navigate('/authcallback');

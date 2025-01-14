@@ -43,7 +43,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
                   : `libraries/${favorite.content_id}/favorite`;
         const response = await API.put(endpoint, {});
         if (response.success) {
-            toaster(`removed from favorites`, ToastState.success);
+            toaster(`Removed from favorites`, ToastState.success);
             await mutate();
         } else {
             toaster('Failed to unfavorite', ToastState.error);
