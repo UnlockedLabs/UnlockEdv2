@@ -16,27 +16,9 @@ type DailyActivity struct {
 	Activities []models.Activity `json:"activities"`
 }
 
-func (db *DB) GetDailyActivityByUserID(userID int, year int, pastWeek bool) ([]DailyActivity, error) {
-	days := 365
-	if pastWeek {
-		days = 7
-	}
+func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]DailyActivity, error) {
+	days := int(math.Ceil(endDate.Sub(startDate).Hours() / 24))
 	activities := make([]models.Activity, 0, days)
-	var startDate time.Time
-	var endDate time.Time
-
-	// Calculate start and end dates
-	if pastWeek {
-		startDate = time.Now().AddDate(0, 0, -7).Truncate(24 * time.Hour)
-		endDate = time.Now().Truncate(24 * time.Hour)
-	} else if year == 0 {
-		startDate = time.Now().AddDate(-1, 0, 0).Truncate(24 * time.Hour)
-		endDate = time.Now().Truncate(24 * time.Hour)
-	} else {
-		startDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-		endDate = time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC).Add(-1 * time.Second)
-	}
-
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "activities")
 	}
@@ -53,20 +35,6 @@ func (db *DB) GetDailyActivityByUserID(userID int, year int, pastWeek bool) ([]D
 				Date:       date,
 				TotalTime:  activity.TimeDelta,
 				Activities: []models.Activity{activity},
-			}
-		}
-	}
-
-	if pastWeek {
-		// Ensure all days are present in the result
-		for d := 0; d < days; d++ {
-			date := startDate.AddDate(0, 0, d)
-			if _, ok := dailyActivities[date]; !ok {
-				dailyActivities[date] = DailyActivity{
-					Date:       date,
-					TotalTime:  0,
-					Activities: []models.Activity{},
-				}
 			}
 		}
 	}

@@ -59,9 +59,14 @@ export const getAdminLevel1Data: LoaderFunction = async () => {
 export const getStudentLayer2Data: LoaderFunction = async () => {
     const user = await fetchUser();
     if (!user) return;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 7);
     const [coursesResp, activityResp] = await Promise.all([
         API.get(`users/${user.id}/courses?order=desc&order_by=recent_activity`),
-        API.get(`users/${user.id}/daily-activity?past_week=true`)
+        API.get(
+            `users/${user.id}/daily-activity?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`
+        )
     ]);
 
     const courses = coursesResp.data as UserCoursesInfo;
