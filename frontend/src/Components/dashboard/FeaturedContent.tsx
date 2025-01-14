@@ -14,19 +14,21 @@ export default function FeaturedContent({
     const [expanded, setExpanded] = useState<boolean>(false);
     const cols = user?.role == UserRole.Student ? 3 : 4;
     const slice = expanded ? featured.length : cols;
+    const isAdmin =
+        user?.role === UserRole.Admin || user?.role === UserRole.SystemAdmin;
 
     const navigate = useNavigate();
 
     const handleEmptyStateClick = () => {
-        if (
-            user?.role === UserRole.Admin ||
-            user?.role === UserRole.SystemAdmin
-        ) {
+        if (isAdmin) {
             navigate('/knowledge-center-management/libraries', {
                 replace: true
             });
         }
     };
+    if (!featured.length && !isAdmin) {
+        return null;
+    }
 
     return (
         <>
