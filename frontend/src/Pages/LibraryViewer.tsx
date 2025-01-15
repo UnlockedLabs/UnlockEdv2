@@ -4,13 +4,13 @@ import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
+import { setGlobalPageTitle } from '@/Components/PageNav';
 
 export default function LibraryViewer() {
     const { id: libraryId } = useParams();
     const [src, setSrc] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [libraryTitle, setLibraryTitle] = useState<string>('');
     const { setPathVal } = usePathValue();
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export default function LibraryViewer() {
                     `libraries/${libraryId}`
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
-                    setLibraryTitle(resp.data.title);
+                    setGlobalPageTitle(resp.data.title);
                     setPathVal([
                         { path_id: ':library_name', value: resp.data.title }
                     ]);
@@ -51,7 +51,6 @@ export default function LibraryViewer() {
     return (
         <div>
             <div className="px-8 pb-4">
-                <h1 className="text-2xl font-bold">{libraryTitle}</h1>
                 <div className="w-full pt-4 justify-center">
                     {isLoading ? (
                         <div className="flex h-screen gap-4 justify-center content-center">

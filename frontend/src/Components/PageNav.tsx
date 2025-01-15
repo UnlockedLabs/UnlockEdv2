@@ -1,14 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { Facility } from '@/common';
+import { Facility, TitleHandler } from '@/common';
 import { useMatches, useLoaderData } from 'react-router-dom';
 import API from '@/api/api';
 
-interface HandleType {
-    title: string;
-}
+let setGlobalPageTitle: (newTitle: string) => void;
 
 export default function PageNav({
     showOpenMenu,
@@ -22,7 +20,11 @@ export default function PageNav({
     const facilityNames = useLoaderData() as Facility[] | null;
     const matches = useMatches();
     const currentRoute = matches[matches.length - 1];
-    const pageTitle = (currentRoute?.handle as HandleType)?.title;
+    const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
+    const [globalPageTitle, _setGlobalPageTitle] = useState<string>(
+        pageTitle || 'Library Viewer'
+    );
+    setGlobalPageTitle = _setGlobalPageTitle;
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -66,7 +68,11 @@ export default function PageNav({
                         iconClassName="lg:hidden cursor-pointer"
                     />
                 )}
-                <h1>{pageTitle}</h1>
+                <h1 className="text-2xl font-lexend font-semibold">
+                    {pageTitle == 'Library Viewer'
+                        ? globalPageTitle
+                        : pageTitle}
+                </h1>
             </div>
             {user && isAdministrator(user) ? (
                 <ul className="menu menu-horizontal px-1">
@@ -109,3 +115,4 @@ export default function PageNav({
         </div>
     );
 }
+export { setGlobalPageTitle };
