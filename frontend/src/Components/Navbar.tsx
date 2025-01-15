@@ -75,7 +75,7 @@ export default function Navbar({
 
     return (
         <div className="w-60 min-w-[240px] flex flex-col bg-background group h-screen">
-            <div className="hidden lg:flex self-end py-6 mr-4">
+            <div className="hidden lg:flex self-end py-8 mr-4">
                 {isPinned ? (
                     <div
                         className="tooltip tooltip-left"
@@ -99,7 +99,7 @@ export default function Navbar({
                 )}
             </div>
 
-            <Link to="/" className="mt-16">
+            <Link to="/" className="mt-14">
                 <Brand />
             </Link>
 
@@ -190,7 +190,7 @@ export default function Navbar({
                                     </li>
                                 )}
                                 <li>
-                                    <Link to="/students">
+                                    <Link to="/residents">
                                         <ULIComponent icon={AcademicCapIcon} />
                                         Residents
                                     </Link>

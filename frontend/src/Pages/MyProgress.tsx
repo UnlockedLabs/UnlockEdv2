@@ -50,7 +50,6 @@ export default function MyProgress() {
 
     return (
         <div className="px-8 py-4">
-            <h1>My Progress</h1>
             {!error && courseData && (
                 <>
                     <div className="grid grid-cols-3 gap-4 mt-6 mb-6">

@@ -36,9 +36,6 @@ export default function AdminLayer2() {
             {!data || (isLoading && <div>Loading...</div>)}
             {data && layer2_metrics && (
                 <>
-                    <div className="pb-4">
-                        <h1>Learning Insights</h1>
-                    </div>
                     <div className="flex flex-row justify-between mb-6">
                         <select
                             id="facility"

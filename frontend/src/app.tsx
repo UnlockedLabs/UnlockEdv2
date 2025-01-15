@@ -337,12 +337,12 @@ const router = createBrowserRouter([
                         }
                     },
                     {
-                        path: 'students',
+                        path: 'residents',
                         element: <StudentManagement />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Students',
-                            path: ['students']
+                            title: 'Residents',
+                            path: ['residents']
                         }
                     },
                     {
@@ -433,7 +433,7 @@ const router = createBrowserRouter([
                                 path: 'knowledge-center-management',
                                 element: <OpenContentManagement />,
                                 handle: {
-                                    title: 'Knowledge Center',
+                                    title: 'Knowledge Center Management',
                                     path: ['knowledge-center', ':kind']
                                 },
                                 children: [
@@ -442,7 +442,7 @@ const router = createBrowserRouter([
                                         element: <LibraryLayout />,
                                         errorElement: <Error />,
                                         handle: {
-                                            title: 'Libraries',
+                                            title: 'Libraries Management',
                                             path: [
                                                 'knowledge-center',
                                                 'libraries'
@@ -453,7 +453,7 @@ const router = createBrowserRouter([
                                         path: 'videos',
                                         element: <VideoManagement />,
                                         handle: {
-                                            title: 'Videos',
+                                            title: 'Videos Management',
                                             path: ['knowledge-center', 'videos']
                                         }
                                     },
@@ -461,7 +461,7 @@ const router = createBrowserRouter([
                                         path: 'helpful-links',
                                         element: <HelpfulLinksManagement />,
                                         handle: {
-                                            title: 'Helpful Links',
+                                            title: 'Helpful Links Management',
                                             path: [
                                                 'knowledge-center',
                                                 'helpful-links'

@@ -8,7 +8,6 @@ import {
     ServerResponseMany
 } from '@/common';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
-import { useAuth } from '@/useAuth';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import { FeaturedContent } from '@/Components/dashboard';
 import TopContentList from '@/Components/dashboard/TopContentList';
@@ -17,7 +16,6 @@ import { AxiosError } from 'axios';
 import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
 
 export default function StudentLayer1() {
-    const { user } = useAuth();
     const navigate = useNavigate();
     const { topUserContent, topFacilityContent } = useLoaderData() as {
         topUserContent: OpenContentItem[];
@@ -50,9 +48,6 @@ export default function StudentLayer1() {
         <div className="flex flex-row h-full">
             {/* main section */}
             <div className="w-full flex flex-col gap-6 px-6 pb-4">
-                <h1 className="text-5xl">
-                    Hi, {user?.name_first ?? 'Student'}!
-                </h1>
                 <FeaturedContent
                     featured={featured?.data ?? []}
                     mutate={updateFavorites}

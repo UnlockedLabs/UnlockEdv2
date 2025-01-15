@@ -13,7 +13,6 @@ export default function AuthenticatedLayout() {
     const matches = useMatches() as CustomRouteMatch[];
     const currentMatch = matches.find((match) => match?.handle?.title);
     const title = currentMatch?.handle?.title ?? 'UnlockEd';
-    const path = currentMatch?.handle?.path;
     // We have three states we need to factor for.
     // 1. If the nav is open & pinned (Large screens only & uses lg:drawer-open)
     // 2. If the nav is open & not pinned (Large screens only)
@@ -46,7 +45,6 @@ export default function AuthenticatedLayout() {
                 <div className="drawer-content flex flex-col border-l border-grey-1">
                     <main className="w-full min-h-screen bg-background flex flex-col">
                         <PageNav
-                            path={path ?? []}
                             showOpenMenu={!isNavPinned}
                             onShowNav={showNav}
                         />

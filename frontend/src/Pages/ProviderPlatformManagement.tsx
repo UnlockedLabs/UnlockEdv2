@@ -179,7 +179,6 @@ export default function ProviderPlatformManagement() {
     return (
         <div>
             <div className="px-8 py-4">
-                <h1>Learning Platforms</h1>
                 <div className="flex flex-row justify-between">
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}
