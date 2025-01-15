@@ -5,42 +5,33 @@ import (
 	"math"
 	"sort"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
-type DailyActivity struct {
-	Date       time.Time         `json:"date"`
-	TotalTime  int64             `json:"total_time"`
-	Quartile   int64             `json:"quartile"`
-	Activities []models.Activity `json:"activities"`
-}
-
-func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]DailyActivity, error) {
+func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]models.DailyActivity, error) {
 	days := int(math.Ceil(endDate.Sub(startDate).Hours() / 24))
 	activities := make([]models.Activity, 0, days)
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "activities")
 	}
 	// Combine activities based on date
-	dailyActivities := make(map[time.Time]DailyActivity, days)
+	dailyActivities := make(map[time.Time]models.DailyActivity, days)
 	for _, activity := range activities {
 		date := activity.CreatedAt.Truncate(24 * time.Hour)
 		if dailyActivity, ok := dailyActivities[date]; ok {
-			dailyActivity.TotalTime += activity.TimeDelta
+			dailyActivity.TotalTime += uint(activity.TimeDelta)
 			dailyActivity.Activities = append(dailyActivity.Activities, activity)
 			dailyActivities[date] = dailyActivity
 		} else {
-			dailyActivities[date] = DailyActivity{
+			dailyActivities[date] = models.DailyActivity{
 				Date:       date,
-				TotalTime:  activity.TimeDelta,
+				TotalTime:  uint(activity.TimeDelta),
 				Activities: []models.Activity{activity},
 			}
 		}
 	}
 
 	// Convert map to slice
-	var dailyActivityList []DailyActivity
+	var dailyActivityList []models.DailyActivity
 	for _, dailyActivity := range dailyActivities {
 		dailyActivityList = append(dailyActivityList, dailyActivity)
 	}
@@ -90,94 +81,6 @@ func (db *DB) DeleteActivity(activityID int) error {
 	return db.Delete(&models.Activity{}, activityID).Error
 }
 
-func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin, error) {
-	var dashboard models.AdminDashboardJoin
-
-	// facility name
-	err := db.Table("facilities f").
-		Select("f.name as facility_name").
-		Where("f.id = ?", facilityID).
-		Find(&dashboard.FacilityName).Error
-	if err != nil {
-		return dashboard, NewDBError(err, "error getting admin dashboard info")
-	}
-
-	// Monthly Activity
-	if db.Dialector.Name() == "sqlite" {
-		err = db.Table("activities a").
-			Select("STRFTIME('%Y-%m-%d', a.created_at) as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
-			Joins("JOIN users u ON a.user_id = u.id").
-			Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
-			Group("STRFTIME('%Y-%m-%d', 'YYYY-MM-DD')").
-			Order("date ").
-			Find(&dashboard.MonthlyActivity).Error
-
-	} else {
-		err = db.Table("activities a").
-			Select("TO_CHAR(a.created_at, 'YYYY-MM-DD') as date, ROUND(SUM(a.time_delta) / 3600.0,2) as delta").
-			Joins("JOIN users u ON a.user_id = u.id").
-			Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, -1, 0)).
-			Group("TO_CHAR(a.created_at, 'YYYY-MM-DD')").
-			Order("date ").
-			Find(&dashboard.MonthlyActivity).Error
-	}
-	if err != nil {
-		return dashboard, NewDBError(err, "error getting admin dashboard info")
-	}
-
-	// Weekly Active Users, Average Daily Activity, Total Weekly Activity
-	var result struct {
-		WeeklyActiveUsers   int64
-		AvgDailyActivity    float64
-		TotalWeeklyActivity int64
-	}
-
-	err = db.Table("activities a").
-		Select(`
-			COUNT(DISTINCT a.user_id) as weekly_active_users, 
-			AVG(a.time_delta) as avg_daily_activity,
-			SUM(a.time_delta) as total_weekly_activity`).
-		Joins("JOIN users u ON a.user_id = u.id").
-		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
-		Find(&result).Error
-	if err != nil {
-		log.Errorf("Query failed: %v", err)
-		return dashboard, NewDBError(err, "error getting admin dashboard info")
-	}
-
-	dashboard.WeeklyActiveUsers = int64(math.Abs(float64(result.WeeklyActiveUsers)))
-	dashboard.AvgDailyActivity = int64(math.Abs(result.AvgDailyActivity))
-	dashboard.TotalWeeklyActivity = int64(math.Abs(float64(result.TotalWeeklyActivity)))
-
-	// Course Milestones
-	err = db.Table("courses c").
-		Select("c.name as name, COUNT(m.id) as milestones").
-		Joins("INNER JOIN milestones m ON m.course_id = c.id AND m.created_at >= ?", time.Now().AddDate(0, 0, -7)).
-		Joins("INNER JOIN users u ON m.user_id = u.id AND u.facility_id = ?", facilityID).
-		Group("c.name").
-		Order("milestones DESC").
-		Limit(5).
-		Find(&dashboard.CourseMilestones).Error
-	if err != nil {
-		return dashboard, NewDBError(err, "error getting admin dashboard info")
-	}
-
-	// Top 5 Courses by Hours Engaged
-	err = db.Table("activities a").
-		Select("c.name as course_name, c.alt_name as alt_name, SUM(a.time_delta) / 3600.0 as hours_engaged").
-		Joins("JOIN courses c ON a.course_id = c.id").
-		Joins("JOIN users u ON a.user_id = u.id").
-		Where("u.facility_id = ? AND a.created_at >= ?", facilityID, time.Now().AddDate(0, 0, -7)).
-		Group("c.id").
-		Order("hours_engaged DESC").
-		Limit(5).
-		Find(&dashboard.TopCourseActivity).Error
-	if err != nil {
-		return dashboard, NewDBError(err, "error getting admin dashboard info")
-	}
-
-	return dashboard, nil
-}
 func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
 	var totalCourses int
 	subQry := db.Table("courses c").
