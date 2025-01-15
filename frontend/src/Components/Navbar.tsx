@@ -75,10 +75,10 @@ export default function Navbar({
 
     return (
         <div className="w-60 min-w-[240px] flex flex-col bg-background group h-screen">
-            <div className="hidden lg:flex self-end py-6 mr-4">
+            <div className="hidden lg:flex self-end py-8 mr-4">
                 {isPinned ? (
                     <div
-                        className="tooltip tooltip-left py-8 "
+                        className="tooltip tooltip-left"
                         data-tip="Close sidebar"
                     >
                         <ChevronDoubleLeftIcon

@@ -66,9 +66,7 @@ export default function PageNav({
                         iconClassName="lg:hidden cursor-pointer"
                     />
                 )}
-                <h1 className="text-2xl font-lexend font-semibold">
-                    {pageTitle}
-                </h1>
+                <h1>{pageTitle}</h1>
             </div>
             {user && isAdministrator(user) ? (
                 <ul className="menu menu-horizontal px-1">
