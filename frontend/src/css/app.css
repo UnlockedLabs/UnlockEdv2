@@ -58,7 +58,10 @@
         @apply body-small my-auto;
     }
     .button {
-        @apply bg-teal-3 body text-white py-3 px-3 flex flex-row gap-3 rounded-lg;
+        @apply bg-teal-3 body text-white py-3 px-3 flex flex-row gap-3 rounded-lg items-center;
+    }
+    .button-outline {
+        @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 flex flex-row gap-3 rounded-lg items-center;
     }
 }
 

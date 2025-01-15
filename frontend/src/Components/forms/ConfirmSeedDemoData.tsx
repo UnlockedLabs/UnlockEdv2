@@ -1,5 +1,4 @@
 import { CloseX } from '../inputs';
-import PrimaryButton from '../PrimaryButton';
 
 export default function ConfirmSeedDemoDataForm({
     handleClose,
@@ -51,14 +50,15 @@ export default function ConfirmSeedDemoDataForm({
                 </>
             )}
             <div className="flex flex-row justify-between">
-                <PrimaryButton
+                <button
                     disabled={inProgress}
                     onClick={() => {
                         void handleSeedDemoData();
                     }}
+                    className="button"
                 >
                     Confirm
-                </PrimaryButton>
+                </button>
             </div>
         </div>
     );

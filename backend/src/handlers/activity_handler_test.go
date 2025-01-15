@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"fmt"
@@ -51,13 +50,13 @@ func TestHandleGetDailyActivityByUserID(t *testing.T) {
 				if err != nil {
 					t.Error("unable to marshal response daily activities, error is ", err)
 				}
-				responseActivities := []database.DailyActivity{}
+				responseActivities := []models.DailyActivity{}
 				err = json.Unmarshal(jsonStr, &responseActivities)
 				if err != nil {
 					t.Error("unable to unmarshal response daily activities, error is ", err)
 				}
 				for _, dailyActivity := range dailyActivities {
-					if !slices.ContainsFunc(responseActivities, func(dailyAct database.DailyActivity) bool {
+					if !slices.ContainsFunc(responseActivities, func(dailyAct models.DailyActivity) bool {
 						isGood := true
 						for _, activity := range dailyActivity.Activities {
 							if !slices.ContainsFunc(dailyAct.Activities, func(act models.Activity) bool {

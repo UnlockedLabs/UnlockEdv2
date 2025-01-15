@@ -1,7 +1,6 @@
 import { useLoaderData, Form, useNavigation } from 'react-router-dom';
 import { TextInput } from '@/Components/inputs/TextInput';
 import InputError from '@/Components/inputs/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
 import { AuthFlow, AuthResponse, ServerResponseOne } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import API from '@/api/api';
@@ -110,17 +109,13 @@ export default function LoginForm() {
             )}
 
             <div className="flex items-center justify-end mt-4">
-                <PrimaryButton
-                    className="ms-4 w-24 h-10"
-                    autoFocus
-                    disabled={processing}
-                >
+                <button className="button" autoFocus disabled={processing}>
                     {processing ? (
                         <span className="loading loading-spinner loading-sm mx-auto"></span>
                     ) : (
                         <div className="m-auto">Log in</div>
                     )}
-                </PrimaryButton>
+                </button>
             </div>
         </Form>
     );
