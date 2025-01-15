@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import API from '@/api/api';
 import { Video, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
-import PrimaryButton from './PrimaryButton';
 
 export default function VideoViewer() {
     const navigate = useNavigate();
@@ -53,11 +52,12 @@ export default function VideoViewer() {
                             <div className="error-message">
                                 Video Currently Unavailable or unauthorized to
                                 view
-                                <PrimaryButton
+                                <button
                                     onClick={() => navigate('/authcallback')}
+                                    className="button"
                                 >
                                     Back to Dashboard
-                                </PrimaryButton>
+                                </button>
                             </div>
                         ) : (
                             <div className="video-details">
