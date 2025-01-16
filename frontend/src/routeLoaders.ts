@@ -74,7 +74,7 @@ export const getStudentLayer2Data: LoaderFunction = async () => {
 
     return json({
         courses: courses.courses,
-        week_activity: activity.activities
+        week_activity: activity.activities || []
     });
 };
 

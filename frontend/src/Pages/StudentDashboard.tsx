@@ -34,19 +34,25 @@ export default function StudentLayer2() {
             <h1 className="text-5xl">Hi, {user.name_first ?? 'Student'}!</h1>
             <h2> Pick Up Where You Left Off</h2>
             <div className="card card-row-padding flex flex-col gap-3">
-                <div className="gap-3 grid grid-cols-4">
-                    {courses
-                        .slice(0, slice)
-                        .map((course: RecentCourse, index: number) => {
-                            return (
-                                <CourseCard
-                                    course={course}
-                                    recent
-                                    key={index}
-                                />
-                            );
-                        })}
-                </div>
+                {courses.length > 0 ? (
+                    <div className="gap-3 grid grid-cols-4">
+                        {courses
+                            .slice(0, slice)
+                            .map((course: RecentCourse, index: number) => {
+                                return (
+                                    <CourseCard
+                                        course={course}
+                                        recent
+                                        key={index}
+                                    />
+                                );
+                            })}
+                    </div>
+                ) : (
+                    <p className="body">
+                        You are not currently enrolled in any courses.
+                    </p>
+                )}
                 {courses.length > 4 && (
                     <button
                         className="flex justify-end text-teal-3 hover:text-teal-4 body"

@@ -18,7 +18,7 @@ export default function ResidentWeeklyActivityTable({
                         </tr>
                     </thead>
                     <tbody className="flex flex-col gap-4 mt-4 overflow-auto h-36 scrollbar">
-                        {courses ? (
+                        {courses.length > 0 ? (
                             courses.map(
                                 (course: RecentCourse, index: number) => {
                                     const totalTime = convertSeconds(
