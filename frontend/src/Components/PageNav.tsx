@@ -68,7 +68,7 @@ export default function PageNav({
                         iconClassName="lg:hidden cursor-pointer"
                     />
                 )}
-                <h1 className="text-2xl font-lexend font-semibold">
+                <h1>
                     {pageTitle == 'Library Viewer'
                         ? globalPageTitle
                         : pageTitle}
