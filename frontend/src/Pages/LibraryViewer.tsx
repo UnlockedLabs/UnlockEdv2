@@ -4,6 +4,7 @@ import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
+import { setGlobalPageTitle } from '@/Components/PageNav';
 
 export default function LibraryViewer() {
     const { id: libraryId } = useParams();
@@ -20,6 +21,7 @@ export default function LibraryViewer() {
                     `libraries/${libraryId}`
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
+                    setGlobalPageTitle(resp.data.title);
                     setPathVal([
                         { path_id: ':library_name', value: resp.data.title }
                     ]);
@@ -49,7 +51,6 @@ export default function LibraryViewer() {
     return (
         <div>
             <div className="px-8 pb-4">
-                <h1>Library Viewer</h1>
                 <div className="w-full pt-4 justify-center">
                     {isLoading ? (
                         <div className="flex h-screen gap-4 justify-center content-center">

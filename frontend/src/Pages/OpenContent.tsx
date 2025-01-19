@@ -43,8 +43,7 @@ export default function OpenContent() {
 
     return (
         <div className="px-8 pb-4">
-            <div className="flex flex-row justify-between">
-                <h1>Knowledge Center</h1>
+            <div className="flex flex-row justify-end">
                 {user && isAdministrator(user) && (
                     <button
                         className="button border border-primary bg-transparent text-body-text"

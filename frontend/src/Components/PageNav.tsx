@@ -1,48 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { isAdministrator, useAuth } from '@/useAuth';
-import {
-    Bars3Icon,
-    BuildingOffice2Icon,
-    HomeIcon
-} from '@heroicons/react/24/solid';
+import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { Facility } from '@/common';
-import { useLoaderData } from 'react-router-dom';
+import { Facility, TitleHandler } from '@/common';
+import { useMatches, useLoaderData } from 'react-router-dom';
 import API from '@/api/api';
-import { usePathValue } from '@/Context/PathValueCtx';
+
+let setGlobalPageTitle: (newTitle: string) => void;
 
 export default function PageNav({
-    path,
     showOpenMenu,
     onShowNav
 }: {
-    path: string[];
     showOpenMenu: boolean;
     onShowNav?: () => void;
 }) {
     const { user } = useAuth();
     const detailsRef = useRef<HTMLDetailsElement>(null);
-    const { pathVal } = usePathValue();
-    const [customPath, setCustomPath] = useState<string[]>(path ?? []);
     const facilityNames = useLoaderData() as Facility[] | null;
-
-    useEffect(() => {
-        const handlePathChange = () => {
-            const newPath = [...path];
-            if (newPath && newPath.length > 0) {
-                setCustomPath(
-                    newPath.map((p) => {
-                        return (
-                            pathVal?.find((pv) => pv.path_id === p)?.value ?? p
-                        );
-                    })
-                );
-                return;
-            }
-            setCustomPath(path);
-        };
-        handlePathChange();
-    }, [path, pathVal]);
+    const matches = useMatches();
+    const currentRoute = matches[matches.length - 1];
+    const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
+    const [globalPageTitle, _setGlobalPageTitle] = useState<string>(
+        pageTitle || 'Library Viewer'
+    );
+    setGlobalPageTitle = _setGlobalPageTitle;
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -72,40 +54,25 @@ export default function PageNav({
 
     return (
         <div className="px-6 py-3 flex justify-between items-center">
-            <div className="breadcrumbs">
-                <ul>
-                    {showOpenMenu ? (
-                        <li>
-                            <ULIComponent
-                                onClick={() => {
-                                    if (onShowNav) onShowNav();
-                                }}
-                                icon={Bars3Icon}
-                                iconClassName={'cursor-pointer'}
-                            />
-                        </li>
-                    ) : (
-                        <li>
-                            <ULIComponent
-                                onClick={() => {
-                                    if (onShowNav) onShowNav();
-                                }}
-                                icon={Bars3Icon}
-                                iconClassName={'lg:hidden cursor-pointer'}
-                            />
-                            <ULIComponent
-                                icon={HomeIcon}
-                                iconClassName={'hidden lg:block'}
-                            />
-                        </li>
-                    )}
-
-                    {customPath?.map((p) => (
-                        <li className="capitalize body" key={p}>
-                            {p}
-                        </li>
-                    ))}
-                </ul>
+            <div className="flex items-center gap-3">
+                {showOpenMenu ? (
+                    <ULIComponent
+                        onClick={onShowNav}
+                        icon={Bars3Icon}
+                        iconClassName="cursor-pointer"
+                    />
+                ) : (
+                    <ULIComponent
+                        onClick={onShowNav}
+                        icon={Bars3Icon}
+                        iconClassName="lg:hidden cursor-pointer"
+                    />
+                )}
+                <h1>
+                    {pageTitle == 'Library Viewer'
+                        ? globalPageTitle
+                        : pageTitle}
+                </h1>
             </div>
             {user && isAdministrator(user) ? (
                 <ul className="menu menu-horizontal px-1">
@@ -148,3 +115,4 @@ export default function PageNav({
         </div>
     );
 }
+export { setGlobalPageTitle };

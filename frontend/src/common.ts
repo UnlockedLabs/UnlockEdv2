@@ -862,7 +862,6 @@ export interface TitleHandler {
     title: string;
     path?: string[];
 }
-
 export interface ActivityMapData {
     date: string;
     total_time: string;
