@@ -7,15 +7,19 @@ import {
 export default function Pagination({
     meta,
     setPage,
-    setPerPage
+    setPerPage,
+    specialPageSelecton
 }: {
     meta: PaginationMeta;
     setPage: (page: number) => void;
     setPerPage?: (perPage: number) => void;
+    specialPageSelecton?: boolean;
 }) {
     const page = meta.current_page - 1;
     const perPage = meta.per_page;
-    const perPageSelections = [10, 20, 50, 100];
+    const perPageSelections = specialPageSelecton
+        ? [12, 24, 60, 120]
+        : [10, 20, 50, 100];
     return (
         <div className="join place-content-center">
             <div
