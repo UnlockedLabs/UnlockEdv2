@@ -152,6 +152,7 @@ export default function VideoManagement() {
                         meta={meta}
                         setPage={setPageQuery}
                         setPerPage={handleSetPerPage}
+                        specialPageSelecton
                     />
                 </div>
             )}
