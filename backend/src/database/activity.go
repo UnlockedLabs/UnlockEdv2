@@ -181,15 +181,18 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
 	var totalCourses int
 	subQry := db.Table("courses c").
-		Select("COUNT(DISTINCT c.id) as total_courses_offered").
-		Joins("INNER JOIN user_enrollments ue on c.id = ue.course_id").
-		Joins("INNER JOIN users u on ue.user_id = u.id")
-
+		Select("COUNT(DISTINCT c.id) AS facility_course_count, f.id AS facility_id").
+		Joins("INNER JOIN user_enrollments ue ON c.id = ue.course_id").
+		Joins("INNER JOIN users u ON ue.user_id = u.id").
+		Joins("INNER JOIN facilities f ON u.facility_id = f.id").
+		Group("f.id")
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
 	}
 
-	err := subQry.Find(&totalCourses).Error
+	err := db.Table("(?) AS sub", subQry).
+		Select("COALESCE(SUM(sub.facility_course_count), 0)").
+		Scan(&totalCourses).Error
 	if err != nil {
 		return 0, NewDBError(err, "error getting total courses offered")
 	}
