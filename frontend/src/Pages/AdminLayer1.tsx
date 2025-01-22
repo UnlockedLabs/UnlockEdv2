@@ -25,7 +25,7 @@ export default function AdminLayer1() {
     const { data: favoritedLibraries } = useSWR<
         ServerResponseMany<OpenContentItem>,
         AxiosError
-    >(`api/libraries?order_by=most_favorited&per_page=5&days=${timeFilter}`);
+    >(`api/libraries?order_by=most_popular&per_page=5&days=${timeFilter}`);
     function navigateToOpenContent() {
         navigate('/knowledge-center-management/libraries');
     }

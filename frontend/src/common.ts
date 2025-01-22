@@ -810,7 +810,7 @@ export enum FilterLibraries {
     'All Libraries' = 'all',
     'Newest' = 'created_at DESC',
     'Oldest' = 'created_at ASC',
-    'Favorited' = 'most_favorited'
+    'Favorited' = 'most_popular'
 }
 
 export enum LibraryAdminVisibility {
