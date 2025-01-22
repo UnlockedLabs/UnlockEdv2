@@ -1,8 +1,8 @@
 name: Add Needs Verification Label
 
 on:
-  project_card:
-    types: [moved]
+  issues:
+    types: [edited]
 
 permissions:
   issues: write
@@ -13,22 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check if the issue is moved to Done
-        id: check_move
+        id: check_status
         run: |
-          if [[ "${{ github.event.project_card.column_id }}" != "98236657" ]]; then
-            echo "Not moved to Done column. Exiting."
+          if [[ "${{ github.event.changes.state.from }}" != "in_progress" || "${{ github.event.issue.state }}" != "done" ]]; then
+            echo "Status not changed to Done. Exiting."
             exit 0
           fi
 
       - name: Add Needs Verification Label
-        if: steps.check_move.outputs.result == 'true'
         uses: actions/github-script@v6
         with:
           script: |
-            const issue_number = context.payload.project_card.content_url.split('/').pop();
             await github.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: issue_number,
+              issue_number: context.issue.number,
               labels: ['Needs verification']
             });
