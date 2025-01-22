@@ -98,7 +98,9 @@ const LibrarySearchResultsModal = forwardRef<
                 setMeta(response.meta);
                 setSearchResults(response.data[0]);
             } else {
-                setSearchError('The search could not be completed due to an unexpected error. Please try again later.');
+                setSearchError(
+                    'The search could not be completed due to an unexpected error. Please try again later.'
+                );
             }
         } catch {
             setSearchError(
@@ -201,7 +203,7 @@ const LibrarySearchResultsModal = forwardRef<
                                 searchTerm={searchTerm}
                                 isSearchValid={isSearchValid}
                                 searchPlaceholder={placeholder}
-                                changeCallback={(value) => {
+                                changeCallback={(value: string) => {
                                     setSearchTerm(value);
                                     setIsSearchValid(value.trim() !== '');
                                 }}

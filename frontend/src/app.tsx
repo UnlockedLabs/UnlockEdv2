@@ -41,9 +41,9 @@ import AdminLayer2 from './Pages/AdminLayer2.tsx';
 import {
     getAdminLevel1Data,
     getFacilities,
+    getLibraryLayoutData,
     getStudentLayer2Data,
-    getStudentLevel1Data,
-    getLibraryOptions
+    getStudentLevel1Data
 } from './routeLoaders.ts';
 
 import FacilityManagement from '@/Pages/FacilityManagement.tsx';
@@ -185,8 +185,8 @@ const router = createBrowserRouter([
                                 children: [
                                     {
                                         path: 'libraries',
+                                        loader: getLibraryLayoutData,
                                         element: <LibraryLayout />,
-                                        loader: getLibraryOptions,
                                         errorElement: <Error />,
                                         handle: {
                                             title: 'Libraries',
@@ -234,7 +234,6 @@ const router = createBrowserRouter([
                                 path: 'viewer/libraries/:id',
                                 element: <LibraryViewer />,
                                 errorElement: <Error />,
-                                loader: getLibraryOptions,
                                 handle: {
                                     title: 'Library Viewer',
                                     path: [
@@ -442,8 +441,8 @@ const router = createBrowserRouter([
                                 children: [
                                     {
                                         path: 'libraries',
+                                        loader: getLibraryLayoutData,
                                         element: <LibraryLayout />,
-                                        loader: getLibraryOptions,
                                         errorElement: <Error />,
                                         handle: {
                                             title: 'Libraries Management',

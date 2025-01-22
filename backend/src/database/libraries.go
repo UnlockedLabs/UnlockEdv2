@@ -22,7 +22,7 @@ type LibraryResponse struct {
 // orderBy - the order in which the results are returned
 // isAdmin - true or false on whether the user is an administrator used to determine how to retrieve featured libraries
 // all - true or false on whether or not to return all libraries without pagination
-func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin, all bool) (int64, []LibraryResponse, error) {
+func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin, all bool, categoryIds []int) (int64, []LibraryResponse, error) {
 	var (
 		total    int64
 		criteria string
@@ -67,6 +67,9 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 	if search != "" {
 		search = "%" + strings.ToLower(search) + "%"
 		tx = tx.Where("LOWER(libraries.title) LIKE ? OR LOWER(libraries.description) LIKE ?", search, search)
+	}
+	if len(categoryIds) > 0 {
+		tx = tx.Select("DISTINCT libraries.*").Joins("JOIN open_content_types t ON t.content_id = libraries.id").Where("t.category_id IN (?)", categoryIds)
 	}
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")

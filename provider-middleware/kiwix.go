@@ -117,12 +117,36 @@ func (ks *KiwixService) UpdateOrInsertLibrary(ctx context.Context, db *gorm.DB, 
 		logger().Errorln("Error updating or inserting library: ", err)
 		return err
 	}
+	// var id int
+	// if err := db.Model(&models.Library{}).Where("external_id = ?", entry.ID).Select("id").Scan(&id).Error; err != nil {
+	// 	logger().Errorln("Error getting library ID: ", err)
+	// }
+	// var categories []models.OpenContentCategory
+	// if err := db.Model(&models.OpenContentCategory{}).Order("RANDOM()").Limit(rand.Intn(3)).Find(&categories).Error; err != nil {
+	// 	logger().Errorln("Error getting random categories")
+	// 	return err
+	// }
+	//
+	// for _, category := range categories {
+	// 	openContentType := struct {
+	// 		CategoryID            uint
+	// 		ContentID             uint
+	// 		OpenContentProviderID uint
+	// 	}{
+	// 		CategoryID:            category.Key,
+	// 		ContentID:             uint(id),
+	// 		OpenContentProviderID: providerId,
+	// 	}
+	// 	if err := db.WithContext(ctx).Table("open_content_types").Create(&openContentType).Error; err != nil {
+	// 		logger().Errorln("Error seeding open_content_types: ", err)
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
 func RemoveDeletedEntries(ctx context.Context, db *gorm.DB, externalIds []string, providerId uint) (int64, error) {
 	logger().Infoln("Removing any deleted Kiwix libraries")
-
 	tx := db.WithContext(ctx).Where("open_content_provider_id = ?", providerId).Delete(&models.Library{}, "external_id NOT IN (?)", externalIds)
 	if tx.Error != nil {
 		return 0, tx.Error
