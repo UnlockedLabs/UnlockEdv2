@@ -210,7 +210,7 @@ func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
 		query = query.Where("u.facility_id = ?", facilityID)
 	}
 
-	err := query.Debug().Find(&totalStudents).Error
+	err := query.Find(&totalStudents).Error
 	if err != nil {
 		return 0, NewDBError(err, "error getting total students enrolled")
 	}
@@ -219,11 +219,9 @@ func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
 
 func (db *DB) GetTotalHourlyActivity(facilityID *uint) (int, error) {
 	var totalActivity int
-	subQry := db.Table("users u").
-		Select("CASE WHEN SUM(a.total_time) IS NULL THEN 0 ELSE ROUND(SUM(a.total_time)/3600, 0) END AS total_time").
-		Joins("LEFT JOIN activities a ON u.id = a.user_id").
-		Where("u.role = ?", "student")
-
+	subQry := db.Table("activities a").
+	Select("COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS total_activity_time").
+	Joins("INNER JOIN users u ON u.id = a.user_id")
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
 	}

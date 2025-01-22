@@ -79,9 +79,7 @@ export default function AdminLayer2() {
                         />
                         <StatsCard
                             title="Total Activity Time"
-                            number={layer2_metrics.total_hourly_activity.toLocaleString(
-                                'en-US'
-                            )}
+                            number={layer2_metrics.total_hourly_activity.toString()}
                             label="Hours"
                         />
                     </div>
