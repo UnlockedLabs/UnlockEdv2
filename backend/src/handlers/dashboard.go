@@ -37,6 +37,12 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
+	alternate_view_string := r.URL.Query().Get("alternate_view")
+	is_alternate_view, err := strconv.ParseBool(alternate_view_string)
+
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
 
 	switch facility {
 	case "all":
@@ -69,11 +75,20 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 		log.add("facilityId", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
+	var learningInsights []models.LearningInsight
 
-	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
+	if is_alternate_view {
+		learningInsights, err = srv.Db.GetLearningInsightsAlternateView()
+		if err != nil {
+			log.add("facilityId", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
+	} else {
+		learningInsights, err = srv.Db.GetLearningInsights(facilityId)
+		if err != nil {
+			log.add("facilityId", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
 	}
 
 	adminDashboard := models.AdminLayer2Join{

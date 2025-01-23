@@ -189,6 +189,7 @@ func seedTestData(db *gorm.DB) {
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
 	}
+	// TODO: work from here to add to the seeder
 	for _, user := range dbUsers {
 		for _, prog := range courses {
 			// all test courses are open_enrollment
@@ -225,7 +226,7 @@ func seedTestData(db *gorm.DB) {
 					log.Printf("Failed to create activity: %v", err)
 				}
 			}
-			if rand.Float32() < 0.4 { // 40% chance to create an outcome
+			if rand.Float32() < 0.1 { // 40% chance to create an outcome
 				outcome := models.Outcome{
 					UserID:   user.ID,
 					CourseID: prog.ID,
