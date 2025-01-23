@@ -3,6 +3,7 @@ name: Add Needs Verification Label
 on:
   issues:
     types: [edited]
+  workflow_dispatch:
 
 permissions:
   issues: write
