@@ -1,5 +1,3 @@
-import DangerButton from '../DangerButton';
-import PrimaryButton from '../PrimaryButton';
 import API from '@/api/api';
 import { AuthResponse } from '@/common';
 import { useNavigate } from 'react-router-dom';
@@ -43,20 +41,20 @@ export default function ConsentForm() {
                 Continue to login to the Education Provider?
             </p>
             <div className="flex justify-evenly">
-                <DangerButton
-                    className="btn btn-warning w-24"
+                <button
+                    className="button !bg-error"
                     type="button"
                     onClick={deny}
                 >
                     Decline
-                </DangerButton>
-                <PrimaryButton
-                    className="btn btn-primary w-24"
+                </button>
+                <button
+                    className="button"
                     type="button"
                     onClick={() => void accept()}
                 >
                     Accept
-                </PrimaryButton>
+                </button>
             </div>
         </div>
     );

@@ -12,7 +12,6 @@ import {
 } from '@/common';
 import Modal from '@/Components/Modal';
 import MapUserForm from '@/Components/forms/MapUserForm';
-import PrimaryButton from '@/Components/PrimaryButton';
 import ShowImportedUsers from '@/Components/forms/ShowImportedUsers';
 import Pagination from '@/Components/Pagination';
 import useSWR from 'swr';
@@ -187,26 +186,25 @@ export default function ProviderUserManagement() {
                     />
                 </div>
                 <div className="flex justify-between">
-                    <button
-                        className="btn btn-sm btn-outline"
-                        onClick={handleRefetch}
-                    >
+                    <button className="button-outline" onClick={handleRefetch}>
                         Refresh
                     </button>
-                    <PrimaryButton
+                    <button
                         onClick={() => importAllUsersModal.current?.showModal()}
                         disabled={!provider}
+                        className="button"
                     >
                         Import All Users
-                    </PrimaryButton>
-                    <PrimaryButton
+                    </button>
+                    <button
                         onClick={() => {
                             void handleImportSelectedUsers();
                         }}
                         disabled={usersToImport.length === 0}
+                        className="button"
                     >
                         Import Selected Users
-                    </PrimaryButton>
+                    </button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="table table-auto table-xs w-full">

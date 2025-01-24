@@ -31,7 +31,6 @@ import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
 import { FeatureAccess, ToastState, UserRole } from '@/common';
-import PrimaryButton from './PrimaryButton';
 import { useToast } from '@/Context/ToastCtx';
 import API from '@/api/api';
 import { useRef, useState } from 'react';
@@ -296,8 +295,8 @@ export default function Navbar({
                             {user && user.role === UserRole.SystemAdmin && (
                                 <>
                                     <li>
-                                        <PrimaryButton
-                                            className="self-center border-black hover:border-white"
+                                        <button
+                                            className="self-center button"
                                             onClick={() =>
                                                 confirmSeedModal.current?.showModal()
                                             }
@@ -307,7 +306,7 @@ export default function Navbar({
                                                 iconClassName={'w-3 h-3'}
                                             />
                                             Seed Demo Data
-                                        </PrimaryButton>
+                                        </button>
                                     </li>
                                     <div className="self-center pt-3">
                                         <strong>Enabled Features:</strong>

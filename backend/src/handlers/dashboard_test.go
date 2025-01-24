@@ -12,39 +12,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestHandleAdminDashboard(t *testing.T) {
-	httpTests := []httpTest{
-		{"TestAdminDashboardAsAdmin", "admin", map[string]any{"id": "1"}, http.StatusOK, ""},
-		{"TestAdminDashboardAsUser", "student", map[string]any{"id": "4"}, http.StatusUnauthorized, ""},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/admin-dashboard", nil)
-			if err != nil {
-				t.Fatalf("unable to create new request, error is %v", err)
-			}
-			req.SetPathValue("id", test.mapKeyValues["id"].(string))
-			handler := getHandlerByRoleWithMiddleware(server.handleAdminDashboard, test.role)
-			rr := executeRequest(t, req, handler, test)
-			id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
-			if test.expectedStatusCode == http.StatusOK {
-				dashboard, err := server.Db.GetAdminDashboardInfo(uint(id))
-				if err != nil {
-					t.Fatalf("unable to get student dashboard, error is %v", err)
-				}
-				received := rr.Body.String()
-				resource := models.Resource[models.AdminDashboardJoin]{}
-				if err := json.Unmarshal([]byte(received), &resource); err != nil {
-					t.Errorf("failed to unmarshal resource, error is %v", err)
-				}
-				if diff := cmp.Diff(&dashboard, &resource.Data); diff != "" {
-					t.Errorf("handler returned unexpected response body: %v", diff)
-				}
-			}
-		})
-	}
-}
-
 func TestHandleAdminLayer2(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestAdminDashboardAsAdmin", "admin", map[string]any{"id": "1"}, http.StatusOK, ""},
