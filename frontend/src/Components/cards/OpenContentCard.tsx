@@ -23,9 +23,9 @@ export default function OpenContentCardRow({
             })}
             onClick={redirectToViewer}
         >
-            <div className="w-[100px]">
+            <div>
                 <img
-                    className="h-12 mx-auto object-contain"
+                    className="h-8 mx-auto object-contain"
                     src={content.thumbnail_url ?? ''}
                 ></img>
             </div>

@@ -29,7 +29,7 @@ export default function TopContentList({
                     onClick={navigateToOpenContent}
                 >
                     <ULIComponent
-                        tooltipClassName="h-12 flex items-center"
+                        tooltipClassName="h-8 flex items-center"
                         icon={ArrowTopRightOnSquareIcon}
                     />
                     <h3 className="body font-normal">
