@@ -1,7 +1,7 @@
 import { CheckCircleIcon, ClockIcon } from '@heroicons/react/24/solid';
-import { useRef, useState, useEffect } from 'react';
 import ProgressBar from './ProgressBar';
 import { CourseStatus, RecentCourse, UserCourses, ViewType } from '@/common';
+import ClampedText from './ClampedText';
 
 // this might also want to live within courses, as the type of course it is (ie currently enrolled, completed, pending)
 // recent would probably be a boolean, which would only need to be accessed on the homepage
@@ -17,26 +17,6 @@ export default function EnrolledCourseCard({
     recent,
     view
 }: CourseCard) {
-    //need this for displaying when text is truncated otherwise it will always display a browser tooltip
-    const textReference = useRef<HTMLHeadingElement>(null);
-    const [isTruncated, setIsTruncated] = useState(false);
-    const checkTruncation = () => {
-        if (textReference.current) {
-            const isContentTruncated =
-                textReference.current.scrollHeight >
-                    textReference.current.offsetHeight ||
-                textReference.current.scrollWidth >
-                    textReference.current.offsetWidth;
-            setIsTruncated(isContentTruncated);
-        }
-    };
-    useEffect(() => {
-        checkTruncation();
-        window.addEventListener('resize', checkTruncation); //add resize listner to check for truncated text.
-        return () => {
-            window.removeEventListener('resize', checkTruncation);
-        };
-    }, [course.alt_name, course.course_name]);
     const coverImage = course.thumbnail_url;
     const url = course.external_url;
     let status: CourseStatus | null = null;
@@ -118,13 +98,9 @@ export default function EnrolledCourseCard({
                         )}
                     </figure>
                     <div className="card-body gap-0.5 relative min-h-[150px] pb-10">
-                        <h3
-                            ref={textReference}
-                            className="card-title text-sm line-clamp-2"
-                            title={isTruncated ? courseFullName : ''}
-                        >
+                        <ClampedText as="h3" lines={2} className="card-title text-sm">
                             {courseFullName}
-                        </h3>
+                        </ClampedText>
                         <p className="text-xs h-10 line-clamp-2">
                             {course.provider_platform_name}
                             {finalDateStr}
