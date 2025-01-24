@@ -54,7 +54,7 @@ export default function MyCourses() {
     };
 
     return (
-        <div className="px-8 py-4">
+        <div className="px-5 py-4">
             <TabView
                 tabs={tabs}
                 activeTab={activeTab}

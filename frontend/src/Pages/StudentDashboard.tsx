@@ -30,7 +30,7 @@ export default function StudentLayer2() {
     );
 
     return (
-        <div className="w-full flex flex-col gap-6 px-6 pb-4">
+        <div className="w-full flex flex-col gap-6 px-5 pb-4">
             <h1 className="text-5xl">Hi, {user.name_first ?? 'Student'}!</h1>
             <h2> Pick Up Where You Left Off</h2>
             <div className="card card-row-padding flex flex-col gap-3">

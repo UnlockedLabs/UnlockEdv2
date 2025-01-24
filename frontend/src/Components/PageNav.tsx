@@ -53,8 +53,8 @@ export default function PageNav({
     };
 
     return (
-        <div className="px-6 py-3 flex justify-between items-center">
-            <div className="flex items-center gap-3">
+        <div className="px-2 py-3 flex justify-between items-center">
+            <div className={`flex items-center gap-3 ${showOpenMenu ? 'px-3' : ''}`}>
                 {showOpenMenu ? (
                     <ULIComponent
                         onClick={onShowNav}
