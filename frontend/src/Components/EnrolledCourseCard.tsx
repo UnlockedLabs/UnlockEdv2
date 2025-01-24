@@ -98,7 +98,7 @@ export default function EnrolledCourseCard({
                         )}
                     </figure>
                     <div className="card-body gap-0.5 relative min-h-[150px] pb-10">
-                        <ClampedText as="h3" lines={2} className="card-title text-sm">
+                        <ClampedText as="h3" className="card-title text-sm">
                             {courseFullName}
                         </ClampedText>
                         <p className="text-xs h-10 line-clamp-2">
