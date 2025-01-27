@@ -72,6 +72,10 @@ export default function VideoCard({
                     ? 'cursor-pointer'
                     : 'cursor-pointer border-3 border-red-500'
             }`}
+            onClick={() =>
+                videoIsAvailable(video) &&
+                navigate(`/viewer/videos/${video.id}`)
+            }
         >
             {!AdminRoles.includes(role) && (
                 <div
@@ -84,10 +88,6 @@ export default function VideoCard({
             )}
             <div
                 className="flex flex-col p-4 gap-2 border-b-2"
-                onClick={() =>
-                    videoIsAvailable(video) &&
-                    navigate(`/viewer/videos/${video.id}`)
-                }
             >
                 <figure className="w-1/2 mx-auto bg-cover">
                     <img

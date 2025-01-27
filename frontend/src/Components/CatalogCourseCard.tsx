@@ -52,14 +52,14 @@ export default function CatalogCourseCard({
         ? courseStartDt.toLocaleDateString('en-US', {
               year: 'numeric',
               month: '2-digit',
-              day: 'numeric'
+              day: '2-digit'
           })
         : '';
     const courseEndDtStr = courseEndDt
         ? courseEndDt.toLocaleDateString('en-US', {
               year: 'numeric',
               month: '2-digit',
-              day: 'numeric'
+              day: '2-digit'
           })
         : '';
     const finalDateStr =

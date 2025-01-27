@@ -1,6 +1,7 @@
 import { CheckCircleIcon, ClockIcon } from '@heroicons/react/24/solid';
 import ProgressBar from './ProgressBar';
 import { CourseStatus, RecentCourse, UserCourses, ViewType } from '@/common';
+import ClampedText from './ClampedText';
 
 // this might also want to live within courses, as the type of course it is (ie currently enrolled, completed, pending)
 // recent would probably be a boolean, which would only need to be accessed on the homepage
@@ -28,20 +29,23 @@ export default function EnrolledCourseCard({
         ? courseStartDt.toLocaleDateString('en-US', {
               year: 'numeric',
               month: '2-digit',
-              day: 'numeric'
+              day: '2-digit'
           })
         : '';
     const courseEndDtStr = courseEndDt
         ? courseEndDt.toLocaleDateString('en-US', {
               year: 'numeric',
               month: '2-digit',
-              day: 'numeric'
+              day: '2-digit'
           })
         : '';
     const finalDateStr =
         courseStartDt || courseEndDt
             ? ' • ' + courseStartDtStr + ' - ' + courseEndDtStr
             : '';
+    const courseFullName = course.alt_name
+        ? `${course.alt_name} - ${course.course_name}`
+        : course.course_name;
     if (view == ViewType.List) {
         return (
             <a
@@ -93,16 +97,15 @@ export default function EnrolledCourseCard({
                             <div className="bg-teal-1 h-full w-full"></div>
                         )}
                     </figure>
-                    <div className="card-body gap-0.5">
-                        <h3 className="card-title text-sm line-clamp-2">
-                            {course.alt_name && course.alt_name + ' - '}
-                            {course.course_name}
-                        </h3>
+                    <div className="card-body gap-0.5 relative min-h-[150px] pb-10">
+                        <ClampedText as="h3" className="card-title text-sm">
+                            {courseFullName}
+                        </ClampedText>
                         <p className="text-xs h-10 line-clamp-2">
                             {course.provider_platform_name}
                             {finalDateStr}
                         </p>
-                        <div className="mt-3 justify-end">
+                        <div className="absolute bottom-2 left-4 right-4">
                             {status == CourseStatus.Completed ? (
                                 <div className="flex flex-row gap-2 body-small text-teal-3">
                                     <CheckCircleIcon className="h-4" /> Course
