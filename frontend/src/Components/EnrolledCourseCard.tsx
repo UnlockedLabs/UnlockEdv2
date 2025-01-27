@@ -105,7 +105,7 @@ export default function EnrolledCourseCard({
                             {course.provider_platform_name}
                             {finalDateStr}
                         </p>
-                        <div className="absolute bottom-2 left-4 right-4 z-10">
+                        <div className="absolute bottom-2 left-4 right-4">
                             {status == CourseStatus.Completed ? (
                                 <div className="flex flex-row gap-2 body-small text-teal-3">
                                     <CheckCircleIcon className="h-4" /> Course
