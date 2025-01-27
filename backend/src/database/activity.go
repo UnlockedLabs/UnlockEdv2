@@ -179,14 +179,11 @@ func (db *DB) GetAdminDashboardInfo(facilityID uint) (models.AdminDashboardJoin,
 
 	return dashboard, nil
 }
-func (db *DB) GetTotalCoursesOffered(facilityID *uint) (int, error) {
+func (db *DB) GetTotalCoursesOffered() (int, error) {
 	var totalCourses int
 	qry := db.Table("user_enrollments ue").
 		Select("COALESCE(COUNT(distinct course_id),0) as courses_offered").
 		Joins("inner join users u on ue.user_id = u.id")
-	if facilityID != nil {
-		qry = qry.Where("u.facility_id = ?", facilityID)
-	}
 
 	err := qry.Scan(&totalCourses).Error
 	if err != nil {

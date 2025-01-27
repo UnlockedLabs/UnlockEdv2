@@ -63,7 +63,7 @@ func TestHandleAdminLayer2(t *testing.T) {
 			if test.expectedStatusCode == http.StatusOK {
 
 				id := uint(id)
-				totalCourses, err := server.Db.GetTotalCoursesOffered(&id)
+				totalCourses, err := server.Db.GetTotalCoursesOffered()
 				if err != nil {
 					t.Fatalf("unable to get total courses offered, error is %v", err)
 				}
