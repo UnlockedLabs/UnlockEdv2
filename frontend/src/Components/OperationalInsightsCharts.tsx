@@ -33,7 +33,7 @@ const OperationalInsights = () => {
         (metrics?.total_residents ?? 0) + (metrics?.total_admins ?? 0);
 
     return (
-        <div className="p-6 max-w-full overflow-x-hidden">
+        <div className="overflow-x-hidden">
             {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (

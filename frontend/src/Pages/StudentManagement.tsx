@@ -133,7 +133,7 @@ export default function StudentManagement() {
     };
     return (
         <div>
-            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-8">
+            <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-5">
                 <div className="flex justify-between">
                     <div className="flex flex-row gap-x-2">
                         <SearchBar

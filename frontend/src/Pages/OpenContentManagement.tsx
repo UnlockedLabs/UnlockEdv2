@@ -32,7 +32,7 @@ export default function OpenContentManagement() {
     }
 
     return (
-        <div className="px-8 pb-4">
+        <div className="px-5 pb-4">
             <div className="flex flex-row justify-end">
                 <button
                     className="button-outline"

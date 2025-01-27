@@ -50,7 +50,7 @@ export default function LibraryViewer() {
 
     return (
         <div>
-            <div className="px-8 pb-4">
+            <div className="px-5 pb-4">
                 <div className="w-full pt-4 justify-center">
                     {isLoading ? (
                         <div className="flex h-screen gap-4 justify-center content-center">
