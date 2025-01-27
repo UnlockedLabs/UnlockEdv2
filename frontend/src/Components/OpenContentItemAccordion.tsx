@@ -74,8 +74,8 @@ export default function OpenContentItemAccordion({
                         </span>
                     </button>
                     <div
-                        className={`overflow-hidden transition-[max-height] duration-700 ${
-                            activeKey === title ? 'max-h-[800px]' : 'max-h-0'
+                        className={`transition-[max-height] duration-400 ${
+                            activeKey === title ? 'overflow-visible max-h-[800px]' : 'max-h-0 overflow-hidden'
                         }`}
                     >
                         <div className="flex flex-col gap-4">

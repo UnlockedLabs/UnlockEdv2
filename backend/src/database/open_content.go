@@ -67,7 +67,6 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 		JOIN libraries lib ON lib.open_content_provider_id = ocp.id 
 			AND lib.id = f.content_id
 		WHERE f.user_id = ?
-			AND f.content_id IN (SELECT id FROM libraries where visibility_status = true)
 	),
 	ordered_videos AS (
 		SELECT
@@ -90,7 +89,7 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 		JOIN videos ON videos.open_content_provider_id = ocp.id
 			AND videos.id = f.content_id
 		WHERE f.user_id = ?
-			AND f.content_id IN (SELECT id FROM videos where visibility_status = true AND availability = 'available')
+			AND f.content_id IN (SELECT id FROM videos where availability = 'available')
 	),
 	ordered_helpful_links AS (
 		SELECT
@@ -113,7 +112,6 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 		JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
 				AND hl.id = f.content_id
 		WHERE f.user_id = ?
-		AND f.content_id IN (SELECT id from helpful_links WHERE visibility_status = true)
 	)
 	SELECT 
 			content_type,
@@ -188,7 +186,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
         JOIN libraries lib ON lib.open_content_provider_id = ocp.id 
             AND lib.id = f.content_id
         WHERE f.user_id = ?
-            AND f.content_id IN (SELECT id FROM libraries where visibility_status = true)
+
         UNION ALL
 
         SELECT
@@ -210,7 +208,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
         JOIN videos ON videos.open_content_provider_id = ocp.id
             AND videos.id = f.content_id
         WHERE f.user_id = ?
-            AND f.content_id IN (SELECT id FROM videos where visibility_status = true AND availability = 'available')
+            AND f.content_id IN (SELECT id FROM videos where availability = 'available')
        UNION ALL
 
         SELECT
@@ -232,7 +230,6 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int) (int64, []models.
         JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
             AND hl.id = f.content_id
         WHERE f.user_id = ?
-          AND f.content_id IN (SELECT id from helpful_links WHERE visibility_status = true)
     ) AS all_favorites
     ORDER BY created_at DESC
     LIMIT ? OFFSET ?`

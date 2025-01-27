@@ -55,7 +55,7 @@ type OpenContentItem struct {
 	Url                   string `json:"url"`
 	ThumbnailUrl          string `json:"thumbnail_url"`
 	Description           string `json:"description,omitempty"`
-	VisibilityStatus      bool   `json:"visibility_status,omitempty"`
+	VisibilityStatus      *bool  `json:"visibility_status"`
 	OpenContentProviderId uint   `json:"open_content_provider_id"`
 	ContentId             uint   `json:"content_id"`
 	ContentType           string `json:"content_type"`
