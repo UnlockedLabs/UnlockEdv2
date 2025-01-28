@@ -23,20 +23,12 @@ func (srv *Server) registerCoursesRoutes() []routeDef {
 * ?searchFields=: searchFields
  */
 func (srv *Server) handleIndexCourses(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
-	search := r.URL.Query().Get("search")
-	total, courses, err := srv.Db.GetCourse(page, perPage, search)
+	args := srv.getQueryArgs(r)
+	courses, err := srv.Db.GetCourses(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
-	return writePaginatedResponse(w, http.StatusOK, courses, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, courses, args.IntoMeta())
 }
 
 func (srv *Server) handleShowCourse(w http.ResponseWriter, r *http.Request, log sLog) error {

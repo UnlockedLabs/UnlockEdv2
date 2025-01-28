@@ -281,7 +281,9 @@ func TestHandleGetStudentAttendanceData(t *testing.T) {
 
 func getOverideForm(facilityId uint) map[string]any {
 	form := make(map[string]any)
-	_, sections, err := server.Db.GetSectionsForFacility(1, 10, facilityId, "")
+	args := getDefaultQueryCtx()
+	args.FacilityID = facilityId
+	sections, err := server.Db.GetSectionsForFacility(&args)
 	if err != nil {
 		form["err"] = err
 	}
@@ -319,7 +321,9 @@ func buildStaticRRule() (*rrule.RRule, error) {
 
 func getProgramSectionEvent(facilityId uint) map[string]any {
 	form := make(map[string]any)
-	_, sections, err := server.Db.GetSectionsForFacility(1, 10, facilityId, "")
+	args := getDefaultQueryCtx()
+	args.FacilityID = facilityId
+	sections, err := server.Db.GetSectionsForFacility(&args)
 	if err != nil {
 		form["err"] = err
 	}

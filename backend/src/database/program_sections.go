@@ -2,13 +2,12 @@ package database
 
 import "UnlockEdv2/src/models"
 
-func (db *DB) GetSectionsForProgram(id, page, perPage int) (int64, []models.ProgramSection, error) {
+func (db *DB) GetSectionsForProgram(id int, args *models.QueryContext) ([]models.ProgramSection, error) {
 	content := []models.ProgramSection{}
-	var total int64
-	if err := db.Find(&content, "program_id = ?", id).Preload("Events").Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "programs")
+	if err := db.Find(&content, "program_id = ?", id).Preload("Events").Count(&args.Total).Error; err != nil {
+		return nil, newNotFoundDBError(err, "programs")
 	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) GetSectionByID(id int) (*models.ProgramSection, error) {
@@ -19,17 +18,16 @@ func (db *DB) GetSectionByID(id int) (*models.ProgramSection, error) {
 	return content, nil
 }
 
-func (db *DB) GetSectionsForFacility(page, perPage int, facilityId uint, search string) (int64, []models.ProgramSection, error) {
+func (db *DB) GetSectionsForFacility(args *models.QueryContext) ([]models.ProgramSection, error) {
 	content := []models.ProgramSection{}
-	var total int64
-	tx := db.Find(&content, "facility_id = ?", facilityId)
-	if search != "" {
-		tx = tx.Where("name LIKE ?", "%"+search+"%")
+	tx := db.Find(&content, "facility_id = ?", args.FacilityID)
+	if args.Search != "" {
+		tx = tx.Where("name LIKE ?", "%"+args.Search+"%")
 	}
-	if err := tx.Count(&total).Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "program sections")
+	if err := tx.Count(&args.Total).Limit(args.PerPage).Offset(args.CalcOffset()).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program sections")
 	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) CreateProgramSection(content *models.ProgramSection) (*models.ProgramSection, error) {

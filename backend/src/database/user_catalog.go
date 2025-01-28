@@ -1,6 +1,7 @@
 package database
 
 import (
+	"UnlockEdv2/src/models"
 	"fmt"
 	"slices"
 	"strings"
@@ -74,7 +75,7 @@ func validOrder(str string) string {
 	return "desc"
 }
 
-func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search string, tags []string) (UserCoursesInfo, error) {
+func (db *DB) GetUserCourses(qCtx *models.QueryContext) (UserCoursesInfo, error) {
 	var courseInfo UserCoursesInfo
 	courses := []UserCourses{}
 	fieldMap := map[string]string{
@@ -86,17 +87,17 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 		"end_dt":          "c.end_dt",
 		"recent_activity": "a.last_ts",
 	}
-	dbField, ok := fieldMap[orderBy]
+	dbField, ok := fieldMap[qCtx.OrderBy]
 	if !ok {
 		dbField = "c.name"
 	}
-	orderStr := dbField + " " + validOrder(order)
+	orderStr := dbField + " " + validOrder(qCtx.Order)
 	tx := db.Table("courses c").
 		Select(`c.id, c.thumbnail_url,
 		c.name as course_name, c.description, pp.name as provider_name, c.external_url, c.start_dt, c.end_dt,
 		progress.course_progress, a.total_time as total_time`).
 		Joins("JOIN provider_platforms pp ON c.provider_platform_id = pp.id").
-		Joins("JOIN milestones as m ON m.course_id = c.id and m.user_id = ?", userId).
+		Joins("JOIN milestones as m ON m.course_id = c.id and m.user_id = ?", qCtx.UserID).
 		Joins(`JOIN (Select cc.id,
 				CASE WHEN EXISTS (SELECT 1 FROM outcomes o WHERE o.course_id = cc.id AND o.user_id = ?) THEN 100
 					WHEN cc.total_progress_milestones = 0 THEN 0
@@ -111,7 +112,7 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 				END as course_progress
 				from courses cc 
 				where cc.deleted_at IS NULL
-				) progress on progress.id = c.id`, userId, userId, userId).
+				) progress on progress.id = c.id`, qCtx.UserID, qCtx.UserID, qCtx.UserID).
 		Joins(`LEFT JOIN user_course_activity_totals a on a.course_id = c.id and a.user_id = m.user_id`).
 		Joins("LEFT JOIN outcomes o ON o.course_id = c.id AND o.user_id = m.user_id").
 		Where("c.deleted_at IS NULL").
@@ -119,10 +120,10 @@ func (db *DB) GetUserCourses(userId uint, order string, orderBy string, search s
 
 	tx = tx.Order(orderStr)
 
-	if search != "" {
-		tx = tx.Where("LOWER(c.name) LIKE ?", "%"+search+"%")
+	if qCtx.Search != "" {
+		tx = tx.Where("LOWER(c.name) LIKE ?", "%"+qCtx.Search+"%")
 	}
-	for i, tag := range tags {
+	for i, tag := range qCtx.Tags {
 		var query string
 		switch tag {
 		case "completed":

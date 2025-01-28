@@ -82,7 +82,9 @@ func TestHandleShowCourse(t *testing.T) {
 
 func getCourseSearch(search string) map[string]any {
 	form := make(map[string]any)
-	_, courses, err := server.Db.GetCourse(1, 10, search)
+	args := getDefaultQueryCtx()
+	args.Search = search
+	courses, err := server.Db.GetCourses(&args)
 	if err != nil {
 		form["err"] = err
 	}

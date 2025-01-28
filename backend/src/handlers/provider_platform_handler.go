@@ -28,12 +28,11 @@ func (srv *Server) registerProviderPlatformRoutes() []routeDef {
 }
 
 func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
-	total, platforms, err := srv.Db.GetAllProviderPlatforms(page, perPage)
+	args := srv.getQueryArgs(r)
+	platforms, err := srv.Db.GetAllProviderPlatforms(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	paginationData := models.NewPaginationInfo(page, perPage, total)
 	only := r.URL.Query().Get("only")
 	if only == "oidc_enabled" {
 		// this is for offering user creation in enabled providers
@@ -56,8 +55,8 @@ func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, 
 		}
 	})
 
-	log.info("Found "+strconv.Itoa(int(total)), " provider platforms")
-	return writePaginatedResponse(w, http.StatusOK, platforms, paginationData)
+	log.info("Found "+strconv.Itoa(int(args.Total)), " provider platforms")
+	return writePaginatedResponse(w, http.StatusOK, platforms, args.IntoMeta())
 }
 
 func (srv *Server) handleShowProvider(w http.ResponseWriter, r *http.Request, log sLog) error {

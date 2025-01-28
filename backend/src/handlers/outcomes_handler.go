@@ -17,24 +17,19 @@ func (srv *Server) registerOutcomesRoutes() []routeDef {
  * ?type=: "certificate", "grade", "pathway_completion", "college_credit"
  ****/
 func (srv *Server) handleGetOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-
-	// Get vars from query param
-	order := r.URL.Query().Get("order")
-	orderBy := r.URL.Query().Get("order_by")
 	typeString := r.URL.Query().Get("type")
 	outcomeType := models.OutcomeType(typeString)
-
-	total, outcome, err := srv.Db.GetOutcomesForUser(uint(id), page, perPage, order, orderBy, outcomeType)
+	args := srv.getQueryArgs(r)
+	args.UserID = uint(id)
+	outcome, err := srv.Db.GetOutcomesForUser(&args, outcomeType)
 	if err != nil {
-		log.add("userId", id)
-		log.add("outcomeType", outcomeType)
+		log.add("user_id", id)
+		log.add("type", outcomeType)
 		return newDatabaseServiceError(err)
 	}
-	meta := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, outcome, meta)
+	return writePaginatedResponse(w, http.StatusOK, outcome, args.IntoMeta())
 }

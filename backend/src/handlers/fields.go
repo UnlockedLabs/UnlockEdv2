@@ -1,6 +1,13 @@
 package handlers
 
-import log "github.com/sirupsen/logrus"
+import (
+	"UnlockEdv2/src/models"
+	"net/http"
+	"strconv"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+)
 
 // sLog is a wrapper around the log.Fields map and is implemented by the handleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging more efficient.
 type sLog struct{ f log.Fields }
@@ -39,4 +46,38 @@ func (slog sLog) errorf(format string, args ...interface{}) {
 
 func (slog *sLog) add(key string, value interface{}) {
 	slog.f[key] = value
+}
+
+func (srv *Server) getQueryArgs(r *http.Request) models.QueryContext {
+	var facilityID, userID uint
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	f, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
+	if err != nil {
+		facilityID = claims.FacilityID
+	} else {
+		facilityID = uint(f)
+	}
+	u, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	if err != nil {
+		userID = claims.UserID
+	} else {
+		userID = uint(u)
+	}
+	page, perPage := srv.getPaginationInfo(r)
+	orderBy := r.URL.Query().Get("order_by")
+	sort := r.URL.Query().Get("sort")
+	isAdmin := userIsAdmin(r)
+	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
+	tags := r.URL.Query()["tags"]
+	return models.QueryContext{
+		Page:       page,
+		PerPage:    perPage,
+		FacilityID: uint(facilityID),
+		UserID:     uint(userID),
+		OrderBy:    orderBy,
+		Order:      sort,
+		IsAdmin:    isAdmin,
+		Search:     search,
+		Tags:       tags,
+	}
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 )
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
@@ -12,13 +13,13 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId uint) (int64, []models.Program, error) {
-	content := make([]models.Program, 0, perPage)
-	total := int64(0)
-	if len(tags) > 0 {
+func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
+	content := make([]models.Program, 0, args.PerPage)
+	if len(args.Tags) > 0 {
+		fmt.Println("tags", args.Tags)
 		// look in program_tags for programs matching this tag
 		query := db.Model(&models.ProgramTag{}).Select("program_id")
-		for idx, tag := range tags {
+		for idx, tag := range args.Tags {
 			if idx == 0 {
 				query.Where("value = ?", tag)
 			} else {
@@ -26,29 +27,30 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId
 			}
 		}
 
-		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities").Preload("Favorites", "user_id = ?", userId).Find(&content, "id IN (?)", query)
-		if search != "" {
-			tx = tx.Where("name LIKE ?", "%"+search+"%")
+		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities").Preload("Favorites", "user_id = ?", args.UserID).
+			Find(&content, "id IN (?)", query)
+		if args.Search != "" {
+			tx = tx.Where("name LIKE ?", "%"+args.Search+"%")
 		}
-		if err := tx.Count(&total).Error; err != nil {
-			return 0, nil, newGetRecordsDBError(err, "programs")
+		if err := tx.Count(&args.Total).Error; err != nil {
+			return nil, newGetRecordsDBError(err, "programs")
 		}
-		if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
-			return 0, nil, newGetRecordsDBError(err, "programs")
+		if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Error; err != nil {
+			return nil, newGetRecordsDBError(err, "programs")
 		}
 	} else {
 		tx := db.Model(&models.Program{}).
 			Preload("Tags").
 			Preload("Facilities").
-			Preload("Favorites", "user_id = ?", userId)
-		if search != "" {
-			tx = tx.Where("name LIKE ?", "%"+search+"%").Count(&total)
+			Preload("Favorites", "user_id = ?", args.UserID)
+		if args.Search != "" {
+			tx = tx.Where("name LIKE ?", "%"+args.Search+"%")
 		}
-		if err := tx.Count(&total).Error; err != nil {
-			return 0, nil, newGetRecordsDBError(err, "programs")
+		if err := tx.Count(&args.Total).Error; err != nil {
+			return nil, newGetRecordsDBError(err, "programs")
 		}
-		if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Find(&content).Error; err != nil {
-			return 0, nil, newGetRecordsDBError(err, "programs")
+		if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
+			return nil, newGetRecordsDBError(err, "programs")
 		}
 	}
 	programs := iterMap(func(prog models.Program) models.Program {
@@ -58,7 +60,7 @@ func (db *DB) GetProgram(page, perPage int, tags []string, search string, userId
 		}
 		return prog
 	}, content)
-	return total, programs, nil
+	return programs, nil
 }
 
 func (db *DB) CreateProgram(content *models.Program) error {

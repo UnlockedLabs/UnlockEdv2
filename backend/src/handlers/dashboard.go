@@ -213,16 +213,11 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 	if !srv.canViewUserData(r, userId) {
 		return newForbiddenServiceError(err, "You do not have permission to view this user's courses")
 	}
-	order := r.URL.Query().Get("order")
-	orderBy := r.URL.Query().Get("order_by")
-	search := r.URL.Query().Get("search")
-	search = strings.ToLower(search)
-	search = strings.TrimSpace(search)
-	tags := r.URL.Query()["tags"]
-	// TODO: cache this response
-	userCourses, err := srv.Db.GetUserCourses(uint(userId), order, orderBy, search, tags)
+	args := srv.getQueryArgs(r)
+	args.UserID = uint(userId)
+	userCourses, err := srv.Db.GetUserCourses(&args)
 	if err != nil {
-		log.add("search", search)
+		log.add("search", args.Search)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, userCourses)

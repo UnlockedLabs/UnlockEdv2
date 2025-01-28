@@ -23,13 +23,12 @@ type LibraryResponse struct {
 // isAdmin - true or false on whether the user is an administrator used to determine how to retrieve featured libraries
 // all - true or false on whether or not to return all libraries without pagination
 // categoryIds - the category ids to filter the libraries by
-func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin, all bool, categoryIds []int) (int64, []LibraryResponse, error) {
+func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, all bool, categoryIds []int) ([]LibraryResponse, error) {
 	var (
-		total    int64
 		criteria string
 		id       uint
 	)
-	libraries := make([]LibraryResponse, 0, perPage)
+	libraries := make([]LibraryResponse, 0, args.PerPage)
 	//added the below to display featuring flags for all admins per facility
 	selectIsFavoriteOrIsFeatured := `
         libraries.*,
@@ -40,10 +39,10 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
               AND f.open_content_provider_id = libraries.open_content_provider_id
 			  AND %s) AS is_favorited`
 
-	if isAdmin {
-		criteria, id = "f.facility_id = ?", facilityId
+	if args.IsAdmin {
+		criteria, id = "f.facility_id = ?", args.FacilityID
 	} else {
-		criteria, id = "f.user_id = ?", userId
+		criteria, id = "f.user_id = ?", args.UserID
 	}
 	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), id)
 	visibility = strings.ToLower(visibility)
@@ -55,7 +54,7 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 		tx = tx.Joins(`JOIN open_content_favorites f 
 			ON f.content_id = libraries.id 
 			AND f.open_content_provider_id = libraries.open_content_provider_id 
-			AND f.facility_id IS NOT NULL`).Where("f.facility_id = ? AND visibility_status = true", facilityId)
+			AND f.facility_id IS NOT NULL`).Where("f.facility_id = ? AND visibility_status = true", args.FacilityID)
 		isFeatured = true
 	case "visible":
 		tx = tx.Where("visibility_status = true")
@@ -65,18 +64,19 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 	default:
 		tx = tx.Where("visibility_status = true")
 	}
-	if search != "" {
-		search = "%" + strings.ToLower(search) + "%"
+	var search string
+	if args.Search != "" {
+		search = "%" + strings.ToLower(args.Search) + "%"
 		tx = tx.Where("LOWER(libraries.title) LIKE ? OR LOWER(libraries.description) LIKE ?", search, search)
 	}
 	if len(categoryIds) > 0 {
 		tx = tx.Joins("JOIN open_content_types t ON t.content_id = libraries.id").Where("t.category_id IN (?) AND t.open_content_provider_id = libraries.open_content_provider_id", categoryIds)
 	}
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "libraries")
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "libraries")
 	}
 
-	switch strings.ToLower(orderBy) {
+	switch args.OrderBy {
 	case "most_popular":
 		tx = tx.Select(`
             libraries.*,
@@ -87,7 +87,7 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
                 WHERE f.content_id = libraries.id
                   AND f.open_content_provider_id = libraries.open_content_provider_id
                   AND f.user_id = ?
-            ) AS is_favorited`, userId)
+            ) AS is_favorited`, args.UserID)
 		if !isFeatured {
 			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
 				ON f.content_id = libraries.id 
@@ -95,15 +95,15 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 		}
 		tx = tx.Group("libraries.id").Order("favorite_count DESC")
 	default:
-		tx = tx.Order(orderBy)
+		tx = tx.Order(args.OrderBy)
 	}
 	if !all {
-		tx = tx.Limit(perPage).Offset(calcOffset(page, perPage))
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
 	if err := tx.Find(&libraries).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "libraries")
+		return nil, newGetRecordsDBError(err, "libraries")
 	}
-	return total, libraries, nil
+	return libraries, nil
 }
 
 func (db *DB) GetLibraryByID(id int) (*models.Library, error) {
