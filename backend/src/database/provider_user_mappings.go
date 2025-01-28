@@ -35,12 +35,12 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 	return nil
 }
 
-func (db *DB) GetUnmappedUsers(page, perPage int, providerID int, userSearch []string, facilityID uint) (int64, []models.User, error) {
+func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSearch []string) ([]models.User, error) {
 	var users []models.User
 	var total int64
 	tx := db.Model(&models.User{}).
 		Where("facility_id = ? AND role = ? AND id NOT IN (?)",
-			facilityID,
+			args.FacilityID,
 			"student",
 			db.Model(&models.ProviderUserMapping{}).Select("user_id").Where("provider_platform_id = ?", providerID),
 		)
@@ -49,12 +49,13 @@ func (db *DB) GetUnmappedUsers(page, perPage int, providerID int, userSearch []s
 		tx = applyUserSearchConditions(tx, userSearch)
 	}
 	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, NewDBError(err, "error counting unmapped users")
+		return nil, NewDBError(err, "error counting unmapped users")
 	}
-	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&users).Error; err != nil {
-		return 0, nil, NewDBError(err, "error getting unmapped users")
+	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&users).Error; err != nil {
+		return nil, NewDBError(err, "error getting unmapped users")
 	}
-	return total, users, nil
+	args.Total = total
+	return users, nil
 }
 
 func applyUserSearchConditions(tx *gorm.DB, userSearch []string) *gorm.DB {

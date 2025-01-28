@@ -28,56 +28,37 @@ func (srv *Server) registerUserRoutes() []routeDef {
 * GET: /api/users
 **/
 func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
 	include := r.URL.Query()["include"]
 	if slices.Contains(include, "only_unmapped") {
 		providerId := r.URL.Query().Get("provider_id")
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 	}
-	order := r.URL.Query().Get("order_by")
-	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	role := r.URL.Query().Get("role")
-	facilityId := srv.getFacilityID(r)
-	total, users, err := srv.Db.GetCurrentUsers(page, perPage, facilityId, order, search, role)
+	args := srv.getQueryArgs(r)
+	users, err := srv.Db.GetCurrentUsers(&args, role)
 	if err != nil {
-		log.add("facility_id", facilityId)
-		log.add("search", search)
+		log.add("facility_id", args.FacilityID)
+		log.add("search", args.Search)
 		return newDatabaseServiceError(err)
 	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
-	return writePaginatedResponse(w, http.StatusOK, users, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
 }
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
 	log.add("subhandlerCall", "HandleGetUnmappedUsers")
-	facilityId := srv.getFacilityID(r)
-	page, perPage := srv.getPaginationInfo(r)
-	search := r.URL.Query()["search"]
+	args := srv.getQueryArgs(r)
 	provID, err := strconv.Atoi(providerId)
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider ID")
 	}
-	total, users, err := srv.Db.GetUnmappedUsers(page, perPage, provID, search, facilityId)
+	search := r.URL.Query()["search"]
+	users, err := srv.Db.GetUnmappedUsers(&args, provID, search)
 	if err != nil {
 		log.add("provider_id", providerId)
-		log.add("facility_id", facilityId)
+		log.add("facility_id", args.FacilityID)
 		return newDatabaseServiceError(err)
 	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
-	log.infof("Total users to return: %d", total)
-	return writePaginatedResponse(w, http.StatusOK, users, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
 }
 
 /**

@@ -37,7 +37,8 @@ func TestHandleIndexMilestones(t *testing.T) {
 			var _ int
 			var dbErr error
 			if test.role == "student" {
-				_, milestones, dbErr = server.Db.GetMilestonesForUser(1, 10, uint(4))
+				args := models.QueryContext{Page: 10, PerPage: 10, UserID: 4}
+				milestones, dbErr = server.Db.GetMilestonesForUser(&args)
 			} else {
 				if test.mapKeyValues["err"] != nil {
 					dbErr = test.mapKeyValues["err"].(error)
@@ -215,12 +216,18 @@ func TestHandleUpdateMilestone(t *testing.T) {
 		})
 	}
 }
+func getDefaultQueryCtx() models.QueryContext {
+	return models.QueryContext{Page: 1, PerPage: 10}
+}
 
 func getMilestonesBySearch(search, orderBy string) map[string]any {
-	total, milestones, err := server.Db.GetMilestones(1, 10, search, orderBy)
+	args := getDefaultQueryCtx()
+	args.Search = search
+	args.OrderBy = orderBy
+	milestones, err := server.Db.GetMilestones(&args)
 	form := make(map[string]any)
 	form["milestones"] = milestones
-	form["total"] = total
+	form["total"] = args.Total
 	form["err"] = err
 	return form
 }
@@ -240,12 +247,14 @@ func getNewMilestoneModelAndForm() (models.Milestone, map[string]any, error) {
 }
 
 func getNewMilestoneForm() map[string]any {
+	args := getDefaultQueryCtx()
+	args.FacilityID = 1
 	form := make(map[string]any)
-	_, courses, err := server.Db.GetCourse(1, 10, "")
+	courses, err := server.Db.GetCourses(&args)
 	if err != nil {
 		form["err"] = err
 	}
-	_, users, err := server.Db.GetCurrentUsers(1, 10, 1, "", "", "")
+	users, err := server.Db.GetCurrentUsers(&args, "student")
 	if err != nil {
 		form["err"] = err
 	}

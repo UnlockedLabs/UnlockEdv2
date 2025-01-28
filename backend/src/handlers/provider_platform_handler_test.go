@@ -30,7 +30,8 @@ func TestHandleIndexProviders(t *testing.T) {
 			handler := getHandlerByRoleWithMiddleware(server.handleIndexProviders, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				_, platforms, err := server.Db.GetAllProviderPlatforms(1, 10)
+				args := getDefaultQueryCtx()
+				platforms, err := server.Db.GetAllProviderPlatforms(&args)
 				if err != nil {
 					t.Errorf("failed to get provider platforms from db, error is %v", err)
 				}

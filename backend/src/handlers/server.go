@@ -5,7 +5,6 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
-	"math"
 	"net/http"
 	"os"
 	"reflect"
@@ -478,11 +477,4 @@ func (srv *Server) errorResponse(w http.ResponseWriter, status int, message stri
 		log.Error("error writing error response: ", err)
 		http.Error(w, message, status)
 	}
-}
-
-func (srv *Server) calculateLast(total int64, perPage int) int {
-	if perPage == 0 {
-		return 0
-	}
-	return int(math.Ceil(float64(total) / float64(perPage)))
 }
