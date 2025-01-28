@@ -15,11 +15,11 @@ import (
 func TestHandleAdminLayer2(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestAdminDashboardAsAdmin", "admin", map[string]any{"id": "1"}, http.StatusOK, ""},
-		{"TestAdminDashboardAsUser", "student", map[string]any{"id": "4"}, http.StatusUnauthorized, ""},
+		{"TestAdminDashboardAsUser", "student", map[string]any{"id": "1"}, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/admin-layer2", nil)
+			req, err := http.NewRequest(http.MethodGet, "/api/users/{id}/admin-layer2?facility=1&reset=true", nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
@@ -28,7 +28,6 @@ func TestHandleAdminLayer2(t *testing.T) {
 			rr := executeRequest(t, req, handler, test)
 			id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
 			if test.expectedStatusCode == http.StatusOK {
-
 				id := uint(id)
 				totalCourses, err := server.Db.GetTotalCoursesOffered(&id)
 				if err != nil {

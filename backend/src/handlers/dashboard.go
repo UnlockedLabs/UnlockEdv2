@@ -26,7 +26,7 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
-
+	clearCache := r.URL.Query().Get("reset") == "true"
 	switch facility {
 	case "all":
 		facilityId = nil
@@ -41,38 +41,79 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 		facilityId = &ref
 	}
 
-	totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
+	if srv.isTesting(r) {
+		totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		learningInsights, err := srv.Db.GetLearningInsights(facilityId)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+
+		adminDashboard := models.AdminLayer2Join{
+			TotalCoursesOffered:   int64(totalCourses),
+			TotalStudentsEnrolled: int64(totalStudents),
+			TotalHourlyActivity:   int64(totalActivity),
+			LearningInsights:      learningInsights,
+		}
+
+		return writeJsonResponse(w, http.StatusOK, adminDashboard)
 	}
 
-	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
+	key := fmt.Sprintf("admin-layer2-%d", claims.FacilityID)
+	cached, err := srv.buckets[AdminLayer2].Get(key)
+	if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
+		totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
+		if err != nil {
+			log.add("facilityId", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
 
-	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
+		totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
+		if err != nil {
+			log.add("facilityId", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
 
-	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
+		totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
+		if err != nil {
+			log.add("facilityId", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
 
-	adminDashboard := models.AdminLayer2Join{
-		TotalCoursesOffered:   int64(totalCourses),
-		TotalStudentsEnrolled: int64(totalStudents),
-		TotalHourlyActivity:   int64(totalActivity),
-		LearningInsights:      learningInsights,
-	}
+		learningInsights, err := srv.Db.GetLearningInsights(facilityId)
+		if err != nil {
+			log.add("facilityId", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
 
-	return writeJsonResponse(w, http.StatusOK, adminDashboard)
+		adminDashboard := models.AdminLayer2Join{
+			TotalCoursesOffered:   int64(totalCourses),
+			TotalStudentsEnrolled: int64(totalStudents),
+			TotalHourlyActivity:   int64(totalActivity),
+			LearningInsights:      learningInsights,
+		}
+		jsonB, err := json.Marshal(models.DefaultResource(adminDashboard))
+		if err != nil {
+			return newMarshallingBodyServiceError(err)
+		}
+		_, err = w.Write(jsonB)
+		return err
+
+	} else if err != nil {
+		return newInternalServerServiceError(err, "Error retrieving admin layer2")
+	}
+	_, err = w.Write(cached.Value())
+	return err
 }
 
 func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {

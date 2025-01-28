@@ -10,11 +10,12 @@ import {
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminLayer2() {
     const { user } = useAuth();
     const [facility, setFacility] = useState('all');
+    const [resetCache, setResetCache] = useState(false);
     const { data: facilities, error: errorFacilitiesFetch } = useSWR<
         ServerResponseMany<Facility>,
         AxiosError
@@ -22,7 +23,12 @@ export default function AdminLayer2() {
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
         AxiosError
-    >(`/api/users/${user?.id}/admin-layer2?facility=${facility}`);
+    >(
+        `/api/users/${user?.id}/admin-layer2?facility=${facility}&reset=${resetCache}`
+    );
+    useEffect(() => {
+        void mutate();
+    }, [facility, resetCache]);
 
     const layer2_metrics = data?.data;
 
@@ -61,7 +67,7 @@ export default function AdminLayer2() {
                         </select>
                         <button
                             className="button"
-                            onClick={() => void mutate()}
+                            onClick={() => setResetCache(!resetCache)}
                         >
                             Refresh Data
                         </button>
