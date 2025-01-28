@@ -91,7 +91,7 @@ func seedTestData(db *gorm.DB) {
 		}
 	}
 	kiwix := models.OpenContentProvider{
-		Url:              "https://library.kiwix.org",
+		Url:              "https://kiwix.staging.unlockedlabs.xyz",
 		Title:            models.Kiwix,
 		ThumbnailUrl:     "https://images.fineartamerica.com/images/artworkimages/mediumlarge/3/llamas-wearing-party-hats-in-a-circle-looking-down-john-daniels.jpg",
 		CurrentlyEnabled: true,
@@ -109,17 +109,17 @@ func seedTestData(db *gorm.DB) {
 			Language:              models.StringPtr("eng,spa,ara"),
 			Description:           models.StringPtr("A collection of TED videos about ted connects"),
 			Url:                   "/content/ted_mul_ted-connects_2024-08",
-			ThumbnailUrl:          models.StringPtr("/catalog/v2/illustration/67440563-a62b-fabe-415c-4c3ee4546f78/?size=48"),
+			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
 			VisibilityStatus:      true,
 		},
 		{
 			OpenContentProviderID: kiwix.ID,
-			ExternalID:            models.StringPtr("urn:uuid:84812c13-fa65-feb7-c206-4f22cc2e0f9a"),
+			ExternalID:            models.StringPtr("urn:uuid:93321718-5228-676d-7e95-14bbe88fa38c"),
 			Title:                 "Python Documentation",
 			Language:              models.StringPtr("eng"),
 			Description:           models.StringPtr("All documentation for Python"),
-			Url:                   "/content/docs.python.org_en_2024-09",
-			ThumbnailUrl:          models.StringPtr("/catalog/v2/illustration/84812c13-fa65-feb7-c206-4f22cc2e0f9a/?size=48"),
+			Url:                   "/content/docs.python.org_en_2025-01",
+			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
 			VisibilityStatus:      true,
 		},
 		{
@@ -129,7 +129,7 @@ func seedTestData(db *gorm.DB) {
 			Language:              models.StringPtr("eng"),
 			Description:           models.StringPtr("The Canadian financial wiki"),
 			Url:                   "/content/finiki_en_all_maxi_2024-06",
-			ThumbnailUrl:          models.StringPtr("/catalog/v2/illustration/19e6fe12-09a9-0a38-5be4-71c0eba0a72d/?size=48"),
+			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
 			VisibilityStatus:      true,
 		}}
 	for idx := range kiwixLibraries {

@@ -13,7 +13,16 @@ type LibraryResponse struct {
 	IsFavorited bool `json:"is_favorited"`
 }
 
-func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin bool) (int64, []LibraryResponse, error) {
+// Retrieves either a paginated list of libraries or all libraries based upon the given parameters.
+// page - the page number for pagination
+// perPage - the number of libraries to display on page
+// userId - the userId for which libraries to display for
+// facilityId - the facility id of where the libraries were favorited
+// visibility - can either be featured, visible, hidden, or all
+// orderBy - the order in which the results are returned
+// isAdmin - true or false on whether the user is an administrator used to determine how to retrieve featured libraries
+// all - true or false on whether or not to return all libraries without pagination
+func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin, all bool) (int64, []LibraryResponse, error) {
 	var (
 		total    int64
 		criteria string
@@ -81,14 +90,15 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 				AND f.open_content_provider_id = libraries.open_content_provider_id`)
 		}
 		tx = tx.Group("libraries.id").Order("favorite_count DESC")
-
 	default:
 		tx = tx.Order(orderBy)
 	}
-	if err := tx.Limit(perPage).Offset(calcOffset(page, perPage)).Find(&libraries).Error; err != nil {
+	if !all {
+		tx = tx.Limit(perPage).Offset(calcOffset(page, perPage))
+	}
+	if err := tx.Find(&libraries).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")
 	}
-
 	return total, libraries, nil
 }
 
@@ -99,6 +109,19 @@ func (db *DB) GetLibraryByID(id int) (*models.Library, error) {
 		return nil, newNotFoundDBError(err, "libraries")
 	}
 	return &library, nil
+}
+
+func (db *DB) GetLibrariesByIDs(ids []int) ([]models.Library, error) {
+	var libraries []models.Library
+	tx := db.Preload("OpenContentProvider").Where("id in ?", ids)
+	if len(ids) > 1 {
+		tx.Where("language = 'eng'")
+	}
+	if err := tx.Find(&libraries).Error; err != nil {
+		log.Errorln("unable to find libraries with these IDs")
+		return nil, newNotFoundDBError(err, "libraries")
+	}
+	return libraries, nil
 }
 
 func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int) (*models.Library, error) {

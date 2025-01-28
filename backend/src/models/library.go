@@ -1,5 +1,11 @@
 package models
 
+import (
+	"encoding/xml"
+	"fmt"
+	"strings"
+)
+
 type Library struct {
 	DatabaseFields
 	OpenContentProviderID uint    `gorm:"not null" json:"open_content_provider_id"`
@@ -34,4 +40,123 @@ type LibraryProxyPO struct {
 	Path                  string
 	BaseUrl               string
 	VisibilityStatus      bool
+}
+
+// Kiwix XML START here...
+type RSS struct {
+	XMLName xml.Name `xml:"rss"`
+	Version string   `xml:"version,attr"`
+	Channel Channel  `xml:"channel"`
+}
+
+type Channel struct {
+	Title        string `xml:"title"`
+	Description  string `xml:"description"`
+	TotalResults string `xml:"http://a9.com/-/spec/opensearch/1.1/ totalResults"`
+	StartIndex   string `xml:"http://a9.com/-/spec/opensearch/1.1/ startIndex"`
+	ItemsPerPage string `xml:"http://a9.com/-/spec/opensearch/1.1/ itemsPerPage"`
+	Items        []Item `xml:"item"`
+}
+
+type Item struct {
+	Title       string      `xml:"title"`
+	Link        string      `xml:"link"`
+	Description Description `xml:"description"`
+	Book        Book        `xml:"book"`
+	WordCount   string      `xml:"wordCount"`
+}
+
+type Description struct {
+	RawText string `xml:"-"`
+}
+
+type Book struct {
+	Title string `xml:"title"`
+}
+
+type KiwixChannel struct {
+	Title        string      `json:"title"`
+	Link         string      `json:"link"`
+	Description  string      `json:"description"`
+	TotalResults string      `json:"total_results"`
+	StartIndex   string      `json:"start_index"`
+	ItemsPerPage string      `json:"items_per_page"`
+	Items        []KiwixItem `json:"items"`
+}
+
+type KiwixItem struct {
+	Library
+	PageTitle string `json:"page_title"`
+}
+
+func (rss *RSS) IntoKiwixChannel(libraries []Library) *KiwixChannel {
+	channel := &KiwixChannel{
+		Title:        rss.Channel.Title,
+		Description:  rss.Channel.Description,
+		TotalResults: rss.Channel.TotalResults,
+		StartIndex:   rss.Channel.StartIndex,
+		ItemsPerPage: rss.Channel.ItemsPerPage,
+		Items:        []KiwixItem{},
+	}
+	for _, item := range rss.Channel.Items {
+		library := getLibrary(libraries, item.Link)
+		kiwixItem := KiwixItem{
+			Library: Library{
+				DatabaseFields: DatabaseFields{
+					ID: library.ID,
+				},
+				Url:          fmt.Sprintf("/api/proxy/libraries/%d%s", library.ID, item.Link),
+				ThumbnailUrl: library.ThumbnailUrl,
+				Description:  &item.Description.RawText,
+				Title:        item.Book.Title,
+			},
+			PageTitle: item.Title,
+		}
+		channel.Items = append(channel.Items, kiwixItem)
+	}
+	return channel
+}
+
+func getLibrary(libraries []Library, link string) *Library {
+	var foundLibrary *Library
+	for _, library := range libraries {
+		if strings.HasPrefix(link, library.Url) {
+			foundLibrary = &library
+			break
+		}
+	}
+	return foundLibrary
+}
+
+// isolates and keeps the bolded words in the description
+func (d *Description) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	var rawContent strings.Builder
+
+	for { //just keep looping till return nil
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		switch ty := tok.(type) {
+		case xml.StartElement:
+			if ty.Name.Local == "b" {
+				var boldText string
+				err = dec.DecodeElement(&boldText, &ty)
+				if err != nil {
+					return err
+				}
+				rawContent.WriteString("<b>" + boldText + "</b>") //write it back into the description, need this
+			} else { //just in case another tag is found
+				rawContent.WriteString("<" + ty.Name.Local + ">")
+			}
+		case xml.EndElement:
+			if ty.Name.Local == start.Name.Local {
+				d.RawText = rawContent.String()
+				return nil
+			}
+			rawContent.WriteString("</" + ty.Name.Local + ">")
+		case xml.CharData:
+			rawContent.WriteString(string(ty))
+		}
+	}
 }

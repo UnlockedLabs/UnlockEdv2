@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -69,7 +70,6 @@ const (
 	KolibriDescription      string = "Kolibri provides an extensive library of educational content suitable for all learning levels."
 	KiwixThumbnailURL       string = "/kiwix.jpg"
 	KiwixDescription        string = "Kiwix is an offline reader that allows you to host a wide array of educational content."
-	KiwixLibraryUrl         string = "https://library.kiwix.org"
 	YoutubeThumbnail        string = "/youtube.png"
 	Youtube                 string = "Youtube"
 	YoutubeApi              string = "https://www.googleapis.com/youtube/v3/videos"
@@ -79,6 +79,8 @@ const (
 	HelpfulLinksUrl         string = ""
 	HelpfulLinksDescription string = "Hand picked helpful links for users"
 )
+
+var KiwixLibraryUrl string = os.Getenv("KIWIX_SERVER_URL")
 
 func (cp *OpenContentProvider) BeforeCreate(tx *gorm.DB) error {
 	if cp.Title == Youtube && cp.Url == "" {

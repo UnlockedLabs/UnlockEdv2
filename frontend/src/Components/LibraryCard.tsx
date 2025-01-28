@@ -6,19 +6,23 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import { AdminRoles } from '@/useAuth';
 import ULIComponent from '@/Components/ULIComponent';
-import { StarIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
-import { FlagIcon } from '@heroicons/react/24/solid';
-import { FlagIcon as FlagIconOutline } from '@heroicons/react/24/outline';
+import { StarIcon, FlagIcon } from '@heroicons/react/24/solid';
+import {
+    StarIcon as StarIconOutline,
+    FlagIcon as FlagIconOutline,
+    MagnifyingGlassIcon
+} from '@heroicons/react/24/outline';
 
 export default function LibraryCard({
     library,
     mutate,
-    role
+    role,
+    onSearchClick
 }: {
     library: Library;
     mutate?: () => void;
     role: UserRole;
+    onSearchClick?: () => void;
 }) {
     const { toaster } = useToast();
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
@@ -57,7 +61,12 @@ export default function LibraryCard({
             toaster(`Library {${actionString}}`, ToastState.error);
         }
     }
-
+    const handleSearchClick = (e?: MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (onSearchClick) {
+            onSearchClick();
+        }
+    };
     return (
         <div
             className="card cursor-pointer"
@@ -72,31 +81,37 @@ export default function LibraryCard({
                 </figure>
                 <h3 className="w-3/4 body my-auto mr-7">{library.title}</h3>
             </div>
-
-            <div
-                className="absolute right-2 top-2 z-100"
-                onClick={(e) => void handleToggleAction('favorite', e)}
-            >
-                {!route.pathname.includes('knowledge-insights') && (
+            <div className="flex items-center justify-end space-x-2 absolute right-2 top-2 z-100">
+            {!route.pathname.includes('knowledge-insights') && (
+                <div onClick={handleSearchClick}>
                     <ULIComponent
-                        tooltipClassName="absolute right-2 top-2 z-100"
-                        iconClassName={`w-6 h-6 ${library.is_favorited && 'text-primary-yellow'}`}
-                        icon={
-                            AdminRoles.includes(role)
-                                ? library.is_favorited
-                                    ? FlagIcon
-                                    : FlagIconOutline
-                                : library.is_favorited
-                                  ? StarIcon
-                                  : StarIconOutline
-                        }
-                        dataTip={
-                            AdminRoles.includes(role)
-                                ? 'Feature Library'
-                                : 'Favorite Library'
-                        }
+                        icon={MagnifyingGlassIcon}
+                        iconClassName="!w-5 !h-5"
+                        dataTip={`Search ${library.title}`}
                     />
-                )}
+                </div>
+            )}
+                <div onClick={(e) => void handleToggleAction('favorite', e)}>
+                    {!route.pathname.includes('knowledge-insights') && (
+                        <ULIComponent
+                            iconClassName={`!w-5 !h-5 ${library.is_favorited && 'text-primary-yellow'}`}
+                            icon={
+                                AdminRoles.includes(role)
+                                    ? library.is_favorited
+                                        ? FlagIcon
+                                        : FlagIconOutline
+                                    : library.is_favorited
+                                      ? StarIcon
+                                      : StarIconOutline
+                            }
+                            dataTip={
+                                AdminRoles.includes(role)
+                                    ? 'Feature Library'
+                                    : 'Favorite Library'
+                            }
+                        />
+                    )}
+                </div>
             </div>
 
             <div className="p-4 space-y-2">

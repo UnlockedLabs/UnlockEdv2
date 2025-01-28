@@ -703,3 +703,20 @@ export interface ActivityMapData {
     total_time: string;
     quartile: number;
 }
+
+export interface KiwixChannel {
+    book: string;
+    title: string;
+    thumbnail_url: string;
+    link: string;
+    description: string;
+    total_results: string;
+    start_index: string;
+    items_per_page: string;
+    items?: KiwixItem[];
+}
+
+export interface KiwixItem extends Library {
+    page_title: string; 
+}
+

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"html"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -20,20 +21,31 @@ type Feed struct {
 }
 
 type Entry struct {
-	ID           string    `xml:"id"`
-	Title        string    `xml:"title"`
-	Updated      string    `xml:"updated"`
-	Summary      string    `xml:"summary"`
-	Language     string    `xml:"language"`
-	Name         string    `xml:"name"`
-	Flavour      string    `xml:"flavour"`
-	Category     string    `xml:"category"`
-	Tags         string    `xml:"tags"`
-	ArticleCount int       `xml:"articleCount"`
-	MediaCount   int       `xml:"mediaCount"`
-	Author       Author    `xml:"author"`
-	Publisher    Publisher `xml:"publisher"`
-	Links        []Link    `xml:"link"`
+	ID           string       `xml:"id"`
+	Title        string       `xml:"title"`
+	Updated      string       `xml:"updated"`
+	Summary      CustomString `xml:"summary"`
+	Language     string       `xml:"language"`
+	Name         string       `xml:"name"`
+	Flavour      string       `xml:"flavour"`
+	Category     string       `xml:"category"`
+	Tags         string       `xml:"tags"`
+	ArticleCount int          `xml:"articleCount"`
+	MediaCount   int          `xml:"mediaCount"`
+	Author       Author       `xml:"author"`
+	Publisher    Publisher    `xml:"publisher"`
+	Links        []Link       `xml:"link"`
+}
+
+type CustomString string
+
+func (cst *CustomString) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
+	var summary string
+	if err := dec.DecodeElement(&summary, &start); err != nil {
+		return err
+	}
+	*cst = CustomString(html.UnescapeString(summary))
+	return nil
 }
 
 type Author struct {
@@ -61,7 +73,7 @@ func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Librar
 		ExternalID:            models.StringPtr(entry.ID),
 		Title:                 entry.Title,
 		Language:              models.StringPtr(entry.Language),
-		Description:           models.StringPtr(entry.Summary),
+		Description:           models.StringPtr(string(entry.Summary)),
 		Url:                   url,
 		ThumbnailUrl:          models.StringPtr(thumbnailURL),
 		VisibilityStatus:      false,
@@ -207,7 +219,7 @@ func (ks *KiwixService) ParseUrls(externId string, links []Link) (string, string
 		if link.Type == "text/html" {
 			url = link.Href
 		}
-		if strings.Split(link.Type, "/")[0] == "image" {
+		if strings.Split(link.Type, "/")[0] == "image" || strings.Contains(link.Href, "catalog/v2/illustration") {
 			if !ks.thumbnailExists(externId) {
 				if thumbnail, err := ks.downloadAndHostThumbnailImg(externId, link.Href); err == nil {
 					thumbnailURL = thumbnail
