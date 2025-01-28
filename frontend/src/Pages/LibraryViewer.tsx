@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
 import { setGlobalPageTitle } from '@/Components/PageNav';
+import { LibrarySearchBar } from '@/Components/inputs';
+import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
+
+interface UrlNavState {
+    url?: string;
+}
 
 export default function LibraryViewer() {
     const { id: libraryId } = useParams();
@@ -12,6 +18,57 @@ export default function LibraryViewer() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const { setPathVal } = usePathValue();
+    const [searchPlaceholder, setSearchPlaceholder] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const modalRef = useRef<HTMLDialogElement>(null);
+    const navigate = useNavigate();
+    const location = useLocation() as { state: UrlNavState };
+    const { url } = location.state || {};
+    const openModal = () => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'visible';
+            modalRef.current.showModal();
+        }
+    };
+    const closeModal = () => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'hidden';
+            modalRef.current.close();
+        }
+    };
+    const handleSearchResultClick = (url: string, title: string, libId?: number) => {
+        if(Number(libraryId) === libId){
+            setSrc(url);
+        }else{
+            navigate(
+                `/viewer/libraries/${libId}`,
+                
+                {
+                    state: { url: url, title: title }, 
+                    replace: true
+                }
+            );
+        }
+        setSearchPlaceholder('Search ' + title);
+        closeModal();
+    };
+    const handleSearch = () => {
+        if (modalRef.current) {
+            if (!modalRef.current.open) {
+                openModal();
+            }
+            //needed a way to call 
+            modalRef.current.dispatchEvent(
+                new CustomEvent('executeHandleSearch', {
+                    detail: {
+                        searchTerm: searchTerm,
+                        page: 1,
+                        perPage: 10
+                    }
+                })
+            );
+        }
+    };
 
     useEffect(() => {
         const fetchLibraryData = async () => {
@@ -21,16 +78,22 @@ export default function LibraryViewer() {
                     `libraries/${libraryId}`
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
-                    setGlobalPageTitle(resp.data.title);
+                    const title = resp.data.title;
+                    setGlobalPageTitle(title);
+                    setSearchPlaceholder('Search ' + title);
                     setPathVal([
-                        { path_id: ':library_name', value: resp.data.title }
+                        { path_id: ':library_name', value: title }
                     ]);
                 }
                 const response = await fetch(
                     `/api/proxy/libraries/${libraryId}/`
                 );
                 if (response.ok) {
-                    setSrc(response.url);
+                    if (url && url !== "") {
+                        setSrc(url);
+                    } else {
+                        setSrc(response.url);
+                    }
                 } else if (response.status === 404) {
                     setError('Library not found');
                 } else {
@@ -47,10 +110,26 @@ export default function LibraryViewer() {
             sessionStorage.removeItem('tag');
         };
     }, [libraryId]);
-
     return (
         <div>
             <div className="px-5 pb-4">
+                <div className="flex items-center gap-4 mb-4">
+                    <h1>Library Viewer</h1>
+                    <LibrarySearchBar
+                        searchPlaceholder={searchPlaceholder}
+                        searchTerm={searchTerm}
+                        onSearchClick={handleSearch}
+                        changeCallback={setSearchTerm}
+                        isSearchValid={searchTerm.trim() !== ''}
+                    />
+                    <LibrarySearchResultsModal
+                        key={libraryId}
+                        onItemClick={handleSearchResultClick}
+                        libraryId={Number(libraryId)}
+                        ref={modalRef}
+                        onModalClose={closeModal}
+                    ></LibrarySearchResultsModal>
+                </div>
                 <div className="w-full pt-4 justify-center">
                     {isLoading ? (
                         <div className="flex h-screen gap-4 justify-center content-center">

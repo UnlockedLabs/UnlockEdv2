@@ -10,11 +10,12 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 import { AxiosError } from 'axios';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
 export default function LibaryLayout({
     studentView
@@ -24,6 +25,35 @@ export default function LibaryLayout({
     const { user } = useAuth();
     if (!user) {
         return null;
+    }
+    const navigate = useNavigate();
+    const [searchModalLibrary, setSearchModalLibrary] = useState<Library | null>(null);
+    const modalRef = useRef<HTMLDialogElement>(null);
+    //execute when the the searchModalLibrary changes
+    useEffect(() => {
+        if (searchModalLibrary && modalRef.current) {
+            modalRef.current.style.visibility = 'visible';
+            modalRef.current.showModal();
+        }
+    }, [searchModalLibrary]);
+
+    const openSearchModal = (library: Library) => {
+        setSearchModalLibrary(library);//fire off useEffect
+    };
+    const closeSearchModal = () => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'hidden';
+            modalRef.current.close();
+        }
+        setSearchModalLibrary(null);
+    };
+    const navToLibraryViewer = (url: string, title: string) => {
+        navigate(
+            `/viewer/libraries/${searchModalLibrary?.id}`,
+            {
+                state: { url: url, title: title }
+            }
+        );
     }
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [filterLibraries, setFilterLibraries] = useState<string>(
@@ -88,6 +118,7 @@ export default function LibaryLayout({
         <>
             <div className="flex flex-row gap-4">
                 <SearchBar
+                    searchPlaceholder="Title Search..."
                     searchTerm={searchTerm}
                     changeCallback={setSearchTerm}
                 />
@@ -111,6 +142,16 @@ export default function LibaryLayout({
                         />
                     </>
                 )}
+                {searchModalLibrary && (
+                    <LibrarySearchResultsModal
+                        ref={modalRef}
+                        libraryId={searchModalLibrary.id}
+                        searchPlaceholder={`Search ${searchModalLibrary.title}`}
+                        onItemClick={navToLibraryViewer}
+                        onModalClose={closeSearchModal}
+                        useInternalSearchBar={true}
+                    />
+                )}
             </div>
             <div className="grid grid-cols-4 gap-6">
                 {libraries?.data.map((library) => (
@@ -119,6 +160,7 @@ export default function LibaryLayout({
                         library={library}
                         mutate={updateLibrary}
                         role={adminWithStudentView() ? UserRole.Student : role}
+                        onSearchClick={() => openSearchModal(library)}
                     />
                 ))}
             </div>
