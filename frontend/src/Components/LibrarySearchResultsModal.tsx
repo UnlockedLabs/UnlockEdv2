@@ -85,8 +85,11 @@ const LibrarySearchResultsModal = forwardRef<
         }
         setIsLoading(true);
         setSearchError(null);
-        const libraryIDs = selectedOptions.length > 0 ? selectedOptions : [libraryId];
-        const urlParams = libraryIDs.map((libID) => `libraryId=${libID}`).join('&');
+        const libraryIDs =
+            selectedOptions.length > 0 ? selectedOptions : [libraryId];
+        const urlParams = libraryIDs
+            .map((libID) => `library_id=${libID}`)
+            .join('&');
         try {
             const response = (await API.get(
                 `libraries/search?search=${term}&${urlParams}&page=${page}&per_page=${perPage}`
