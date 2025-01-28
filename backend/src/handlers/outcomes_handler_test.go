@@ -52,11 +52,16 @@ func getOutcomesByTypeAndOrdered(outcomeType, orderBy, order string) map[string]
 	if outcomeType != "" {
 		outType = models.OutcomeType(outcomeType)
 	}
-	total, outcomes, err := server.Db.GetOutcomesForUser(4, 1, 10, order, orderBy, outType)
+	args := getDefaultQueryCtx()
+	args.UserID = 4
+	args.Order = order
+	args.OrderBy = orderBy
+	outcomes, err := server.Db.GetOutcomesForUser(&args, outType)
+	fmt.Println("OUTCOMES: ", outcomes)
 	form := make(map[string]any)
 	form["outcomes"] = outcomes
 	form["err"] = err
-	form["total"] = total
+	form["total"] = args.Total
 	form["id"] = "4"
 	return form
 }

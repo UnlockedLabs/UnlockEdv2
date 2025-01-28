@@ -7,13 +7,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.ProviderPlatform, error) {
+func (db *DB) GetAllProviderPlatforms(args *models.QueryContext) ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
 	var total int64
-	offset := (page - 1) * perPage
 	if err := db.Model(&models.ProviderPlatform{}).Preload("OidcClient").
-		Offset(offset).Limit(perPage).Find(&platforms).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "provider_platforms")
+		Offset(args.CalcOffset()).Limit(args.PerPage).Find(&platforms).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
 	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
 		if prov.OidcClient != nil {
@@ -21,8 +20,8 @@ func (db *DB) GetAllProviderPlatforms(page, perPage int) (int64, []models.Provid
 		}
 		return prov
 	}, platforms)
-
-	return total, toReturn, nil
+	args.Total = total
+	return toReturn, nil
 }
 
 func iterMap[T any](fun func(T) T, arr []T) []T {

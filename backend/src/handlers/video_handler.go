@@ -27,15 +27,12 @@ func (srv *Server) handleGetVideos(w http.ResponseWriter, r *http.Request, log s
 	user := r.Context().Value(ClaimsKey).(*Claims)
 	// cookie gets preference over query unless query specifies student
 	onlyVisible := !user.isAdmin() || r.URL.Query().Get("visibility") == "student"
-	search := r.URL.Query().Get("search")
-	orderBy := r.URL.Query().Get("order_by")
-	page, perPage := srv.getPaginationInfo(r)
-	total, videos, err := srv.Db.GetAllVideos(onlyVisible, page, perPage, search, orderBy, user.UserID)
+	args := srv.getQueryArgs(r)
+	videos, err := srv.Db.GetAllVideos(&args, onlyVisible)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching videos")
 	}
-	meta := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, videos, meta)
+	return writePaginatedResponse(w, http.StatusOK, videos, args.IntoMeta())
 }
 
 func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, log sLog) error {

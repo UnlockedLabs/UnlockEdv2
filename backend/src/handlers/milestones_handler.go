@@ -20,34 +20,23 @@ func (srv *Server) registerMilestonesRoutes() []routeDef {
 }
 
 func (srv *Server) handleIndexMilestones(w http.ResponseWriter, r *http.Request, log sLog) error {
-	search := r.URL.Query().Get("search")
-	orderBy := r.URL.Query().Get("order_by")
-	page, perPage := srv.getPaginationInfo(r)
 	var milestones []database.MilestoneResponse
+	args := srv.getQueryArgs(r)
 	err := error(nil)
-	total := int64(0)
 	if !userIsAdmin(r) {
-		userId := srv.getUserID(r)
-		total, milestones, err = srv.Db.GetMilestonesForUser(page, perPage, userId)
+		milestones, err = srv.Db.GetMilestonesForUser(&args)
 		if err != nil {
-			log.add("userId", userId)
+			log.add("user_id", args.UserID)
 			return newDatabaseServiceError(err)
 		}
 	} else {
-		total, milestones, err = srv.Db.GetMilestones(page, perPage, search, orderBy)
+		milestones, err = srv.Db.GetMilestones(&args)
 		if err != nil {
-			log.add("search", search)
+			log.add("search", args.Search)
 			return newDatabaseServiceError(err)
 		}
 	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
-	return writePaginatedResponse(w, http.StatusOK, milestones, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, milestones, args.IntoMeta())
 }
 
 func (srv *Server) handleCreateMilestone(w http.ResponseWriter, r *http.Request, log sLog) error {

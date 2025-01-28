@@ -24,20 +24,13 @@ func (srv *Server) handleGetSectionsForProgram(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	page, perPage := srv.getPaginationInfo(r)
-	total, sections, err := srv.Db.GetSectionsForProgram(id, page, perPage)
+	args := srv.getQueryArgs(r)
+	sections, err := srv.Db.GetSectionsForProgram(id, &args)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
-	return writePaginatedResponse(w, http.StatusOK, sections, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, sections, args.IntoMeta())
 }
 
 func (srv *Server) handleGetSection(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -54,23 +47,12 @@ func (srv *Server) handleGetSection(w http.ResponseWriter, r *http.Request, log 
 }
 
 func (srv *Server) handleIndexSectionsForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facilityID := r.Context().Value(ClaimsKey).(*Claims).FacilityID
-	log.add("facility_id", facilityID)
-	page, perPage := srv.getPaginationInfo(r)
-	search := r.URL.Query().Get("search")
-	log.add("search", search)
-	total, sections, err := srv.Db.GetSectionsForFacility(page, perPage, facilityID, search)
+	args := srv.getQueryArgs(r)
+	sections, err := srv.Db.GetSectionsForFacility(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	last := srv.calculateLast(total, perPage)
-	paginationData := models.PaginationMeta{
-		PerPage:     perPage,
-		LastPage:    int(last),
-		CurrentPage: page,
-		Total:       total,
-	}
-	return writePaginatedResponse(w, http.StatusOK, sections, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, sections, args.IntoMeta())
 }
 
 func (srv *Server) handleCreateSection(w http.ResponseWriter, r *http.Request, log sLog) error {
