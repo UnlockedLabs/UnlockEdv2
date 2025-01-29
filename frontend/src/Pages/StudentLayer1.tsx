@@ -4,7 +4,8 @@ import {
     UserRole,
     ServerResponseOne,
     HelpfulLinkAndSort,
-    ServerResponseMany
+    ServerResponseMany,
+    HelpfulLink
 } from '@/common';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import LibraryCard from '@/Components/LibraryCard';
@@ -87,8 +88,9 @@ export default function StudentLayer1() {
                 <ExpandableCardGrid
                     items={featured?.data ?? []}
                     title="Featured Content"
+                    cols={3}
                 >
-                    {(item) => (
+                    {(item: Library) => (
                         <LibraryCard
                             key={item.id}
                             library={item}
@@ -116,8 +118,9 @@ export default function StudentLayer1() {
                     items={helpfulLinks?.data.helpful_links ?? []}
                     emptyStateText="Add helpful links to share"
                     emptyStateLink="knowledge-center/helpful-links"
+                    cols={4}
                 >
-                    {(link) => (
+                    {(link: HelpfulLink) => (
                         <HelpfulLinkCard
                             key={link.id}
                             link={link}
