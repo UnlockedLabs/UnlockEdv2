@@ -27,11 +27,12 @@ const OperationalInsights = () => {
     const facilities = facilitiesData?.data;
 
     const metrics = data?.data;
-    console.log('Here is the metrics: ', metrics);
+    const formattedDate =
+        metrics && new Date(metrics.last_cache).toLocaleString('en-US', {});
 
     const totalUsers =
-        (metrics?.total_residents ?? 0) + (metrics?.total_admins ?? 0);
-
+        (metrics?.data.total_residents ?? 0) +
+        (metrics?.data.total_admins ?? 0);
     return (
         <div className="overflow-x-hidden">
             {error && <div>Error loading data</div>}
@@ -85,12 +86,17 @@ const OperationalInsights = () => {
                                 </select>
                             </div>
                         </div>
-                        <button
-                            className="button "
-                            onClick={() => setResetCache(!resetCache)}
-                        >
-                            Refresh Data
-                        </button>
+                        <div>
+                            <p className="label label-text text-grey-3">
+                                Last updated: {formattedDate}
+                            </p>
+                            <button
+                                className="button justify-self-end"
+                                onClick={() => setResetCache(!resetCache)}
+                            >
+                                Refresh Data
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 mb-6">
@@ -102,9 +108,9 @@ const OperationalInsights = () => {
                         />
                         <StatsCard
                             title="Active Users"
-                            number={metrics.active_users.toString()}
+                            number={metrics.data.active_users.toString()}
                             label={`${(
-                                (metrics.active_users / totalUsers) *
+                                (metrics.data.active_users / totalUsers) *
                                 100
                             ).toFixed(2)}% of total`}
                             tooltip={`Number of users who have logged in in the last ${days} days`}
@@ -112,10 +118,10 @@ const OperationalInsights = () => {
                         <StatsCard
                             title="Inactive Users"
                             number={(
-                                totalUsers - metrics.active_users
+                                totalUsers - metrics.data.active_users
                             ).toString()}
                             label={
-                                totalUsers - metrics.active_users === 1
+                                totalUsers - metrics.data.active_users === 1
                                     ? 'User'
                                     : 'Users'
                             }
@@ -123,9 +129,9 @@ const OperationalInsights = () => {
                         />
                         <StatsCard
                             title="New Admins Added"
-                            number={metrics.new_admins_added.toString()}
+                            number={metrics.data.new_admins_added.toString()}
                             label={
-                                metrics.new_admins_added === 1
+                                metrics.data.new_admins_added === 1
                                     ? 'Admin'
                                     : 'Admins'
                             }
@@ -133,9 +139,9 @@ const OperationalInsights = () => {
                         />
                         <StatsCard
                             title="New Residents Added"
-                            number={metrics.new_residents_added.toString()}
+                            number={metrics.data.new_residents_added.toString()}
                             label={
-                                metrics.new_residents_added === 1
+                                metrics.data.new_residents_added === 1
                                     ? 'Resident'
                                     : 'Residents'
                             }
@@ -143,9 +149,11 @@ const OperationalInsights = () => {
                         />
                         <StatsCard
                             title="Total Logins"
-                            number={metrics.total_logins.toString()}
+                            number={metrics.data.total_logins.toString()}
                             label={
-                                metrics.total_logins === 1 ? 'Login' : 'Logins'
+                                metrics.data.total_logins === 1
+                                    ? 'Login'
+                                    : 'Logins'
                             }
                             tooltip={`Total number of logins in the last ${days} days`}
                         />
@@ -163,7 +171,7 @@ const OperationalInsights = () => {
                                 >
                                     <EngagementRateGraph
                                         peak_login_times={
-                                            metrics?.peak_login_times || []
+                                            metrics?.data.peak_login_times || []
                                         }
                                     />
                                 </ResponsiveContainer>

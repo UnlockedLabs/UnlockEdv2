@@ -233,11 +233,9 @@ func (srv *Server) setupNatsKvBuckets() error {
 			switch bucket {
 			case CachedUsers:
 				cfg.TTL = time.Hour * 1
-			case LoginMetrics:
-				cfg.TTL = time.Hour * 24
 			case OAuthState:
 				cfg.TTL = time.Minute * 10
-			case AdminLayer2:
+			default:
 				cfg.TTL = time.Hour * 24
 			}
 			kv, err = js.CreateKeyValue(cfg)

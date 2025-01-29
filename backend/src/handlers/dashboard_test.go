@@ -53,11 +53,11 @@ func TestHandleAdminLayer2(t *testing.T) {
 				}
 
 				received := rr.Body.String()
-				resource := models.Resource[models.AdminLayer2Join]{}
+				resource := models.Resource[models.CachedDashboard[models.AdminLayer2Join]]{}
 				if err := json.Unmarshal([]byte(received), &resource); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(&adminDashboard, &resource.Data); diff != "" {
+				if diff := cmp.Diff(&adminDashboard, &resource.Data.Data); diff != "" {
 					t.Errorf("handler returned unexpected response body: %v", diff)
 				}
 			}
