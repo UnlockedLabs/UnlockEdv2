@@ -28,7 +28,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 * ?searchFields=: searchFields
  */
 func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	programs, err := srv.Db.GetPrograms(&args)
 	if err != nil {
 		log.add("search", args.Search)

@@ -28,7 +28,7 @@ func (srv *Server) registerProviderPlatformRoutes() []routeDef {
 }
 
 func (srv *Server) handleIndexProviders(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	platforms, err := srv.Db.GetAllProviderPlatforms(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)

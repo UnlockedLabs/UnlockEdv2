@@ -70,7 +70,6 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 		  AND f.open_content_provider_id = videos.open_content_provider_id
 		  AND f.user_id = ?
 	) AS is_favorited`, args.UserID)
-	var total int64
 
 	if onlyVisible {
 		tx = tx.Where("visibility_status = ?", true)
@@ -86,13 +85,12 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 	default:
 		tx = tx.Order(args.OrderBy)
 	}
-	if err := tx.Count(&total).Error; err != nil {
+	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "videos")
 	}
 	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&videos).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "videos")
 	}
-	args.Total = total
 	return videos, nil
 }
 

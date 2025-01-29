@@ -21,7 +21,7 @@ func (srv *Server) registerMilestonesRoutes() []routeDef {
 
 func (srv *Server) handleIndexMilestones(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var milestones []database.MilestoneResponse
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	err := error(nil)
 	if !userIsAdmin(r) {
 		milestones, err = srv.Db.GetMilestonesForUser(&args)
