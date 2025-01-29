@@ -1,8 +1,9 @@
 import { Library, UserRole } from '@/common';
 import LibraryCard from '../LibraryCard';
 import { useAuth } from '@/useAuth';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LibrarySearchResultsModal from '../LibrarySearchResultsModal';
 export default function FeaturedContent({
     featured,
     mutate
@@ -18,7 +19,32 @@ export default function FeaturedContent({
         user?.role === UserRole.Admin || user?.role === UserRole.SystemAdmin;
 
     const navigate = useNavigate();
-
+    const [searchModalLibrary, setSearchModalLibrary] = useState<Library | null>(null);
+    const modalRef = useRef<HTMLDialogElement>(null);
+    useEffect(() => {
+        if (searchModalLibrary && modalRef.current) {
+            modalRef.current.style.visibility = 'visible';
+            modalRef.current.showModal();
+        }
+    }, [searchModalLibrary]);
+    const openSearchModal = (library: Library) => {
+        setSearchModalLibrary(library);//fire off useEffect
+    };
+    const closeSearchModal = () => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'hidden';
+            modalRef.current.close();
+        }
+        setSearchModalLibrary(null);
+    };
+    const navToLibraryViewer = (url: string, title: string) => {
+        navigate(
+            `/viewer/libraries/${searchModalLibrary?.id}`,
+            {
+                state: { url: url, title: title }
+            }
+        );
+    }
     const handleEmptyStateClick = () => {
         if (isAdmin) {
             navigate('/knowledge-center-management/libraries', {
@@ -34,6 +60,16 @@ export default function FeaturedContent({
         <>
             <h2>Featured Content</h2>
             <div className="card card-row-padding flex flex-col gap-3">
+            {searchModalLibrary && (
+                    <LibrarySearchResultsModal
+                        ref={modalRef}
+                        libraryId={searchModalLibrary.id}
+                        searchPlaceholder={`Search ${searchModalLibrary.title}`}
+                        onItemClick={navToLibraryViewer}
+                        onModalClose={closeSearchModal}
+                        useInternalSearchBar={true}
+                    />
+                )}
                 {featured.length > 0 ? (
                     <>
                         <div className={`grid grid-cols-${cols} gap-3`}>
@@ -43,6 +79,7 @@ export default function FeaturedContent({
                                     library={item}
                                     role={UserRole.Student}
                                     mutate={mutate}
+                                    onSearchClick={() => openSearchModal(item)}
                                 />
                             ))}
                         </div>

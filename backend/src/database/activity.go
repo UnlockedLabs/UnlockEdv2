@@ -6,42 +6,33 @@ import (
 	"math"
 	"sort"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
-type DailyActivity struct {
-	Date       time.Time         `json:"date"`
-	TotalTime  int64             `json:"total_time"`
-	Quartile   int64             `json:"quartile"`
-	Activities []models.Activity `json:"activities"`
-}
-
-func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]DailyActivity, error) {
+func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]models.DailyActivity, error) {
 	days := int(math.Ceil(endDate.Sub(startDate).Hours() / 24))
 	activities := make([]models.Activity, 0, days)
 	if err := db.Where("user_id = ? AND created_at BETWEEN ? AND ?", userID, startDate, endDate).Find(&activities).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "activities")
 	}
 	// Combine activities based on date
-	dailyActivities := make(map[time.Time]DailyActivity, days)
+	dailyActivities := make(map[time.Time]models.DailyActivity, days)
 	for _, activity := range activities {
 		date := activity.CreatedAt.Truncate(24 * time.Hour)
 		if dailyActivity, ok := dailyActivities[date]; ok {
-			dailyActivity.TotalTime += activity.TimeDelta
+			dailyActivity.TotalTime += uint(activity.TimeDelta)
 			dailyActivity.Activities = append(dailyActivity.Activities, activity)
 			dailyActivities[date] = dailyActivity
 		} else {
-			dailyActivities[date] = DailyActivity{
+			dailyActivities[date] = models.DailyActivity{
 				Date:       date,
-				TotalTime:  activity.TimeDelta,
+				TotalTime:  uint(activity.TimeDelta),
 				Activities: []models.Activity{activity},
 			}
 		}
 	}
 
 	// Convert map to slice
-	var dailyActivityList []DailyActivity
+	var dailyActivityList []models.DailyActivity
 	for _, dailyActivity := range dailyActivities {
 		dailyActivityList = append(dailyActivityList, dailyActivity)
 	}

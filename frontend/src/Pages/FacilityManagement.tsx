@@ -109,7 +109,7 @@ export default function FacilityManagement() {
     };
     return (
         <>
-            <div className="px-8 py-4 flex flex-col justify-center gap-4">
+            <div className="px-5 py-4 flex flex-col justify-center gap-4">
                 <div className="flex flex-row justify-between">
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}

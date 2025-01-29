@@ -25,21 +25,6 @@ export interface User {
     feature_access: FeatureAccess[];
     [key: string]: number | string | boolean | undefined | FeatureAccess[];
 }
-export const providerRoutes = [
-    'provider-user-management',
-    'learning-platforms',
-    'my-courses',
-    'course-catalog',
-    'course-catalog-admin'
-];
-
-export const openContentRoutes = [
-    'knowledge-center',
-    'knowledge-center-management',
-    'viewer'
-];
-
-export const programRoutes = ['programs', 'program-management'];
 
 export interface OpenContentProvider {
     id: number;
@@ -317,17 +302,6 @@ export interface UserImports {
     error?: string;
 }
 
-export interface ProviderMapping {
-    id: number;
-    provider_platform_id: number;
-    user_id: number;
-    external_user_id: string;
-    external_login_id: string;
-    external_username: string;
-    created_at: Date;
-    updated_at: Date;
-}
-
 export interface PaginationMeta {
     total: number;
     current_page: number;
@@ -353,13 +327,6 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
-export interface ResourceCategory {
-    id: number;
-    name: string;
-    links: ResourceLink[];
-    rank: number;
-}
-
 export interface LoginMetrics {
     active_users: number;
     total_logins: number;
@@ -379,12 +346,6 @@ export interface LoginActivity {
     total_logins: number;
     facility_id: number;
 }
-
-export type ResourceLink = Record<string, string>;
-
-export type EditableResourceCollection = ResourceCategory & {
-    isModified: boolean;
-};
 export interface OidcClient {
     client_id: string;
     client_secret: string;
@@ -403,27 +364,6 @@ export interface Activity {
     updated_at: Date;
     user_name_first: string;
     user_name_last: string;
-}
-export interface Course {
-    id: number;
-    provider_platform_id: number;
-    name: string;
-    description: string;
-    external_id: string;
-    thumbnail_url: string;
-    is_public: boolean;
-    external_url: string;
-    created_at: Date;
-    updated_at: Date;
-}
-export interface Outcome {
-    id: number;
-    type: string;
-    course_id: number;
-    user_id: number;
-    value: string;
-    course_name: string;
-    created_at: string;
 }
 export interface UserCoursesInfo {
     num_completed: number;
@@ -468,17 +408,6 @@ export interface CourseCatalogResponse {
     outcome_types: string;
     start_dt?: Date;
     end_dt?: Date;
-}
-
-export interface Milestone {
-    id: number;
-    course_id: number;
-    type: string;
-    external_url: string;
-    description: string;
-    external_id: Date;
-    created_at: Date;
-    updated_at: Date;
 }
 
 export interface ProviderPlatform {
@@ -554,18 +483,6 @@ export interface AdminLayer2Join {
     learning_insights: LearningInsight[];
 }
 
-export interface AdminDashboardJoin {
-    monthly_activity: RecentActivity[];
-    weekly_active_users: number;
-    avg_daily_activity: number;
-    total_weekly_activity: number;
-    course_milestones: CourseMilestones[];
-    top_course_activity: CourseActivity[];
-    facility_name: string;
-    hours_engaged: number;
-    program_name: string;
-}
-
 export interface EventCalendar {
     month: Month;
     year: number;
@@ -606,40 +523,6 @@ export const parseDuration = (duration: number): string => {
     return `${hours}h ${minutes}m`;
 };
 
-export interface RecurrenceForm {
-    start_date: string;
-    end_date?: string;
-    frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-    interval: number;
-    count?: number;
-    days_of_week?: string[];
-}
-
-export interface ProgramAttendanceData {
-    program_id: number;
-    program_name: string;
-    section_id: number;
-    total_events: number;
-    attended_events: number;
-    percentage_complete: number;
-    events_left: number;
-    attendance_records: EventAttendance[];
-}
-
-export interface EventAttendance {
-    event_id: number;
-    user_id: number;
-    date: string;
-}
-
-export interface CurrentEnrollment {
-    alt_name: string;
-    name: string;
-    provider_platform_name: string;
-    external_url: string;
-    total_activity_time: number;
-}
-
 export interface RecentCourse {
     course_name: string;
     description: string;
@@ -676,13 +559,6 @@ export interface Tab {
 
 export type Link = Record<string, string>;
 
-export interface Resource {
-    id: number;
-    name: string;
-    links: Link[];
-    rank: number;
-}
-
 export interface HelpfulLinkAndSort {
     helpful_links: HelpfulLink[];
     sort_order: string;
@@ -698,22 +574,6 @@ export interface HelpfulLink {
     open_content_provider_id: number;
     facility_id: number;
     is_favorited: boolean;
-}
-
-export interface Resource {
-    id: number;
-    name: string;
-    links: Link[];
-    rank: number;
-}
-
-export interface Announcement {
-    course_name: string;
-    title: string;
-    message: string;
-    url: string;
-    provider_platform: string;
-    due: Date;
 }
 
 export interface YAxisTickProps {
@@ -739,11 +599,6 @@ export interface ModalProps {
 export enum OutcomePillType {
     Certificate = 'certificate',
     CollegeCredit = 'college_credit'
-}
-
-export enum NotificationType {
-    Announcement = 'Announcement',
-    ToDo = 'ToDo'
 }
 
 export enum CourseStatus {
@@ -772,25 +627,6 @@ export interface Library {
     is_favorited: boolean;
 }
 
-export interface LibraryFavorites {
-    id: number;
-    image_url: string | null;
-    language: string | null;
-    name: string;
-    open_content_provider_id: number;
-    updated_at: string;
-    url: string;
-    visibility_status: boolean;
-    is_favorited: boolean;
-    open_content_provider_name: string;
-    base_url: string;
-    thumbnail_url: string | null;
-    currently_enabled: boolean;
-    open_content_provider_description: string | null;
-    user_id: number;
-    library_id: number;
-}
-
 export interface Program {
     id: number;
     created_at: Date;
@@ -811,7 +647,7 @@ export enum FilterLibraries {
     'All Libraries' = 'all',
     'Newest' = 'created_at DESC',
     'Oldest' = 'created_at ASC',
-    'Favorited' = 'most_favorited'
+    'Favorited' = 'most_popular'
 }
 
 export enum LibraryAdminVisibility {
@@ -868,3 +704,20 @@ export interface ActivityMapData {
     total_time: string;
     quartile: number;
 }
+
+export interface KiwixChannel {
+    book: string;
+    title: string;
+    thumbnail_url: string;
+    link: string;
+    description: string;
+    total_results: string;
+    start_index: string;
+    items_per_page: string;
+    items?: KiwixItem[];
+}
+
+export interface KiwixItem extends Library {
+    page_title: string; 
+}
+

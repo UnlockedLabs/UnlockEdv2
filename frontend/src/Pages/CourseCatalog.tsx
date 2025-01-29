@@ -29,7 +29,7 @@ export default function CourseCatalog() {
     }
 
     return (
-        <div className="px-8 py-4">
+        <div className="px-5 py-4">
             <div className="flex flex-row justify-end">
                 <ToggleView
                     activeView={activeView}

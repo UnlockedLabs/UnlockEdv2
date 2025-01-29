@@ -46,7 +46,7 @@ export default function AdminLayer2() {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
     return (
-        <div className="p-8">
+        <div className="w-full flex flex-col gap-2 px-5 pb-4">
             {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && layer2_metrics && (

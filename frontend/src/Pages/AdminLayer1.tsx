@@ -25,7 +25,7 @@ export default function AdminLayer1() {
     const { data: favoritedLibraries } = useSWR<
         ServerResponseMany<OpenContentItem>,
         AxiosError
-    >(`api/libraries?order_by=most_favorited&per_page=5&days=${timeFilter}`);
+    >(`api/libraries?order_by=most_popular&per_page=5&days=${timeFilter}`);
     function navigateToOpenContent() {
         navigate('/knowledge-center-management/libraries');
     }
@@ -33,7 +33,7 @@ export default function AdminLayer1() {
         console.log(timeFilter);
     }, [timeFilter]);
     return (
-        <div className="w-full flex flex-col gap-6 px-6 pb-4">
+        <div className="w-full flex flex-col gap-6 px-5 pb-4">
             <FeaturedContent featured={featured} />
             <div className="flex flex-row justify-between items-center">
                 <h2>Insights</h2>

@@ -89,12 +89,3 @@ func (user *User) GetTraits() map[string]interface{} {
 func (user *User) IsAdmin() bool {
 	return slices.Contains(AdminRoles, user.Role)
 }
-
-func (user *User) GetExternalIDFromProvider(db *gorm.DB, providerId uint) (string, error) {
-	var mapping ProviderUserMapping
-	err := db.Model(ProviderUserMapping{}).Where("provider_platform_id = ?", providerId).Where("user_id = ?", user.ID).Find(&mapping).Error
-	if err != nil {
-		return "", err
-	}
-	return mapping.ExternalUserID, nil
-}

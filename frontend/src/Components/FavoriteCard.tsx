@@ -57,7 +57,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
                     : 'bg-grey-2 cursor-not-allowed'
             } tooltip `}
             {...(!favorite.visibility_status && {
-                'data-tip': 'Unavailable Content'
+                'data-tip': 'This content is no longer accessible'
             })}
             onClick={favorite.visibility_status ? handleCardClick : undefined}
         >

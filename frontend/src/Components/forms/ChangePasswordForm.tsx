@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
-import PrimaryButton from '../../Components/PrimaryButton';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { DropdownInput, TextInput } from '../inputs';
 import { useAuth } from '@/useAuth';
@@ -185,16 +184,13 @@ export default function ChangePasswordForm() {
             )}
 
             <div className="flex items-center justify-end mt-4">
-                <PrimaryButton
-                    className="ms-4 w-44 h-10"
-                    disabled={processing || !isValid}
-                >
+                <button className="button" disabled={processing || !isValid}>
                     {processing ? (
                         <span className="loading loading-spinner loading-sm mx-auto"></span>
                     ) : (
                         <div className="m-auto">Reset Password</div>
                     )}
-                </PrimaryButton>
+                </button>
             </div>
         </form>
     );

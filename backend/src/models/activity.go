@@ -46,14 +46,6 @@ func (UserCourseActivityTotals) TableName() string {
 	return "user_course_activity_totals"
 }
 
-type ImportActivity struct {
-	ExternalUserID   string `json:"external_user_id"`
-	ExternalCourseID string `json:"external_course_id"`
-	Type             string `json:"type"`
-	TotalTime        int    `json:"total_time"`
-	Date             string `json:"date"`
-}
-
 type DailyActivity struct {
 	Date       time.Time  `json:"date"`
 	TotalTime  uint       `json:"total_time"`

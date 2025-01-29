@@ -47,7 +47,7 @@ export default function StudentLayer1() {
     return (
         <div className="flex flex-row h-full">
             {/* main section */}
-            <div className="w-full flex flex-col gap-6 px-6 pb-4">
+            <div className="w-full flex flex-col gap-6 px-5 pb-4">
                 <FeaturedContent
                     featured={featured?.data ?? []}
                     mutate={updateFavorites}

@@ -73,6 +73,7 @@ services:
       - NATS_PASSWORD=dev
       - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
+      - KIWIX_SERVER_URL=https://kiwix.staging.unlockedlabs.xyz
     depends_on:
       kratos:
         condition: service_started

@@ -16,7 +16,6 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
 		{"GET /api/login-metrics", srv.handleLoginMetrics, true, models.Feature()},
-		{"GET /api/users/{id}/admin-dashboard", srv.handleAdminDashboard, true, models.Feature()},
 		{"GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2, true, models.Feature()},
 		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
 		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},

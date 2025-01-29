@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"gorm.io/gorm"
@@ -49,7 +50,7 @@ func NewKiwixService(openContentProvider *models.OpenContentProvider, params *ma
 }
 
 func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error {
-	logger().Infoln("Importing libraries from Kiwix")
+	logger().Infoln("Importing libraries from Kiwix using the follwing url: ", ks.Url)
 	req, err := http.NewRequest(http.MethodGet, ks.Url, nil)
 	if err != nil {
 		logger().Errorf("error creating request: %v", err)
@@ -66,14 +67,16 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 		logger().Errorf("error reading data: %v", err)
 		return err
 	}
+	//remove unencoded &'s from xml
+	replacer := strings.NewReplacer("&", "&amp;")
+	xmlBody := replacer.Replace(string(body))
 	var feed Feed
-	err = xml.Unmarshal(body, &feed)
+	err = xml.Unmarshal([]byte(xmlBody), &feed)
 	if err != nil {
 		logger().Errorf("error parsing data: %v", err)
 		return err
 	}
 	logger().Infof("Found %v libraries from Kiwix", len(feed.Entries))
-
 	var externalIds []string
 	for _, entry := range feed.Entries {
 		select {

@@ -34,7 +34,7 @@ export default function Programs() {
     }
 
     return (
-        <div className="px-8 py-4">
+        <div className="px-5 py-4">
             <div className="flex flex-row justify-between items-center mb-4">
                 <div className="flex flex-row items-center space-x-4">
                     <SearchBar

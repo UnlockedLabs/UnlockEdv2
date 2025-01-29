@@ -54,29 +54,6 @@ type RecentActivity struct {
 	Delta float64 `json:"delta"`
 }
 
-type ImportCourse struct {
-	ProviderPlatformID      int      `json:"provider_platform_id"`
-	Name                    string   `json:"name"`
-	Description             string   `json:"description"`
-	ExternalID              string   `json:"external_id"`
-	ThumbnailURL            string   `json:"thumbnail_url"`
-	Type                    string   `json:"type"`
-	OutcomeTypes            []string `json:"outcome_types"`
-	ExternalURL             string   `json:"external_url"`
-	TotalProgressMilestones int      `json:"total_progress_milestones"`
-}
-
-// ADMIN STRUCTS
-type AdminDashboardJoin struct {
-	FacilityName        string             `json:"facility_name"`
-	MonthlyActivity     []RecentActivity   `json:"monthly_activity"`
-	WeeklyActiveUsers   int64              `json:"weekly_active_users"`
-	AvgDailyActivity    int64              `json:"avg_daily_activity"`
-	TotalWeeklyActivity int64              `json:"total_weekly_activity"`
-	CourseMilestones    []CourseMilestones `json:"course_milestones"`
-	TopCourseActivity   []CourseActivity   `json:"top_course_activity"`
-}
-
 type LearningInsight struct {
 	FacilityName          string  `json:"facility_name"`
 	CourseName            string  `json:"course_name"`
@@ -90,15 +67,4 @@ type AdminLayer2Join struct {
 	TotalStudentsEnrolled int64             `json:"total_students_enrolled"`
 	TotalHourlyActivity   int64             `json:"total_hourly_activity"`
 	LearningInsights      []LearningInsight `json:"learning_insights"`
-}
-
-type CourseMilestones struct {
-	Name       string `json:"name"`
-	Milestones int    `json:"milestones"`
-}
-
-type CourseActivity struct {
-	CourseName   string  `json:"course_name"`
-	AltName      string  `json:"alt_name"`
-	HoursEngaged float32 `json:"hours_engaged"`
 }

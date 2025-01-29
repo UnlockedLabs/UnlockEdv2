@@ -22,14 +22,6 @@ type Milestone struct {
 	Course *Course `gorm:"foreignKey:CourseID" json:"-"`
 }
 
-type ImportMilestone struct {
-	UserID           int    `json:"user_id"`
-	ExternalCourseID string `json:"external_course_id"`
-	ExternalID       string `json:"external_id"`
-	Type             string `json:"type"`
-	IsCompleted      bool   `json:"is_completed"`
-}
-
 func (Milestone) TableName() string {
 	return "milestones"
 }
