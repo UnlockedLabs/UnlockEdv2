@@ -46,7 +46,7 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 
 func (db *DB) AddHelpfulLink(link *models.HelpfulLink) error {
 	if db.Where("url = ?", link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
-		return NewDBError(fmt.Errorf("link already exists"), "helpful_links")
+		return NewDBError(fmt.Errorf("link already exists"), "existing_helpful_link")
 	}
 	if err := db.Create(link).Error; err != nil {
 		return newCreateDBError(err, "helpful_links")
