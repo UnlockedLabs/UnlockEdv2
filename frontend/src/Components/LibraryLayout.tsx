@@ -6,7 +6,7 @@ import {
     Option
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import MultiSelectDropdown from './MultiSelectDropdownControl';
+import { MultiSelectDropdown } from './inputs';
 import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
 import { isAdministrator, useAuth } from '@/useAuth';

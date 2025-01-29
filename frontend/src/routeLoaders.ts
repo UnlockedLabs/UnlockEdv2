@@ -120,7 +120,13 @@ export const getLibraryLayoutData: LoaderFunction = async ({
     ]);
     const categories = categoriesResp.data as Option[];
     const libraryOptions = libraryResp.success
-        ? (libraryResp.data as Library[])
+        ? (libraryResp.data as Library[]).map(
+              (library) =>
+                  ({
+                      key: library.id,
+                      value: library.title
+                  }) as Option
+          )
         : [];
     return json({ categories: categories, libraryOptions: libraryOptions });
 };

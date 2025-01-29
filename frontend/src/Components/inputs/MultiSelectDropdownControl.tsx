@@ -1,9 +1,9 @@
-import { Library } from '@/common';
+import { Option } from '@/common';
 import { useRef, useState } from 'react';
 
 interface MultiSelectDropdownProps {
     label?: string;
-    options: Library[];
+    options: Option[];
     selectedOptions: number[];
     addSelectAllOption?: boolean;
     onSelectionChange: (selected: number[]) => void;
@@ -29,9 +29,12 @@ export function MultiSelectDropdown({
     const displayText = () => {
         if (selectedOptions.length === 1) {
             return (
-                options.find((option) => option.id === selectedOptions[0])
-                    ?.title ?? label
+                options.find((option) => option.key === selectedOptions[0])
+                    ?.value ?? label
             );
+        }
+        if (selectedOptions.length === options.length) {
+            return `All ${label}`;
         }
         if (selectedOptions.length > 1) {
             return `${selectedOptions.length} selected`;
@@ -60,18 +63,18 @@ export function MultiSelectDropdown({
                         tabIndex={0}
                         style={{ minWidth: 'max-content' }}
                     >
-                        {options.map((lib) => (
-                            <li key={lib.id} className="w-full">
+                        {options.map(({ key, value }) => (
+                            <li key={key} className="w-full">
                                 <label className="flex items-center space-x-2 px-2 py-1 hover:bg-grey-2 rounded cursor-pointer">
                                     <input
                                         type="checkbox"
                                         className="checkbox checkbox-sm"
-                                        checked={selectedOptions.includes(lib.id)}
+                                        checked={selectedOptions.includes(key)}
                                         onChange={() =>
-                                            handleCheckboxChange(lib.id)
+                                            handleCheckboxChange(key)
                                         }
                                     />
-                                    <span className="text-sm">{lib.title}</span>
+                                    <span className="text-sm">{value}</span>
                                 </label>
                             </li>
                         ))}
