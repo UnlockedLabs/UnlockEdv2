@@ -213,7 +213,7 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 	if !srv.canViewUserData(r, userId) {
 		return newForbiddenServiceError(err, "You do not have permission to view this user's courses")
 	}
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	args.UserID = uint(userId)
 	userCourses, err := srv.Db.GetUserCourses(&args)
 	if err != nil {

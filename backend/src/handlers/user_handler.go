@@ -34,7 +34,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 	}
 	role := r.URL.Query().Get("role")
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	users, err := srv.Db.GetCurrentUsers(&args, role)
 	if err != nil {
 		log.add("facility_id", args.FacilityID)
@@ -46,7 +46,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 
 func (srv *Server) handleGetUnmappedUsers(w http.ResponseWriter, r *http.Request, providerId string, log sLog) error {
 	log.add("subhandlerCall", "HandleGetUnmappedUsers")
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	provID, err := strconv.Atoi(providerId)
 	if err != nil {
 		return newInvalidIdServiceError(err, "provider ID")

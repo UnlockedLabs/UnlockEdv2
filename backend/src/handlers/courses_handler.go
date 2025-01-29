@@ -23,7 +23,7 @@ func (srv *Server) registerCoursesRoutes() []routeDef {
 * ?searchFields=: searchFields
  */
 func (srv *Server) handleIndexCourses(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	courses, err := srv.Db.GetCourses(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
