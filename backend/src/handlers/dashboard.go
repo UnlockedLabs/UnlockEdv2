@@ -22,16 +22,6 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	}
 }
 
-func (srv *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	adminDashboard, err := srv.Db.GetAdminDashboardInfo(claims.FacilityID)
-	if err != nil {
-		log.add("facility_id", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, adminDashboard)
-}
-
 func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
