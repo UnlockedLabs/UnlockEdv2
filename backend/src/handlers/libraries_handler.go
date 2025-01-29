@@ -35,7 +35,7 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 // all - true or false on whether or not to return all libraries without pagination
 // categories - the category ids to filter the libraries by
 func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	showHidden := "visible"
 	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()

@@ -23,7 +23,7 @@ func (srv *Server) handleGetOutcomes(w http.ResponseWriter, r *http.Request, log
 	}
 	typeString := r.URL.Query().Get("type")
 	outcomeType := models.OutcomeType(typeString)
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	args.UserID = uint(id)
 	outcome, err := srv.Db.GetOutcomesForUser(&args, outcomeType)
 	if err != nil {

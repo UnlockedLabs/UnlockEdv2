@@ -48,7 +48,7 @@ func (slog *sLog) add(key string, value interface{}) {
 	slog.f[key] = value
 }
 
-func (srv *Server) getQueryArgs(r *http.Request) models.QueryContext {
+func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	var facilityID, userID uint
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	f, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
@@ -65,7 +65,7 @@ func (srv *Server) getQueryArgs(r *http.Request) models.QueryContext {
 	}
 	page, perPage := srv.getPaginationInfo(r)
 	orderBy := r.URL.Query().Get("order_by")
-	sort := r.URL.Query().Get("sort")
+	order := r.URL.Query().Get("order")
 	isAdmin := userIsAdmin(r)
 	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	tags := r.URL.Query()["tags"]
@@ -75,7 +75,7 @@ func (srv *Server) getQueryArgs(r *http.Request) models.QueryContext {
 		FacilityID: uint(facilityID),
 		UserID:     uint(userID),
 		OrderBy:    orderBy,
-		Order:      sort,
+		Order:      order,
 		IsAdmin:    isAdmin,
 		Search:     search,
 		Tags:       tags,

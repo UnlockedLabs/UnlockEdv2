@@ -27,7 +27,7 @@ func (srv *Server) handleGetVideos(w http.ResponseWriter, r *http.Request, log s
 	user := r.Context().Value(ClaimsKey).(*Claims)
 	// cookie gets preference over query unless query specifies student
 	onlyVisible := !user.isAdmin() || r.URL.Query().Get("visibility") == "student"
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	videos, err := srv.Db.GetAllVideos(&args, onlyVisible)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching videos")

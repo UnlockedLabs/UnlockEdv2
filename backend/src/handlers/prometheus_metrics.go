@@ -40,9 +40,9 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
 			Help:    "Histogram of response latency (seconds) for handler.",
-			Buckets: prometheus.DefBuckets,
+			Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10},
 		},
-		[]string{"path", "method"},
+		[]string{"path"},
 	)
 	requestSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -85,7 +85,7 @@ var (
 
 func (srv *Server) prometheusMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		timer := prometheus.NewTimer(requestDuration.WithLabelValues(r.URL.Path, r.Method))
+		timer := prometheus.NewTimer(requestDuration.WithLabelValues(r.URL.Path))
 		defer timer.ObserveDuration()
 		requestSize.WithLabelValues(r.URL.Path).Observe(float64(r.ContentLength))
 

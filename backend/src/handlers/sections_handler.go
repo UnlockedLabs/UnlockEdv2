@@ -24,7 +24,7 @@ func (srv *Server) handleGetSectionsForProgram(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	sections, err := srv.Db.GetSectionsForProgram(id, &args)
 	if err != nil {
 		log.add("program_id", id)
@@ -47,7 +47,7 @@ func (srv *Server) handleGetSection(w http.ResponseWriter, r *http.Request, log 
 }
 
 func (srv *Server) handleIndexSectionsForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryArgs(r)
+	args := srv.getQueryContext(r)
 	sections, err := srv.Db.GetSectionsForFacility(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
