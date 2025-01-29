@@ -471,6 +471,7 @@ export enum ProgramType {
 export interface LearningInsight {
     facility_name: string;
     course_name: string;
+    completions: number;
     total_students_enrolled: number;
     completion_rate: number;
     activity_hours: number;
@@ -718,6 +719,5 @@ export interface KiwixChannel {
 }
 
 export interface KiwixItem extends Library {
-    page_title: string; 
+    page_title: string;
 }
-

@@ -22,22 +22,17 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 	}
 }
 
-func (srv *Server) handleAdminDashboard(w http.ResponseWriter, r *http.Request, log sLog) error {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	adminDashboard, err := srv.Db.GetAdminDashboardInfo(claims.FacilityID)
-	if err != nil {
-		log.add("facility_id", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, adminDashboard)
-}
-
 func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log sLog) error {
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
-	isAlternateView := r.URL.Query().Get("alternate_view") == "true"
-
+	log.add("facility_id", claims.FacilityID)
+	// TODO: Check the request for the string facility then
+	// write logic to pass that string to a function that runs a qurey
+	// returns the facility_id and that faciltiy_id should be passed into:
+	// GetTotalStudentsEnrolled
+	// GetTotalHourlyActivity
+	// GetLearningInsights
 	switch facility {
 	case "all":
 		facilityId = nil
@@ -54,35 +49,22 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 
 	totalCourses, err := srv.Db.GetTotalCoursesOffered()
 	if err != nil {
-		log.add("facility_id", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
 
 	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
 	if err != nil {
-		log.add("facility_id", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
 
 	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
 	if err != nil {
-		log.add("facility_id", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
 	var learningInsights []models.LearningInsight
-
-	if isAlternateView {
-		learningInsights, err = srv.Db.GetLearningInsightsAlternateView()
-		if err != nil {
-			log.add("facility_id", claims.FacilityID)
-			return newDatabaseServiceError(err)
-		}
-	} else {
-		learningInsights, err = srv.Db.GetLearningInsights(facilityId)
-		if err != nil {
-			log.add("facility_id", claims.FacilityID)
-			return newDatabaseServiceError(err)
-		}
+	learningInsights, err = srv.Db.GetLearningInsights(facilityId)
+	if err != nil {
+		return newDatabaseServiceError(err)
 	}
 
 	adminDashboard := models.AdminLayer2Join{

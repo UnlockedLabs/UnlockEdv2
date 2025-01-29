@@ -12,10 +12,15 @@ import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
 import { useEffect, useState } from 'react';
 
+// TODO:
+// remove the facility dropdown and use the facility_switcher to
+// control metrics:
+// function should take the facility string that is on the page
+// and compare that string to the value
+
 export default function AdminLayer2() {
     const { user } = useAuth();
     const [facility, setFacility] = useState('all');
-    const [isToggleOn, setIsToggleOn] = useState(false);
     const { data: facilities, error: errorFacilitiesFetch } = useSWR<
         ServerResponseMany<Facility>,
         AxiosError
@@ -23,21 +28,13 @@ export default function AdminLayer2() {
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
         AxiosError
-    >(
-        `/api/users/${user?.id}/admin-layer2?facility=${facility}&alternate_view=${isToggleOn}`
-    );
+    >(`/api/users/${user?.id}/admin-layer2?facility=${facility}`);
     useEffect(() => {
         void mutate();
-    }, [isToggleOn, facility]);
+    }, [facility]);
 
     const handleDropdownChange = (value: string) => {
-        if (value != 'all') {
-            setIsToggleOn(false);
-        }
         setFacility(value);
-    };
-    const handleToggleChange = () => {
-        setIsToggleOn(!isToggleOn);
     };
     const layer2_metrics = data?.data;
 
@@ -49,6 +46,7 @@ export default function AdminLayer2() {
         <div className="w-full flex flex-col gap-2 px-5 pb-4">
             {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
+            {/* TODO: Having access to the facility_name field here {user.facility_name}  is the same string that controls the  Facility Dropdown on PageNav can I use that string to filter all total_courses_offered, total_students_enrolled, total_activity_time, as well as the Learning insights table.*/}
             {data && layer2_metrics && (
                 <>
                     <div className="flex flex-row justify-between mb-6">
@@ -101,90 +99,58 @@ export default function AdminLayer2() {
                             label="Hours"
                         />
                     </div>
-                    {facility === 'all' && (
-                        <div className="mb-4">
-                            <label htmlFor="viewToggle" className="mr-2">
-                                Alternate View
-                            </label>
-                            <input
-                                type="checkbox"
-                                id="viewToggle"
-                                checked={isToggleOn}
-                                onChange={handleToggleChange}
-                                className="toggle toggle-accent"
-                            />
-                        </div>
-                    )}
-                    {facility === 'all' && isToggleOn && (
-                        <h2>Facility Summation View</h2>
-                    )}
                     <div className="card card-row-padding mb-30">
-                        {Object.entries(
-                            layer2_metrics.learning_insights.reduce(
-                                (
-                                    acc: Record<string, LearningInsight[]>,
-                                    insight: LearningInsight
-                                ) => {
-                                    if (!acc[insight.facility_name]) {
-                                        acc[insight.facility_name] = [];
-                                    }
-                                    acc[insight.facility_name].push(insight);
-                                    return acc;
-                                },
-                                {} as Record<string, LearningInsight[]>
-                            )
-                        ).map(([facility, insights]) => (
-                            <div key={facility} className="mb-10">
-                                <h3 className="facility-title">{facility}</h3>
-                                <table className="table-2 mb-4">
-                                    <thead>
-                                        <tr className="grid-col-4">
-                                            <th className="justify-self-start">
-                                                Course Name
-                                            </th>
-                                            <th># Students Enrolled</th>
-                                            <th>Completion Rate</th>
-                                            <th className="justify-self-end pr-4">
-                                                Total Activity Hours
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="flex flex-col gap-4 mt-4">
-                                        {insights.map(
-                                            (
-                                                insight: LearningInsight,
-                                                index: number
-                                            ) => (
-                                                <tr
-                                                    className="grid-cols-4 justify-items-center"
-                                                    key={index}
-                                                >
-                                                    <td className="justify-self-start">
-                                                        {insight.course_name}
-                                                    </td>
-                                                    <td>
-                                                        {
-                                                            insight.total_students_enrolled
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                        {insight.completion_rate.toFixed(
-                                                            2
-                                                        )}
-                                                        %
-                                                    </td>
-                                                    <td className="justify-self-end">
-                                                        {insight.activity_hours.toLocaleString(
-                                                            'en-US'
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            )
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ))}
+                        <div className="mb-10">
+                            <table className="table-2 mb-4">
+                                <thead>
+                                    <tr className="grid-col-5">
+                                        <th className="justify-self-start">
+                                            Course Name
+                                        </th>
+                                        <th># Students Enrolled</th>
+                                        <th># Students Completed</th>
+                                        <th>Completion Rate</th>
+                                        <th className="justify-self-end pr-4">
+                                            Total Activity Hours
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="flex flex-col gap-4 mt-4">
+                                    {layer2_metrics.learning_insights.map(
+                                        (
+                                            insight: LearningInsight,
+                                            index: number
+                                        ) => (
+                                            <tr
+                                                className="grid-cols-5 justify-items-center"
+                                                key={index}
+                                            >
+                                                <td className="justify-self-start">
+                                                    {insight.course_name}
+                                                </td>
+                                                <td>
+                                                    {
+                                                        insight.total_students_enrolled
+                                                    }
+                                                </td>
+                                                <td>{insight.completions}</td>
+                                                <td>
+                                                    {insight.completion_rate.toFixed(
+                                                        2
+                                                    )}
+                                                    %
+                                                </td>
+                                                <td className="justify-self-end">
+                                                    {insight.activity_hours.toLocaleString(
+                                                        'en-US'
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </>
             )}

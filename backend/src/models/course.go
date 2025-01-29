@@ -56,10 +56,11 @@ type RecentActivity struct {
 
 type LearningInsight struct {
 	FacilityName          string  `json:"facility_name"`
+	Completions           int64   `json:"completions"`
 	CourseName            string  `json:"course_name"`
 	TotalStudentsEnrolled int64   `json:"total_students_enrolled"`
 	CompletionRate        float32 `json:"completion_rate"`
-	ActivityHours         int64   `json:"activity_hours"`
+	ActivityHours         float32 `json:"activity_hours"`
 }
 
 type AdminLayer2Join struct {
