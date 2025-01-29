@@ -37,7 +37,8 @@ export default function AuthenticatedLayout() {
         setIsNavOpen(newPinnedState);
         localStorage.setItem('navPinned', JSON.stringify(newPinnedState));
     };
-
+    //  Can i pass a title to page nave from auth layout
+    // can i get a way form outlet to bubble that up
     return (
         <div className="font-lato">
             <div title={title} />
@@ -49,6 +50,7 @@ export default function AuthenticatedLayout() {
                             onShowNav={showNav}
                         />
                         <div className="grow">
+                            {/* Needs to send data up to auth layout how to bubble up from outlet*/}
                             <Outlet />
                         </div>
                     </main>
