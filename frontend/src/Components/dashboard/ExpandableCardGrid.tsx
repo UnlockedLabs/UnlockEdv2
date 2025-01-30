@@ -8,17 +8,18 @@ export default function ExpandableCardGrid<T>({
     children,
     emptyStateText,
     emptyStateLink,
-    title
+    title,
+    cols = 4
 }: {
     items: T[];
     children: (item: T) => React.ReactNode; // Child function to render each item
     emptyStateText?: string;
     emptyStateLink?: string;
     title?: string;
+    cols?: number;
 }) {
     const { user } = useAuth();
     const [expanded, setExpanded] = useState<boolean>(false);
-    const cols = user?.role == UserRole.Student ? 3 : 4;
     const slice = expanded ? items.length : cols;
     const isAdmin =
         user?.role === UserRole.Admin || user?.role === UserRole.SystemAdmin;
