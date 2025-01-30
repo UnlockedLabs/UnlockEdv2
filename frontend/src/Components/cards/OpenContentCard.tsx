@@ -1,5 +1,6 @@
 import { OpenContentItem } from '@/common';
 import { useNavigate } from 'react-router-dom';
+import ClampedText from '../ClampedText';
 
 export default function OpenContentCardRow({
     content
@@ -8,7 +9,8 @@ export default function OpenContentCardRow({
 }) {
     const navigate = useNavigate();
     function redirectToViewer() {
-        if (content.visibility_status != null && !content.visibility_status) return;
+        if (content.visibility_status != null && !content.visibility_status)
+            return;
         const basePath =
             content.content_type === 'video'
                 ? `/viewer/videos/${content.content_id}`
@@ -18,9 +20,10 @@ export default function OpenContentCardRow({
     return (
         <div
             className={`card ${content.visibility_status == null || content.visibility_status ? 'cursor-pointer' : 'bg-grey-2 cursor-not-allowed'} flex flex-row w-full gap-3 px-4 py-2 tooltip`}
-            {...((content.visibility_status != null && !content.visibility_status) && {
-                'data-tip': 'This content is no longer accessible'
-            })}
+            {...(content.visibility_status != null &&
+                !content.visibility_status && {
+                    'data-tip': 'This content is no longer accessible'
+                })}
             onClick={redirectToViewer}
         >
             <div>
@@ -29,9 +32,13 @@ export default function OpenContentCardRow({
                     src={content.thumbnail_url ?? ''}
                 ></img>
             </div>
-            <h3 className="my-auto w-full body font-normal">
+            <ClampedText
+                as="h3"
+                lines={1}
+                className="my-auto w-full body font-normal text-left"
+            >
                 {content.title ?? 'Untitled'}
-            </h3>
+            </ClampedText>
         </div>
     );
 }
