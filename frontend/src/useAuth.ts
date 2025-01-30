@@ -153,30 +153,11 @@ export async function handleLogout(): Promise<void> {
     }
 }
 
-const accessValues = new Map<FeatureAccess, number>([
-    [FeatureAccess.OpenContentAccess, 1],
-    [FeatureAccess.ProviderAccess, 2],
-    [FeatureAccess.ProgramAccess, 3]
-]);
-
-export const studentAccessLinks = [
-    '/home', // temporary layer 0 until implemented
-    '/trending-content',
-    '/learning-path', // temporary until layer 3 is implemented
-    '/learning-path' // temporary until layer 3 is implemented
-];
-
 export const getDashboardLink = (user?: User) => {
     if (!user) return '/';
-
-    const maxFeature =
-        user?.feature_access
-            .map((ax) => accessValues.get(ax) ?? 0)
-            .sort((a, b) => a - b)
-            .pop() ?? 0;
     return isAdministrator(user)
         ? getAdminLink(user)
-        : studentAccessLinks[maxFeature];
+        : getResidentLink(user);
 };
 
 const getAdminLink = (user: User): string => {
@@ -187,4 +168,14 @@ const getAdminLink = (user: User): string => {
         return "/learning-insights";
     }
     return "/operational-insights";
+};
+
+const getResidentLink = (user: User): string => {
+    if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
+        return "/trending-content";
+    }
+    if (user.feature_access.includes(FeatureAccess.ProviderAccess)) {
+        return "/learning-path";
+    }
+    return "/home";
 };
