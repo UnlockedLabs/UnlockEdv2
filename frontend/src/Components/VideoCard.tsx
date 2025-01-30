@@ -82,7 +82,11 @@ export default function VideoCard({
                 <div
                     className="tooltip tooltip-top absolute right-2 top-2 w-6 h-6"
                     data-tip="Favorite video"
-                    onClick={() => void handleToggleAction('favorite')}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        void handleToggleAction('favorite');
+                    }
+                }
                 >
                     {bookmark}
                 </div>
