@@ -22,6 +22,7 @@ type LibraryResponse struct {
 // orderBy - the order in which the results are returned
 // isAdmin - true or false on whether the user is an administrator used to determine how to retrieve featured libraries
 // all - true or false on whether or not to return all libraries without pagination
+// categoryIds - the category ids to filter the libraries by
 func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, visibility, orderBy, search string, isAdmin, all bool, categoryIds []int) (int64, []LibraryResponse, error) {
 	var (
 		total    int64

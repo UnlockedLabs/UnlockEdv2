@@ -12,7 +12,7 @@ func (srv *Server) registerOpenContentRoutes() []routeDef {
 		{"GET /api/open-content", srv.handleIndexOpenContent, false, axx},
 		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx},
 		{"GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx},
-		{"GET /api/open-content/categories", srv.handleGetCategories, false, models.Feature()},
+		{"GET /api/open-content/categories", srv.handleGetCategories, false, axx},
 	}
 }
 
