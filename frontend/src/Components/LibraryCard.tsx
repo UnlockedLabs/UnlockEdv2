@@ -12,6 +12,7 @@ import {
     FlagIcon as FlagIconOutline,
     MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
+import ClampedText from './ClampedText';
 
 export default function LibraryCard({
     library,
@@ -79,18 +80,20 @@ export default function LibraryCard({
                         alt={`${library.title} thumbnail`}
                     />
                 </figure>
-                <h3 className="w-3/4 body my-auto mr-7">{library.title}</h3>
+                <ClampedText as="h3" className="w-3/4 body my-auto mr-7">
+                    {library.title}
+                </ClampedText>
             </div>
             <div className="flex items-center justify-end space-x-2 absolute right-2 top-2 z-100">
-            {!route.pathname.includes('knowledge-insights') && (
-                <div onClick={handleSearchClick}>
-                    <ULIComponent
-                        icon={MagnifyingGlassIcon}
-                        iconClassName="!w-5 !h-5"
-                        dataTip={`Search ${library.title}`}
-                    />
-                </div>
-            )}
+                {!route.pathname.includes('knowledge-insights') && (
+                    <div onClick={handleSearchClick}>
+                        <ULIComponent
+                            icon={MagnifyingGlassIcon}
+                            iconClassName="!w-5 !h-5"
+                            dataTip={`Search ${library.title}`}
+                        />
+                    </div>
+                )}
                 <div onClick={(e) => void handleToggleAction('favorite', e)}>
                     {!route.pathname.includes('knowledge-insights') && (
                         <ULIComponent

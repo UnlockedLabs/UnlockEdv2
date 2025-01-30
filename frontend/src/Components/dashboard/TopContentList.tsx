@@ -2,6 +2,7 @@ import { OpenContentItem } from '@/common';
 import OpenContentCard from '../cards/OpenContentCard';
 import ULIComponent from '../ULIComponent';
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import ClampedText from '../ClampedText';
 
 export default function TopContentList({
     heading,
@@ -32,9 +33,9 @@ export default function TopContentList({
                         tooltipClassName="h-8 flex items-center"
                         icon={ArrowTopRightOnSquareIcon}
                     />
-                    <h3 className="body font-normal">
+                    <ClampedText as="h3" className="body font-normal">
                         Explore other content offered
-                    </h3>
+                    </ClampedText>
                 </div>
             )}
         </div>

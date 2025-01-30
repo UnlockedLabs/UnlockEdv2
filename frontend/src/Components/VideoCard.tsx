@@ -15,6 +15,7 @@ import { useToast } from '@/Context/ToastCtx';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { AdminRoles } from '@/useAuth';
+import ClampedText from './ClampedText';
 
 export default function VideoCard({
     video,
@@ -86,30 +87,28 @@ export default function VideoCard({
                     {bookmark}
                 </div>
             )}
-            <div
-                className="flex flex-col p-4 gap-2 border-b-2"
-            >
+            <div className="flex flex-col p-4 gap-2 border-b-2">
                 <figure className="w-1/2 mx-auto bg-cover">
                     <img
                         src={video?.thumbnail_url ?? ''}
                         alt={`${video.title} thumbnail`}
                     />
                 </figure>
-                <h3 className="body text-center h-10 line-clamp-2 my-auto">
+                <ClampedText as="h3" className="body text-center h-10 my-auto">
                     {video.title}
-                </h3>
+                </ClampedText>
             </div>
             <div className="p-4 space-y-2">
                 <p className="body font-bold sm:h-10 sm:line-clamp-2">
                     {video.channel_title} - {toMinutes(video.duration)}
                 </p>
-                <p className="body-small h-[40px] leading-5 line-clamp-2">
+                <ClampedText as="p" className="body-small h-[40px] leading-5">
                     {videoIsAvailable(video)
                         ? video?.description
                         : getVideoErrorMessage(video) ??
                           `Video currently unavailable.
-                           May be in the process of downloading, Please check back later`}
-                </p>
+                            May be in the process of downloading, Please check back later`}
+                </ClampedText>
                 {AdminRoles.includes(role) &&
                     (videoIsAvailable(video) ? (
                         <VisibleHiddenToggle

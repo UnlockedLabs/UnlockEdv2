@@ -14,6 +14,7 @@ import { AdminRoles } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import ClampedText from '../ClampedText';
 
 export default function HelpfulLinkCard({
     link,
@@ -82,7 +83,9 @@ export default function HelpfulLinkCard({
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img src={link.thumbnail_url ?? ''} alt={link.title} />
                 </figure>
-                <h3 className="w-3/4 body my-auto mr-7">{link.title}</h3>
+                <ClampedText as="h3" className="w-3/4 body my-auto mr-7">
+                    {link.title}
+                </ClampedText>
             </div>
             {AdminRoles.includes(role) ? (
                 showModal != undefined && (
@@ -117,9 +120,9 @@ export default function HelpfulLinkCard({
                 </div>
             )}
             <div className="p-4 space-y-2">
-                <p className="body-small h-[40px] leading-5 line-clamp-2">
+                <ClampedText as="p" className="body-small h-[40px] leading-5">
                     {link.description}
-                </p>
+                </ClampedText>
                 {AdminRoles.includes(role) && (
                     <VisibleHiddenToggle
                         visible={visible}
