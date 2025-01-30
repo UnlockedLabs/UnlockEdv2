@@ -395,7 +395,7 @@ const router = createBrowserRouter([
                                 path: 'provider-users/:id',
                                 element: <ProviderUserManagement />,
                                 handle: {
-                                    title: 'Provider User Management',
+                                    title: 'Learning Platforms User Management',
                                     path: [
                                         'provider-platforms',
                                         ':provider_platform_name'
