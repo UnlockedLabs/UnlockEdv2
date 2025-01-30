@@ -23,7 +23,7 @@ type LibraryResponse struct {
 // isAdmin - true or false on whether the user is an administrator used to determine how to retrieve featured libraries
 // all - true or false on whether or not to return all libraries without pagination
 // categoryIds - the category ids to filter the libraries by
-func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, all bool, categoryIds []int) ([]LibraryResponse, error) {
+func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, categoryIds []int) ([]LibraryResponse, error) {
 	var (
 		criteria string
 		id       uint
@@ -97,7 +97,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, all 
 	default:
 		tx = tx.Order(args.OrderBy)
 	}
-	if !all {
+	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
 	if err := tx.Find(&libraries).Error; err != nil {

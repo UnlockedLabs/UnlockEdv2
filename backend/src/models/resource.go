@@ -79,6 +79,7 @@ type QueryContext struct {
 	Search     string
 	Tags       []string
 	Total      int64
+	All        bool
 }
 
 func (q QueryContext) IntoMeta() PaginationMeta {

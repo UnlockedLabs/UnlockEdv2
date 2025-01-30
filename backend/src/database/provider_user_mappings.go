@@ -37,7 +37,6 @@ func (db *DB) UpdateProviderUserMapping(providerUserMapping *models.ProviderUser
 
 func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSearch []string) ([]models.User, error) {
 	var users []models.User
-	var total int64
 	tx := db.Model(&models.User{}).
 		Where("facility_id = ? AND role = ? AND id NOT IN (?)",
 			args.FacilityID,
@@ -48,13 +47,12 @@ func (db *DB) GetUnmappedUsers(args *models.QueryContext, providerID int, userSe
 	if len(userSearch) > 0 {
 		tx = applyUserSearchConditions(tx, userSearch)
 	}
-	if err := tx.Count(&total).Error; err != nil {
+	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, NewDBError(err, "error counting unmapped users")
 	}
 	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&users).Error; err != nil {
 		return nil, NewDBError(err, "error getting unmapped users")
 	}
-	args.Total = total
 	return users, nil
 }
 

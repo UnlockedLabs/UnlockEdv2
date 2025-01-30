@@ -9,7 +9,9 @@ import (
 
 func (db *DB) GetAllProviderPlatforms(args *models.QueryContext) ([]models.ProviderPlatform, error) {
 	var platforms []models.ProviderPlatform
-	var total int64
+	if err := db.Model(&models.ProviderPlatform{}).Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "provider_platforms")
+	}
 	if err := db.Model(&models.ProviderPlatform{}).Preload("OidcClient").
 		Offset(args.CalcOffset()).Limit(args.PerPage).Find(&platforms).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_platforms")
@@ -20,7 +22,6 @@ func (db *DB) GetAllProviderPlatforms(args *models.QueryContext) ([]models.Provi
 		}
 		return prov
 	}, platforms)
-	args.Total = total
 	return toReturn, nil
 }
 

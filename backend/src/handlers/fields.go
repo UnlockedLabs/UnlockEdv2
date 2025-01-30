@@ -64,11 +64,14 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 		userID = uint(u)
 	}
 	page, perPage := srv.getPaginationInfo(r)
-	orderBy := r.URL.Query().Get("order_by")
-	order := r.URL.Query().Get("order")
-	isAdmin := userIsAdmin(r)
+	orderBy := strings.ToLower(r.URL.Query().Get("order_by"))
+	order := strings.ToLower(r.URL.Query().Get("order"))
+	if order != "asc" && order != "desc" {
+		order = "asc"
+	}
 	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	tags := r.URL.Query()["tags"]
+	all := r.URL.Query().Get("all") == "true"
 	return models.QueryContext{
 		Page:       page,
 		PerPage:    perPage,
@@ -76,8 +79,9 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 		UserID:     uint(userID),
 		OrderBy:    orderBy,
 		Order:      order,
-		IsAdmin:    isAdmin,
+		IsAdmin:    claims.isAdmin(),
 		Search:     search,
 		Tags:       tags,
+		All:        all,
 	}
 }
