@@ -1,5 +1,6 @@
 import { OpenContentItem } from '@/common';
 import { useNavigate } from 'react-router-dom';
+import ClampedText from '../ClampedText';
 
 export default function OpenContentCardRow({
     content
@@ -29,9 +30,12 @@ export default function OpenContentCardRow({
                     src={content.thumbnail_url ?? ''}
                 ></img>
             </div>
-            <h3 className="my-auto w-full body font-normal">
+            <ClampedText
+                as="h3"
+                className="my-auto w-full body font-normal text-left"
+            >
                 {content.title ?? 'Untitled'}
-            </h3>
+            </ClampedText>
         </div>
     );
 }
