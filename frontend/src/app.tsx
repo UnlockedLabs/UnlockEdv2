@@ -233,6 +233,7 @@ const router = createBrowserRouter([
                             {
                                 path: 'viewer/libraries/:id',
                                 element: <LibraryViewer />,
+                                loader: getLibraryLayoutData,
                                 errorElement: <Error />,
                                 handle: {
                                     title: 'Library Viewer',

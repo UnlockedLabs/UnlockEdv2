@@ -184,7 +184,6 @@ const LibrarySearchResultsModal = forwardRef<
         onModalClose();
         setSearchResults(BlankChannel);
     };
-    console.log(libraryOptions);
     return (
         <dialog
             ref={ref}

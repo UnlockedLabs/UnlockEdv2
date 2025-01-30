@@ -302,7 +302,7 @@ func (db *DB) GetTopFacilityLibraries(id int, perPage int, days int) ([]models.O
 func (db *DB) GetCategories() ([]models.OpenContentCategory, error) {
 	var categories []models.OpenContentCategory
 	if err := db.Model(&models.OpenContentCategory{}).Find(&categories).Error; err != nil {
-		return nil, newNotFoundDBError(err, "categories")
+		return nil, newNotFoundDBError(err, "open_content_categories")
 	}
 	return categories, nil
 }

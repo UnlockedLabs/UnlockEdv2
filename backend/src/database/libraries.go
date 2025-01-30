@@ -69,7 +69,7 @@ func (db *DB) GetAllLibraries(page, perPage, days int, userId, facilityId uint, 
 		tx = tx.Where("LOWER(libraries.title) LIKE ? OR LOWER(libraries.description) LIKE ?", search, search)
 	}
 	if len(categoryIds) > 0 {
-		tx = tx.Select("DISTINCT libraries.*").Joins("JOIN open_content_types t ON t.content_id = libraries.id").Where("t.category_id IN (?)", categoryIds)
+		tx = tx.Joins("JOIN open_content_types t ON t.content_id = libraries.id").Where("t.category_id IN (?) AND t.open_content_provider_id = libraries.open_content_provider_id", categoryIds)
 	}
 	if err := tx.Count(&total).Error; err != nil {
 		return 0, nil, newGetRecordsDBError(err, "libraries")
