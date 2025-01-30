@@ -1,8 +1,8 @@
 import {
     KiwixChannel,
     PaginationMeta,
-    Library,
-    ServerResponseMany
+    ServerResponseMany,
+    Option
 } from '@/common';
 import { CloseX, LibrarySearchBar, MultiSelectDropdown } from './inputs';
 import { useLoaderData } from 'react-router-dom';
@@ -39,7 +39,7 @@ const LibrarySearchResultsModal = forwardRef<
     ref
 ) {
     const { libraryOptions } = useLoaderData() as {
-        libraryOptions: Library[];
+        libraryOptions: Option[];
     };
     const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -98,7 +98,9 @@ const LibrarySearchResultsModal = forwardRef<
                 setMeta(response.meta);
                 setSearchResults(response.data[0]);
             } else {
-                setSearchError('The search could not be completed due to an unexpected error. Please try again later.');
+                setSearchError(
+                    'The search could not be completed due to an unexpected error. Please try again later.'
+                );
             }
         } catch {
             setSearchError(
@@ -115,8 +117,8 @@ const LibrarySearchResultsModal = forwardRef<
     };
     const setDefaultOption = () => {
         const selected = libraryOptions
-            .filter((op) => op.id === Number(libraryId))
-            .map((option) => option.id);
+            .filter((op) => op.key === Number(libraryId))
+            .map((option) => option.key);
         setSelectedOptions(selected);
     };
     const handleSetPage = (page: number) => {
@@ -201,7 +203,7 @@ const LibrarySearchResultsModal = forwardRef<
                                 searchTerm={searchTerm}
                                 isSearchValid={isSearchValid}
                                 searchPlaceholder={placeholder}
-                                changeCallback={(value) => {
+                                changeCallback={(value: string) => {
                                     setSearchTerm(value);
                                     setIsSearchValid(value.trim() !== '');
                                 }}

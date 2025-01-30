@@ -7,22 +7,21 @@ import {
     Library,
     UserCoursesInfo,
     ActivityMapData,
-    UserRole, 
+    UserRole,
+    Option
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
 
-export const getStudentLevel1Data: LoaderFunction = async () => {
+export const getStudentLevel1Data: LoaderFunction = async ({ request }) => {
     const user = await fetchUser();
     if (!user) return;
-    const visibilityParam = user.role === UserRole.Student ? "&visibility=visible" : "&visibility=all"
-    const [resourcesResp, userContentResp, facilityContentResp, favoritesResp, libraryResp] =
+    const [resourcesResp, userContentResp, facilityContentResp, favoritesResp] =
         await Promise.all([
             API.get(`helpful-links?visibility=true&per_page=5`),
             API.get(`open-content/activity/${user.id}`),
             API.get(`open-content/activity`),
-            API.get(`open-content/favorites`),
-            API.get(`libraries?all=true&order_by=title${visibilityParam}`)
+            API.get(`open-content/favorites`)
         ]);
 
     const links = resourcesResp.data as HelpfulLinkAndSort;
@@ -36,14 +35,12 @@ export const getStudentLevel1Data: LoaderFunction = async () => {
     const favoriteOpenContent = favoritesResp.success
         ? (favoritesResp.data as OpenContentItem[])
         : [];
-    const libraryOptions = libraryResp.success
-        ? (libraryResp.data as Library[])
-        : [];
+    const libraryOptions = getLibraryOptionsHelper({ request });
     return json({
         helpfulLinks: helpfulLinks,
         topUserContent: topUserOpenContent,
         topFacilityContent: topFacilityOpenContent,
-        favorites: favoriteOpenContent, 
+        favorites: favoriteOpenContent,
         libraryOptions: libraryOptions
     });
 };
@@ -93,17 +90,38 @@ export const getFacilities: LoaderFunction = async () => {
     return json<null>(null);
 };
 
-export const getLibraryOptions: LoaderFunction = async ({ request }: { request: Request }) => {
+export const getLibraryLayoutData: LoaderFunction = async ({
+    request
+}: {
+    request: Request;
+}) => {
+    const [categoriesResp] = await Promise.all([
+        API.get(`open-content/categories`)
+    ]);
+    const categories = categoriesResp.data as Option[];
+    const libraryOptions = await getLibraryOptionsHelper({ request });
+    return json({ categories: categories, libraryOptions: libraryOptions });
+};
+
+const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
     const user = await fetchUser();
     if (!user) return;
-    const visibilityParam = user.Role != UserRole.Student && (request.url.includes('management') || request.url.includes('viewer'))  ? "&visibility=all" : "&visibility=visible"; 
-    const [libraryResp] = await Promise.all([
-        API.get(`libraries?all=true&order_by=title${visibilityParam}`)
-    ]);
+    const visibilityParam =
+        user.Role != UserRole.Student &&
+        (request.url.includes('management') || request.url.includes('viewer'))
+            ? '&visibility=all'
+            : '&visibility=visible';
+    const libraryResp = await API.get(
+        `libraries?all=true&order_by=title${visibilityParam}`
+    );
     const libraryOptions = libraryResp.success
-        ? (libraryResp.data as Library[])
+        ? (libraryResp.data as Library[]).map(
+              (library) =>
+                  ({
+                      key: library.id,
+                      value: library.title
+                  }) as Option
+          )
         : [];
-    return json({
-        libraryOptions: libraryOptions
-    });
+    return libraryOptions;
 };

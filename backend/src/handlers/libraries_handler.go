@@ -33,6 +33,7 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 // order_by - (title|created_at|most_popular) the order in which the results are returned
 // visibility - can either be featured, visible, hidden, or all
 // all - true or false on whether or not to return all libraries without pagination
+// categories - the category ids to filter the libraries by
 func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
@@ -50,8 +51,15 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	} else if userIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
+	categories := r.URL.Query()["category"]
+	categoryIds := make([]int, 0, len(categories))
+	for _, id := range categories {
+		if categoryId, err := strconv.Atoi(id); err == nil {
+			categoryIds = append(categoryIds, categoryId)
+		}
+	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, days, claims.UserID, claims.FacilityID, showHidden, orderBy, search, claims.isAdmin(), all)
+	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, days, claims.UserID, claims.FacilityID, showHidden, orderBy, search, claims.isAdmin(), all, categoryIds)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
