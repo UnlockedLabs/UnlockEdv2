@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"strings"
 )
 
 func (db *DB) GetVideoByID(id int) (*models.Video, error) {
@@ -78,7 +77,7 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 		args.Search = "%" + args.Search + "%"
 		tx = tx.Where("LOWER(title) LIKE ? OR LOWER(channel_title) LIKE ?", args.Search, args.Search)
 	}
-	switch strings.ToLower(args.OrderBy) {
+	switch args.OrderBy {
 	case "most_popular":
 		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
 			Group("videos.id").Order("COUNT(f.id) DESC")

@@ -57,7 +57,6 @@ func getOutcomesByTypeAndOrdered(outcomeType, orderBy, order string) map[string]
 	args.Order = order
 	args.OrderBy = orderBy
 	outcomes, err := server.Db.GetOutcomesForUser(&args, outType)
-	fmt.Println("OUTCOMES: ", outcomes)
 	form := make(map[string]any)
 	form["outcomes"] = outcomes
 	form["err"] = err

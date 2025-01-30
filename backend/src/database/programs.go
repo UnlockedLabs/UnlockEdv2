@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"fmt"
 )
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
@@ -16,7 +15,6 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	if len(args.Tags) > 0 {
-		fmt.Println("tags", args.Tags)
 		// look in program_tags for programs matching this tag
 		query := db.Model(&models.ProgramTag{}).Select("program_id")
 		for idx, tag := range args.Tags {
