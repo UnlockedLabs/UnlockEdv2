@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
@@ -6,14 +6,14 @@ import { Facility, TitleHandler } from '@/common';
 import { useMatches, useLoaderData } from 'react-router-dom';
 import API from '@/api/api';
 
-let setGlobalPageTitle: (newTitle: string) => void;
-
 export default function PageNav({
     showOpenMenu,
-    onShowNav
+    onShowNav,
+    globalPageTitle
 }: {
     showOpenMenu: boolean;
     onShowNav?: () => void;
+    globalPageTitle: string;
 }) {
     const { user } = useAuth();
     const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -21,10 +21,6 @@ export default function PageNav({
     const matches = useMatches();
     const currentRoute = matches[matches.length - 1];
     const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
-    const [globalPageTitle, _setGlobalPageTitle] = useState<string>(
-        pageTitle || 'Library Viewer'
-    );
-    setGlobalPageTitle = _setGlobalPageTitle;
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -54,7 +50,9 @@ export default function PageNav({
 
     return (
         <div className="px-2 py-3 flex justify-between items-center">
-            <div className={`flex items-center gap-3 ${showOpenMenu ? 'px-3' : ''}`}>
+            <div
+                className={`flex items-center gap-3 ${showOpenMenu ? 'px-3' : ''}`}
+            >
                 {showOpenMenu ? (
                     <ULIComponent
                         onClick={onShowNav}
@@ -115,4 +113,3 @@ export default function PageNav({
         </div>
     );
 }
-export { setGlobalPageTitle };

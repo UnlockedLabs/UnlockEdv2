@@ -13,6 +13,9 @@ export default function AuthenticatedLayout() {
     const matches = useMatches() as CustomRouteMatch[];
     const currentMatch = matches.find((match) => match?.handle?.title);
     const title = currentMatch?.handle?.title ?? 'UnlockEd';
+    // ✅ Move global page title state to AuthenticatedLayout
+    const [globalPageTitle, setGlobalPageTitle] = useState<string>(title);
+
     // We have three states we need to factor for.
     // 1. If the nav is open & pinned (Large screens only & uses lg:drawer-open)
     // 2. If the nav is open & not pinned (Large screens only)
@@ -48,10 +51,11 @@ export default function AuthenticatedLayout() {
                         <PageNav
                             showOpenMenu={!isNavPinned}
                             onShowNav={showNav}
+                            globalPageTitle={globalPageTitle}
                         />
                         <div className="grow">
                             {/* Needs to send data up to auth layout how to bubble up from outlet*/}
-                            <Outlet />
+                            <Outlet context={{ setGlobalPageTitle }} />
                         </div>
                     </main>
                 </div>
