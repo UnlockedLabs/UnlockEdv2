@@ -30,10 +30,15 @@ export default function AddLinkForm({
         if (response.success) {
             toaster('Helpful link added successfully', ToastState.success);
             onSuccess(data.title, data.url);
+            reset();
         } else {
-            toaster('Error adding helpful link', ToastState.error);
+            const message =
+                String(response.message) === 'existing_helpful_link'
+                    ? 'Link already exists'
+                    : 'Error adding helpful link';
+
+            toaster(message, ToastState.error);
         }
-        reset();
     };
 
     return (
