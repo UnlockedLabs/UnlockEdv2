@@ -14,7 +14,7 @@ func (db *DB) GetOutcomesForUser(args *models.QueryContext, outcomeType models.O
 	if !ok {
 		dbField = "created_at"
 	}
-	orderStr := dbField + " " + validOrder(args.Order)
+	orderStr := dbField + " " + args.Order
 
 	query := db.Model(&models.Outcome{}).Where("user_id = ?", args.UserID)
 

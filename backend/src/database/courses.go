@@ -23,11 +23,11 @@ func (db *DB) GetCourses(args *models.QueryContext) ([]models.Course, error) {
 			Or("LOWER(provider_platforms.name) LIKE ?", search).
 			Joins("LEFT JOIN provider_platforms ON courses.provider_platform_id = provider_platforms.id")
 
-		if err := tx.Count(&total).Error; err != nil {
+		if err := tx.Count(&args.Total).Error; err != nil {
 			return nil, newNotFoundDBError(err, "courses")
 		}
 
-		if err := tx.Limit(args.PerPage).Offset(calcOffset(args.Page, args.PerPage)).Find(&content).Error; err != nil {
+		if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 			return nil, newNotFoundDBError(err, "courses")
 		}
 	} else {
@@ -35,10 +35,9 @@ func (db *DB) GetCourses(args *models.QueryContext) ([]models.Course, error) {
 		if err := tx.Count(&total).Error; err != nil {
 			return nil, newNotFoundDBError(err, "courses")
 		}
-		if err := tx.Limit(args.PerPage).Offset(calcOffset(args.Page, args.PerPage)).Find(&content).Error; err != nil {
+		if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 			return nil, err
 		}
 	}
-	args.Total = total
 	return content, nil
 }
