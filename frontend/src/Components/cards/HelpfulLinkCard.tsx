@@ -73,11 +73,17 @@ export default function HelpfulLinkCard({
 
     return (
         <div
-            className="card p-4 space-y-2 relative"
+            className="card cursor-pointer"
             onClick={() => {
                 void handleHelpfulLinkClick(link.id);
             }}
         >
+            <div className="flex p-4 gap-2 border-b-2">
+                <figure className="w-[48px] h-[48px] bg-cover">
+                    <img src={link.thumbnail_url ?? ''} alt={link.title} />
+                </figure>
+                <h3 className="w-3/4 body my-auto mr-7">{link.title}</h3>
+            </div>
             {AdminRoles.includes(role) ? (
                 showModal != undefined && (
                     <div className="flex flex-row gap-2 absolute top-4 right-4 z-100">
@@ -98,28 +104,31 @@ export default function HelpfulLinkCard({
                     </div>
                 )
             ) : (
-                <ULIComponent
-                    iconClassName={`absolute right-1 w-6 h-6 cursor-pointer ${link.is_favorited ? 'text-primary-yellow' : ''}`}
-                    icon={link.is_favorited ? StarIcon : StarIconOutline}
-                    onClick={(e) => {
-                        if (e) void handleToggleAction('favorite', e);
-                    }}
-                />
+                <div
+                    className="absolute right-2 top-2 z-100"
+                    onClick={(e) => void handleToggleAction('favorite', e)}
+                >
+                    <ULIComponent
+                        tooltipClassName="absolute right-2 top-2 z-100"
+                        iconClassName={`w-6 h-6 cursor-pointer ${link.is_favorited ? 'text-primary-yellow' : ''}`}
+                        icon={link.is_favorited ? StarIcon : StarIconOutline}
+                        dataTip="Favorite Helpful Link"
+                    />
+                </div>
             )}
-            <img
-                src={link.thumbnail_url}
-                alt={link.title}
-                className="h-16 mx-auto object-contain"
-            />
-            <h3 className="body">{link.title}</h3>
-            <p className="body line-clamp-2 h-10">{link.description}</p>
-
-            {AdminRoles.includes(role) && (
-                <VisibleHiddenToggle
-                    visible={visible}
-                    changeVisibility={() => void handleToggleAction('toggle')}
-                />
-            )}
+            <div className="p-4 space-y-2">
+                <p className="body-small h-[40px] leading-5 line-clamp-2">
+                    {link.description}
+                </p>
+                {AdminRoles.includes(role) && (
+                    <VisibleHiddenToggle
+                        visible={visible}
+                        changeVisibility={() =>
+                            void handleToggleAction('toggle')
+                        }
+                    />
+                )}
+            </div>
         </div>
     );
 }
