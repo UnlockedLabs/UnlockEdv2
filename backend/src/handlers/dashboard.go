@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nats-io/nats.go"
 )
@@ -23,56 +24,39 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 }
 
 func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	var facilityId *uint
-
-	switch facility {
-	case "all":
-		facilityId = nil
-	case "":
-		facilityId = &claims.FacilityID
-	default:
-		facilityIdInt, err := strconv.Atoi(facility)
-		if err != nil {
-			return newInvalidIdServiceError(err, "facility")
+	clearCache := r.URL.Query().Get("reset") == "true"
+	if !srv.isTesting(r) {
+		key := fmt.Sprintf("admin-layer2-%d", claims.FacilityID)
+		cached, err := srv.buckets[AdminLayer2].Get(key)
+		if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
+			newCacheData, err := srv.getLayer2Data(r, log)
+			if err != nil {
+				return newInternalServerServiceError(err, "Error getting admin layer 2 data")
+			}
+			cacheBytes, err := json.Marshal(newCacheData)
+			if err != nil {
+				return newMarshallingBodyServiceError(err)
+			}
+			_, err = srv.buckets[AdminLayer2].Put(key, cacheBytes)
+			if err != nil {
+				return newInternalServerServiceError(err, "Error caching admin layer 2 data")
+			}
+			return writeJsonResponse(w, http.StatusOK, newCacheData)
 		}
-		ref := uint(facilityIdInt)
-		facilityId = &ref
+		var cachedData models.CachedDashboard[models.AdminLayer2Join]
+		err = json.Unmarshal(cached.Value(), &cachedData)
+		if err != nil {
+			return newInternalServerServiceError(err, "Error unmarshalling cached data")
+		}
+		return writeJsonResponse(w, http.StatusOK, cachedData)
+	} else {
+		newCacheData, err := srv.getLayer2Data(r, log)
+		if err != nil {
+			return newInternalServerServiceError(err, "Error retrieving admin layer 2 data")
+		}
+		return writeJsonResponse(w, http.StatusOK, newCacheData)
 	}
-
-	totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
-
-	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
-
-	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
-
-	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
-	}
-
-	adminDashboard := models.AdminLayer2Join{
-		TotalCoursesOffered:   int64(totalCourses),
-		TotalStudentsEnrolled: int64(totalStudents),
-		TotalHourlyActivity:   int64(totalActivity),
-		LearningInsights:      learningInsights,
-	}
-
-	return writeJsonResponse(w, http.StatusOK, adminDashboard)
 }
 
 func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -164,21 +148,32 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 			NewAdminsAdded:    newAdminsAdded,
 			PeakLoginTimes:    loginTimes,
 		}
-		jsonB, err := json.Marshal(models.DefaultResource(activityMetrics))
+		var cachedData models.CachedDashboard[interface{}]
+		cachedData.LastCache = time.Now()
+		cachedData.Data = activityMetrics
+
+		cacheBytes, err := json.Marshal(cachedData)
 		if err != nil {
 			return newMarshallingBodyServiceError(err)
 		}
-		_, err = srv.buckets[LoginMetrics].Put(key, jsonB)
+		_, err = srv.buckets[LoginMetrics].Put(key, cacheBytes)
 		if err != nil {
 			return newInternalServerServiceError(err, "Error caching login metrics")
 		}
-		_, err = w.Write(jsonB)
-		return err
+		return writeJsonResponse(w, http.StatusOK, cachedData)
 	} else if err != nil {
 		return newInternalServerServiceError(err, "Error retrieving login metrics")
 	}
-	_, err = w.Write(cached.Value())
-	return err
+	var cachedData models.CachedDashboard[interface{}]
+	err = json.Unmarshal(cached.Value(), &cachedData)
+	if err != nil {
+		return newInternalServerServiceError(err, "Error unmarshalling cached data")
+	}
+
+	return writeJsonResponse(w, http.StatusOK, cachedData)
+
+	// _, err = w.Write(cached.Value())
+	// return err
 }
 
 /**
@@ -231,4 +226,57 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, userCourses)
+}
+
+func (srv *Server) getLayer2Data(r *http.Request, log sLog) (models.CachedDashboard[models.AdminLayer2Join], error) {
+	facility := r.URL.Query().Get("facility")
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	case "":
+		facilityId = &claims.FacilityID
+	default:
+		facilityIdInt, err := strconv.Atoi(facility)
+		if err != nil {
+			return models.CachedDashboard[models.AdminLayer2Join]{}, newInvalidIdServiceError(err, "facility")
+		}
+		ref := uint(facilityIdInt)
+		facilityId = &ref
+	}
+	totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
+	}
+
+	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
+	}
+
+	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
+	}
+
+	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
+	if err != nil {
+		log.add("facilityId", claims.FacilityID)
+		return models.CachedDashboard[models.AdminLayer2Join]{}, newDatabaseServiceError(err)
+	}
+
+	adminDashboard := models.AdminLayer2Join{
+		TotalCoursesOffered:   int64(totalCourses),
+		TotalStudentsEnrolled: int64(totalStudents),
+		TotalHourlyActivity:   int64(totalActivity),
+		LearningInsights:      learningInsights,
+	}
+	var cachedData models.CachedDashboard[models.AdminLayer2Join]
+	cachedData.LastCache = time.Now()
+	cachedData.Data = adminDashboard
+	return cachedData, nil
 }

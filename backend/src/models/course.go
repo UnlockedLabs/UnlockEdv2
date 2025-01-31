@@ -67,3 +67,8 @@ type AdminLayer2Join struct {
 	TotalHourlyActivity   int64             `json:"total_hourly_activity"`
 	LearningInsights      []LearningInsight `json:"learning_insights"`
 }
+
+type AdminLayer2Response struct {
+	Data      AdminLayer2Join `json:"data"`
+	LastCache time.Time       `json:"last_cache"`
+}

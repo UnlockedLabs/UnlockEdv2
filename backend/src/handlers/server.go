@@ -213,6 +213,7 @@ const (
 	LibraryPaths string = "library_paths"
 	OAuthState   string = "oauth_state"
 	LoginMetrics string = "login_metrics"
+	AdminLayer2  string = "admin_layer_2"
 )
 
 func (srv *Server) setupNatsKvBuckets() error {
@@ -222,7 +223,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState} {
+	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2} {
 		kv, err := js.KeyValue(bucket)
 		if err != nil {
 			cfg := &nats.KeyValueConfig{
@@ -232,10 +233,10 @@ func (srv *Server) setupNatsKvBuckets() error {
 			switch bucket {
 			case CachedUsers:
 				cfg.TTL = time.Hour * 1
-			case LoginMetrics:
-				cfg.TTL = time.Hour * 24
 			case OAuthState:
 				cfg.TTL = time.Minute * 10
+			default:
+				cfg.TTL = time.Hour * 24
 			}
 			kv, err = js.CreateKeyValue(cfg)
 			if err != nil {

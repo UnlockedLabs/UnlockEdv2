@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -41,4 +43,9 @@ type ProgramFavorite struct {
 
 func (ProgramFavorite) TableName() string {
 	return "program_favorites"
+}
+
+type CachedDashboard[T any] struct {
+	LastCache time.Time `json:"last_cache"`
+	Data      T         `json:"data"`
 }

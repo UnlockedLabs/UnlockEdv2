@@ -328,17 +328,20 @@ export interface ServerResponseMany<T> extends ServerResponseBase {
 export type ServerResponse<T> = ServerResponseOne<T> | ServerResponseMany<T>;
 
 export interface LoginMetrics {
-    active_users: number;
-    total_logins: number;
-    logins_per_day: number;
-    percent_active: number;
-    percent_inactive: number;
-    total_residents: number;
-    total_admins: number;
-    facility: string;
-    new_residents_added: number;
-    new_admins_added: number;
-    peak_login_times: LoginActivity[];
+    data: {
+        active_users: number;
+        total_logins: number;
+        logins_per_day: number;
+        percent_active: number;
+        percent_inactive: number;
+        total_residents: number;
+        total_admins: number;
+        facility: string;
+        new_residents_added: number;
+        new_admins_added: number;
+        peak_login_times: LoginActivity[];
+    };
+    last_cache: string;
 }
 
 export interface LoginActivity {
@@ -476,10 +479,13 @@ export interface LearningInsight {
 }
 
 export interface AdminLayer2Join {
-    total_courses_offered: number;
-    total_students_enrolled: number;
-    total_hourly_activity: number;
-    learning_insights: LearningInsight[];
+    data: {
+        total_courses_offered: number;
+        total_students_enrolled: number;
+        total_hourly_activity: number;
+        learning_insights: LearningInsight[];
+    };
+    last_cache: string;
 }
 
 export interface EventCalendar {
@@ -710,9 +716,8 @@ export interface KiwixChannel {
 }
 
 export interface KiwixItem extends Library {
-    page_title: string; 
+    page_title: string;
 }
-
 
 export interface Option {
     key: number;
