@@ -225,7 +225,7 @@ func seedTestData(db *gorm.DB) {
 					log.Printf("Failed to create activity: %v", err)
 				}
 			}
-			if rand.Float32() < 0.4 { // 40% chance to create an outcome
+			if rand.Float32() < 0.1 { // 40% chance to create an outcome
 				outcome := models.Outcome{
 					UserID:   user.ID,
 					CourseID: prog.ID,

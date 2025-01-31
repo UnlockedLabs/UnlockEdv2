@@ -26,6 +26,7 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
+	isAlternateView := r.URL.Query().Get("alternate_view") == "true"
 
 	switch facility {
 	case "all":
@@ -41,28 +42,37 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 		facilityId = &ref
 	}
 
-	totalCourses, err := srv.Db.GetTotalCoursesOffered(facilityId)
+	totalCourses, err := srv.Db.GetTotalCoursesOffered()
 	if err != nil {
-		log.add("facilityId", claims.FacilityID)
+		log.add("facility_id", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
 
 	totalStudents, err := srv.Db.GetTotalStudentsEnrolled(facilityId)
 	if err != nil {
-		log.add("facilityId", claims.FacilityID)
+		log.add("facility_id", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
 
 	totalActivity, err := srv.Db.GetTotalHourlyActivity(facilityId)
 	if err != nil {
-		log.add("facilityId", claims.FacilityID)
+		log.add("facility_id", claims.FacilityID)
 		return newDatabaseServiceError(err)
 	}
+	var learningInsights []models.LearningInsight
 
-	learningInsights, err := srv.Db.GetLearningInsights(facilityId)
-	if err != nil {
-		log.add("facilityId", claims.FacilityID)
-		return newDatabaseServiceError(err)
+	if isAlternateView {
+		learningInsights, err = srv.Db.GetLearningInsightsAlternateView()
+		if err != nil {
+			log.add("facility_id", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
+	} else {
+		learningInsights, err = srv.Db.GetLearningInsights(facilityId)
+		if err != nil {
+			log.add("facility_id", claims.FacilityID)
+			return newDatabaseServiceError(err)
+		}
 	}
 
 	adminDashboard := models.AdminLayer2Join{

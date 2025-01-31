@@ -55,6 +55,7 @@ type RecentActivity struct {
 }
 
 type LearningInsight struct {
+	FacilityName          string  `json:"facility_name"`
 	CourseName            string  `json:"course_name"`
 	TotalStudentsEnrolled int64   `json:"total_students_enrolled"`
 	CompletionRate        float32 `json:"completion_rate"`
