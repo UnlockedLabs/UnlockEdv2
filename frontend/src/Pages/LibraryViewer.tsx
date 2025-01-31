@@ -4,7 +4,7 @@ import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
-import { useGlobalPageTitle } from '@/Context/GlobalPageTitleContext'; // Import the context hook
+import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext'; // Import the context hook
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
@@ -25,13 +25,10 @@ export default function LibraryViewer() {
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
 
-    // Access global page title and setter from context
-    const { setGlobalPageTitle } = useGlobalPageTitle();
-
-    // Set the page title when the component mounts
+    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
     useEffect(() => {
-        setGlobalPageTitle('Library Viewer'); // Setting the global page title
-    }, [setGlobalPageTitle]);
+        setAuthLayoutPageTitle('Library Viewer');
+    }, [setAuthLayoutPageTitle]);
 
     const openModal = () => {
         if (modalRef.current) {
@@ -90,7 +87,7 @@ export default function LibraryViewer() {
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
                     const title = resp.data.title;
-                    setGlobalPageTitle(title); // Update title with the library title
+                    setAuthLayoutPageTitle(title); // Update title with the library title
                     setSearchPlaceholder('Search ' + title);
                     setPathVal([{ path_id: ':library_name', value: title }]);
                 }
@@ -118,7 +115,7 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId, url, setGlobalPageTitle, setPathVal]);
+    }, [libraryId, url, setAuthLayoutPageTitle, setPathVal]);
 
     return (
         <div>

@@ -5,8 +5,7 @@ import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, TitleHandler } from '@/common';
 import { useMatches, useLoaderData } from 'react-router-dom';
 import API from '@/api/api';
-//TODO: Bring in the context that you created  here
-import { useGlobalPageTitle } from '@/Context/GlobalPageTitleContext';
+import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
 
 export default function PageNav({
     showOpenMenu,
@@ -22,9 +21,10 @@ export default function PageNav({
     const currentRoute = matches[matches.length - 1];
     const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
 
-    // assign the context to the local variable and setter
-    const { globalPageTitle, setGlobalPageTitle: contextSetGlobalPageTitle } =
-        useGlobalPageTitle();
+    const {
+        authLayoutPageTitle,
+        setAuthLayoutPageTitle: contextSetAuthLayoutPageTitle
+    } = useAuthLayoutPageTitle();
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -43,11 +43,10 @@ export default function PageNav({
     }, []);
 
     useEffect(() => {
-        // If the route has a title, update the global page title using context
         if (pageTitle) {
-            contextSetGlobalPageTitle(pageTitle);
+            contextSetAuthLayoutPageTitle(pageTitle);
         }
-    }, [pageTitle, contextSetGlobalPageTitle]);
+    }, [pageTitle, contextSetAuthLayoutPageTitle]);
 
     const handleSwitchFacility = async (facility: Facility) => {
         const resp = await API.put<null, object>(
@@ -79,7 +78,7 @@ export default function PageNav({
                 )}
                 <h1>
                     {pageTitle == 'Library Viewer'
-                        ? globalPageTitle
+                        ? authLayoutPageTitle
                         : pageTitle}
                 </h1>
             </div>
