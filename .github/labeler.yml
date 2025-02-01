@@ -1,0 +1,23 @@
+Frontend:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/src/**/*'
+
+Backend:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/src/**/*.go'
+
+CronTasks:
+  - changed-files:
+      - any-glob-to-any-file: 'backend/tasks/*.go'
+
+ProviderMiddleware:
+  - changed-files:
+      - any-glob-to-any-file: 'provider-middleware/*.go'
+
+Documentation:
+- changed-files:
+  - any-glob-to-any-file: '**/*.md'
+
+CI-Actions:
+- changed-files:
+  - any-glob-to-any-file: '.github/workflows/*.yml'
