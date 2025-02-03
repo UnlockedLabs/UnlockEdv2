@@ -31,7 +31,9 @@ func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request
 
 func (srv *Server) handleGetUserFavoriteOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
-	total, favorites, err := srv.Db.GetUserFavorites(srv.getUserID(r), page, perPage)
+	search := r.URL.Query().Get("search")
+	orderBy := r.URL.Query().Get("order_by")
+	total, favorites, err := srv.Db.GetUserFavorites(srv.getUserID(r), page, perPage, orderBy, search)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

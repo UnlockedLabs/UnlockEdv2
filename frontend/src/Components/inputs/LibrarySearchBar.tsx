@@ -11,21 +11,21 @@ interface LibrarySearchBarProps {
 
 export const LibrarySearchBar = forwardRef<
     HTMLInputElement,
-        LibrarySearchBarProps
-    >(function SearchResultsModal(
-        {
-            searchTerm,
-            isSearchValid,
-            searchPlaceholder,
-            changeCallback,
-            onSearchClick,
-        },
-        ref
-    ) {
+    LibrarySearchBarProps
+>(function SearchResultsModal(
+    {
+        searchTerm,
+        isSearchValid,
+        searchPlaceholder,
+        changeCallback,
+        onSearchClick
+    },
+    ref
+) {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && isSearchValid) {
             e.preventDefault();
-           onSearchClick(1, 10);
+            onSearchClick(1, 10);
         }
     };
     return (
