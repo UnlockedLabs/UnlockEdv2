@@ -2,21 +2,31 @@ Frontend:
   - changed-files:
       - any-glob-to-any-file: 'frontend/src/**/*'
 
+
 Backend:
   - changed-files:
       - any-glob-to-any-file: 'backend/src/**/*.go'
+
 
 CronTasks:
   - changed-files:
       - any-glob-to-any-file: 'backend/tasks/*.go'
 
+
 ProviderMiddleware:
   - changed-files:
       - any-glob-to-any-file: 'provider-middleware/*.go'
 
+
 Documentation:
 - changed-files:
   - any-glob-to-any-file: '**/*.md'
+
+
+HAS_MIGRATION:
+- changed-files:
+  - any-glob-to-any-file: 'backend/migrations/*.sql'
+
 
 CI-Actions:
 - changed-files:
