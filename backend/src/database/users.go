@@ -55,8 +55,7 @@ func (db *DB) GetCurrentUsers(qCtx *models.QueryContext, role string) ([]models.
 }
 
 func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
-	search := strings.TrimSpace(ctx.Search)
-	likeSearch := "%" + strings.ToLower(search) + "%"
+	likeSearch := "%" + ctx.Search + "%"
 	tx := db.Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
 	switch role {
 	case "admin":
@@ -78,7 +77,7 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	if len(users) == 0 {
-		split := strings.Fields(search)
+		split := strings.Fields(ctx.Search)
 		if len(split) > 1 {
 			first := "%" + split[0] + "%"
 			last := "%" + split[1] + "%"

@@ -22,6 +22,10 @@ Other-Config:
 - changed-files:
   - any-glob-to-any-file: "config/*"
 
+HAS_MIGRATION:
+- changed-files:
+  - any-glob-to-any-file: 'backend/migrations/*.sql'
+
 CI-Actions:
 - changed-files:
   - any-glob-to-any-file: '.github/workflows/*.yml'

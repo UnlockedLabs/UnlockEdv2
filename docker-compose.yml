@@ -126,6 +126,7 @@ services:
       context: .
       dockerfile: ./backend/tasks/dev.Dockerfile
     environment:
+      - APP_ENV=dev
       - LOG_LEVEL=debug
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
