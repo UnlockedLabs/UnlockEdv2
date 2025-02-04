@@ -40,9 +40,13 @@ func (srv *Server) handleForwardKiwixProxy(w http.ResponseWriter, r *http.Reques
 		srv.errorResponse(w, http.StatusBadRequest, "Error parsing target URL")
 		return
 	}
+	scheme := "https"
+	if srv.dev {
+		scheme = "http"
+	}
 	proxy := httputil.ReverseProxy{
 		Director: func(req *http.Request) {
-			req.URL.Scheme = "https"
+			req.URL.Scheme = scheme
 			req.URL.Host = parsedURL.Host
 			req.Host = parsedURL.Host
 
@@ -93,7 +97,7 @@ func (srv *Server) handleRedirectVideosLocal(w http.ResponseWriter, r *http.Requ
 func (srv *Server) handleRedirectVideosS3(w http.ResponseWriter, r *http.Request) {
 	logrus.Infof("Redirecting to S3 for video %s", r.URL.Path)
 	video := r.Context().Value(videoKey).(*models.Video)
-	if srv.s3Bucket == "" || video == nil {
+	if srv.dev || video == nil || srv.s3Bucket == "" {
 		srv.handleRedirectVideosLocal(w, r, video)
 		return
 	}
