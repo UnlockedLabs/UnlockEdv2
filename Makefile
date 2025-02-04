@@ -44,9 +44,11 @@ init: ascii_art
 	@echo 'Installing dependencies...'
 	go install github.com/pressly/goose/v3/cmd/goose@latest && go install github.com/air-verse/air@latest && cd frontend && yarn install && yarn prepare && cd ..
 	@echo 'Dependencies installed successfully.'
+	./config/zims.sh
 	docker compose up $(BUILD_RECREATE)
 
 dev: ascii_art
+	./config/zims.sh
 	docker compose up $(BUILD_RECREATE)
 
 install-dep: ascii_art

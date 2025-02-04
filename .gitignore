@@ -1,4 +1,3 @@
-/canvas-seeder/users.txt
 *.env
 .vscode
 .idea
@@ -18,4 +17,4 @@ jar
 /provider-middleware/middleware
 /bin/*
 /tmp
-/canvas-seeder/users.txt
+/csvs/zims/*.zim

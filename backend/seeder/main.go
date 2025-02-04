@@ -91,7 +91,7 @@ func seedTestData(db *gorm.DB) {
 		}
 	}
 	kiwix := models.OpenContentProvider{
-		Url:              "https://kiwix.staging.unlockedlabs.xyz",
+		Url:              "http://kiwix:8080",
 		Title:            models.Kiwix,
 		ThumbnailUrl:     "https://images.fineartamerica.com/images/artworkimages/mediumlarge/3/llamas-wearing-party-hats-in-a-circle-looking-down-john-daniels.jpg",
 		CurrentlyEnabled: true,

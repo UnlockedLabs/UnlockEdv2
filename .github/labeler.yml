@@ -18,6 +18,10 @@ Documentation:
 - changed-files:
   - any-glob-to-any-file: '**/*.md'
 
+Other-Config:
+- changed-files:
+  - any-glob-to-any-file: "config/*"
+
 CI-Actions:
 - changed-files:
   - any-glob-to-any-file: '.github/workflows/*.yml'

@@ -30,6 +30,7 @@ type Server struct {
 	OryClient *ory.APIClient
 	Client    *http.Client
 	nats      *nats.Conn
+	dev       bool
 	buckets   map[string]nats.KeyValue
 	features  []models.FeatureAccess
 	s3        *s3.Client
@@ -133,12 +134,14 @@ func newServer() *Server {
 	if err != nil {
 		log.Errorf("Failed to connect to NATS: %v", err)
 	}
+	dev := os.Getenv("APP_ENV") == "dev"
 	server := Server{
 		Db:        database.InitDB(false),
 		Mux:       http.NewServeMux(),
 		OryClient: ory.NewAPIClient(oryConfig()),
 		Client:    &http.Client{},
 		nats:      conn,
+		dev:       dev,
 	}
 	features, err := server.Db.GetFeatureAccess()
 	if err != nil {
