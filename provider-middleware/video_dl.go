@@ -43,7 +43,7 @@ func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body *map[st
 	var svc *s3.Client = nil
 	if bucketName != "" {
 		logger().Info("s3 bucket found, creating client")
-		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithClientLogMode(aws.LogRequest|aws.LogResponseWithBody), config.WithRegion(os.Getenv("AWS_REGION")))
+		cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion(os.Getenv("AWS_REGION")))
 		if err != nil {
 			logger().Fatal(err)
 		}
@@ -369,11 +369,14 @@ func (yt *VideoService) addVideos(ctx context.Context) error {
 				return
 			default:
 				var videoExists bool
-				if err := yt.db.WithContext(ctx).Model(&models.Video{}).Select("count(*) > 0").Where("url = ?", url).Scan(&videoExists).Error; err != nil {
-					logger().Errorf("error checking if video exists: %v", err)
-					return
+				tx := yt.db.WithContext(ctx).Model(&models.Video{}).Select("count(*) > 0")
+				if strings.Contains(url, "youtu") {
+					tx = tx.Where("external_id = ?", ytIdFromUrl(url))
+				} else {
+					tx = tx.Where("url = ?", url)
 				}
-				if videoExists {
+				if err := tx.Scan(&videoExists).Error; err != nil || videoExists {
+					logger().Errorf("video already exists: %v", url)
 					return
 				}
 				result, vid, err := yt.fetchAndSaveInitialVideoInfo(ctx, url, false)
@@ -433,11 +436,15 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 	if err != nil {
 		thumbnail = "/youtube.png"
 	}
+	externId := result.Info.ID
+	if strings.Contains("youtu", vidUrl) {
+		externId = ytIdFromUrl(vidUrl)
+	}
 	vid := &models.Video{
 		Title:                 result.Info.Title,
 		Description:           stripUrlsFromDescription(result.Info.Description),
 		ChannelTitle:          &result.Info.Channel,
-		ExternalID:            result.Info.ID,
+		ExternalID:            externId,
 		VisibilityStatus:      false,
 		Url:                   vidUrl,
 		ThumbnailUrl:          thumbnail,
@@ -454,6 +461,25 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 		return nil, nil, err
 	}
 	return &result, vid, err
+}
+
+func ytIdFromUrl(url string) string {
+	if !strings.Contains(url, "v=") && strings.Contains(url, "youtu.be") {
+		parts := strings.Split(url, "//")
+		if len(parts) < 2 {
+			return ""
+		}
+		rest := strings.Split(strings.Split(parts[1], "?")[0], "/")[1]
+		return rest
+	}
+	if strings.Contains(url, "v=") {
+		parts := strings.Split(url, "v=")
+		if len(parts) < 2 {
+			return ""
+		}
+		return strings.Split(parts[1], "&")[0]
+	}
+	return ""
 }
 
 // can be called vith the existing goutubedl.Result, or nil and it will fetch the info again
