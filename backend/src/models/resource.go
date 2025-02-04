@@ -67,3 +67,25 @@ func UpdateStruct(dst, src interface{}) {
 func StringPtr(s string) *string {
 	return &s
 }
+
+type QueryContext struct {
+	Page       int
+	PerPage    int
+	FacilityID uint
+	UserID     uint
+	OrderBy    string
+	Order      string
+	IsAdmin    bool
+	Search     string
+	Tags       []string
+	Total      int64
+	All        bool
+}
+
+func (q QueryContext) IntoMeta() PaginationMeta {
+	return NewPaginationInfo(q.Page, q.PerPage, q.Total)
+}
+
+func (q QueryContext) CalcOffset() int {
+	return (q.Page - 1) * q.PerPage
+}

@@ -39,53 +39,49 @@ type MilestoneResponse struct {
 	CourseID             int    `json:"course_id"`
 }
 
-func (db *DB) GetMilestones(page, perPage int, search, orderBy string) (int64, []MilestoneResponse, error) {
-	var (
-		content []MilestoneResponse
-		total   int64
-	)
+func (db *DB) GetMilestones(args *models.QueryContext) ([]MilestoneResponse, error) {
+	var content []MilestoneResponse
 	query := db.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, courses.name as course_name, users.username").
 		Joins("JOIN courses ON milestones.course_id = courses.id").
 		Joins("JOIN provider_platforms ON courses.provider_platform_id = provider_platforms.id").
 		Joins("JOIN users ON milestones.user_id = users.id")
-
-	if search != "" {
-		search = "%" + search + "%"
+	var search string
+	if args.Search != "" {
+		search = "%" + args.Search + "%"
 		query = query.Where("LOWER(milestones.type) LIKE ?", search).Or("LOWER(users.username) LIKE ?", search).Or("LOWER(courses.name) LIKE ?", search).Or("LOWER(provider_platforms.name) LIKE ?", search)
 	}
-	if err := query.Count(&total).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "milestones")
+	if err := query.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "milestones")
 	}
-	if orderBy != "" && IsValidOrderBy(orderBy) {
-		if orderBy == "name" {
-			orderBy = "courses.name"
+	if args.OrderBy != "" && IsValidOrderBy(args.OrderBy) {
+		if args.OrderBy == "name" {
+			args.OrderBy = "courses.name"
 		}
-		query = query.Order(orderBy)
+		query = query.Order(args.OrderBy)
 	}
-	query = query.Limit(perPage).Offset(calcOffset(page, perPage))
+	query = query.Limit(args.PerPage).Offset(args.CalcOffset())
 	if err := query.Find(&content).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "milestones")
+		return nil, newGetRecordsDBError(err, "milestones")
 	}
-	return total, content, nil
+	return content, nil
 }
 
-func (db *DB) GetMilestonesForUser(page, perPage int, id uint) (int64, []MilestoneResponse, error) {
+func (db *DB) GetMilestonesForUser(args *models.QueryContext) ([]MilestoneResponse, error) {
 	content := []MilestoneResponse{}
-	total := int64(0)
 	err := db.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, courses.name as course_name, users.username").
 		Joins("JOIN courses ON milestones.course_id = courses.id").
 		Joins("JOIN provider_platforms ON courses.provider_platform_id = provider_platforms.id").
 		Joins("JOIN users ON milestones.user_id = users.id").
-		Where("user_id = ?", id).
-		Count(&total).
-		Limit(perPage).
-		Offset(calcOffset(page, perPage)).
+		Where("user_id = ?", args.UserID).
+		Count(&args.Total).
+		Limit(args.PerPage).
+		Offset(args.CalcOffset()).
 		Find(&content).
 		Error
 	if err != nil {
-		return 0, nil, NewDBError(err, "error getting milestones for user")
+		return nil, NewDBError(err, "error getting milestones for user")
 	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) CreateMilestone(content *models.Milestone) (*models.Milestone, error) {

@@ -150,7 +150,8 @@ func TestHandleCreateProviderUserAccountUserMgmt(t *testing.T) {
 
 func getImportUsersWithIdsForm() map[string]any {
 	form := make(map[string]any)
-	_, platforms, err := server.Db.GetAllProviderPlatforms(1, 10)
+	args := getDefaultQueryCtx()
+	platforms, err := server.Db.GetAllProviderPlatforms(&args)
 	if err != nil {
 		form["err"] = err
 	}
@@ -185,11 +186,14 @@ func getImportUserWithIdsForm() map[string]any {
 
 func getProviderPlatformIdAndUserId() map[string]any {
 	form := make(map[string]any)
-	_, platforms, err := server.Db.GetAllProviderPlatforms(1, 10)
+	args := getDefaultQueryCtx()
+	platforms, err := server.Db.GetAllProviderPlatforms(&args)
 	if err != nil {
 		form["err"] = err
 	}
-	_, users, err := server.Db.GetCurrentUsers(1, 10, 1, "", "", "")
+	args.UserID = 1
+	args.FacilityID = 1
+	users, err := server.Db.GetCurrentUsers(&args, "")
 	if err != nil {
 		form["err"] = err
 	}

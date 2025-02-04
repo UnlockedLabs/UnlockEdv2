@@ -17,6 +17,7 @@ func main() {
 	if err != nil {
 		log.Error("error loading .env file, using default env variables")
 	}
+	dev := os.Getenv("APP_ENV") == "dev"
 	initLogging()
 	runner := newJobRunner()
 	scheduler, err := gocron.NewScheduler()
@@ -45,7 +46,9 @@ func main() {
 			hour = 1
 		}
 	}
-	runner.execute()
+	if !dev {
+		runner.execute()
+	}
 	scheduler.Start()
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)

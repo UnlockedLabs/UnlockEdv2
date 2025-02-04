@@ -298,27 +298,34 @@ func cleanupAddedUser() {
 	}
 }
 func getDBUsersAsUser() map[string]any {
-	total, _, dbErr := server.Db.GetCurrentUsers(1, 10, 1, "", "", "")
+	args := getDefaultQueryCtx()
+	args.UserID = 1
+	dbUsers, dbErr := server.Db.GetCurrentUsers(&args, "")
 	form := make(map[string]any)
-	form["total"] = total
+	form["total"] = args.Total
 	form["dbErr"] = dbErr
+	form["dbUsers"] = dbUsers
 	return form
 }
 
 func getDBUnmappedUsers() map[string]any {
-	total, _, dbErr := server.Db.GetUnmappedUsers(1, 10, 1, nil, 1)
+	args := getDefaultQueryCtx()
+	dbUsers, dbErr := server.Db.GetUnmappedUsers(&args, 1, []string{})
 	form := make(map[string]any)
-	form["total"] = total
+	form["total"] = args.Total
 	form["dbErr"] = dbErr
+	form["dbUsers"] = dbUsers
 	return form
 }
 
 func getDBUsers() map[string]any {
-	total, dbUsers, dbErr := server.Db.GetCurrentUsers(1, 10, 2, "", "", "")
+	args := getDefaultQueryCtx()
+	args.FacilityID = 2
+	dbUsers, dbErr := server.Db.GetCurrentUsers(&args, "")
 	form := make(map[string]any)
 	form["dbUsers"] = dbUsers
 	form["dbErr"] = dbErr
-	form["total"] = total
+	form["total"] = args.Total
 	return form
 }
 

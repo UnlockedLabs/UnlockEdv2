@@ -33,7 +33,11 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 			handler := getHandlerByRole(server.handleGetSectionsForProgram, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				total, sections, err := server.Db.GetSectionsForProgram(int(id), 1, 10)
+				args := models.QueryContext{
+					Page:    1,
+					PerPage: 10,
+				}
+				sections, err := server.Db.GetSectionsForProgram(int(id), &args)
 				if err != nil {
 					t.Errorf("failed to get sections for program from db, error is %v", err)
 				}
@@ -42,8 +46,8 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if data.Meta.Total != total {
-					t.Errorf("handler returned unexpected total returned: got %v want %v", data.Meta.Total, total)
+				if data.Meta.Total != args.Total {
+					t.Errorf("handler returned unexpected total returned: got %v want %v", data.Meta.Total, args.Total)
 				}
 				for _, section := range sections {
 					if !slices.ContainsFunc(data.Data, func(sec models.ProgramSection) bool {
@@ -274,7 +278,13 @@ func TestHandleDeleteSection(t *testing.T) {
 
 func getProgramSection(facilityId uint) map[string]any {
 	form := make(map[string]any)
-	_, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
+	args := models.QueryContext{
+		Page:       1,
+		PerPage:    10,
+		UserID:     1,
+		FacilityID: 1,
+	}
+	programs, err := server.Db.GetPrograms(&args)
 	if err != nil {
 		form["err"] = err
 	}
@@ -286,7 +296,13 @@ func getProgramSection(facilityId uint) map[string]any {
 }
 func getProgramId() map[string]any {
 	form := make(map[string]any)
-	_, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
+	args := models.QueryContext{
+		Page:       1,
+		PerPage:    10,
+		UserID:     1,
+		FacilityID: 1,
+	}
+	programs, err := server.Db.GetPrograms(&args)
 	if err != nil {
 		form["err"] = err
 	}
@@ -296,11 +312,17 @@ func getProgramId() map[string]any {
 
 func getSectionId() map[string]any {
 	form := make(map[string]any)
-	_, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
+	args := models.QueryContext{
+		Page:       1,
+		PerPage:    10,
+		UserID:     1,
+		FacilityID: 1,
+	}
+	programs, err := server.Db.GetPrograms(&args)
 	if err != nil {
 		form["err"] = err
 	}
-	_, sections, err := server.Db.GetSectionsForProgram(int(programs[rand.Intn(len(programs))].ID), 1, 10)
+	sections, err := server.Db.GetSectionsForProgram(int(programs[rand.Intn(len(programs))].ID), &args)
 	if err != nil {
 		form["err"] = err
 	}
@@ -313,10 +335,17 @@ func getSectionId() map[string]any {
 }
 
 func getSectionsSearch(facilityId uint, search string) map[string]any {
-	total, sections, err := server.Db.GetSectionsForFacility(1, 10, facilityId, search)
+	args := models.QueryContext{
+		Page:       1,
+		PerPage:    10,
+		UserID:     1,
+		FacilityID: facilityId,
+		Search:     search,
+	}
+	sections, err := server.Db.GetSectionsForFacility(&args)
 	form := make(map[string]any)
 	form["sections"] = sections
 	form["err"] = err
-	form["total"] = total
+	form["total"] = args.Total
 	return form
 }

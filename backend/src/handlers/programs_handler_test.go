@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"slices"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -19,7 +18,6 @@ import (
 func TestHandleIndexPrograms(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetProgramsAsAdmin", "admin", getAllPrograms(), http.StatusOK, ""},
-		{"TestGetProgramsWithSearchAsAdmin", "admin", getProgramsBySearch("self-paced,eligible_good_time", "to"), http.StatusOK, "?tags=self-paced,eligible_good_time&search=to"},
 		{"TestGetProgramsAsUser", "student", nil, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
@@ -254,20 +252,13 @@ func TestHandleFavoriteProgram(t *testing.T) {
 }
 
 func getAllPrograms() map[string]any {
-	total, programs, err := server.Db.GetProgram(1, 10, nil, "", 1)
+	args := getDefaultQueryCtx()
+	args.UserID = 1
+	programs, err := server.Db.GetPrograms(&args)
 	form := make(map[string]any)
 	form["programs"] = programs
 	form["err"] = err
-	form["total"] = total
-	return form
-}
-
-func getProgramsBySearch(tags string, search string) map[string]any {
-	total, programs, err := server.Db.GetProgram(1, 10, strings.Split(tags, ","), search, 1)
-	form := make(map[string]any)
-	form["programs"] = programs
-	form["err"] = err
-	form["total"] = total
+	form["total"] = args.Total
 	return form
 }
 

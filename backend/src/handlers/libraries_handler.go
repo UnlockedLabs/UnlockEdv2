@@ -35,14 +35,8 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 // all - true or false on whether or not to return all libraries without pagination
 // categories - the category ids to filter the libraries by
 func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
-	search := r.URL.Query().Get("search")
-	orderBy := r.URL.Query().Get("order_by")
-	all := r.URL.Query().Get("all") == "true"
-	days, err := strconv.Atoi(r.URL.Query().Get("days"))
-	if err != nil {
-		days = -1
-	}
+	args := srv.getQueryContext(r)
+	categoryIds := getCategoryIds(r.URL.Query()["categories"])
 	showHidden := "visible"
 	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
@@ -51,20 +45,21 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	} else if userIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
-	categories := r.URL.Query()["category"]
+	libraries, err := srv.Db.GetAllLibraries(&args, showHidden, categoryIds)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writePaginatedResponse(w, http.StatusOK, libraries, args.IntoMeta())
+}
+
+func getCategoryIds(categories []string) []int {
 	categoryIds := make([]int, 0, len(categories))
 	for _, id := range categories {
 		if categoryId, err := strconv.Atoi(id); err == nil {
 			categoryIds = append(categoryIds, categoryId)
 		}
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	total, libraries, err := srv.Db.GetAllLibraries(page, perPage, days, claims.UserID, claims.FacilityID, showHidden, orderBy, search, claims.isAdmin(), all, categoryIds)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	paginationData := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, libraries, paginationData)
+	return categoryIds
 }
 
 func (srv *Server) handleGetLibrary(w http.ResponseWriter, r *http.Request, log sLog) error {
