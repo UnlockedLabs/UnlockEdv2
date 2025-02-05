@@ -2,15 +2,14 @@ import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import {
-    ModalType,
     ToastState,
     Video,
     ServerResponseMany,
     UserRole,
-    FilterLibrariesVidsandHelpfulLinksAdmin
+    FilterLibrariesVidsandHelpfulLinksAdmin,
+    MAX_DOWNLOAD_ATTEMPTS,
+    getVideoErrorMessage
 } from '../common';
-import AddVideosForm from '@/Components/forms/AddVideosForm';
-import Modal from '@/Components/Modal';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
@@ -20,15 +19,19 @@ import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
 import { useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
-import VideoInfoModalForm from '@/Components/forms/VideoInfoModalForm';
 import { useNavigate } from 'react-router-dom';
+import {
+    AddVideoModal,
+    closeModal,
+    showModal,
+    TextModalType,
+    TextOnlyModal
+} from '@/Components/modals';
 
 export default function VideoManagement() {
     const { user } = useAuth();
     const addVideoModal = useRef<HTMLDialogElement>(null);
-    const [targetVideo, setTargetVideo] = useState<Video | undefined>(
-        undefined
-    );
+    const [targetVideo, setTargetVideo] = useState<Video | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const videoErrorModal = useRef<HTMLDialogElement>(null);
@@ -68,13 +71,6 @@ export default function VideoManagement() {
         });
     };
 
-    const handleAddVideoSuccess = (msg: string, state: ToastState) => {
-        if (state !== ToastState.null) toaster(msg, state);
-        addVideoModal.current?.close();
-        setPolling(true);
-        setTimeout(() => pollVideos(1000), 1000);
-    };
-
     const handleRetryVideo = async (video: Video) => {
         const response = await API.put<null, object>(
             `videos/${video.id}/retry`,
@@ -87,6 +83,15 @@ export default function VideoManagement() {
         } else {
             toaster('Error uploading video', ToastState.error);
         }
+    };
+
+    const prepError = () => {
+        if (!targetVideo) return;
+        return targetVideo.video_download_attempts.length >=
+            MAX_DOWNLOAD_ATTEMPTS
+            ? `This video has reached the maximum download attempts. Please remove and try again`
+            : `Download is processsing: ${getVideoErrorMessage(targetVideo) ?? ''}
+                   The video download will be retried every 3 hours`;
     };
 
     const handleChange = (newSearch: string) => {
@@ -116,7 +121,7 @@ export default function VideoManagement() {
                 </div>
                 <button
                     className="button items-center"
-                    onClick={() => addVideoModal.current?.showModal()}
+                    onClick={() => showModal(addVideoModal)}
                 >
                     <PlusCircleIcon className="w-4 my-auto" />
                     Add Videos
@@ -141,7 +146,7 @@ export default function VideoManagement() {
                         }}
                         handleOpenInfo={() => {
                             setTargetVideo(video);
-                            videoErrorModal.current?.showModal();
+                            showModal(videoErrorModal);
                         }}
                     />
                 ))}
@@ -164,30 +169,18 @@ export default function VideoManagement() {
             {!isLoading && !error && videoData.length === 0 && (
                 <span className="text-center text-warning">No results</span>
             )}
-            <Modal
-                ref={addVideoModal}
-                type={ModalType.Add}
-                item="Videos"
-                form={<AddVideosForm onSuccess={handleAddVideoSuccess} />}
-            />
-            {targetVideo && (
-                <div>
-                    <Modal
-                        ref={videoErrorModal}
-                        item="video info"
-                        form={
-                            <VideoInfoModalForm
-                                video={targetVideo}
-                                onClose={() => {
-                                    videoErrorModal.current?.close();
-                                    setTargetVideo(undefined);
-                                }}
-                            />
-                        }
-                        type={ModalType.Show}
-                    />
-                </div>
-            )}
+            <AddVideoModal mutate={mutate} ref={addVideoModal} />
+            <TextOnlyModal
+                ref={videoErrorModal}
+                type={TextModalType.Information}
+                title={'Video Status'}
+                text={prepError() ?? ''}
+                onSubmit={() => {}} //eslint-disable-line
+                onClose={() => {
+                    closeModal(videoErrorModal);
+                    setTargetVideo(null);
+                }}
+            ></TextOnlyModal>
         </>
     );
 }

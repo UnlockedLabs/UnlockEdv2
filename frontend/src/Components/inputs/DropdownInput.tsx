@@ -7,6 +7,7 @@ interface DropdownProps {
     errors: FieldErrors<any>; // eslint-disable-line
     register: UseFormRegister<any>; // eslint-disable-line
     enumType: Record<string, string>;
+    disabled?: boolean;
 }
 
 export function DropdownInput({
@@ -15,7 +16,8 @@ export function DropdownInput({
     required,
     errors,
     register,
-    enumType
+    enumType,
+    disabled = false
 }: DropdownProps) {
     return (
         <label className="form-control w-full">
@@ -30,6 +32,7 @@ export function DropdownInput({
                         message: `${label} is required`
                     }
                 })}
+                disabled={disabled}
             >
                 {Object.entries(enumType).map(([key, value]) => (
                     <option key={key} value={value}>

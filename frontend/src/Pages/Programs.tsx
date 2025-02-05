@@ -12,6 +12,7 @@ import Modal from '@/Components/Modal';
 import CreateProgramForm from '@/Components/forms/CreateProgramForm';
 import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
+import { showModal } from '@/Components/modals';
 
 export default function Programs() {
     const { user } = useAuth();
@@ -65,7 +66,7 @@ export default function Programs() {
                         <button
                             className="button flex items-center space-x-2"
                             onClick={() => {
-                                addProgramModal.current?.showModal();
+                                showModal(addProgramModal);
                             }}
                         >
                             <PlusCircleIcon className="w-4 my-auto" />
