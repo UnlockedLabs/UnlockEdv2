@@ -1,4 +1,9 @@
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import {
+    DefaultValues,
+    FieldValues,
+    SubmitHandler,
+    useForm
+} from 'react-hook-form';
 import {
     CloseX,
     DropdownInput,
@@ -6,7 +11,7 @@ import {
     TextAreaInput,
     TextInput
 } from './inputs';
-import { forwardRef } from 'react';
+import { forwardRef, useEffect } from 'react';
 
 export enum FormInputTypes {
     Text,
@@ -26,11 +31,12 @@ export interface Input {
 interface ModalProps<T extends FieldValues> {
     title: string;
     inputs: Input[];
+    defaultValues?: DefaultValues<T>;
     onSubmit: SubmitHandler<T>;
 }
 
 export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
-    { title, inputs, onSubmit }: ModalProps<T>,
+    { title, inputs, onSubmit, defaultValues }: ModalProps<T>,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     const {
@@ -38,7 +44,10 @@ export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
         reset,
         handleSubmit,
         formState: { errors }
-    } = useForm<T>();
+    } = useForm<T>({ defaultValues: defaultValues });
+    useEffect(() => {
+        reset(defaultValues);
+    }, [defaultValues, reset]);
     return (
         <dialog ref={ref} className="modal relative">
             <div className="modal-box">
@@ -52,10 +61,11 @@ export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
                             void handleSubmit(onSubmit)(e);
                         }}
                     >
-                        {inputs.map((input: Input) => {
+                        {inputs.map((input: Input, index) => {
                             if (input.type == FormInputTypes.Text) {
                                 return (
                                     <TextInput
+                                        key={index}
                                         label={input.label}
                                         interfaceRef={input.interfaceRef}
                                         required={input.required}
@@ -69,6 +79,7 @@ export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
                                 if (!input.enumType) return;
                                 return (
                                     <DropdownInput
+                                        key={index}
                                         label={input.label}
                                         interfaceRef={input.interfaceRef}
                                         required={input.required}
@@ -81,6 +92,7 @@ export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
                             if (input.type == FormInputTypes.TextArea) {
                                 return (
                                     <TextAreaInput
+                                        key={index}
                                         label={input.label}
                                         interfaceRef={input.interfaceRef}
                                         required={input.required}
