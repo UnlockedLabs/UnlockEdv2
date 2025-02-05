@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { ForwardedRef, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 
 import {
@@ -8,17 +8,13 @@ import {
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import {
-    ModalType,
+    ResetPasswordResponse,
     ServerResponseMany,
+    ServerResponseOne,
     ToastState,
     User,
     UserRole
 } from '@/common';
-import AddUserForm from '@/Components/forms/AddUserForm';
-import Modal from '@/Components/Modal';
-import DeleteForm from '@/Components/DeleteForm';
-import ResetPasswordForm from '@/Components/forms/ResetPasswordForm';
-import ShowTempPasswordForm from '@/Components/forms/ShowTempPasswordForm';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
@@ -27,14 +23,24 @@ import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
-import EditUserForm from '@/Components/forms/EditUserForm';
+import {
+    AddUserModal,
+    closeModal,
+    CRUDActions,
+    EditUserModal,
+    showModal,
+    TargetItem,
+    TextModalType,
+    TextOnlyModal
+} from '@/Components/modals';
+import { useCheckResponse } from '@/Hooks/useCheckResponse';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
     const editUserModal = useRef<HTMLDialogElement>(null);
     const resetUserPasswordModal = useRef<HTMLDialogElement>(null);
     const deleteUserModal = useRef<HTMLDialogElement>(null);
-    const [targetUser, setTargetUser] = useState<undefined | User>();
+    const [targetUser, setTargetUser] = useState<TargetItem<User> | null>(null);
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
@@ -49,78 +55,75 @@ export default function StudentManagement() {
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
     );
+    const checkResponseForDelete = useCheckResponse({
+        mutate: mutate,
+        refModal: deleteUserModal
+    });
     const userData = data?.data as User[] | [];
     const meta = data?.meta;
 
-    function resetModal() {
-        setTimeout(() => {
-            setTargetUser(undefined);
-        }, 200);
-    }
+    useEffect(() => {
+        const ref =
+            targetUser?.action === CRUDActions.Add
+                ? addUserModal
+                : targetUser?.action === CRUDActions.Edit
+                  ? editUserModal
+                  : targetUser?.action === CRUDActions.Delete
+                    ? deleteUserModal
+                    : targetUser?.action === CRUDActions.Reset
+                      ? resetUserPasswordModal
+                      : null;
+        if (ref) {
+            showModal(ref);
+        }
+    }, [targetUser]);
+
     const deleteUser = async () => {
-        if (targetUser?.role === UserRole.SystemAdmin) {
+        if (targetUser?.target.role === UserRole.SystemAdmin) {
             toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
             return;
         }
-        const response = await API.delete('users/' + targetUser?.id);
-        const toastType = response.success
-            ? ToastState.success
-            : ToastState.error;
-        const message = response.success
-            ? 'User deleted successfully'
-            : 'Failed to delete user';
-        deleteUserModal.current?.close();
-        toaster(message, toastType);
-        resetModal();
-        await mutate();
+        const response = await API.delete('users/' + targetUser?.target.id);
+        checkResponseForDelete(
+            response.success,
+            'Failed to delete user',
+            'User deleted successfully'
+        );
+        handleCancelModal(deleteUserModal);
+    };
+
+    const getTempPassword = async () => {
+        if (targetUser === null) return;
+        const response = (await API.post<
+            ResetPasswordResponse,
+            { user_id: number }
+        >('users/student-password', {
+            user_id: targetUser.target.id
+        })) as ServerResponseOne<ResetPasswordResponse>;
+        if (!response.success) {
+            toaster('Failed to reset password', ToastState.error);
+            return;
+        }
+        setTempPassword(response.data.temp_password);
+        closeModal(resetUserPasswordModal);
+        showModal(showUserPassword);
+        toaster('Password reset successfully', ToastState.success);
         return;
     };
 
-    const onAddUserSuccess = (pswd = '', msg: string, type: ToastState) => {
-        toaster(msg, type);
+    const onAddUserSuccess = (pswd: string) => {
         setTempPassword(pswd);
-        addUserModal.current?.close();
-        showUserPassword.current?.showModal();
-        void mutate();
+        showModal(showUserPassword);
     };
 
-    const hanldleEditUser = () => {
-        editUserModal.current?.close();
-        resetModal();
-        void mutate();
-    };
-
-    const handleDeleteUserCancel = () => {
-        deleteUserModal.current?.close();
-        resetModal();
-    };
-
-    const handleResetPasswordCancel = (msg: string, err: boolean) => {
-        const state = err ? ToastState.error : ToastState.success;
-        if (msg === '' && !err) {
-            resetUserPasswordModal.current?.close();
-            resetModal();
-            return;
-        }
-        toaster(msg, state);
-        resetModal();
-    };
-
-    const handleDisplayTempPassword = (psw: string) => {
-        setTempPassword(psw);
-        resetUserPasswordModal.current?.close();
-        showUserPassword.current?.showModal();
-        toaster('Password reset successfully', ToastState.success);
-    };
-
-    const handleShowPasswordClose = () => {
-        showUserPassword.current?.close();
+    function handleCancelModal(ref: ForwardedRef<HTMLDialogElement>) {
+        closeModal(ref);
+        setTargetUser(null);
         setTempPassword('');
-        resetModal();
-    };
+    }
 
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
@@ -158,7 +161,7 @@ export default function StudentManagement() {
                     >
                         <button
                             className="button "
-                            onClick={() => addUserModal.current?.showModal()}
+                            onClick={() => showModal(addUserModal)}
                         >
                             <PlusCircleIcon className="w-4 my-auto" />
                             Add Resident
@@ -241,8 +244,13 @@ export default function StudentManagement() {
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={PencilSquareIcon}
                                                         onClick={() => {
-                                                            setTargetUser(user);
-                                                            editUserModal.current?.showModal();
+                                                            setTargetUser({
+                                                                action: CRUDActions.Edit,
+                                                                target: user
+                                                            });
+                                                            showModal(
+                                                                editUserModal
+                                                            );
                                                         }}
                                                     />
 
@@ -255,8 +263,13 @@ export default function StudentManagement() {
                                                             ArrowPathRoundedSquareIcon
                                                         }
                                                         onClick={() => {
-                                                            setTargetUser(user);
-                                                            resetUserPasswordModal.current?.showModal();
+                                                            setTargetUser({
+                                                                action: CRUDActions.Reset,
+                                                                target: user
+                                                            });
+                                                            showModal(
+                                                                resetUserPasswordModal
+                                                            );
                                                         }}
                                                     />
 
@@ -267,8 +280,13 @@ export default function StudentManagement() {
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={TrashIcon}
                                                         onClick={() => {
-                                                            setTargetUser(user);
-                                                            deleteUserModal.current?.showModal();
+                                                            setTargetUser({
+                                                                action: CRUDActions.Delete,
+                                                                target: user
+                                                            });
+                                                            showModal(
+                                                                deleteUserModal
+                                                            );
                                                         }}
                                                     />
                                                 </div>
@@ -302,72 +320,50 @@ export default function StudentManagement() {
                     )}
                 </div>
             </div>
-            <Modal
+            <AddUserModal
+                mutate={mutate}
+                onSuccess={onAddUserSuccess}
+                userRole={UserRole.Student}
                 ref={addUserModal}
-                type={ModalType.Add}
-                item="Resident"
-                form={
-                    <AddUserForm
-                        onSuccess={onAddUserSuccess}
-                        userRole={UserRole.Student}
-                    />
-                }
             />
-            <Modal
+            <EditUserModal
+                mutate={mutate}
                 ref={editUserModal}
-                type={ModalType.Edit}
-                item="Resident"
-                form={
-                    targetUser ? (
-                        <EditUserForm
-                            onSuccess={hanldleEditUser}
-                            user={targetUser}
-                        />
-                    ) : (
-                        <div>No user defined!</div>
-                    )
-                }
+                target={targetUser?.target}
             />
-            <Modal
+            <TextOnlyModal
                 ref={deleteUserModal}
-                type={ModalType.Confirm}
-                item="Delete Resident"
-                form={
-                    <DeleteForm
-                        item="User"
-                        onCancel={handleDeleteUserCancel}
-                        onSuccess={() => void deleteUser()}
-                    />
+                type={TextModalType.Delete}
+                title={'Delete Resident'}
+                text={
+                    'Are you sure you would like to delete this resident? This action cannot be undone.'
                 }
+                onSubmit={() => void deleteUser()}
+                onClose={() => void handleCancelModal(deleteUserModal)}
             />
-            <Modal
+            <TextOnlyModal
                 ref={resetUserPasswordModal}
-                type={ModalType.Confirm}
-                item="Reset Password"
-                form={
-                    <ResetPasswordForm
-                        user={targetUser}
-                        onCancel={handleResetPasswordCancel}
-                        onSuccess={handleDisplayTempPassword}
-                    />
-                }
+                type={TextModalType.Confirm}
+                title={'Reset Password'}
+                text={`Are you sure you would like to reset ${targetUser?.target.name_first + ' ' + targetUser?.target.name_last}'s password?`}
+                onSubmit={() => void getTempPassword()}
+                onClose={() => void handleCancelModal(resetUserPasswordModal)}
             />
-            <Modal
+            <TextOnlyModal
                 ref={showUserPassword}
-                type={ModalType.Show}
-                item={'New Password'}
-                form={
-                    <ShowTempPasswordForm
-                        tempPassword={tempPassword}
-                        userName={
-                            targetUser
-                                ? `${targetUser.name_first} ${targetUser.name_last}`
-                                : undefined
-                        }
-                        onClose={handleShowPasswordClose}
-                    />
-                }
-            />
+                type={TextModalType.Information}
+                title={'New Password'}
+                text={`Copy your password now. If you lose it, you'll need to generate a new one.`}
+                onSubmit={() => {}} //eslint-disable-line
+                onClose={() => handleCancelModal(showUserPassword)}
+            >
+                <div className="stats shadow mx-auto">
+                    <div className="stat">
+                        <div className="stat-title">Temporary Password</div>
+                        <div className="stat-value">{tempPassword}</div>
+                    </div>
+                </div>
+            </TextOnlyModal>
         </div>
     );
 }

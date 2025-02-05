@@ -1,37 +1,35 @@
-import {
-    Facility,
-    ModalType,
-    ServerResponseMany,
-    ToastState
-} from '@/common.ts';
+import { Facility, ServerResponseMany, ToastState } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import FacilityCard from '@/Components/FacilityCard.tsx';
-import DeleteForm from '../Components/DeleteForm';
-import Modal from '@/Components/Modal.tsx';
-import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
-import EditFacilityForm from '@/Components/forms/EditFacilityForm';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
-import { useRevalidator } from 'react-router-dom';
+import {
+    AddFacilityModal,
+    closeModal,
+    CRUDActions,
+    EditFacilityModal,
+    showModal,
+    TargetItem,
+    TextModalType,
+    TextOnlyModal
+} from '@/Components/modals';
+import { useCheckResponse } from '@/Hooks/useCheckResponse';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
     const editFacilityModal = useRef<HTMLDialogElement>(null);
     const deleteFacilityModal = useRef<HTMLDialogElement>(null);
-    const [editFacility, setEditFacility] = useState<Facility | undefined>();
     const { toaster } = useToast();
-    const [targetFacility, setTargetFacility] = useState<
-        undefined | Facility
-    >();
+    const [targetFacility, setTargetFacility] =
+        useState<TargetItem<Facility> | null>(null);
 
     const [perPage, setPerPage] = useState(10);
     const [pageQuery, setPageQuery] = useState(1);
 
-    // TODO: modify this const
     const {
         data: facility,
         mutate,
@@ -40,73 +38,55 @@ export default function FacilityManagement() {
     } = useSWR<ServerResponseMany<Facility>, AxiosError>(
         `/api/facilities?page=${pageQuery}&per_page=${perPage}`
     );
-    const { revalidate } = useRevalidator();
+    const checkResponseForDelete = useCheckResponse({
+        mutate: mutate,
+        refModal: deleteFacilityModal
+    });
 
     const facilityData = facility?.data ?? [];
 
-    function resetModal() {
-        setTimeout(() => {
-            setEditFacility(undefined);
-        }, 200);
-    }
-
-    function openEditFacility(facility: Facility) {
-        setEditFacility(facility);
-        editFacilityModal.current?.showModal();
-    }
-
-    function updateFacility(state: ToastState, message: string) {
-        void mutate();
-        if (state && message) {
-            toaster(message, state);
+    useEffect(() => {
+        const ref =
+            targetFacility?.action === CRUDActions.Add
+                ? addFacilityModal
+                : targetFacility?.action === CRUDActions.Edit
+                  ? editFacilityModal
+                  : targetFacility?.action === CRUDActions.Delete
+                    ? deleteFacilityModal
+                    : null;
+        if (ref) {
+            showModal(ref);
         }
-        revalidate();
-        editFacilityModal.current?.close();
-        addFacilityModal.current?.close();
-        resetModal();
-    }
-
-    const handleDeleteFacilityCancel = () => {
-        deleteFacilityModal.current?.close();
-        resetModal();
-    };
-    const openDeleteFacility = (facility: Facility) => {
-        deleteFacilityModal.current?.showModal();
-        setTargetFacility(facility);
-    };
-    const handleDeleteFacility = async () => {
-        if (targetFacility?.id == 1) {
-            toaster('Cannot delete default facility', ToastState.error);
-            return;
-        }
-
-        await API.delete('facilities/' + targetFacility?.id)
-            .then((response) => {
-                if (response.success) {
-                    toaster(
-                        'Facility successfully deleted',
-                        ToastState.success
-                    );
-                    revalidate();
-                } else {
-                    toaster('Error deleting facility', ToastState.success);
-                }
-            })
-            .catch(() => {
-                toaster('Error deleting facility', ToastState.error);
-            });
-
-        deleteFacilityModal.current?.close();
-        resetModal();
-        void mutate();
-        return;
-    };
+    }, [targetFacility]);
 
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPageQuery(1);
         void mutate();
     };
+
+    const deleteFacility = async () => {
+        if (targetFacility?.target.id == 1) {
+            toaster('Cannot delete default facility', ToastState.error);
+            closeModal(deleteFacilityModal);
+            return;
+        }
+        const response = await API.delete(
+            'facilities/' + targetFacility?.target.id
+        );
+        checkResponseForDelete(
+            response.success,
+            'Error deleting facility',
+            'Facility successfully deleted'
+        );
+        closeDeleteFacility();
+    };
+
+    function closeDeleteFacility() {
+        closeModal(deleteFacilityModal);
+        setTargetFacility(null);
+    }
+
     return (
         <>
             <div className="px-5 py-4 flex flex-col justify-center gap-4">
@@ -118,7 +98,7 @@ export default function FacilityManagement() {
                     <button
                         className="button"
                         onClick={() => {
-                            addFacilityModal.current?.showModal();
+                            showModal(addFacilityModal);
                         }}
                     >
                         <PlusCircleIcon className="w-4 my-auto" />
@@ -141,9 +121,17 @@ export default function FacilityManagement() {
                                         key={facility.id}
                                         facility={facility}
                                         openEditFacility={() => {
-                                            openEditFacility(facility);
+                                            setTargetFacility({
+                                                action: CRUDActions.Edit,
+                                                target: facility
+                                            });
                                         }}
-                                        openDeleteFacility={openDeleteFacility}
+                                        openDeleteFacility={() => {
+                                            setTargetFacility({
+                                                action: CRUDActions.Delete,
+                                                target: facility
+                                            });
+                                        }}
                                     />
                                 );
                             })
@@ -166,46 +154,21 @@ export default function FacilityManagement() {
                     )}
             </div>
             {/* Modals */}
-            <Modal
-                type={ModalType.Add}
-                item="Facility"
-                form={
-                    <AddFacilityForm
-                        onSuccess={(state: ToastState, message: string) => {
-                            updateFacility(state, message);
-                        }}
-                    />
-                }
-                ref={addFacilityModal}
-            />
-            <Modal
-                type={ModalType.Edit}
-                item="Facility"
-                form={
-                    editFacility ? (
-                        <EditFacilityForm
-                            onSuccess={(state: ToastState, message: string) => {
-                                updateFacility(state, message);
-                            }}
-                            facility={editFacility}
-                        />
-                    ) : (
-                        <div></div>
-                    )
-                }
+            <AddFacilityModal mutate={mutate} ref={addFacilityModal} />
+            <EditFacilityModal
+                mutate={mutate}
                 ref={editFacilityModal}
+                target={targetFacility?.target}
             />
-            <Modal
+            <TextOnlyModal
                 ref={deleteFacilityModal}
-                type={ModalType.Confirm}
-                item="Delete Facility"
-                form={
-                    <DeleteForm
-                        item="Facility"
-                        onCancel={handleDeleteFacilityCancel}
-                        onSuccess={() => void handleDeleteFacility()}
-                    />
+                type={TextModalType.Delete}
+                title={'Delete Facility'}
+                text={
+                    'Are you sure you would like to delete this facility? This action cannot be undone.'
                 }
+                onSubmit={() => void deleteFacility()}
+                onClose={closeDeleteFacility}
             />
         </>
     );
