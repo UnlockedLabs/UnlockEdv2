@@ -45,9 +45,16 @@ export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
         handleSubmit,
         formState: { errors }
     } = useForm<T>({ defaultValues: defaultValues });
+
     useEffect(() => {
         reset(defaultValues);
     }, [defaultValues, reset]);
+
+    const onSubmitHandler: SubmitHandler<T> = async (data) => {
+        await onSubmit(data);
+        reset();
+    };
+
     return (
         <dialog ref={ref} className="modal relative">
             <div className="modal-box">
@@ -58,7 +65,7 @@ export const NewModal = forwardRef(function NewModal<T extends FieldValues>(
                     </span>
                     <form
                         onSubmit={(e) => {
-                            void handleSubmit(onSubmit)(e);
+                            void handleSubmit(onSubmitHandler)(e);
                         }}
                     >
                         {inputs.map((input: Input, index) => {
