@@ -2,6 +2,7 @@ import {
     Facility,
     ModalType,
     ServerResponseMany,
+    Timezones,
     ToastState
 } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -10,13 +11,14 @@ import useSWR from 'swr';
 import FacilityCard from '@/Components/FacilityCard.tsx';
 import DeleteForm from '../Components/DeleteForm';
 import Modal from '@/Components/Modal.tsx';
-import AddFacilityForm from '@/Components/forms/AddFacilityForm.tsx';
 import EditFacilityForm from '@/Components/forms/EditFacilityForm';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
 import { useRevalidator } from 'react-router-dom';
+import NewModal, { FormInputTypes, Input } from '@/Components/Modaltest';
+import { FieldValues, SubmitHandler } from 'react-hook-form';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
@@ -107,6 +109,34 @@ export default function FacilityManagement() {
         setPageQuery(1);
         void mutate();
     };
+
+    const newFacilityInputs: Input[] = [
+        {
+            type: FormInputTypes.Text,
+            label: 'Name',
+            interfaceRef: 'name',
+            required: true
+        },
+        {
+            type: FormInputTypes.Dropdown,
+            label: 'Timezone',
+            interfaceRef: 'timezone',
+            required: true,
+            enumType: Timezones
+        }
+    ];
+
+    const onSubmit: SubmitHandler<FieldValues> = async (data) => {
+        const response = await API.post('facilities', data);
+        if (!response.success) {
+            toaster('Failed to add facility', ToastState.error);
+            return;
+        }
+        toaster('Facility created successfully', ToastState.success);
+        void mutate();
+        addFacilityModal.current?.close();
+    };
+
     return (
         <>
             <div className="px-5 py-4 flex flex-col justify-center gap-4">
@@ -166,7 +196,7 @@ export default function FacilityManagement() {
                     )}
             </div>
             {/* Modals */}
-            <Modal
+            {/* <Modal
                 type={ModalType.Add}
                 item="Facility"
                 form={
@@ -176,6 +206,12 @@ export default function FacilityManagement() {
                         }}
                     />
                 }
+                ref={addFacilityModal}
+            /> */}
+            <NewModal
+                title="Add Facility"
+                inputs={newFacilityInputs}
+                onSubmit={onSubmit}
                 ref={addFacilityModal}
             />
             <Modal
