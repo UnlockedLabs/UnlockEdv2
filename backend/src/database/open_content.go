@@ -156,16 +156,16 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
 		countArgs = append(countArgs, searchTerm)
 	}
 
-	var allowedOrderBy = map[string]string{
-		"title ASC":       "title ASC",
-		"title DESC":      "title DESC",
-		"created_at DESC": "created_at DESC",
-		"created_at ASC":  "created_at ASC",
+	var allowedOrderBy = map[string]struct{}{
+		"title ASC":       {},
+		"title DESC":      {},
+		"created_at DESC": {},
+		"created_at ASC":  {},
 	}
 
-	sanitizedOrderBy, ok := allowedOrderBy[orderBy]
+	_, ok := allowedOrderBy[orderBy]
 	if !ok {
-		sanitizedOrderBy = "created_at DESC"
+		orderBy = "created_at DESC"
 	}
 
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
@@ -185,7 +185,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
 
 	queryArgs := make([]interface{}, 0, 8)
 
-	// Libraries .
+	// Libraries
 	queryArgs = append(queryArgs, userID)
 	if search != "" {
 		queryArgs = append(queryArgs, searchTerm)
@@ -283,7 +283,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
 		WHERE f.user_id = ? %s
 	) AS all_favorites
 	ORDER BY %s
-	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, sanitizedOrderBy)
+	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, orderBy)
 
 	var favorites []models.OpenContentItem
 	if err := db.Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
