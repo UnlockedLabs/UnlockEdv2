@@ -4,7 +4,7 @@ import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext'; // Import the context hook
+import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
