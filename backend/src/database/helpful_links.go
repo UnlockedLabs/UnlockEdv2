@@ -26,7 +26,7 @@ func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVis
 	}
 
 	if search != "" {
-		search = "%" + search + "%"
+		search = "%" + strings.ToLower(search) + "%"
 		tx = tx.Where("LOWER(title) LIKE ?", search)
 	}
 	switch strings.ToLower(orderBy) {

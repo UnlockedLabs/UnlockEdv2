@@ -76,7 +76,7 @@ func (db *DB) GetAllVideos(onlyVisible bool, page, perPage int, search, orderBy 
 		tx = tx.Where("visibility_status = ?", true)
 	}
 	if search != "" {
-		search = "%" + search + "%"
+		search = "%" + strings.ToLower(search) + "%"
 		tx = tx.Where("LOWER(title) LIKE ? OR LOWER(channel_title) LIKE ?", search, search)
 	}
 	switch strings.ToLower(orderBy) {

@@ -81,6 +81,8 @@ func TestHandleGetUserFavoriteOpenContent(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestGetUserFavoriteOpenContentUser", "student", map[string]any{"user_id": uint(4), "page": 1, "per_page": 10}, http.StatusOK, ""},
 	}
+	search := ""
+	orderBy := ""
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodGet, "/api/open-content/favorites", nil)
@@ -89,7 +91,7 @@ func TestHandleGetUserFavoriteOpenContent(t *testing.T) {
 			}
 			handler := getHandlerByRole(server.handleGetUserFavoriteOpenContent, test.role)
 			rr := executeRequest(t, req, handler, test)
-			_, favorites, err := server.Db.GetUserFavorites(test.mapKeyValues["user_id"].(uint), test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int))
+			_, favorites, err := server.Db.GetUserFavorites(test.mapKeyValues["user_id"].(uint), test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int), search, orderBy)
 			if err != nil {
 				t.Fatalf("unable to get user favorites from db, error is %v", err)
 			}

@@ -240,6 +240,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 				cfg.TTL = time.Minute * 10
 			default:
 				cfg.TTL = time.Hour * 24
+
 			}
 			kv, err = js.CreateKeyValue(cfg)
 			if err != nil {

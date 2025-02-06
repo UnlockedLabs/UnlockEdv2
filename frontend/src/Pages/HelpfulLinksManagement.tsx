@@ -1,6 +1,6 @@
 import {
     HelpfulLink,
-    FilterLibrariesVidsandHelpfulLinksAdmin,
+    FilterLibrariesVidsandHelpfulLinksResident,
     ModalType,
     ServerResponseOne,
     ToastState,
@@ -35,7 +35,7 @@ export default function HelpfulLinksManagement() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
+        FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
     );
     const { toaster } = useToast();
 
@@ -101,7 +101,7 @@ export default function HelpfulLinksManagement() {
                     <DropdownControl
                         label="Order by"
                         setState={setSortQuery}
-                        enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
+                        enumType={FilterLibrariesVidsandHelpfulLinksResident}
                     />
                 </div>
                 {/* add links button */}
