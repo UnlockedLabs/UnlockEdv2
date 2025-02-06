@@ -5,6 +5,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"os"
@@ -15,8 +16,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -35,6 +39,7 @@ type Server struct {
 	features  []models.FeatureAccess
 	s3        *s3.Client
 	presigner *s3.PresignClient
+	sesClient *sesv2.Client
 	s3Bucket  string
 }
 
@@ -167,6 +172,7 @@ func (srv *Server) initAwsConfig(ctx context.Context) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		srv.sesClient = sesv2.NewFromConfig(cfg)
 		srv.s3 = s3.NewFromConfig(cfg)
 		srv.presigner = s3.NewPresignClient(srv.s3)
 		srv.s3Bucket = bucket
@@ -484,4 +490,80 @@ func (srv *Server) calculateLast(total int64, perPage int) int {
 		return 0
 	}
 	return int(math.Ceil(float64(total) / float64(perPage)))
+}
+
+type emailReq struct {
+	to       string
+	from     string
+	subject  string
+	bodyText string
+	bodyHTML string
+}
+
+func newEmailReq(to, from, subject, bodyText, bodyHTML string) *emailReq {
+	return &emailReq{
+		to:       to,
+		from:     from,
+		subject:  subject,
+		bodyText: bodyText,
+		bodyHTML: bodyHTML,
+	}
+}
+
+func newWhitelistRequest(user *models.User, link *models.HelpfulLink) *emailReq {
+	reqTime := time.Now().Format("2006-01-02 15:04:05")
+	emailStr := `A new Helpful Link has been added to the UnlockEd system by an Administrator.
+	In order for it to successfully become available to users, it must be whitelisted globally after your pending review of the site. 
+	It may already be available, but the Administrator has chosen to submit it for whitelisting`
+	emailTo := os.Getenv("DOMAIN_ADMIN_EMAIL")
+	emailFrom := os.Getenv("EMAIL_FROM")
+	bodyHtml := fmt.Sprintf(`<div style="font-family: Arial, sans-serif; font-size: 16px;">
+        <p>Incoming request for review and whitelisting of <strong>%s</strong>.</p>
+        <p>We have received the following request from:</p>
+        <ul>
+            <li><strong>Admin:</strong> %s</li>
+            <li><strong>Time:</strong> %s</li>
+        </ul>
+		<li><strong>URL:</strong> <a href="%s">Download Resume</a></li>
+		<br />
+		<br />
+		<p><strong>NOTE:</strong> 
+		This website may already be available, but the Administrator has chosen to submit it for whitelisting.</p>
+		<p>Although this request was made by an administrator, always be sure to properly review the contents of the site before whitelisting.</p>`, link.Url, user.Email, reqTime, link.Url)
+	return newEmailReq(emailTo, emailFrom, "UnlockEd - Request for Whitelist", emailStr, bodyHtml)
+}
+
+func (srv *Server) sendEmail(ctx context.Context, r *emailReq) error {
+	input := &sesv2.SendEmailInput{
+		Content: &types.EmailContent{
+			Simple: &types.Message{
+				Subject: &types.Content{
+					Data:    aws.String(r.subject),
+					Charset: aws.String("UTF-8"),
+				},
+				Body: &types.Body{
+					Text: &types.Content{
+						Data:    aws.String(r.bodyText),
+						Charset: aws.String("UTF-8"),
+					},
+					Html: &types.Content{
+						Data:    aws.String(r.bodyHTML),
+						Charset: aws.String("UTF-8"),
+					},
+				},
+			},
+		},
+		Destination: &types.Destination{
+			ToAddresses: []string{r.to, os.Getenv("CC_EMAIL")},
+		},
+		FromEmailAddress: aws.String(r.from),
+	}
+	if !srv.dev {
+		_, err := srv.sesClient.SendEmail(ctx, input)
+		if err != nil {
+			log.Printf("error sending email: %v\n", err)
+			return fmt.Errorf("failed to send email via SES: %v", err)
+		}
+	}
+	return nil
 }
