@@ -95,7 +95,7 @@ export default function HelpfulLinkCard({
                         <ULIComponent
                             icon={LockOpenIcon}
                             iconClassName={`cursor-pointer`}
-                            dataTip="Send request to network administrator to whitelist link"
+                            dataTip="Send request to network Administrator to add link to Allow-List"
                             onClick={(e) => {
                                 if (e && reqAllowlist) {
                                     e.stopPropagation();
