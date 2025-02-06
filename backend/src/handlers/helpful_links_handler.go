@@ -22,6 +22,7 @@ func (srv *Server) registerLeftMenuRoutes() []routeDef {
 		{"PUT /api/helpful-links/activity/{id}", srv.handleAddUserActivity, false, axx},
 		{"PUT /api/helpful-links/sort", srv.changeSortOrder, true, axx},
 		{"PUT /api/helpful-links/favorite/{id}", srv.handleFavoriteLink, false, axx},
+		{"POST /api/helpful-links/{id}/allowlist", srv.handleSubmitAllowlistRequest, true, axx},
 	}
 }
 
@@ -79,6 +80,30 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Link added successfully")
+}
+
+func (srv *Server) handleSubmitAllowlistRequest(w http.ResponseWriter, r *http.Request, log sLog) error {
+	linkID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "Invalid id")
+	}
+	link, err := srv.Db.GetLinkFromId(uint(linkID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	log.add("link", link.Url)
+	cliams := r.Context().Value(ClaimsKey).(*Claims)
+	user, err := srv.Db.GetUserByID(cliams.UserID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	emailReq := newAllowlistRequest(user, link)
+	err = srv.sendEmail(r.Context(), emailReq)
+	if err != nil {
+		log.add("user_email", user.Email)
+		return newInternalServerServiceError(err, "error sending email")
+	}
+	return nil
 }
 
 func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sLog) error {

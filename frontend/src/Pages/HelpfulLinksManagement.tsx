@@ -53,6 +53,19 @@ export default function HelpfulLinksManagement() {
         editLinkModal.current?.close();
         void mutate();
     }
+
+    async function reqAllowlist(id: number) {
+        const response = await API.post(`helpful-links/${id}/allowlist`, {});
+        if (response.success) {
+            toaster(
+                'Request to allow link sent successfully',
+                ToastState.success
+            );
+        } else {
+            toaster('Error sending request', ToastState.error);
+        }
+    }
+
     async function deleteLink(id: number | undefined) {
         const response = await API.delete(`helpful-links/${id}`);
         if (response.success) {
@@ -129,6 +142,7 @@ export default function HelpfulLinksManagement() {
                                     ? UserRole.Admin
                                     : UserRole.Student
                             }
+                            reqAllowlist={reqAllowlist}
                         />
                     );
                 })}

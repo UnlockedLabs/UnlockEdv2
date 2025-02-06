@@ -12,7 +12,7 @@ import ULIComponent from '../ULIComponent';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { AdminRoles } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
-import { StarIcon } from '@heroicons/react/24/solid';
+import { LockOpenIcon, StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import ClampedText from '../ClampedText';
 
@@ -20,7 +20,8 @@ export default function HelpfulLinkCard({
     link,
     showModal,
     mutate,
-    role
+    role,
+    reqAllowlist
 }: {
     link: HelpfulLink;
     showModal?: (
@@ -30,6 +31,7 @@ export default function HelpfulLinkCard({
     ) => void;
     mutate?: () => void;
     role: UserRole;
+    reqAllowlist?: (id: number) => Promise<void>;
 }) {
     const [visible, setVisible] = useState<boolean>(link.visibility_status);
     const [favorite, setFavorite] = useState<boolean>(link.is_favorited);
@@ -90,6 +92,17 @@ export default function HelpfulLinkCard({
             {AdminRoles.includes(role) ? (
                 showModal != undefined && (
                     <div className="flex flex-row gap-2 absolute top-4 right-4 z-100">
+                        <ULIComponent
+                            icon={LockOpenIcon}
+                            iconClassName={`cursor-pointer`}
+                            dataTip="Send request to network administrator to whitelist link"
+                            onClick={(e) => {
+                                if (e && reqAllowlist) {
+                                    e.stopPropagation();
+                                    void reqAllowlist(link.id);
+                                }
+                            }}
+                        />
                         <ULIComponent
                             icon={PencilSquareIcon}
                             iconClassName={'cursor-pointer'}
