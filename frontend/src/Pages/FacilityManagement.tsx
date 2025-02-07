@@ -2,7 +2,6 @@ import {
     Facility,
     ModalType,
     ServerResponseMany,
-    Timezones,
     ToastState
 } from '@/common.ts';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -15,14 +14,11 @@ import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
 import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
-import NewModal, { FormInputTypes, Input } from '@/Components/Modaltest';
-import { FieldValues, SubmitHandler } from 'react-hook-form';
-
-enum CRUDActions {
-    Add,
-    Edit,
-    Delete
-}
+import {
+    AddFacilityModal,
+    CRUDActions,
+    EditFacilityModal
+} from '@/Components/modals';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
@@ -81,49 +77,6 @@ export default function FacilityManagement() {
         void mutate();
     };
 
-    const facilityInputs: Input[] = [
-        {
-            type: FormInputTypes.Text,
-            label: 'Name',
-            interfaceRef: 'name',
-            required: true
-        },
-        {
-            type: FormInputTypes.Dropdown,
-            label: 'Timezone',
-            interfaceRef: 'timezone',
-            required: true,
-            enumType: Timezones
-        }
-    ];
-
-    const addFacility: SubmitHandler<FieldValues> = async (data) => {
-        const response = await API.post('facilities', data);
-        if (!response.success) {
-            toaster('Failed to add facility', ToastState.error);
-            return;
-        }
-        toaster('Facility created successfully', ToastState.success);
-        void mutate();
-        addFacilityModal.current?.close();
-        setTargetFacility(null);
-    };
-
-    const updateFacility: SubmitHandler<FieldValues> = async (data) => {
-        const response = await API.patch(
-            `facilities/${targetFacility?.facility.id}`,
-            data
-        );
-        if (!response.success) {
-            toaster('Failed to update facility', ToastState.error);
-            return;
-        }
-        toaster('Facility updated successfully', ToastState.success);
-        void mutate();
-        editFacilityModal.current?.close();
-        setTargetFacility(null);
-    };
-
     const deleteFacility = async () => {
         if (targetFacility?.facility.id == 1) {
             toaster('Cannot delete default facility', ToastState.error);
@@ -143,7 +96,6 @@ export default function FacilityManagement() {
         setTargetFacility(null);
         return;
     };
-
     return (
         <>
             <div className="px-5 py-4 flex flex-col justify-center gap-4">
@@ -203,20 +155,11 @@ export default function FacilityManagement() {
                     )}
             </div>
             {/* Modals */}
-            <NewModal
-                title="Add Facility"
-                inputs={facilityInputs}
-                onSubmit={addFacility}
-                ref={addFacilityModal}
-            />
-            <NewModal
-                title="Edit Facility"
-                inputs={facilityInputs}
-                defaultValues={
-                    targetFacility ? targetFacility.facility : undefined
-                }
-                onSubmit={updateFacility}
+            <AddFacilityModal mutate={mutate} ref={addFacilityModal} />
+            <EditFacilityModal
+                mutate={mutate}
                 ref={editFacilityModal}
+                target={targetFacility?.facility}
             />
             <Modal
                 ref={deleteFacilityModal}
