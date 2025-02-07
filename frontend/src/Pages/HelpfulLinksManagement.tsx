@@ -21,8 +21,7 @@ import { AxiosError } from 'axios';
 import API from '@/api/api';
 import { isAdministrator, useAuth } from '@/useAuth';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import NewModal, { FormInputTypes, Input } from '@/Components/Modaltest';
-import { FieldValues, SubmitHandler } from 'react-hook-form';
+import { AddHelpfulLinkModal, EditHelpfulLinkModal } from '@/Components/modals';
 
 export default function HelpfulLinksManagement() {
     const { user } = useAuth();
@@ -63,52 +62,6 @@ export default function HelpfulLinksManagement() {
         }
         deleteLinkModal.current?.close();
     }
-
-    const linkInputs: Input[] = [
-        {
-            type: FormInputTypes.Text,
-            label: 'Title',
-            interfaceRef: 'title',
-            required: true,
-            length: 25
-        },
-        {
-            type: FormInputTypes.Text,
-            label: 'URL',
-            interfaceRef: 'url',
-            required: true
-        },
-        {
-            type: FormInputTypes.TextArea,
-            label: 'Description',
-            interfaceRef: 'description',
-            required: false,
-            length: 255
-        }
-    ];
-
-    const addLink: SubmitHandler<FieldValues> = async (data) => {
-        const response = await API.put(`helpful-links`, data);
-        if (response.success) {
-            toaster('Helpful link added successfully', ToastState.success);
-        } else {
-            toaster('Error adding helpful link', ToastState.error);
-        }
-        updateLinks();
-    };
-
-    const updateLink: SubmitHandler<FieldValues> = async (data) => {
-        const response = await API.patch(
-            `helpful-links/${currentLink?.id}/edit`,
-            data
-        );
-        if (response.success) {
-            toaster('Updated helpful link successfully', ToastState.success);
-        } else {
-            toaster('Error updating helpful link', ToastState.error);
-        }
-        updateLinks();
-    };
 
     function showModifyLink(
         link: HelpfulLink,
@@ -180,17 +133,11 @@ export default function HelpfulLinksManagement() {
                 })}
             </div>
             {/* Modals */}
-            <NewModal
-                title={'Add Helpful Link'}
-                inputs={linkInputs}
-                onSubmit={addLink}
-                ref={addLinkModal}
-            />
-            <NewModal
-                title={'Edit Helpful Link'}
-                inputs={linkInputs}
-                defaultValues={currentLink ? currentLink : undefined}
-                onSubmit={updateLink}
+            <AddHelpfulLinkModal mutate={mutate} ref={addLinkModal} />
+            <EditHelpfulLinkModal
+                mutate={mutate}
+                target={currentLink}
+                ref={editLinkModal}
             />
             <Modal
                 ref={deleteLinkModal}

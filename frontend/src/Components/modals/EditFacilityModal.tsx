@@ -1,8 +1,7 @@
 import { forwardRef } from 'react';
-import { CRUDModalProps } from './AddFacilityModal';
 import { Facility, ToastState } from '@/common';
 import NewModal from '../Modaltest';
-import { facilityInputs } from './index';
+import { CRUDModalProps, facilityInputs } from '.';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
@@ -26,7 +25,7 @@ export const EditFacilityModal = forwardRef(function (
         ) {
             editFacilityModal.current.close();
         }
-        void mutate();
+        await mutate();
     };
     return (
         <NewModal

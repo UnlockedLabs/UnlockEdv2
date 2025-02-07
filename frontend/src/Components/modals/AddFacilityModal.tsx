@@ -3,14 +3,9 @@ import NewModal from '../Modaltest';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
-import { Facility, ServerResponseMany, ToastState } from '@/common';
-import { KeyedMutator } from 'swr';
-import { facilityInputs } from './index';
+import { Facility, ToastState } from '@/common';
+import { CRUDModalProps, facilityInputs } from './index';
 
-export interface CRUDModalProps<T> {
-    mutate: KeyedMutator<ServerResponseMany<T>>;
-    target?: T;
-}
 export const AddFacilityModal = forwardRef(function (
     { mutate }: CRUDModalProps<Facility>,
     addFacilityModal: React.ForwardedRef<HTMLDialogElement>
@@ -23,7 +18,7 @@ export const AddFacilityModal = forwardRef(function (
             return;
         }
         toaster('Facility created successfully', ToastState.success);
-        void mutate();
+        await mutate();
     };
 
     return (

@@ -10,9 +10,7 @@ import {
     ToastState,
     ProviderPlatformState,
     FeatureAccess,
-    ProviderResponse,
-    ServerResponseOne,
-    ProviderPlatformType
+    ProviderResponse
 } from '@/common';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState, useEffect } from 'react';
@@ -22,8 +20,6 @@ import NewOidcClientNotification from '@/Components/NewOidcClientNotification';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
 import { hasFeature, useAuth } from '@/useAuth';
-import NewModal, { FormInputTypes, Input } from '@/Components/Modaltest';
-import { FieldValues, SubmitHandler } from 'react-hook-form';
 
 export default function ProviderPlatformManagement() {
     const { user } = useAuth();
@@ -175,64 +171,6 @@ export default function ProviderPlatformManagement() {
             });
     };
 
-    const addProvider: SubmitHandler<FieldValues> = async (data) => {
-        const response = (await API.post(
-            'provider-platforms',
-            data
-        )) as ServerResponseOne<ProviderResponse>;
-        if (!response.success) {
-            toaster('Failed to add provider platform', ToastState.error);
-            return;
-        }
-        if (response.data.oauth2Url) {
-            window.location.href = response.data.oauth2Url;
-            return;
-        }
-        toaster('Provider platform created successfully', ToastState.success);
-    };
-
-    const providerInputs: Input[] = [
-        {
-            type: FormInputTypes.Text,
-            label: 'Name',
-            interfaceRef: 'name',
-            required: true,
-            length: 25
-        },
-        {
-            type: FormInputTypes.Dropdown,
-            label: 'Type',
-            interfaceRef: 'type',
-            enumType: ProviderPlatformType,
-            required: true
-        },
-        {
-            type: FormInputTypes.Dropdown,
-            label: 'State',
-            interfaceRef: 'state',
-            enumType: ProviderPlatformState,
-            required: true
-        },
-        {
-            type: FormInputTypes.Text,
-            label: 'Base URL',
-            interfaceRef: 'base_url',
-            required: true
-        },
-        {
-            type: FormInputTypes.Text,
-            label: 'Account Id',
-            interfaceRef: 'account_id',
-            required: true
-        },
-        {
-            type: FormInputTypes.Text,
-            label: 'Access Key',
-            interfaceRef: 'access_key',
-            required: true
-        }
-    ];
-
     return (
         <div>
             <div className="px-5 py-4">
@@ -291,12 +229,6 @@ export default function ProviderPlatformManagement() {
                 </table>
             </div>
             {/* Modals */}
-            <NewModal
-                title={'Add Provider'}
-                inputs={providerInputs}
-                onSubmit={addProvider}
-                ref={addProviderModal}
-            />
             <Modal
                 type={ModalType.Edit}
                 item="Provider"
