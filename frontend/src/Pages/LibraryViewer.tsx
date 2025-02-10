@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
-import { setGlobalPageTitle } from '@/Components/PageNav';
+import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
@@ -24,40 +24,48 @@ export default function LibraryViewer() {
     const navigate = useNavigate();
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
+
+    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
+    useEffect(() => {
+        setAuthLayoutPageTitle('Library Viewer');
+    }, [setAuthLayoutPageTitle]);
+
     const openModal = () => {
         if (modalRef.current) {
             modalRef.current.style.visibility = 'visible';
             modalRef.current.showModal();
         }
     };
+
     const closeModal = () => {
         if (modalRef.current) {
             modalRef.current.style.visibility = 'hidden';
             modalRef.current.close();
         }
     };
-    const handleSearchResultClick = (url: string, title: string, libId?: number) => {
-        if(Number(libraryId) === libId){
+
+    const handleSearchResultClick = (
+        url: string,
+        title: string,
+        libId?: number
+    ) => {
+        if (Number(libraryId) === libId) {
             setSrc(url);
-        }else{
-            navigate(
-                `/viewer/libraries/${libId}`,
-                
-                {
-                    state: { url: url, title: title }, 
-                    replace: true
-                }
-            );
+        } else {
+            navigate(`/viewer/libraries/${libId}`, {
+                state: { url: url, title: title },
+                replace: true
+            });
         }
         setSearchPlaceholder('Search ' + title);
         closeModal();
     };
+
     const handleSearch = () => {
         if (modalRef.current) {
             if (!modalRef.current.open) {
                 openModal();
             }
-            //needed a way to call 
             modalRef.current.dispatchEvent(
                 new CustomEvent('executeHandleSearch', {
                     detail: {
@@ -79,17 +87,15 @@ export default function LibraryViewer() {
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
                     const title = resp.data.title;
-                    setGlobalPageTitle(title);
+                    setAuthLayoutPageTitle(title); // Update title with the library title
                     setSearchPlaceholder('Search ' + title);
-                    setPathVal([
-                        { path_id: ':library_name', value: title }
-                    ]);
+                    setPathVal([{ path_id: ':library_name', value: title }]);
                 }
                 const response = await fetch(
                     `/api/proxy/libraries/${libraryId}/`
                 );
                 if (response.ok) {
-                    if (url && url !== "") {
+                    if (url && url !== '') {
                         setSrc(url);
                     } else {
                         setSrc(response.url);
@@ -109,7 +115,8 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId]);
+    }, [libraryId, url, setAuthLayoutPageTitle, setPathVal]);
+
     return (
         <div>
             <div className="px-5 pb-4">
@@ -128,7 +135,7 @@ export default function LibraryViewer() {
                         libraryId={Number(libraryId)}
                         ref={modalRef}
                         onModalClose={closeModal}
-                    ></LibrarySearchResultsModal>
+                    />
                 </div>
                 <div className="w-full pt-4 justify-center">
                     {isLoading ? (
@@ -136,7 +143,7 @@ export default function LibraryViewer() {
                             <span className="my-auto loading loading-spinner loading-lg"></span>
                             <p className="my-auto text-lg">Loading...</p>
                         </div>
-                    ) : src != '' ? (
+                    ) : src !== '' ? (
                         <iframe
                             sandbox="allow-scripts allow-same-origin allow-modals allow-popups"
                             className="w-full h-screen pt-4"
