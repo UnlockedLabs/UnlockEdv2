@@ -151,47 +151,43 @@ func (yt *VideoService) syncVideoMetadataFromS3(ctx context.Context) error {
 			jsonFiles = append(jsonFiles, *item.Key)
 		}
 	}
-	wg := sync.WaitGroup{}
 	if len(jsonFiles) == 0 {
 		return nil
 	}
-	wg.Add(len(jsonFiles))
 	for _, key := range jsonFiles {
-		go func(key string) {
-			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				ytId := strings.TrimSuffix(strings.TrimPrefix(key, "videos/"), ".json")
-				if ytId == "" {
-					return
-				}
-				if yt.db.WithContext(ctx).Find(&models.Video{}, "external_id = ?", ytId).RowsAffected > 0 {
-					logger().Infof("video with external_id %v already exists", ytId)
-					return
-				}
-				obj, err := yt.s3Svc.GetObject(ctx, &s3.GetObjectInput{
-					Bucket: aws.String(yt.bucketName),
-					Key:    aws.String(key),
-				})
-				if err != nil {
-					logger().Errorf("error getting video json from s3: %v", err)
-					return
-				}
-				defer obj.Body.Close()
-				video := &models.Video{}
-				if err := json.NewDecoder(obj.Body).Decode(video); err != nil {
-					logger().Errorf("error decoding video json: %v", err)
-					return
-				}
-				if _, _, err := yt.fetchAndSaveInitialVideoInfo(ctx, video.Url, true); err != nil {
-					logger().Errorf("error fetching video info: %v", err)
-				}
+		select {
+		case <-ctx.Done():
+			return ctx.Err() // Exit if the context is canceled
+		default:
+			ytId := strings.TrimSuffix(strings.TrimPrefix(key, "videos/"), ".json")
+			if ytId == "" {
+				continue
 			}
-		}(key)
+
+			if yt.db.WithContext(ctx).Find(&models.Video{}, "external_id = ?", ytId).RowsAffected > 0 {
+				logger().Infof("video with external_id %v already exists", ytId)
+				continue
+			}
+
+			obj, err := yt.s3Svc.GetObject(ctx, &s3.GetObjectInput{
+				Bucket: aws.String(yt.bucketName),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				logger().Errorf("error getting video json from s3: %v", err)
+				continue
+			}
+			defer obj.Body.Close()
+			video := &models.Video{}
+			if err := json.NewDecoder(obj.Body).Decode(video); err != nil {
+				logger().Errorf("error decoding video json: %v", err)
+				continue
+			}
+			if _, _, err := yt.fetchAndSaveInitialVideoInfo(ctx, video.Url, true); err != nil {
+				logger().Errorf("error fetching video info: %v", err)
+			}
+		}
 	}
-	wg.Wait()
 	return nil
 }
 
