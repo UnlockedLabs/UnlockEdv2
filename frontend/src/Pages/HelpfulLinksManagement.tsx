@@ -53,6 +53,19 @@ export default function HelpfulLinksManagement() {
         editLinkModal.current?.close();
         void mutate();
     }
+
+    async function reqWhitelist(id: number) {
+        const response = await API.post(`helpful-links/${id}/whitelist`, {});
+        if (response.success) {
+            toaster(
+                'Request to Whitelist link request sent successfully',
+                ToastState.success
+            );
+        } else {
+            toaster('Error sending whitelist request', ToastState.error);
+        }
+    }
+
     async function deleteLink(id: number | undefined) {
         const response = await API.delete(`helpful-links/${id}`);
         if (response.success) {
@@ -129,6 +142,7 @@ export default function HelpfulLinksManagement() {
                                     ? UserRole.Admin
                                     : UserRole.Student
                             }
+                            reqWhitelist={reqWhitelist}
                         />
                     );
                 })}
