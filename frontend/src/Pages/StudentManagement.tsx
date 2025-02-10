@@ -146,8 +146,8 @@ export default function StudentManagement() {
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',
                                 'Name (Z-A)': 'name_last desc',
-                                'Account Created &#8595; ': 'created_at desc',
-                                'Account Created &#8593; ': 'created_at asc'
+                                'Account Created (Newest) ': 'created_at desc',
+                                'Account Created  (Oldest)': 'created_at asc'
                             }}
                         />
                     </div>
@@ -168,10 +168,11 @@ export default function StudentManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
                         <thead>
-                            <tr className="grid-cols-4 px-4">
+                            <tr className="grid grid-cols-5 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
                                 <th>Last Updated</th>
+                                <th>Created At</th>
                                 <th className="justify-self-end pr-4">
                                     Actions
                                 </th>
@@ -182,10 +183,11 @@ export default function StudentManagement() {
                                 !error &&
                                 userData.map((user: User) => {
                                     const updatedAt = new Date(user.updated_at);
+                                    const createdAt = new Date(user.created_at);
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-4 justify-items-center"
+                                            className="card p-4 w-full grid-cols-5 justify-items-center"
                                         >
                                             <td className="justify-self-start">
                                                 {user.name_first}{' '}
@@ -200,6 +202,25 @@ export default function StudentManagement() {
                                                     <a className="flex justify-start cursor-pointer">
                                                         <span>
                                                             {updatedAt.toLocaleDateString(
+                                                                'en-US',
+                                                                {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                }
+                                                            )}
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div
+                                                    className="tooltip"
+                                                    data-tip="Account Creation"
+                                                >
+                                                    <a className="flex justify-start cursor-pointer">
+                                                        <span>
+                                                            {createdAt.toLocaleDateString(
                                                                 'en-US',
                                                                 {
                                                                     year: 'numeric',
