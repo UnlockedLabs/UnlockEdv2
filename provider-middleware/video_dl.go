@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -289,27 +288,21 @@ func (vs *VideoService) retryFailedVideos(ctx context.Context) error {
 	if err := vs.db.WithContext(ctx).Model(&models.Video{}).Find(&videos, "availability <> 'available'").Error; err != nil {
 		logger().Errorf("error fetching failed videos: %v", err)
 	}
-	wg := sync.WaitGroup{}
-	wg.Add(len(videos))
 	for _, video := range videos {
-		go func(video models.Video) {
-			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if err := vs.retrySingleVideo(ctx, int(video.ID)); err != nil {
-					logger().Errorf("error retrying single video: %v", err)
-					err = vs.incrementFailedAttempt(ctx, &video, err.Error())
-					if err != nil {
-						logger().Error("error incrementing failed attempt ", err)
-						return
-					}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if err := vs.retrySingleVideo(ctx, int(video.ID)); err != nil {
+				logger().Errorf("error retrying single video: %v", err)
+				err = vs.incrementFailedAttempt(ctx, &video, err.Error())
+				if err != nil {
+					logger().Error("error incrementing failed attempt ", err)
+					continue
 				}
 			}
-		}(video)
+		}
 	}
-	wg.Wait()
 	return nil
 }
 
@@ -353,42 +346,35 @@ func (yt *VideoService) addVideos(ctx context.Context) error {
 	urls := params["video_urls"].([]interface{})
 	logger().Infof("Adding videos: %v", urls)
 
-	var wg sync.WaitGroup
-	wg.Add(len(urls))
-
 	for idx := range urls {
 		urlStr := urls[idx].(string)
-		go func(url string) {
-			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				var videoExists bool
-				tx := yt.db.WithContext(ctx).Model(&models.Video{}).Select("count(*) > 0")
-				if strings.Contains(url, "youtu") {
-					tx = tx.Where("external_id = ?", ytIdFromUrl(url))
-				} else {
-					tx = tx.Where("url = ?", url)
-				}
-				if err := tx.Scan(&videoExists).Error; err != nil || videoExists {
-					logger().Errorf("video already exists: %v", url)
-					return
-				}
-				result, vid, err := yt.fetchAndSaveInitialVideoInfo(ctx, url, false)
-				if err != nil {
-					logger().Errorf("Error fetching video info: %v", err)
-					return
-				}
-				err = yt.downloadVideo(ctx, result, vid)
-				if err != nil {
-					logger().Errorf("Error downloading video: %v", err)
-					return
-				}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			var videoExists bool
+			tx := yt.db.WithContext(ctx).Model(&models.Video{}).Select("count(*) > 0")
+			if strings.Contains(urlStr, "youtu") {
+				tx = tx.Where("external_id = ?", ytIdFromUrl(urlStr))
+			} else {
+				tx = tx.Where("url = ?", urlStr)
 			}
-		}(urlStr)
+			if err := tx.Scan(&videoExists).Error; err != nil || videoExists {
+				logger().Errorf("video already exists: %v", urlStr)
+				continue
+			}
+			result, vid, err := yt.fetchAndSaveInitialVideoInfo(ctx, urlStr, false)
+			if err != nil {
+				logger().Errorf("Error fetching video info: %v", err)
+				continue
+			}
+			err = yt.downloadVideo(ctx, result, vid)
+			if err != nil {
+				logger().Errorf("Error downloading video: %v", err)
+				continue
+			}
+		}
 	}
-	wg.Wait()
 	return nil
 }
 
