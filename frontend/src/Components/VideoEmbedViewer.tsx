@@ -3,8 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import API from '@/api/api';
 import { Video, ServerResponseOne } from '@/common';
 import { usePathValue } from '@/Context/PathValueCtx';
+import useWebSocketTracker from './useWebSocket';
+import { useAuth } from '@/useAuth';
 
 export default function VideoViewer() {
+        const { user } = useAuth();
+        if (!user) {
+            return null;
+        }
     const navigate = useNavigate();
     const { id: videoId } = useParams();
     const [error, setError] = useState<string | null>(null);
@@ -12,7 +18,12 @@ export default function VideoViewer() {
     const { setPathVal } = usePathValue();
     const [video, setVideo] = useState<Video | undefined>();
 
+        const { activityID, isConnected } = useWebSocketTracker(user.id, videoId, (newActivityId) => {
+            console.log("Activity Updated:", newActivityId);
+        });
     useEffect(() => {
+            if (!videoId) return;
+    console.log("Fetching video data for:", videoId); 
         const fetchVideoData = async () => {
             const resp = (await API.get(
                 `videos/${videoId}`
@@ -40,6 +51,8 @@ export default function VideoViewer() {
     return (
         <div className="px-5 pb-4">
             <div className="w-2/3 pt-4 justify-center">
+            <p>WebSocket Status: {isConnected ? "Connected" : "Disconnected"}</p>
+            <p>Current Activity ID: {activityID}</p>
                 {isLoading ? (
                     <div className="flex h-screen gap-4 justify-center content-center">
                         <span className="my-auto loading loading-spinner loading-lg"></span>

@@ -7,13 +7,29 @@ import { usePathValue } from '@/Context/PathValueCtx';
 import { setGlobalPageTitle } from '@/Components/PageNav';
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
+import { useAuth } from '@/useAuth';
+import useWebSocketTracker from '@/Components/useWebSocket';
 
 interface UrlNavState {
     url?: string;
 }
+// interface WebSocketEvent {
+//     event_type: string;
+//     page: string;
+//     timestamp: number;
+//     user_id: number;
+//     activity_id: number;
+// }
 
 export default function LibraryViewer() {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const { id: libraryId } = useParams();
+    const { activityID, isConnected } = useWebSocketTracker(user.id, libraryId, (newActivityId) => {
+        console.log("Activity Updated:", newActivityId);
+    });
     const [src, setSrc] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -115,6 +131,8 @@ export default function LibraryViewer() {
             <div className="px-5 pb-4">
                 <div className="flex items-center gap-4 mb-4">
                     <h1>Library Viewer</h1>
+                    <p>WebSocket Status: {isConnected ? "Connected" : "Disconnected"}</p>
+                    <p>Current Activity ID: {activityID}</p>
                     <LibrarySearchBar
                         searchPlaceholder={searchPlaceholder}
                         searchTerm={searchTerm}

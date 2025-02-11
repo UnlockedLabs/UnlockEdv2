@@ -104,34 +104,25 @@ func seedTestData(db *gorm.DB) {
 	kiwixLibraries := []models.Library{
 		{
 			OpenContentProviderID: kiwix.ID,
-			ExternalID:            models.StringPtr("urn:uuid:67440563-a62b-fabe-415c-4c3ee4546f78"),
-			Title:                 "TED ted connects",
-			Language:              models.StringPtr("eng,spa,ara"),
-			Description:           models.StringPtr("A collection of TED videos about ted connects"),
-			Url:                   "/content/ted_mul_ted-connects_2024-08",
+			ExternalID:            models.StringPtr("urn:uuid:b218a9b9-1aa5-0c0a-fe3c-eeb4b9bc92e9"),
+			Title:                 "C Docs",
+			Language:              models.StringPtr("eng"),
+			Description:           models.StringPtr("C docs by DevDocs"),
+			Url:                   "/content/devdocs_en_c_2025-01",
 			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
 			VisibilityStatus:      true,
 		},
 		{
 			OpenContentProviderID: kiwix.ID,
-			ExternalID:            models.StringPtr("urn:uuid:93321718-5228-676d-7e95-14bbe88fa38c"),
-			Title:                 "Python Documentation",
+			ExternalID:            models.StringPtr("urn:uuid:b231a72f-7d7e-076d-9003-a7e47823e589"),
+			Title:                 "Go Docs",
 			Language:              models.StringPtr("eng"),
-			Description:           models.StringPtr("All documentation for Python"),
-			Url:                   "/content/docs.python.org_en_2025-01",
+			Description:           models.StringPtr("Go docs by DevDocs"),
+			Url:                   "/content/devdocs_en_go_2025-01",
 			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
 			VisibilityStatus:      true,
 		},
-		{
-			OpenContentProviderID: kiwix.ID,
-			ExternalID:            models.StringPtr("urn:uuid:19e6fe12-09a9-0a38-5be4-71c0eba0a72d"),
-			Title:                 "Finiki",
-			Language:              models.StringPtr("eng"),
-			Description:           models.StringPtr("The Canadian financial wiki"),
-			Url:                   "/content/finiki_en_all_maxi_2024-06",
-			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
-			VisibilityStatus:      true,
-		}}
+	}
 	for idx := range kiwixLibraries {
 		log.Printf("Creating library %s", kiwixLibraries[idx].Title)
 		if err := db.Create(&kiwixLibraries[idx]).Error; err != nil {

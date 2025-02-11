@@ -36,6 +36,7 @@ type Server struct {
 	s3        *s3.Client
 	presigner *s3.PresignClient
 	s3Bucket  string
+	wsClient  *ClientManager
 }
 
 type routeDef struct {
@@ -62,6 +63,7 @@ func (srv *Server) RegisterRoutes() {
 	/* register special routes */
 	srv.registerProxyRoutes()
 	srv.registerImageRoutes()
+	srv.registerWebsocketRoute()
 	srv.Mux.Handle("/api/metrics", promhttp.Handler())
 	srv.Mux.HandleFunc("/api/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("OK")); err != nil {
@@ -157,6 +159,7 @@ func newServer() *Server {
 	if err := server.setupDefaultAdminInKratos(); err != nil {
 		log.Fatal("Error setting up default admin in Kratos")
 	}
+	server.wsClient = newClientManager()
 	return &server
 }
 

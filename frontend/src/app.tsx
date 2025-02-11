@@ -61,6 +61,7 @@ import StudentLayer2 from './Pages/StudentDashboard.tsx';
 import AdminLayer1 from './Pages/AdminLayer1.tsx';
 import HelpfulLinks from './Pages/HelpfulLinks.tsx';
 import { TitleManager } from './Components/TitleManager.tsx';
+import StudentProfile from './Pages/StudentProfile.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -345,6 +346,14 @@ const router = createBrowserRouter([
                         errorElement: <Error />,
                         handle: {
                             title: 'Residents',
+                            path: ['residents']
+                        }
+                    },
+                    {
+                        path: 'residents/:id',
+                        element: <StudentProfile />,
+                        handle: {
+                            title: 'Resident Profile',
                             path: ['residents']
                         }
                     },

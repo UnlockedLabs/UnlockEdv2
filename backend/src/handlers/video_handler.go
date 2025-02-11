@@ -59,6 +59,12 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 		ContentID:             video.ID,
 	}
 	srv.Db.CreateContentActivity(videoViewerUrl, &activity)
+	//FIXME JUST TESTING THISSSSSS HERE
+	fmt.Println("did this save???>>>>>>>>>", activity.ID, "; video url:", videoViewerUrl)
+	if activity.ID > 0 {
+		srv.wsClient.notifyUser(activity.UserID, ActivityEvent{OpenContentActivityID: activity.ID})
+	}
+	//FIXME JUST TESTING THISSSSSS HERE
 	return writeJsonResponse(w, http.StatusOK, video)
 }
 

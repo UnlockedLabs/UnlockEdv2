@@ -6,7 +6,7 @@ import { SWRConfig } from 'swr';
 import { ThemeProvider } from '@/Context/ThemeContext';
 
 ReactDOM.createRoot(document.querySelector('#root')!).render(
-    <React.StrictMode>
+    // <React.StrictMode>
         <SWRConfig
             value={{
                 // eslint-disable-next-line
@@ -17,5 +17,5 @@ ReactDOM.createRoot(document.querySelector('#root')!).render(
                 <App />
             </ThemeProvider>
         </SWRConfig>
-    </React.StrictMode>
+    // </React.StrictMode>
 );

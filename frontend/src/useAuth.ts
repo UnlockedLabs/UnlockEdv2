@@ -141,6 +141,7 @@ export async function handleLogout(): Promise<void> {
                 (resp.data as AuthResponse).redirect_to
             );
             if (logout.status === 200) {
+                window.dispatchEvent(new Event("logoutEvent"));
                 const logoutResp = logout.data as AuthResponse;
                 window.location.replace(
                     logoutResp.logout_url ?? INIT_KRATOS_LOGIN_FLOW
