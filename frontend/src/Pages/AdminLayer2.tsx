@@ -10,7 +10,7 @@ import {
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminLayer2() {
     const { user } = useAuth();
@@ -20,19 +20,15 @@ export default function AdminLayer2() {
         ServerResponseMany<Facility>,
         AxiosError
     >('/api/facilities');
-    const { data, error, isLoading, mutate } = useSWR<
+    const { data, error, isLoading } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
         AxiosError
     >(
         `/api/users/${user?.id}/admin-layer2?facility=${facility}&reset=${resetCache}`
     );
-    useEffect(() => {
-        void mutate();
-    }, [facility, resetCache]);
 
     const handleDropdownChange = (value: string) => {
         setFacility(value);
-        setResetCache(true);
     };
     const layer2_metrics = data?.data;
     const formattedDate =
