@@ -105,9 +105,7 @@ export default function AdminLayer2() {
                             />
                             <StatsCard
                                 title="Total Activity Time"
-                                number={layer2_metrics.data.total_hourly_activity.toLocaleString(
-                                    'en-US'
-                                )}
+                                number={layer2_metrics.data.total_hourly_activity.toString()}
                                 label="Hours"
                             />
                         </div>
@@ -120,7 +118,10 @@ export default function AdminLayer2() {
                                         Course Name
                                     </th>
                                     <th># Students Enrolled</th>
-                                    <th>Completion Rate</th>
+                                    <th># Students Completed</th>
+                                    <th className="justify-center">
+                                        Completion Rate
+                                    </th>
                                     <th className="justify-self-end pr-4">
                                         Total Activity Hours
                                     </th>
@@ -134,7 +135,7 @@ export default function AdminLayer2() {
                                     ) => {
                                         return (
                                             <tr
-                                                className="grid-cols-4 justify-items-center"
+                                                className="grid-cols-5 justify-items-center"
                                                 key={index}
                                             >
                                                 <td className="justify-self-start">
@@ -143,6 +144,11 @@ export default function AdminLayer2() {
                                                 <td>
                                                     {
                                                         insight.total_students_enrolled
+                                                    }
+                                                </td>
+                                                <td>
+                                                    {
+                                                        insight.total_students_completed
                                                     }
                                                 </td>
                                                 <td>
