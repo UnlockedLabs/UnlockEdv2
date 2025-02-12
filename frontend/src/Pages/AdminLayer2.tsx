@@ -30,6 +30,10 @@ export default function AdminLayer2() {
         void mutate();
     }, [facility, resetCache]);
 
+    const handleDropdownChange = (value: string) => {
+        setFacility(value);
+        setResetCache(true);
+    };
     const layer2_metrics = data?.data;
     const formattedDate =
         layer2_metrics &&
@@ -55,9 +59,9 @@ export default function AdminLayer2() {
                                     id="facility"
                                     className="select select-bordered w-full max-w-xs"
                                     value={facility}
-                                    onChange={(e) =>
-                                        setFacility(e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        handleDropdownChange(e.target.value);
+                                    }}
                                 >
                                     <option key={'all'} value={'all'}>
                                         All Facilities

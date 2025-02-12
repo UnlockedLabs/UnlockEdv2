@@ -55,11 +55,11 @@ type RecentActivity struct {
 }
 
 type LearningInsight struct {
-	CourseName            string  `json:"course_name"`
-	TotalStudentsCompleted int64  `json:"total_students_completed"`
-	TotalStudentsEnrolled int64   `json:"total_students_enrolled"`
-	CompletionRate        float32 `json:"completion_rate"`
-	ActivityHours         float32   `json:"activity_hours"`
+	CourseName             string  `json:"course_name"`
+	TotalStudentsCompleted int64   `json:"total_students_completed"`
+	TotalStudentsEnrolled  int64   `json:"total_students_enrolled"`
+	CompletionRate         float32 `json:"completion_rate"`
+	ActivityHours          float32 `json:"activity_hours"`
 }
 
 type AdminLayer2Join struct {

@@ -2,10 +2,10 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 	"math"
 	"sort"
 	"time"
-	"fmt"
 )
 
 func (db *DB) GetDailyActivityByUserID(userID int, startDate time.Time, endDate time.Time) ([]models.DailyActivity, error) {
