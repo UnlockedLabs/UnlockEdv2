@@ -20,6 +20,50 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		{"GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2, true, models.Feature()},
 		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
 		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
+		{"GET /api/users/{id}/profile", srv.handleResidentProfile, false, axx},
+	}
+}
+
+// // TODO: ResidentProfileHandler here (for now but it may should be closer to the user)
+func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	clearCache := r.URL.Query().Get("reset") == "true"
+
+	if !srv.isTesting(r) {
+		key := fmt.Sprintf("resident-profile-%d", claims.FacilityID)
+		cached, err := srv.buckets[AdminLayer2].Get(key)
+
+		if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
+			newCacheData := map[string]interface{}{
+				"name":   "John Doe",
+				"email":  "johndoe@example.com",
+				"status": "active",
+			}
+			cacheBytes, err := json.Marshal(newCacheData)
+			if err != nil {
+				return newMarshallingBodyServiceError(err)
+			}
+			_, err = srv.buckets[AdminLayer2].Put(key, cacheBytes)
+			if err != nil {
+				return newInternalServerServiceError(err, "Error caching resident profile data")
+			}
+			return writeJsonResponse(w, http.StatusOK, newCacheData)
+		}
+		// Todo: Declare my model StudentProfile here
+		// Ask Rich about the associated table or code?
+		var cachedData map[string]interface{}
+		err = json.Unmarshal(cached.Value(), &cachedData)
+		if err != nil {
+			return newInternalServerServiceError(err, "Error unmarshalling cached data")
+		}
+		return writeJsonResponse(w, http.StatusOK, cachedData)
+	} else {
+		newCacheData := map[string]interface{}{
+			"name":   "John Doe",
+			"email":  "johndoe@example.com",
+			"status": "active",
+		}
+		return writeJsonResponse(w, http.StatusOK, newCacheData)
 	}
 }
 

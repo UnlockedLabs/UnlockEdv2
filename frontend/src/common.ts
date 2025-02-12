@@ -730,3 +730,9 @@ export interface Option {
     key: number;
     value: string;
 }
+
+export interface ResidentProfile {
+    name: string;
+    email: string;
+    status: string;
+}

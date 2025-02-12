@@ -1,22 +1,23 @@
-// import { useEffect, useState } from 'react';
-// import useSWR from 'swr';
-// import { AxiosError } from 'axios';
-// import { Facility, LoginMetrics, ServerResponseOne } from '@/common';
+// import { useState } from 'react';
+import useSWR from 'swr';
+import { AxiosError } from 'axios';
+import { ResidentProfile, ServerResponseOne } from '@/common';
 // import StatsCard from './StatsCard';
 // import { ResponsiveContainer } from 'recharts';
 // import EngagementRateGraph from './EngagementRateGraph';
+
+// TODO: Flesh this page out
 
 const StudentProfile = () => {
     // const [facility, setFacility] = useState('all');
     // const [days, setDays] = useState(7);
     // const [resetCache, setResetCache] = useState(false);
 
-    // const { data, error, isLoading, mutate } = useSWR<
-    //     ServerResponseOne<LoginMetrics>,
-    //     AxiosError
-    // >(
-    //     `/api/login-metrics?facility=${facility}&days=${days}&reset=${resetCache}`
-    // );
+    const { data, error, isLoading } = useSWR<
+        ServerResponseOne<ResidentProfile>,
+        AxiosError
+    >(`/api/users/${1}/profile`);
+    const metrics = data?.data;
     // const { data: facilitiesData } =
     //     useSWR<ServerResponseOne<Facility[]>>('/api/facilities');
 
@@ -26,7 +27,6 @@ const StudentProfile = () => {
 
     // const facilities = facilitiesData?.data;
 
-    // const metrics = data?.data;
     // const formattedDate =
     //     metrics && new Date(metrics.last_cache).toLocaleString('en-US', {});
 
@@ -35,10 +35,10 @@ const StudentProfile = () => {
     //     (metrics?.data.total_admins ?? 0);
     return (
         <div className="overflow-x-hidden">
-            {/* {error && <div>Error loading data</div>}
+            {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
-                <> */}
+                <>
                     <div className="flex items-end justify-between pb-4">
                         <div className="flex flex-row gap-4">
                             <div>
@@ -88,8 +88,7 @@ const StudentProfile = () => {
                         </div>
                         <div>
                             <p className="label label-text text-grey-3">
-                                Last updated:  
-                                
+                                Last updated:
                             </p>
                             <button
                                 className="button justify-self-end"
@@ -163,13 +162,11 @@ const StudentProfile = () => {
                     <div className="card card-row-padding overflow-hidden">
                         <h1 className="">Peak Login Times</h1>
                         <div className=" items-stretch gap-12 px-10 pt-10 ">
-                            <div className="w-full h-[500px] overflow-visible">
-
-                            </div>
+                            <div className="w-full h-[500px] overflow-visible"></div>
                         </div>
                     </div>
-            {/* </>
-        )} */}
+                </>
+            )}
         </div>
     );
 };

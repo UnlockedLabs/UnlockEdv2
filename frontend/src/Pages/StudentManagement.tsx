@@ -131,6 +131,11 @@ export default function StudentManagement() {
         setPageQuery(1);
         void mutate();
     };
+
+    // TODO: write out logic here
+    // const handleShowUserProfileClick()=>{
+
+    // }
     return (
         <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-5">
@@ -187,7 +192,11 @@ export default function StudentManagement() {
                                             key={user.id}
                                             className="card p-4 w-full grid-cols-4 justify-items-center"
                                         >
-                                            <td className="justify-self-start">
+                                            <td
+                                                className="justify-self-start"
+
+                                                //TODO: Add onclick event to resident profile
+                                            >
                                                 {user.name_first}{' '}
                                                 {user.name_last}
                                             </td>
