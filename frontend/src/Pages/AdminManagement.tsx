@@ -28,6 +28,7 @@ import { AxiosError } from 'axios';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { useToast } from '@/Context/ToastCtx';
+import { useAuth, isSysAdmin } from '@/useAuth';
 
 export default function AdminManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -43,11 +44,17 @@ export default function AdminManagement() {
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { toaster } = useToast();
+
+    const { user } = useAuth();
+    const newAdminRole: UserRole = isSysAdmin(user)
+        ? UserRole.DepartmentAdmin
+        : UserRole.FacilityAdmin;
+
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=admin`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=${newAdminRole}`
     );
     const userData = data?.data as User[] | [];
     const meta = data?.meta;
@@ -325,7 +332,7 @@ export default function AdminManagement() {
                 form={
                     <AddUserForm
                         onSuccess={onAddUserSuccess}
-                        userRole={UserRole.Admin}
+                        userRole={newAdminRole}
                     />
                 }
             />

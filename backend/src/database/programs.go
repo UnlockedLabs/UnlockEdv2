@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"strings"
 )
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
@@ -28,7 +29,8 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 		tx := db.Model(&models.Program{}).Preload("Tags").Preload("Facilities").Preload("Favorites", "user_id = ?", args.UserID).
 			Find(&content, "id IN (?)", query)
 		if args.Search != "" {
-			tx = tx.Where("name LIKE ?", "%"+args.Search+"%")
+			search := "%" + strings.ToLower(args.Search) + "%"
+			tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", search, search)
 		}
 		if err := tx.Count(&args.Total).Error; err != nil {
 			return nil, newGetRecordsDBError(err, "programs")
@@ -42,7 +44,8 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 			Preload("Facilities").
 			Preload("Favorites", "user_id = ?", args.UserID)
 		if args.Search != "" {
-			tx = tx.Where("name LIKE ?", "%"+args.Search+"%")
+			search := "%" + strings.ToLower(args.Search) + "%"
+			tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", search, search)
 		}
 		if err := tx.Count(&args.Total).Error; err != nil {
 			return nil, newGetRecordsDBError(err, "programs")

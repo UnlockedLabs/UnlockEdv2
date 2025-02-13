@@ -1,5 +1,4 @@
-import { UserRole } from '@/common';
-import { useAuth } from '@/useAuth';
+import { isAdministrator, useAuth } from '@/useAuth';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,9 +20,7 @@ export default function ExpandableCardGrid<T>({
     const { user } = useAuth();
     const [expanded, setExpanded] = useState<boolean>(false);
     const slice = expanded ? items.length : cols;
-    const isAdmin =
-        user?.role === UserRole.Admin || user?.role === UserRole.SystemAdmin;
-
+    const isAdmin = isAdministrator(user);
     const navigate = useNavigate();
 
     const handleEmptyStateClick = () => {

@@ -26,8 +26,24 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	clearCache := r.URL.Query().Get("reset") == "true"
+	facility := r.URL.Query().Get("facility")
+	var facilityId *uint
+	switch facility {
+	case "all":
+		facilityId = nil
+	case "":
+		facilityId = &claims.FacilityID
+	default:
+		var err error
+		facilityIdInt, err := strconv.Atoi(facility)
+		if err != nil {
+			return newInternalServerServiceError(err, "Facility ID")
+		}
+		ref := uint(facilityIdInt)
+		facilityId = &ref
+	}
 	if !srv.isTesting(r) {
-		key := fmt.Sprintf("admin-layer2-%d", claims.FacilityID)
+		key := fmt.Sprintf("admin-layer2-%d", facilityId)
 		cached, err := srv.buckets[AdminLayer2].Get(key)
 		if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
 			newCacheData, err := srv.getLayer2Data(r, log)

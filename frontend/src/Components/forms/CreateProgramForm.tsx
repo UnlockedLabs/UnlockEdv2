@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { CloseX, DropdownInput, SubmitButton, TextInput } from '../inputs';
 import API from '@/api/api';
+import { canSwitchFacility, useAuth } from '@/useAuth';
 
 interface ProgramInputs {
     name: string;
@@ -29,6 +30,7 @@ export default function CreateProgramForm({
     const [errorMessage, setErrorMessage] = useState('');
     const [selectedFacilities, setSelectedFacilities] = useState<number[]>([]);
     const [hasAll, setHasAll] = useState(false);
+    const { user } = useAuth();
     const {
         register,
         handleSubmit,
@@ -96,59 +98,67 @@ export default function CreateProgramForm({
                     required
                     errors={errors}
                 />
-                <label className="label">
-                    Facilities to make program available:
-                </label>
-                <div className="m-2 columns-2">
-                    <input
-                        type="checkbox"
-                        className="checkbox mb-4 mr-1"
-                        id={'all'}
-                        name={'all'}
-                        value={'all'}
-                        onChange={() => {
-                            setHasAll(!hasAll);
-                            if (hasAll) setSelectedFacilities([]);
-                            else
-                                setSelectedFacilities(
-                                    facilities.map((fac) => {
-                                        return fac.id;
-                                    })
-                                );
-                        }}
-                    />
-                    <label htmlFor={'all'}>{'Select All'}</label>
-
-                    {facilities?.map((facility) => (
-                        <div key={facility.id}>
+                {user && canSwitchFacility(user) && (
+                    <>
+                        <label className="label">
+                            Facilities to make program available:
+                        </label>
+                        <div className="m-2 columns-2">
                             <input
                                 type="checkbox"
                                 className="checkbox mb-4 mr-1"
-                                id={facility.name}
-                                name={facility.name}
-                                value={facility.id}
-                                disabled={hasAll}
-                                onChange={
-                                    selectedFacilities.includes(facility.id)
-                                        ? () =>
-                                              setSelectedFacilities(
-                                                  selectedFacilities.filter(
-                                                      (id) => id !== facility.id
-                                                  )
-                                              )
-                                        : () =>
-                                              setSelectedFacilities([
-                                                  ...selectedFacilities,
-                                                  facility.id
-                                              ])
-                                }
+                                id={'all'}
+                                name={'all'}
+                                value={'all'}
+                                onChange={() => {
+                                    setHasAll(!hasAll);
+                                    if (hasAll) setSelectedFacilities([]);
+                                    else
+                                        setSelectedFacilities(
+                                            facilities.map((fac) => {
+                                                return fac.id;
+                                            })
+                                        );
+                                }}
                             />
-                            <label htmlFor={facility.name}>
-                                {facility.name}
-                            </label>
+                            <label htmlFor={'all'}>{'Select All'}</label>
+
+                            {facilities?.map((facility) => (
+                                <div key={facility.id}>
+                                    <input
+                                        type="checkbox"
+                                        className="checkbox mb-4 mr-1"
+                                        id={facility.name}
+                                        name={facility.name}
+                                        value={facility.id}
+                                        disabled={hasAll}
+                                        onChange={
+                                            selectedFacilities.includes(
+                                                facility.id
+                                            )
+                                                ? () =>
+                                                      setSelectedFacilities(
+                                                          selectedFacilities.filter(
+                                                              (id) =>
+                                                                  id !==
+                                                                  facility.id
+                                                          )
+                                                      )
+                                                : () =>
+                                                      setSelectedFacilities([
+                                                          ...selectedFacilities,
+                                                          facility.id
+                                                      ])
+                                        }
+                                    />
+                                    <label htmlFor={facility.name}>
+                                        {facility.name}
+                                    </label>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </>
+                )}
                 <SubmitButton errorMessage={errorMessage} />
             </form>
         </div>

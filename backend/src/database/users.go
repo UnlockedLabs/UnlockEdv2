@@ -34,8 +34,10 @@ func (db *DB) GetCurrentUsers(qCtx *models.QueryContext, role string) ([]models.
 	}
 	tx := db.Model(&models.User{}).Where("facility_id = ?", qCtx.FacilityID)
 	switch role {
-	case "admin":
-		tx = tx.Where("role IN ('admin', 'system_admin')")
+	case "system_admin":
+		tx = tx.Where("role IN ('system_admin',  'department_admin', 'facility_admin')")
+	case "department_admin":
+		tx = tx.Where("role IN ('department_admin', 'facility_admin')")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
@@ -150,7 +152,7 @@ func (db *DB) GetUserByUsername(username string) (*models.User, error) {
 func (db *DB) UsernameExists(username string) bool {
 	userExists := false
 	email := username + "@unlocked.v2"
-	if err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE username = ? OR email = ?)", strings.ToLower(username), email).
+	if err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = ? OR email = ?)", strings.ToLower(username), email).
 		Scan(&userExists).Error; err != nil {
 		log.Error("Error checking if username exists: ", err)
 	}

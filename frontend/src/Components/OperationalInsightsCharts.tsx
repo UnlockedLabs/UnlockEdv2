@@ -5,11 +5,13 @@ import { Facility, LoginMetrics, ServerResponseOne } from '@/common';
 import StatsCard from './StatsCard';
 import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
+import { useAuth, canSwitchFacility } from '@/useAuth';
 
 const OperationalInsights = () => {
     const [facility, setFacility] = useState('all');
     const [days, setDays] = useState(7);
     const [resetCache, setResetCache] = useState(false);
+    const { user } = useAuth();
 
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseOne<LoginMetrics>,
@@ -25,6 +27,11 @@ const OperationalInsights = () => {
     }, [facility, days, resetCache]);
 
     const facilities = facilitiesData?.data;
+    useEffect(() => {
+        if (user && !canSwitchFacility(user)) {
+            setFacility('');
+        }
+    }, [user, facility]);
 
     const metrics = data?.data;
     const formattedDate =
@@ -60,31 +67,36 @@ const OperationalInsights = () => {
                                     <option value={30}>Last 30 days</option>
                                 </select>
                             </div>
-                            <div>
-                                <label htmlFor="facility" className="label">
-                                    <span className="label-text">Facility</span>
-                                </label>
-                                <select
-                                    id="facility"
-                                    className="select select-bordered w-full max-w-xs"
-                                    value={facility}
-                                    onChange={(e) =>
-                                        setFacility(e.target.value)
-                                    }
-                                >
-                                    <option key={'all'} value={'all'}>
-                                        All
-                                    </option>
-                                    {facilities?.map((facility) => (
-                                        <option
-                                            key={facility.id}
-                                            value={facility.id}
-                                        >
-                                            {facility.name}
+
+                            {canSwitchFacility(user!) && (
+                                <div>
+                                    <label htmlFor="facility" className="label">
+                                        <span className="label-text">
+                                            Facility
+                                        </span>
+                                    </label>
+                                    <select
+                                        id="facility"
+                                        className="select select-bordered w-full max-w-xs"
+                                        value={facility}
+                                        onChange={(e) =>
+                                            setFacility(e.target.value)
+                                        }
+                                    >
+                                        <option key={'all'} value={'all'}>
+                                            All
                                         </option>
-                                    ))}
-                                </select>
-                            </div>
+                                        {facilities?.map((facility) => (
+                                            <option
+                                                key={facility.name}
+                                                value={facility.id}
+                                            >
+                                                {facility.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <p className="label label-text text-grey-3">

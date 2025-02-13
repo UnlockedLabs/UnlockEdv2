@@ -21,7 +21,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import API from '@/api/api';
-import { isAdministrator, useAuth } from '@/useAuth';
+import { useAuth } from '@/useAuth';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 
 export default function HelpfulLinksManagement() {
@@ -88,7 +88,6 @@ export default function HelpfulLinksManagement() {
         setPageQuery(1);
         void mutate();
     };
-
     return (
         <>
             <div className="flex flex-row justify-between">
@@ -124,11 +123,7 @@ export default function HelpfulLinksManagement() {
                             link={link}
                             mutate={updateLinks}
                             showModal={showModifyLink}
-                            role={
-                                isAdministrator(user)
-                                    ? UserRole.Admin
-                                    : UserRole.Student
-                            }
+                            role={user ? user?.role : UserRole.Student}
                         />
                     );
                 })}

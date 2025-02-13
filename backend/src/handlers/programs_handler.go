@@ -61,11 +61,15 @@ type ProgramForm struct {
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var program ProgramForm
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
+	}
+	if len(program.Facilities) == 0 {
+		program.Facilities = []int{int(claims.FacilityID)}
 	}
 	newProg := models.Program{
 		Name:          program.Name,

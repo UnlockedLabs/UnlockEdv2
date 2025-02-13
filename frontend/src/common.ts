@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 
 export enum UserRole {
     SystemAdmin = 'system_admin',
-    Admin = 'admin',
+    DepartmentAdmin = 'department_admin',
+    FacilityAdmin = 'facility_admin',
     Student = 'student'
 }
 export enum FeatureAccess {
