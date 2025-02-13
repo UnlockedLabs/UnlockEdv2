@@ -24,10 +24,26 @@ export const AuthContext = createContext<AuthContextType | undefined>(
     undefined
 );
 
-export const AdminRoles = [UserRole.SystemAdmin, UserRole.Admin];
+export const AdminRoles = [
+    UserRole.SystemAdmin,
+    UserRole.FacilityAdmin,
+    UserRole.DepartmentAdmin
+];
 
+export function canSwitchFacility(user: User): boolean {
+    return isSysAdmin(user) || isDeptAdmin(user);
+}
 export const isAdministrator = (user: User | undefined): boolean => {
     return user !== undefined && AdminRoles.includes(user.role);
+};
+export const isSysAdmin = (user: User | undefined): boolean => {
+    return user !== undefined && user.role === UserRole.SystemAdmin;
+};
+export const isDeptAdmin = (user: User | undefined): boolean => {
+    return user !== undefined && user.role === UserRole.DepartmentAdmin;
+};
+export const isFacilityAdmin = (user: User | undefined): boolean => {
+    return user !== undefined && user.role === UserRole.FacilityAdmin;
 };
 
 export const isStudent = (user: User): boolean => {

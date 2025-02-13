@@ -48,7 +48,7 @@ func (srv *Server) TestAsAdmin(handler HttpFunc) http.Handler {
 		testClaims := &Claims{
 			UserID:        1,
 			PasswordReset: false,
-			Role:          models.Admin,
+			Role:          models.DepartmentAdmin,
 			FacilityID:    1,
 		}
 		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)

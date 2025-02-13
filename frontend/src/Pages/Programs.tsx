@@ -2,7 +2,7 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useState, useRef } from 'react';
 import ProgramCard from '@/Components/ProgramCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { Program, ServerResponse, ViewType, Facility } from '@/common';
+import { Program, ServerResponseMany, ViewType, Facility } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { AxiosError } from 'axios';
@@ -11,26 +11,32 @@ import ToggleView from '@/Components/ToggleView';
 import Modal from '@/Components/Modal';
 import CreateProgramForm from '@/Components/forms/CreateProgramForm';
 import { useLoaderData } from 'react-router-dom';
+import Pagination from '@/Components/Pagination';
 
 export default function Programs() {
     const { user } = useAuth();
-    const facilities = useLoaderData() as Facility[];
     const addProgramModal = useRef<HTMLDialogElement>(null);
-
+    const facilities = useLoaderData() as Facility[];
     if (!user) {
         return null;
     }
-
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [order, setOrder] = useState('asc');
-    const { data, error, mutate } = useSWR<ServerResponse<Program>, AxiosError>(
-        `/api/programs?search=${searchTerm}&order=${order}`
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(20);
+    const { data, error, mutate } = useSWR<
+        ServerResponseMany<Program>,
+        AxiosError
+    >(
+        `/api/programs?search=${searchTerm}&order=${order}&page=${page}&per_page=${perPage}`
     );
-    const programData = data?.data as Program[];
+    const programData = data?.data;
+    const meta = data?.meta;
 
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
+        setPage(1);
     }
 
     return (
@@ -88,6 +94,15 @@ export default function Programs() {
                     })
                 )}
             </div>
+            {meta && (
+                <div className="flex justify-center mt-4">
+                    <Pagination
+                        meta={meta}
+                        setPage={setPage}
+                        setPerPage={setPerPage}
+                    />
+                </div>
+            )}
             <Modal
                 ref={addProgramModal}
                 type="Add"

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { isAdministrator, useAuth } from '@/useAuth';
+import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, TitleHandler } from '@/common';
@@ -79,7 +79,7 @@ export default function PageNav({
                         : pageTitle}
                 </h1>
             </div>
-            {user && isAdministrator(user) ? (
+            {user && canSwitchFacility(user) ? (
                 <ul className="menu menu-horizontal px-1">
                     <li>
                         <details

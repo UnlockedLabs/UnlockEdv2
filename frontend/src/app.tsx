@@ -51,7 +51,7 @@ import { ToastProvider } from './Context/ToastCtx.tsx';
 import VideoViewer from './Components/VideoEmbedViewer.tsx';
 import VideoContent from './Components/VideoContent.tsx';
 import OpenContentManagement from './Pages/OpenContentManagement.tsx';
-import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW } from './common.ts';
+import { FeatureAccess, INIT_KRATOS_LOGIN_FLOW, UserRole } from './common.ts';
 import FavoritesPage from './Pages/Favorites.tsx';
 import StudentLayer1 from './Pages/StudentLayer1.tsx';
 import OperationalInsightsPage from './Pages/OperationalInsights.tsx';
@@ -82,6 +82,18 @@ const AdminOnly: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     ) : (
         <UnauthorizedNotFound which="unauthorized" />
     );
+};
+const RoleGuard: React.FC<{ allowedRoles: UserRole[] }> = ({
+    allowedRoles
+}) => {
+    const { user } = useAuth();
+    if (!user) {
+        return <Navigate to="/login" />;
+    }
+    if (!allowedRoles.includes(user.role)) {
+        return <UnauthorizedNotFound which="unauthorized" />;
+    }
+    return <Outlet />;
 };
 
 function ProtectedRoute({
@@ -131,6 +143,8 @@ const router = createBrowserRouter([
         children: [
             {
                 element: <AuthenticatedLayout />,
+                id: 'authenticated',
+                loader: getFacilities,
                 children: [
                     {
                         path: 'authcallback',
@@ -272,8 +286,9 @@ const router = createBrowserRouter([
                         children: [
                             {
                                 path: 'programs',
-                                element: <Programs />,
+                                id: 'programs-facilities',
                                 loader: getFacilities,
+                                element: <Programs />,
                                 handle: {
                                     title: 'Programs',
                                     path: ['programs']
@@ -318,18 +333,53 @@ const router = createBrowserRouter([
                     },
                     {
                         path: 'admins',
-                        element: <AdminManagement />,
                         errorElement: <Error />,
                         handle: {
                             title: 'Admins'
-                        }
+                        },
+                        element: (
+                            <RoleGuard
+                                allowedRoles={[
+                                    UserRole.SystemAdmin,
+                                    UserRole.DepartmentAdmin
+                                ]}
+                            />
+                        ),
+                        children: [
+                            {
+                                path: '',
+                                element: <AdminManagement />,
+                                errorElement: <Error />,
+                                handle: {
+                                    title: 'Admins',
+                                    path: ['admins']
+                                }
+                            }
+                        ]
                     },
                     {
                         path: 'facilities',
-                        element: <FacilityManagement />,
                         handle: {
                             title: 'Facilities'
-                        }
+                        },
+                        element: (
+                            <RoleGuard
+                                allowedRoles={[
+                                    UserRole.DepartmentAdmin,
+                                    UserRole.SystemAdmin
+                                ]}
+                            />
+                        ),
+                        children: [
+                            {
+                                path: '',
+                                element: <FacilityManagement />,
+                                errorElement: <Error />,
+                                handle: {
+                                    title: 'Facilities'
+                                }
+                            }
+                        ]
                     },
                     {
                         path: '',
@@ -350,10 +400,28 @@ const router = createBrowserRouter([
                             },
                             {
                                 path: 'learning-platforms',
-                                element: <ProviderPlatformManagement />,
                                 handle: {
                                     title: 'Learning Platforms'
-                                }
+                                },
+                                element: (
+                                    <RoleGuard
+                                        allowedRoles={[
+                                            UserRole.SystemAdmin,
+                                            UserRole.DepartmentAdmin
+                                        ]}
+                                    />
+                                ),
+                                children: [
+                                    {
+                                        path: '',
+                                        element: <ProviderPlatformManagement />,
+                                        errorElement: <Error />,
+                                        handle: {
+                                            title: 'Learning Platforms',
+                                            path: ['learning-platforms']
+                                        }
+                                    }
+                                ]
                             },
                             {
                                 path: 'provider-users/:id',
@@ -424,6 +492,7 @@ const router = createBrowserRouter([
                             }
                         ]
                     },
+
                     {
                         path: '*',
                         element: <UnauthorizedNotFound which="notFound" />

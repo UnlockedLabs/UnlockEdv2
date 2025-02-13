@@ -1,4 +1,4 @@
-import { isAdministrator, useAuth } from '@/useAuth';
+import { canSwitchFacility, isAdministrator, useAuth } from '@/useAuth';
 import StatsCard from '@/Components/StatsCard';
 import {
     AdminLayer2Join,
@@ -10,7 +10,7 @@ import {
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function AdminLayer2() {
     const { user } = useAuth();
@@ -20,6 +20,7 @@ export default function AdminLayer2() {
         ServerResponseMany<Facility>,
         AxiosError
     >('/api/facilities');
+
     const { data, error, isLoading } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
         AxiosError
@@ -30,6 +31,12 @@ export default function AdminLayer2() {
     const handleDropdownChange = (value: string) => {
         setFacility(value);
     };
+
+    useEffect(() => {
+        if (user && !canSwitchFacility(user)) {
+            setFacility('');
+        }
+    }, [user, facility]);
     const layer2_metrics = data?.data;
     const formattedDate =
         layer2_metrics &&
@@ -39,6 +46,7 @@ export default function AdminLayer2() {
     if (!isAdministrator(user)) {
         return <UnauthorizedNotFound which="unauthorized" />;
     }
+
     return (
         <div className="w-full flex flex-col gap-2 pb-4 px-5">
             {error && <div>Error loading data</div>}
@@ -47,39 +55,45 @@ export default function AdminLayer2() {
                 <>
                     <div className="flex items-end justify-between pb-4">
                         <div className="flex flex-row gap-4">
-                            <div>
-                                <label htmlFor="facility" className="label">
-                                    <span className="label-text">Facility</span>
-                                </label>
-                                <select
-                                    id="facility"
-                                    className="select select-bordered w-full max-w-xs"
-                                    value={facility}
-                                    onChange={(e) => {
-                                        handleDropdownChange(e.target.value);
-                                    }}
-                                >
-                                    <option key={'all'} value={'all'}>
-                                        All Facilities
-                                    </option>
-                                    {errorFacilitiesFetch ? (
-                                        <div>Error fetching facilities</div>
-                                    ) : (
-                                        facilities?.data?.map(
-                                            (facility: Facility) => (
-                                                <option
-                                                    key={facility.id}
-                                                    value={facility.id}
-                                                >
-                                                    {facility.name}
-                                                </option>
+                            {canSwitchFacility(user) && (
+                                <div>
+                                    <label htmlFor="facility" className="label">
+                                        <span className="label-text">
+                                            Facility
+                                        </span>
+                                    </label>
+                                    <select
+                                        id="facility"
+                                        className="select select-bordered w-full max-w-xs"
+                                        value={facility}
+                                        onChange={(e) => {
+                                            handleDropdownChange(
+                                                e.target.value
+                                            );
+                                        }}
+                                    >
+                                        <option key={'all'} value={'all'}>
+                                            All Facilities
+                                        </option>
+                                        {errorFacilitiesFetch ? (
+                                            <div>Error fetching facilities</div>
+                                        ) : (
+                                            facilities?.data?.map(
+                                                (facility: Facility) => (
+                                                    <option
+                                                        key={facility.id}
+                                                        value={facility.id}
+                                                    >
+                                                        {facility.name}
+                                                    </option>
+                                                )
                                             )
-                                        )
-                                    )}
-                                </select>
-                            </div>
+                                        )}
+                                    </select>
+                                </div>
+                            )}
                         </div>
-                        <div>
+                        <div className="text-right">
                             <p className="label label-text text-grey-3">
                                 Last updated: {formattedDate}
                             </p>

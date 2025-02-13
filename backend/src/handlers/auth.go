@@ -236,6 +236,12 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					Role:          user.Role,
 					FeatureAccess: srv.features,
 				}
+				if string(user.Role) != traits["role"].(string) {
+					err := srv.updateUserTraitsInKratos(claims)
+					if err != nil {
+						log.WithFields(fields).Errorf("Error updating user traits in kratos: %v", err)
+					}
+				}
 				return claims, hasCookie, nil
 			}
 		}

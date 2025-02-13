@@ -163,7 +163,7 @@ func TestUpdateUser(t *testing.T) {
 				NameLast:   "testDeleteUser",
 				Username:   "testDeleteUser",
 				Email:      "testDeleteUser",
-				Role:       "admin",
+				Role:       "system_admin",
 				FacilityID: 1,
 			}
 			var id uint
@@ -222,7 +222,7 @@ func TestDeleteUser(t *testing.T) {
 				NameLast:   "testUser",
 				Username:   "testUser",
 				Email:      "testUser",
-				Role:       "admin",
+				Role:       "system_admin",
 				FacilityID: 1,
 			}
 			var id uint

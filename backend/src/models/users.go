@@ -11,12 +11,13 @@ import (
 type UserRole string
 
 const (
-	SystemAdmin UserRole = "system_admin"
-	Admin       UserRole = "admin"
-	Student     UserRole = "student"
+	SystemAdmin     UserRole = "system_admin"
+	FacilityAdmin   UserRole = "facility_admin"
+	DepartmentAdmin UserRole = "department_admin"
+	Student         UserRole = "student"
 )
 
-var AdminRoles = []UserRole{SystemAdmin, Admin}
+var AdminRoles = []UserRole{SystemAdmin, FacilityAdmin, DepartmentAdmin}
 
 type DatabaseFields struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
@@ -35,7 +36,7 @@ type User struct {
 	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
 	Email      string   `gorm:"size:255;not null;unique" json:"email" validate:"-"`
 	NameLast   string   `gorm:"size:255;not null" json:"name_last"  validate:"alphanumspace"`
-	Role       UserRole `gorm:"size:64;default:student" json:"role" validate:"oneof=admin student system_admin"`
+	Role       UserRole `gorm:"size:64;default:student" json:"role" validate:"oneof=student system_admin facility_admin department_admin"`
 	KratosID   string   `gorm:"size:255" json:"kratos_id"`
 	FacilityID uint     `json:"facility_id"`
 
