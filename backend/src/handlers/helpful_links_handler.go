@@ -92,6 +92,7 @@ func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sL
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
 	defer r.Body.Close()
+	link.ThumbnailUrl = srv.getFavicon(link.Url)
 	if err = srv.Db.EditLink(uint(id), link); err != nil {
 		return newDatabaseServiceError(err)
 	}
