@@ -154,14 +154,14 @@ export default function StudentManagement() {
 
                     <div
                         className="tooltip tooltip-left"
-                        data-tip="Add Student"
+                        data-tip="Add Resident"
                     >
                         <button
                             className="button "
                             onClick={() => addUserModal.current?.showModal()}
                         >
                             <PlusCircleIcon className="w-4 my-auto" />
-                            Add Student
+                            Add Resident
                         </button>
                     </div>
                 </div>
@@ -235,7 +235,9 @@ export default function StudentManagement() {
                                             <td className="justify-self-end">
                                                 <div className="flex space-x-4">
                                                     <ULIComponent
-                                                        dataTip={'Edit Student'}
+                                                        dataTip={
+                                                            'Edit Resident'
+                                                        }
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={PencilSquareIcon}
                                                         onClick={() => {
@@ -260,7 +262,7 @@ export default function StudentManagement() {
 
                                                     <ULIComponent
                                                         dataTip={
-                                                            'Delete Student'
+                                                            'Delete Resident'
                                                         }
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={TrashIcon}
@@ -303,7 +305,7 @@ export default function StudentManagement() {
             <Modal
                 ref={addUserModal}
                 type={ModalType.Add}
-                item="Student"
+                item="Resident"
                 form={
                     <AddUserForm
                         onSuccess={onAddUserSuccess}
@@ -314,7 +316,7 @@ export default function StudentManagement() {
             <Modal
                 ref={editUserModal}
                 type={ModalType.Edit}
-                item="Student"
+                item="Resident"
                 form={
                     targetUser ? (
                         <EditUserForm
@@ -329,7 +331,7 @@ export default function StudentManagement() {
             <Modal
                 ref={deleteUserModal}
                 type={ModalType.Confirm}
-                item="Delete Student"
+                item="Delete Resident"
                 form={
                     <DeleteForm
                         item="User"

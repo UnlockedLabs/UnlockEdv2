@@ -54,7 +54,7 @@ export default function AddLinkForm({
                     label="Title"
                     interfaceRef="title"
                     required
-                    length={25}
+                    length={255}
                     errors={errors}
                     register={register}
                 />
