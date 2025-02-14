@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -118,11 +119,9 @@ func (db *DB) GetTotalStudentsEnrolled(facilityID *uint) (int, error) {
 
 func (db *DB) GetTotalHourlyActivity(facilityID *uint) (int, error) {
 	var totalActivity int
-	subQry := db.Table("users u").
-		Select("CASE WHEN SUM(a.total_time) IS NULL THEN 0 ELSE ROUND(SUM(a.total_time)/3600, 0) END AS total_time").
-		Joins("LEFT JOIN activities a ON u.id = a.user_id").
-		Where("u.role = ?", "student")
-
+	subQry := db.Table("activities a").
+		Select("CAST(COALESCE(ROUND(SUM(a.total_time)/3600, 0), 0) AS INTEGER) AS total_activity_time").
+		Joins("INNER JOIN users u ON u.id = a.user_id")
 	if facilityID != nil {
 		subQry = subQry.Where("u.facility_id = ?", facilityID)
 	}
@@ -136,32 +135,38 @@ func (db *DB) GetTotalHourlyActivity(facilityID *uint) (int, error) {
 
 func (db *DB) GetLearningInsights(facilityID *uint) ([]models.LearningInsight, error) {
 	var insights []models.LearningInsight
-	subQry := db.Table("outcomes o").
-		Select("o.course_id, COUNT(o.id) AS outcome_count").
-		Group("o.course_id")
+	qry := `
+	SELECT
+	    sub.name AS course_name,
+	    sub.completions AS total_students_completed,
+	    sub.enrollments AS total_students_enrolled,
+	    COALESCE(sub.activity_hours, 0) AS activity_hours,
+	    CASE
+	        WHEN COALESCE(sub.completions, 0) = 0 THEN 0
+	        ELSE %s
+	    END AS completion_rate
+	FROM (
+	    SELECT
+	        c.id AS course_id,
+	        c.name,
+	        COUNT(DISTINCT ue.user_id) AS enrollments,
+	        (SELECT COUNT(DISTINCT o.user_id) FROM outcomes o WHERE o.course_id = c.id) AS completions,
+	        (SELECT ROUND(COALESCE(SUM(a.total_time) / 3600, 0), 2)
+	         FROM activities a WHERE a.course_id = c.id) AS activity_hours
+	    FROM courses c
+	    LEFT JOIN user_enrollments ue ON ue.course_id = c.id
+	    GROUP BY c.id, c.name
+	) AS sub
+	ORDER BY sub.course_id
+`
+	sqlFunc := `ROUND(COALESCE(sub.completions, 0)::NUMERIC / COALESCE(sub.enrollments, 0) * 100, 2)`
 
-	subQry2 := db.Table("courses c").
-		Select(`
-			c.name AS course_name,
-			COUNT(DISTINCT u.id) AS total_students_enrolled,
-			CASE 
-				WHEN MAX(subqry.outcome_count) > 0 THEN  
-					COUNT(DISTINCT u.id) / NULLIF(CAST(MAX(c.total_progress_milestones) AS float), 0) * 100.0
-				ELSE 0
-			END AS completion_rate,
-			COALESCE(ROUND(SUM(a.total_time) / 3600, 0), 0) AS activity_hours
-		`).
-		Joins("LEFT JOIN milestones m ON m.course_id = c.id").
-		Joins("LEFT JOIN users u ON m.user_id = u.id").
-		Joins("LEFT JOIN activities a ON u.id = a.user_id").
-		Joins("INNER JOIN (?) AS subqry ON m.course_id = subqry.course_id", subQry).
-		Where("u.role = ?", "student")
-
-	if facilityID != nil {
-		subQry2 = subQry2.Where("u.facility_id = ?", facilityID)
+	if db.Dialector.Name() == "sqlite" {
+		sqlFunc = `ROUND(CAST(COALESCE(sub.completions, 0) AS REAL) /
+               CAST(NULLIF(sub.enrollments, 0) AS REAL) * 100, 2)`
 	}
 
-	err := subQry2.Group("c.name, c.total_progress_milestones").Find(&insights).Error
+	err := db.Raw(fmt.Sprintf(qry, sqlFunc)).Find(&insights).Error
 	if err != nil {
 		return nil, NewDBError(err, "error getting learning insights")
 	}

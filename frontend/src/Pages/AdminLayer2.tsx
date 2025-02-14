@@ -10,7 +10,7 @@ import {
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminLayer2() {
     const { user } = useAuth();
@@ -20,16 +20,16 @@ export default function AdminLayer2() {
         ServerResponseMany<Facility>,
         AxiosError
     >('/api/facilities');
-    const { data, error, isLoading, mutate } = useSWR<
+    const { data, error, isLoading } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
         AxiosError
     >(
         `/api/users/${user?.id}/admin-layer2?facility=${facility}&reset=${resetCache}`
     );
-    useEffect(() => {
-        void mutate();
-    }, [facility, resetCache]);
 
+    const handleDropdownChange = (value: string) => {
+        setFacility(value);
+    };
     const layer2_metrics = data?.data;
     const formattedDate =
         layer2_metrics &&
@@ -55,9 +55,9 @@ export default function AdminLayer2() {
                                     id="facility"
                                     className="select select-bordered w-full max-w-xs"
                                     value={facility}
-                                    onChange={(e) =>
-                                        setFacility(e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        handleDropdownChange(e.target.value);
+                                    }}
                                 >
                                     <option key={'all'} value={'all'}>
                                         All Facilities
@@ -105,9 +105,7 @@ export default function AdminLayer2() {
                             />
                             <StatsCard
                                 title="Total Activity Time"
-                                number={layer2_metrics.data.total_hourly_activity.toLocaleString(
-                                    'en-US'
-                                )}
+                                number={layer2_metrics.data.total_hourly_activity.toString()}
                                 label="Hours"
                             />
                         </div>
@@ -120,7 +118,10 @@ export default function AdminLayer2() {
                                         Course Name
                                     </th>
                                     <th># Students Enrolled</th>
-                                    <th>Completion Rate</th>
+                                    <th># Students Completed</th>
+                                    <th className="justify-center">
+                                        Completion Rate
+                                    </th>
                                     <th className="justify-self-end pr-4">
                                         Total Activity Hours
                                     </th>
@@ -134,7 +135,7 @@ export default function AdminLayer2() {
                                     ) => {
                                         return (
                                             <tr
-                                                className="grid-cols-4 justify-items-center"
+                                                className="grid-cols-5 justify-items-center"
                                                 key={index}
                                             >
                                                 <td className="justify-self-start">
@@ -143,6 +144,11 @@ export default function AdminLayer2() {
                                                 <td>
                                                     {
                                                         insight.total_students_enrolled
+                                                    }
+                                                </td>
+                                                <td>
+                                                    {
+                                                        insight.total_students_completed
                                                     }
                                                 </td>
                                                 <td>
