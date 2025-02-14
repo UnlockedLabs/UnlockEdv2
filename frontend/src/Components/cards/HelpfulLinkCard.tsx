@@ -85,53 +85,56 @@ export default function HelpfulLinkCard({
                 <figure className="w-[48px] h-[48px] bg-cover">
                     <img src={link.thumbnail_url ?? ''} alt={link.title} />
                 </figure>
-                <ClampedText as="h3" className="w-3/4 body my-auto mr-7">
+                <ClampedText as="h3" className="w-3/4 body my-auto">
                     {link.title}
                 </ClampedText>
-            </div>
-            {AdminRoles.includes(role) ? (
-                showModal != undefined && (
-                    <div className="flex flex-row gap-2 absolute top-4 right-4 z-100">
+                {AdminRoles.includes(role) ? (
+                    showModal != undefined && (
+                        <div className="flex flex-row gap-2">
+                            <ULIComponent
+                                icon={LockOpenIcon}
+                                iconClassName={`cursor-pointer`}
+                                dataTip="Send request to network Administrator to add link to Allow-List"
+                                onClick={(e) => {
+                                    if (e && reqAllowlist) {
+                                        e.stopPropagation();
+                                        void reqAllowlist(link.id);
+                                    }
+                                }}
+                            />
+                            <ULIComponent
+                                icon={PencilSquareIcon}
+                                iconClassName={'cursor-pointer'}
+                                onClick={(e) => {
+                                    if (e) showModal(link, ModalType.Edit, e);
+                                }}
+                            />
+                            <ULIComponent
+                                icon={TrashIcon}
+                                iconClassName={'cursor-pointer'}
+                                onClick={(e) => {
+                                    if (e) showModal(link, ModalType.Delete, e);
+                                }}
+                            />
+                        </div>
+                    )
+                ) : (
+                    <div
+                        className=""
+                        onClick={(e) => void handleToggleAction('favorite', e)}
+                    >
                         <ULIComponent
-                            icon={LockOpenIcon}
-                            iconClassName={`cursor-pointer`}
-                            dataTip="Send request to network Administrator to add link to Allow-List"
-                            onClick={(e) => {
-                                if (e && reqAllowlist) {
-                                    e.stopPropagation();
-                                    void reqAllowlist(link.id);
-                                }
-                            }}
-                        />
-                        <ULIComponent
-                            icon={PencilSquareIcon}
-                            iconClassName={'cursor-pointer'}
-                            onClick={(e) => {
-                                if (e) showModal(link, ModalType.Edit, e);
-                            }}
-                        />
-                        <ULIComponent
-                            icon={TrashIcon}
-                            iconClassName={'cursor-pointer'}
-                            onClick={(e) => {
-                                if (e) showModal(link, ModalType.Delete, e);
-                            }}
+                            tooltipClassName="absolute right-2 top-2 z-100"
+                            iconClassName={`w-6 h-6 cursor-pointer ${link.is_favorited ? 'text-primary-yellow' : ''}`}
+                            icon={
+                                link.is_favorited ? StarIcon : StarIconOutline
+                            }
+                            dataTip="Favorite Helpful Link"
                         />
                     </div>
-                )
-            ) : (
-                <div
-                    className="absolute right-2 top-2 z-100"
-                    onClick={(e) => void handleToggleAction('favorite', e)}
-                >
-                    <ULIComponent
-                        tooltipClassName="absolute right-2 top-2 z-100"
-                        iconClassName={`w-6 h-6 cursor-pointer ${link.is_favorited ? 'text-primary-yellow' : ''}`}
-                        icon={link.is_favorited ? StarIcon : StarIconOutline}
-                        dataTip="Favorite Helpful Link"
-                    />
-                </div>
-            )}
+                )}
+            </div>
+
             <div className="p-4 space-y-2">
                 <ClampedText as="p" className="body-small h-[40px] leading-5">
                     {link.description}
