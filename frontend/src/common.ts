@@ -100,8 +100,8 @@ export interface OryFlow {
     expires_at: string;
     id: string;
     issued_at: string;
-    oauth2_login_challenge: string;
-    oauth2_login_request: Oauth2LoginRequest;
+    oauth2_login_challenge?: string;
+    oauth2_login_request?: Oauth2LoginRequest;
     organization_id: string;
     refresh: boolean;
     request_url: string;

@@ -1,10 +1,16 @@
-import { useLoaderData, Form, useNavigation } from 'react-router-dom';
+import {
+    useLoaderData,
+    Form,
+    useNavigation,
+    useNavigate
+} from 'react-router-dom';
 import { TextInput } from '@/Components/inputs/TextInput';
 import InputError from '@/Components/inputs/InputError';
 import { AuthFlow, AuthResponse, ServerResponseOne } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import API from '@/api/api';
 import { useEffect, useState } from 'react';
+import { AUTHCALLBACK } from '@/useAuth';
 
 interface Inputs {
     identifier: string;
@@ -17,6 +23,7 @@ interface Inputs {
 export default function LoginForm() {
     const loaderData = useLoaderData() as AuthFlow;
     const navigation = useNavigation();
+    const navigate = useNavigate();
     const processing = navigation.state === 'submitting';
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
@@ -43,6 +50,11 @@ export default function LoginForm() {
     };
     useEffect(() => {
         if (loaderData.redirect_to) {
+            if (loaderData.redirect_to === AUTHCALLBACK) {
+                // use internal navigation if possible
+                navigate(AUTHCALLBACK);
+                return;
+            }
             window.location.href = loaderData.redirect_to;
             return;
         }
