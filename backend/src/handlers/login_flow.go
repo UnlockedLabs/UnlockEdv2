@@ -268,8 +268,12 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newCreateRequestServiceError(err)
 	}
+	redirectTo, ok := consentResponse["redirect_to"].(string)
+	if !ok {
+		return newBadRequestServiceError(errors.New("hydra auth refresh failed"), "Bad Request")
+	}
 	return writeJsonResponse(w, http.StatusOK, map[string]string{
-		"redirect_to": consentResponse["redirect_to"].(string),
+		"redirect_to": redirectTo,
 	})
 }
 
