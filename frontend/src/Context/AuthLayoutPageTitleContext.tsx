@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface AuthLayoutPageTitleContextType {
     authLayoutPageTitle: string;
@@ -13,19 +13,21 @@ export const useAuthLayoutPageTitle = (): AuthLayoutPageTitleContextType => {
     const context = useContext(AuthLayoutPageTitleContext);
     if (!context) {
         throw new Error(
-            'useAuthLayoutPageTitle must be used within a AuthLayoutPageTitleProvider'
+            'useAuthLayoutPageTitle must be used within an AuthLayoutPageTitleProvider'
         );
     }
     return context;
 };
 
 interface AuthLayoutPageTitleProviderProps {
-    children: React.ReactNode;
+    children: ReactNode;
 }
+
 export const AuthLayoutPageTitleProvider: React.FC<
     AuthLayoutPageTitleProviderProps
 > = ({ children }) => {
-    const [authLayoutPageTitle, setAuthLayoutPageTitle] = useState<string>('');
+    const [authLayoutPageTitle, setAuthLayoutPageTitle] =
+        useState<string>('UnlockEd');
 
     return (
         <AuthLayoutPageTitleContext.Provider

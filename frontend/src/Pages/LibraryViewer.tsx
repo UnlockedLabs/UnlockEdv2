@@ -1,9 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
-import { usePathValue } from '@/Context/PathValueCtx';
 import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
@@ -17,7 +16,6 @@ export default function LibraryViewer() {
     const [src, setSrc] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const { setPathVal } = usePathValue();
     const [searchPlaceholder, setSearchPlaceholder] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const modalRef = useRef<HTMLDialogElement>(null);
@@ -26,9 +24,6 @@ export default function LibraryViewer() {
     const { url } = location.state || {};
 
     const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
-    useEffect(() => {
-        setAuthLayoutPageTitle('Library Viewer');
-    }, [setAuthLayoutPageTitle]);
 
     const openModal = () => {
         if (modalRef.current) {
@@ -87,9 +82,8 @@ export default function LibraryViewer() {
                 )) as ServerResponseOne<Library>;
                 if (resp.success) {
                     const title = resp.data.title;
-                    setAuthLayoutPageTitle(title); // Update title with the library title
+                    setAuthLayoutPageTitle(title);
                     setSearchPlaceholder('Search ' + title);
-                    setPathVal([{ path_id: ':library_name', value: title }]);
                 }
                 const response = await fetch(
                     `/api/proxy/libraries/${libraryId}/`
@@ -115,7 +109,7 @@ export default function LibraryViewer() {
         return () => {
             sessionStorage.removeItem('tag');
         };
-    }, [libraryId, url, setAuthLayoutPageTitle, setPathVal]);
+    }, [libraryId, url, setAuthLayoutPageTitle]);
 
     return (
         <div>

@@ -36,7 +36,6 @@ import {
 } from '@/useAuth';
 import Loading from './Components/Loading';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout.tsx';
-import { PathValueProvider } from '@/Context/PathValueCtx';
 import AdminLayer2 from './Pages/AdminLayer2.tsx';
 import {
     getAdminLevel1Data,
@@ -66,10 +65,8 @@ const WithAuth: React.FC = () => {
     return (
         <AuthProvider>
             <ToastProvider>
-                <PathValueProvider>
-                    <TitleManager />
-                    <Outlet />
-                </PathValueProvider>
+                <TitleManager />
+                <Outlet />
             </ToastProvider>
         </AuthProvider>
     );
@@ -105,12 +102,10 @@ function WithAdmin() {
     return (
         <AuthProvider>
             <ToastProvider>
-                <PathValueProvider>
-                    <AdminOnly>
-                        <TitleManager />
-                        <Outlet />
-                    </AdminOnly>
-                </PathValueProvider>
+                <AdminOnly>
+                    <TitleManager />
+                    <Outlet />
+                </AdminOnly>
             </ToastProvider>
         </AuthProvider>
     );
@@ -144,16 +139,14 @@ const router = createBrowserRouter([
                         path: 'consent',
                         element: <Consent />,
                         handle: {
-                            title: 'External Provider Consent',
-                            path: ['consent']
+                            title: 'External Provider Consent'
                         }
                     },
                     {
                         path: 'home',
                         element: <StudentLayer0 />,
                         handle: {
-                            title: 'UnlockEd',
-                            path: ['home']
+                            title: 'UnlockEd'
                         }
                     },
                     {
@@ -171,16 +164,14 @@ const router = createBrowserRouter([
                                 element: <StudentLayer1 />,
                                 loader: getStudentLevel1Data,
                                 handle: {
-                                    title: 'Trending Content',
-                                    path: ['trending-content']
+                                    title: 'Trending Content'
                                 }
                             },
                             {
                                 path: 'knowledge-center',
                                 element: <OpenContent />,
                                 handle: {
-                                    title: 'Knowledge Center',
-                                    path: ['knowledge-center', ':kind']
+                                    title: 'Knowledge Center'
                                 },
                                 children: [
                                     {
@@ -189,11 +180,7 @@ const router = createBrowserRouter([
                                         element: <LibraryLayout />,
                                         errorElement: <Error />,
                                         handle: {
-                                            title: 'Libraries',
-                                            path: [
-                                                'knowledge-center',
-                                                'libraries'
-                                            ]
+                                            title: 'Libraries'
                                         }
                                     },
                                     {
@@ -201,19 +188,14 @@ const router = createBrowserRouter([
                                         element: <VideoContent />,
                                         errorElement: <Error />,
                                         handle: {
-                                            title: 'Videos',
-                                            path: ['knowledge-center', 'videos']
+                                            title: 'Videos'
                                         }
                                     },
                                     {
                                         path: 'helpful-links',
                                         element: <HelpfulLinks />,
                                         handle: {
-                                            title: 'Helpful Links',
-                                            path: [
-                                                'knowledge-center',
-                                                'helpful-links'
-                                            ]
+                                            title: 'Helpful Links'
                                         }
                                     },
                                     {
@@ -221,11 +203,7 @@ const router = createBrowserRouter([
                                         element: <FavoritesPage />,
                                         errorElement: <Error />,
                                         handle: {
-                                            title: 'Favorites',
-                                            path: [
-                                                'knowledge-center',
-                                                'favorites'
-                                            ]
+                                            title: 'Favorites'
                                         }
                                     }
                                 ]
@@ -236,12 +214,7 @@ const router = createBrowserRouter([
                                 loader: getLibraryLayoutData,
                                 errorElement: <Error />,
                                 handle: {
-                                    title: 'Library Viewer',
-                                    path: [
-                                        'viewer',
-                                        'libraries',
-                                        ':library_name'
-                                    ]
+                                    title: 'Library Viewer'
                                 }
                             },
                             {
@@ -249,8 +222,7 @@ const router = createBrowserRouter([
                                 element: <VideoViewer />,
                                 errorElement: <Error />,
                                 handle: {
-                                    title: 'Video Viewer',
-                                    path: ['viewer', 'videos', ':video_name']
+                                    title: 'Video Viewer'
                                 }
                             }
                         ]
@@ -269,24 +241,21 @@ const router = createBrowserRouter([
                                 element: <StudentLayer2 />,
                                 loader: getStudentLayer2Data,
                                 handle: {
-                                    title: 'Learning Path',
-                                    path: ['learning-path']
+                                    title: 'Learning Path'
                                 }
                             },
                             {
                                 path: 'my-courses',
                                 element: <MyCourses />,
                                 handle: {
-                                    title: 'My Courses',
-                                    path: ['my-courses']
+                                    title: 'My Courses'
                                 }
                             },
                             {
                                 path: 'my-progress',
                                 element: <MyProgress />,
                                 handle: {
-                                    title: 'My Progress',
-                                    path: ['my-progress']
+                                    title: 'My Progress'
                                 }
                             }
                         ]
@@ -335,8 +304,7 @@ const router = createBrowserRouter([
                         element: <OperationalInsightsPage />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Operational Insights',
-                            path: ['operational-insights']
+                            title: 'Operational Insights'
                         }
                     },
                     {
@@ -344,8 +312,7 @@ const router = createBrowserRouter([
                         element: <StudentManagement />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Residents',
-                            path: ['residents']
+                            title: 'Residents'
                         }
                     },
                     {
@@ -353,16 +320,14 @@ const router = createBrowserRouter([
                         element: <AdminManagement />,
                         errorElement: <Error />,
                         handle: {
-                            title: 'Admins',
-                            path: ['admins']
+                            title: 'Admins'
                         }
                     },
                     {
                         path: 'facilities',
                         element: <FacilityManagement />,
                         handle: {
-                            title: 'Facilities',
-                            path: ['facilities']
+                            title: 'Facilities'
                         }
                     },
                     {
@@ -379,35 +344,28 @@ const router = createBrowserRouter([
                                 element: <AdminLayer2 />,
                                 errorElement: <Error />,
                                 handle: {
-                                    title: 'Learning Insights',
-                                    path: ['learning-insights']
+                                    title: 'Learning Insights'
                                 }
                             },
                             {
                                 path: 'learning-platforms',
                                 element: <ProviderPlatformManagement />,
                                 handle: {
-                                    title: 'Learning Platforms',
-                                    path: ['learning-platforms']
+                                    title: 'Learning Platforms'
                                 }
                             },
                             {
                                 path: 'provider-users/:id',
                                 element: <ProviderUserManagement />,
                                 handle: {
-                                    title: 'Learning Platforms User Management',
-                                    path: [
-                                        'provider-platforms',
-                                        ':provider_platform_name'
-                                    ]
+                                    title: 'Learning Platforms User Management'
                                 }
                             },
                             {
                                 path: 'course-catalog-admin',
                                 element: <CourseCatalog />,
                                 handle: {
-                                    title: 'Course Catalog',
-                                    path: ['course-catalog']
+                                    title: 'Course Catalog'
                                 }
                             }
                         ]
@@ -428,16 +386,14 @@ const router = createBrowserRouter([
                                 element: <AdminLayer1 />,
                                 loader: getAdminLevel1Data,
                                 handle: {
-                                    title: 'Knowledge Insights',
-                                    path: ['knowledge-insights']
+                                    title: 'Knowledge Insights'
                                 }
                             },
                             {
                                 path: 'knowledge-center-management',
                                 element: <OpenContentManagement />,
                                 handle: {
-                                    title: 'Knowledge Center Management',
-                                    path: ['knowledge-center', ':kind']
+                                    title: 'Knowledge Center Management'
                                 },
                                 children: [
                                     {
@@ -446,30 +402,21 @@ const router = createBrowserRouter([
                                         element: <LibraryLayout />,
                                         errorElement: <Error />,
                                         handle: {
-                                            title: 'Libraries Management',
-                                            path: [
-                                                'knowledge-center',
-                                                'libraries'
-                                            ]
+                                            title: 'Libraries Management'
                                         }
                                     },
                                     {
                                         path: 'videos',
                                         element: <VideoManagement />,
                                         handle: {
-                                            title: 'Videos Management',
-                                            path: ['knowledge-center', 'videos']
+                                            title: 'Videos Management'
                                         }
                                     },
                                     {
                                         path: 'helpful-links',
                                         element: <HelpfulLinksManagement />,
                                         handle: {
-                                            title: 'Helpful Links Management',
-                                            path: [
-                                                'knowledge-center',
-                                                'helpful-links'
-                                            ]
+                                            title: 'Helpful Links Management'
                                         }
                                     }
                                 ]
