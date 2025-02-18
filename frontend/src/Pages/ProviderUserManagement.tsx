@@ -20,7 +20,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
-import { usePathValue } from '@/Context/PathValueCtx';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useToast } from '@/Context/ToastCtx';
 
 export default function ProviderUserManagement() {
@@ -32,7 +32,7 @@ export default function ProviderUserManagement() {
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const { id: providerId } = useParams();
-    const { setPathVal } = usePathValue();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const providerID = parseInt(providerId ?? '0', 10);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
@@ -162,9 +162,7 @@ export default function ProviderUserManagement() {
             if (res.success) {
                 const prov = res.data as ProviderPlatform;
                 setProvider(prov);
-                setPathVal([
-                    { path_id: ':provider_platform_name', value: prov.name }
-                ]);
+                setAuthLayoutPageTitle(prov.name);
                 setIsLoading(false);
             } else {
                 toaster('Failed to fetch provider users', ToastState.error);

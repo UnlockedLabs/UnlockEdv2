@@ -1,11 +1,11 @@
 import { OpenContentTabs, Tab } from '@/common';
-import { usePathValue } from '@/Context/PathValueCtx';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 
 export default function OpenContentManagement() {
-    const { setPathVal } = usePathValue();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const navigate = useNavigate();
     const route = useLocation();
     const tab = route.pathname.split('/')[2] ?? 'libraries';
@@ -19,7 +19,7 @@ export default function OpenContentManagement() {
     );
 
     useEffect(() => {
-        setPathVal([{ path_id: ':kind', value: activeTab.value as string }]);
+        setAuthLayoutPageTitle(activeTab.value as string);
     }, [activeTab]);
 
     const handlePageChange = (tab: Tab) => {
