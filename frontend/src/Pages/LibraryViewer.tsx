@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne } from '@/common';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
@@ -23,7 +23,7 @@ export default function LibraryViewer() {
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
 
-    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
 
     const openModal = () => {
         if (modalRef.current) {

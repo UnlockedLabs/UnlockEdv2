@@ -1,16 +1,16 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface AuthLayoutPageTitleContextType {
-    authLayoutPageTitle: string;
-    setAuthLayoutPageTitle: (title: string) => void;
+interface PageTitleContextType {
+    pageTitle: string;
+    setPageTitle: (title: string) => void;
 }
 
-const AuthLayoutPageTitleContext = createContext<
-    AuthLayoutPageTitleContextType | undefined
->(undefined);
+const PageTitleContext = createContext<PageTitleContextType | undefined>(
+    undefined
+);
 
-export const useAuthLayoutPageTitle = (): AuthLayoutPageTitleContextType => {
-    const context = useContext(AuthLayoutPageTitleContext);
+export const usePageTitle = (): PageTitleContextType => {
+    const context = useContext(PageTitleContext);
     if (!context) {
         throw new Error(
             'useAuthLayoutPageTitle must be used within an AuthLayoutPageTitleProvider'
@@ -19,21 +19,20 @@ export const useAuthLayoutPageTitle = (): AuthLayoutPageTitleContextType => {
     return context;
 };
 
-interface AuthLayoutPageTitleProviderProps {
+interface PageTitleProviderProps {
     children: ReactNode;
 }
 
-export const AuthLayoutPageTitleProvider: React.FC<
-    AuthLayoutPageTitleProviderProps
-> = ({ children }) => {
-    const [authLayoutPageTitle, setAuthLayoutPageTitle] =
-        useState<string>('UnlockEd');
+export const PageTitleProvider: React.FC<PageTitleProviderProps> = ({
+    children
+}) => {
+    const [pageTitle, setPageTitle] = useState<string>('UnlockEd');
 
     return (
-        <AuthLayoutPageTitleContext.Provider
-            value={{ authLayoutPageTitle, setAuthLayoutPageTitle }}
+        <PageTitleContext.Provider
+            value={{ pageTitle: pageTitle, setPageTitle: setPageTitle }}
         >
             {children}
-        </AuthLayoutPageTitleContext.Provider>
+        </PageTitleContext.Provider>
     );
 };

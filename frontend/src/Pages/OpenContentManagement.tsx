@@ -1,11 +1,11 @@
 import { OpenContentTabs, Tab } from '@/common';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 
 export default function OpenContentManagement() {
-    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const navigate = useNavigate();
     const route = useLocation();
     const tab = route.pathname.split('/')[2] ?? 'libraries';

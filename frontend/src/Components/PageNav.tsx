@@ -5,7 +5,7 @@ import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, TitleHandler } from '@/common';
 import { useMatches, useLoaderData } from 'react-router-dom';
 import API from '@/api/api';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 
 export default function PageNav({
     showOpenMenu,
@@ -21,10 +21,7 @@ export default function PageNav({
     const currentRoute = matches[matches.length - 1];
     const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
 
-    const {
-        authLayoutPageTitle,
-        setAuthLayoutPageTitle: contextSetAuthLayoutPageTitle
-    } = useAuthLayoutPageTitle();
+    const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
 
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
@@ -44,9 +41,9 @@ export default function PageNav({
 
     useEffect(() => {
         if (pageTitle) {
-            contextSetAuthLayoutPageTitle(pageTitle);
+            setPageTitle(pageTitle);
         }
-    }, [pageTitle, contextSetAuthLayoutPageTitle]);
+    }, [pageTitle, setPageTitle]);
 
     const handleSwitchFacility = async (facility: Facility) => {
         const resp = await API.put<null, object>(

@@ -3,7 +3,7 @@ import Navbar from '@/Components/Navbar';
 import { useMatches, UIMatch, Outlet } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
 import { RouteLabel } from '@/common';
-import { AuthLayoutPageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
+import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
 
 // Extend RouteMatch with custom RouteMeta
 interface CustomRouteMatch extends UIMatch {
@@ -40,7 +40,7 @@ export default function AuthenticatedLayout() {
     };
 
     return (
-        <AuthLayoutPageTitleProvider>
+        <PageTitleProvider>
             <div className="font-lato">
                 <div title={title} />
                 <div
@@ -76,6 +76,6 @@ export default function AuthenticatedLayout() {
                     </div>
                 </div>
             </div>
-        </AuthLayoutPageTitleProvider>
+        </PageTitleProvider>
     );
 }

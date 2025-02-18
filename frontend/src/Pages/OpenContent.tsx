@@ -1,12 +1,12 @@
 import { OpenContentTabs, Tab } from '@/common';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { isAdministrator, useAuth } from '@/useAuth';
 
 export default function OpenContent() {
-    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const navigate = useNavigate();
     const { user } = useAuth();
     const route = useLocation();

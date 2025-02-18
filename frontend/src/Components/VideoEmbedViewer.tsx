@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import API from '@/api/api';
 import { Video, ServerResponseOne } from '@/common';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 
 export default function VideoViewer() {
     const navigate = useNavigate();
     const { id: videoId } = useParams();
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const [video, setVideo] = useState<Video | undefined>();
 
     useEffect(() => {

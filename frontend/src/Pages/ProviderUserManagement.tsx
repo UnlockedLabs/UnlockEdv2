@@ -20,7 +20,7 @@ import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
-import { useAuthLayoutPageTitle } from '@/Context/AuthLayoutPageTitleContext';
+import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useToast } from '@/Context/ToastCtx';
 
 export default function ProviderUserManagement() {
@@ -32,7 +32,7 @@ export default function ProviderUserManagement() {
     const [perPage, setPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const { id: providerId } = useParams();
-    const { setAuthLayoutPageTitle } = useAuthLayoutPageTitle();
+    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const providerID = parseInt(providerId ?? '0', 10);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
