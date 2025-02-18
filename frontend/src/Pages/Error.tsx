@@ -1,3 +1,7 @@
+import { AUTHCALLBACK } from '@/useAuth';
+import { useNavigate } from 'react-router-dom';
+
+const navigate = useNavigate();
 export default function Error() {
     return (
         <>
@@ -10,7 +14,7 @@ export default function Error() {
                 <button
                     className="btn btn-primary btn-outline"
                     onClick={() => {
-                        window.location.href = '/authcallback';
+                        navigate(AUTHCALLBACK);
                     }}
                 >
                     Home Page

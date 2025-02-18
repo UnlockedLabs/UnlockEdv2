@@ -1,5 +1,6 @@
 import API from '@/api/api';
 import { AuthResponse } from '@/common';
+import { AUTHCALLBACK } from '@/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 interface ConsentForm {
@@ -27,10 +28,10 @@ export default function ConsentForm() {
             window.location.href = location;
             return;
         }
-        window.location.href = '/authcallback';
+        window.location.href = AUTHCALLBACK;
     };
     const deny = () => {
-        window.location.href = '/authcallback';
+        window.location.href = AUTHCALLBACK;
     };
     return (
         <div className="bg-base-100 shadow-lg rounded-lg p-8 mb-4 flex flex-col my-2 max-w-screen-xl mx-auto">

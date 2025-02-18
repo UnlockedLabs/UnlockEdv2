@@ -3,6 +3,7 @@ import Brand from '../Components/Brand';
 import { INIT_KRATOS_LOGIN_FLOW, ServerResponse, User } from '@/common';
 import API from '@/api/api';
 import { Link } from 'react-router-dom';
+import { AUTHCALLBACK } from '@/useAuth';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv1Sm.webp');
@@ -39,7 +40,7 @@ export default function Welcome() {
                             </li>
                         ) : (
                             <li>
-                                <Link to={'/authcallback'}>Dashboard</Link>
+                                <Link to={AUTHCALLBACK}>Dashboard</Link>
                             </li>
                         )}
                     </ul>

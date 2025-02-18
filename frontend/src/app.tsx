@@ -27,6 +27,7 @@ import Programs from './Pages/Programs.tsx';
 import LibraryLayout from './Components/LibraryLayout';
 import VideoManagement from './Pages/VideoManagement';
 import {
+    AUTHCALLBACK,
     checkDefaultFacility,
     checkExistingFlow,
     checkRole,
@@ -90,10 +91,10 @@ function ProtectedRoute({
 }) {
     const { user } = useAuth();
     if (!user) {
-        return <Navigate to={`${INIT_KRATOS_LOGIN_FLOW}`} />;
+        return <Navigate to={INIT_KRATOS_LOGIN_FLOW} />;
     }
     if (!allowedFeatures.every((feat) => hasFeature(user, feat))) {
-        return <Navigate to="/authcallback" />;
+        return <Navigate to={AUTHCALLBACK} />;
     }
     return <Outlet />;
 }
