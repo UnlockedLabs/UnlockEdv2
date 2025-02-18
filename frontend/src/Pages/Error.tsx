@@ -1,7 +1,5 @@
 import { AUTHCALLBACK } from '@/useAuth';
-import { useNavigate } from 'react-router-dom';
 
-const navigate = useNavigate();
 export default function Error() {
     return (
         <>
@@ -14,7 +12,7 @@ export default function Error() {
                 <button
                     className="btn btn-primary btn-outline"
                     onClick={() => {
-                        navigate(AUTHCALLBACK);
+                        window.location.href = AUTHCALLBACK;
                     }}
                 >
                     Home Page
