@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kratos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kratos
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: kratos
+    spec:
+      containers:
+        - args:
+            - serve
+            - -c
+            - /etc/config/kratos/kratos.yml
+            - --watch-courier
+          env:
+            - name: LOG_LEVEL
+              value: debug 
+            - name: DSN
+              valueFrom:
+                secretKeyRef:         # Needs Secret with connection string!
+                  name: kratos-dsn 
+                  key: KRATOS_DSN
+          image: oryd/kratos:v1.1.0
+          name: kratos
+          ports:
+            - containerPort: 4433
+            - containerPort: 4434
+          volumeMounts:
+            - mountPath: /etc/config/kratos/kratos.yml
+              name: kratos-config
+              subPath: kratos.yml
+            - mountPath: /etc/config/kratos/identity.schema.json
+              name: kratos-id-schema
+              subPath: identity.schema.json 
+      restartPolicy: Always
+      volumes:
+        - name: kratos-config
+          configMap:
+            name: kratos-config 
+        - name: kratos-id-schema
+          configMap:
+            name: kratos-id-schema

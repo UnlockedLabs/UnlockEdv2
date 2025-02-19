@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hydra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hydra 
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: hydra
+    spec:
+      containers:
+        - args:
+            - serve
+            - -c
+            - /etc/config/hydra/hydra.yml
+            - all
+          env:
+            - name: SECRETS_SYSTEM
+              valueFrom:
+                secretKeyRef:
+                  name: hydra-token
+                  key: HYDRA_TOKEN
+            - name: DSN
+              valueFrom:
+                secretKeyRef:
+                  name: hydra-dsn
+                  key: HYDRA_DSN
+            - name: SERVE_ADMIN_CORS_ALLOWED_METHODS
+              value: POST,GET,PUT,DELETE
+            - name: SERVE_ADMIN_CORS_ENABLED
+              value: "true"
+            - name: SERVE_PUBLIC_CORS_ALLOWED_METHODS
+              value: POST,GET,PUT,DELETE
+            - name: SERVE_PUBLIC_TLS_ALLOW_TERMINATION_FROM
+              value: 0.0.0.0/0
+            - name: SERVE_ADMIN_TLS_ALLOW_TERMINATION_FROM
+              value: 0.0.0.0/0
+            - name: SERVE_PUBLIC_CORS_ENABLED
+              value: "true"
+          image: oryd/hydra:v2.2.0
+          name: hydra
+          ports:
+            - containerPort: 4444
+            - containerPort: 4445
+            - containerPort: 5555
+          volumeMounts:
+            - mountPath: /etc/config/hydra/hydra.yml
+              name: hydra-configmap
+              subPath: hydra.yml
+      restartPolicy: Always
+      volumes:
+        - name: hydra-configmap
+          configMap:
+            name: hydra-config 

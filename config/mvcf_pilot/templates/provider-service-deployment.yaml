@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provider-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider-service
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: provider-service
+    spec:
+      containers:
+        - args:
+            - ./provider-service
+          env:
+            - name: APP_URL
+              value: http://server:8080
+            - name: APP_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: server-dsn
+                  key: SERVER_DSN # Can use same connection string as server
+            - name: NATS_URL
+              value: nats://nats:4222
+            - name: NATS_USER
+              value:           # NATS username
+            - name: NATS_PASSWORD
+              valueFrom:       # Needs secret!
+                secretKeyRef:
+                  name: nats-password
+                  key: NATS_PASSWORD
+            - name: KOLIBRI_DB_PASSWORD
+              valueFrom:       # Needs secret!
+                secretKeyRef:
+                  name: kolibri-password
+                  key: KOLIBRI_DB_PASSWORD
+            - name: S3_BUCKET_NAME
+              value:              # S3 bucket for region
+            - name: AWS_REGION
+              value:              # aws region
+            - name: BRIGHTSPACE_TEMP_DIR
+              value: /videos
+
+          image:  # OCI container image registry location
+          name: provider-service
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - mountPath: /logs
+              name: logs
+            - mountPath: /videos
+              name: videos
+            - mountPath: /app/cookies.txt
+              name: cookies
+              subPath: cookies.txt
+            - mountPath: /etc/yt-dlp.conf
+              name: ytdlp-config
+              subPath: yt-dlp.conf
+      imagePullSecrets:
+        - name: ecr-secret
+      restartPolicy: Always
+      volumes:
+        - name: videos
+          persistentVolumeClaim: 
+            claimName: video-pvc
+        - name: logs
+          persistentVolumeClaim:
+            claimName: logs
+        - name: cookies
+          configMap:
+            name: cookies
+        - name: ytdlp-config
+          configMap:
+            name: yt-dlp

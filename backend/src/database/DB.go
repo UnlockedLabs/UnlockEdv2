@@ -180,11 +180,9 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 		if err := db.Create(&links).Error; err != nil {
 			logrus.Fatalf("Failed to create left menu links: %v", err)
 		}
-		openContent := []models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
-			{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
-		for idx := range openContent {
-			if err := db.Create(&openContent[idx]).Error; err != nil {
-				logrus.Fatalf("Failed to create kiwix open content provider: %v", err)
+		for idx := range defaultOpenContentProviders {
+			if err := db.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
+				logrus.Fatalf("Failed to create default open content providers: %v", err)
 			}
 		}
 	}

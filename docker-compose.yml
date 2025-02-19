@@ -83,7 +83,7 @@ services:
       - NATS_PASSWORD=dev
       - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
-      - KIWIX_SERVER_URL=http://kiwix:8082
+      - KIWIX_SERVER_URL=http://kiwix:8080
     depends_on:
       kratos:
         condition: service_started

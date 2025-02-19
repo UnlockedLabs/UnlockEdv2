@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - args:
+            - ./backend
+          env:
+            - name: APP_ENV
+              value: production
+            - name: APP_URL
+              value:       # main app url
+            - name: APP_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: server-dsn
+                  key: SERVER_DSN  # Needs secret for database connection string
+            - name: KIWIX_SERVER_URL 
+              value:       # kiwix server URL
+            - name: HYDRA_ADMIN_URL
+              value: http://hydra:4445
+            - name: HYDRA_PUBLIC_URL
+              value: http://hydra:4444
+            - name: KETO_ADMIN_URL
+              value: http://keto:4466
+            - name: KRATOS_ADMIN_URL
+              value: http://kratos:4434
+            - name: KRATOS_PUBLIC_URL
+              value: http://kratos:4433
+            - name: MIDDLEWARE_CRON_SCHEDULE
+              value: 0 22 * * *
+            - name: IMG_FILEPATH
+              value: /thumbnails
+            - name: NATS_URL
+              value: nats:4222
+            - name: NATS_USER
+              value:           # NATS username
+            - name: NATS_PASSWORD
+              valueFrom:       # Needs secret!
+                secretKeyRef:
+                  name: nats-password
+                  key: NATS_PASSWORD
+            - name: LOG_LEVEL
+              value: debug
+            - name: ORY_TOKEN
+              valueFrom:
+                secretKeyRef:  # Needs secret!
+                  name: hydra-token
+                  key: HYDRA_TOKEN
+            - name: PROVIDER_SERVICE_URL
+              value: http://provider-service:8081
+            - name: MIGRATION_DIR
+              value: "./migrations"
+            - name: S3_BUCKET_NAME
+              value:          # s3 bucket for the region
+            - name: AWS_REGION
+              value:          # AWS region
+          image:             # OCI container image location in registry
+          name: unlockedv2
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /thumbnails
+              name: thumbnails
+            - mountPath: /logs
+              name: logs
+      imagePullSecrets:
+        - name: ecr-secret  # ecr-secret needs to be created if pulling images from AWS ecr
+      restartPolicy: Always
+      volumes:
+        - name: thumbnails
+          persistentVolumeClaim:
+            claimName: thumbnails 
+        - name: logs
+          persistentVolumeClaim:
+            claimName: logs

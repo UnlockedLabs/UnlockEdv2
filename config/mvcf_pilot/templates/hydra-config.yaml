@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hydra-config
+data:
+  hydra.yml: |
+   serve:
+     admin:
+       cors:
+         enabled: true
+         allowed_origins:
+           - https:// example.com     # NEEDS VALUE
+         allowed_methods:
+           - POST
+           - GET
+           - PUT
+           - PATCH
+           - DELETE
+         allowed_headers:
+           - Authorization
+           - X-Requested-With
+         exposed_headers:
+           - Content-Type
+
+     public:
+       cors:
+         enabled: true
+         allowed_origins:
+           - https://example.com   # NEEDS VALUE
+         allowed_methods:
+           - POST
+           - GET
+           - PUT
+           - PATCH
+           - DELETE
+         allowed_headers:
+           - Authorization
+         exposed_headers:
+           - Content-Type
+           - Access-Control-Allowed-Origins
+     cookies:
+       same_site_mode: Lax
+   log:
+     leak_sensitive_values: true
+
+   urls:
+     self:
+       issuer: https:// example.com                         # NEEDS VALUE
+     login: https:// example.com/self-service/login/browser # NEEDS VALUE
+     consent: http://example.com/consent                    # NEEDS VALUE
+     logout: http://example.com/logout                      # NEEDS VALUE
+     identity_provider:
+       url: http://kratos:4434/admin
+       publicUrl: http://kratos:4433
+   oidc:
+     subject_identifiers:
+       supported_types:
+         - pairwise
+         - public
+       pairwise:
+         salt:        # NEEDS VALUE
