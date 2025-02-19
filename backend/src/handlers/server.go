@@ -10,12 +10,12 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,6 +34,7 @@ type Server struct {
 	features  []models.FeatureAccess
 	s3        *s3.Client
 	presigner *s3.PresignClient
+	sesClient *sesv2.Client
 	s3Bucket  string
 }
 
@@ -166,6 +167,7 @@ func (srv *Server) initAwsConfig(ctx context.Context) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		srv.sesClient = sesv2.NewFromConfig(cfg)
 		srv.s3 = s3.NewFromConfig(cfg)
 		srv.presigner = s3.NewPresignClient(srv.s3)
 		srv.s3Bucket = bucket
@@ -387,26 +389,6 @@ const TestingClaimsKey TestClaims = "test_claims"
 
 func (srv *Server) isTesting(r *http.Request) bool {
 	return r.Context().Value(TestingClaimsKey) != nil
-}
-
-func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
-	page := r.URL.Query().Get("page")
-	perPage := r.URL.Query().Get("per_page")
-	if page == "" {
-		page = "1"
-	}
-	if perPage == "" {
-		perPage = "10"
-	}
-	intPage, err := strconv.Atoi(page)
-	if err != nil {
-		intPage = 1
-	}
-	intPerPage, err := strconv.Atoi(perPage)
-	if err != nil {
-		intPerPage = 10
-	}
-	return intPage, intPerPage
 }
 
 type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error

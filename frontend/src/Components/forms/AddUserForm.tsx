@@ -10,12 +10,14 @@ import { CloseX } from '../inputs/CloseX';
 import { TextInput } from '../inputs/TextInput';
 import { SubmitButton } from '@/Components/inputs';
 import API from '@/api/api';
+import { AdminRoles, isAdministrator, useAuth } from '@/useAuth';
 
 interface Inputs {
     name_first: string;
     name_last: string;
     username: string;
     role: UserRole;
+    email?: string;
 }
 interface Form {
     user: Inputs;
@@ -27,6 +29,7 @@ interface AddUserFormProps {
 }
 
 export default function AddUserForm({ onSuccess, userRole }: AddUserFormProps) {
+    const { user } = useAuth();
     const [errorMessage, setErrorMessage] = useState('');
     const [providers, setProviders] = useState<ProviderPlatform[]>([]);
     const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
@@ -152,6 +155,20 @@ export default function AddUserForm({ onSuccess, userRole }: AddUserFormProps) {
                             'Username can only contain letters and numbers without spaces'
                     }}
                 />
+
+                {isAdministrator(user) && AdminRoles.includes(userRole) && (
+                    <TextInput
+                        label={'Email'}
+                        interfaceRef={'email'}
+                        length={255}
+                        errors={errors}
+                        register={register}
+                        pattern={{
+                            value: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$/,
+                            message: 'Invalid email address'
+                        }}
+                    />
+                )}
 
                 <input type="hidden" {...register('role')} />
 
