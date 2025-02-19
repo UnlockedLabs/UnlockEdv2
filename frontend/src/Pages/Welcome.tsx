@@ -36,7 +36,7 @@ export default function Welcome() {
                     <ul className="menu menu-horizontal px-1 text-primary">
                         {!authUser ? (
                             <li>
-                                <Link to={INIT_KRATOS_LOGIN_FLOW}>Log in</Link>
+                                <a href={INIT_KRATOS_LOGIN_FLOW}>Log in</a>
                             </li>
                         ) : (
                             <li>
