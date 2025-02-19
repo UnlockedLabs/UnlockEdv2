@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nats
+    spec:
+      containers:
+        - name: nats
+          image: nats:latest
+          args: ["--js", "-c", "/config/nats-server.conf"]
+          ports:
+            - containerPort: 4222
+            - containerPort: 8222
+          volumeMounts:
+            - mountPath: /config/nats-server.conf
+              name: nats-config
+              subPath: nats-server.conf
+            - mountPath: /nats-data
+              name: nats-data
+      volumes:
+        - name: nats-config
+          configMap:
+            name: nats-config 
+        - name: nats-data 
+          persistentVolumeClaim:
+            claimName: logs
+      restartPolicy: Always

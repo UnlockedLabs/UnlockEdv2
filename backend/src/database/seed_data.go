@@ -14,12 +14,10 @@ import (
 )
 
 var (
-	outcomeTypes   = [4]string{"completion", "grade", "certificate", "pathway_completion"}
-	milestoneTypes = [4]models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
-
-	openContent = [2]models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+	outcomeTypes                = [4]string{"completion", "grade", "certificate", "pathway_completion"}
+	milestoneTypes              = [4]models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
+	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
 		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
-
 	openContentUrlPrefixes = [38]string{"alpha-bravo", "sunny-breeze", "stormy-night", "crimson-sky", "electric-wave", "golden-hour", "starry-dream", "lunar-echo", "cosmic-dust", "silent-whisper", "ocean-tide", "shadow-flame", "emerald-haze", "velvet-sun", "fire-bolt", "thunder-cloud", "frozen-peak", "radiant-gem", "mystic-vortex", "crystal-shard", "obsidian-moon", "solar-wind", "arctic-light", "nebula-glow", "desert-spark", "forest-blaze", "phantom-frost", "twilight-glimmer", "vivid-flare", "prism-halo", "aurora-wave", "blazing-star", "icy-horizon", "jagged-dream", "vivid-shadow", "iron-bloom", "canyon-sky", "frost-spark"}
 )
 
@@ -31,24 +29,10 @@ func (db *DB) SeedTestData() {
 	courses := seedCourses(db)
 	sections := seedProgramData(db)
 
-	//added this here from seeder
 	var dbUsers []models.User
 	if db.Find(&dbUsers).Error != nil {
 		logrus.Fatalf("Failed to get users from db")
 		return
-	}
-	for idx := range openContent {
-		if err := db.Create(&openContent[idx]).Error; err != nil {
-			logrus.Fatalf("Failed to create kiwix open content provider: %v", err)
-		}
-	}
-	libraries, err := os.ReadFile("test_data/libraries.json")
-	if err != nil {
-		logrus.Fatalf("Failed to read test data: %v", err)
-	}
-	var library []models.Library
-	if err := json.Unmarshal(libraries, &library); err != nil {
-		logrus.Fatalf("Failed to unmarshal test data: %v", err)
 	}
 	videosJson, err := os.ReadFile("test_data/videos.json")
 	if err != nil {
@@ -57,6 +41,10 @@ func (db *DB) SeedTestData() {
 	var videos []models.Video
 	if err := json.Unmarshal(videosJson, &videos); err != nil {
 		logrus.Fatalf("Failed to unmarshal test data: %v", err)
+	}
+	var library []models.Library
+	if err := db.Model(&models.Library{}).Find(&library).Error; err != nil {
+		logrus.Fatalf("Failed to get libraries from db")
 	}
 	var kwixID uint //get id for kwix
 	if db.Model(&models.OpenContentProvider{}).Select("id").Where("title = ?", models.Kiwix).First(&kwixID).RowsAffected == 0 {

@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiwix-tools
+  labels:
+    app: kiwix-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiwix-tools
+  template:
+    metadata:
+      labels:
+        app: kiwix-tools
+    spec:
+      containers:
+      - name: kiwix-tools
+        image: ghcr.io/kiwix/kiwix-tools:3.7.0
+        command: ["/bin/sh", "-c"]
+        args: ["while true; do sleep 30; done;"]
+        volumeMounts:
+        - name: kiwix-data
+          mountPath: /kiwix
+        - name: logs
+          mountPath: /logs
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: logs
+      - name: kiwix-data
+        hostPath:
+          path: /kiwix
+          type: Directory

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cookies 
+data:
+  cookies.txt: |
+    # Needs to be populated by running 'login.py'

@@ -1,0 +1,189 @@
+# Declare variables to be passed into the templates.
+
+# All values in this example helmfile are using 'example.com', so a search-and-replace
+# example.com -> production.url.xyz it will take care of most of those values that need changing
+# but be SURE to create all the necessary secrets
+
+
+replicaCount: 1
+
+fullname: unlocked
+
+imagePullSecrets: [ecr-secret]
+
+appHost: example.com
+
+ingress:
+  enabled: true
+  hosts:
+    - host: example.com 
+      paths:
+      - path: /
+        serviceName: "frontend"
+        servicePort: 80
+      - path: /videos
+        serviceName: "server"
+        servicePort: 8080
+      - path: /api
+        serviceName: "server"
+        servicePort: 8080
+      - path: /oauth2
+        serviceName: "hydra"
+        servicePort: 4444
+      - path: /sessions
+        serviceName: "kratos"
+        servicePort: 4433
+      - path: /self-service
+        serviceName: "kratos"
+        servicePort: 4433
+      - path: /.well-known/jwks.json
+        serviceName: "hydra"
+        servicePort: 4444
+      - path: /userinfo
+        serviceName: "hydra"
+        servicePort: 4444
+
+    - host: metrics.example.com
+      paths:
+      - path: /
+        serviceName: "monitoring-grafana"
+        servicePort: 80
+
+    - host: kiwix.example.com
+      paths:
+      - path: /
+        serviceName: "kiwix"
+        servicePort: 8082
+
+services:
+  frontend:
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 80
+        targetPort: 80
+
+  provider-service:
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 8081
+        targetPort: 8081
+
+  server:
+    type: ClusterIP
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/path: "/api/metrics"
+      prometheus.io/port: "8080"
+    ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+
+  kratos:
+    type: ClusterIP
+    ports:
+      - name: public 
+        port: 4433
+        targetPort: 4433
+      - name: admin
+        port: 4434
+        targetPort: 4434 
+
+  hydra:
+    type: ClusterIP
+    ports:
+      - name: admin 
+        port: 4445
+        targetPort: 4445
+      - name: public
+        port: 4444
+        targetPort: 4444
+      - name: other
+        port: 5555
+        targetPort: 5555
+
+  nats:
+    type: ClusterIP
+    ports:
+      - name: nats
+        port: 4222
+        targetPort: 4222
+      - name: admin
+        port: 8222
+        targetPort: 8222
+
+  kiwix:
+    type: ClusterIP
+    ports:
+     - name: kiwix
+       port: 8082
+       targetPort: 8082
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /api/checkhealth
+    port: http
+
+
+persistentVolumes:
+  - name: logs
+    capacity: 500Mi
+    accessModes:
+      - ReadWriteMany
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: local-path
+    hostPath:
+      path: "/logs"
+
+  - name: videos
+    capacity: 16Gi
+    accessModes:
+      - ReadWriteMany
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: local-path
+    hostPath:
+      path: "/videos"
+
+  - name: thumbnails
+    capacity: 1Gi
+    accessModes:
+     - ReadWriteMany
+    persistentVolumeReclaimPolicy: Retain
+    storageClassName: local-path
+    hostPath:
+      path: "/thumbnails"
+
+persistentVolumeClaims:
+  - name: thumbnails
+    accessModes:
+      - ReadWriteMany
+    storageClassName: local-path
+    volumeName: thumbnails
+    resources:
+      requests:
+        storage: 1Gi
+
+  - name: logs
+    accessModes:
+      - ReadWriteMany
+    storageClassName: local-path
+    volumeName: logs
+    resources:
+      requests:
+        storage: 500Mi
+
+
+  - name: video-pvc
+    accessModes:
+      - ReadWriteMany
+    storageClassName: local-path
+    volumeName: videos
+    resources:
+      requests:
+        storage: 8Gi

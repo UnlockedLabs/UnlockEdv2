@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiwix
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiwix
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: kiwix
+    spec:
+      containers:
+      - image: jamescherti/kiwix-serve:latest
+        command: [ "sh", "-c" ]
+        args: ["exec /usr/local/bin/kiwix-serve --port=8082 --blockexternal --library /kiwix/library.xml"]
+        name: kiwix
+        env:
+        volumeMounts:
+        - mountPath: /kiwix
+          name: kiwix
+        ports:
+        - containerPort: 8082
+      restartPolicy: Always
+      volumes:
+      - name: kiwix
+        hostPath:
+          path: /kiwix

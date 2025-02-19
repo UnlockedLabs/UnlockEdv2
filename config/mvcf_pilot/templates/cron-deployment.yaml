@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cron-tasks
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cron-tasks
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cron-tasks
+    spec:
+      containers:
+        - name: cron-tasks
+          image:                # needs value, oci container registry
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: NATS_URL
+              value: nats://nats:4222
+            - name: NATS_USER
+              value:           # NATS username
+            - name: NATS_PASSWORD
+              valueFrom:
+                secretKeyRef:      # Needs Secret!
+                  name: nats-user 
+                  key: NATS_USER 
+            - name: APP_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: server-dsn 
+                  key: SERVER_DSN
+            - name: DB_NAME
+              value: unlocked # ensure this is correct!
+            - name: MIDDLEWARE_CRON_SCHEDULE
+              value: 0 22 * * *
+          volumeMounts:
+            - name: localtime
+              mountPath: /etc/localtime
+      imagePullSecrets:
+        - name: ecr-secret
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /usr/share/zoneinfo/America/New_York
+      restartPolicy: Always

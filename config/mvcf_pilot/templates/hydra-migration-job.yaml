@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hydra-migrate
+  labels:
+    app: hydra
+spec:
+  template:
+    spec:
+      containers:
+        - name: hydra-migrate
+          image: oryd/hydra:v2.2.0
+          command: ["hydra", "migrate", "-c", "/etc/config/hydra/hydra.yml", "sql", "-e", "--yes"]
+          env:
+            - name: DSN
+              valueFrom:
+                secretKeyRef:
+                  name: hydra-dsn
+                  key: HYDRA_DSN
+          volumeMounts:
+            - mountPath: /etc/config/hydra/hydra.yml
+              name: hydra-configmap
+              subPath: hydra.yml
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      restartPolicy: OnFailure
+      volumes:
+        - name: hydra-configmap
+          configMap:
+            name: hydra-config 
+  backoffLimit: 4
