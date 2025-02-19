@@ -103,7 +103,8 @@ function ProtectedRoute({
 }) {
     const { user } = useAuth();
     if (!user) {
-        return <Navigate to={INIT_KRATOS_LOGIN_FLOW} />;
+        window.location.href = INIT_KRATOS_LOGIN_FLOW;
+        return;
     }
     if (!allowedFeatures.every((feat) => hasFeature(user, feat))) {
         return <Navigate to={AUTHCALLBACK} />;
