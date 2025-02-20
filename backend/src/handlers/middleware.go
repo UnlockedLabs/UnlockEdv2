@@ -110,6 +110,12 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 				ContentID:             proxyParams.ID,
 			}
 			srv.Db.CreateContentActivity(urlString, &activity)
+			var bookmark models.OpenContentFavorite
+			if srv.Db.Model(&models.OpenContentFavorite{}).Where("user_id = ? AND content_id = ? AND open_content_url_id = ?", activity.UserID, activity.ContentID, activity.OpenContentUrlID).First(&bookmark).RowsAffected > 0 {
+				srv.wsClient.notifyUser(activity.UserID, []byte("true"))
+			} else {
+				srv.wsClient.notifyUser(activity.UserID, []byte("false"))
+			}
 		}
 		ctx := context.WithValue(r.Context(), libraryKey, proxyParams)
 		next.ServeHTTP(w, r.WithContext(ctx))

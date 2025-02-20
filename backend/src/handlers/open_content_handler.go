@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -11,6 +13,7 @@ func (srv *Server) registerOpenContentRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/open-content", srv.handleIndexOpenContent, false, axx},
 		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx},
+		{"PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, false, axx},
 		{"GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx},
 		{"GET /api/open-content/categories", srv.handleGetCategories, false, axx},
 	}
@@ -55,4 +58,33 @@ func (srv *Server) handleGetCategories(w http.ResponseWriter, r *http.Request, l
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, categories)
+}
+
+func (srv *Server) handleBookmarkOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	var requestBody struct {
+		Name                  string `json:"name,omitempty"`
+		ContentURL            string `json:"content_url,omitempty"`
+		OpenContentProviderId uint   `json:"open_content_provider_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	defer r.Body.Close()
+	contentID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "Content ID")
+	}
+	userID := srv.getUserID(r)
+	contentParams := models.OpenContentParams{
+		UserID:                userID,
+		ContentID:             uint(contentID),
+		Name:                  requestBody.Name,
+		ContentURL:            requestBody.ContentURL,
+		OpenContentProviderID: requestBody.OpenContentProviderId,
+	}
+	err = srv.Db.BookmarkOpenContent(&contentParams)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Bookmark toggled successfully")
 }
