@@ -92,7 +92,7 @@ export default function StudentLayer1() {
                 >
                     {(item: Library) => (
                         <LibraryCard
-                            key={item.id}
+                            key={item.id + item.open_content_provider_id}
                             library={item}
                             role={UserRole.Student}
                             mutate={updateFavorites}
@@ -122,7 +122,11 @@ export default function StudentLayer1() {
                 >
                     {(link: HelpfulLink) => (
                         <HelpfulLinkCard
-                            key={link.id}
+                            key={
+                                link.id +
+                                link.open_content_provider_id +
+                                link.url
+                            }
                             link={link}
                             role={UserRole.Student}
                             mutate={updateFavorites}

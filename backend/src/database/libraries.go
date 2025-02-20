@@ -37,6 +37,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
             FROM open_content_favorites f
             WHERE f.content_id = libraries.id
               AND f.open_content_provider_id = libraries.open_content_provider_id
+            AND f.open_content_url_id IS NULL
 			  AND %s) AS is_favorited`
 
 	if args.IsAdmin {

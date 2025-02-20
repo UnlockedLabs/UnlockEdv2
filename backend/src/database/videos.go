@@ -28,14 +28,16 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 		FacilityID:            facilityID,
 	}
 	//added user id to query below to isolate favorite by user when facility id is passed in
-	tx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
+	tx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID).
+		Where("open_content_url_id IS NULL OR name IS NULL OR name = ''")
 	if facilityID != nil {
 		tx = tx.Where("facility_id = ?", facilityID)
 	} else {
 		tx = tx.Where("user_id = ?", userID)
 	}
 	if tx.First(&models.OpenContentFavorite{}).RowsAffected > 0 {
-		delTx := db.Where("content_id = ? AND open_content_provider_id = ?", contentID, ocpID)
+		delTx := db.Where("content_id = ? AND open_content_provider_id = ?  ", contentID, ocpID).
+			Where("open_content_url_id IS NULL OR name IS NULL OR name = ''")
 		if facilityID != nil {
 			delTx = delTx.Where("facility_id = ?", facilityID)
 		} else {

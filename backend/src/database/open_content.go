@@ -52,8 +52,8 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 		SELECT
 			'library' AS content_type,
 			f.content_id,
-			lib.title,
-			lib.url,
+            COALESCE(NULLIF(f.name, ''), lib.title) as title,
+            COALESCE(ocu.content_url, lib.url) AS url,  
 			lib.thumbnail_url,
 			ocp.description,
 			lib.visibility_status,
@@ -68,6 +68,7 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 			AND ocp.deleted_at IS NULL
 		JOIN libraries lib ON lib.open_content_provider_id = ocp.id 
 			AND lib.id = f.content_id
+        LEFT JOIN open_content_urls ocu ON f.open_content_url_id = ocu.id  
 		WHERE f.user_id = ?
 	),
 	ordered_videos AS (
@@ -139,7 +140,6 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 	}
 	return favorites, nil
 }
-
 func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search string) (int64, []models.OpenContentItem, error) {
 	var libSearchCond, videoSearchCond, hlSearchCond string
 	var searchTerm string
@@ -169,14 +169,14 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
 	}
 
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
-		SELECT fav.content_id
-		FROM open_content_favorites fav
-		JOIN libraries lib ON lib.id = fav.content_id
-		JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
-			AND ocp.currently_enabled = true
-			AND ocp.deleted_at IS NULL
-		WHERE fav.user_id = ? %s
-	) AS total_favorites`, libSearchCond)
+        SELECT fav.content_id
+        FROM open_content_favorites fav
+        JOIN libraries lib ON lib.id = fav.content_id
+        JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
+            AND ocp.currently_enabled = true
+            AND ocp.deleted_at IS NULL
+        WHERE fav.user_id = ? %s
+    ) AS total_favorites`, libSearchCond)
 
 	var total int64
 	if err := db.Raw(countQuery, countArgs...).Scan(&total).Error; err != nil {
@@ -203,93 +203,92 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
 	queryArgs = append(queryArgs, perPage, calcOffset(page, perPage))
 
 	favoritesQuery := fmt.Sprintf(`SELECT
-		content_type,
-		content_id,
-		title,
-		url,
-		thumbnail_url,
-		description,
-		visibility_status,
-		open_content_provider_id,
-		provider_name,
-		channel_title,
-		created_at
-	FROM (
-		-- Libraries block:
-		SELECT
-			'library' AS content_type,
-			f.content_id,
-			lib.title,
-			lib.url,
-			lib.thumbnail_url,
-			ocp.description,
-			lib.visibility_status,
-			lib.open_content_provider_id,
-			ocp.title AS provider_name,
-			NULL AS channel_title,
-			f.created_at
-		FROM open_content_favorites f
-		JOIN open_content_providers ocp ON ocp.id = f.open_content_provider_id
-			AND ocp.currently_enabled = TRUE
-			AND ocp.deleted_at IS NULL
-		JOIN libraries lib ON lib.open_content_provider_id = ocp.id
-			AND lib.id = f.content_id
-		WHERE f.user_id = ? %s
+        content_type,
+        content_id,
+        title,
+        url,
+        thumbnail_url,
+        description,
+        visibility_status,
+        open_content_provider_id,
+        provider_name,
+        channel_title,
+        created_at
+    FROM (
+        -- Libraries block:
+        SELECT
+            'library' AS content_type,
+            f.content_id,
+            COALESCE(NULLIF(f.name, ''), lib.title) as title,
+            COALESCE(ocu.content_url, lib.url) AS url,  
+            lib.thumbnail_url,
+            ocp.description,
+            lib.visibility_status,
+            lib.open_content_provider_id,
+            ocp.title AS provider_name,
+            NULL AS channel_title,
+            f.created_at
+        FROM open_content_favorites f
+        JOIN open_content_providers ocp ON ocp.id = f.open_content_provider_id
+            AND ocp.currently_enabled = TRUE
+            AND ocp.deleted_at IS NULL
+        JOIN libraries lib ON lib.open_content_provider_id = ocp.id
+            AND lib.id = f.content_id
+        LEFT JOIN open_content_urls ocu ON f.open_content_url_id = ocu.id  
+        WHERE f.user_id = ? %s
 
-		UNION ALL
+        UNION ALL
 
-		-- Videos block:
-		SELECT
-			'video' AS content_type,
-			f.content_id,
-			videos.title,
-			videos.url,
-			videos.thumbnail_url,
-			videos.description,
-			videos.visibility_status,
-			videos.open_content_provider_id,
-			NULL AS provider_name,
-			videos.channel_title,
-			f.created_at
-		FROM open_content_favorites f
-		JOIN open_content_providers ocp ON ocp.id = f.open_content_provider_id
-			AND ocp.currently_enabled = TRUE
-			AND ocp.deleted_at IS NULL
-		JOIN videos ON videos.open_content_provider_id = ocp.id
-			AND videos.id = f.content_id
-		WHERE f.user_id = ? %s
+        -- Videos block:
+        SELECT
+            'video' AS content_type,
+            f.content_id,
+            videos.title,
+            videos.url,
+            videos.thumbnail_url,
+            videos.description,
+            videos.visibility_status,
+            videos.open_content_provider_id,
+            NULL AS provider_name,
+            videos.channel_title,
+            f.created_at
+        FROM open_content_favorites f
+        JOIN open_content_providers ocp ON ocp.id = f.open_content_provider_id
+            AND ocp.currently_enabled = TRUE
+            AND ocp.deleted_at IS NULL
+        JOIN videos ON videos.open_content_provider_id = ocp.id
+            AND videos.id = f.content_id
+        WHERE f.user_id = ? %s
 
-		UNION ALL
+        UNION ALL
 
-		-- Helpful links block:
-		SELECT
-			'helpful_link' AS content_type,
-			f.content_id AS content_id,
-			hl.title,
-			hl.url,
-			hl.thumbnail_url,
-			hl.description,
-			hl.visibility_status,
-			hl.open_content_provider_id AS open_content_provider_id,
-			NULL AS provider_name,
-			NULL AS channel_title,
-			f.created_at
-		FROM open_content_favorites f
-		JOIN open_content_providers ocp ON ocp.id = f.open_content_provider_id
-			AND ocp.currently_enabled = TRUE
-			AND ocp.deleted_at IS NULL
-		JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
-			AND hl.id = f.content_id
-		WHERE f.user_id = ? %s
-	) AS all_favorites
-	ORDER BY %s
-	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, orderBy)
+        SELECT
+            'helpful_link' AS content_type,
+            f.content_id AS content_id,
+            hl.title,
+            hl.url,
+            hl.thumbnail_url,
+            hl.description,
+            hl.visibility_status,
+            hl.open_content_provider_id AS open_content_provider_id,
+            NULL AS provider_name,
+            NULL AS channel_title,
+            f.created_at
+        FROM open_content_favorites f
+        JOIN open_content_providers ocp ON ocp.id = f.open_content_provider_id
+            AND ocp.currently_enabled = TRUE
+            AND ocp.deleted_at IS NULL
+        JOIN helpful_links hl ON hl.open_content_provider_id = ocp.id
+            AND hl.id = f.content_id
+        WHERE f.user_id = ? %s
+    ) AS all_favorites
+    ORDER BY %s
+    LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, orderBy)
 
 	var favorites []models.OpenContentItem
 	if err := db.Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
 		return 0, nil, err
 	}
-
 	return total, favorites, nil
 }
 
@@ -359,4 +358,44 @@ func (db *DB) GetCategories() ([]models.OpenContentCategory, error) {
 		return nil, newNotFoundDBError(err, "open_content_categories")
 	}
 	return categories, nil
+}
+
+func (db *DB) BookmarkOpenContent(params *models.OpenContentParams) error {
+	if params.Name != "" {
+		var activity models.OpenContentActivity
+		if err := db.Model(&models.OpenContentActivity{}).
+			Where("user_id = ? AND content_id = ? AND open_content_provider_id = ?",
+				params.UserID, params.ContentID, params.OpenContentProviderID).
+			Order("request_ts DESC").
+			First(&activity).Error; err != nil {
+			log.Infof("activity %v", activity)
+			return newNotFoundDBError(err, "open_content_activities")
+		}
+		newFav := models.OpenContentFavorite{
+			UserID:                params.UserID,
+			ContentID:             params.ContentID,
+			OpenContentProviderID: params.OpenContentProviderID,
+			Name:                  params.Name,
+			OpenContentUrlID:      &activity.OpenContentUrlID,
+		}
+		if err := db.Create(&newFav).Error; err != nil {
+			return newNotFoundDBError(err, "open_content_favorites")
+		}
+	} else if params.ContentURL != "" {
+		var url models.OpenContentUrl
+		if err := db.Model(&models.OpenContentUrl{}).
+			Where("content_url = ?", params.ContentURL).
+			First(&url).Error; err != nil {
+			log.Infof("No matching URL found for %s", params.ContentURL)
+			return newNotFoundDBError(err, "open_content_urls")
+		}
+		if err := db.Where("user_id = ? AND content_id = ? AND open_content_url_id = ? AND open_content_provider_id = ?",
+			params.UserID, params.ContentID, &url.ID, params.OpenContentProviderID).
+			Delete(&models.OpenContentFavorite{}).Error; err != nil {
+			return newNotFoundDBError(err, "open_content_favorites")
+		}
+	} else {
+		return fmt.Errorf("invalid parameters: must provide either Name or ContentURL")
+	}
+	return nil
 }

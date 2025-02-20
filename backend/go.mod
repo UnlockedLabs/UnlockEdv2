@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.32.7
 	github.com/aws/aws-sdk-go-v2/config v1.28.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.72.0
+	github.com/coder/websocket v1.8.12
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0

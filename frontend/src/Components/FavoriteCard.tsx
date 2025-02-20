@@ -28,20 +28,39 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
         if (favorite.content_type === 'video') {
             navigate(`/viewer/videos/${favorite.content_id}`);
         } else if (favorite.content_type === 'library') {
-            navigate(`/viewer/libraries/${favorite.content_id}`);
+            if (favorite.url.includes('/api/proxy/')) {
+                navigate(`/viewer/libraries/${favorite.content_id}`, {
+                    state: { url: favorite.url }
+                });
+            } else {
+                navigate(`/viewer/libraries/${favorite.content_id}`);
+            }
         } else if (favorite.content_type === 'helpful_link') {
             window.open(favorite.url, '_blank');
         }
     };
 
     const handleUnfavorite = async () => {
-        const endpoint =
-            favorite.content_type === 'video'
-                ? `videos/${favorite.content_id}/favorite`
-                : favorite.content_type === 'helpful_link'
-                  ? `helpful-links/favorite/${favorite.content_id}`
-                  : `libraries/${favorite.content_id}/favorite`;
-        const response = await API.put(endpoint, {});
+        let endpoint = '';
+        let payload = {};
+
+        if (favorite.content_type === 'video') {
+            endpoint = `videos/${favorite.content_id}/favorite`;
+        } else if (favorite.content_type === 'helpful_link') {
+            endpoint = `helpful-links/favorite/${favorite.content_id}`;
+        } else if (favorite.content_type === 'library') {
+            if (favorite.url.includes('/api/proxy/')) {
+                //nested
+                endpoint = `open-content/${favorite.content_id}/bookmark`;
+                payload = {
+                    open_content_provider_id: favorite.open_content_provider_id,
+                    content_url: favorite.url
+                };
+            } else {
+                endpoint = `libraries/${favorite.content_id}/favorite`;
+            }
+        }
+        const response = await API.put(endpoint, payload);
         if (response.success) {
             toaster(`Removed from favorites`, ToastState.success);
             await mutate();
