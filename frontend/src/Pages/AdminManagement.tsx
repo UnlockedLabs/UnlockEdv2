@@ -16,7 +16,6 @@ import { AxiosError } from 'axios';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { useToast } from '@/Context/ToastCtx';
-import { useAuth, isSysAdmin } from '@/useAuth';
 import {
     AddUserModal,
     closeModal,
@@ -26,7 +25,21 @@ import {
     TextOnlyModal
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
+import { useAuth, isSysAdmin, isDeptAdmin, isFacilityAdmin } from '@/useAuth';
 
+const canEdit = (currentUser: User, targetUser: User): boolean => {
+    return (
+        isSysAdmin(currentUser) ||
+        (isDeptAdmin(currentUser) && isFacilityAdmin(targetUser))
+    );
+};
+
+const canDelete = (currentUser: User, targetUser: User): boolean => {
+    return (
+        (isSysAdmin(currentUser) && !isSysAdmin(targetUser)) ||
+        (isDeptAdmin(currentUser) && isFacilityAdmin(targetUser))
+    );
+};
 export default function AdminManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
     const editUserModal = useRef<HTMLDialogElement>(null);
@@ -44,7 +57,7 @@ export default function AdminManagement() {
     const { toaster } = useToast();
 
     const { user } = useAuth();
-    const newAdminRole: UserRole = isSysAdmin(user)
+    const newAdminRole: UserRole = isSysAdmin(user!)
         ? UserRole.DepartmentAdmin
         : UserRole.FacilityAdmin;
 
@@ -52,7 +65,7 @@ export default function AdminManagement() {
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=${newAdminRole}`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=${user?.role}`
     );
     const checkResponseForDelete = useCheckResponse({
         mutate: mutate,
@@ -170,19 +183,23 @@ export default function AdminManagement() {
                         <tbody>
                             {!isLoading &&
                                 !error &&
-                                userData.map((user: User) => {
-                                    const updatedAt = new Date(user.updated_at);
-                                    const createdAt = new Date(user.created_at);
+                                userData.map((targetUser: User) => {
+                                    const updatedAt = new Date(
+                                        targetUser.updated_at
+                                    );
+                                    const createdAt = new Date(
+                                        targetUser.created_at
+                                    );
                                     return (
                                         <tr
-                                            key={user.id}
+                                            key={targetUser.id}
                                             className="card p-4 w-full grid-cols-5 justify-items-center"
                                         >
                                             <td className="justify-self-start">
-                                                {user.name_first}{' '}
-                                                {user.name_last}
+                                                {targetUser.name_first}{' '}
+                                                {targetUser.name_last}
                                             </td>
-                                            <td>{user.username}</td>
+                                            <td>{targetUser.username}</td>
                                             <td>
                                                 <div
                                                     className="tooltip"
@@ -227,7 +244,9 @@ export default function AdminManagement() {
                                                         dataTip={'Edit Admin'}
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={() => {
-                                                            setTargetUser(user);
+                                                            setTargetUser(
+                                                                user as User
+                                                            );
                                                             showModal(
                                                                 editUserModal
                                                             );
@@ -240,7 +259,9 @@ export default function AdminManagement() {
                                                         }
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={() => {
-                                                            setTargetUser(user);
+                                                            setTargetUser(
+                                                                user as User
+                                                            );
                                                             showModal(
                                                                 resetUserPasswordModal
                                                             );
@@ -252,15 +273,84 @@ export default function AdminManagement() {
                                                     <ULIComponent
                                                         dataTip={getUserIconData[
                                                             'data-tip'
-                                                        ](user)}
+                                                        ](user as User)}
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={getUserIconData.onClick(
-                                                            user
+                                                            user as User
                                                         )}
                                                         icon={getUserIconData.icon(
-                                                            user
+                                                            user as User
                                                         )}
                                                     />
+                                                    {canEdit(
+                                                        user!,
+                                                        targetUser
+                                                    ) && (
+                                                        <ULIComponent
+                                                            dataTip={
+                                                                'Edit Admin'
+                                                            }
+                                                            tooltipClassName="tooltip-left cursor-pointer"
+                                                            onClick={() => {
+                                                                setTargetUser(
+                                                                    targetUser
+                                                                );
+                                                                editUserModal.current?.showModal();
+                                                            }}
+                                                            icon={
+                                                                PencilSquareIcon
+                                                            }
+                                                        />
+                                                    )}
+                                                    {canEdit(
+                                                        user!,
+                                                        targetUser
+                                                    ) && (
+                                                        <ULIComponent
+                                                            dataTip={
+                                                                'Reset Password'
+                                                            }
+                                                            tooltipClassName="tooltip-left cursor-pointer"
+                                                            onClick={() => {
+                                                                setTargetUser(
+                                                                    targetUser
+                                                                );
+                                                                resetUserPasswordModal.current?.showModal();
+                                                            }}
+                                                            icon={
+                                                                ArrowPathRoundedSquareIcon
+                                                            }
+                                                        />
+                                                    )}
+                                                    {canDelete(
+                                                        user!,
+                                                        targetUser
+                                                    ) ? (
+                                                        <ULIComponent
+                                                            dataTip={
+                                                                'Delete Admin'
+                                                            }
+                                                            tooltipClassName="tooltip-left cursor-pointer"
+                                                            onClick={() => {
+                                                                setTargetUser(
+                                                                    targetUser
+                                                                );
+                                                                deleteUserModal.current?.showModal();
+                                                            }}
+                                                            icon={TrashIcon}
+                                                        />
+                                                    ) : targetUser.role ===
+                                                      UserRole.SystemAdmin ? (
+                                                        <ULIComponent
+                                                            dataTip={
+                                                                'Cannot Delete'
+                                                            }
+                                                            tooltipClassName="tooltip-left cursor-pointer"
+                                                            icon={
+                                                                LockClosedIcon
+                                                            }
+                                                        />
+                                                    ) : null}
                                                 </div>
                                             </td>
                                         </tr>
