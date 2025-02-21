@@ -480,6 +480,7 @@ const router = createBrowserRouter([
                                     },
                                     {
                                         path: 'videos',
+                                        loader: getLibraryLayoutData,
                                         element: <VideoManagement />,
                                         handle: {
                                             title: 'Videos Management'

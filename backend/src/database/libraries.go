@@ -116,6 +116,46 @@ func (db *DB) GetLibraryByID(id int) (*models.Library, error) {
 	return &library, nil
 }
 
+func (db *DB) OpenContentTitleSearch(search string) ([]models.OpenContentItem, error) {
+	var items []models.OpenContentItem
+	searchQuery := `SELECT
+			'video' AS content_type,
+			v.id as content_id,
+			v.title,
+			CONCAT('/viewer/videos/', v.id) as url,
+			v.thumbnail_url,
+			v.description,
+			v.visibility_status,
+			v.open_content_provider_id,
+			NULL AS provider_name,
+			v.channel_title,
+			v.created_at
+		   FROM videos v
+		   WHERE to_tsvector('english', v.title || ' ' || v.description || ' ' || v.channel_title) @@ plainto_tsquery('english', ?)
+		   UNION ALL
+		SELECT
+			'library' AS content_type,
+			l.id as content_id,
+			l.title,
+			CONCAT('/viewer/libraries/', l.id) as url,
+			l.thumbnail_url,
+			l.description,
+			l.visibility_status,
+			l.open_content_provider_id,
+			'kiwix' AS provider_name,
+			NULL AS channel_title,
+			l.created_at
+		    FROM libraries l
+		    WHERE to_tsvector('english', l.title || ' ' || l.description) @@ plainto_tsquery('english', ?);`
+
+	tx := db.Raw(searchQuery, search, search)
+	if err := tx.Scan(&items).Error; err != nil {
+		log.Errorln("Unable to perform content search")
+		return nil, newNotFoundDBError(err, "content search")
+	}
+	return items, nil
+}
+
 func (db *DB) GetLibrariesByIDs(ids []int) ([]models.Library, error) {
 	var libraries []models.Library
 	tx := db.Preload("OpenContentProvider").Where("id in ?", ids)

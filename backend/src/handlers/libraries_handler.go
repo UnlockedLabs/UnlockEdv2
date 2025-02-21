@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -18,7 +19,7 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 	axx := models.Feature(models.OpenContentAccess)
 	return []routeDef{
 		{"GET /api/libraries", srv.handleIndexLibraries, false, axx},
-		{"GET /api/libraries/search", srv.handleSearchLibraries, false, axx},
+		{"GET /api/open-content/search", srv.handleSearchOpenContent, false, axx},
 		{"GET /api/libraries/{id}", srv.handleGetLibrary, false, axx},
 		{"PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, true, axx},
 		{"PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, false, axx},
@@ -75,9 +76,11 @@ func (srv *Server) handleGetLibrary(w http.ResponseWriter, r *http.Request, log 
 	return writeJsonResponse(w, http.StatusOK, library)
 }
 
-func (srv *Server) handleSearchLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
+	titleSearch := make([]models.OpenContentItem, 0, 1)
+	var err error
 	ids := r.URL.Query()["library_id"]
 	libraryIDs := make([]int, 0, len(ids))
 	for _, id := range ids {
@@ -85,10 +88,38 @@ func (srv *Server) handleSearchLibraries(w http.ResponseWriter, r *http.Request,
 			libraryIDs = append(libraryIDs, libID)
 		}
 	}
-	libraries, err := srv.Db.GetLibrariesByIDs(libraryIDs)
-	if err != nil {
-		log.add("library_ids", libraryIDs)
-		return newDatabaseServiceError(err)
+	// if we are on a library viewer page, we want to search
+	// only the included library, so we omit title search
+	if page == 1 && len(libraryIDs) == 0 {
+		titleSearch, err = srv.Db.OpenContentTitleSearch(search)
+		if err != nil {
+			log.error("error performing title search on open content")
+		}
+	}
+	if len(titleSearch) >= perPage {
+		rss := models.RSS{}
+		paginationData := models.NewPaginationInfo(page, perPage, int64(int64(len(titleSearch))))
+		channels := make([]*models.OpenContentSearchResult, 0, 1)
+		channels = append(channels, rss.SerializeSearchResults([]models.Library{}))
+		channels[0].AppendTitleSearchResults(titleSearch)
+		return writePaginatedResponse(w, http.StatusOK, channels, paginationData)
+	}
+	libraries := make([]models.Library, 0, len(libraryIDs))
+	if len(libraryIDs) > 0 {
+		libraries, err = srv.Db.GetLibrariesByIDs(libraryIDs)
+		if err != nil {
+			log.add("library_ids", libraryIDs)
+			return newDatabaseServiceError(err)
+		}
+	} else {
+		queryCtx := srv.getQueryContext(r)
+		queryCtx.Search = ""
+		librariesResp, err := srv.Db.GetAllLibraries(&queryCtx, "visible", nil)
+		if err == nil {
+			for _, library := range librariesResp {
+				libraries = append(libraries, library.Library)
+			}
+		}
 	}
 	nextPage := (page-1)*perPage + 1
 	queryParams := url.Values{}
@@ -130,9 +161,13 @@ func (srv *Server) handleSearchLibraries(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newInternalServerServiceError(err, "error parsing the total results value into an int64")
 	}
-	paginationData := models.NewPaginationInfo(page, perPage, int64(total))
-	channels := make([]*models.KiwixChannel, 0, 1) //only ever going to be one KiwixChannel
-	channels = append(channels, rss.IntoKiwixChannel(libraries))
+	paginationData := models.NewPaginationInfo(page, perPage, int64(total+int64(len(titleSearch))))
+	channels := make([]*models.OpenContentSearchResult, 0, 1) //only ever going to be one
+	channels = append(channels, rss.SerializeSearchResults(libraries))
+	if page == 1 {
+		channels[0].AppendTitleSearchResults(titleSearch)
+		slices.Reverse(channels[0].Items)
+	}
 	return writePaginatedResponse(w, http.StatusOK, channels, paginationData)
 }
 

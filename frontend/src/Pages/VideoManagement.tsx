@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import {
@@ -10,10 +10,8 @@ import {
     MAX_DOWNLOAD_ATTEMPTS,
     getVideoErrorMessage
 } from '../common';
-import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
-import { useDebounceValue } from 'usehooks-ts';
 import API from '@/api/api';
 import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
@@ -27,13 +25,14 @@ import {
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
+import { LibrarySearchBar } from '@/Components/inputs';
+import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
 export default function VideoManagement() {
     const { user } = useAuth();
     const addVideoModal = useRef<HTMLDialogElement>(null);
     const [targetVideo, setTargetVideo] = useState<Video | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const searchQuery = useDebounceValue(searchTerm, 300);
     const videoErrorModal = useRef<HTMLDialogElement>(null);
     const [polling, setPolling] = useState<boolean>(false);
     const [perPage, setPerPage] = useState(12);
@@ -41,15 +40,51 @@ export default function VideoManagement() {
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
+    const modalRef = useRef<HTMLDialogElement>(null);
+    const [searchModalOpen, setSearchModalOpen] = useState<number | null>(null);
+
+    //execute when the the searchModalOpen changes (choppyness otherwise)
+    useEffect(() => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'visible';
+            modalRef.current.showModal();
+        }
+    }, [searchModalOpen]);
+    const openSearchModal = () => {
+        setSearchModalOpen(null); //fire off useEffect
+    };
+    const closeSearchModal = () => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'hidden';
+            modalRef.current.close();
+        }
+        setSearchModalOpen(null);
+    };
     const navigate = useNavigate();
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
         AxiosError
     >(
-        `/api/videos?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
+        `/api/videos?page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
+    const navToViewer = (
+        kind: string,
+        url: string,
+        title: string,
+        id: number
+    ) => {
+        switch (kind) {
+            case 'library':
+                navigate(`/viewer/libraries/${id}`, {
+                    state: { url: url, title: title }
+                });
+                return;
+            case 'video':
+                navigate(`/viewer/videos/${id}`);
+        }
+    };
     const videoData = data?.data ?? [];
     const meta = data?.meta;
     if (!user) {
@@ -94,11 +129,6 @@ export default function VideoManagement() {
                    The video download will be retried every 3 hours`;
     };
 
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPageQuery(1);
-    };
-
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPageQuery(1);
@@ -109,10 +139,17 @@ export default function VideoManagement() {
         <>
             <div className="flex justify-between">
                 <div className="flex flex-row gap-4">
-                    <SearchBar
-                        searchTerm={searchTerm}
-                        changeCallback={handleChange}
-                    />
+                    {videoData && videoData.length > 0 && (
+                        <div onClick={() => setSearchModalOpen(1)}>
+                            <LibrarySearchBar
+                                onSearchClick={openSearchModal}
+                                searchPlaceholder="Search..."
+                                searchTerm={searchTerm}
+                                changeCallback={setSearchTerm}
+                                isSearchValid={searchTerm.trim() !== ''}
+                            />
+                        </div>
+                    )}
                     <DropdownControl
                         label="Order by"
                         setState={setSortQuery}
@@ -181,6 +218,15 @@ export default function VideoManagement() {
                     setTargetVideo(null);
                 }}
             ></TextOnlyModal>
+            {searchModalOpen && (
+                <LibrarySearchResultsModal
+                    ref={modalRef}
+                    searchPlaceholder={`Search`}
+                    onItemClick={navToViewer}
+                    onModalClose={closeSearchModal}
+                    useInternalSearchBar={true}
+                />
+            )}
         </>
     );
 }
