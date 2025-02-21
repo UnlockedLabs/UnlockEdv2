@@ -74,40 +74,54 @@ type Book struct {
 	Title string `xml:"title"`
 }
 
-type KiwixChannel struct {
-	Title        string      `json:"title"`
-	Link         string      `json:"link"`
-	Description  string      `json:"description"`
-	TotalResults string      `json:"total_results"`
-	StartIndex   string      `json:"start_index"`
-	ItemsPerPage string      `json:"items_per_page"`
-	Items        []KiwixItem `json:"items"`
+type OpenContentSearchResult struct {
+	Title        string             `json:"title"`
+	Link         string             `json:"link"`
+	Description  string             `json:"description"`
+	TotalResults string             `json:"total_results"`
+	StartIndex   string             `json:"start_index"`
+	ItemsPerPage string             `json:"items_per_page"`
+	Items        []SearchResultItem `json:"items"`
 }
 
-type KiwixItem struct {
-	Library
+type SearchResultItem struct {
+	OpenContentItem
 	PageTitle string `json:"page_title"`
 }
 
-func (rss *RSS) IntoKiwixChannel(libraries []Library) *KiwixChannel {
-	channel := &KiwixChannel{
+func (res *OpenContentSearchResult) AppendTitleSearchResults(items []OpenContentItem) {
+	for _, item := range items {
+		res.Items = append(res.Items,
+			SearchResultItem{
+				OpenContentItem: item,
+				PageTitle:       item.Title,
+			})
+	}
+}
+
+func (rss *RSS) SerializeSearchResults(libraries []Library) *OpenContentSearchResult {
+	channel := &OpenContentSearchResult{
 		Title:        rss.Channel.Title,
 		Description:  rss.Channel.Description,
 		TotalResults: rss.Channel.TotalResults,
 		StartIndex:   rss.Channel.StartIndex,
 		ItemsPerPage: rss.Channel.ItemsPerPage,
-		Items:        []KiwixItem{},
+		Items:        []SearchResultItem{},
 	}
 	for _, item := range rss.Channel.Items {
 		library := getLibrary(libraries, item.Link)
-		kiwixItem := KiwixItem{
-			Library: Library{
-				DatabaseFields: DatabaseFields{
-					ID: library.ID,
-				},
+		thumbnail := ""
+		if library == nil {
+			continue
+		} else if library.ThumbnailUrl != nil {
+			thumbnail = *library.ThumbnailUrl
+		}
+		kiwixItem := SearchResultItem{
+			OpenContentItem: OpenContentItem{
+				ContentId:    library.ID,
 				Url:          fmt.Sprintf("/api/proxy/libraries/%d%s", library.ID, item.Link),
-				ThumbnailUrl: library.ThumbnailUrl,
-				Description:  &item.Description.RawText,
+				ThumbnailUrl: thumbnail,
+				Description:  item.Description.RawText,
 				Title:        item.Book.Title,
 			},
 			PageTitle: item.Title,

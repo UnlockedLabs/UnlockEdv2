@@ -1,5 +1,5 @@
 import {
-    KiwixChannel,
+    SearchResult,
     PaginationMeta,
     ServerResponseMany,
     Option
@@ -15,7 +15,7 @@ interface LibrarySearchResultsModalProps {
     useInternalSearchBar?: boolean;
     searchPlaceholder?: string;
     libraryId?: number;
-    onItemClick: (url: string, title: string, id?: number) => void;
+    onItemClick: (kind: string, url: string, title: string, id: number) => void;
     onModalClose: () => void;
 }
 
@@ -63,7 +63,7 @@ const LibrarySearchResultsModal = forwardRef<
         items: []
     };
     const [searchResults, setSearchResults] =
-        useState<KiwixChannel>(BlankChannel);
+        useState<SearchResult>(BlankChannel);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
         per_page: 10,
@@ -86,14 +86,18 @@ const LibrarySearchResultsModal = forwardRef<
         setIsLoading(true);
         setSearchError(null);
         const libraryIDs =
-            selectedOptions.length > 0 ? selectedOptions : [libraryId];
+            selectedOptions.length > 0
+                ? selectedOptions
+                : libraryId
+                  ? [libraryId]
+                  : [];
         const urlParams = libraryIDs
             .map((libID) => `library_id=${libID}`)
             .join('&');
         try {
             const response = (await API.get(
-                `libraries/search?search=${term}&${urlParams}&page=${page}&per_page=${perPage}`
-            )) as ServerResponseMany<KiwixChannel>;
+                `open-content/search?search=${term}&${urlParams}&page=${page}&per_page=${perPage}`
+            )) as ServerResponseMany<SearchResult>;
             if (response.success) {
                 setMeta(response.meta);
                 setSearchResults(response.data[0]);
@@ -211,13 +215,15 @@ const LibrarySearchResultsModal = forwardRef<
                                 ref={searchBarRef}
                             />
                         )}
-                        <MultiSelectDropdown
-                            label="Select Libraries"
-                            options={libraryOptions}
-                            selectedOptions={selectedOptions}
-                            onSelectionChange={handleSelectionChange}
-                            onBlurSearch={handleOnBlurSearch}
-                        />
+                        {libraryId && (
+                            <MultiSelectDropdown
+                                label="Select Libraries"
+                                options={libraryOptions}
+                                selectedOptions={selectedOptions}
+                                onSelectionChange={handleSelectionChange}
+                                onBlurSearch={handleOnBlurSearch}
+                            />
+                        )}
                         <CloseX close={onModalClose} />
                     </div>
                 </div>

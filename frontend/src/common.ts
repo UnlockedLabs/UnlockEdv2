@@ -712,7 +712,7 @@ export interface ActivityMapData {
     quartile: number;
 }
 
-export interface KiwixChannel {
+export interface SearchResult {
     book: string;
     title: string;
     thumbnail_url: string;
@@ -721,11 +721,11 @@ export interface KiwixChannel {
     total_results: string;
     start_index: string;
     items_per_page: string;
-    items?: KiwixItem[];
+    items?: SearchResultItem[];
 }
 
-export interface KiwixItem extends Library {
-    page_title: string;
+export interface SearchResultItem extends OpenContentItem {
+    page_title?: string;
 }
 
 export interface Option {
