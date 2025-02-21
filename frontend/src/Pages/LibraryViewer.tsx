@@ -51,6 +51,7 @@ export default function LibraryViewer() {
     };
 
     const handleSearchResultClick = (
+        _kind: string,
         url: string,
         title: string,
         libId?: number
