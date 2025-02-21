@@ -48,10 +48,21 @@ export default function LibaryLayout({
         }
         setSearchModalLibrary(null);
     };
-    const navToLibraryViewer = (url: string, title: string) => {
-        navigate(`/viewer/libraries/${searchModalLibrary?.id}`, {
-            state: { url: url, title: title }
-        });
+    const navToLibraryViewer = (
+        kind: string,
+        url: string,
+        title: string,
+        id: number
+    ) => {
+        switch (kind) {
+            case 'library':
+                navigate(`/viewer/libraries/${searchModalLibrary?.id}`, {
+                    state: { url: url, title: title }
+                });
+                return;
+            case 'video':
+                navigate(`/viewer/videos/${id}`);
+        }
     };
     const { categories } = useLoaderData() as {
         categories: Option[];
@@ -78,7 +89,7 @@ export default function LibaryLayout({
         error: librariesError,
         isLoading: librariesLoading
     } = useSWR<ServerResponseMany<Library>, AxiosError>(
-        `/api/libraries?page=${pageQuery}&per_page=${perPage}&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=created_at%20desc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
     );
 
     const librariesMeta = libraries?.meta ?? {
@@ -110,18 +121,16 @@ export default function LibaryLayout({
         setCategoryQueryString(queryString);
     }, [selectedCategories]);
 
-    useEffect(() => {
-        console.log(categoryQueryString);
-    }, [categoryQueryString]);
-
     return (
         <>
             <div className="flex flex-row gap-4">
-                <SearchBar
-                    searchPlaceholder="Title Search..."
-                    searchTerm={searchTerm}
-                    changeCallback={setSearchTerm}
-                />
+                <div onClick={() => setSearchModalLibrary({} as Library)}>
+                    <SearchBar
+                        searchPlaceholder="Search..."
+                        searchTerm={searchTerm}
+                        changeCallback={setSearchTerm}
+                    />
+                </div>
                 {isAdministrator(user) && !adminWithStudentView() && (
                     <DropdownControl
                         enumType={LibraryAdminVisibility}
@@ -140,8 +149,7 @@ export default function LibaryLayout({
                 {searchModalLibrary && (
                     <LibrarySearchResultsModal
                         ref={modalRef}
-                        libraryId={searchModalLibrary.id}
-                        searchPlaceholder={`Search ${searchModalLibrary.title}`}
+                        searchPlaceholder={`Search`}
                         onItemClick={navToLibraryViewer}
                         onModalClose={closeSearchModal}
                         useInternalSearchBar={true}
