@@ -9,7 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - config:/docker-entrypoint-initdb.d
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U unlocked"]
       interval: 10s
@@ -83,7 +83,7 @@ services:
       - NATS_PASSWORD=dev
       - IMG_FILEPATH=/imgs
       - MIGRATION_DIR=backend/migrations
-      - KIWIX_SERVER_URL=http://kiwix:8082
+      - KIWIX_SERVER_URL=http://kiwix:8080
     depends_on:
       kratos:
         condition: service_started
