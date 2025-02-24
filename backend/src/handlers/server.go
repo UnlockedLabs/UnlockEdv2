@@ -97,6 +97,7 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerVideoRoutes,
 		srv.registerFeatureFlagRoutes,
 		srv.registerOpenContentActivityRoutes,
+		srv.registerTagRoutes,
 	} {
 		srv.register(route)
 	}

@@ -295,7 +295,6 @@ func seedTestData(db *gorm.DB) {
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 	facilities := []models.Facility{}
 	randNames := []string{"Anger Management", "Substance Abuse Treatment", "AA/NA", "Thinking for a Change", "A New Freedom", "Dog Training", "A New Path", "GED/Hi-SET", "Parenting", "Employment", "Life Skills", "Health and Wellness", "Financial Literacy", "Computer Skills", "Parenting", "Employment", "Life Skills"}
-	randTags := []string{"Rehabilitation", "Life-Skills", "12-step", "Required", "Recovery", "DV-Requirement", "10-Weeks", "Addiction"}
 	if err := db.Find(&facilities).Error; err != nil {
 		return nil, err
 	}
@@ -349,14 +348,18 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 			if err := db.Create(&prog[i]).Error; err != nil {
 				log.Fatalf("Failed to create program: %v", err)
 			}
-			numTags := rand.Intn(3) + 1
-			for j := 0; j < numTags; j++ {
-				tag := models.ProgramTag{
-					ProgramID: prog[i].ID,
-					Value:     randTags[rand.Intn(len(randTags))],
+			var tags []models.Tag
+			if err := db.Model(&models.Tag{}).Order("RANDOM()").Limit(rand.Intn(3) + 1).Find(&tags).Error; err != nil {
+				log.Fatalf("Error getting random categories: %v", err)
+			}
+			for _, tag := range tags {
+				programTag := models.ProgramTag{
+					TagID:      tag.ID,
+					ProgramID:  prog[i].ID,
+					FacilityID: facilities[idx].ID,
 				}
-				if err := db.Create(&tag).Error; err != nil {
-					log.Fatalf("Failed to create tag: %v", err)
+				if err := db.Create(&programTag).Error; err != nil {
+					log.Fatalf("Failed to create program tag: %v", err)
 				}
 			}
 			section := models.ProgramSection{
