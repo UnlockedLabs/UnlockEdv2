@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 export default function ClampedText({
-    as: Component = "div",
+    as: Component = 'div',
     children,
     lines = 2,
-    className = "",
+    className = ''
 }: {
     as?: React.ElementType;
     children: React.ReactNode;
@@ -25,14 +25,20 @@ export default function ClampedText({
 
     useEffect(() => {
         checkClamping();
-        window.addEventListener("resize", checkClamping);
+        window.addEventListener('resize', checkClamping);
         return () => {
-            window.removeEventListener("resize", checkClamping);
+            window.removeEventListener('resize', checkClamping);
         };
     }, [children]);
 
     return (
-        <Component ref={textRef} className={`line-clamp-${lines} overflow-hidden ${className}`} title={isClamped ? (typeof children === "string" ? children : "") : ""}>
+        <Component
+            ref={textRef}
+            className={`line-clamp-${lines} overflow-hidden ${className}`}
+            title={
+                isClamped ? (typeof children === 'string' ? children : '') : ''
+            }
+        >
             {children}
         </Component>
     );

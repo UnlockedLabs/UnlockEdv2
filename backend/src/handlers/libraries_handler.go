@@ -34,10 +34,9 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 // order_by - (title|created_at|most_popular) the order in which the results are returned
 // visibility - can either be featured, visible, hidden, or all
 // all - true or false on whether or not to return all libraries without pagination
-// categories - the category ids to filter the libraries by
+// categories - the tag ids to filter the libraries by
 func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
-	categoryIds := getCategoryIds(r.URL.Query()["categories"])
 	showHidden := "visible"
 	if !userIsAdmin(r) && r.URL.Query().Get("visibility") == "hidden" {
 		return newUnauthorizedServiceError()
@@ -46,21 +45,11 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	} else if userIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
-	libraries, err := srv.Db.GetAllLibraries(&args, showHidden, categoryIds)
+	libraries, err := srv.Db.GetAllLibraries(&args, showHidden)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writePaginatedResponse(w, http.StatusOK, libraries, args.IntoMeta())
-}
-
-func getCategoryIds(categories []string) []int {
-	categoryIds := make([]int, 0, len(categories))
-	for _, id := range categories {
-		if categoryId, err := strconv.Atoi(id); err == nil {
-			categoryIds = append(categoryIds, categoryId)
-		}
-	}
-	return categoryIds
 }
 
 func (srv *Server) handleGetLibrary(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -127,6 +127,16 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
     return libraryOptions;
 };
 
+export const getProgramData: LoaderFunction = async () => {
+    const [tagsResp, facilitiesResp] = await Promise.all([
+        API.get(`tags`),
+        API.get<Facility[]>(`facilities`)
+    ]);
+    const categories = tagsResp.data as Option[];
+    const facilities = facilitiesResp.data as Facility[];
+    return json({ categories: categories, facilities: facilities });
+};
+
 export const getProviderPlatforms: LoaderFunction = async () => {
     const response: ServerResponse<ProviderPlatform> =
         await API.get<ProviderPlatform>(`provider-platforms?only=oidc_enabled`);

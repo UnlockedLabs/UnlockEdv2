@@ -23,7 +23,6 @@ import AdminManagement from '@/Pages/AdminManagement.tsx';
 import StudentManagement from '@/Pages/StudentManagement.tsx';
 import OpenContent from './Pages/OpenContent';
 import LibraryViewer from './Pages/LibraryViewer';
-import Programs from './Pages/Programs.tsx';
 import LibraryLayout from './Components/LibraryLayout';
 import VideoManagement from './Pages/VideoManagement';
 import {
@@ -42,6 +41,7 @@ import {
     getAdminLevel1Data,
     getFacilities,
     getLibraryLayoutData,
+    getProgramData,
     getStudentLayer2Data,
     getStudentLevel1Data,
     getProviderPlatforms
@@ -62,6 +62,7 @@ import StudentLayer2 from './Pages/StudentDashboard.tsx';
 import AdminLayer1 from './Pages/AdminLayer1.tsx';
 import HelpfulLinks from './Pages/HelpfulLinks.tsx';
 import { TitleManager } from './Components/TitleManager.tsx';
+import ProgramManagement from './Pages/ProgramManagement.tsx';
 
 const WithAuth: React.FC = () => {
     return (
@@ -291,8 +292,8 @@ const router = createBrowserRouter([
                             {
                                 path: 'programs',
                                 id: 'programs-facilities',
-                                loader: getFacilities,
-                                element: <Programs />,
+                                loader: getProgramData,
+                                element: <ProgramManagement />,
                                 handle: {
                                     title: 'Programs',
                                     path: ['programs']

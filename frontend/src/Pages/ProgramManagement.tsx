@@ -2,9 +2,14 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useState, useRef } from 'react';
 import ProgramCard from '@/Components/ProgramCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { Program, ServerResponseMany, ViewType, Facility } from '@/common';
+import {
+    Program,
+    ViewType,
+    Facility,
+    Option,
+    ServerResponseMany
+} from '@/common';
 import useSWR from 'swr';
-import DropdownControl from '@/Components/inputs/DropdownControl';
 import { AxiosError } from 'axios';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import ToggleView from '@/Components/ToggleView';
@@ -13,27 +18,31 @@ import CreateProgramForm from '@/Components/forms/CreateProgramForm';
 import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
 import { showModal } from '@/Components/modals';
+import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
 
-export default function Programs() {
+export enum sortPrograms {}
+
+export default function ProgramManagement() {
     const { user } = useAuth();
     const addProgramModal = useRef<HTMLDialogElement>(null);
-    const facilities = useLoaderData() as Facility[];
-    if (!user) {
-        return null;
-    }
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
-    const [order, setOrder] = useState('asc');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
+    const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const { data, error, mutate } = useSWR<
         ServerResponseMany<Program>,
         AxiosError
     >(
-        `/api/programs?search=${searchTerm}&order=${order}&page=${page}&per_page=${perPage}`
+        `/api/programs?page=${page}&per_page=${perPage}&search=${searchTerm}&${categoryQueryString}&order=asc&order_by=name`
     );
     const programData = data?.data;
     const meta = data?.meta;
+
+    const { categories, facilities } = useLoaderData() as {
+        categories: Option[];
+        facilities: Facility[];
+    };
 
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
@@ -48,13 +57,10 @@ export default function Programs() {
                         searchTerm={searchTerm}
                         changeCallback={handleSearch}
                     />
-                    <DropdownControl
-                        label="order"
-                        setState={setOrder}
-                        enumType={{
-                            Ascending: 'asc',
-                            Descending: 'desc'
-                        }}
+                    <CategoryDropdownFilter
+                        mutate={() => void mutate()}
+                        setCategoryQueryString={setCategoryQueryString}
+                        options={categories ?? []}
                     />
                 </div>
                 <div className="flex items-center space-x-4">

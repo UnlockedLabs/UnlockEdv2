@@ -6,7 +6,6 @@ import {
     Option
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { MultiSelectDropdown } from './inputs';
 import SearchBar from '@/Components/inputs/SearchBar';
 import LibraryCard from '@/Components/LibraryCard';
 import { isAdministrator, useAuth } from '@/useAuth';
@@ -16,6 +15,7 @@ import Pagination from './Pagination';
 import { AxiosError } from 'axios';
 import { useLoaderData, useLocation } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
+import CategoryDropdownFilter from './CategoryDropdownFilter';
 
 export default function LibaryLayout({
     studentView
@@ -50,7 +50,6 @@ export default function LibaryLayout({
     const { categories } = useLoaderData() as {
         categories: Option[];
     };
-    const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [filterVisibilityAdmin, setFilterVisibilityAdmin] = useState<string>(
@@ -91,18 +90,11 @@ export default function LibaryLayout({
 
     useEffect(() => {
         setPageQuery(1);
-    }, [filterVisibilityAdmin, searchTerm, selectedCategories]);
+    }, [filterVisibilityAdmin, searchTerm, categoryQueryString]);
 
     function updateLibrary() {
         void mutateLibraries();
     }
-
-    useEffect(() => {
-        const queryString = selectedCategories
-            .map((category) => `category=${category}`)
-            .join('&');
-        setCategoryQueryString(queryString);
-    }, [selectedCategories]);
 
     return (
         <>
@@ -121,14 +113,10 @@ export default function LibaryLayout({
                         setState={setFilterVisibilityAdmin}
                     />
                 )}
-                <MultiSelectDropdown
-                    label="Categories"
+                <CategoryDropdownFilter
+                    mutate={() => void mutateLibraries()}
+                    setCategoryQueryString={setCategoryQueryString}
                     options={categories}
-                    selectedOptions={selectedCategories}
-                    onSelectionChange={setSelectedCategories}
-                    onBlurSearch={() => {
-                        void mutateLibraries;
-                    }}
                 />
                 {searchModalLibrary && (
                     <LibrarySearchResultsModal

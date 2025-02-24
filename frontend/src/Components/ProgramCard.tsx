@@ -1,10 +1,10 @@
 import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { BookmarkIcon as BookmarkIconOutline } from '@heroicons/react/24/outline';
-import LightGreenPill from './pill-labels/LightGreenPill';
 import { MouseEvent } from 'react';
-import { Facility, Program, ViewType } from '@/common';
+import { Program, ViewType } from '@/common';
 import API from '@/api/api';
 import { isAdministrator, useAuth } from '@/useAuth';
+import ClampedText from './ClampedText';
 
 export default function ProgramCard({
     program,
@@ -27,12 +27,6 @@ export default function ProgramCard({
             });
     }
 
-    const getFacilitiesList = () => {
-        return program.facilities
-            .map((facility: Facility) => facility.name)
-            .join(', ');
-    };
-
     let bookmark: JSX.Element = <></>;
     if (user && !isAdministrator(user)) {
         bookmark = program.is_favorited ? (
@@ -44,9 +38,7 @@ export default function ProgramCard({
         );
     }
 
-    const tagPills = program.tags.map((tag) => (
-        <LightGreenPill key={tag.id}>{tag.value.toString()}</LightGreenPill>
-    ));
+    const enrollments = Math.round(Math.random() * 20);
 
     if (view === ViewType.List) {
         return (
@@ -60,13 +52,20 @@ export default function ProgramCard({
                         <div onClick={(e) => updateFavorite(e)}>{bookmark}</div>
                         <h2>{program.name}</h2>
                         <p className="body">|</p>
-                        <div className="flex flex-wrap gap-2">{tagPills}</div>
                     </div>
                     <p className="body-small h-[1rem] line-clamp-2 overflow-hidden">
                         {program.description}
                     </p>
-                    <p className="body">Available in Facilities:</p>
-                    <p className="body">{getFacilitiesList()}</p>
+                    <p className="body-small">
+                        {enrollments} student{enrollments == 1 ? '' : 's'}{' '}
+                        enrolled
+                    </p>
+                    <p className="body-small">
+                        Available in {program.facilities.length}{' '}
+                        {program.facilities.length == 1
+                            ? 'facility'
+                            : 'facilities'}
+                    </p>
                 </div>
             </a>
         );
@@ -80,13 +79,22 @@ export default function ProgramCard({
                     {bookmark}
                 </div>
                 <div className="p-4 gap-2 flex flex-col columns-4">
-                    <h3 className="text-sm">{program.name}</h3>
-                    <p className="body-small line-clamp-4 h-16">
+                    <ClampedText as="h3" lines={1} className="body">
+                        {program.name}
+                    </ClampedText>
+                    <ClampedText as={'p'} lines={4} className="body-small h-16">
                         {program.description}
+                    </ClampedText>
+                    <p className="body-small">
+                        {enrollments} student{enrollments == 1 ? '' : 's'}{' '}
+                        enrolled
                     </p>
-                    <p className="body font-bold">Available in Facilities:</p>
-                    <p>{getFacilitiesList()}</p>
-                    <div className="flex flex-auto gap-2">{tagPills}</div>
+                    <p className="body-small">
+                        Available in {program.facilities.length}{' '}
+                        {program.facilities.length == 1
+                            ? 'facility'
+                            : 'facilities'}
+                    </p>
                 </div>
             </div>
         );

@@ -22,8 +22,8 @@ type LibraryResponse struct {
 // orderBy - the order in which the results are returned
 // isAdmin - true or false on whether the user is an administrator used to determine how to retrieve featured libraries
 // all - true or false on whether or not to return all libraries without pagination
-// categoryIds - the category ids to filter the libraries by
-func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, categoryIds []int) ([]LibraryResponse, error) {
+// tagIds - the tag ids to filter the libraries by
+func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]LibraryResponse, error) {
 	var (
 		criteria string
 		id       uint
@@ -70,8 +70,8 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
 		search = "%" + strings.ToLower(args.Search) + "%"
 		tx = tx.Where("LOWER(libraries.title) LIKE ? OR LOWER(libraries.description) LIKE ?", search, search)
 	}
-	if len(categoryIds) > 0 {
-		tx = tx.Joins("JOIN open_content_types t ON t.content_id = libraries.id").Where("t.category_id IN (?) AND t.open_content_provider_id = libraries.open_content_provider_id", categoryIds)
+	if len(args.Tags) > 0 {
+		tx = tx.Joins("JOIN open_content_tags t ON t.content_id = libraries.id").Where("t.tag_id IN (?) AND t.open_content_provider_id = libraries.open_content_provider_id", args.Tags)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "libraries")
