@@ -38,6 +38,8 @@ func (db *DB) GetCurrentUsers(qCtx *models.QueryContext, role string) ([]models.
 		tx = tx.Where("role IN ('system_admin',  'department_admin', 'facility_admin')")
 	case "department_admin":
 		tx = tx.Where("role IN ('department_admin', 'facility_admin')")
+	case "facility_admin":
+		tx = tx.Where("role = 'facility_admin'")
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
