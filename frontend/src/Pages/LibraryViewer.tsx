@@ -50,22 +50,17 @@ export default function LibraryViewer() {
         }
     };
 
-    const handleSearchResultClick = (
+    const navToLibraryViewer = (
         _kind: string,
         url: string,
         title: string,
-        libId?: number
+        id: number
     ) => {
-        if (Number(libraryId) === libId) {
-            setSrc(url);
-        } else {
-            navigate(`/viewer/libraries/${libId}`, {
-                state: { url: url, title: title },
-                replace: true
-            });
-        }
-        setSearchPlaceholder('Search ' + title);
+        navigate(`/viewer/libraries/${id}`, {
+            state: { url: url, title: title }
+        });
         closeModal();
+        return;
     };
 
     const handleSearch = () => {
@@ -256,7 +251,7 @@ export default function LibraryViewer() {
                     />
                     <LibrarySearchResultsModal
                         key={libraryId}
-                        onItemClick={handleSearchResultClick}
+                        onItemClick={navToLibraryViewer}
                         libraryId={Number(libraryId)}
                         ref={modalRef}
                         onModalClose={closeModal}
