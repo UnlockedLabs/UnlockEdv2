@@ -29,13 +29,7 @@ const LibrarySearchResultsModal = forwardRef<
     HTMLDialogElement,
     LibrarySearchResultsModalProps
 >(function SearchResultsModal(
-    {
-        useInternalSearchBar = false,
-        searchPlaceholder = '',
-        libraryId,
-        onItemClick,
-        onModalClose
-    },
+    { searchPlaceholder = '', libraryId, onItemClick, onModalClose },
     ref
 ) {
     const { libraryOptions } = useLoaderData() as {
@@ -51,7 +45,7 @@ const LibrarySearchResultsModal = forwardRef<
             searchBarRef.current?.focus();
         }
     }, [ref]);
-    const BlankChannel = {
+    const EmptyResult = {
         title: 'Search',
         link: '',
         book: '',
@@ -63,7 +57,7 @@ const LibrarySearchResultsModal = forwardRef<
         items: []
     };
     const [searchResults, setSearchResults] =
-        useState<SearchResult>(BlankChannel);
+        useState<SearchResult>(EmptyResult);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
         per_page: 10,
@@ -135,14 +129,14 @@ const LibrarySearchResultsModal = forwardRef<
     };
     const handleOnBlurSearch = () => {
         if (selectedOptions.length > 0) {
-            if (useInternalSearchBar && searchTerm.trim() === '') {
+            if (searchTerm.trim() === '') {
                 return;
             }
             void handleSearch(1, 10);
         }
     };
     const handleSelectionChange = (selected: number[]) => {
-        if (useInternalSearchBar && selected.length > 1) {
+        if (selected.length > 1) {
             setPlaceholder('Search Libraries...');
         }
         setSelectedOptions(selected);
@@ -186,7 +180,7 @@ const LibrarySearchResultsModal = forwardRef<
     const handleCloseModal = () => {
         setDefaultOption();
         onModalClose();
-        setSearchResults(BlankChannel);
+        setSearchResults(EmptyResult);
     };
     return (
         <dialog
@@ -202,28 +196,24 @@ const LibrarySearchResultsModal = forwardRef<
                             <h2 className="text-2xl">{searchResults.title}</h2>
                             <p className="body">{currentPageDisplay}</p>
                         </div>
-                        {useInternalSearchBar && (
-                            <LibrarySearchBar
-                                searchTerm={searchTerm}
-                                isSearchValid={isSearchValid}
-                                searchPlaceholder={placeholder}
-                                changeCallback={(value: string) => {
-                                    setSearchTerm(value);
-                                    setIsSearchValid(value.trim() !== '');
-                                }}
-                                onSearchClick={() => void handleSearch(1, 10)}
-                                ref={searchBarRef}
-                            />
-                        )}
-                        {libraryId && (
-                            <MultiSelectDropdown
-                                label="Select Libraries"
-                                options={libraryOptions}
-                                selectedOptions={selectedOptions}
-                                onSelectionChange={handleSelectionChange}
-                                onBlurSearch={handleOnBlurSearch}
-                            />
-                        )}
+                        <LibrarySearchBar
+                            searchTerm={searchTerm}
+                            isSearchValid={isSearchValid}
+                            searchPlaceholder={placeholder}
+                            changeCallback={(value: string) => {
+                                setSearchTerm(value);
+                                setIsSearchValid(value.trim() !== '');
+                            }}
+                            onSearchClick={() => void handleSearch(1, 10)}
+                            ref={searchBarRef}
+                        />
+                        <MultiSelectDropdown
+                            label="Select Libraries"
+                            options={libraryOptions}
+                            selectedOptions={selectedOptions}
+                            onSelectionChange={handleSelectionChange}
+                            onBlurSearch={handleOnBlurSearch}
+                        />
                         <CloseX close={onModalClose} />
                     </div>
                 </div>
@@ -250,7 +240,7 @@ const LibrarySearchResultsModal = forwardRef<
                             {searchError}
                         </p>
                     </div>
-                ) : searchResults.title === 'Search' && useInternalSearchBar ? (
+                ) : searchResults.title === 'Search' ? (
                     <div className="flex h-screen gap-4 justify-center content-center">
                         <p className="my-auto text-lg">Execute a search</p>
                     </div>

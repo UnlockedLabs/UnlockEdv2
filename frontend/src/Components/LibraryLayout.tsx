@@ -56,7 +56,7 @@ export default function LibaryLayout({
     ) => {
         switch (kind) {
             case 'library':
-                navigate(`/viewer/libraries/${searchModalLibrary?.id}`, {
+                navigate(`/viewer/libraries/${id}`, {
                     state: { url: url, title: title }
                 });
                 return;
@@ -129,6 +129,7 @@ export default function LibaryLayout({
                         searchPlaceholder="Search..."
                         searchTerm={searchTerm}
                         changeCallback={setSearchTerm}
+                        autoFocus={false}
                     />
                 </div>
                 {isAdministrator(user) && !adminWithStudentView() && (

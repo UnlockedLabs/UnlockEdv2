@@ -3,11 +3,13 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 export default function SearchBar({
     searchTerm,
     searchPlaceholder,
-    changeCallback
+    changeCallback,
+    autoFocus
 }: {
     searchTerm: string;
     searchPlaceholder?: string;
     changeCallback: (arg: string) => void;
+    autoFocus?: boolean;
 }) {
     return (
         <label className="form-control">
@@ -19,7 +21,7 @@ export default function SearchBar({
                     className="input input-bordered w-full max-w-xs"
                     value={searchTerm}
                     onChange={(e) => changeCallback(e.target.value)}
-                    autoFocus
+                    autoFocus={autoFocus ?? true}
                 />
             </div>
         </label>

@@ -112,13 +112,15 @@ export default function LibraryViewer() {
             <div className="px-5 pb-4">
                 <div className="flex items-center gap-4 mb-4">
                     <h1>Library Viewer</h1>
-                    <LibrarySearchBar
-                        searchPlaceholder={searchPlaceholder}
-                        searchTerm={searchTerm}
-                        onSearchClick={handleSearch}
-                        changeCallback={setSearchTerm}
-                        isSearchValid={searchTerm.trim() !== ''}
-                    />
+                    <div onClick={openModal}>
+                        <LibrarySearchBar
+                            searchPlaceholder={searchPlaceholder}
+                            searchTerm={searchTerm}
+                            onSearchClick={handleSearch}
+                            changeCallback={setSearchTerm}
+                            isSearchValid={searchTerm.trim() !== ''}
+                        />
+                    </div>
                     <LibrarySearchResultsModal
                         key={libraryId}
                         onItemClick={navToLibraryViewer}
