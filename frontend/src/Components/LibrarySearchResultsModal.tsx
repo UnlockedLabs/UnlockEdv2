@@ -1,5 +1,5 @@
 import {
-    KiwixChannel,
+    SearchResult,
     PaginationMeta,
     ServerResponseMany,
     Option
@@ -15,7 +15,7 @@ interface LibrarySearchResultsModalProps {
     useInternalSearchBar?: boolean;
     searchPlaceholder?: string;
     libraryId?: number;
-    onItemClick: (url: string, title: string, id?: number) => void;
+    onItemClick: (kind: string, url: string, title: string, id: number) => void;
     onModalClose: () => void;
 }
 
@@ -29,13 +29,7 @@ const LibrarySearchResultsModal = forwardRef<
     HTMLDialogElement,
     LibrarySearchResultsModalProps
 >(function SearchResultsModal(
-    {
-        useInternalSearchBar = false,
-        searchPlaceholder = '',
-        libraryId,
-        onItemClick,
-        onModalClose
-    },
+    { searchPlaceholder = '', libraryId, onItemClick, onModalClose },
     ref
 ) {
     const { libraryOptions } = useLoaderData() as {
@@ -51,7 +45,7 @@ const LibrarySearchResultsModal = forwardRef<
             searchBarRef.current?.focus();
         }
     }, [ref]);
-    const BlankChannel = {
+    const EmptyResult = {
         title: 'Search',
         link: '',
         book: '',
@@ -63,7 +57,7 @@ const LibrarySearchResultsModal = forwardRef<
         items: []
     };
     const [searchResults, setSearchResults] =
-        useState<KiwixChannel>(BlankChannel);
+        useState<SearchResult>(EmptyResult);
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
         per_page: 10,
@@ -86,14 +80,18 @@ const LibrarySearchResultsModal = forwardRef<
         setIsLoading(true);
         setSearchError(null);
         const libraryIDs =
-            selectedOptions.length > 0 ? selectedOptions : [libraryId];
+            selectedOptions.length > 0
+                ? selectedOptions
+                : libraryId
+                  ? [libraryId]
+                  : [];
         const urlParams = libraryIDs
             .map((libID) => `library_id=${libID}`)
             .join('&');
         try {
             const response = (await API.get(
-                `libraries/search?search=${term}&${urlParams}&page=${page}&per_page=${perPage}`
-            )) as ServerResponseMany<KiwixChannel>;
+                `open-content/search?search=${term}&${urlParams}&page=${page}&per_page=${perPage}`
+            )) as ServerResponseMany<SearchResult>;
             if (response.success) {
                 setMeta(response.meta);
                 setSearchResults(response.data[0]);
@@ -131,14 +129,14 @@ const LibrarySearchResultsModal = forwardRef<
     };
     const handleOnBlurSearch = () => {
         if (selectedOptions.length > 0) {
-            if (useInternalSearchBar && searchTerm.trim() === '') {
+            if (searchTerm.trim() === '') {
                 return;
             }
             void handleSearch(1, 10);
         }
     };
     const handleSelectionChange = (selected: number[]) => {
-        if (useInternalSearchBar && selected.length > 1) {
+        if (selected.length > 1) {
             setPlaceholder('Search Libraries...');
         }
         setSelectedOptions(selected);
@@ -182,7 +180,7 @@ const LibrarySearchResultsModal = forwardRef<
     const handleCloseModal = () => {
         setDefaultOption();
         onModalClose();
-        setSearchResults(BlankChannel);
+        setSearchResults(EmptyResult);
     };
     return (
         <dialog
@@ -198,19 +196,17 @@ const LibrarySearchResultsModal = forwardRef<
                             <h2 className="text-2xl">{searchResults.title}</h2>
                             <p className="body">{currentPageDisplay}</p>
                         </div>
-                        {useInternalSearchBar && (
-                            <LibrarySearchBar
-                                searchTerm={searchTerm}
-                                isSearchValid={isSearchValid}
-                                searchPlaceholder={placeholder}
-                                changeCallback={(value: string) => {
-                                    setSearchTerm(value);
-                                    setIsSearchValid(value.trim() !== '');
-                                }}
-                                onSearchClick={() => void handleSearch(1, 10)}
-                                ref={searchBarRef}
-                            />
-                        )}
+                        <LibrarySearchBar
+                            searchTerm={searchTerm}
+                            isSearchValid={isSearchValid}
+                            searchPlaceholder={placeholder}
+                            changeCallback={(value: string) => {
+                                setSearchTerm(value);
+                                setIsSearchValid(value.trim() !== '');
+                            }}
+                            onSearchClick={() => void handleSearch(1, 10)}
+                            ref={searchBarRef}
+                        />
                         <MultiSelectDropdown
                             label="Select Libraries"
                             options={libraryOptions}
@@ -244,7 +240,7 @@ const LibrarySearchResultsModal = forwardRef<
                             {searchError}
                         </p>
                     </div>
-                ) : searchResults.title === 'Search' && useInternalSearchBar ? (
+                ) : searchResults.title === 'Search' ? (
                     <div className="flex h-screen gap-4 justify-center content-center">
                         <p className="my-auto text-lg">Execute a search</p>
                     </div>

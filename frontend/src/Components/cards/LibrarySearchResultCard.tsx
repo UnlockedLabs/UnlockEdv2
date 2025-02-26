@@ -1,11 +1,11 @@
-import { KiwixItem } from '@/common';
+import { SearchResultItem } from '@/common';
 
 export default function LibrarySearchResultCard({
     item,
     onItemClick
 }: {
-    item: KiwixItem;
-    onItemClick: (url: string, title: string, id?: number) => void;
+    item: SearchResultItem;
+    onItemClick: (kind: string, url: string, title: string, id: number) => void;
 }) {
     const boldKeywords = (description: string) => {
         const rawPieces = description.split(/<b>(.*?)<\/b>/g);
@@ -17,7 +17,14 @@ export default function LibrarySearchResultCard({
     return (
         <div
             className="card card-row-padding cursor-pointer"
-            onClick={() => onItemClick(item.url, item.title, item.id)}
+            onClick={() =>
+                onItemClick(
+                    item.content_type,
+                    item.url,
+                    item.title,
+                    item.content_id
+                )
+            }
         >
             <div className="flex items-center gap-4 border-b pb-2 mb-2">
                 <div className="flex p-4 gap-2">
