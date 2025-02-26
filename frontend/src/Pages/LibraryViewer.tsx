@@ -242,13 +242,15 @@ export default function LibraryViewer() {
                             )}
                         </>
                     )}
-                    <LibrarySearchBar
-                        searchPlaceholder={searchPlaceholder}
-                        searchTerm={searchTerm}
-                        onSearchClick={handleSearch}
-                        changeCallback={setSearchTerm}
-                        isSearchValid={searchTerm.trim() !== ''}
-                    />
+                    <div onClick={openModal}>
+                        <LibrarySearchBar
+                            searchPlaceholder={searchPlaceholder}
+                            searchTerm={searchTerm}
+                            onSearchClick={handleSearch}
+                            changeCallback={setSearchTerm}
+                            isSearchValid={searchTerm.trim() !== ''}
+                        />
+                    </div>
                     <LibrarySearchResultsModal
                         key={libraryId}
                         onItemClick={navToLibraryViewer}
