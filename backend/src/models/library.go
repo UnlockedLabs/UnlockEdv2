@@ -123,6 +123,7 @@ func (rss *RSS) SerializeSearchResults(libraries []Library) *OpenContentSearchRe
 				ThumbnailUrl: thumbnail,
 				Description:  item.Description.RawText,
 				Title:        item.Book.Title,
+				ContentType:  "library",
 			},
 			PageTitle: item.Title,
 		}
