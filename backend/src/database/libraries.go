@@ -101,7 +101,8 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
 		if !isFeatured {
 			tx = tx.Joins(`JOIN open_content_favorites f 
 				ON f.content_id = libraries.id 
-				AND f.open_content_provider_id = libraries.open_content_provider_id`)
+				AND f.open_content_provider_id = libraries.open_content_provider_id
+				AND f.facility_id IS NULL`)
 		}
 		tx = tx.Group("libraries.id, 12").Order("favorite_count DESC")
 	default:
