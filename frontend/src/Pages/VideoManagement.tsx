@@ -41,7 +41,9 @@ export default function VideoManagement() {
         FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
     const modalRef = useRef<HTMLDialogElement>(null);
-    const [searchModalOpen, setSearchModalOpen] = useState<number | null>(null);
+    const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
+        null
+    );
 
     //execute when the the searchModalOpen changes (choppyness otherwise)
     useEffect(() => {
@@ -69,22 +71,6 @@ export default function VideoManagement() {
         `/api/videos?page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    const navToViewer = (
-        kind: string,
-        url: string,
-        title: string,
-        id: number
-    ) => {
-        switch (kind) {
-            case 'library':
-                navigate(`/viewer/libraries/${id}`, {
-                    state: { url: url, title: title }
-                });
-                return;
-            case 'video':
-                navigate(`/viewer/videos/${id}`);
-        }
-    };
     const videoData = data?.data ?? [];
     const meta = data?.meta;
     if (!user) {
@@ -140,7 +126,7 @@ export default function VideoManagement() {
             <div className="flex justify-between">
                 <div className="flex flex-row gap-4">
                     {videoData && videoData.length > 0 && (
-                        <div onClick={() => setSearchModalOpen(1)}>
+                        <div onClick={() => setSearchModalOpen(false)}>
                             <LibrarySearchBar
                                 onSearchClick={openSearchModal}
                                 searchPlaceholder="Search..."
@@ -222,7 +208,6 @@ export default function VideoManagement() {
                 <LibrarySearchResultsModal
                     ref={modalRef}
                     searchPlaceholder={`Search`}
-                    onItemClick={navToViewer}
                     onModalClose={closeSearchModal}
                     useInternalSearchBar={true}
                 />

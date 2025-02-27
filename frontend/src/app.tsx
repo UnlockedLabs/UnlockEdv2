@@ -202,6 +202,7 @@ const router = createBrowserRouter([
                                     },
                                     {
                                         path: 'videos',
+                                        loader: getLibraryLayoutData,
                                         element: <VideoContent />,
                                         errorElement: <Error />,
                                         handle: {
@@ -236,6 +237,7 @@ const router = createBrowserRouter([
                             },
                             {
                                 path: 'viewer/videos/:id',
+                                loader: getLibraryLayoutData,
                                 element: <VideoViewer />,
                                 errorElement: <Error />,
                                 handle: {

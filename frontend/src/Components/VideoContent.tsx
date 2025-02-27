@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import {
     Video,
@@ -6,7 +6,6 @@ import {
     UserRole,
     videoIsAvailable
 } from '../common';
-import SearchBar from '../Components/inputs/SearchBar';
 import DropdownControl from '../Components/inputs/DropdownControl';
 import Pagination from '../Components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
@@ -14,6 +13,8 @@ import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation } from 'react-router-dom';
+import { LibrarySearchBar } from './inputs';
+import LibrarySearchResultsModal from './LibrarySearchResultsModal';
 
 export default function VideoContent() {
     const { user } = useAuth();
@@ -23,8 +24,29 @@ export default function VideoContent() {
     const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const route = useLocation();
+    const modalRef = useRef<HTMLDialogElement>(null);
+    const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
+        null
+    );
     const adminWithStudentView = (): boolean => {
         return !route.pathname.includes('management') && isAdministrator(user);
+    };
+    const openSearchModal = () => {
+        setSearchModalOpen(null); //fire off useEffect
+    };
+    //execute when the the searchModalOpen changes (choppyness otherwise)
+    useEffect(() => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'visible';
+            modalRef.current.showModal();
+        }
+    }, [searchModalOpen]);
+    const closeSearchModal = () => {
+        if (modalRef.current) {
+            modalRef.current.style.visibility = 'hidden';
+            modalRef.current.close();
+        }
+        setSearchModalOpen(null);
     };
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
@@ -41,11 +63,6 @@ export default function VideoContent() {
     if (!user) {
         return null;
     }
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPageQuery(1);
-    };
-
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPageQuery(1);
@@ -55,10 +72,17 @@ export default function VideoContent() {
     return (
         <>
             <div className="flex flex-row gap-4">
-                <SearchBar
-                    searchTerm={searchTerm}
-                    changeCallback={handleChange}
-                />
+                {videoData && videoData.length > 0 && (
+                    <div onClick={() => setSearchModalOpen(true)}>
+                        <LibrarySearchBar
+                            onSearchClick={openSearchModal}
+                            searchPlaceholder="Search..."
+                            searchTerm={searchTerm}
+                            changeCallback={setSearchTerm}
+                            isSearchValid={searchTerm.trim() !== ''}
+                        />
+                    </div>
+                )}
                 <DropdownControl
                     label="Order by"
                     setState={setSortQuery}
@@ -97,6 +121,14 @@ export default function VideoContent() {
             )}
             {!isLoading && !error && videoData.length === 0 && (
                 <span className="text-center text-warning">No results</span>
+            )}
+            {searchModalOpen && (
+                <LibrarySearchResultsModal
+                    ref={modalRef}
+                    searchPlaceholder={`Search`}
+                    onModalClose={closeSearchModal}
+                    useInternalSearchBar={true}
+                />
             )}
         </>
     );

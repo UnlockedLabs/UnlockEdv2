@@ -14,7 +14,7 @@ import { useEffect, useState, useRef } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 import { AxiosError } from 'axios';
-import { useLoaderData, useLocation, useNavigate } from 'react-router-dom';
+import { useLoaderData, useLocation } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
 export default function LibaryLayout({
@@ -26,7 +26,6 @@ export default function LibaryLayout({
     if (!user) {
         return null;
     }
-    const navigate = useNavigate();
     const [searchModalLibrary, setSearchModalLibrary] =
         useState<Library | null>(null);
     const modalRef = useRef<HTMLDialogElement>(null);
@@ -47,22 +46,6 @@ export default function LibaryLayout({
             modalRef.current.close();
         }
         setSearchModalLibrary(null);
-    };
-    const navToLibraryViewer = (
-        kind: string,
-        url: string,
-        title: string,
-        id: number
-    ) => {
-        switch (kind) {
-            case 'library':
-                navigate(`/viewer/libraries/${id}`, {
-                    state: { url: url, title: title }
-                });
-                return;
-            case 'video':
-                navigate(`/viewer/videos/${id}`);
-        }
     };
     const { categories } = useLoaderData() as {
         categories: Option[];
@@ -151,7 +134,6 @@ export default function LibaryLayout({
                     <LibrarySearchResultsModal
                         ref={modalRef}
                         searchPlaceholder={`Search`}
-                        onItemClick={navToLibraryViewer}
                         onModalClose={closeSearchModal}
                         useInternalSearchBar={true}
                     />
