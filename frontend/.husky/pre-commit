@@ -1,17 +1,15 @@
 git diff --cached --name-only --diff-filter=ACMRTUXB >frontend/.husky/staged-files
-echo "🔎 checking frontend........."
 cd frontend
-echo "🎀 running prettier 🎀 󰎙 ..."
 FRONTEND_FILES=$(cat .husky/staged-files | grep '^frontend/.*\.\(css\|ts\|json\|html\|js\|tsx\)$' | sed 's/^frontend\///')
-
 if [ -z "$FRONTEND_FILES" ]; then
-  echo "No files to check"
+  echo "No frontend files to check"
 else
+  echo "🎀 running prettier 🎀 󰎙 ..."
   npx prettier -w $FRONTEND_FILES
-echo "running front-end linters 󰎙 ..."
-yarn lint-staged
-yarn build
-git add $FRONTEND_FILES
+  echo "running front-end linters 󰎙 ..."
+  yarn lint-staged
+  yarn build
+  git add $FRONTEND_FILES
 fi
 
 echo " 🔎 checking backend ..............."
@@ -26,5 +24,13 @@ else
   go fmt ./...
   echo "Running Go tests  .."
   go test ./...
-  echo "🎉 All checks passed! 🎉"
+
+  DUPLICATE_MIGRATIONS=$(ls -1 migrations | grep '.*\.sql' | cut -c1-5 | sort | uniq -d)
+  if [ -z "$DUPLICATE_MIGRATIONS" ]; then
+    echo "🎉 All checks passed! 🎉"
+  else
+    echo "🚨 Duplicate migration files found 🚨"
+    echo "Migration number: $DUPLICATE_MIGRATIONS is a duplicate\n and needs to be renamed"
+    exit 1
+  fi
 fi
