@@ -10,7 +10,7 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import { ExpandableCardGrid } from '@/Components/dashboard';
 import LibraryCard from '@/Components/LibraryCard';
 import { AxiosError } from 'axios';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 
@@ -31,9 +31,6 @@ export default function AdminLayer1() {
     function navigateToOpenContent() {
         navigate('/knowledge-center-management/libraries');
     }
-    useEffect(() => {
-        console.log(timeFilter);
-    }, [timeFilter]);
     return (
         <div className="w-full flex flex-col gap-6 px-5 pb-4">
             <ExpandableCardGrid

@@ -15,7 +15,6 @@ func (srv *Server) registerOpenContentRoutes() []routeDef {
 		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx},
 		{"PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, false, axx},
 		{"GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx},
-		{"GET /api/open-content/categories", srv.handleGetCategories, false, axx},
 	}
 }
 
@@ -50,14 +49,6 @@ func (srv *Server) handleGetUserFavoriteOpenContentGroupings(w http.ResponseWrit
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, favorites)
-}
-
-func (srv *Server) handleGetCategories(w http.ResponseWriter, r *http.Request, log sLog) error {
-	categories, err := srv.Db.GetCategories()
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, categories)
 }
 
 func (srv *Server) handleBookmarkOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {

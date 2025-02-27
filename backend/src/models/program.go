@@ -17,11 +17,12 @@ type Program struct {
 func (Program) TableName() string { return "programs" }
 
 type ProgramTag struct {
-	DatabaseFields
-	ProgramID uint   `json:"program_id" gorm:"not null" validate:"required"`
-	Value     string `json:"value" gorm:"not null" validate:"required"`
+	TagID      uint `json:"tag_id" gorm:"not null" validate:"required"`
+	ProgramID  uint `json:"program_id" gorm:"not null" validate:"required"`
+	FacilityID uint `json:"facility_id" gorm:"not null" validate:"required"`
 
-	Program *Program `json:"tags" gorm:"foreignKey:ProgramID;references:ID"`
+	Program  *Program  `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
+	Facility *Facility `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
 }
 
 func (ProgramTag) TableName() string { return "program_tags" }

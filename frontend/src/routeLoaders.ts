@@ -96,10 +96,8 @@ export const getLibraryLayoutData: LoaderFunction = async ({
 }: {
     request: Request;
 }) => {
-    const [categoriesResp] = await Promise.all([
-        API.get(`open-content/categories`)
-    ]);
-    const categories = categoriesResp.data as Option[];
+    const [tagsResp] = await Promise.all([API.get(`tags`)]);
+    const categories = tagsResp.data as Option[];
     const libraryOptions = await getLibraryOptionsHelper({ request });
     return json({ categories: categories, libraryOptions: libraryOptions });
 };
@@ -125,6 +123,16 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
           )
         : [];
     return libraryOptions;
+};
+
+export const getProgramData: LoaderFunction = async () => {
+    const [tagsResp, facilitiesResp] = await Promise.all([
+        API.get(`tags`),
+        API.get<Facility[]>(`facilities`)
+    ]);
+    const categories = tagsResp.data as Option[];
+    const facilities = facilitiesResp.data as Facility[];
+    return json({ categories: categories, facilities: facilities });
 };
 
 export const getProviderPlatforms: LoaderFunction = async () => {
