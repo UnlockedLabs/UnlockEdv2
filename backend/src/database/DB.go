@@ -120,6 +120,7 @@ func MigrateTesting(db *gorm.DB) {
 		&models.CronJob{},
 		&models.RunnableTask{},
 		&models.Library{},
+		&models.FacilityVisibilityStatus{},
 		&models.Video{},
 		&models.VideoDownloadAttempt{},
 		&models.OpenContentFavorite{},
