@@ -31,12 +31,15 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
 	libraries := make([]LibraryResponse, 0, args.PerPage)
 	//added the below to display featuring flags for all admins per facility
 	selectIsFavoriteOrIsFeatured := `
-        libraries.*,
-        EXISTS (
-            SELECT 1
-            FROM open_content_favorites f
-            WHERE f.content_id = libraries.id
-              AND f.open_content_provider_id = libraries.open_content_provider_id
+		libraries.*,
+		CASE WHEN fvs.visibility_status IS NULL THEN false
+			ELSE fvs.visibility_status
+		END AS visibility_status,
+		EXISTS (
+			SELECT 1
+			FROM open_content_favorites f
+			WHERE f.content_id = libraries.id
+				AND f.open_content_provider_id = libraries.open_content_provider_id
             AND f.open_content_url_id IS NULL
 			  AND %s) AS is_favorited`
 
@@ -46,6 +49,9 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
 		criteria, id = "f.user_id = ?", args.UserID
 	}
 	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), id)
+	tx = tx.Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
+		and fvs.content_id = libraries.id
+		and fvs.facility_id = ?`, args.FacilityID)
 	visibility = strings.ToLower(visibility)
 
 	isFeatured := false
@@ -55,15 +61,15 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
 		tx = tx.Joins(`JOIN open_content_favorites f 
 			ON f.content_id = libraries.id 
 			AND f.open_content_provider_id = libraries.open_content_provider_id 
-			AND f.facility_id IS NOT NULL`).Where("f.facility_id = ? AND visibility_status = true", args.FacilityID)
+			AND f.facility_id IS NOT NULL`).Where("f.facility_id = ? AND fvs.visibility_status = true", args.FacilityID)
 		isFeatured = true
 	case "visible":
-		tx = tx.Where("visibility_status = true")
+		tx = tx.Where("fvs.visibility_status = true")
 	case "hidden":
-		tx = tx.Where("visibility_status = false")
+		tx = tx.Where("(fvs.visibility_status = false OR fvs.visibility_status IS NULL)")
 	case "all":
 	default:
-		tx = tx.Where("visibility_status = true")
+		tx = tx.Where("fvs.visibility_status = true")
 	}
 	var search string
 	if args.Search != "" {
@@ -80,21 +86,24 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string, cate
 	switch args.OrderBy {
 	case "most_popular":
 		tx = tx.Select(`
-            libraries.*,
-            COUNT(f.id) AS favorite_count,
-            EXISTS (
-                SELECT 1
-                FROM open_content_favorites f
-                WHERE f.content_id = libraries.id
-                  AND f.open_content_provider_id = libraries.open_content_provider_id
-                  AND f.user_id = ?
-            ) AS is_favorited`, args.UserID)
+			libraries.*,
+			CASE WHEN fvs.visibility_status IS NULL THEN false
+				ELSE fvs.visibility_status
+			END AS visibility_status,
+			COUNT(f.id) AS favorite_count,
+			EXISTS (
+				SELECT 1
+				FROM open_content_favorites f
+				WHERE f.content_id = libraries.id
+					AND f.open_content_provider_id = libraries.open_content_provider_id
+					AND f.user_id = ?
+			) AS is_favorited`, args.UserID)
 		if !isFeatured {
-			tx = tx.Joins(`LEFT JOIN open_content_favorites f 
+			tx = tx.Joins(`JOIN open_content_favorites f 
 				ON f.content_id = libraries.id 
 				AND f.open_content_provider_id = libraries.open_content_provider_id`)
 		}
-		tx = tx.Group("libraries.id").Order("favorite_count DESC")
+		tx = tx.Group("libraries.id, 12").Order("favorite_count DESC")
 	default:
 		tx = tx.Order(args.OrderBy)
 	}
@@ -129,15 +138,22 @@ func (db *DB) GetLibrariesByIDs(ids []int) ([]models.Library, error) {
 	return libraries, nil
 }
 
-func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int) (*models.Library, error) {
+func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int, args *models.QueryContext) (*models.Library, error) {
 	var library models.Library
-	if err := db.Preload("OpenContentProvider").Find(&library, "id = ?", id).Error; err != nil {
+	query := db.Model(&models.Library{}).Preload("OpenContentProvider").
+		Select("libraries.*, fvs.visibility_status").
+		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
+			and fvs.content_id = libraries.id
+			and fvs.facility_id = ?`, args.FacilityID)
+	if err := query.Find(&library, "id = ?", id).Error; err != nil {
 		log.Errorln("Unable to find library with that ID")
 		return nil, newNotFoundDBError(err, "libraries")
 	}
-	library.VisibilityStatus = !library.VisibilityStatus
-	if err := db.Save(&library).Error; err != nil {
+	visibility := library.GetFacilityVisibilityStatus(args.FacilityID)
+	visibility.VisibilityStatus = !visibility.VisibilityStatus
+	if err := db.Save(&visibility).Error; err != nil {
 		return nil, newUpdateDBError(err, "libraries")
 	}
+	library.VisibilityStatus = visibility.VisibilityStatus
 	return &library, nil
 }

@@ -137,11 +137,12 @@ func (srv *Server) handleSearchLibraries(w http.ResponseWriter, r *http.Request,
 }
 
 func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "library id")
 	}
-	library, err := srv.Db.ToggleVisibilityAndRetrieveLibrary(id)
+	library, err := srv.Db.ToggleVisibilityAndRetrieveLibrary(id, &args)
 	if err != nil {
 		log.add("library_id", id)
 		return newDatabaseServiceError(err)

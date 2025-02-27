@@ -57,7 +57,8 @@ func TestHandleGetUserFavoriteOpenContentGroupings(t *testing.T) {
 			}
 			handler := getHandlerByRole(server.handleGetUserFavoriteOpenContentGroupings, test.role)
 			rr := executeRequest(t, req, handler, test)
-			contentItems, err := server.Db.GetUserFavoriteGroupings(test.mapKeyValues["user_id"].(uint))
+			args := models.QueryContext{FacilityID: 1, UserID: test.mapKeyValues["user_id"].(uint)}
+			contentItems, err := server.Db.GetUserFavoriteGroupings(&args)
 			if err != nil {
 				t.Fatalf("unable to get open content items from db, error is %v", err)
 			}
@@ -91,7 +92,8 @@ func TestHandleGetUserFavoriteOpenContent(t *testing.T) {
 			}
 			handler := getHandlerByRole(server.handleGetUserFavoriteOpenContent, test.role)
 			rr := executeRequest(t, req, handler, test)
-			_, favorites, err := server.Db.GetUserFavorites(test.mapKeyValues["user_id"].(uint), test.mapKeyValues["page"].(int), test.mapKeyValues["per_page"].(int), search, orderBy)
+			args := models.QueryContext{FacilityID: 1, Page: 1, PerPage: 10, UserID: 4, Search: search, OrderBy: orderBy}
+			favorites, err := server.Db.GetUserFavorites(&args)
 			if err != nil {
 				t.Fatalf("unable to get user favorites from db, error is %v", err)
 			}
