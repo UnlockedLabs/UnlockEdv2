@@ -97,7 +97,7 @@ selfservice:
             - hook: show_verification_ui
 
 log:
-  level: trace
+  level: info
   format: json
   leak_sensitive_values: true
 
