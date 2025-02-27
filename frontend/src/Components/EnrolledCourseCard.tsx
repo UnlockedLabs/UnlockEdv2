@@ -74,6 +74,7 @@ export default function EnrolledCourseCard({
                     <div className="w-1/3">
                         <ProgressBar
                             percent={Math.floor(course.course_progress)}
+                            showPercentage={true}
                         />
                     </div>
                 )}
@@ -118,6 +119,7 @@ export default function EnrolledCourseCard({
                             ) : (
                                 <ProgressBar
                                     percent={Math.floor(course.course_progress)}
+                                    showPercentage={true}
                                 />
                             )}
                         </div>
