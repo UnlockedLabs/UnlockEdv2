@@ -96,10 +96,8 @@ export const getLibraryLayoutData: LoaderFunction = async ({
 }: {
     request: Request;
 }) => {
-    const [categoriesResp] = await Promise.all([
-        API.get(`open-content/categories`)
-    ]);
-    const categories = categoriesResp.data as Option[];
+    const [tagsResp] = await Promise.all([API.get(`tags`)]);
+    const categories = tagsResp.data as Option[];
     const libraryOptions = await getLibraryOptionsHelper({ request });
     return json({ categories: categories, libraryOptions: libraryOptions });
 };
