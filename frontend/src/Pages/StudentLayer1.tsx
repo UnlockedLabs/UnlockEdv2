@@ -55,11 +55,6 @@ export default function StudentLayer1() {
         }
         setSearchModalLibrary(null);
     };
-    const navToLibraryViewer = (url: string, title: string) => {
-        navigate(`/viewer/libraries/${searchModalLibrary?.id}`, {
-            state: { url: url, title: title }
-        });
-    };
 
     function navigateToOpenContent() {
         navigate('/knowledge-center/libraries');
@@ -78,7 +73,6 @@ export default function StudentLayer1() {
                     ref={modalRef}
                     libraryId={searchModalLibrary.id}
                     searchPlaceholder={`Search ${searchModalLibrary.title}`}
-                    onItemClick={navToLibraryViewer}
                     onModalClose={closeSearchModal}
                     useInternalSearchBar={true}
                 />

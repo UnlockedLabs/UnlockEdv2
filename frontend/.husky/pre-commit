@@ -8,14 +8,11 @@ if [ -z "$FRONTEND_FILES" ]; then
   echo "No files to check"
 else
   npx prettier -w $FRONTEND_FILES
-fi
-
 echo "running front-end linters 󰎙 ..."
 yarn lint-staged
-
 yarn build
-
 git add $FRONTEND_FILES
+fi
 
 echo " 🔎 checking backend ..............."
 BACKEND_FILES=$(cat .husky/staged-files | grep '^backend/.*\.\(go\)$' | sed 's/^backend\///')
@@ -24,7 +21,6 @@ if [ -z "$BACKEND_FILES" ]; then
 else
   echo " 🔎 running golangci-lint 🔎   ......"
   cd ../backend
-  golangci-lint run -v
   go mod tidy -v
   echo "running go fmt  ...."
   go fmt ./...

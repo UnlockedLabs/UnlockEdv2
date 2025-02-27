@@ -9,9 +9,8 @@ import (
 	"sync"
 	"unicode"
 
-	_ "github.com/ncruces/go-sqlite3/embed"
-	"github.com/ncruces/go-sqlite3/gormlite"
-
+	"github.com/glebarez/sqlite"
+	_ "github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
@@ -48,7 +47,7 @@ func InitDB(isTesting bool) *DB {
 	var gormDb *gorm.DB
 	var err error
 	if isTesting {
-		gormDb, err = gorm.Open(gormlite.Open(":memory:"), &gorm.Config{})
+		gormDb, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 		if err != nil {
 			logrus.Fatal("Failed to connect to SQLite database:", err)
 		}

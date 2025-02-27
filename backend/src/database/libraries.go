@@ -137,7 +137,7 @@ func (db *DB) OpenContentTitleSearch(search string) ([]models.OpenContentItem, e
 			'library' AS content_type,
 			l.id as content_id,
 			l.title,
-			CONCAT('/viewer/libraries/', l.id) as url,
+			CONCAT('/api/proxy/libraries/', l.id) as url,
 			l.thumbnail_url,
 			l.description,
 			l.visibility_status,

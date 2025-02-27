@@ -116,7 +116,7 @@ func (rss *RSS) SerializeSearchResults(libraries []Library) *OpenContentSearchRe
 		} else if library.ThumbnailUrl != nil {
 			thumbnail = *library.ThumbnailUrl
 		}
-		kiwixItem := SearchResultItem{
+		resultItem := SearchResultItem{
 			OpenContentItem: OpenContentItem{
 				ContentId:    library.ID,
 				Url:          fmt.Sprintf("/api/proxy/libraries/%d%s", library.ID, item.Link),
@@ -127,7 +127,7 @@ func (rss *RSS) SerializeSearchResults(libraries []Library) *OpenContentSearchRe
 			},
 			PageTitle: item.Title,
 		}
-		channel.Items = append(channel.Items, kiwixItem)
+		channel.Items = append(channel.Items, resultItem)
 	}
 	return channel
 }

@@ -1,6 +1,6 @@
 import { MouseEvent, useEffect, useState, useRef } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { SubmitHandler, FieldValues } from 'react-hook-form';
+import { useParams, useLocation } from 'react-router-dom';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
 import { Library, ServerResponseOne, ToastState } from '@/common';
@@ -31,7 +31,6 @@ export default function LibraryViewer() {
     const [searchPlaceholder, setSearchPlaceholder] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const modalRef = useRef<HTMLDialogElement>(null);
-    const navigate = useNavigate();
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
@@ -48,19 +47,6 @@ export default function LibraryViewer() {
             modalRef.current.style.visibility = 'hidden';
             modalRef.current.close();
         }
-    };
-
-    const navToLibraryViewer = (
-        _kind: string,
-        url: string,
-        title: string,
-        id: number
-    ) => {
-        navigate(`/viewer/libraries/${id}`, {
-            state: { url: url, title: title }
-        });
-        closeModal();
-        return;
     };
 
     const handleSearch = () => {
@@ -253,7 +239,6 @@ export default function LibraryViewer() {
                     </div>
                     <LibrarySearchResultsModal
                         key={libraryId}
-                        onItemClick={navToLibraryViewer}
                         libraryId={Number(libraryId)}
                         ref={modalRef}
                         onModalClose={closeModal}

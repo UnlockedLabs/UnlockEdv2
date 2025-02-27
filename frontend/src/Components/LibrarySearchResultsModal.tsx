@@ -5,7 +5,7 @@ import {
     Option
 } from '@/common';
 import { CloseX, LibrarySearchBar, MultiSelectDropdown } from './inputs';
-import { useLoaderData } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import { forwardRef, useRef, useState, useEffect } from 'react';
 import Pagination from './Pagination';
 import API from '@/api/api';
@@ -15,7 +15,6 @@ interface LibrarySearchResultsModalProps {
     useInternalSearchBar?: boolean;
     searchPlaceholder?: string;
     libraryId?: number;
-    onItemClick: (kind: string, url: string, title: string, id: number) => void;
     onModalClose: () => void;
 }
 
@@ -29,12 +28,13 @@ const LibrarySearchResultsModal = forwardRef<
     HTMLDialogElement,
     LibrarySearchResultsModalProps
 >(function SearchResultsModal(
-    { searchPlaceholder = '', libraryId, onItemClick, onModalClose },
+    { searchPlaceholder = '', libraryId, onModalClose },
     ref
 ) {
-    const { libraryOptions } = useLoaderData() as {
+    const { libraryOptions } = (useLoaderData() as {
         libraryOptions: Option[];
-    };
+    }) || { libraryOptions: [] };
+    const navigate = useNavigate();
     const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [placeholder, setPlaceholder] = useState<string>(searchPlaceholder);
@@ -182,6 +182,25 @@ const LibrarySearchResultsModal = forwardRef<
         onModalClose();
         setSearchResults(EmptyResult);
     };
+
+    const navToViewer = (
+        kind: string,
+        url: string,
+        title: string,
+        id: number
+    ) => {
+        switch (kind) {
+            case 'library':
+                navigate(`/viewer/libraries/${id}`, {
+                    state: { url: url, title: title }
+                });
+                break;
+            case 'video':
+                navigate(url);
+        }
+        handleCloseModal();
+    };
+
     return (
         <dialog
             ref={ref}
@@ -225,7 +244,7 @@ const LibrarySearchResultsModal = forwardRef<
                         <LibrarySearchResultCard
                             key={index}
                             item={item}
-                            onItemClick={onItemClick}
+                            onItemClick={navToViewer}
                         />
                     ))}
                 </div>
