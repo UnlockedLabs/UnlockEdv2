@@ -15,6 +15,8 @@ jar
 /provider-middleware/providers.db
 /backend/server
 /provider-middleware/middleware
+/provider-middleware/bin
+/backend/bin
 /bin/*
 /tmp
 /csvs/zims/*.zim
