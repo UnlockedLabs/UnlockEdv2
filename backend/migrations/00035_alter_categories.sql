@@ -20,7 +20,7 @@ CREATE TABLE public.program_tags (
 -- +goose Down
 -- +goose StatementBegin
 ALTER TABLE public.open_content_tags RENAME TO open_content_types;
-ALTER TABLE public.open_content_types RENAME COLUMN tag_id TO category_id
+ALTER TABLE public.open_content_types RENAME COLUMN tag_id TO category_id;
 ALTER TABLE public.open_content_types DROP FOREIGN KEY (tag_id);
 ALTER TABLE public.open_content_types DROP FOREIGN KEY (open_content_provider_id);
 ALTER TABLE public.tags RENAME TO open_content_categories;
