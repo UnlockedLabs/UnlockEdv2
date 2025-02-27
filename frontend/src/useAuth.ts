@@ -30,6 +30,8 @@ export const AdminRoles = [
     UserRole.DepartmentAdmin
 ];
 
+export const AllRoles = [UserRole.Student, ...AdminRoles];
+
 export function canSwitchFacility(user: User): boolean {
     return isSysAdmin(user) || isDeptAdmin(user);
 }
