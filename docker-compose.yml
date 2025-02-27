@@ -76,7 +76,6 @@ services:
       - KRATOS_ADMIN_URL=http://kratos:4434
       - KRATOS_PUBLIC_URL=http://kratos:4433
       - MIDDLEWARE_CRON_SCHEDULE=0 22 * * *
-      - KETO_ADMIN_URL=http://keto:4466
       - ORY_TOKEN=eyJvZmZzZXQiOiItMjUwIiwidmo8iV*@
       - NATS_URL=nats:4222
       - NATS_USER=unlocked
@@ -144,22 +143,6 @@ services:
       - ./:/app
     depends_on: [provider-service]
 
-  keto-migrate:
-    image: oryd/keto:v0.12.0-alpha.0
-    links:
-      - postgres:postgres
-    volumes:
-      - config:/home/ory
-    environment:
-      - LOG_LEVEL=debug
-      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer&max_conns=20&max_idle_conns=4
-    command: ["migrate", "up", "-y"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - intranet
-
   nats:
     image: nats:latest
     networks:
@@ -172,24 +155,6 @@ services:
     volumes:
       - config:/config
       - nats_data:/data
-
-  keto:
-    image: oryd/keto:v0.11.1-alpha.0
-    links:
-      - postgres:postgres
-    volumes:
-      - type: bind
-        source: config
-        target: /home/ory
-    ports:
-      - "4466:4466"
-      - "4467:4467"
-    depends_on:
-      - keto-migrate
-    environment:
-      - DSN=postgres://keto:ChangeMe!@postgres:5432/accesscontroldb?sslmode=prefer&max_conns=20&max_idle_conns=4
-    networks:
-      - intranet
 
   kratos-migrate:
     image: oryd/kratos:v1.1.0
@@ -215,7 +180,7 @@ services:
       - "4434:4434" # admin
     environment:
       - DSN=postgres://kratos:ChangeMe!@postgres:5432/kratos?sslmode=prefer&max_conns=20&max_idle_conns=4
-      - LOG_LEVEL=trace
+      - LOG_LEVEL=info
     command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
     volumes:
       - type: bind
@@ -236,7 +201,7 @@ services:
         source: ./config/hydra
         target: /etc/config/hydra
     environment:
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=info
       - OAUTH2_EXPOSE_INTERNAL_ERRORS=1
       - SERVE_PUBLIC_CORS_ENABLED=true
       - SERVE_PUBLIC_CORS_ALLOWED_METHODS=POST,GET,PUT,DELETE
@@ -253,6 +218,7 @@ services:
     image: oryd/hydra:v2.2.0
     environment:
       - DSN=postgres://hydra:ChangeMe!@postgres:5432/hydra?sslmode=prefer&max_conns=20&max_idle_conns=4
+      - LOG_LEVEL=info 
     command: migrate -c /etc/config/hydra/hydra.yml sql -e --yes
     volumes:
       - type: bind
