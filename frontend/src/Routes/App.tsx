@@ -61,6 +61,12 @@ export const globalRoutes = {
             element: <UnauthorizedNotFound which="notFound" />
         },
         {
+            path: '/reset-password',
+            element: <ResetPassword />,
+            errorElement: <Error />,
+            loader: checkDefaultFacility
+        },
+        {
             path: '/error',
             element: <Error />
         }
@@ -108,12 +114,6 @@ const nonAdminLoggedInRoutes = DeclareAuthenticatedRoutes([
         handle: {
             title: 'UnlockEd'
         }
-    },
-    {
-        path: '/reset-password',
-        element: <ResetPassword />,
-        errorElement: <Error />,
-        loader: checkDefaultFacility
     }
 ]);
 

@@ -5,7 +5,7 @@ import { getStudentLayer2Data } from '@/routeLoaders';
 import MyCourses from '@/Pages/MyCourses';
 import MyProgress from '@/Pages/MyProgress';
 import { AdminRoles, AllRoles } from '@/useAuth';
-import { FeatureAccess } from '@/common';
+import { FeatureAccess, UserRole } from '@/common';
 import AdminLayer2 from '@/Pages/AdminLayer2';
 import Error from '@/Pages/Error';
 import CourseCatalog from '@/Pages/CourseCatalog';
@@ -52,14 +52,6 @@ const adminRoutes: RouteObject = DeclareAuthenticatedRoutes(
             }
         },
         {
-            path: 'learning-platforms',
-            handle: {
-                title: 'Learning Platforms'
-            },
-            element: <ProviderPlatformManagement />,
-            errorElement: <Error />
-        },
-        {
             path: 'provider-users/:id',
             element: <ProviderUserManagement />,
             handle: {
@@ -78,6 +70,21 @@ const adminRoutes: RouteObject = DeclareAuthenticatedRoutes(
     [FeatureAccess.ProviderAccess]
 );
 
+const deptAdminRoutes: RouteObject = DeclareAuthenticatedRoutes(
+    [
+        {
+            path: 'learning-platforms',
+            handle: {
+                title: 'Learning Platforms'
+            },
+            element: <ProviderPlatformManagement />,
+            errorElement: <Error />
+        }
+    ],
+    [UserRole.DepartmentAdmin, UserRole.SystemAdmin],
+    [FeatureAccess.ProviderAccess]
+);
+
 export const ProviderPlatformRoutes: RouteObject = {
-    children: [routes, adminRoutes]
+    children: [routes, adminRoutes, deptAdminRoutes]
 };
