@@ -40,7 +40,7 @@ export const LibrarySearchBar = forwardRef<
                     <MagnifyingGlassIcon className="absolute top-1/2 right-2 transform -translate-y-1/2 w-5 h-5 text-secondary" />
                 </button>
                 <input
-                    {...(ref ? { ref } : { autoFocus: true })}
+                    {...(ref ? { ref } : { autoFocus: false })}
                     type="text"
                     placeholder={searchPlaceholder}
                     className="input input-bordered w-full max-w-xs"

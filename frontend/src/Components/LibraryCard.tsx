@@ -96,15 +96,16 @@ export default function LibraryCard({
                 </ClampedText>
             </div>
             <div className="flex items-center justify-end space-x-2 absolute right-2 top-2 z-100">
-                {!route.pathname.includes('knowledge-insights') && (
-                    <div onClick={handleSearchClick}>
-                        <ULIComponent
-                            icon={MagnifyingGlassIcon}
-                            iconClassName="!w-5 !h-5"
-                            dataTip={`Search ${library.title}`}
-                        />
-                    </div>
-                )}
+                {!route.pathname.includes('knowledge-insights') &&
+                    onSearchClick && (
+                        <div onClick={handleSearchClick}>
+                            <ULIComponent
+                                icon={MagnifyingGlassIcon}
+                                iconClassName="!w-5 !h-5"
+                                dataTip={`Search ${library.title}`}
+                            />
+                        </div>
+                    )}
                 <div onClick={(e) => void handleToggleAction('favorite', e)}>
                     {!route.pathname.includes('knowledge-insights') && (
                         <ULIComponent

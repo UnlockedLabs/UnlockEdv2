@@ -42,7 +42,7 @@ export default function VideoManagement() {
     );
     const modalRef = useRef<HTMLDialogElement>(null);
     const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
-        null
+        false
     );
 
     //execute when the the searchModalOpen changes (choppyness otherwise)
@@ -126,7 +126,7 @@ export default function VideoManagement() {
             <div className="flex justify-between">
                 <div className="flex flex-row gap-4">
                     {videoData && videoData.length > 0 && (
-                        <div onClick={() => setSearchModalOpen(false)}>
+                        <div onClick={() => setSearchModalOpen(true)}>
                             <LibrarySearchBar
                                 onSearchClick={openSearchModal}
                                 searchPlaceholder="Search..."
