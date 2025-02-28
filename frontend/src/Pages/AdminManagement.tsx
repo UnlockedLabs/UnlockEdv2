@@ -245,7 +245,7 @@ export default function AdminManagement() {
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(
-                                                                user as User
+                                                                user!
                                                             );
                                                             showModal(
                                                                 editUserModal
@@ -260,7 +260,7 @@ export default function AdminManagement() {
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={() => {
                                                             setTargetUser(
-                                                                user as User
+                                                                user!
                                                             );
                                                             showModal(
                                                                 resetUserPasswordModal
@@ -273,13 +273,13 @@ export default function AdminManagement() {
                                                     <ULIComponent
                                                         dataTip={getUserIconData[
                                                             'data-tip'
-                                                        ](user as User)}
+                                                        ](user!)}
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         onClick={getUserIconData.onClick(
-                                                            user as User
+                                                            user!
                                                         )}
                                                         icon={getUserIconData.icon(
-                                                            user as User
+                                                            user!
                                                         )}
                                                     />
                                                     {canEdit(
