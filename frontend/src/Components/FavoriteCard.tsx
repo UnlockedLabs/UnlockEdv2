@@ -69,6 +69,10 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
         }
         const response = await API.put(endpoint, payload);
         if (adminWithStudentView()) {
+            toaster(
+                "You're in preview mode. Changes cannot be made.",
+                ToastState.null
+            );
             return;
         }
         if (response.success) {

@@ -42,6 +42,10 @@ export default function LibraryCard({
         if (!mutate) return;
         if (e) e.stopPropagation();
         if (adminWithStudentView()) {
+            toaster(
+                "You're in preview mode. Changes cannot be made.",
+                ToastState.null
+            );
             return;
         }
         const actionString =

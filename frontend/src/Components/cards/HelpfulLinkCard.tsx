@@ -48,6 +48,10 @@ export default function HelpfulLinkCard({
     ) => {
         if (e) e.stopPropagation();
         if (adminWithStudentView()) {
+            toaster(
+                "You're in preview mode. Changes cannot be made.",
+                ToastState.null
+            );
             return;
         }
         const response = await API.put<null, object>(
