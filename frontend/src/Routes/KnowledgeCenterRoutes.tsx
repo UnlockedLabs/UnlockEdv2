@@ -33,14 +33,6 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
                 }
             },
             {
-                path: 'knowledge-insights',
-                element: <AdminLayer1 />,
-                loader: getAdminLevel1Data,
-                handle: {
-                    title: 'Knowledge Insights'
-                }
-            },
-            {
                 path: 'knowledge-center-management',
                 element: <OpenContentManagement />,
                 handle: {
@@ -58,38 +50,7 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
                     },
                     {
                         path: 'videos',
-                        element: <VideoManagement />,
-                        handle: {
-                            title: 'Videos Management'
-                        }
-                    },
-                    {
-                        path: 'helpful-links',
-                        element: <HelpfulLinksManagement />,
-                        handle: {
-                            title: 'Helpful Links Management'
-                        }
-                    }
-                ]
-            },
-            {
-                path: 'knowledge-center-management',
-                element: <OpenContentManagement />,
-                handle: {
-                    title: 'Knowledge Center Management'
-                },
-                children: [
-                    {
-                        path: 'libraries',
                         loader: getLibraryLayoutData,
-                        element: <LibraryLayout />,
-                        errorElement: <Error />,
-                        handle: {
-                            title: 'Libraries Management'
-                        }
-                    },
-                    {
-                        path: 'videos',
                         element: <VideoManagement />,
                         handle: {
                             title: 'Videos Management'
@@ -137,6 +98,7 @@ export const KnowledgeCenterRoutes: RouteObject = DeclareAuthenticatedRoutes(
                 },
                 {
                     path: 'videos',
+                    loader: getLibraryLayoutData,
                     element: <VideoContent />,
                     errorElement: <Error />,
                     handle: {

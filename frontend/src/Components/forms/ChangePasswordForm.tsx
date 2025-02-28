@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import InputError from '../../Components/inputs/InputError';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { DropdownInput, TextInput } from '../inputs';
-import { useAuth } from '@/useAuth';
 import API from '@/api/api';
 import {
     AuthResponse,
     Facility,
     ServerResponseOne,
     UserRole,
-    Timezones
+    Timezones,
+    User
 } from '@/common';
 import { useLoaderData } from 'react-router-dom';
+import { fetchUser } from '@/useAuth';
 interface Inputs {
     password: string;
     confirm: string;
@@ -24,7 +25,7 @@ export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
     const loaderData = useLoaderData() as Facility | null;
-    const { user } = useAuth();
+    const [user, setUser] = useState<User | undefined>(undefined);
 
     const {
         control,
@@ -33,7 +34,10 @@ export default function ChangePasswordForm() {
         reset,
         formState: { errors }
     } = useForm<Inputs>();
-
+    useEffect(() => {
+        const user = void fetchUser();
+        setUser(user);
+    }, []);
     const password = useWatch({
         control,
         name: 'password'
