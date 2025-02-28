@@ -10,11 +10,11 @@ import {
 } from '@/common';
 import API from '@/api/api';
 import { KeyedMutator } from 'swr';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
-import { AdminRoles } from '@/useAuth';
+import { AdminRoles, useAuth, isAdministrator } from '@/useAuth';
 import ClampedText from './ClampedText';
 
 export default function VideoCard({
@@ -34,8 +34,20 @@ export default function VideoCard({
     const [favorite, setFavorite] = useState<boolean>(video.is_favorited);
     const navigate = useNavigate();
     const { toaster } = useToast();
+    const route = useLocation();
+    const { user } = useAuth();
+    const adminWithStudentView = (): boolean => {
+        return !route.pathname.includes('management') && isAdministrator(user);
+    };
 
     const handleToggleAction = async (action: 'favorite' | 'visibility') => {
+        if (adminWithStudentView() && action === 'favorite') {
+            toaster(
+                "You're in preview mode. Changes cannot be made.",
+                ToastState.null
+            );
+            return;
+        }
         const response = await API.put<null, object>(
             `videos/${video.id}/${action}`,
             {}
@@ -48,6 +60,7 @@ export default function VideoCard({
                 : visible
                   ? 'is now hidden'
                   : 'is now visible';
+
         if (response.success) {
             toaster(`Video ${actionString}`, ToastState.success);
             await mutate();

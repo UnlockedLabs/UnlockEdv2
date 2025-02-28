@@ -4,7 +4,7 @@ import { Library, ToastState, UserRole } from '@/common';
 import API from '@/api/api';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
-import { AdminRoles } from '@/useAuth';
+import { useAuth, AdminRoles, isAdministrator } from '@/useAuth';
 import ULIComponent from '@/Components/ULIComponent';
 import { StarIcon, FlagIcon } from '@heroicons/react/24/solid';
 import {
@@ -29,7 +29,11 @@ export default function LibraryCard({
     const [visible, setVisible] = useState<boolean>(library.visibility_status);
     const [favorite, setFavorite] = useState<boolean>(library.is_favorited);
     const navigate = useNavigate();
+    const { user } = useAuth();
     const route = useLocation();
+    const adminWithStudentView = (): boolean => {
+        return !route.pathname.includes('management') && isAdministrator(user);
+    };
 
     async function handleToggleAction(
         action: 'favorite' | 'toggle',
@@ -37,6 +41,13 @@ export default function LibraryCard({
     ) {
         if (!mutate) return;
         if (e) e.stopPropagation();
+        if (adminWithStudentView()) {
+            toaster(
+                "You're in preview mode. Changes cannot be made.",
+                ToastState.null
+            );
+            return;
+        }
         const actionString =
             action == 'favorite'
                 ? favorite

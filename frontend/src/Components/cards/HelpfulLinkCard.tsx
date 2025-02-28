@@ -10,11 +10,12 @@ import VisibleHiddenToggle from '../VisibleHiddenToggle';
 import { useState } from 'react';
 import ULIComponent from '../ULIComponent';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { AdminRoles } from '@/useAuth';
+import { useAuth, isAdministrator, AdminRoles } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import ClampedText from '../ClampedText';
+import { useLocation } from 'react-router-dom';
 
 export default function HelpfulLinkCard({
     link,
@@ -34,12 +35,25 @@ export default function HelpfulLinkCard({
     const [visible, setVisible] = useState<boolean>(link.visibility_status);
     const [favorite, setFavorite] = useState<boolean>(link.is_favorited);
     const { toaster } = useToast();
+    const { user } = useAuth();
+    const route = useLocation();
+
+    const adminWithStudentView = (): boolean => {
+        return !route.pathname.includes('management') && isAdministrator(user);
+    };
 
     const handleToggleAction = async (
         action: 'favorite' | 'toggle',
         e?: React.MouseEvent
     ) => {
         if (e) e.stopPropagation();
+        if (adminWithStudentView()) {
+            toaster(
+                "You're in preview mode. Changes cannot be made.",
+                ToastState.null
+            );
+            return;
+        }
         const response = await API.put<null, object>(
             `helpful-links/${action}/${link.id}`,
             {}
