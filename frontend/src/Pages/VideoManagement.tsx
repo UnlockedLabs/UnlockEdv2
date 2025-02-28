@@ -126,21 +126,25 @@ export default function VideoManagement() {
             <div className="flex justify-between">
                 <div className="flex flex-row gap-4">
                     {videoData && videoData.length > 0 && (
-                        <div onClick={() => setSearchModalOpen(true)}>
-                            <LibrarySearchBar
-                                onSearchClick={openSearchModal}
-                                searchPlaceholder="Search..."
-                                searchTerm={searchTerm}
-                                changeCallback={setSearchTerm}
-                                isSearchValid={searchTerm.trim() !== ''}
+                        <>
+                            <div onClick={() => setSearchModalOpen(true)}>
+                                <LibrarySearchBar
+                                    onSearchClick={openSearchModal}
+                                    searchPlaceholder="Search..."
+                                    searchTerm={searchTerm}
+                                    changeCallback={setSearchTerm}
+                                    isSearchValid={searchTerm.trim() !== ''}
+                                />
+                            </div>
+                            <DropdownControl
+                                label="Order by"
+                                setState={setSortQuery}
+                                enumType={
+                                    FilterLibrariesVidsandHelpfulLinksAdmin
+                                }
                             />
-                        </div>
+                        </>
                     )}
-                    <DropdownControl
-                        label="Order by"
-                        setState={setSortQuery}
-                        enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
-                    />
                 </div>
                 <button
                     className="button items-center"
@@ -174,7 +178,7 @@ export default function VideoManagement() {
                     />
                 ))}
             </div>
-            {!isLoading && !error && meta && (
+            {!isLoading && !error && meta && videoData.length > 0 && (
                 <div className="flex justify-center">
                     <Pagination
                         meta={meta}

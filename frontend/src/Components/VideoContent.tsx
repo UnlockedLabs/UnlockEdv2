@@ -73,27 +73,30 @@ export default function VideoContent() {
         <>
             <div className="flex flex-row gap-4">
                 {videoData && videoData.length > 0 && (
-                    <div onClick={() => setSearchModalOpen(true)}>
-                        <LibrarySearchBar
-                            onSearchClick={openSearchModal}
-                            searchPlaceholder="Search..."
-                            searchTerm={searchTerm}
-                            changeCallback={setSearchTerm}
-                            isSearchValid={searchTerm.trim() !== ''}
+                    <>
+                        {' '}
+                        <div onClick={() => setSearchModalOpen(true)}>
+                            <LibrarySearchBar
+                                onSearchClick={openSearchModal}
+                                searchPlaceholder="Search..."
+                                searchTerm={searchTerm}
+                                changeCallback={setSearchTerm}
+                                isSearchValid={searchTerm.trim() !== ''}
+                            />
+                        </div>
+                        <DropdownControl
+                            label="Order by"
+                            setState={setSortQuery}
+                            enumType={{
+                                'Title (A-Z)': 'title ASC',
+                                'Title (Z-A)': 'title DESC',
+                                'Date Added ↓': 'created_at DESC',
+                                'Date Added ↑': 'created_at ASC',
+                                Favorited: 'favorited'
+                            }}
                         />
-                    </div>
+                    </>
                 )}
-                <DropdownControl
-                    label="Order by"
-                    setState={setSortQuery}
-                    enumType={{
-                        'Title (A-Z)': 'title ASC',
-                        'Title (Z-A)': 'title DESC',
-                        'Date Added ↓': 'created_at DESC',
-                        'Date Added ↑': 'created_at ASC',
-                        Favorited: 'favorited'
-                    }}
-                />
             </div>
             <div className="grid grid-cols-4 gap-6">
                 {videoData.map((video) => (
@@ -105,7 +108,7 @@ export default function VideoContent() {
                     />
                 ))}
             </div>
-            {!isLoading && !error && meta && (
+            {!isLoading && !error && meta && videoData.length > 0 && (
                 <div className="flex justify-center">
                     <Pagination
                         meta={meta}
