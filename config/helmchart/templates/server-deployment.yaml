@@ -33,8 +33,6 @@ spec:
               value: http://hydra:4445
             - name: HYDRA_PUBLIC_URL
               value: http://hydra:4444
-            - name: KETO_ADMIN_URL
-              value: http://keto:4466
             - name: KRATOS_ADMIN_URL
               value: http://kratos:4434
             - name: KRATOS_PUBLIC_URL

@@ -33,8 +33,16 @@ jobs:
           changes="${changes%,}"
           echo "changes=${changes}" >> $GITHUB_OUTPUT
 
-      - name: Debug changes
-        run: echo "${{ steps.check-changes.outputs.changes }}"
+      - name: Check duplicate migration files
+        run: |
+          DUPLICATE_MIGRATIONS=$(ls -1 backend/migrations | grep '.*\.sql' | cut -c1-5 | sort | uniq -d)
+          if [ -z "$DUPLICATE_MIGRATIONS" ]; then
+            echo "no invalid migrations found"
+          else
+            echo "🚨 Duplicate migration files found 🚨"
+            echo "Migration number: $DUPLICATE_MIGRATIONS is a duplicate\n and needs to be renamed"
+            exit 1
+          fi
 
   build-and-push:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
