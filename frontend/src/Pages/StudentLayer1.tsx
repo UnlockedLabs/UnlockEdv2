@@ -15,8 +15,6 @@ import TopContentList from '@/Components/dashboard/TopContentList';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
-import { useEffect, useRef, useState } from 'react';
-import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 
 export default function StudentLayer1() {
     const navigate = useNavigate();
@@ -36,25 +34,6 @@ export default function StudentLayer1() {
         ServerResponseOne<HelpfulLinkAndSort>,
         AxiosError
     >(`api/helpful-links`);
-    const [searchModalLibrary, setSearchModalLibrary] =
-        useState<Library | null>(null);
-    const modalRef = useRef<HTMLDialogElement>(null);
-    useEffect(() => {
-        if (searchModalLibrary && modalRef.current) {
-            modalRef.current.style.visibility = 'visible';
-            modalRef.current.showModal();
-        }
-    }, [searchModalLibrary]);
-    const openSearchModal = (library: Library) => {
-        setSearchModalLibrary(library); //fire off useEffect
-    };
-    const closeSearchModal = () => {
-        if (modalRef.current) {
-            modalRef.current.style.visibility = 'hidden';
-            modalRef.current.close();
-        }
-        setSearchModalLibrary(null);
-    };
 
     function navigateToOpenContent() {
         navigate('/knowledge-center/libraries');
@@ -68,15 +47,6 @@ export default function StudentLayer1() {
 
     return (
         <div className="flex flex-row h-full">
-            {searchModalLibrary && (
-                <LibrarySearchResultsModal
-                    ref={modalRef}
-                    libraryId={searchModalLibrary.id}
-                    searchPlaceholder={`Search ${searchModalLibrary.title}`}
-                    onModalClose={closeSearchModal}
-                    useInternalSearchBar={true}
-                />
-            )}
             {/* main section */}
             <div className="w-full flex flex-col gap-6 px-5 pb-4">
                 <ExpandableCardGrid
@@ -90,7 +60,6 @@ export default function StudentLayer1() {
                             library={item}
                             role={UserRole.Student}
                             mutate={updateFavorites}
-                            onSearchClick={() => openSearchModal(item)}
                         />
                     )}
                 </ExpandableCardGrid>
