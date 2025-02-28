@@ -6,7 +6,7 @@ import (
 )
 
 func (srv *Server) registerTagRoutes() []routeDef {
-	axx := models.Feature(models.OpenContentAccess)
+	axx := models.Feature()
 	return []routeDef{
 		{"GET /api/tags", srv.handleGetTags, false, axx},
 	}

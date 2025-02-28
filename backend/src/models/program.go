@@ -21,6 +21,7 @@ type ProgramTag struct {
 	ProgramID  uint `json:"program_id" gorm:"not null" validate:"required"`
 	FacilityID uint `json:"facility_id" gorm:"not null" validate:"required"`
 
+	Tag      *Tag      `json:"tag" gorm:"foreignKey:TagID;references:ID"`
 	Program  *Program  `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Facility *Facility `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
 }

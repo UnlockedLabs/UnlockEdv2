@@ -21,7 +21,7 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_tags t ON t.program_id = programs.id").Where("t.tag_id IN (?) AND t.facility_id = ?", args.Tags, args.FacilityID)
 	}
-	if args.OrderBy != "" && args.Order != "" {
+	if args.OrderBy != "" {
 		tx = tx.Order(args.OrderBy + " " + args.Order)
 	}
 	if args.Search != "" {
