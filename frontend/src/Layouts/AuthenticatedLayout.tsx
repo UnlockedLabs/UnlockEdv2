@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Navbar from '@/Components/Navbar';
-import { useMatches, UIMatch, Outlet } from 'react-router-dom';
+import { useMatches, UIMatch, Outlet, useLoaderData } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
-import { RouteLabel } from '@/common';
+import { Facility, RouteLabel } from '@/common';
 import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
 
 // Extend RouteMatch with custom RouteMeta
@@ -13,6 +13,7 @@ interface CustomRouteMatch extends UIMatch {
 export default function AuthenticatedLayout() {
     const matches = useMatches() as CustomRouteMatch[];
     const currentMatch = matches.find((match) => match?.handle?.title);
+    const facilities = useLoaderData() as Facility[] | null;
     const title = currentMatch?.handle?.title ?? 'UnlockEd';
     // We have three states we need to factor for.
     // 1. If the nav is open & pinned (Large screens only & uses lg:drawer-open)
@@ -49,6 +50,7 @@ export default function AuthenticatedLayout() {
                     <div className="drawer-content flex flex-col border-l border-grey-1">
                         <main className="w-full min-h-screen bg-background flex flex-col">
                             <PageNav
+                                facilities={facilities ?? []}
                                 showOpenMenu={!isNavPinned}
                                 onShowNav={showNav}
                             />

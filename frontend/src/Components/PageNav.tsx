@@ -3,20 +3,21 @@ import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, TitleHandler } from '@/common';
-import { useMatches, useLoaderData } from 'react-router-dom';
+import { useMatches } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 
 export default function PageNav({
     showOpenMenu,
-    onShowNav
+    onShowNav,
+    facilities
 }: {
     showOpenMenu: boolean;
     onShowNav?: () => void;
+    facilities?: Facility[];
 }) {
     const { user } = useAuth();
     const detailsRef = useRef<HTMLDetailsElement>(null);
-    const facilityNames = useLoaderData() as Facility[] | null;
     const matches = useMatches();
     const currentRoute = matches[matches.length - 1];
     const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
@@ -93,7 +94,7 @@ export default function PageNav({
                                 </span>
                             </summary>
                             <ul className="dropdown-content w-max bg-grey-2 z-[1] dark:bg-grey-1 flex flex-col">
-                                {facilityNames?.map((facility: Facility) => (
+                                {facilities?.map((facility: Facility) => (
                                     <li
                                         key={facility.id}
                                         onClick={() => {

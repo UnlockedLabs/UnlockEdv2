@@ -6,6 +6,7 @@ import { Navigate, RouteObject } from 'react-router-dom';
 import { AUTHCALLBACK, hasFeature, useAuth } from '@/useAuth.ts';
 import Error from '@/Pages/Error.tsx';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
+import { getFacilities } from '@/routeLoaders.ts';
 
 export const RouteGuard: React.FC<{
     allowedRoles?: UserRole[];
@@ -38,6 +39,7 @@ export function DeclareAuthenticatedRoutes(
                 }
             />
         ),
+        loader: getFacilities,
         errorElement: <Error />,
         children: routes
     };

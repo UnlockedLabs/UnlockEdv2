@@ -67,6 +67,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         {title}
                     </span>
                     <form
+                        key={inputs.length}
                         onSubmit={(e) => {
                             void handleSubmit(onSubmitHandler)(e);
                         }}
