@@ -106,7 +106,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		queryCtx.Search = ""
 		queryCtx.All = true
 		var librariesResp []database.LibraryResponse
-		librariesResp, err = srv.Db.GetAllLibraries(&queryCtx, "visible", nil)
+		librariesResp, err = srv.Db.GetAllLibraries(&queryCtx, "visible")
 		libraries = make([]models.Library, 0, len(librariesResp))
 		if err == nil {
 			for _, library := range librariesResp {
