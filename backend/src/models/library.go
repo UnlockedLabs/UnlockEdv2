@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -15,13 +16,35 @@ type Library struct {
 	Description           *string `json:"description"`
 	Url                   string  `gorm:"not null" json:"url"`
 	ThumbnailUrl          *string `json:"thumbnail_url"`
-	VisibilityStatus      bool    `gorm:"default:false;not null" json:"visibility_status"`
+	VisibilityStatus      bool    `gorm:"->" json:"visibility_status"`
 
 	OpenContentProvider *OpenContentProvider  `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
 	Favorites           []OpenContentFavorite `gorm:"-" json:"favorites"`
 }
 
 func (Library) TableName() string { return "libraries" }
+
+func (lib *Library) GetFacilityVisibilityStatus(facilityID uint) *FacilityVisibilityStatus {
+	visibilityStatus := FacilityVisibilityStatus{
+		FacilityID:            facilityID,
+		OpenContentProviderID: lib.OpenContentProviderID,
+		VisibilityStatus:      lib.VisibilityStatus,
+		ContentID:             lib.ID,
+	}
+	return &visibilityStatus
+}
+
+type FacilityVisibilityStatus struct {
+	FacilityID            uint `gorm:"primaryKey" json:"facility_id"`
+	OpenContentProviderID uint `gorm:"primaryKey" json:"open_content_provider_id"`
+	ContentID             uint `gorm:"primaryKey" json:"content_id"`
+	VisibilityStatus      bool `gorm:"default:false;not null" json:"visibility_status"`
+
+	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`
+	Facility            *Facility            `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
+}
+
+func (FacilityVisibilityStatus) TableName() string { return "facility_visibility_statuses" }
 
 func (lib *Library) IntoProxyPO() *LibraryProxyPO {
 	proxyParams := LibraryProxyPO{
@@ -97,6 +120,18 @@ func (res *OpenContentSearchResult) AppendTitleSearchResults(items []OpenContent
 				PageTitle:       item.Title,
 			})
 	}
+}
+
+func (rss *RSS) SerializeSearchMeta(startIndex, perPage, total int, search string) *OpenContentSearchResult {
+	channel := &OpenContentSearchResult{
+		Title:        fmt.Sprintf("Search: %s", search),
+		Description:  "",
+		TotalResults: strconv.Itoa(total),
+		StartIndex:   strconv.Itoa(startIndex),
+		ItemsPerPage: strconv.Itoa(perPage),
+		Items:        []SearchResultItem{},
+	}
+	return channel
 }
 
 func (rss *RSS) SerializeSearchResults(libraries []Library) *OpenContentSearchResult {

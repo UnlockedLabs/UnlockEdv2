@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"encoding/xml"
@@ -69,7 +70,11 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
 	titleSearch := make([]models.OpenContentItem, 0, 1)
-	var err error
+	var (
+		err            error
+		paginationData models.PaginationMeta
+		libraries      []models.Library
+	)
 	ids := r.URL.Query()["library_id"]
 	libraryIDs := make([]int, 0, len(ids))
 	for _, id := range ids {
@@ -79,8 +84,9 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 	}
 	// if we are on a library viewer page, we want to search
 	// only the included library, so we omit title search
+	queryCtx := srv.getQueryContext(r)
 	if page == 1 && len(libraryIDs) == 0 {
-		titleSearch, err = srv.Db.OpenContentTitleSearch(search)
+		titleSearch, err = srv.Db.OpenContentTitleSearch(&queryCtx)
 		if err != nil {
 			log.error("error performing title search on open content")
 		}
@@ -89,83 +95,99 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		rss := models.RSS{}
 		paginationData := models.NewPaginationInfo(page, perPage, int64(int64(len(titleSearch))))
 		channels := make([]*models.OpenContentSearchResult, 0, 1)
-		channels = append(channels, rss.SerializeSearchResults([]models.Library{}))
+		index := (page * perPage) - (perPage - 1)
+		channels = append(channels, rss.SerializeSearchMeta(index, perPage, len(titleSearch), search))
 		channels[0].AppendTitleSearchResults(titleSearch)
 		return writePaginatedResponse(w, http.StatusOK, channels, paginationData)
 	}
-	libraries := make([]models.Library, 0, len(libraryIDs))
 	if len(libraryIDs) > 0 {
 		libraries, err = srv.Db.GetLibrariesByIDs(libraryIDs)
-		if err != nil {
-			log.add("library_ids", libraryIDs)
-			return newDatabaseServiceError(err)
-		}
 	} else {
-		queryCtx := srv.getQueryContext(r)
 		queryCtx.Search = ""
-		librariesResp, err := srv.Db.GetAllLibraries(&queryCtx, "visible")
+		queryCtx.All = true
+		var librariesResp []database.LibraryResponse
+		librariesResp, err = srv.Db.GetAllLibraries(&queryCtx, "visible", nil)
+		libraries = make([]models.Library, 0, len(librariesResp))
 		if err == nil {
 			for _, library := range librariesResp {
 				libraries = append(libraries, library.Library)
 			}
 		}
 	}
-	nextPage := (page-1)*perPage + 1
-	queryParams := url.Values{}
-	for _, library := range libraries {
-		queryParams.Add("books.name", path.Base(library.Url))
-	}
-	queryParams.Add("format", "xml")
-	queryParams.Add("pattern", search)
-	kiwixSearchURL := fmt.Sprintf("%s/search?start=%d&pageLength=%d&%s", models.KiwixLibraryUrl, nextPage, perPage, queryParams.Encode())
-	request, err := http.NewRequest(http.MethodGet, kiwixSearchURL, nil)
-	log.add("kiwix_search_url", kiwixSearchURL)
 	if err != nil {
-		return newInternalServerServiceError(err, "unable to create new request to kiwix")
+		log.add("library_ids", libraryIDs)
+		return newDatabaseServiceError(err)
 	}
-	resp, err := srv.Client.Do(request)
-	if err != nil {
-		return newInternalServerServiceError(err, "error executing kiwix search request")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.add("status_code", resp.StatusCode)
+	channels := make([]*models.OpenContentSearchResult, 0, 1) //only ever going to be one
+	if len(libraries) > 0 {
+		nextPage := (page-1)*perPage + 1
+		queryParams := url.Values{}
+		for _, library := range libraries {
+			queryParams.Add("books.name", path.Base(library.Url))
+		}
+		queryParams.Add("format", "xml")
+		queryParams.Add("pattern", search)
+		kiwixSearchURL := fmt.Sprintf("%s/search?start=%d&pageLength=%d&%s", models.KiwixLibraryUrl, nextPage, perPage, queryParams.Encode())
+		request, err := http.NewRequest(http.MethodGet, kiwixSearchURL, nil)
+		log.add("kiwix_search_url", kiwixSearchURL)
+		if err != nil {
+			return newInternalServerServiceError(err, "unable to create new request to kiwix")
+		}
+		resp, err := srv.Client.Do(request)
+		if err != nil {
+			return newInternalServerServiceError(err, "error executing kiwix search request")
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			log.add("status_code", resp.StatusCode)
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return newInternalServerServiceError(err, "executing request returned unexpected status, and failed to read error from its response")
+			}
+			log.add("kiwix_error", string(body))
+			return newBadRequestServiceError(errors.New("api call to kiwix failed"), "response contained unexpected status code from kiwix")
+		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return newInternalServerServiceError(err, "executing request returned unexpected status, and failed to read error from its response")
+			return newInternalServerServiceError(err, "error reading body of response")
 		}
-		log.add("kiwix_error", string(body))
-		return newBadRequestServiceError(errors.New("api call to kiwix failed"), "response contained unexpected status code from kiwix")
+		var rss models.RSS
+		err = xml.Unmarshal(body, &rss)
+		if err != nil {
+			return newInternalServerServiceError(err, "error parsing response body into XML")
+		}
+		total, err := strconv.ParseInt(strings.ReplaceAll(rss.Channel.TotalResults, ",", ""), 10, 64)
+		if err != nil {
+			return newInternalServerServiceError(err, "error parsing the total results value into an int64")
+		}
+		paginationData = models.NewPaginationInfo(page, perPage, int64(total+int64(len(titleSearch))))
+		channels = append(channels, rss.SerializeSearchResults(libraries))
+	} else {
+		paginationData = models.NewPaginationInfo(page, perPage, int64(len(titleSearch)))
 	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return newInternalServerServiceError(err, "error reading body of response")
-	}
-	var rss models.RSS
-	err = xml.Unmarshal(body, &rss)
-	if err != nil {
-		return newInternalServerServiceError(err, "error parsing response body into XML")
-	}
-	total, err := strconv.ParseInt(strings.ReplaceAll(rss.Channel.TotalResults, ",", ""), 10, 64)
-	if err != nil {
-		return newInternalServerServiceError(err, "error parsing the total results value into an int64")
-	}
-	paginationData := models.NewPaginationInfo(page, perPage, int64(total+int64(len(titleSearch))))
-	channels := make([]*models.OpenContentSearchResult, 0, 1) //only ever going to be one
-	channels = append(channels, rss.SerializeSearchResults(libraries))
 	if page == 1 {
-		channels[0].AppendTitleSearchResults(titleSearch)
+		if len(channels) > 0 { //if channels exist then append
+			channels[0].AppendTitleSearchResults(titleSearch)
+		} else if len(titleSearch) > 0 { //custom build titleSearch
+			rss := models.RSS{}
+			channels = append(channels, rss.SerializeSearchMeta(1, perPage, len(titleSearch), search))
+			channels[0].AppendTitleSearchResults(titleSearch)
+		} else { //custom build no results
+			rss := models.RSS{}
+			channels = append(channels, rss.SerializeSearchMeta(1, perPage, 0, search))
+		}
 		slices.Reverse(channels[0].Items)
 	}
 	return writePaginatedResponse(w, http.StatusOK, channels, paginationData)
 }
 
 func (srv *Server) handleToggleLibraryVisibility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "library id")
 	}
-	library, err := srv.Db.ToggleVisibilityAndRetrieveLibrary(id)
+	library, err := srv.Db.ToggleVisibilityAndRetrieveLibrary(id, &args)
 	if err != nil {
 		log.add("library_id", id)
 		return newDatabaseServiceError(err)
