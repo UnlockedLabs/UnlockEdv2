@@ -103,7 +103,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 	} else {
 		queryCtx := srv.getQueryContext(r)
 		queryCtx.Search = ""
-		librariesResp, err := srv.Db.GetAllLibraries(&queryCtx, "visible", nil)
+		librariesResp, err := srv.Db.GetAllLibraries(&queryCtx, "visible")
 		if err == nil {
 			for _, library := range librariesResp {
 				libraries = append(libraries, library.Library)
