@@ -13,6 +13,7 @@ export const EditUserModal = forwardRef(function (
         mutate: mutate,
         refModal: editUserModal
     });
+    if (!target) return null;
     const editUser: SubmitHandler<FieldValues> = async (data) => {
         const resp = await API.patch(`users/${target?.id}`, data);
         checkResponse(
@@ -24,7 +25,7 @@ export const EditUserModal = forwardRef(function (
     return (
         <FormModal
             title={'Edit User'}
-            inputs={getUserInputs(CRUDActions.Edit)}
+            inputs={getUserInputs(target.role, CRUDActions.Edit)}
             defaultValues={target}
             onSubmit={editUser}
             ref={editUserModal}
