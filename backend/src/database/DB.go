@@ -101,7 +101,6 @@ func MigrateTesting(db *gorm.DB) {
 		&models.HelpfulLink{},
 		&models.Course{},
 		&models.Program{},
-		&models.ProgramTag{},
 		&models.ProgramSection{},
 		&models.ProgramSectionEvent{},
 		&models.ProgramSectionEnrollment{},

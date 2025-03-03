@@ -394,15 +394,5 @@ func seedProgramData(db *DB) []models.ProgramSection {
 	if err := db.Find(&programs).Error; err != nil {
 		logrus.Fatalf("Failed to create facility programs: %v", err)
 	}
-	programTags := []string{"eligible_good_time", "self-paced"}
-	for idx := range programs {
-		tag := models.ProgramTag{
-			ProgramID: programs[idx].ID,
-			Value:     programTags[rand.Intn(len(programTags))],
-		}
-		if err := db.Create(&tag).Error; err != nil {
-			logrus.Fatalf("Failed to create program tag: %v", err)
-		}
-	}
 	return sections
 }
