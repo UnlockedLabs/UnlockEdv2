@@ -4,11 +4,13 @@ import {
     ProviderPlatformType,
     ServerResponseMany,
     ServerResponseOne,
-    Timezones
+    Timezones,
+    UserRole
 } from '@/common';
 import { KeyedMutator } from 'swr';
 import { Validate } from 'react-hook-form';
 import React from 'react';
+import { AdminRoles } from '@/useAuth';
 
 export enum TextModalType {
     Confirm,
@@ -207,9 +209,11 @@ export const checkOnlyLettersAndNumbers: Validate<string, string | boolean> = (
     return true;
 };
 export const getUserInputs = (
-    action: CRUDActions
+    userRole: UserRole,
+    action: CRUDActions,
+    providerPlatforms?: ProviderPlatform[]
 ): InputWithOptions<ProviderPlatform>[] => {
-    return [
+    const inputs: InputWithOptions<ProviderPlatform>[] = [
         {
             type: FormInputTypes.Text,
             label: 'First Name',
@@ -238,15 +242,32 @@ export const getUserInputs = (
                     'Username can only contain letters and numbers without spaces'
             },
             disabled: action === CRUDActions.Edit
-        },
-        {
+        }
+    ];
+    if (AdminRoles.includes(userRole)) {
+        inputs.push({
             type: FormInputTypes.Text,
             label: 'Email (optional)',
             interfaceRef: 'email',
             required: false,
-            length: 50
-        }
-    ];
+            length: 50,
+            disabled: false
+        });
+    }
+    if (
+        userRole === UserRole.Student &&
+        providerPlatforms &&
+        providerPlatforms.length > 0
+    ) {
+        inputs.push({
+            type: FormInputTypes.MultiSelectDropdown,
+            label: 'Also create new account for user in:',
+            interfaceRef: 'platforms',
+            required: false,
+            options: providerPlatforms
+        });
+    }
+    return inputs;
 };
 export { AddUserModal } from './AddUserModal';
 export { EditUserModal } from './EditUserModal';

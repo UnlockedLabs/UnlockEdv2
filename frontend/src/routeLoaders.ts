@@ -141,5 +141,5 @@ export const getProviderPlatforms: LoaderFunction = async () => {
     if (response.success) {
         return json({ providerPlatforms: response.data as ProviderPlatform[] });
     }
-    return json<null>(null);
+    return json({ providerPlatforms: [] });
 };

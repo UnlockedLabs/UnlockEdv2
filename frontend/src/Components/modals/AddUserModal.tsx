@@ -1,5 +1,5 @@
 import { forwardRef, useState } from 'react';
-import { CRUDActions, CRUDModalProps, FormInputTypes, getUserInputs } from '.';
+import { CRUDActions, CRUDModalProps, getUserInputs } from '.';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { NewUserResponse, ProviderPlatform, User, UserRole } from '@/common';
 import API from '@/api/api';
@@ -79,22 +79,7 @@ export const AddUserModal = forwardRef(function (
     return (
         <FormModal
             title={'Add User'}
-            inputs={[
-                ...getUserInputs(CRUDActions.Add),
-                ...(userRole === UserRole.Student
-                    ? [
-                          {
-                              type: FormInputTypes.MultiSelectDropdown,
-                              label: 'Also create new account for user in:',
-                              interfaceRef: 'platforms',
-                              required: false,
-                              options: providerPlatforms
-                                  ? providerPlatforms
-                                  : []
-                          }
-                      ]
-                    : [])
-            ]}
+            inputs={getUserInputs(userRole, CRUDActions.Add, providerPlatforms)}
             onSubmit={addUser}
             error={formError}
             ref={addUserModal}
