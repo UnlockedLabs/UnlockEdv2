@@ -5,8 +5,7 @@
      "language":"eng, jpn",
      "description":"\u30D7\u30ED\u30B0\u30E9\u30DE\u30FC\u3068\u30D7\u30ED\u30B0\u30E9\u30DF\u30F3\u30B0\u306B\u71B1\u5FC3\u306A\u4EBA\u3005\u306E\u305F\u3081\u306E\u8CEA\u554F\u3068\u56DE\u7B54",
      "path":"\/content\/ja.stackoverflow.com_mul_all_2024-06",
-     "image_url":"\/api\/photos\/\u30B9\u30BF\u30C3\u30AF\u30FB\u30AA\u30FC\u30D0\u30FC\u30D5\u30ED\u30FC.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/\u30B9\u30BF\u30C3\u30AF\u30FB\u30AA\u30FC\u30D0\u30FC\u30D5\u30ED\u30FC.png"
     },
     
   {
@@ -15,8 +14,7 @@
      "language":"eng",
      "description":"From RationalWiki",
      "path":"\/content\/rationalwiki_en_all_maxi_2021-03",
-     "image_url":"\/api\/photos\/RationalWiki.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/RationalWiki.png"
     },
     
   {
@@ -25,8 +23,7 @@
      "language":"eng",
      "description":"From mediawiki.org",
      "path":"\/content\/mediawiki_en_all_2023-07",
-     "image_url":"\/api\/photos\/MediaWiki.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/MediaWiki.png"
     },
     
   {
@@ -35,8 +32,7 @@
      "language":"eng",
      "description":"Arch Linux documentation",
      "path":"\/content\/archlinux_en_all_nopic_2022-12",
-     "image_url":"\/api\/photos\/ArchWiki.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/ArchWiki.png"
     },
     
   {
@@ -45,8 +41,7 @@
      "language":"eng",
      "description":"From Wikiversity",
      "path":"\/content\/wikiversity_en_all_maxi_2021-03",
-     "image_url":"\/api\/photos\/Wikiversity.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/Wikiversity.png"
     },
     
   {
@@ -55,8 +50,7 @@
      "language":"eng, rus",
      "description":"\u0412\u043E\u043F\u0440\u043E\u0441\u044B \u0438 \u043E\u0442\u0432\u0435\u0442\u044B \u0434\u043B\u044F \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0438\u0441\u0442\u043E\u0432",
      "path":"\/content\/ru.stackoverflow.com_mul_all_2024-10",
-     "image_url":"\/api\/photos\/Stack Overflow \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/Stack Overflow \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C.png"
     },
     
   {
@@ -65,8 +59,7 @@
      "language":"eng,fra,ita,zho,kor,ind,spa,ara,zho,deu",
      "description":"A collection of TED videos about veganism",
      "path":"\/content\/ted_mul_veganism_2024-11",
-     "image_url":"\/api\/photos\/TED veganism.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/TED veganism.png"
     },
     
   {
@@ -75,8 +68,7 @@
      "language":"eng",
      "description":"Books for children",
      "path":"\/content\/prunelle_interactive_books_en_2024-05",
-     "image_url":"\/api\/photos\/Prunelle books.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/Prunelle books.png"
     },
     
   {
@@ -85,8 +77,7 @@
      "language":"eng",
      "description":"The free encyclopedia",
      "path":"\/content\/wikipedia_en_all_maxi_2024-01",
-     "image_url":"\/api\/photos\/Wikipedia.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/Wikipedia.png"
     },
     
   {
@@ -95,8 +86,7 @@
      "language":"eng,spa,ara",
      "description":"A collection of TED videos about ted connects",
      "path":"\/content\/ted_mul_ted-connects_2024-08",
-     "image_url":"\/catalog\/v2\/illustration\/67440563-a62b-fabe-415c-4c3ee4546f78\/?size=48",
-     "visibility_status":true
+     "image_url":"\/catalog\/v2\/illustration\/67440563-a62b-fabe-415c-4c3ee4546f78\/?size=48"
     },
     
   {
@@ -105,8 +95,7 @@
      "language":"eng",
      "description":"The Canadian financial wiki",
      "path":"\/content\/finiki_en_all_maxi_2024-06",
-     "image_url":"\/api\/photos\/Finiki.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/Finiki.png"
     },
     
   {
@@ -115,8 +104,7 @@
      "language":"eng",
      "description":"All documentation for Python",
      "path":"\/content\/docs.python.org_en_2024-09",
-     "image_url":"\/catalog\/v2\/illustration\/84812c13-fa65-feb7-c206-4f22cc2e0f9a\/?size=48",
-     "visibility_status":true
+     "image_url":"\/catalog\/v2\/illustration\/84812c13-fa65-feb7-c206-4f22cc2e0f9a\/?size=48"
     },
     
   {
@@ -125,8 +113,7 @@
      "language":"eng",
      "description":"Arch Linux documentation",
      "path":"\/content\/archlinux_en_all_maxi_2022-12",
-     "image_url":"\/api\/photos\/ArchWiki.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/ArchWiki.png"
     },
     
   {
@@ -135,8 +122,7 @@
      "language":"eng",
      "description":"PHP Manual",
      "path":"\/content\/php.net_en_all_2024-08",
-     "image_url":"\/api\/photos\/PHP Manual.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/PHP Manual.png"
     },
     
   {
@@ -145,8 +131,7 @@
      "language":"eng",
      "description":"From RationalWiki",
      "path":"\/content\/rationalwiki_en_all_nopic_2021-03",
-     "image_url":"\/api\/photos\/RationalWiki.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/RationalWiki.png"
     },
     
   {
@@ -155,8 +140,7 @@
      "language":"eng",
      "description":"From RationalWiki",
      "path":"\/content\/rationalwiki_en_all_maxi_2021-03",
-     "image_url":"\/api\/photos\/RationalWiki.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/RationalWiki.png"
     },
     
   {
@@ -165,8 +149,7 @@
      "language":"eng",
      "description":"From Wikiversity",
      "path":"\/content\/wikiversity_en_all_nopic_2021-03",
-     "image_url":"\/api\/photos\/Wikiversity.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/Wikiversity.png"
   },
   {
      "external_id":"urn:uuid:9d1667aa-5180-4573-ddc2-16396e1bb27c",
@@ -174,8 +157,7 @@
      "language":"eng",
      "description":"Indian Classical Music Theory",
      "path":"\/content\/ragajunglism.org_en_all_2024-11",
-     "image_url":"\/api\/photos\/RagaGunglism.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/RagaGunglism.png"
     },
     
   {
@@ -184,8 +166,7 @@
      "language":"fra,eng,spa",
      "description":"Football(s). Histoire, culture, \u00E9conomie, soci\u00E9t\u00E9", 
      "path":"\/content\/u-bourgogne.fr_mul_football-s_2024-11",
-     "image_url":"\/api\/photos\/Football(s).png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/Football(s).png"
     },
     
   {
@@ -194,8 +175,7 @@
      "language":"eng",
      "description":"PHP Manual",
      "path":"\/content\/php.net_en_all_2024-08",
-     "image_url":"\/api\/photos\/PHP Manual.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/PHP Manual.png"
     },
     
   {
@@ -204,8 +184,7 @@
      "language":"eng",
      "description":"The free encyclopedia",
      "path":"\/content\/wikipedia_en_all_maxi_2024-01",
-     "image_url":"\/api\/photos\/Wikipedia.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/Wikipedia.png"
     },
     
   {
@@ -214,8 +193,7 @@
      "language":"eng",
      "description":"Books for children",
      "path":"\/content\/prunelle_interactive_books_en_2024-05",
-     "image_url":"\/api\/photos\/Prunelle books.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/Prunelle books.png"
     },
   {
      "external_id":"urn:uuid:9b4bc967-1063-0ad2-f446-10721f452930",
@@ -223,8 +201,7 @@
      "language":"eng",
      "description":"From RationalWiki",
      "path":"\/content\/rationalwiki_en_all_nopic_2021-03",
-     "image_url":"\/api\/photos\/RationalWiki.png",
-     "visibility_status":true
+     "image_url":"\/api\/photos\/RationalWiki.png"
     },
   {
      "external_id":"urn:uuid:e86ed0fa-bf87-d533-2967-5ffeee353e64",
@@ -232,8 +209,7 @@
      "language":"eng,  epo",
      "description":"Q&A for teachers and students of the Esperanto language",
      "path":"\/content\/esperanto.stackexchange.com_mul_all_2024-11",
-     "image_url":"\/api\/photos\/Esperanto Language.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/Esperanto Language.png"
     },
   {
      "external_id":"urn:uuid:99b68dd3-8e85-0669-dff7-9adcf4d0c950",
@@ -241,7 +217,6 @@
      "language":"eng",
      "description":"Arch Linux documentation",
      "path":"\/content\/archlinux_en_all_nopic_2022-12",
-     "image_url":"\/api\/photos\/ArchWiki.png",
-     "visibility_status":false
+     "image_url":"\/api\/photos\/ArchWiki.png"
     }
 ]

@@ -25,11 +25,12 @@ func (srv *Server) handleGetTopFacilityOpenContent(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) handleGetTopUserOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	topOpenContent, err := srv.Db.GetTopUserOpenContent(id)
+	topOpenContent, err := srv.Db.GetTopUserOpenContent(id, &args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

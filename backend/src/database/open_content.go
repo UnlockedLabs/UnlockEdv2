@@ -46,7 +46,7 @@ func (db *DB) CreateContentActivity(urlString string, activity *models.OpenConte
 }
 
 // This method will at most ever return the most recent 30 favorites (10 Libraries, 10 Videos, 10 Helpful Links)
-func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, error) {
+func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.OpenContentItem, error) {
 	favorites := make([]models.OpenContentItem, 0, 30)
 	favoritesQuery := `WITH ordered_libraries AS (
 		SELECT
@@ -56,7 +56,7 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
             COALESCE(ocu.content_url, lib.url) AS url,  
 			lib.thumbnail_url,
 			ocp.description,
-			lib.visibility_status,
+			fvs.visibility_status,
 			lib.open_content_provider_id,
 			ocp.title AS provider_name,
 			NULL AS channel_title,
@@ -68,6 +68,9 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 			AND ocp.deleted_at IS NULL
 		JOIN libraries lib ON lib.open_content_provider_id = ocp.id 
 			AND lib.id = f.content_id
+		left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = lib.open_content_provider_id
+				and fvs.content_id = lib.id
+				and fvs.facility_id = ?
         LEFT JOIN open_content_urls ocu ON f.open_content_url_id = ocu.id  
 		WHERE f.user_id = ?
 	),
@@ -135,24 +138,25 @@ func (db *DB) GetUserFavoriteGroupings(userID uint) ([]models.OpenContentItem, e
 		UNION ALL
 		SELECT * FROM ordered_helpful_links WHERE row_num <= 10
 	)`
-	if err := db.Raw(favoritesQuery, userID, userID, userID).Scan(&favorites).Error; err != nil {
+	if err := db.Raw(favoritesQuery, args.FacilityID, args.UserID, args.UserID, args.UserID).Scan(&favorites).Error; err != nil {
 		return nil, err
 	}
 	return favorites, nil
 }
-func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search string) (int64, []models.OpenContentItem, error) {
+
+func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentItem, error) {
 	var libSearchCond, videoSearchCond, hlSearchCond string
 	var searchTerm string
 
-	if search != "" {
-		searchTerm = "%" + strings.ToLower(search) + "%"
+	if args.Search != "" {
+		searchTerm = "%" + strings.ToLower(args.Search) + "%"
 		libSearchCond = "AND LOWER(lib.title) LIKE ?"
 		videoSearchCond = "AND LOWER(videos.title) LIKE ?"
 		hlSearchCond = "AND LOWER(hl.title) LIKE ?"
 	}
 
-	countArgs := []interface{}{userID}
-	if search != "" {
+	countArgs := []interface{}{args.UserID}
+	if args.Search != "" {
 		countArgs = append(countArgs, searchTerm)
 	}
 
@@ -163,44 +167,43 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
 		"created_at ASC":  {},
 	}
 
-	_, ok := allowedOrderBy[orderBy]
+	_, ok := allowedOrderBy[args.OrderBy]
 	if !ok {
-		orderBy = "created_at DESC"
+		args.OrderBy = "created_at DESC"
 	}
 
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
-        SELECT fav.content_id
-        FROM open_content_favorites fav
-        JOIN libraries lib ON lib.id = fav.content_id
-        JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
-            AND ocp.currently_enabled = true
-            AND ocp.deleted_at IS NULL
-        WHERE fav.user_id = ? %s
-    ) AS total_favorites`, libSearchCond)
+		SELECT fav.content_id
+		FROM open_content_favorites fav
+		JOIN libraries lib ON lib.id = fav.content_id
+		JOIN open_content_providers ocp ON ocp.id = lib.open_content_provider_id
+			AND ocp.currently_enabled = true
+			AND ocp.deleted_at IS NULL
+		WHERE fav.user_id = ? %s
+	) AS total_favorites`, libSearchCond)
 
-	var total int64
-	if err := db.Raw(countQuery, countArgs...).Scan(&total).Error; err != nil {
-		return 0, nil, err
+	if err := db.Raw(countQuery, countArgs...).Scan(&args.Total).Error; err != nil {
+		return nil, err
 	}
 
 	queryArgs := make([]interface{}, 0, 8)
 
 	// Libraries
-	queryArgs = append(queryArgs, userID)
-	if search != "" {
+	queryArgs = append(queryArgs, args.FacilityID, args.UserID)
+	if args.Search != "" {
 		queryArgs = append(queryArgs, searchTerm)
 	}
 	// Videos
-	queryArgs = append(queryArgs, userID)
-	if search != "" {
+	queryArgs = append(queryArgs, args.UserID)
+	if args.Search != "" {
 		queryArgs = append(queryArgs, searchTerm)
 	}
 	// Helpful links
-	queryArgs = append(queryArgs, userID)
-	if search != "" {
+	queryArgs = append(queryArgs, args.UserID)
+	if args.Search != "" {
 		queryArgs = append(queryArgs, searchTerm)
 	}
-	queryArgs = append(queryArgs, perPage, calcOffset(page, perPage))
+	queryArgs = append(queryArgs, args.PerPage, args.CalcOffset())
 
 	favoritesQuery := fmt.Sprintf(`SELECT
         content_type,
@@ -223,7 +226,7 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
             COALESCE(ocu.content_url, lib.url) AS url,  
             lib.thumbnail_url,
             ocp.description,
-            lib.visibility_status,
+			fvs.visibility_status,
             lib.open_content_provider_id,
             ocp.title AS provider_name,
             NULL AS channel_title,
@@ -234,6 +237,9 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
             AND ocp.deleted_at IS NULL
         JOIN libraries lib ON lib.open_content_provider_id = ocp.id
             AND lib.id = f.content_id
+		left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = lib.open_content_provider_id
+				and fvs.content_id = lib.id
+				and fvs.facility_id = ?
         LEFT JOIN open_content_urls ocu ON f.open_content_url_id = ocu.id  
         WHERE f.user_id = ? %s
 
@@ -283,13 +289,14 @@ func (db *DB) GetUserFavorites(userID uint, page, perPage int, orderBy, search s
         WHERE f.user_id = ? %s
     ) AS all_favorites
     ORDER BY %s
-    LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, orderBy)
+	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, args.OrderBy)
 
 	var favorites []models.OpenContentItem
 	if err := db.Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
-		return 0, nil, err
+		return nil, err
 	}
-	return total, favorites, nil
+
+	return favorites, nil
 }
 
 func (db *DB) GetTopFacilityOpenContent(id int) ([]models.OpenContentItem, error) {
@@ -303,8 +310,11 @@ func (db *DB) GetTopFacilityOpenContent(id int) ([]models.OpenContentItem, error
 			Having("count(v.id) > 0"),
 		db.Select("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as content_type, count(l.id) as visits").
 			Table("open_content_activities oca").
-			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id AND l.visibility_status = TRUE").
-			Where("oca.facility_id = ?", id).
+			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id and l.deleted_at is null").
+			Joins(`LEFT JOIN facility_visibility_statuses fvs on fvs.open_content_provider_id = l.open_content_provider_id
+				and fvs.content_id = l.id
+				and fvs.facility_id = ?`, id).
+			Where("oca.facility_id = ? and fvs.visibility_status = TRUE", id).
 			Group("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id").
 			Having("count(l.id) > 0"),
 	).Find(&content).Error; err != nil {
@@ -313,7 +323,7 @@ func (db *DB) GetTopFacilityOpenContent(id int) ([]models.OpenContentItem, error
 	return content, nil
 }
 
-func (db *DB) GetTopUserOpenContent(id int) ([]models.OpenContentItem, error) {
+func (db *DB) GetTopUserOpenContent(id int, args *models.QueryContext) ([]models.OpenContentItem, error) {
 	var content []models.OpenContentItem
 	log.Println(id)
 	if err := db.Raw("? UNION ? ORDER BY visits DESC LIMIT 5",
@@ -325,8 +335,11 @@ func (db *DB) GetTopUserOpenContent(id int) ([]models.OpenContentItem, error) {
 			Having("count(v.id) > 0"),
 		db.Select("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as content_type, count(l.id) as visits").
 			Table("open_content_activities oca").
-			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id AND l.visibility_status = TRUE").
-			Where("oca.user_id = ?", id).
+			Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id and l.deleted_at is null").
+			Joins(`LEFT JOIN facility_visibility_statuses fvs on fvs.open_content_provider_id = l.open_content_provider_id
+				and fvs.content_id = l.id
+				and fvs.facility_id = ?`, args.FacilityID).
+			Where("oca.user_id = ? and fvs.visibility_status = TRUE", id).
 			Group("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id").
 			Having("count(l.id) > 0"),
 	).Find(&content).Error; err != nil {
@@ -340,7 +353,7 @@ func (db *DB) GetTopFacilityLibraries(id int, perPage int, days int) ([]models.O
 	daysAgo := time.Now().AddDate(0, 0, -days)
 	if err := db.Table("open_content_activities oca").
 		Select("l.title, l.url, l.thumbnail_url as thumbnail_url, l.open_content_provider_id, l.id as content_id, 'library' as type, count(l.id) as visits").
-		Joins("LEFT JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id").
+		Joins("JOIN libraries l on l.id = oca.content_id AND l.open_content_provider_id = oca.open_content_provider_id and l.deleted_at is null").
 		Where("oca.facility_id = ? AND oca.request_ts >= ?", id, daysAgo).
 		Group("l.title, l.url, l.thumbnail_url, l.open_content_provider_id, l.id").
 		Order("visits DESC").
