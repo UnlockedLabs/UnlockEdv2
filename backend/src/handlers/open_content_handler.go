@@ -32,19 +32,17 @@ func (srv *Server) handleIndexOpenContent(w http.ResponseWriter, r *http.Request
 }
 
 func (srv *Server) handleGetUserFavoriteOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	page, perPage := srv.getPaginationInfo(r)
-	search := r.URL.Query().Get("search")
-	orderBy := r.URL.Query().Get("order_by")
-	total, favorites, err := srv.Db.GetUserFavorites(srv.getUserID(r), page, perPage, orderBy, search)
+	args := srv.getQueryContext(r)
+	favorites, err := srv.Db.GetUserFavorites(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	meta := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, favorites, meta)
+	return writePaginatedResponse(w, http.StatusOK, favorites, args.IntoMeta())
 }
 
 func (srv *Server) handleGetUserFavoriteOpenContentGroupings(w http.ResponseWriter, r *http.Request, log sLog) error {
-	favorites, err := srv.Db.GetUserFavoriteGroupings(srv.getUserID(r))
+	args := srv.getQueryContext(r)
+	favorites, err := srv.Db.GetUserFavoriteGroupings(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

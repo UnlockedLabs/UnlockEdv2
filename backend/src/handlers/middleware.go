@@ -81,8 +81,13 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 			}
 		}
 		var library models.Library
-		if err != nil { //check if there was an error
-			if srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").Where("id = ?", resourceID).First(&library).RowsAffected == 0 {
+		if err != nil {
+			query := srv.Db.Model(&models.Library{}).Preload("OpenContentProvider").
+				Select("libraries.*, fvs.visibility_status").
+				Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
+					and fvs.content_id = libraries.id
+					and fvs.facility_id = ?`, user.FacilityID)
+			if query.First(&library, "id = ?", resourceID).RowsAffected == 0 {
 				srv.errorResponse(w, http.StatusNotFound, "Library not found.")
 				return
 			}

@@ -60,7 +60,8 @@ func TestTopUserOpenContentHandler(t *testing.T) {
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				id, _ := strconv.Atoi(test.mapKeyValues["id"].(string))
-				expectedOpenContent, err := server.Db.GetTopUserOpenContent(id)
+				args := models.QueryContext{FacilityID: 1}
+				expectedOpenContent, err := server.Db.GetTopUserOpenContent(id, &args)
 				if err != nil {
 					t.Fatalf("unable to get open content, error is %v", err)
 				}

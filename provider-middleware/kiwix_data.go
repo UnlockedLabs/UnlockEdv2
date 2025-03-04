@@ -76,7 +76,6 @@ func (ks *KiwixService) IntoLibrary(entry Entry, providerId uint) *models.Librar
 		Description:           models.StringPtr(string(entry.Summary)),
 		Url:                   url,
 		ThumbnailUrl:          models.StringPtr(thumbnailURL),
-		VisibilityStatus:      false,
 	}
 }
 
