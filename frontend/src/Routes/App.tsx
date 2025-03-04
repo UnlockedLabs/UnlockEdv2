@@ -109,7 +109,7 @@ const nonAdminLoggedInRoutes = DeclareAuthenticatedRoutes([
         }
     },
     {
-        path: 'home',
+        path: 'temp-home',
         element: <StudentLayer0 />,
         handle: {
             title: 'UnlockEd'

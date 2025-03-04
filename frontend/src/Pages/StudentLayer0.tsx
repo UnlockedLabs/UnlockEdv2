@@ -11,7 +11,13 @@ export default function StudentLayer0() {
                 alt="UnlockEd Logo"
                 className="w-125px h-125px"
             />
-            <div className="card card-row-padding"></div>
+            <div title="Error" />
+            <div className="text-center">
+                <div className="mb-4 font-medium text-xl text-red-600">
+                    Please contact your administrator to get access to
+                    application features
+                </div>
+            </div>
         </div>
     );
 }

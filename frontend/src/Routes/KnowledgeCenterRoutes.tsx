@@ -19,7 +19,7 @@ import LibraryViewer from '@/Pages/LibraryViewer';
 import VideoViewer from '@/Components/VideoEmbedViewer';
 import VideoContent from '@/Components/VideoContent';
 import OpenContent from '@/Pages/OpenContent';
-import StudentLayer1 from '@/Pages/StudentLayer1';
+import ResidentHome from '@/Pages/ResidentHome';
 
 export const KnowledgeCenterAdminRoutes: RouteObject =
     DeclareAuthenticatedRoutes(
@@ -73,11 +73,11 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
 export const KnowledgeCenterRoutes: RouteObject = DeclareAuthenticatedRoutes(
     [
         {
-            path: 'trending-content',
-            element: <StudentLayer1 />,
+            path: 'home',
+            element: <ResidentHome />,
             loader: getStudentLevel1Data,
             handle: {
-                title: 'Trending Content'
+                title: 'Home'
             }
         },
         {

@@ -17,8 +17,7 @@ import {
     RectangleStackIcon,
     CogIcon,
     LightBulbIcon,
-    RocketLaunchIcon,
-    ArrowTrendingUpIcon
+    RocketLaunchIcon
 } from '@heroicons/react/24/solid';
 import {
     handleLogout,
@@ -210,7 +209,7 @@ export default function Navbar({
                                 ) && (
                                     <>
                                         <li>
-                                            <Link to="/home">
+                                            <Link to="/temp-home">
                                                 <ULIComponent icon={HomeIcon} />
                                                 Home
                                             </Link>
@@ -223,11 +222,9 @@ export default function Navbar({
                             ) && (
                                 <>
                                     <li>
-                                        <Link to="/trending-content">
-                                            <ULIComponent
-                                                icon={ArrowTrendingUpIcon}
-                                            />
-                                            Trending Content
+                                        <Link to="/home">
+                                            <ULIComponent icon={HomeIcon} />
+                                            Home
                                         </Link>
                                     </li>
                                     <li>

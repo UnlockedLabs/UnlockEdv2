@@ -16,7 +16,7 @@ import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
 
-export default function StudentLayer1() {
+export default function ResidentHome() {
     const navigate = useNavigate();
     const { topUserContent, topFacilityContent } = useLoaderData() as {
         topUserContent: OpenContentItem[];

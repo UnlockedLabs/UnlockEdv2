@@ -192,10 +192,10 @@ const getAdminLink = (user: User): string => {
 
 const getResidentLink = (user: User): string => {
     if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
-        return '/trending-content';
+        return '/home';
     }
     if (user.feature_access.includes(FeatureAccess.ProviderAccess)) {
         return '/learning-path';
     }
-    return '/home';
+    return '/temp-home';
 };
