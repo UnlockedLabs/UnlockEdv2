@@ -5,98 +5,102 @@ import {
     XAxis,
     YAxis,
     CartesianGrid,
-    Tooltip
+    Tooltip,
+    ResponsiveContainer
 } from 'recharts';
 import { ThemeContext } from '@/Context/ThemeContext';
-import { ResponsiveContainer } from 'recharts';
+import { UserEngagementTimes } from '@/common';
 
 interface EngagementRateGraphProps {
-    peak_login_times: { time_interval: string; total_logins: number }[];
+    viewType: 'hourly' | 'daily';
+    data: UserEngagementTimes[];
 }
 
-const EngagementRateGraph = ({
-    peak_login_times
-}: EngagementRateGraphProps) => {
+const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
     const { theme } = useContext(ThemeContext);
 
     const strokeColor = theme === 'light' ? '#666' : '#CCC';
     const lineColor = theme === 'light' ? '#18ABA0' : '#61BAB2';
     const backgroundColor = theme === 'light' ? '#FFFFFF' : '#0F2926';
 
-    const [xTicks, setxTicks] = useState(2);
+    const [xTicks, setXTicks] = useState(2);
+
     useEffect(() => {
         const handleResize = () => {
             const width = window.outerWidth;
-            if (width < 640) {
-                setxTicks(8);
-            } else if (width < 900) {
-                setxTicks(6);
-            } else {
-                setxTicks(3);
-            }
+            setXTicks(width < 640 ? 8 : width < 900 ? 6 : 3);
         };
 
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-    const fullDayData = useMemo(() => {
-        const hoursInDay = Array.from({ length: 24 }, (_, i) => i);
-        const dataMap = new Map(
-            hoursInDay.map((hour) => [
-                hour,
-                {
-                    time: new Date(2023, 0, 1, hour, 0).toLocaleTimeString([], {
+
+    const processedData = useMemo(() => {
+        if (viewType === 'daily') {
+            const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
+            const dataMap = new Map(
+                daysInMonth.map((day) => [
+                    day,
+                    { time: `Day ${day}`, logins: 0 }
+                ])
+            );
+
+            data.forEach(({ time_interval, total_hours }) => {
+                const date = new Date(time_interval);
+                const dayOfMonth = date.getDate();
+                dataMap.set(dayOfMonth, {
+                    time: `Day ${dayOfMonth}`,
+                    logins: total_hours ?? 0
+                });
+            });
+
+            return Array.from(dataMap.values());
+        } else {
+            const hoursInDay = Array.from({ length: 24 }, (_, i) => i);
+            const dataMap = new Map(
+                hoursInDay.map((hour) => [
+                    hour,
+                    {
+                        time: new Date(2023, 0, 1, hour, 0).toLocaleTimeString(
+                            [],
+                            { hour: '2-digit', minute: '2-digit', hour12: true }
+                        ),
+                        logins: 0
+                    }
+                ])
+            );
+
+            data.forEach(({ time_interval, total_hours }) => {
+                const date = new Date(time_interval);
+                const localHour = date.getHours();
+                dataMap.set(localHour, {
+                    time: date.toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: true
                     }),
-                    logins: 0
-                }
-            ])
-        );
-
-        peak_login_times.forEach(({ time_interval, total_logins }) => {
-            const date = new Date(time_interval);
-            const localHour = date.getHours();
-            const localTime = date.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
+                    logins: total_hours ?? 0
+                });
             });
 
-            dataMap.set(localHour, {
-                time: localTime,
-                logins: total_logins
-            });
-        });
+            return Array.from(dataMap.values());
+        }
+    }, [data, viewType]);
 
-        return Array.from(dataMap.values());
-    }, [peak_login_times]);
     return (
         <ResponsiveContainer width="100%" height="100%" className="pt-2">
             <LineChart
-                data={fullDayData}
+                data={processedData}
                 margin={{ top: 20, right: 30, left: 50, bottom: 40 }}
             >
                 <CartesianGrid stroke={strokeColor} strokeDasharray="3 3" />
-
                 <XAxis
                     dataKey="time"
                     interval={xTicks}
-                    tickFormatter={(tick: string) => {
-                        const [hours, minutes] = tick.split(':');
-                        const date = new Date();
-                        date.setHours(parseInt(hours), parseInt(minutes));
-                        return date.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                        });
-                    }}
                     stroke={strokeColor}
                     label={{
-                        value: 'Time',
+                        value: viewType === 'daily' ? 'Day' : 'Time',
                         style: { fill: strokeColor },
                         dy: 20,
                         zIndex: 100
@@ -108,16 +112,10 @@ const EngagementRateGraph = ({
                         value: 'Logins',
                         angle: -90,
                         dx: -20,
-                        style: {
-                            fill: strokeColor,
-                            textAnchor: 'middle'
-                        }
+                        style: { fill: strokeColor, textAnchor: 'middle' }
                     }}
                 />
-                <Tooltip
-                    labelClassName="text-body"
-                    contentStyle={{ backgroundColor: backgroundColor }}
-                />
+                <Tooltip contentStyle={{ backgroundColor }} />
                 <Line
                     type="monotone"
                     dataKey="logins"

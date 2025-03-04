@@ -31,6 +31,7 @@ type (
 		FacilityName  string                 `json:"facility_name"`
 		KratosID      string                 `json:"kratos_id"`
 		FeatureAccess []models.FeatureAccess `json:"feature_access"`
+		SessionID     string                 `json:"session_id"`
 	}
 )
 
@@ -155,6 +156,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	}
 	traits := claims.getTraits()
 	traits["id"] = user.ID
+	traits["session_id"] = claims.SessionID
 	traits["kratos_id"] = claims.KratosID
 	traits["created_at"] = user.CreatedAt
 	traits["name_first"] = user.NameFirst
@@ -196,6 +198,10 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 			log.WithFields(fields).Errorln("error decoding active session from ory response")
 			return nil, hasCookie, err
 		}
+		sessionID, ok := oryResp["id"].(string)
+		if !ok {
+			return nil, hasCookie, errors.New("ory session ID not found")
+		}
 		if active {
 			identity, ok := oryResp["identity"].(map[string]interface{})
 			if ok {
@@ -235,6 +241,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					KratosID:      kratosID,
 					Role:          user.Role,
 					FeatureAccess: srv.features,
+					SessionID:     sessionID,
 				}
 				if string(user.Role) != traits["role"].(string) {
 					err := srv.updateUserTraitsInKratos(claims)

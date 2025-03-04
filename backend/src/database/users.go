@@ -216,9 +216,35 @@ func (db *DB) IncrementUserLogin(username string) error {
 		log.Errorf("Error incrementing login activity: %v", err)
 		return newUpdateDBError(err, "login_activity")
 	}
-
 	log.Printf("FINISHED Incremented login count for %s", username)
 	return nil
+}
+
+func (db *DB) LogUserSessionStarted(userID uint, sessionID string) {
+	if db.Where("user_id = ? and session_id = ?", userID, sessionID).First(&models.UserSessionTracking{}).RowsAffected > 0 {
+		log.Warn("The record already exists skipping the log in activity")
+		return
+	}
+
+	userTracking := models.UserSessionTracking{
+		UserID:         userID,
+		SessionStartTS: time.Now(),
+		SessionID:      sessionID,
+	}
+	if err := db.Create(&userTracking).Error; err != nil {
+		log.Warnf("Unable to insert user for session tracking: %v", err)
+	}
+}
+
+func (db *DB) LogUserSessionEnded(userID uint, sessionID string) {
+	var userSessionTracking models.UserSessionTracking
+	if err := db.Where("user_id = ? and session_id = ?", userID, sessionID).Order("session_start_ts desc").First(&userSessionTracking).Error; err != nil {
+		log.Warnf("Unable to find user record to update user for session tracking: %v", err)
+	}
+
+	if err := db.Model(&userSessionTracking).Update("session_end_ts", time.Now()).Error; err != nil {
+		log.Warnf("Unable to update user for session tracking: %v", err)
+	}
 }
 
 func (db *DB) GetNumberOfActiveUsersForTimePeriod(active bool, days int, facilityId *uint) (int64, error) {
@@ -306,4 +332,84 @@ func (db *DB) GetLoginActivity(days int, facilityID *uint) ([]models.LoginActivi
 		return nil, newGetRecordsDBError(err, "login_activity")
 	}
 	return acitvity, nil
+}
+
+type LoginEngagementActivityWithUserInfo struct {
+	UserInfo            models.User                `json:"user_info"`
+	UserEngagementTimes []models.SessionEngagement `json:"user_engagement_times"`
+}
+
+func (db *DB) GetLoginEngagementActivity(userID int) (*LoginEngagementActivityWithUserInfo, error) {
+	var sessionEngagement []models.SessionEngagement
+
+	query := db.Table("user_session_tracking as ust").
+		Select(`ust.user_id,
+	ANY_VALUE(u.name_first) AS name_first,
+	ANY_VALUE(u.name_last) AS name_last,
+	ANY_VALUE(u.username) AS username,
+	TO_CHAR(DATE(ust.session_start_ts), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS time_interval,
+	SUM(EXTRACT(EPOCH FROM ust.session_duration) / 3600) AS total_hours,
+	SUM(EXTRACT(EPOCH FROM ust.session_duration) / 60) AS total_minutes`).
+		Joins("JOIN users u ON ust.user_id = u.id").
+		Where("ust.user_id = ?", userID).
+		Group("ust.user_id, time_interval").
+		Order("ust.user_id, time_interval")
+
+	if err := query.Find(&sessionEngagement).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "session_engagement")
+	}
+
+	var usrInfo models.User
+
+	if len(sessionEngagement) > 0 {
+		usrInfo = models.User{
+			DatabaseFields: models.DatabaseFields{
+				ID: uint(sessionEngagement[0].UserId),
+			},
+			NameFirst: sessionEngagement[0].NameFirst,
+			NameLast:  sessionEngagement[0].NameLast,
+			Username:  sessionEngagement[0].Username,
+		}
+	} else {
+		log.Warnf("No session data found for user with id %d", userID)
+	}
+
+	result := &LoginEngagementActivityWithUserInfo{
+		UserInfo:            usrInfo,
+		UserEngagementTimes: sessionEngagement,
+	}
+	return result, nil
+}
+
+func (db *DB) GetEngagementActivityMetrics(userID int) (*models.EngagementActivityMetrics, error) {
+	var engagementActivityMetrics models.EngagementActivityMetrics
+	query := db.Table("open_content_activities ").
+		Select(`user_id,
+			COUNT(DISTINCT CAST(request_ts AS DATE)) AS total_active_days_monthly,
+			AVG(EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 3600) AS total_hours_active_monthly,
+			SUM(EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 3600) / 4 AS total_hours_active_weekly,
+			SUM(EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 60) / 4 AS total_minutes_active_weekly,
+			SUM(
+				CASE
+					WHEN request_ts >= date_trunc('week', CURRENT_DATE)
+					THEN EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 3600
+					ELSE 0
+				END
+			) AS total_hours_engaged,
+			SUM(
+				CASE
+					WHEN request_ts >= date_trunc('week', CURRENT_DATE)
+					THEN EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 60
+					ELSE 0
+				END
+			) AS total_minutes_engaged,
+			MIN(request_ts) AS first_active_date,
+			MAX(request_ts) AS last_active_date`).
+		Where(`request_ts >= CURRENT_DATE - INTERVAL '30 days' AND user_id = ? `, userID).
+		Group("user_id")
+
+	if err := query.Find(&engagementActivityMetrics).Error; err != nil {
+		return nil, NewDBError(err, "error getting engagement_activity")
+	}
+	return &engagementActivityMetrics, nil
 }

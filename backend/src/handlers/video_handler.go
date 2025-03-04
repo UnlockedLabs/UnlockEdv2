@@ -55,7 +55,9 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 		UserID:                user.UserID,
 		ContentID:             video.ID,
 	}
-	srv.Db.CreateContentActivity(videoViewerUrl, &activity)
+	if !user.isAdmin() {
+		srv.createContentActivityAndNotifyWS(videoViewerUrl, &activity)
+	}
 	return writeJsonResponse(w, http.StatusOK, video)
 }
 

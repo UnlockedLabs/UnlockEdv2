@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -279,6 +280,106 @@ func seedTestData(db *gorm.DB) {
 			}
 		}
 	}
+	createUserSessionActivity(db, dbUsers)
+}
+
+func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
+	now := time.Now()
+	threeMonthsInPast := now.AddDate(0, -3, 0)
+	for _, user := range dbUsers {
+		numSessions := rand.Intn(90)
+		for i := 0; i < numSessions; i++ {
+			randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
+			sessionDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
+			sessionHours := rand.Intn(24)
+			sessionMinutes := rand.Intn(60)
+			sessionSeconds := rand.Intn(60)
+			sessionStart := time.Date(sessionDate.Year(), sessionDate.Month(), sessionDate.Day(), sessionHours, sessionMinutes, sessionSeconds, 0, time.UTC)
+			sessionEnd := sessionStart.Add(time.Duration(rand.Intn(720)+15) * time.Minute)
+			userSessionTracking := models.UserSessionTracking{
+				UserID:         user.ID,
+				SessionStartTS: sessionStart,
+				SessionEndTS:   sessionEnd,
+				SessionID:      sessionStart.Format("2006-01-02 15:04:05"),
+			}
+			if err := db.Create(&userSessionTracking).Error; err != nil {
+				log.Printf("Failed to create userSessionTracking: %v", err)
+			}
+		}
+	}
+
+	openContentUrls := []models.OpenContentUrl{{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/math/acos"},
+		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/math/acosh"},
+		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/math/abs"},
+		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/numeric/fenv"},
+		{ContentURL: "/api/proxy/libraries/1/content/devdocs_en_c_2025-01/index"},
+		{ContentURL: "/api/proxy/libraries/1/"},
+		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/arena/index"},
+		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/index"},
+	}
+
+	for _, url := range openContentUrls {
+		if err := db.Create(&url).Error; err != nil {
+			log.Printf("Failed to create openconenturl: %v", err)
+		}
+	}
+	if err := db.Find(&openContentUrls).Error; err != nil {
+		log.Printf("Failed to get open content urls: %v", err)
+	}
+
+	var libraries []models.Library
+	if err := db.Model(&models.Library{}).Find(&libraries).Error; err != nil {
+		log.Printf("Failed to get open content urls: %v", err)
+	}
+
+	for _, user := range dbUsers {
+		if user.Role != "student" {
+			continue
+		}
+		for _, kiwix := range libraries {
+			numSessions := rand.Intn(90)
+			for i := 0; i < numSessions; i++ {
+				// Select random facility, provider, and content
+				urlID := getRandomURLForLibrary(openContentUrls, int(kiwix.ID))
+				randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
+				requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
+				requestHour := rand.Intn(23)
+				requestMinute := rand.Intn(60)
+				requestSecond := rand.Intn(60)
+				requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
+				stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
+				contentActivity := models.OpenContentActivity{
+					RequestTS:             requestTS,
+					OpenContentProviderID: kiwix.OpenContentProviderID,
+					FacilityID:            user.FacilityID,
+					UserID:                user.ID,
+					ContentID:             kiwix.ID,
+					OpenContentUrlID:      urlID,
+					StopTS:                stopTS,
+				}
+				if err := db.Create(&contentActivity).Error; err != nil {
+					log.Printf("Failed to create open content activity: %v", err)
+				}
+			}
+
+		}
+	}
+}
+
+func getRandomURLForLibrary(urls []models.OpenContentUrl, libraryID int) uint {
+	var filteredUrls []models.OpenContentUrl
+	libraryStr := fmt.Sprintf("/libraries/%d/", libraryID)
+	for _, url := range urls {
+		if strings.Contains(url.ContentURL, libraryStr) {
+			filteredUrls = append(filteredUrls, url)
+		}
+	}
+	if len(filteredUrls) == 0 {
+		log.Print("unable to find any matching urls, just going to use the first one in the slice")
+		return urls[0].ID
+	}
+	selectedURL := filteredUrls[rand.Intn(len(filteredUrls))]
+	return selectedURL.ID
 }
 
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {

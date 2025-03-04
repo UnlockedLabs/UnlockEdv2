@@ -144,7 +144,7 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 		http.SetCookie(w, &http.Cookie{
 			Name:     cookie.Name,
 			Value:    cookie.Value,
-			Expires:  time.Now().Add(24 * time.Hour),
+			Expires:  time.Now().Add(12 * time.Hour),
 			SameSite: http.SameSiteNoneMode,
 			HttpOnly: true,
 			Secure:   true,

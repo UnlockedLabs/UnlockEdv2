@@ -1,9 +1,15 @@
 import { MouseEvent, useEffect, useState, useRef } from 'react';
-import { SubmitHandler, FieldValues } from 'react-hook-form';
 import { useParams, useLocation } from 'react-router-dom';
+import { SubmitHandler, FieldValues } from 'react-hook-form';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
-import { Library, ServerResponseOne, ToastState } from '@/common';
+import {
+    Library,
+    ServerResponseOne,
+    ToastState,
+    WsMsg,
+    WsEventType
+} from '@/common';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
@@ -105,38 +111,17 @@ export default function LibraryViewer() {
         };
     }, [libraryId, url, setAuthLayoutPageTitle]);
 
-    const socketRef = useRef<WebSocket | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
     useEffect(() => {
-        //websocket effect
-        const protocol =
-            window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const host = window.location.hostname;
-        const socket = new WebSocket(`${protocol}${host}/api/ws/listen`);
-        // Handle incoming messages
-        socketRef.current = socket;
-        socket.onopen = () => {
-            setIsConnected(true);
-            console.log('WebSocket connected');
-        };
-        socket.onmessage = (event) => {
-            try {
-                setBookmarked(event.data === 'true');
-            } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
+        window.websocket?.setMsgHandler((wsmsg: Partial<WsMsg>) => {
+            if (wsmsg.event_type === WsEventType.BookmarkEvent) {
+                setBookmarked(wsmsg.msg?.msg === 'true');
             }
-        };
-        socket.onclose = () => {
-            console.log('WebSocket closed');
-            setIsConnected(false);
-        };
-        //send message to let server know the user?
+        });
         return () => {
-            if (socketRef.current && isConnected) {
-                socketRef.current.close();
-            }
+            window.websocket?.resetMsgHandler();
+            window.websocket?.notifyOpenContentActivity(true);
         };
-    }, [src, isConnected]);
+    }, []);
 
     const toggleBookmark = (e: MouseEvent) => {
         e.preventDefault();

@@ -22,12 +22,14 @@ type OpenContentProvider struct {
 }
 
 type OpenContentActivity struct {
+	ID                    int64     `gorm:"primaryKey" json:"id"`
 	OpenContentProviderID uint      `gorm:"not null" json:"open_content_provider_id"`
 	FacilityID            uint      `gorm:"not null" json:"facility_id"`
 	UserID                uint      `gorm:"not null" json:"user_id"`
 	ContentID             uint      `gorm:"not null" json:"content_id"`
 	OpenContentUrlID      uint      `gorm:"not null" json:"open_content_url_id"`
 	RequestTS             time.Time `gorm:"type:datetime;default:CURRENT_TIMESTAMP" json:"request_ts"`
+	StopTS                time.Time `gorm:"type:datetime;default:NULL" json:"stop_ts"`
 
 	User                *User                `gorm:"foreignKey:UserID" json:"-"`
 	OpenContentProvider *OpenContentProvider `gorm:"foreignKey:OpenContentProviderID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"open_content_provider"`

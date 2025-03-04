@@ -12,6 +12,7 @@ export enum FeatureAccess {
     ProgramAccess = 'program_management'
 }
 export const INIT_KRATOS_LOGIN_FLOW = '/self-service/login/browser';
+
 export interface User {
     id: number;
     name_first: string;
@@ -20,6 +21,7 @@ export interface User {
     role: UserRole;
     email: string;
     password_reset?: boolean;
+    session_id: string;
     created_at: string;
     updated_at: string;
     facility_name?: string;
@@ -340,7 +342,7 @@ export interface LoginMetrics {
         facility: string;
         new_residents_added: number;
         new_admins_added: number;
-        peak_login_times: LoginActivity[];
+        user_engagement_times: UserEngagementTimes[];
     };
     last_cache: string;
 }
@@ -731,4 +733,63 @@ export interface SearchResultItem extends OpenContentItem {
 export interface Option {
     key: number;
     value: string;
+}
+
+export enum WsEventType {
+    ClientHello = 'client_hello',
+    ClientGoodbye = 'client_goodbye',
+    Pong = 'pong',
+    VisitEvent = 'visits',
+    BookmarkEvent = 'bookmarks'
+}
+
+export interface OcActivityUpdate {
+    activity_id: number;
+}
+
+export interface WsMsg {
+    event_type: WsEventType;
+    msg: MsgContent;
+    user_id: number;
+    session_id?: string;
+}
+
+export interface MsgContent {
+    activity_id: number;
+    msg: string;
+}
+
+export interface UserEngagementTimes {
+    time_interval: string;
+    total_hours: number;
+    facility_id: number;
+}
+
+export interface SessionEngagementActivityWithUserInfo {
+    user_info: User;
+    user_engagement_times: UserEngagementTimes[];
+}
+
+export interface EngagementActivityMetrics {
+    user_id: number;
+    total_active_days_monthly: number;
+    total_hours_active_monthly: number;
+    total_hours_active_weekly: number;
+    total_minutes_active_weekly: number;
+    total_hours_engaged: number;
+    total_minutes_engaged: number;
+    first_active_date: string;
+    last_active_date: string;
+}
+export interface OpenContentResponse extends OpenContentItem {
+    is_featured: boolean;
+    total_hours: number;
+    total_minutes: number;
+}
+
+export interface ResidentEngagementProfile {
+    session_engagement: SessionEngagementActivityWithUserInfo;
+    activity_engagement: EngagementActivityMetrics;
+    top_libraries: OpenContentResponse[];
+    recent_videos: OpenContentResponse[];
 }
