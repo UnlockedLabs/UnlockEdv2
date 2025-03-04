@@ -15,7 +15,11 @@ export default function OpenContentCardRow({
             content.content_type === 'video'
                 ? `/viewer/videos/${content.content_id}`
                 : `/viewer/libraries/${content.content_id}`;
-        navigate(basePath);
+        const obj =
+            content.content_type === 'library'
+                ? { state: { url: content.url, title: content.title } }
+                : {};
+        navigate(basePath, obj);
     }
     return (
         <div

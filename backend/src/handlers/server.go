@@ -393,6 +393,25 @@ func (srv *Server) isTesting(r *http.Request) bool {
 	return r.Context().Value(TestingClaimsKey) != nil
 }
 
+func (srv *Server) createContentActivityAndNotifyWS(urlString string, activity *models.OpenContentActivity) {
+	srv.Db.CreateContentActivity(urlString, activity)
+	if activity.ID > 0 {
+		srv.wsClient.notifyUser(WsMsg{EventType: VisitEvent, UserID: activity.UserID, Msg: MsgContent{ActivityID: activity.ID}})
+		if !strings.HasPrefix(urlString, "/viewer/videos") {
+			var (
+				bookmark models.OpenContentFavorite
+				wsMsg    MsgContent
+			)
+			if srv.Db.Model(&models.OpenContentFavorite{}).Where("user_id = ? AND content_id = ? AND open_content_url_id = ?", activity.UserID, activity.ContentID, activity.OpenContentUrlID).First(&bookmark).RowsAffected > 0 {
+				wsMsg = MsgContent{Msg: "true"}
+			} else {
+				wsMsg = MsgContent{Msg: "false"}
+			}
+			srv.wsClient.notifyUser(WsMsg{EventType: BookmarkEvent, UserID: activity.UserID, Msg: wsMsg})
+		}
+	}
+}
+
 func (srv *Server) getPaginationInfo(r *http.Request) (int, int) {
 	page := r.URL.Query().Get("page")
 	perPage := r.URL.Query().Get("per_page")

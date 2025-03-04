@@ -182,9 +182,11 @@ const OperationalInsights = () => {
                                     debounce={500}
                                 >
                                     <EngagementRateGraph
-                                        peak_login_times={
-                                            metrics?.data.peak_login_times || []
+                                        data={
+                                            metrics?.data
+                                                .user_engagement_times || []
                                         }
+                                        viewType="hourly"
                                     />
                                 </ResponsiveContainer>
                             </div>

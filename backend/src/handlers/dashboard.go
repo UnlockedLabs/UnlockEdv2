@@ -20,7 +20,49 @@ func (srv *Server) registerDashboardRoutes() []routeDef {
 		{"GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2, true, models.Feature()},
 		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
 		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
+		{"GET /api/users/{id}/profile", srv.handleResidentProfile, false, models.Feature()},
 	}
+}
+
+func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
+
+	loginData, err := srv.Db.GetLoginEngagementActivity(userID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	activityEngagement, err := srv.Db.GetEngagementActivityMetrics(userID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	topLibraries, err := srv.Db.GetTopFiveLibrariesByUserID(userID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	recentVideos, err := srv.Db.GetMostRecentFiveVideosByUserID(userID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	response := struct {
+		LoginEngagement    interface{} `json:"session_engagement"`
+		ActivityEngagement interface{} `json:"activity_engagement"`
+		TopLibraries       interface{} `json:"top_libraries"`
+		RecentVideos       interface{} `json:"recent_videos"`
+	}{
+		LoginEngagement:    loginData,
+		ActivityEngagement: activityEngagement,
+		TopLibraries:       topLibraries,
+		RecentVideos:       recentVideos,
+	}
+
+	return writeJsonResponse(w, http.StatusOK, response)
 }
 
 func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log sLog) error {

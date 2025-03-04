@@ -4,6 +4,8 @@ import { useMatches, UIMatch, Outlet, useLoaderData } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
 import { Facility, RouteLabel } from '@/common';
 import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
+import WebsocketSession from '@/session_ws';
+import { useAuth } from '@/useAuth';
 
 // Extend RouteMatch with custom RouteMeta
 interface CustomRouteMatch extends UIMatch {
@@ -11,6 +13,10 @@ interface CustomRouteMatch extends UIMatch {
 }
 
 export default function AuthenticatedLayout() {
+    const { user } = useAuth();
+    if (!window.websocket && user) {
+        window.websocket = new WebsocketSession(user);
+    }
     const matches = useMatches() as CustomRouteMatch[];
     const currentMatch = matches.find((match) => match?.handle?.title);
     const facilities = useLoaderData() as Facility[] | null;

@@ -34,6 +34,7 @@ import {
     TextOnlyModal
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
+import { useNavigate } from 'react-router-dom';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -134,6 +135,13 @@ export default function StudentManagement() {
         setPageQuery(1);
         void mutate();
     };
+
+    const navigate = useNavigate();
+
+    const handleShowUserProfileClick = (id: number) => {
+        navigate(`/residents/${id}`);
+    };
+
     return (
         <div>
             <div className="flex flex-col space-y-6 overflow-x-auto rounded-lg p-4 px-5">
@@ -190,7 +198,12 @@ export default function StudentManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-5 justify-items-center"
+                                            className="card p-4 w-full grid-cols-4 justify-items-center cursor-pointer"
+                                            onClick={() =>
+                                                handleShowUserProfileClick(
+                                                    user.id
+                                                )
+                                            }
                                         >
                                             <td className="justify-self-start">
                                                 {user.name_first}{' '}
@@ -243,7 +256,8 @@ export default function StudentManagement() {
                                                         }
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={PencilSquareIcon}
-                                                        onClick={() => {
+                                                        onClick={(e) => {
+                                                            e?.stopPropagation();
                                                             setTargetUser({
                                                                 action: CRUDActions.Edit,
                                                                 target: user
@@ -262,7 +276,8 @@ export default function StudentManagement() {
                                                         icon={
                                                             ArrowPathRoundedSquareIcon
                                                         }
-                                                        onClick={() => {
+                                                        onClick={(e) => {
+                                                            e?.stopPropagation();
                                                             setTargetUser({
                                                                 action: CRUDActions.Reset,
                                                                 target: user
@@ -279,7 +294,8 @@ export default function StudentManagement() {
                                                         }
                                                         tooltipClassName="tooltip-left cursor-pointer"
                                                         icon={TrashIcon}
-                                                        onClick={() => {
+                                                        onClick={(e) => {
+                                                            e?.stopPropagation();
                                                             setTargetUser({
                                                                 action: CRUDActions.Delete,
                                                                 target: user

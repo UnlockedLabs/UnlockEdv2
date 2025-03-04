@@ -5,12 +5,14 @@ interface StatsCardProps {
     number: string;
     label: string;
     tooltip?: string;
+    useToLocaleString?: boolean; //true will be the default bc component already existed with the formatNumber function operating on the number that is passed into the function
 }
 export default function StatsCard({
     title,
     number,
     label,
-    tooltip
+    tooltip,
+    useToLocaleString = true
 }: StatsCardProps) {
     const formatNumber = (num: string) => {
         return parseInt(num).toLocaleString('en-US');
@@ -31,7 +33,7 @@ export default function StatsCard({
                 )}
             </div>
             <p className="text-teal-3 text-4xl font-bold mt-4">
-                {formatNumber(number)}
+                {useToLocaleString ? formatNumber(number) : number}
                 <span className="text-teal-4 text-base font-bold ml-3">
                     {label[0].toUpperCase() + label.slice(1)}
                 </span>

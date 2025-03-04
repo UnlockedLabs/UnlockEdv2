@@ -5,7 +5,7 @@ import {
     BookOpenIcon,
     InformationCircleIcon
 } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import OpenContentCard from './cards/OpenContentCard';
 
 type OpenContentItemMap = Record<string, OpenContentItem[]>;
@@ -75,13 +75,15 @@ export default function OpenContentItemAccordion({
                     </button>
                     <div
                         className={`transition-[max-height] duration-400 ${
-                            activeKey === title ? 'overflow-visible max-h-[800px]' : 'max-h-0 overflow-hidden'
+                            activeKey === title
+                                ? 'overflow-visible max-h-[800px]'
+                                : 'max-h-0 overflow-hidden'
                         }`}
                     >
                         <div className="flex flex-col gap-4">
                             {contentItems.map((item) => (
                                 <OpenContentCard
-                                    key={item.content_id}
+                                    key={item.url}
                                     content={item}
                                 />
                             ))}

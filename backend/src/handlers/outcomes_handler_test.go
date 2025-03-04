@@ -54,6 +54,12 @@ func getOutcomesByTypeAndOrdered(outcomeType, orderBy, order string) map[string]
 	}
 	args := getDefaultQueryCtx()
 	args.UserID = 4
+	if orderBy == "" {
+		orderBy = "created_at"
+	}
+	if order == "" {
+		order = "desc"
+	}
 	args.Order = order
 	args.OrderBy = orderBy
 	outcomes, err := server.Db.GetOutcomesForUser(&args, outType)
