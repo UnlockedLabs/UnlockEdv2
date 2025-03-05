@@ -378,13 +378,15 @@ type OpenContentResponse struct {
 	TotalMinutes float64 `json:"total_minutes"`
 }
 
-func (db *DB) GetTopFiveLibrariesByUserID(userID int) ([]OpenContentResponse, error) {
+func (db *DB) GetTopFiveLibrariesByUserID(userID int, args *models.QueryContext) ([]OpenContentResponse, error) {
 	libraries := make([]OpenContentResponse, 0, 5)
 	query := db.Table("libraries lib ").
 		Select(`lib.id as content_id,lib.title,
 			lib.url,
 			lib.thumbnail_url,
-			lib.visibility_status,
+			CASE WHEN fvs.visibility_status IS NULL THEN false
+				ELSE fvs.visibility_status
+			END AS visibility_status,
 			lib.open_content_provider_id, 
 			CASE WHEN ocf.facility_id IS NOT NULL AND ocf.facility_id = u.facility_id THEN true
 				ELSE false
@@ -396,13 +398,16 @@ func (db *DB) GetTopFiveLibrariesByUserID(userID int) ([]OpenContentResponse, er
 				AND ocp.currently_enabled = TRUE
 				AND ocp.deleted_at IS NULL`).
 		Joins(`join open_content_activities oca on oca.open_content_provider_id = ocp.id
-			and oca.content_id = lib.id`).
+				and oca.content_id = lib.id`).
 		Joins(`join users u on u.id = oca.user_id
-			and u.id = ?`, userID).
+				and u.id = ?`, userID).
 		Joins(`left outer join open_content_favorites ocf on ocf.open_content_provider_id = ocp.id
-			and ocf.content_id = lib.id`).
+				and ocf.content_id = lib.id`).
+		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = lib.open_content_provider_id
+			and fvs.content_id = lib.id
+			and fvs.facility_id = ?`, args.FacilityID).
 		Where("oca.user_id = ?", userID).
-		Group("lib.title, lib.url, lib.thumbnail_url, lib.visibility_status, lib.open_content_provider_id, ocf.facility_id, u.facility_id, lib.id").
+		Group("lib.title, lib.url, lib.thumbnail_url, fvs.visibility_status, lib.open_content_provider_id, ocf.facility_id, u.facility_id, lib.id").
 		Order("8 desc")
 	if err := query.Find(&libraries).Error; err != nil {
 		return nil, NewDBError(err, "error getting top 5 libraries")
