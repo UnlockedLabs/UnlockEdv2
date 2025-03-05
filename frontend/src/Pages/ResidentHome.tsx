@@ -76,9 +76,9 @@ export default function ResidentHome() {
                         navigateToOpenContent={navigateToOpenContent}
                     />
                 </div>
-
                 <ExpandableCardGrid
                     items={helpfulLinks?.data.helpful_links ?? []}
+                    title="Helpful Links"
                     emptyStateText="Add helpful links to share"
                     emptyStateLink="knowledge-center/helpful-links"
                     cols={4}
