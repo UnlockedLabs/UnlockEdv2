@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - demo
+      - beta
 
 permissions:
   id-token: write
@@ -57,6 +58,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set Image Version
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
+            echo "IMAGE_VERSION=beta" >> $GITHUB_ENV
+          else
+            echo "IMAGE_VERSION=latest" >> $GITHUB_ENV
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -86,22 +95,22 @@ jobs:
               case $path in
                 "frontend/")
                   echo "Building frontend image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:latest --push frontend/.
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
                   deployments+=("frontend")
                   ;;
                 "backend/")
                   echo "Building backend image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:latest --push -f backend/Dockerfile .
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION} --push -f backend/Dockerfile .
                   deployments+=("server")
                   ;;
                 "provider-middleware/")
                   echo "Building middleware image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:latest --push -f provider-middleware/Dockerfile .
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
                   deployments+=("provider-service")
                   ;;
                 "backend/tasks")
                   echo "Building scheduler image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:latest --push -f backend/tasks/Dockerfile .
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:${IMAGE_VERSION} --push -f backend/tasks/Dockerfile .
                   deployments+=("cron-tasks")
                   ;;
               esac
@@ -147,7 +156,10 @@ jobs:
             echo "No deployments need restarting."
             exit 0
           fi
-          if [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
+          if [[ "${GITHUB_REF}" == "refs/heads/beta" ]]; then
+            echo "Skipping deployment restarts for branch ${GITHUB_REF}"
+            exit 0
+          elif [[ "${GITHUB_REF}" == "refs/heads/demo" ]]; then
             CONTEXT="demo"
           elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
             CONTEXT="staging"
