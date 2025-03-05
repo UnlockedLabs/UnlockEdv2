@@ -39,8 +39,8 @@ func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-
-	topLibraries, err := srv.Db.GetTopFiveLibrariesByUserID(userID)
+	args := srv.getQueryContext(r)
+	topLibraries, err := srv.Db.GetTopFiveLibrariesByUserID(userID, &args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
