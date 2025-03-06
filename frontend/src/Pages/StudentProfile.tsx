@@ -33,22 +33,19 @@ const StudentProfile = () => {
               2
           );
 
-    const weekNumber = isLessThanOneHour ? (metrics?.activity_engagement.total_minutes_engaged ?? 0).toFixed(2) :
-        (metrics?.activity_engagement.total_hours_engaged ?? 0).toFixed(2);
-  
-    const avgLabel = isLessAvgThanOneHour
-        ? 'AVG Minutes PER Week'
-        : 'AVG Hours PER Week';
+    const weekNumber = isLessThanOneHour
+        ? (metrics?.activity_engagement.total_minutes_engaged ?? 0).toFixed(2)
+        : (metrics?.activity_engagement.total_hours_engaged ?? 0).toFixed(2);
 
-        const weekLabel = isLessThanOneHour
-        ? 'Total Minutes This Week'
-        : 'Total Hours This Week';
+    const avgLabel = isLessAvgThanOneHour ? 'Min' : 'Hrs';
+
+    const weekLabel = isLessThanOneHour ? 'Minutes' : 'Hours';
 
     const avgToolTip = isLessAvgThanOneHour
-        ? 'Average number of minutes resident is logged in to UnlockedEd'
-        : 'Average number of hours resident is logged in to UnlockedEd';
+        ? 'Average minutes logged in to UnlockedEd'
+        : 'Average hours logged in to UnlockedEd';
 
-        const weekToolTip = isLessThanOneHour
+    const weekToolTip = isLessThanOneHour
         ? 'Total number of minutes resident was logged in to UnlockedEd this week'
         : 'Total number of hours resident was logged in to UnlockedEd this week';
 
@@ -59,13 +56,13 @@ const StudentProfile = () => {
             {data && metrics && (
                 <>
                     <div className="flex flex-row gap-6 items-stretch">
-                        <div className="w-[270px] h-[240px] flex flex-col gap-4">
-                            <div className="card card-row-padding overflow-hidden text-med text-teal-4 flex-1 h-full">
+                        <div className="w-[300px] h-[240px] flex flex-col gap-4">
+                            <div className="card p-4 overflow-hidden flex-1 h-full text-grey-4">
                                 <div className="justify-items-center">
                                     <UserCircleIcon className="w-[64px] h-[64px]" />
                                 </div>
                                 <div className="">
-                                    <div className="text-md mt-2">
+                                    <div className="text-2xl text-center">
                                         {
                                             metrics?.session_engagement
                                                 .user_info.name_first
@@ -75,31 +72,49 @@ const StudentProfile = () => {
                                                 .user_info.name_last
                                         }
                                     </div>
-                                    <div className="text-sm mt-2">
-                                        <span className="font-semibold  justify-self-start">
-                                            Username
-                                        </span>
-                                        {' : '}
-                                        {
-                                            metrics?.session_engagement
-                                                .user_info.username
-                                        }
-                                    </div>
-                                    <div className="text-sm mt-2">
-                                        <span className="font-semibold">
-                                            Joined :
-                                        </span>{' '}
-                                        {new Date(
-                                            metrics.activity_engagement.first_active_date
-                                        ).toLocaleDateString('en-US')}
-                                    </div>
-                                    <div className="text-sm mt-2">
-                                        <span className="font-semibold">
-                                            Last Active :
-                                        </span>{' '}
-                                        {new Date(
-                                            metrics.activity_engagement.last_active_date
-                                        ).toLocaleDateString('en-US')}
+                                    <div className="text -base">
+                                        <div className="grid grid-cols-2">
+                                            <p>Username</p>
+                                            <div className="flex flex-row justify-between">
+                                                <p>:</p>
+                                                {
+                                                    metrics?.session_engagement
+                                                        .user_info.username
+                                                }
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2">
+                                            <p>Joined</p>
+                                            <div className="flex flex-row justify-between">
+                                                <p>:</p>
+                                                {metrics?.activity_engagement
+                                                    ?.first_active_date
+                                                    ? new Date(
+                                                          metrics.activity_engagement.first_active_date
+                                                      ).toLocaleDateString(
+                                                          'en-US',
+                                                          {
+                                                              year: 'numeric',
+                                                              month: 'short',
+                                                              day: 'numeric'
+                                                          }
+                                                      )
+                                                    : 'No Date Available'}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2">
+                                            <p>Last Active</p>
+                                            <div className="flex flex-row justify-between">
+                                                <p>:</p>
+                                                {new Date(
+                                                    metrics.activity_engagement.last_active_date
+                                                ).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -141,20 +156,32 @@ const StudentProfile = () => {
                             number={metrics.activity_engagement.total_active_days_monthly.toFixed(
                                 0
                             )}
-                            label="Days Active This Month"
-                            tooltip="Total number of days resident has been active in UnlockedEd"
+                            label="Days"
+                            tooltip="Total days active in UnlockEd"
                             useToLocaleString={false}
                         />
                         <StatsCard
-                            title="Average Activity Time"
-                            number={avgNumber}
+                            title="Avg Hours Per Week"
+                            number={
+                                parseFloat(avgNumber) === 0
+                                    ? '0'
+                                    : parseFloat(avgNumber) < 1
+                                      ? '<1'
+                                      : avgNumber
+                            }
                             label={avgLabel}
                             tooltip={avgToolTip}
                             useToLocaleString={false}
                         />
                         <StatsCard
-                            title="Total Hours"
-                            number={weekNumber}
+                            title="Total Hours This Week"
+                            number={
+                                parseFloat(weekNumber) === 0
+                                    ? '0'
+                                    : parseFloat(weekNumber) < 1
+                                      ? '<1'
+                                      : weekNumber
+                            }
                             label={weekLabel}
                             tooltip={weekToolTip}
                         />
@@ -171,17 +198,20 @@ const StudentProfile = () => {
                                         <th className="justify-self-start">
                                             Library Name
                                         </th>
-                                        <th># Hours Watching</th>
+                                        <th># Hours</th>
                                         <th className="justify-self-end">
                                             Is Featured
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="flex flex-col gap-4 mt-4">
+                                <tbody className="grid-col-3">
                                     {metrics.top_libraries.map(
                                         (items: OpenContentResponse) => {
                                             return (
-                                                <tr key={items.content_id}>
+                                                <tr
+                                                    className="justify-items-center"
+                                                    key={items.content_id}
+                                                >
                                                     <td className="justify-self-start">
                                                         <img
                                                             className="h-8 mx-auto object-contain"
@@ -195,8 +225,13 @@ const StudentProfile = () => {
                                                             lines={1}
                                                             className="my-auto w-full body font-normal text-left"
                                                         >
-                                                            {items.title ??
-                                                                'Untitled'}
+                                                            {items.is_featured
+                                                                ? `* ${
+                                                                      items.title ??
+                                                                      'Untitled'
+                                                                  }`
+                                                                : items.title ??
+                                                                  'Untitled'}
                                                         </ClampedText>
                                                     </td>
                                                     <td>
@@ -238,7 +273,7 @@ const StudentProfile = () => {
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="flex flex-col gap-4 mt-4">
+                                <tbody className="grid-col-2">
                                     {metrics.recent_videos.length > 0 ? (
                                         metrics.recent_videos.map(
                                             (
@@ -246,7 +281,7 @@ const StudentProfile = () => {
                                                 index: number
                                             ) => {
                                                 return (
-                                                    <tr>
+                                                    <tr className="justify-items-center">
                                                         <td className="justify-self-end">
                                                             <img
                                                                 className="h-8 mx-auto object-contain"
@@ -266,7 +301,7 @@ const StudentProfile = () => {
                                             }
                                         )
                                     ) : (
-                                        <tr>
+                                        <tr className="justify-items-center">
                                             <td className="justify-self-start">
                                                 No Videos Found
                                             </td>
