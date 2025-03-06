@@ -402,7 +402,8 @@ func (db *DB) GetTopFiveLibrariesByUserID(userID int, args *models.QueryContext)
 		Joins(`join users u on u.id = oca.user_id
 				and u.id = ?`, userID).
 		Joins(`left outer join open_content_favorites ocf on ocf.open_content_provider_id = ocp.id
-				and ocf.content_id = lib.id`).
+				and ocf.content_id = lib.id
+				and ocf.facility_id IS NOT NULL`).
 		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = lib.open_content_provider_id
 			and fvs.content_id = lib.id
 			and fvs.facility_id = ?`, args.FacilityID).
