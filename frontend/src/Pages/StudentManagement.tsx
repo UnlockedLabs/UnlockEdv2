@@ -198,7 +198,7 @@ export default function StudentManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-4 justify-items-center cursor-pointer"
+                                            className="card p-4 w-full grid-cols-5 justify-items-center cursor-pointer"
                                             onClick={() =>
                                                 handleShowUserProfileClick(
                                                     user.id
