@@ -71,7 +71,7 @@ export default function LibaryLayout({
         error: librariesError,
         isLoading: librariesLoading
     } = useSWR<ServerResponseMany<Library>, AxiosError>(
-        `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=created_at%20desc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=created_at&order=desc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
     );
 
     const librariesMeta = libraries?.meta ?? {
