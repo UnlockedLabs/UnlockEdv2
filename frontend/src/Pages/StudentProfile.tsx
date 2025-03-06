@@ -9,8 +9,7 @@ import EngagementRateGraph from '@/Components/EngagementRateGraph';
 import { ResponsiveContainer } from 'recharts';
 import StatsCard from '@/Components/StatsCard';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
-import { useParams } from 'react-router-dom';
-import ClampedText from '@/Components/ClampedText';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const StudentProfile = () => {
     const { user_id } = useParams<{ user_id: string }>();
@@ -48,6 +47,11 @@ const StudentProfile = () => {
     const weekToolTip = isLessThanOneHour
         ? 'Total number of minutes resident was logged in to UnlockedEd this week'
         : 'Total number of hours resident was logged in to UnlockedEd this week';
+
+    const navigate = useNavigate();
+    const handleShowLibraryClick = (id: number) => {
+        navigate(`/viewer/libraries/${id}`);
+    };
 
     return (
         <div className="overflow-x-hidden px-5 pb-4">
@@ -123,14 +127,13 @@ const StudentProfile = () => {
                         <div className="flex-1 h-[240px] flex flex-col gap-4">
                             <div className="card card-row-padding overflow-hidden">
                                 <h1 className="">
-                                    {' '}
-                                    {/* {metrics?.session_engagement.user_info.name_first +
-                                        " 's recent Activity"} */}
+                                    {metrics?.session_engagement.user_info
+                                        .name_first + " 's recent Activity"}
                                 </h1>
                                 <div className=" items-stretch">
-                                    <div className="h-[240px] overflow-visible">
+                                    <div className="w-full h-[240px] overflow-visible">
                                         <ResponsiveContainer
-                                            className="h-full p-7"
+                                            className="w-full h-full overflow-visible pb-10"
                                             width="100%"
                                             height="100%"
                                             debounce={500}
@@ -194,61 +197,39 @@ const StudentProfile = () => {
                             </div>
                             <table className="table-2 mb-4">
                                 <thead>
-                                    <tr className="grid-col-3">
+                                    <tr className="grid-col-2">
                                         <th className="justify-self-start">
                                             Library Name
                                         </th>
                                         <th># Hours</th>
-                                        <th className="justify-self-end">
-                                            Is Featured
-                                        </th>
                                     </tr>
                                 </thead>
-                                <tbody className="grid-col-3">
+                                <tbody className="">
                                     {metrics.top_libraries.map(
                                         (items: OpenContentResponse) => {
                                             return (
                                                 <tr
-                                                    className="justify-items-center"
+                                                    className="justify-items-center cursor-pointer"
                                                     key={items.content_id}
+                                                    onClick={() =>
+                                                        handleShowLibraryClick(
+                                                            items.content_id
+                                                        )
+                                                    }
                                                 >
                                                     <td className="justify-self-start">
-                                                        <img
-                                                            className="h-8 mx-auto object-contain"
-                                                            src={
-                                                                items.thumbnail_url ??
-                                                                ''
-                                                            }
-                                                        />
-                                                        <ClampedText
-                                                            as="h3"
-                                                            lines={1}
-                                                            className="my-auto w-full body font-normal text-left"
-                                                        >
-                                                            {items.is_featured
-                                                                ? `* ${
-                                                                      items.title ??
-                                                                      'Untitled'
-                                                                  }`
-                                                                : items.title ??
-                                                                  'Untitled'}
-                                                        </ClampedText>
+                                                        {items.is_featured
+                                                            ? `* ${
+                                                                  items.title ??
+                                                                  'Untitled'
+                                                              }`
+                                                            : items.title ??
+                                                              'Untitled'}
                                                     </td>
-                                                    <td>
+                                                    <td className="justify-self-end">
                                                         {items.total_hours.toFixed(
                                                             2
                                                         )}
-                                                    </td>
-                                                    <td className="justify-self-end">
-                                                        <input
-                                                            name={'is_featured'}
-                                                            type="checkbox"
-                                                            className="checkbox"
-                                                            checked={
-                                                                items.is_featured
-                                                            }
-                                                            readOnly
-                                                        />
                                                     </td>
                                                 </tr>
                                             );
@@ -256,6 +237,11 @@ const StudentProfile = () => {
                                     )}
                                 </tbody>
                             </table>
+                            <div className="border-t border-gray-300 mt-2"></div>
+                            <p className="text-xs text-grey-4 italic">
+                                * Data is based on recent video performance and
+                                may not reflect all content.
+                            </p>
                         </div>
                         {/* <div></div> */}
                         <div className="card pt-2 px-3">
@@ -264,14 +250,7 @@ const StudentProfile = () => {
                             </div>
                             <table className="table-2 mb-4">
                                 <thead>
-                                    <tr className="grid-col-2">
-                                        <th className="justify-self-end">
-                                            Title
-                                        </th>
-                                        <th className="justify-self-start">
-                                            Rank
-                                        </th>
-                                    </tr>
+                                    <tr className="grid-col-2"></tr>
                                 </thead>
                                 <tbody className="grid-col-2">
                                     {metrics.recent_videos.length > 0 ? (
@@ -281,8 +260,11 @@ const StudentProfile = () => {
                                                 index: number
                                             ) => {
                                                 return (
-                                                    <tr className="justify-items-center">
-                                                        <td className="justify-self-end">
+                                                    <tr
+                                                        className="justify-items-center"
+                                                        key={index}
+                                                    >
+                                                        <td className="justify-self-end truncate w-full">
                                                             <img
                                                                 className="h-8 mx-auto object-contain"
                                                                 src={
@@ -290,11 +272,8 @@ const StudentProfile = () => {
                                                                     ''
                                                                 }
                                                             />
-                                                        </td>
-                                                        {items.title ??
-                                                            'Untitled'}
-                                                        <td className="justify-self-start">
-                                                            {index + 1}
+                                                            {items.title ??
+                                                                'Untitled'}
                                                         </td>
                                                     </tr>
                                                 );
