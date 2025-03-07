@@ -3,6 +3,7 @@ import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
 import { FeatureAccess } from '@/common';
 import { AdminRoles } from '@/useAuth';
+import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 
 const routes = DeclareAuthenticatedRoutes(
     [
@@ -15,6 +16,11 @@ const routes = DeclareAuthenticatedRoutes(
                 title: 'Programs',
                 path: ['programs']
             }
+        },
+        {
+            path: 'programs/:id',
+            element: <ProgramOverviewDashboard />,
+            handle: { title: 'Program Overview Dashboard' }
         }
     ],
     AdminRoles,

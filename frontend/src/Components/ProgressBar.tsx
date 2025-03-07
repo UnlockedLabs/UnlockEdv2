@@ -1,4 +1,14 @@
-export default function ProgressBar({ percent }: { percent: number }) {
+export default function ProgressBar({
+    percent,
+    showPercentage = true,
+    numerator = 0,
+    denominator = 100
+}: {
+    percent: number;
+    showPercentage?: boolean;
+    numerator?: number;
+    denominator?: number;
+}) {
     return (
         <div className="flex flex-row gap-2 justify-between">
             <progress
@@ -6,7 +16,11 @@ export default function ProgressBar({ percent }: { percent: number }) {
                 value={percent}
                 max="100"
             ></progress>
-            <span className="text-sm text-nowrap">{percent} %</span>
+            <span className="text-sm text-nowrap">
+                {showPercentage
+                    ? `${percent} %`
+                    : `${numerator}/${denominator}`}
+            </span>
         </div>
     );
 }
