@@ -183,10 +183,9 @@ const OperationalInsights = () => {
                                 >
                                     <EngagementRateGraph
                                         data={
-                                            metrics?.data
-                                                .user_engagement_times || []
+                                            metrics?.data.peak_login_times || []
                                         }
-                                        viewType="hourly"
+                                        viewType="peakLogin"
                                     />
                                 </ResponsiveContainer>
                             </div>

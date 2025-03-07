@@ -18,7 +18,7 @@ import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
 import UnauthorizedNotFound from '@/Pages/Unauthorized';
 import { getProviderPlatforms } from '@/routeLoaders';
-import StudentProfile from '@/Pages/StudentProfile';
+import ResidentProfile from '@/Pages/ResidentProfile';
 
 const deptAdminRoutes = DeclareAuthenticatedRoutes(
     [
@@ -95,7 +95,7 @@ const adminRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'residents/:user_id',
-            element: <StudentProfile />,
+            element: <ResidentProfile />,
             handle: {
                 title: 'Resident Profile',
                 path: ['residents']

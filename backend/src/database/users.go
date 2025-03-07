@@ -342,6 +342,8 @@ type LoginEngagementActivityWithUserInfo struct {
 func (db *DB) GetLoginEngagementActivity(userID int) (*LoginEngagementActivityWithUserInfo, error) {
 	var sessionEngagement []models.SessionEngagement
 
+	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+
 	query := db.Table("user_session_tracking as ust").
 		Select(`ust.user_id,
 	ANY_VALUE(u.name_first) AS name_first,
@@ -351,7 +353,7 @@ func (db *DB) GetLoginEngagementActivity(userID int) (*LoginEngagementActivityWi
 	SUM(EXTRACT(EPOCH FROM ust.session_duration) / 3600) AS total_hours,
 	SUM(EXTRACT(EPOCH FROM ust.session_duration) / 60) AS total_minutes`).
 		Joins("JOIN users u ON ust.user_id = u.id").
-		Where("ust.user_id = ?", userID).
+		Where("ust.user_id = ? AND ust.session_start_ts >= ?", userID, thirtyDaysAgo).
 		Group("ust.user_id, time_interval").
 		Order("ust.user_id, time_interval")
 

@@ -1,4 +1,4 @@
-import { useMemo, useContext, useState, useEffect } from 'react';
+import React, { useMemo, useContext, useState, useEffect } from 'react';
 import {
     LineChart,
     Line,
@@ -9,11 +9,11 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { ThemeContext } from '@/Context/ThemeContext';
-import { UserEngagementTimes } from '@/common';
+import { LoginActivity, UserEngagementTimes } from '@/common';
 
 interface EngagementRateGraphProps {
-    viewType: 'hourly' | 'daily';
-    data: UserEngagementTimes[];
+    viewType: 'peakLogin' | 'userEngagement';
+    data: LoginActivity[] | UserEngagementTimes[];
 }
 
 const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
@@ -36,57 +36,72 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const generateHourlyLabels = (): string[] => {
+        return Array.from({ length: 24 }, (_, hour) =>
+            new Date(0, 0, 0, hour).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                hour12: true
+            })
+        );
+    };
+
+    const processPeakLoginData = (rawData: LoginActivity[]) => {
+        const hourlyLabels = generateHourlyLabels();
+        const loginsByHour: number[] = Array.from({ length: 24 }, () => 0);
+
+        rawData.forEach((item) => {
+            const date = new Date(item.time_interval);
+            const hour = date.getHours();
+            loginsByHour[hour] += item.total_logins;
+        });
+
+        return hourlyLabels.map((label, hour) => ({
+            hour: label,
+            logins: loginsByHour[hour]
+        }));
+    };
+
+    const generateLast30Days = (): string[] => {
+        const today = new Date();
+        return Array.from({ length: 30 }, (_, i) => {
+            const date = new Date(today);
+            date.setDate(today.getDate() - (30 - i));
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        });
+    };
+
+    const processUserEngagementData = (rawData: UserEngagementTimes[]) => {
+        const last30Days = generateLast30Days();
+        const dataMap = rawData.reduce<Record<string, number>>((map, item) => {
+            const date = new Date(item.time_interval);
+            const key = new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                timeZone: 'UTC'
+            }).format(date);
+            map[key] = parseFloat(item.total_hours.toFixed(2));
+            return map;
+        }, {});
+
+        return last30Days.map((date) => ({
+            date,
+            hours: dataMap[date] || 0
+        }));
+    };
+
     const processedData = useMemo(() => {
-        if (viewType === 'daily') {
-            const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
-            const dataMap = new Map(
-                daysInMonth.map((day) => [
-                    day,
-                    { time: `Day ${day}`, logins: 0 }
-                ])
-            );
-
-            data.forEach(({ time_interval, total_hours }) => {
-                const date = new Date(time_interval);
-                const dayOfMonth = date.getDate();
-                dataMap.set(dayOfMonth, {
-                    time: `Day ${dayOfMonth}`,
-                    logins: total_hours ?? 0
-                });
-            });
-
-            return Array.from(dataMap.values());
-        } else {
-            const hoursInDay = Array.from({ length: 24 }, (_, i) => i);
-            const dataMap = new Map(
-                hoursInDay.map((hour) => [
-                    hour,
-                    {
-                        time: new Date(2023, 0, 1, hour, 0).toLocaleTimeString(
-                            [],
-                            { hour: '2-digit', minute: '2-digit', hour12: true }
-                        ),
-                        logins: 0
-                    }
-                ])
-            );
-
-            data.forEach(({ time_interval, total_hours }) => {
-                const date = new Date(time_interval);
-                const localHour = date.getHours();
-                dataMap.set(localHour, {
-                    time: date.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    }),
-                    logins: total_hours ?? 0
-                });
-            });
-
-            return Array.from(dataMap.values());
+        if (viewType === 'peakLogin') {
+            return processPeakLoginData(data as LoginActivity[]);
+        } else if (viewType === 'userEngagement') {
+            return processUserEngagementData(data as UserEngagementTimes[]);
         }
+        return [];
     }, [data, viewType]);
+
+    const yAxisLabel = viewType === 'peakLogin' ? 'Logins' : 'Hours';
 
     return (
         <ResponsiveContainer width="100%" height="100%" className="pt-2">
@@ -96,11 +111,10 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
             >
                 <CartesianGrid stroke={strokeColor} strokeDasharray="3 3" />
                 <XAxis
-                    dataKey="time"
+                    dataKey={viewType === 'peakLogin' ? 'hour' : 'date'}
                     interval={xTicks}
                     stroke={strokeColor}
                     label={{
-                        value: viewType === 'daily' ? 'Day' : 'Time',
                         style: { fill: strokeColor },
                         dy: 20,
                         zIndex: 100
@@ -109,7 +123,7 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
                 <YAxis
                     allowDecimals={false}
                     label={{
-                        value: 'Logins',
+                        value: yAxisLabel,
                         angle: -90,
                         dx: -20,
                         style: { fill: strokeColor, textAnchor: 'middle' }
@@ -118,7 +132,7 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
                 <Tooltip contentStyle={{ backgroundColor }} />
                 <Line
                     type="monotone"
-                    dataKey="logins"
+                    dataKey={viewType === 'peakLogin' ? 'logins' : 'hours'}
                     stroke={lineColor}
                     strokeWidth={3}
                     dot={{ r: 3 }}

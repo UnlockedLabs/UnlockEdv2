@@ -11,7 +11,7 @@ import StatsCard from '@/Components/StatsCard';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const StudentProfile = () => {
+const ResidentProfile = () => {
     const { user_id } = useParams<{ user_id: string }>();
     const { data, error, isLoading } = useSWR<
         ServerResponseOne<ResidentEngagementProfile>,
@@ -144,7 +144,7 @@ const StudentProfile = () => {
                                                         ?.user_engagement_times ??
                                                     []
                                                 }
-                                                viewType="daily"
+                                                viewType="userEngagement"
                                             />
                                         </ResponsiveContainer>
                                     </div>
@@ -298,4 +298,4 @@ const StudentProfile = () => {
     );
 };
 
-export default StudentProfile;
+export default ResidentProfile;

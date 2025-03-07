@@ -342,7 +342,7 @@ export interface LoginMetrics {
         facility: string;
         new_residents_added: number;
         new_admins_added: number;
-        user_engagement_times: UserEngagementTimes[];
+        peak_login_times: LoginActivity[];
     };
     last_cache: string;
 }
