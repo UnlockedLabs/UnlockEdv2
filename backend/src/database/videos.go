@@ -2,14 +2,25 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"errors"
+
+	"gorm.io/gorm"
 )
 
-func (db *DB) GetVideoByID(id int) (*models.Video, error) {
+func (db *DB) GetVideoByID(id int, facilityId uint) (*models.Video, bool, error) {
 	var video models.Video
+	var videoVisibility models.FacilityVisibilityStatus
 	if err := db.Preload("Attempts").First(&video, id).Error; err != nil {
-		return nil, newNotFoundDBError(err, "videos")
+		return nil, false, newNotFoundDBError(err, "videos")
 	}
-	return &video, nil
+	err := db.Where("open_content_provider_id = ? and content_id = ? and facility_id = ?", video.OpenContentProviderID, video.ID, facilityId).First(&videoVisibility).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &video, false, nil
+		}
+		return &video, false, newNotFoundDBError(err, "video visibility")
+	}
+	return &video, videoVisibility.VisibilityStatus, nil
 }
 
 func (db *DB) GetVideoProvider() (*models.OpenContentProvider, error) {
@@ -57,23 +68,31 @@ func (db *DB) FavoriteOpenContent(contentID int, ocpID uint, userID uint, facili
 
 type VideoResponse struct {
 	models.Video
-	IsFavorited bool `json:"is_favorited"`
+	IsFavorited      bool `json:"is_favorited"`
+	VisibilityStatus bool `json:"visibility_status" `
 }
 
 func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]VideoResponse, error) {
 	var videos []VideoResponse
 	tx := db.Model(&models.Video{}).Preload("Attempts").Select(`
 	videos.*,
+        CASE WHEN fvs.visibility_status is null then false 
+        else fvs.visibility_status
+    end as visibility_status,
 	EXISTS (
 		SELECT 1
 		FROM open_content_favorites f
 		WHERE f.content_id = videos.id
 		  AND f.open_content_provider_id = videos.open_content_provider_id
 		  AND f.user_id = ?
-	) AS is_favorited`, args.UserID)
+	) AS is_favorited`, args.UserID).
+		Joins(`left join facility_visibility_statuses fvs 
+        on fvs.open_content_provider_id = videos.open_content_provider_id
+        and fvs.content_id = videos.id 
+        and fvs.facility_id = ?`, args.FacilityID)
 
 	if onlyVisible {
-		tx = tx.Where("visibility_status = ?", true)
+		tx = tx.Where("fvs.visibility_status = ?", true)
 	}
 	if args.Search != "" {
 		args.Search = "%" + args.Search + "%"
@@ -95,14 +114,27 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 	return videos, nil
 }
 
-func (db *DB) ToggleVideoVisibility(id int) error {
+func (db *DB) ToggleVideoVisibility(id int, facilityId uint) error {
 	var video models.Video
+	var videoVisibility models.FacilityVisibilityStatus
 	if err := db.First(&video, id).Error; err != nil {
 		return newNotFoundDBError(err, "videos")
 	}
-	video.VisibilityStatus = !video.VisibilityStatus
-	if err := db.Save(&video).Error; err != nil {
-		return newUpdateDBError(err, "videos")
+	if db.Where("open_content_provider_id = ? and content_id = ? and facility_id = ?", video.OpenContentProviderID, video.ID, facilityId).First(&videoVisibility).RowsAffected > 0 {
+		videoVisibility.VisibilityStatus = !videoVisibility.VisibilityStatus
+		if err := db.Save(&videoVisibility).Error; err != nil {
+			return newUpdateDBError(err, "video visibility")
+		}
+	} else {
+		videoVisibility = models.FacilityVisibilityStatus{
+			FacilityID:            facilityId,
+			OpenContentProviderID: video.OpenContentProviderID,
+			ContentID:             video.ID,
+			VisibilityStatus:      true,
+		}
+		if err := db.Create(&videoVisibility).Error; err != nil {
+			return newCreateDBError(err, "video visibility")
+		}
 	}
 	return nil
 }

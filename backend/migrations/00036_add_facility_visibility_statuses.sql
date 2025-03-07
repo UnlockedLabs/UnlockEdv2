@@ -12,9 +12,10 @@ CREATE TABLE public.facility_visibility_statuses (
 );
 ALTER TABLE public.libraries DROP COLUMN visibility_status;
 -- +goose StatementEnd
-
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS public.facility_visibility_statuses CASCADE;
 ALTER TABLE public.libraries ADD COLUMN visibility_status BOOLEAN;
 -- +goose StatementEnd
+
+

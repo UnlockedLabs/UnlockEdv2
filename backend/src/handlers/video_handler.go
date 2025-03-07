@@ -41,11 +41,11 @@ func (srv *Server) handleGetVideoById(w http.ResponseWriter, r *http.Request, lo
 		return newBadRequestServiceError(err, "error reading video id")
 	}
 	user := r.Context().Value(ClaimsKey).(*Claims)
-	video, err := srv.Db.GetVideoByID(id)
+	video, videoVisibility, err := srv.Db.GetVideoByID(id, user.FacilityID)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching video")
 	}
-	if !user.isAdmin() && !video.VisibilityStatus || video.Availability != models.VideoAvailable {
+	if !user.isAdmin() && !videoVisibility || video.Availability != models.VideoAvailable {
 		return newForbiddenServiceError(errors.New("video not visible"), "you are not authorized to view this content")
 	}
 	videoViewerUrl := fmt.Sprintf("/viewer/videos/%d", video.ID)
@@ -72,7 +72,7 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
-	video, err := srv.Db.GetVideoByID(vidId)
+	video, _, err := srv.Db.GetVideoByID(vidId, claims.FacilityID)
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
@@ -92,7 +92,7 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		return writeJsonResponse(w, http.StatusOK, msg)
 
 	case ToggleVisibilityAction:
-		if err = srv.Db.ToggleVideoVisibility(vidId); err != nil {
+		if err = srv.Db.ToggleVideoVisibility(vidId, facilityID); err != nil {
 			return newInternalServerServiceError(err, "error toggling video visibility")
 		}
 		return writeJsonResponse(w, http.StatusOK, "video visibility toggled")
@@ -154,12 +154,14 @@ func (srv *Server) handleDeleteVideo(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleFavoriteVideo(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	userID := claims.UserID
+
 	vidId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
-	video, err := srv.Db.GetVideoByID(vidId)
+	video, _, err := srv.Db.GetVideoByID(vidId, claims.FacilityID)
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
