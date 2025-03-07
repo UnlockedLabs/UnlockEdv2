@@ -48,7 +48,7 @@ export const getStudentLevel1Data: LoaderFunction = async ({ request }) => {
 
 export const getAdminLevel1Data: LoaderFunction = async () => {
     const [featuredResp] = await Promise.all([
-        API.get(`libraries?visibility=featured`)
+        API.get(`libraries?visibility=featured&order_by=created_at`)
     ]);
 
     const featured = featuredResp.success
