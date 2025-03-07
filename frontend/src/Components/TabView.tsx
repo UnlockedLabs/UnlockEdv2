@@ -22,7 +22,7 @@ export default function TabView({
                         className={`focus:outline-none py-3 px-8 ${
                             isActive
                                 ? 'font-bold text-teal-4 border-b-2 border-teal-4'
-                                : 'hover:scale-105 hover:text-teal-3 hover:drop-shadow hover:border-b-2 hover:border-teal-3'
+                                : 'hover:text-teal-3 hover:drop-shadow hover:border-b-2 hover:border-teal-3'
                         }`}
                     >
                         {tabName}
