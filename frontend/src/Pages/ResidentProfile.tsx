@@ -40,14 +40,6 @@ const ResidentProfile = () => {
 
     const weekLabel = isLessThanOneHour ? 'Minutes' : 'Hours';
 
-    const avgToolTip = isLessAvgThanOneHour
-        ? 'Average minutes logged in to UnlockedEd'
-        : 'Average hours logged in to UnlockedEd';
-
-    const weekToolTip = isLessThanOneHour
-        ? 'Total number of minutes resident was logged in to UnlockedEd this week'
-        : 'Total number of hours resident was logged in to UnlockedEd this week';
-
     const navigate = useNavigate();
     const handleShowLibraryClick = (id: number) => {
         navigate(`/viewer/libraries/${id}`);
@@ -63,9 +55,9 @@ const ResidentProfile = () => {
                         <div className="w-[300px] h-[240px] flex flex-col gap-4">
                             <div className="card p-4 overflow-hidden flex-1 h-full text-grey-4">
                                 <div className="justify-items-center">
-                                    <UserCircleIcon className="w-[64px] h-[64px]" />
+                                    <UserCircleIcon className="w-[80px] h-[80px]" />
                                 </div>
-                                <div className="">
+                                <div className="mt-auto">
                                     <div className="text-2xl text-center">
                                         {
                                             metrics?.session_engagement
@@ -76,7 +68,7 @@ const ResidentProfile = () => {
                                                 .user_info.name_last
                                         }
                                     </div>
-                                    <div className="text -base">
+                                    <div className="text-base">
                                         <div className="grid grid-cols-2">
                                             <p>Username</p>
                                             <div className="flex flex-row justify-between">
@@ -128,7 +120,7 @@ const ResidentProfile = () => {
                             <div className="card card-row-padding overflow-hidden">
                                 <h1 className="">
                                     {metrics?.session_engagement.user_info
-                                        .name_first + " 's recent Activity"}
+                                        .name_first + "'s Activity"}
                                 </h1>
                                 <div className=" items-stretch">
                                     <div className="w-full h-[240px] overflow-visible">
@@ -164,7 +156,7 @@ const ResidentProfile = () => {
                             useToLocaleString={false}
                         />
                         <StatsCard
-                            title="Avg Hours Per Week"
+                            title="Avg Time Per Week"
                             number={
                                 parseFloat(avgNumber) === 0
                                     ? '0'
@@ -173,11 +165,11 @@ const ResidentProfile = () => {
                                       : avgNumber
                             }
                             label={avgLabel}
-                            tooltip={avgToolTip}
+                            tooltip="Average time spent in UnlockEd per week"
                             useToLocaleString={false}
                         />
                         <StatsCard
-                            title="Total Hours This Week"
+                            title="Total Time This Week"
                             number={
                                 parseFloat(weekNumber) === 0
                                     ? '0'
@@ -186,7 +178,7 @@ const ResidentProfile = () => {
                                       : weekNumber
                             }
                             label={weekLabel}
-                            tooltip={weekToolTip}
+                            tooltip="Total time spent in UnlockEd this week"
                         />
                     </div>
                     {/* Tables */}
