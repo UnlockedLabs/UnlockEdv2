@@ -84,48 +84,52 @@ export default function LibraryCard({
             className="card cursor-pointer"
             onClick={() => navigate(`/viewer/libraries/${library.id}`)}
         >
-            <div className="flex p-4 gap-2 border-b-2">
-                <figure className="w-[48px] h-[48px] bg-cover">
-                    <img
-                        src={library.thumbnail_url ?? ''}
-                        alt={`${library.title} thumbnail`}
-                    />
-                </figure>
-                <ClampedText as="h3" className="w-3/4 body my-auto mr-7">
-                    {library.title}
-                </ClampedText>
-            </div>
-            <div className="flex items-center justify-end space-x-2 absolute right-2 top-2 z-100">
-                {!route.pathname.includes('knowledge-insights') &&
-                    onSearchClick && (
-                        <div onClick={handleSearchClick}>
-                            <ULIComponent
-                                icon={MagnifyingGlassIcon}
-                                iconClassName="!w-5 !h-5"
-                                dataTip={`Search ${library.title}`}
-                            />
-                        </div>
-                    )}
-                <div onClick={(e) => void handleToggleAction('favorite', e)}>
-                    {!route.pathname.includes('knowledge-insights') && (
-                        <ULIComponent
-                            iconClassName={`!w-5 !h-5 ${library.is_favorited && 'text-primary-yellow'}`}
-                            icon={
-                                AdminRoles.includes(role)
-                                    ? library.is_favorited
-                                        ? FlagIcon
-                                        : FlagIconOutline
-                                    : library.is_favorited
-                                      ? StarIcon
-                                      : StarIconOutline
-                            }
-                            dataTip={
-                                AdminRoles.includes(role)
-                                    ? 'Feature Library'
-                                    : 'Favorite Library'
-                            }
+            <div className="flex items-center justify-between p-4 gap-2 border-b-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <figure className="w-[48px] h-[48px] flex-shrink-0 bg-cover">
+                        <img
+                            src={library.thumbnail_url ?? ''}
+                            alt={`${library.title} thumbnail`}
                         />
-                    )}
+                    </figure>
+                    <ClampedText as="h3" className="w-3/4 body my-auto mr-7">
+                        {library.title}
+                    </ClampedText>
+                </div>
+                <div className="flex items-center  space-x-2 flex-shrink-0">
+                    {!route.pathname.includes('knowledge-insights') &&
+                        onSearchClick && (
+                            <div onClick={handleSearchClick}>
+                                <ULIComponent
+                                    icon={MagnifyingGlassIcon}
+                                    iconClassName="!w-5 !h-5"
+                                    dataTip={`Search ${library.title}`}
+                                />
+                            </div>
+                        )}
+                    <div
+                        onClick={(e) => void handleToggleAction('favorite', e)}
+                    >
+                        {!route.pathname.includes('knowledge-insights') && (
+                            <ULIComponent
+                                iconClassName={`!w-5 !h-5 ${library.is_favorited && 'text-primary-yellow'}`}
+                                icon={
+                                    AdminRoles.includes(role)
+                                        ? library.is_favorited
+                                            ? FlagIcon
+                                            : FlagIconOutline
+                                        : library.is_favorited
+                                          ? StarIcon
+                                          : StarIconOutline
+                                }
+                                dataTip={
+                                    AdminRoles.includes(role)
+                                        ? 'Feature Library'
+                                        : 'Favorite Library'
+                                }
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 
