@@ -79,7 +79,7 @@ func (cm *ClientManager) addClient(client *WsClient) {
 	clientKey := client.getClientKey()
 	if cm.clients[clientKey] == nil {
 		cm.clients[clientKey] = client
-		log.Infof("Added client with key/user_id %d", clientKey)
+		log.Debugf("Added client with key/user_id %d", clientKey)
 	} else {
 		log.Warnf("Client already existed with key/user_id %d", clientKey)
 	}
@@ -94,7 +94,7 @@ func (cm *ClientManager) removeClient(client *WsClient, reason string) {
 	}
 	clientKey := client.getClientKey()
 	if cm.clients[clientKey] != nil {
-		log.Infof("Removing client key/user_id %d", clientKey)
+		log.Debugf("Removing client key/user_id %d", clientKey)
 		err := client.Conn.Close(websocket.StatusNormalClosure, reason)
 		if err != nil {
 			log.Errorf("Failed to close connection: %v", err)
@@ -119,7 +119,7 @@ func (cm *ClientManager) notifyUser(event WsMsg) {
 }
 
 func (client *WsClient) send(event WsMsg) {
-	log.Infof("Sending message to user_id %d, message: %s, activityID: %d", client.UserID, event.Msg.Msg, event.Msg.ActivityID)
+	log.Debugf("Sending message to user_id %d, message: %s, activityID: %d", client.UserID, event.Msg.Msg, event.Msg.ActivityID)
 	if event.Msg.ActivityID > 0 {
 		client.OpenContentActivityID = event.Msg.ActivityID
 	}
@@ -135,7 +135,7 @@ func (client *WsClient) writePump() {
 	for {
 		select {
 		case message := <-client.sendChan:
-			log.Infof("Writing message to user_id %d", client.UserID)
+			log.Debugf("Writing message to user_id %d", client.UserID)
 			err := client.Conn.Write(client.ctx, websocket.MessageText, message)
 			if err != nil {
 				log.Errorf("Failed to write message: %v", err)
@@ -152,7 +152,7 @@ func (srv *Server) handleWebsocketConnection(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return newInternalServerServiceError(err, "")
 	}
-	log.info("WebSocket connection established")
+	log.debug("WebSocket connection established")
 	user := r.Context().Value(ClaimsKey).(*Claims)
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &WsClient{
@@ -204,10 +204,10 @@ func (srv *Server) handleWsReader(ctx context.Context, client *WsClient) {
 		if err != nil { //if there was an error then we should attempt a clean up
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure ||
 				websocket.CloseStatus(err) == websocket.StatusGoingAway {
-				log.Info("WebSocket connection closed by client")
+				log.Trace("WebSocket connection closed by client")
 				srv.handleIfClientExists(client, "websocket closed, unable to read message")
 			} else {
-				log.Warnf("Error reading from WebSocket, due to frontend closure")
+				log.Debug("Error reading from WebSocket, due to frontend closure")
 			}
 			srv.wsClient.removeClient(client, "websocket closed, unable to read message")
 			return
@@ -239,7 +239,6 @@ func (srv *Server) handleWsHeartbeat(client *WsClient) {
 		case <-client.ctx.Done():
 			return
 		case <-ticker.C:
-			log.Info("sending ping...")
 			if err := client.Conn.Ping(client.ctx); err != nil {
 				log.Errorf("Failed to send ping: %v", err)
 				srv.wsClient.removeClient(client, "ping failed")
