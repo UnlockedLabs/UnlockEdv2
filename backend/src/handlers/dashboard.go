@@ -29,13 +29,20 @@ func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-
-	loginData, err := srv.Db.GetLoginEngagementActivity(userID)
+	user, err := srv.Db.GetUserByID(uint(userID))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	days, err := strconv.Atoi(r.URL.Query().Get("days"))
+	if err != nil {
+		days = 30
+	}
+	loginData, err := srv.Db.GetUserSessionEngagement(userID, days)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 
-	activityEngagement, err := srv.Db.GetEngagementActivityMetrics(userID)
+	activityEngagement, err := srv.Db.GetUserOpenContentEngagement(userID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -51,11 +58,13 @@ func (srv *Server) handleResidentProfile(w http.ResponseWriter, r *http.Request,
 	}
 
 	response := struct {
+		User               models.User `json:"user"`
 		LoginEngagement    interface{} `json:"session_engagement"`
 		ActivityEngagement interface{} `json:"activity_engagement"`
 		TopLibraries       interface{} `json:"top_libraries"`
 		RecentVideos       interface{} `json:"recent_videos"`
 	}{
+		User:               *user,
 		LoginEngagement:    loginData,
 		ActivityEngagement: activityEngagement,
 		TopLibraries:       topLibraries,

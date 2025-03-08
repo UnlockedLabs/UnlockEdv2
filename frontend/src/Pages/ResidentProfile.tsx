@@ -59,34 +59,24 @@ const ResidentProfile = () => {
                                 </div>
                                 <div className="mt-auto">
                                     <div className="text-2xl text-center">
-                                        {
-                                            metrics?.session_engagement
-                                                .user_info.name_first
-                                        }{' '}
-                                        {
-                                            metrics?.session_engagement
-                                                .user_info.name_last
-                                        }
+                                        {metrics?.user.name_first}{' '}
+                                        {metrics?.user.name_last}
                                     </div>
                                     <div className="text-base">
                                         <div className="grid grid-cols-2">
                                             <p>Username</p>
                                             <div className="flex flex-row justify-between">
                                                 <p>:</p>
-                                                {
-                                                    metrics?.session_engagement
-                                                        .user_info.username
-                                                }
+                                                {metrics.user.username}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2">
                                             <p>Joined</p>
                                             <div className="flex flex-row justify-between">
                                                 <p>:</p>
-                                                {metrics?.activity_engagement
-                                                    ?.first_active_date
+                                                {metrics?.user.created_at
                                                     ? new Date(
-                                                          metrics.activity_engagement.first_active_date
+                                                          metrics.activity_engagement.joined
                                                       ).toLocaleDateString(
                                                           'en-US',
                                                           {
@@ -102,13 +92,17 @@ const ResidentProfile = () => {
                                             <p>Last Active</p>
                                             <div className="flex flex-row justify-between">
                                                 <p>:</p>
-                                                {new Date(
-                                                    metrics.activity_engagement.last_active_date
-                                                ).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric'
-                                                })}
+                                                {metrics.activity_engagement
+                                                    .last_active_date
+                                                    ? new Date().toLocaleDateString(
+                                                          'en-US',
+                                                          {
+                                                              year: 'numeric',
+                                                              month: 'short',
+                                                              day: 'numeric'
+                                                          }
+                                                      )
+                                                    : 'N/A'}
                                             </div>
                                         </div>
                                     </div>
@@ -119,8 +113,8 @@ const ResidentProfile = () => {
                         <div className="flex-1 h-[240px] flex flex-col gap-4">
                             <div className="card card-row-padding overflow-hidden">
                                 <h1 className="">
-                                    {metrics?.session_engagement.user_info
-                                        .name_first + "'s Activity"}
+                                    {metrics?.user.name_first +
+                                        "'s recent Activity"}
                                 </h1>
                                 <div className=" items-stretch">
                                     <div className="w-full h-[240px] overflow-visible">
@@ -132,8 +126,7 @@ const ResidentProfile = () => {
                                         >
                                             <EngagementRateGraph
                                                 data={
-                                                    metrics?.session_engagement
-                                                        ?.user_engagement_times ??
+                                                    metrics?.session_engagement ??
                                                     []
                                                 }
                                                 viewType="userEngagement"
