@@ -765,11 +765,6 @@ export interface UserEngagementTimes {
     facility_id: number;
 }
 
-export interface SessionEngagementActivityWithUserInfo {
-    user_info: User;
-    user_engagement_times: UserEngagementTimes[];
-}
-
 export interface EngagementActivityMetrics {
     user_id: number;
     total_active_days_monthly: number;
@@ -778,7 +773,7 @@ export interface EngagementActivityMetrics {
     total_minutes_active_weekly: number;
     total_hours_engaged: number;
     total_minutes_engaged: number;
-    first_active_date: string;
+    joined: string;
     last_active_date: string;
 }
 export interface OpenContentResponse extends OpenContentItem {
@@ -788,7 +783,8 @@ export interface OpenContentResponse extends OpenContentItem {
 }
 
 export interface ResidentEngagementProfile {
-    session_engagement: SessionEngagementActivityWithUserInfo;
+    user: User;
+    session_engagement: UserEngagementTimes[];
     activity_engagement: EngagementActivityMetrics;
     top_libraries: OpenContentResponse[];
     recent_videos: OpenContentResponse[];

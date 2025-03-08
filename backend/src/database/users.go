@@ -334,81 +334,60 @@ func (db *DB) GetLoginActivity(days int, facilityID *uint) ([]models.LoginActivi
 	return acitvity, nil
 }
 
-type LoginEngagementActivityWithUserInfo struct {
-	UserInfo            models.User                `json:"user_info"`
-	UserEngagementTimes []models.SessionEngagement `json:"user_engagement_times"`
-}
-
-func (db *DB) GetLoginEngagementActivity(userID int) (*LoginEngagementActivityWithUserInfo, error) {
+func (db *DB) GetUserSessionEngagement(userID int, days int) ([]models.SessionEngagement, error) {
 	var sessionEngagement []models.SessionEngagement
 
-	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
+	daysAgo := time.Now().AddDate(0, 0, -days)
 
 	query := db.Table("user_session_tracking as ust").
 		Select(`ust.user_id,
-	ANY_VALUE(u.name_first) AS name_first,
-	ANY_VALUE(u.name_last) AS name_last,
-	ANY_VALUE(u.username) AS username,
 	TO_CHAR(DATE(ust.session_start_ts), 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS time_interval,
 	SUM(EXTRACT(EPOCH FROM ust.session_duration) / 3600) AS total_hours,
 	SUM(EXTRACT(EPOCH FROM ust.session_duration) / 60) AS total_minutes`).
 		Joins("JOIN users u ON ust.user_id = u.id").
-		Where("ust.user_id = ? AND ust.session_start_ts >= ?", userID, thirtyDaysAgo).
+		Where("ust.user_id = ? AND ust.session_start_ts >= ?", userID, daysAgo).
 		Group("ust.user_id, time_interval").
 		Order("ust.user_id, time_interval")
 
 	if err := query.Find(&sessionEngagement).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "session_engagement")
 	}
-
-	var usrInfo models.User
-
-	if len(sessionEngagement) > 0 {
-		usrInfo = models.User{
-			DatabaseFields: models.DatabaseFields{
-				ID: uint(sessionEngagement[0].UserId),
-			},
-			NameFirst: sessionEngagement[0].NameFirst,
-			NameLast:  sessionEngagement[0].NameLast,
-			Username:  sessionEngagement[0].Username,
-		}
-	} else {
-		log.Warnf("No session data found for user with id %d", userID)
+	var user models.User
+	if err := db.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, newNotFoundDBError(err, "users")
 	}
 
-	result := &LoginEngagementActivityWithUserInfo{
-		UserInfo:            usrInfo,
-		UserEngagementTimes: sessionEngagement,
-	}
-	return result, nil
+	return sessionEngagement, nil
 }
 
-func (db *DB) GetEngagementActivityMetrics(userID int) (*models.EngagementActivityMetrics, error) {
+func (db *DB) GetUserOpenContentEngagement(userID int) (*models.EngagementActivityMetrics, error) {
 	var engagementActivityMetrics models.EngagementActivityMetrics
-	query := db.Table("open_content_activities ").
-		Select(`user_id,
-			COUNT(DISTINCT CAST(request_ts AS DATE)) AS total_active_days_monthly,
-			AVG(EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 3600) AS total_hours_active_monthly,
-			SUM(EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 3600) / 4 AS total_hours_active_weekly,
-			SUM(EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 60) / 4 AS total_minutes_active_weekly,
-			SUM(
-				CASE
-					WHEN request_ts >= date_trunc('week', CURRENT_DATE)
-					THEN EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 3600
-					ELSE 0
-				END
-			) AS total_hours_engaged,
-			SUM(
-				CASE
-					WHEN request_ts >= date_trunc('week', CURRENT_DATE)
-					THEN EXTRACT(EPOCH FROM (stop_ts - request_ts)) / 60
-					ELSE 0
-				END
-			) AS total_minutes_engaged,
-			MIN(request_ts) AS first_active_date,
-			MAX(request_ts) AS last_active_date`).
-		Where(`request_ts >= CURRENT_DATE - INTERVAL '30 days' AND user_id = ? `, userID).
-		Group("user_id")
+	query := db.Table("users u").
+		Select(`u.id as user_id,
+		COUNT(DISTINCT CAST(oca.request_ts AS DATE)) AS total_active_days_monthly,
+		AVG(EXTRACT(EPOCH FROM (oca.stop_ts - oca.request_ts)) / 3600) AS total_hours_active_monthly,
+		SUM(EXTRACT(EPOCH FROM (oca.stop_ts - oca.request_ts)) / 3600) / 4 AS total_hours_active_weekly,
+		SUM(EXTRACT(EPOCH FROM (oca.stop_ts - oca.request_ts)) / 60) / 4 AS total_minutes_active_weekly,
+		SUM(
+			CASE
+				WHEN oca.request_ts >= date_trunc('week', CURRENT_DATE)
+				THEN EXTRACT(EPOCH FROM (oca.stop_ts - oca.request_ts)) / 3600
+				ELSE 0
+			END
+		) AS total_hours_engaged,
+		SUM(
+			CASE
+				WHEN oca.request_ts >= date_trunc('week', CURRENT_DATE)
+				THEN EXTRACT(EPOCH FROM (oca.stop_ts - oca.request_ts)) / 60
+				ELSE 0
+			END
+		) AS total_minutes_engaged,
+		COALESCE(l.last_login, NULL) AS last_active_date,
+		u.created_at as joined`).
+		Joins("LEFT JOIN login_metrics l ON l.user_id = u.id").
+		Joins("LEFT JOIN open_content_activities oca ON oca.user_id = u.id").
+		Where("u.id = ?", userID).
+		Group("u.id, l.last_login, u.created_at")
 
 	if err := query.Find(&engagementActivityMetrics).Error; err != nil {
 		return nil, NewDBError(err, "error getting engagement_activity")
