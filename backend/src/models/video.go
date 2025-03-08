@@ -14,7 +14,6 @@ type Video struct {
 	ChannelTitle          *string           `json:"channel_title" gorm:"size:255"`
 	Duration              int               `json:"duration"`
 	Description           string            `json:"description"`
-	VisibilityStatus      bool              `json:"visibility_status" gorm:"not null;default:false"`
 	ThumbnailUrl          string            `json:"thumbnail_url" gorm:"size:255"`
 	OpenContentProviderID uint              `json:"open_content_provider_id" gorm:"not null"`
 
