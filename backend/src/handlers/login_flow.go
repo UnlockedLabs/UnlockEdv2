@@ -24,6 +24,7 @@ func (srv *Server) registerLoginFlowRoutes() []routeDef {
 }
 
 const (
+	SessionTimeout      = 12 * time.Hour
 	LoginEndpoint       = "/self-service/login"
 	LogoutEndpoint      = "/self-service/logout/browser"
 	ConsentPutEndpoint  = "/admin/oauth2/auth/requests/consent/accept"
@@ -144,7 +145,7 @@ func setLoginCookies(resp *http.Response, w http.ResponseWriter) {
 		http.SetCookie(w, &http.Cookie{
 			Name:     cookie.Name,
 			Value:    cookie.Value,
-			Expires:  time.Now().Add(12 * time.Hour),
+			Expires:  time.Now().Add(SessionTimeout),
 			SameSite: http.SameSiteNoneMode,
 			HttpOnly: true,
 			Secure:   true,
@@ -164,7 +165,7 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, log s
 	defer r.Body.Close()
 	// get the user from the database
 	user, err := s.Db.GetUserByID(s.getUserID(r))
-	log.add("userId", s.getUserID(r))
+	log.add("user_id", s.getUserID(r))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
