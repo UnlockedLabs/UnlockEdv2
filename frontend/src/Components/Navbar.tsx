@@ -17,7 +17,8 @@ import {
     RectangleStackIcon,
     CogIcon,
     LightBulbIcon,
-    RocketLaunchIcon
+    RocketLaunchIcon,
+    QuestionMarkCircleIcon
 } from '@heroicons/react/24/solid';
 import {
     handleLogout,
@@ -39,10 +40,12 @@ import ConfirmSeedDemoDataForm from './forms/ConfirmSeedDemoData';
 
 export default function Navbar({
     isPinned,
-    onTogglePin
+    onTogglePin,
+    onToggleHelpCenter
 }: {
     isPinned: boolean;
     onTogglePin: () => void;
+    onToggleHelpCenter: () => void;
 }) {
     const { user, setUser } = useAuth();
     if (!user) {
@@ -271,6 +274,12 @@ export default function Navbar({
                                     </Link>
                                 </li>
                             )}
+                                <li>
+                                    <button onClick={onToggleHelpCenter}>
+                                        <ULIComponent icon={QuestionMarkCircleIcon} />
+                                        <span>Get Help</span>
+                                    </button>
+                                </li>
                         </>
                     )}
                 </ul>
