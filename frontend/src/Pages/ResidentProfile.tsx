@@ -115,7 +115,7 @@ const ResidentProfile = () => {
                             <div className="card card-row-padding overflow-hidden">
                                 <h1 className="">
                                     {metrics?.user.name_first +
-                                        "'s recent Activity"}
+                                        "'s Recent Activity"}
                                 </h1>
                                 <div className=" items-stretch">
                                     <div className="w-full h-[240px] overflow-visible">
