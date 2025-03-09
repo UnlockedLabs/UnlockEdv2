@@ -10,6 +10,7 @@ import { ResponsiveContainer } from 'recharts';
 import StatsCard from '@/Components/StatsCard';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
+import ClampedText from '@/Components/ClampedText';
 
 const ResidentProfile = () => {
     const { user_id } = useParams<{ user_id: string }>();
@@ -222,59 +223,43 @@ const ResidentProfile = () => {
                                     )}
                                 </tbody>
                             </table>
-                            <div className="border-t border-gray-300 mt-2"></div>
+                            <div className="border-t border-grey-300 mt-2"></div>
                             <p className="text-xs text-grey-4 italic">
-                                * Data is based on recent video performance and
-                                may not reflect all content.
+                                * Featured library
                             </p>
                         </div>
                         {/* <div></div> */}
                         <div className="card pt-2 px-3">
-                            <div className="text-teal-4 text-center text-lg font-semibold">
-                                Top 5 Recently Watched Videos
+                            <div className="text-teal-4 text-center text-lg font-semibold border-b border-b-grey-300">
+                                Recently Watched Videos
                             </div>
-                            <table className="table-2 mb-4">
-                                <thead>
-                                    <tr className="grid-col-2"></tr>
-                                </thead>
-                                <tbody className="grid-col-2">
-                                    {metrics.recent_videos.length > 0 ? (
-                                        metrics.recent_videos.map(
-                                            (
-                                                items: OpenContentResponse,
-                                                index: number
-                                            ) => {
-                                                return (
-                                                    <tr
-                                                        className="justify-items-center"
-                                                        key={index}
-                                                    >
-                                                        <td className="justify-self-end truncate w-full">
-                                                            <img
-                                                                className="h-8 mx-auto object-contain"
-                                                                src={
-                                                                    items.thumbnail_url ??
-                                                                    ''
-                                                                }
-                                                            />
-                                                            {items.title ??
-                                                                'Untitled'}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }
-                                        )
-                                    ) : (
-                                        <tr className="justify-items-center">
-                                            <td className="justify-self-start">
-                                                No Videos Found
-                                            </td>
-                                            <td></td>
-                                            <td className="justify-self-end"></td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                            <div className="grid grid-cols-2 gap-4 mb-4 mt-4">
+                                {metrics.recent_videos.length > 0 ? (
+                                    metrics.recent_videos.map((item, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex flex-col items-center"
+                                        >
+                                            <img
+                                                className="h-8 object-contain"
+                                                src={item.thumbnail_url ?? ''}
+                                                alt={item.title ?? 'Untitled'}
+                                            />
+                                            <ClampedText
+                                                className="text-xs"
+                                                as={'span'}
+                                                lines={2}
+                                            >
+                                                {item.title ?? 'Untitled'}
+                                            </ClampedText>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-2 text-center">
+                                        No Videos Found
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </>
