@@ -30,7 +30,7 @@ export default function HelpfulLinks() {
         isLoading,
         error
     } = useSWR<ServerResponseOne<HelpfulLinkAndSort>, AxiosError>(
-        `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}&order_by=${sortQuery}`
+        `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}${sortQuery}`
     );
     function updateFavorites() {
         void mutateHelpfulFavs();

@@ -43,25 +43,20 @@ func (srv *Server) changeSortOrder(w http.ResponseWriter, r *http.Request, log s
 }
 
 func (srv *Server) handleGetHelpfulLinks(w http.ResponseWriter, r *http.Request, log sLog) error {
-	search := r.URL.Query().Get("search")
-	orderBy := r.URL.Query().Get("order_by")
+	args := srv.getQueryContext(r)
 	onlyVisible := r.URL.Query().Get("visibility") == "true"
 	if !userIsAdmin(r) {
 		onlyVisible = true
 	}
-	userID := srv.getUserID(r)
-	page, perPage := srv.getPaginationInfo(r)
-	total, links, err := srv.Db.GetHelpfulLinks(page, perPage, search, orderBy, onlyVisible, userID)
+	links, err := srv.Db.GetHelpfulLinks(&args, onlyVisible)
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching helpful links")
 	}
-	meta := models.NewPaginationInfo(page, perPage, total)
 	respSort := struct {
 		SortOrder string                     `json:"sort_order"`
 		Links     []database.HelpfulLinkResp `json:"helpful_links"`
 		Meta      models.PaginationMeta      `json:"meta"`
-	}{SortOrder: HelpfulSortOrder[srv.getFacilityID(r)], Links: links, Meta: meta}
-
+	}{SortOrder: HelpfulSortOrder[srv.getFacilityID(r)], Links: links, Meta: args.IntoMeta()}
 	return writeJsonResponse(w, http.StatusOK, respSort)
 }
 
