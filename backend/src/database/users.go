@@ -394,3 +394,18 @@ func (db *DB) GetUserOpenContentEngagement(userID int) (*models.EngagementActivi
 	}
 	return &engagementActivityMetrics, nil
 }
+
+func (db *DB) IncrementUserFAQClick(args *models.QueryContext, question string) error {
+	faq := models.FAQ{Question: question}
+	if err := db.Model(&models.FAQ{}).Where("LOWER(question) = ?", strings.ToLower(question)).FirstOrCreate(&faq).Error; err != nil {
+		log.Errorf("failed to find or create FAQ: %v", err)
+		return newUpdateDBError(err, "faqs")
+	}
+	if err := db.Exec(`INSERT INTO faq_click_metrics(user_id, faq_id, total) VALUES (?, ?, 1) 
+		 ON CONFLICT (user_id, faq_id) DO UPDATE SET total = faq_click_metrics.total + 1`,
+		args.UserID, faq.ID).Error; err != nil {
+		log.Errorf("Error incrementing faq clicks: %v", err)
+		return newUpdateDBError(err, "faq_click_metrics")
+	}
+	return nil
+}
