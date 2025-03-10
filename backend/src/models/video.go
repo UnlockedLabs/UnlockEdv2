@@ -14,13 +14,22 @@ type Video struct {
 	ChannelTitle          *string           `json:"channel_title" gorm:"size:255"`
 	Duration              int               `json:"duration"`
 	Description           string            `json:"description"`
-	VisibilityStatus      bool              `json:"visibility_status" gorm:"not null;default:false"`
 	ThumbnailUrl          string            `json:"thumbnail_url" gorm:"size:255"`
 	OpenContentProviderID uint              `json:"open_content_provider_id" gorm:"not null"`
+	VisibilityStatus      bool              `gorm:"->" json:"visibility_status"`
 
 	Provider  *OpenContentProvider   `json:"open_content_provider" gorm:"foreignKey:OpenContentProviderID"`
 	Attempts  []VideoDownloadAttempt `json:"video_download_attempts" gorm:"foreignKey:VideoID"`
 	Favorites []OpenContentFavorite  `json:"video_favorites" gorm:"-"`
+}
+
+func (video *Video) GetFacilityVisibilityStatus(facilityID uint) FacilityVisibilityStatus {
+	return FacilityVisibilityStatus{
+		FacilityID:            facilityID,
+		OpenContentProviderID: video.OpenContentProviderID,
+		VisibilityStatus:      video.VisibilityStatus,
+		ContentID:             video.ID,
+	}
 }
 
 func (vid *Video) GetS3KeyMp4() string {
