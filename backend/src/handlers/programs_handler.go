@@ -61,6 +61,7 @@ type ProgramForm struct {
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Create Program")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var program ProgramForm
 	err := json.NewDecoder(r.Body).Decode(&program)
@@ -98,6 +99,7 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Update Program")
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
@@ -122,6 +124,7 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Delete Program")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
@@ -135,6 +138,7 @@ func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Favorite Program")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")

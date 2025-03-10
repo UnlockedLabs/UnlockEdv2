@@ -68,6 +68,8 @@ const (
 )
 
 func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log sLog) error {
+
+	log.audit(r, "Toggle Video Visibility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	userID, facilityID := claims.UserID, claims.FacilityID
 	vidId, err := strconv.Atoi(r.PathValue("id"))
@@ -123,6 +125,7 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Post Video")
 	var video struct {
 		VideoUrls []string `json:"video_urls"`
 	}
@@ -145,6 +148,7 @@ func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log 
 }
 
 func (srv *Server) handleDeleteVideo(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Delete Video")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "error reading video id")
@@ -156,6 +160,7 @@ func (srv *Server) handleDeleteVideo(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleFavoriteVideo(w http.ResponseWriter, r *http.Request, log sLog) error {
+	log.audit(r, "Toggole Favorite Video")
 	userID := r.Context().Value(ClaimsKey).(*Claims).UserID
 	vidId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
