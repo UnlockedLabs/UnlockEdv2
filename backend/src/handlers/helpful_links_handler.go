@@ -66,7 +66,6 @@ func (srv *Server) handleGetHelpfulLinks(w http.ResponseWriter, r *http.Request,
 }
 
 func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.audit(r, "Add Helpful link")
 	var link models.HelpfulLink
 	err := json.NewDecoder(r.Body).Decode(&link)
 	if err != nil {
@@ -84,7 +83,6 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 }
 
 func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.audit(r, "Edit Helpful link")
 	var link models.HelpfulLink
 	err := json.NewDecoder(r.Body).Decode(&link)
 	if err != nil {
@@ -103,7 +101,6 @@ func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sL
 }
 
 func (srv *Server) handleToggleVisibilityStatus(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.audit(r, "Toggle Visibility of Helpful link")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "Invalid id")
@@ -116,7 +113,6 @@ func (srv *Server) handleToggleVisibilityStatus(w http.ResponseWriter, r *http.R
 }
 
 func (srv *Server) handleDeleteLink(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.audit(r, "Delete Helpful link")
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "Invalid id")
@@ -155,7 +151,6 @@ func (srv *Server) handleAddUserActivity(w http.ResponseWriter, r *http.Request,
 }
 
 func (srv *Server) handleFavoriteLink(w http.ResponseWriter, r *http.Request, log sLog) error {
-	log.audit(r, "Toggle Helpful link")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	userID := claims.UserID
 	linkID, err := strconv.Atoi(r.PathValue("id"))

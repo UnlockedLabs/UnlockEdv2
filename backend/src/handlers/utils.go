@@ -12,6 +12,17 @@ import (
 // sLog is a wrapper around the log.Fields map and is implemented by the handleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging more efficient.
 type sLog struct{ f logrus.Fields }
 
+func (log sLog) audit() {
+	log.f["level"] = "audit"
+	logrus.WithFields(log.f).Println()
+}
+
+// TODO: Do we want to use this for action handlers that do things like toggle visibility?
+// func (slog sLog) auditDetails (action string) {
+// 	slog.f["level"] = true
+// 	slog.f["action"] = action
+// }
+
 func (slog sLog) info(args ...interface{}) {
 	logrus.WithFields(slog.f).Info(args...)
 }
@@ -48,15 +59,6 @@ func (slog *sLog) add(key string, value interface{}) {
 	slog.f[key] = value
 }
 
-func (log sLog) audit(r *http.Request, action string) {
-
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	log.f["user_id"] = claims.UserID
-	log.f["facility_id"] = claims.FacilityID
-	log.f["path"] = r.URL.Path
-	log.f["remote_addr"] = r.RemoteAddr
-	logrus.WithFields(log.f).Infof("AUDIT_ACTION: %s", action)
-}
 func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	var facilityID, userID uint
 	claims := r.Context().Value(ClaimsKey).(*Claims)

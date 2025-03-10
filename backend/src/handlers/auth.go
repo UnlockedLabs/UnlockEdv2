@@ -18,6 +18,7 @@ const (
 	ClaimsKey         contextKey = "claims"
 	KratosBrowserFlow string     = "/self-service/login/browser"
 	AuthCallbackRoute string     = "/authcallback"
+	AuditKey          contextKey = "audit_log"
 )
 
 type (
@@ -132,7 +133,9 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 			srv.errorResponse(w, http.StatusUnauthorized, "Unauthorized - not admin")
 			return
 		}
-		next.ServeHTTP(w, r)
+
+		ctx := context.WithValue(r.Context(), AuditKey, struct{}{})
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -438,6 +438,26 @@ type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 func (svr *Server) handleError(handler HttpFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := sLog{f: log.Fields{"handler": getHandlerName(handler), "method": r.Method, "path": r.URL.Path}}
+		ip := r.Header.Get("X-Forwarded-For")
+		var ips []string
+		if ip != "" {
+			ips = strings.Split(ip, ",")
+		} else {
+			ips = []string{r.RemoteAddr} //Take care of cases were ip is "" This could be caused by request potentially going through a proxy or load balancer, r.RemoteAddr may show the proxy’s IP instead of the real client’s IP.
+		}
+
+		if _, ok := r.Context().Value(AuditKey).(struct{}); ok {
+			// if r.Method != http.MethodGet {
+			claims := r.Context().Value(ClaimsKey).(*Claims)
+			log.add("user_id", claims.UserID)
+			log.add("username", claims.Username)
+			log.add("role", claims.SessionID)
+			log.add("facility_id", claims.FacilityID)
+			log.add("facility_name", claims.FacilityName)
+			log.add("ip_address", ips[0])
+			log.audit()
+			// }
+		}
 		if err := handler(w, r, log); err != nil {
 			if svcErr, ok := err.(serviceError); ok {
 				svr.errorResponse(w, svcErr.Status, svcErr.Message)
