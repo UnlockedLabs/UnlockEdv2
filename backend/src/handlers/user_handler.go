@@ -260,7 +260,7 @@ func (srv *Server) handleUserFAQClick(w http.ResponseWriter, r *http.Request, lo
 	}
 	defer r.Body.Close()
 	question, ok := body["question"].(string)
-	if !ok {
+	if !ok || question == "" {
 		return newBadRequestServiceError(errors.New("no question found in body"), "Bad Request")
 	}
 	args := srv.getQueryContext(r)
