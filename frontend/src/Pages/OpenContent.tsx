@@ -42,7 +42,7 @@ export default function OpenContent() {
     };
 
     return (
-        <div className="px-5 pb-4">
+        <div className="px-5 pb-4" id="knowledge-center-landing">
             <div className="flex flex-row justify-end">
                 {user && isAdministrator(user) && (
                     <button

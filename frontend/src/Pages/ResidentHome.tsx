@@ -46,7 +46,7 @@ export default function ResidentHome() {
     }
 
     return (
-        <div className="flex flex-row h-full">
+        <div className="flex flex-row h-full" id="resident-home">
             {/* main section */}
             <div className="w-full flex flex-col gap-6 px-5 pb-4">
                 <ExpandableCardGrid

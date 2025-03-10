@@ -36,6 +36,7 @@ import { useToast } from '@/Context/ToastCtx';
 import API from '@/api/api';
 import { useRef, useState } from 'react';
 import ConfirmSeedDemoDataForm from './forms/ConfirmSeedDemoData';
+import { useTourContext } from '@/Context/TourContext';
 
 export default function Navbar({
     isPinned,
@@ -52,6 +53,7 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
+    const { tourState, setTourState } = useTourContext();
 
     const handleSeedDemoData = async () => {
         setSeedInProgress(true);
@@ -133,7 +135,13 @@ export default function Navbar({
                                 user,
                                 FeatureAccess.OpenContentAccess
                             ) && (
-                                <li>
+                                <li
+                                    onClick={() =>
+                                        setTourState({
+                                            stepIndex: tourState.stepIndex + 1
+                                        })
+                                    }
+                                >
                                     <Link to="/knowledge-center-management/libraries">
                                         <ULIComponent icon={BookOpenIcon} />
                                         Knowledge Center
@@ -227,7 +235,7 @@ export default function Navbar({
                                             Home
                                         </Link>
                                     </li>
-                                    <li>
+                                    <li id="visit-knowledge-center">
                                         <Link to="/knowledge-center/libraries">
                                             <ULIComponent icon={BookOpenIcon} />
                                             Knowledge Center

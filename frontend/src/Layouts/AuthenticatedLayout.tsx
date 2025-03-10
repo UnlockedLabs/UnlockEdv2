@@ -4,6 +4,7 @@ import { useMatches, UIMatch, Outlet, useLoaderData } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
 import { Facility, RouteLabel } from '@/common';
 import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
+import UnlockEdTour from '@/Components/UnlockEdTour';
 
 // Extend RouteMatch with custom RouteMeta
 interface CustomRouteMatch extends UIMatch {
@@ -44,6 +45,7 @@ export default function AuthenticatedLayout() {
         <PageTitleProvider>
             <div className="font-lato">
                 <div title={title} />
+                <UnlockEdTour />
                 <div
                     className={`drawer ${isNavPinned ? 'lg:drawer-open' : ''} `}
                 >
