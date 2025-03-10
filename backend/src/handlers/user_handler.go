@@ -94,6 +94,10 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+
+	log.info("BEFORE THE CALLL!!!!!!!!!!")
+	log.audit(r, ">>>>>>>>>>>>>>>>>>>>>>Create User")
+
 	defer r.Body.Close()
 	if reqForm.User.FacilityID == 0 {
 		reqForm.User.FacilityID = srv.getFacilityID(r)
@@ -160,6 +164,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	log.add("userId", id)
+	log.audit(r, ">>>>>>>>>>>>>>>>>>>>>>Delete User")
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
@@ -196,6 +201,7 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	defer r.Body.Close()
 	toUpdate, err := srv.Db.GetUserByID(uint(id))
 	log.add("userId", id)
+	log.audit(r, ">>>>>>>>>>>>>>>>>>>>>>Create User")
 	if err != nil {
 		log.error("Error getting user by ID:" + fmt.Sprintf("%d", id))
 		return newDatabaseServiceError(err)
@@ -227,6 +233,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	response := make(map[string]string)
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
 	log.add("student.user_id", temp.UserID)
+	log.audit(r, ">>>>>>>>>>>>>>>>>>>>>>Update User")
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

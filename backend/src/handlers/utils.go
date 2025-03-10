@@ -48,6 +48,15 @@ func (slog *sLog) add(key string, value interface{}) {
 	slog.f[key] = value
 }
 
+func (log sLog) audit(r *http.Request, action string) {
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	log.f["user_id"] = claims.UserID
+	log.f["facility_id"] = claims.FacilityID
+	log.f["path"] = r.URL.Path
+	log.f["remote_addr"] = r.RemoteAddr
+	logrus.WithFields(log.f).Infof("AUDIT_ACTION: %s", action)
+}
 func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	var facilityID, userID uint
 	claims := r.Context().Value(ClaimsKey).(*Claims)

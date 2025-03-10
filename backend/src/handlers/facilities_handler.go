@@ -67,6 +67,7 @@ func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Requ
 func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var facility models.Facility
 	err := json.NewDecoder(r.Body).Decode(&facility)
+	log.audit(r, "Create Facility")
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
@@ -86,6 +87,7 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 		return newInvalidIdServiceError(err, "facility ID")
 	}
 	log.add("facilty_id", id)
+	log.audit(r, "Update Facility")
 	var facility models.Facility
 	err = json.NewDecoder(r.Body).Decode(&facility)
 	if err != nil {
@@ -105,6 +107,7 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
  */
 func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
+	log.audit(r, "Delete Facility")
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
 	}
