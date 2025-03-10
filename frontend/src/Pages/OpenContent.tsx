@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { isAdministrator, useAuth } from '@/useAuth';
+import { useTourContext } from '@/Context/TourContext';
 
 export default function OpenContent() {
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
@@ -20,6 +21,7 @@ export default function OpenContent() {
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]
     );
+    const { tourState, setTourState } = useTourContext();
 
     useEffect(() => {
         setAuthLayoutPageTitle(activeTab.value as string);
@@ -41,8 +43,16 @@ export default function OpenContent() {
         }
     };
 
+    useEffect(() => {
+        if (tourState.tourActive) {
+            setTourState({
+                stepIndex: 2
+            });
+        }
+    }, []);
+
     return (
-        <div className="px-5 pb-4">
+        <div className="px-5 pb-4" id="knowledge-center-landing">
             <div className="flex flex-row justify-end">
                 {user && isAdministrator(user) && (
                     <button
@@ -53,13 +63,15 @@ export default function OpenContent() {
                     </button>
                 )}
             </div>
-            <TabView
-                tabs={tabOptions}
-                activeTab={activeTab}
-                setActiveTab={(tab) => {
-                    void handlePageChange(tab);
-                }}
-            />
+            <div id="knowledge-center-tabs">
+                <TabView
+                    tabs={tabOptions}
+                    activeTab={activeTab}
+                    setActiveTab={(tab) => {
+                        void handlePageChange(tab);
+                    }}
+                />
+            </div>
             <div className="flex flex-col gap-8 py-8">
                 <Outlet />
             </div>

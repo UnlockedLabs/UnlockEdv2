@@ -29,7 +29,7 @@ import {
 } from '@/useAuth';
 import Modal from '@/Components/Modal';
 import ULIComponent from './ULIComponent';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
 import { FeatureAccess, ToastState, UserRole } from '@/common';
@@ -37,6 +37,7 @@ import { useToast } from '@/Context/ToastCtx';
 import API from '@/api/api';
 import { useRef, useState } from 'react';
 import ConfirmSeedDemoDataForm from './forms/ConfirmSeedDemoData';
+import { useTourContext } from '@/Context/TourContext';
 
 export default function Navbar({
     isPinned,
@@ -55,6 +56,8 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
+    const navigate = useNavigate();
+    const { tourState, setTourState } = useTourContext();
 
     const handleSeedDemoData = async () => {
         setSeedInProgress(true);
@@ -73,8 +76,18 @@ export default function Navbar({
         setSeedInProgress(false);
     };
 
+    const startTour = () => {
+        if (window.location.pathname !== '/home') {
+            navigate('/home');
+        }
+        setTourState({
+            tourActive: true
+        });
+    };
+
     return (
         <div className="w-60 min-w-[240px] flex flex-col bg-background group h-screen">
+            <button onClick={startTour}>Start Tour</button>
             <div className="hidden lg:flex self-end py-8 mr-4">
                 {isPinned ? (
                     <div
@@ -102,7 +115,6 @@ export default function Navbar({
             <Link to="/" className="mt-14">
                 <Brand />
             </Link>
-
             <div className="mt-8 flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
                 <ul className="menu space-y-2 px-2 ">
                     {user && isAdministrator(user) ? (
@@ -224,13 +236,19 @@ export default function Navbar({
                                 FeatureAccess.OpenContentAccess
                             ) && (
                                 <>
-                                    <li>
+                                    <li
+                                        id="navigate-homepage"
+                                        className={`${tourState.stepIndex === 11 && `animate-pulse border border-2 border-primary-yellow rounded-xl`} `}
+                                    >
                                         <Link to="/home">
                                             <ULIComponent icon={HomeIcon} />
                                             Home
                                         </Link>
                                     </li>
-                                    <li>
+                                    <li
+                                        id="visit-knowledge-center"
+                                        className={`${tourState.stepIndex === 1 && `animate-pulse border border-2 border-primary-yellow rounded-xl`} `}
+                                    >
                                         <Link to="/knowledge-center/libraries">
                                             <ULIComponent icon={BookOpenIcon} />
                                             Knowledge Center
