@@ -69,7 +69,7 @@ func (usr *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
 func (user *User) CreateTempPassword() string {
 	b := make([]byte, 8)
