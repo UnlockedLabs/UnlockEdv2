@@ -1,12 +1,12 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE faqs (
+CREATE TABLE public.faqs (
         id SERIAL NOT NULL, 
         question CHARACTER VARYING(255) NOT NULL, 
         PRIMARY KEY (id)
 );
 
-CREATE TABLE faq_click_metrics (
+CREATE TABLE public.faq_click_metrics (
         user_id INTEGER NOT NULL, 
         faq_id INTEGER NOT NULL, 
         total BIGINT NOT NULL DEFAULT 1,
