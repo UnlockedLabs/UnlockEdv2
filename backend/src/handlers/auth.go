@@ -35,6 +35,10 @@ type (
 	}
 )
 
+func (c *Claims) canSwitchFacility() bool {
+	return slices.Contains([]models.UserRole{models.SystemAdmin, models.DepartmentAdmin}, c.Role)
+}
+
 func (srv *Server) registerAuthRoutes() []routeDef {
 	return []routeDef{
 		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature()},
@@ -149,7 +153,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	if err != nil { //special case here, kept original flow as Unauthorized is referenced in api.ts file)
 		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized")
 	}
-	if !claims.isAdmin() && claims.FacilityID != user.FacilityID {
+	if !claims.canSwitchFacility() && claims.FacilityID != user.FacilityID {
 		// user isn't an admin, and has alternate facility_id in the JWT claims
 		log.error("user viewing context for different facility. this should never happen")
 		return newUnauthorizedServiceError()

@@ -81,10 +81,7 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "video_id")
 	}
 
-	handlerAction := r.PathValue("action")
-	log.auditDetails(handlerAction)
-
-	switch handlerAction {
+	switch r.PathValue("action") {
 	case FeatureVideoAction: // this is an admin only action, so pass the facilityID to 'feature' the content
 		isFavorited, err := srv.Db.FavoriteOpenContent(vidId, video.OpenContentProviderID, userID, &facilityID)
 		if err != nil {
@@ -107,11 +104,12 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		return writeJsonResponse(w, http.StatusOK, "video visibility toggled")
 
 	case RetryVideoAction:
+		log.auditDetails("retry_video_download")
 		if len(video.Attempts) >= models.MAX_DOWNLOAD_ATTEMPTS {
 			return newBadRequestServiceError(errors.New("max attempts reached"), "max download attempts reached, please remove video and try again")
 		}
 		msg := nats.NewMsg(models.RetryManualDownloadJob.PubName())
-		body := make(map[string]interface{})
+		body := make(map[string]any)
 		body["video_id"] = video.ID
 		body["open_content_provider_id"] = video.OpenContentProviderID
 		body["job_type"] = models.RetryVideoDownloadsJob
