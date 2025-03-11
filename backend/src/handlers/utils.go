@@ -17,45 +17,44 @@ func (log sLog) audit() {
 	logrus.WithFields(log.f).Println()
 }
 
-// TODO: Do we want to use this for action handlers that do things like toggle visibility?
-// func (slog sLog) auditDetails (action string) {
-// 	slog.f["level"] = true
-// 	slog.f["action"] = action
-// }
+func (slog sLog) auditDetails(action string) {
+	slog.f["level"] = true
+	slog.f["action"] = action
+}
 
-func (slog sLog) info(args ...interface{}) {
+func (slog sLog) info(args ...any) {
 	logrus.WithFields(slog.f).Info(args...)
 }
 
-func (slog sLog) infof(format string, args ...interface{}) {
+func (slog sLog) infof(format string, args ...any) {
 	logrus.WithFields(slog.f).Infof(format, args...)
 }
 
-func (slog sLog) debug(args ...interface{}) {
+func (slog sLog) debug(args ...any) {
 	logrus.WithFields(slog.f).Debug(args...)
 }
 
-func (slog sLog) debugf(format string, args ...interface{}) {
+func (slog sLog) debugf(format string, args ...any) {
 	logrus.WithFields(slog.f).Debugf(format, args...)
 }
 
-func (slog sLog) warn(args ...interface{}) {
+func (slog sLog) warn(args ...any) {
 	logrus.WithFields(slog.f).Warn(args...)
 }
 
-func (slog sLog) warnf(format string, args ...interface{}) {
+func (slog sLog) warnf(format string, args ...any) {
 	logrus.WithFields(slog.f).Warnf(format, args...)
 }
 
-func (slog sLog) error(args ...interface{}) {
+func (slog sLog) error(args ...any) {
 	logrus.WithFields(slog.f).Error(args...)
 }
 
-func (slog sLog) errorf(format string, args ...interface{}) {
+func (slog sLog) errorf(format string, args ...any) {
 	logrus.WithFields(slog.f).Errorf(format, args...)
 }
 
-func (slog *sLog) add(key string, value interface{}) {
+func (slog *sLog) add(key string, value any) {
 	slog.f[key] = value
 }
 
@@ -91,6 +90,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	tags := r.URL.Query()["tags"]
 	all := r.URL.Query().Get("all") == "true"
 	return models.QueryContext{
+		Ctx:        r.Context(),
 		Page:       page,
 		PerPage:    perPage,
 		FacilityID: uint(facilityID),

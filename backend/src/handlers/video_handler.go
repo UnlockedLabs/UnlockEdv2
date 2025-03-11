@@ -75,13 +75,14 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
+	log.add("video_id", vidId)
 	video, err := srv.Db.GetVideoByID(vidId)
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
 
 	handlerAction := r.PathValue("action")
-	// log.auditDetails(handlerAction)?
+	log.auditDetails(handlerAction)
 
 	switch handlerAction {
 	case FeatureVideoAction: // this is an admin only action, so pass the facilityID to 'feature' the content
@@ -91,16 +92,18 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		}
 		msg := ""
 		if isFavorited {
-			msg = "video added to favorites"
+			msg = "video added to featured list"
 		} else {
-			msg = "video removed from favorites"
+			msg = "video removed from featured list"
 		}
+		log.auditDetails("video_featured")
 		return writeJsonResponse(w, http.StatusOK, msg)
 
 	case ToggleVisibilityAction:
 		if err = srv.Db.ToggleVideoVisibility(vidId); err != nil {
 			return newInternalServerServiceError(err, "error toggling video visibility")
 		}
+		log.auditDetails("visibility_toggled")
 		return writeJsonResponse(w, http.StatusOK, "video visibility toggled")
 
 	case RetryVideoAction:
@@ -109,7 +112,6 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		}
 		msg := nats.NewMsg(models.RetryManualDownloadJob.PubName())
 		body := make(map[string]interface{})
-		log.add("video_id", video.ID)
 		body["video_id"] = video.ID
 		body["open_content_provider_id"] = video.OpenContentProviderID
 		body["job_type"] = models.RetryVideoDownloadsJob
