@@ -18,7 +18,6 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"GET /api/users", srv.handleIndexUsers, true, axx},
 		{"GET /api/users/{id}", srv.handleShowUser, false, axx},
 		{"POST /api/users", srv.handleCreateUser, true, axx},
-		{"POST /api/users/faq-click", srv.handleUserFAQClick, false, axx},
 		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
 		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
@@ -250,27 +249,6 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		}
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
-}
-
-func (srv *Server) handleUserFAQClick(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var body map[string]interface{}
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if err != nil {
-		return newJSONReqBodyServiceError(err)
-	}
-	defer r.Body.Close()
-	question, ok := body["question"].(string)
-	if !ok || question == "" {
-		return newBadRequestServiceError(errors.New("no question found in body"), "Bad Request")
-	}
-	args := srv.getQueryContext(r)
-	err = srv.Db.IncrementUserFAQClick(&args, question)
-	if err != nil {
-		log.add("question", question)
-		log.add("user_id", args.UserID)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusCreated, "Question logged successfully")
 }
 
 func validateUser(user *models.User) string {

@@ -119,7 +119,7 @@ export default function FAQs() {
             question: question
         };
         try {
-            const response = await API.post("users/faq-click",
+            const response = await API.post("analytics/faq-click",
                 requestBody
             )
             if (!response.success){
@@ -158,7 +158,7 @@ export default function FAQs() {
                                         openQuestion === (category + '-' + index) ? "overflow-visible max-h-[800px]" : "max-h-0 overflow-hidden"
                                     }`}
                                 >
-                                    <div className="body px-4 pb-3 border-l-4 border-teal-500">
+                                    <div className="body px-4 pb-3 border-l-4 border-teal-3">
                                         <p>{faq.answer}</p>
                                         {("list" in faq) && faq.list && (
                                         <ul className="list-disc list-outside pl-6 mt-2">

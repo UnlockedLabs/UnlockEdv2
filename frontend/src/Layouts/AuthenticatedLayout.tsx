@@ -68,7 +68,7 @@ export default function AuthenticatedLayout() {
                                 onShowNav={showNav}
                             />
                             <div className="flex grow relative">
-                                <div className="flex-1 transition-all duration-300 ease-in-out">
+                                <div className={`transition-all duration-100 ease-in-out ${isHelpOpen ? "w-[calc(100%-20rem)]" : "w-full"}`}>
                                     <Outlet />
                                 </div>
                                 {isHelpOpen && (
