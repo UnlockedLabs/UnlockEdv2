@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"reflect"
 )
 
@@ -80,6 +81,7 @@ type QueryContext struct {
 	Tags       []string
 	Total      int64
 	All        bool
+	Ctx        context.Context
 }
 
 func (q QueryContext) IntoMeta() PaginationMeta {

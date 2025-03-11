@@ -68,18 +68,20 @@ const (
 )
 
 func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log sLog) error {
+
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	userID, facilityID := claims.UserID, claims.FacilityID
 	vidId, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
+	log.add("video_id", vidId)
 	video, err := srv.Db.GetVideoByID(vidId)
 	if err != nil {
 		return newInvalidIdServiceError(err, "video_id")
 	}
-	switch r.PathValue("action") {
 
+	switch r.PathValue("action") {
 	case FeatureVideoAction: // this is an admin only action, so pass the facilityID to 'feature' the content
 		isFavorited, err := srv.Db.FavoriteOpenContent(vidId, video.OpenContentProviderID, userID, &facilityID)
 		if err != nil {
@@ -87,25 +89,27 @@ func (srv *Server) handleVideoAction(w http.ResponseWriter, r *http.Request, log
 		}
 		msg := ""
 		if isFavorited {
-			msg = "video added to favorites"
+			msg = "video added to featured list"
 		} else {
-			msg = "video removed from favorites"
+			msg = "video removed from featured list"
 		}
+		log.auditDetails("video_featured")
 		return writeJsonResponse(w, http.StatusOK, msg)
 
 	case ToggleVisibilityAction:
 		if err = srv.Db.ToggleVideoVisibility(vidId); err != nil {
 			return newInternalServerServiceError(err, "error toggling video visibility")
 		}
+		log.auditDetails("visibility_toggled")
 		return writeJsonResponse(w, http.StatusOK, "video visibility toggled")
 
 	case RetryVideoAction:
+		log.auditDetails("retry_video_download")
 		if len(video.Attempts) >= models.MAX_DOWNLOAD_ATTEMPTS {
 			return newBadRequestServiceError(errors.New("max attempts reached"), "max download attempts reached, please remove video and try again")
 		}
 		msg := nats.NewMsg(models.RetryManualDownloadJob.PubName())
-		body := make(map[string]interface{})
-		log.add("video_id", video.ID)
+		body := make(map[string]any)
 		body["video_id"] = video.ID
 		body["open_content_provider_id"] = video.OpenContentProviderID
 		body["job_type"] = models.RetryVideoDownloadsJob
@@ -145,6 +149,7 @@ func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log 
 }
 
 func (srv *Server) handleDeleteVideo(w http.ResponseWriter, r *http.Request, log sLog) error {
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "error reading video id")

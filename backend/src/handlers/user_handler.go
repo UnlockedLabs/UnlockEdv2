@@ -94,6 +94,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+
 	defer r.Body.Close()
 	if reqForm.User.FacilityID == 0 {
 		reqForm.User.FacilityID = srv.getFacilityID(r)

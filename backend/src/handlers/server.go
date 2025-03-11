@@ -438,6 +438,19 @@ type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 func (svr *Server) handleError(handler HttpFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := sLog{f: log.Fields{"handler": getHandlerName(handler), "method": r.Method, "path": r.URL.Path}}
+		ip := r.Header.Get("X-Forwarded-For")
+		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		if ok {
+			if claims.isAdmin() && r.Method != http.MethodGet {
+				log.add("user_id", claims.UserID)
+				log.add("username", claims.Username)
+				log.add("role", claims.SessionID)
+				log.add("facility_id", claims.FacilityID)
+				log.add("facility_name", claims.FacilityName)
+				log.add("ip_address", ip)
+				log.audit()
+			}
+		}
 		if err := handler(w, r, log); err != nil {
 			if svcErr, ok := err.(serviceError); ok {
 				svr.errorResponse(w, svcErr.Status, svcErr.Message)
