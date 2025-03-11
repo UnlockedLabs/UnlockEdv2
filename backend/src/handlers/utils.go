@@ -83,6 +83,9 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 			order = orderBySplit[1]
 		}
 	}
+	if orderBy == "" {
+		orderBy = "created_at"
+	}
 	if order != "asc" && order != "desc" {
 		order = "desc"
 	}
