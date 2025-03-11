@@ -4,16 +4,9 @@ import InputError from '../../Components/inputs/InputError';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import { DropdownInput, TextInput } from '../inputs';
 import API from '@/api/api';
-import {
-    AuthResponse,
-    Facility,
-    ServerResponseOne,
-    UserRole,
-    Timezones,
-    User
-} from '@/common';
-import { useLoaderData } from 'react-router-dom';
-import { fetchUser } from '@/useAuth';
+import { AuthResponse, ServerResponseOne, UserRole, Timezones } from '@/common';
+import { AUTHCALLBACK, fetchUser } from '@/useAuth';
+import { useNavigate } from 'react-router-dom';
 interface Inputs {
     password: string;
     confirm: string;
@@ -24,9 +17,8 @@ interface Inputs {
 export default function ChangePasswordForm() {
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
-    const loaderData = useLoaderData() as Facility | null;
-    const [user, setUser] = useState<User | undefined>(undefined);
-
+    const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
+    const navigate = useNavigate();
     const {
         control,
         register,
@@ -34,9 +26,19 @@ export default function ChangePasswordForm() {
         reset,
         formState: { errors }
     } = useForm<Inputs>();
+
     useEffect(() => {
-        const user = void fetchUser();
-        setUser(user);
+        const getUser = async () => {
+            const authUser = await fetchUser();
+            if (!authUser?.password_reset) {
+                navigate(AUTHCALLBACK);
+            }
+            setIsFirstLogin(
+                authUser?.role === UserRole.SystemAdmin &&
+                    authUser?.facility_name === 'Default'
+            );
+        };
+        void getUser();
     }, []);
     const password = useWatch({
         control,
@@ -59,8 +61,6 @@ export default function ChangePasswordForm() {
     const isValid = isLengthValid && hasNumber && passwordsMatch;
     const validFacility =
         facility && facility.length > 2 && facility.trim().length > 2;
-    const isFirstAdminLogin =
-        user?.role === UserRole.SystemAdmin && loaderData?.name === 'Default';
 
     const submit: SubmitHandler<Inputs> = async (data) => {
         setErrorMessage('');
@@ -152,7 +152,7 @@ export default function ChangePasswordForm() {
                 </div>
             )}
 
-            {isFirstAdminLogin && (
+            {isFirstLogin && (
                 <>
                     <TextInput
                         label={'New default facility name'}

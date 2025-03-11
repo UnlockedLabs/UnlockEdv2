@@ -47,8 +47,8 @@ func (srv *Server) registerAuthRoutes() []routeDef {
 	}
 }
 
-func (claims *Claims) getTraits() map[string]interface{} {
-	return map[string]interface{}{
+func (claims *Claims) getTraits() map[string]any {
+	return map[string]any{
 		"username":       claims.Username,
 		"facility_id":    claims.FacilityID,
 		"role":           claims.Role,
@@ -191,7 +191,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 		return nil, hasCookie, err
 	}
 	if response.StatusCode == 200 {
-		oryResp := map[string]interface{}{}
+		oryResp := map[string]any{}
 		if err := json.NewDecoder(response.Body).Decode(&oryResp); err != nil {
 			log.WithFields(fields).Errorln("error decoding body from ory response")
 			return nil, hasCookie, err
@@ -207,7 +207,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 			return nil, hasCookie, errors.New("ory session ID not found")
 		}
 		if active {
-			identity, ok := oryResp["identity"].(map[string]interface{})
+			identity, ok := oryResp["identity"].(map[string]any)
 			if ok {
 				kratosID, ok := identity["id"].(string)
 				if !ok {
@@ -221,7 +221,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					log.WithFields(fields).Errorln("error fetching user found from kratos session")
 					return nil, hasCookie, err
 				}
-				traits := identity["traits"].(map[string]interface{})
+				traits := identity["traits"].(map[string]any)
 				fields["user"] = user
 				log.WithFields(fields).Trace("found user from ory session")
 				facilityId, ok := traits["facility_id"].(float64)
@@ -284,10 +284,11 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	}
 	tx := srv.Db.Begin()
 	user, err := srv.Db.GetUserByID(claims.UserID)
-	log.add("userId", claims.UserID)
+	log.add("user_id", claims.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	log.add("username_to_reset", user.Username)
 	if claims.Role == models.SystemAdmin && form.FacilityName != "" {
 		facility := models.Facility{Name: form.FacilityName, Timezone: form.Timezone}
 		if err := srv.Db.UpdateFacility(&facility, 1); err != nil {

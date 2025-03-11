@@ -103,6 +103,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
+	log.add("created_username", reqForm.User.Username)
 	userNameExists := srv.Db.UsernameExists(reqForm.User.Username)
 	if userNameExists {
 		return newBadRequestServiceError(err, "userexists")
@@ -148,7 +149,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			return writeJsonResponse(w, http.StatusCreated, response)
 		}
 		if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
-			log.add("userId", reqForm.User.ID)
+			log.add("user_id", reqForm.User.ID)
 			log.error("error creating user in kolibri")
 		}
 	}
@@ -160,7 +161,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
  */
 func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
-	log.add("userId", id)
+	log.add("user_id", id)
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
@@ -168,9 +169,10 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	log.add("deleted_username", user.Username)
 	if !srv.isTesting(r) {
 		if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
-			log.add("Kratos_id", user.KratosID)
+			log.add("deleted_kratos_id", user.KratosID)
 			return newInternalServerServiceError(err, "error deleting user in kratos")
 		}
 	}

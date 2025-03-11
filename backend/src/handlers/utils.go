@@ -12,13 +12,12 @@ import (
 // sLog is a wrapper around the log.Fields map and is implemented by the handleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging more efficient.
 type sLog struct{ f logrus.Fields }
 
-func (log sLog) audit() {
-	log.f["level"] = "audit"
+func (log sLog) adminAudit() {
+	log.f["audit"] = "admin_action"
 	logrus.WithFields(log.f).Println()
 }
 
 func (slog sLog) auditDetails(action string) {
-	slog.f["level"] = true
 	slog.f["action"] = action
 }
 
