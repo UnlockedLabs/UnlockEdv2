@@ -25,7 +25,7 @@ export default function ResidentHome() {
     const { data: featured, mutate: mutateFeatLibs } = useSWR<
         ServerResponseMany<Library>,
         AxiosError
-    >('api/libraries?visibility=featured');
+    >('api/libraries?visibility=featured&order_by=created_at');
     const { data: favorites, mutate: mutateFavLibs } = useSWR<
         ServerResponseMany<OpenContentItem>,
         AxiosError
