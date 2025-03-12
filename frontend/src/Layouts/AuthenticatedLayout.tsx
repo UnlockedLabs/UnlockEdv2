@@ -7,7 +7,6 @@ import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
 import WebsocketSession from '@/session_ws';
 import { useAuth } from '@/useAuth';
 import HelpCenter from '@/Pages/HelpCenter';
-import { CloseX } from '@/Components/inputs';
 import UnlockEdTour from '@/Components/UnlockEdTour';
 
 // Extend RouteMatch with custom RouteMeta
@@ -77,8 +76,7 @@ export default function AuthenticatedLayout() {
                                 </div>
                                 {isHelpOpen && (
                                     <div className="w-80 bg-inner-background p-4 shadow-lg h-[85vh] max-h-full overflow-y-auto scrollbar">
-                                        <CloseX close={toggleHelpCenter} />
-                                        <HelpCenter />
+                                        <HelpCenter close={toggleHelpCenter} />
                                     </div>
                                 )}
                             </div>
