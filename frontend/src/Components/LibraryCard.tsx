@@ -92,7 +92,10 @@ export default function LibraryCard({
                             alt={`${library.title} thumbnail`}
                         />
                     </figure>
-                    <ClampedText as="h3" className="w-3/4 body my-auto mr-7">
+                    <ClampedText
+                        as="h3"
+                        className="w-3/4 flex-shrink-0 body my-auto mr-7"
+                    >
                         {library.title}
                     </ClampedText>
                 </div>
