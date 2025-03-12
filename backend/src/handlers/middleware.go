@@ -48,11 +48,19 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 		}
 		resourceID := r.PathValue("id")
 		var video models.Video
-		tx := srv.Db.Model(&models.Video{}).Where("id = ?", resourceID)
+
+		tx := srv.Db.Model(&models.Video{}).
+			Select(`videos.*, 
+            (CASE WHEN fvs.visibility_status IS NULL THEN false ELSE fvs.visibility_status END) AS visibility_status`).
+			Joins(`LEFT OUTER JOIN facility_visibility_statuses fvs 
+            ON fvs.open_content_provider_id = videos.open_content_provider_id 
+            AND fvs.content_id = videos.id 
+            AND fvs.facility_id = ?`, user.FacilityID).
+			Where("videos.id = ?", resourceID)
 		if user.isAdmin() {
 			tx = tx.First(&video)
 		} else {
-			tx = tx.First(&video, "visibility_status = true AND availability = 'available'")
+			tx = tx.First(&video, "fvs.visibility_status = true AND availability = 'available'")
 		}
 		if err := tx.Error; err != nil {
 			srv.errorResponse(w, http.StatusNotFound, "Video not found, is not available or visibility is not enabled")

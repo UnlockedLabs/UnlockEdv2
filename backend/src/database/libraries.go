@@ -135,13 +135,17 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
 			CONCAT('/viewer/videos/', v.id) as url,
 			v.thumbnail_url,
 			v.description,
-			v.visibility_status,
+			(CASE WHEN fvs.visibility_status is null then false else fvs.visibility_status END) as visibility_status,
 			v.open_content_provider_id,
 			NULL AS provider_name,
 			v.channel_title,
 			v.created_at
 			FROM videos v
-			WHERE v.visibility_status = true 
+        LEFT OUTER JOIN facility_visibility_statuses fvs
+            on fvs.open_content_provider_id = v.open_content_provider_id
+            and fvs.content_id = v.id
+            and fvs.facility_id = ? 
+        WHERE fvs.visibility_status = true 
 				and to_tsvector('english', v.title || ' ' || v.description || ' ' || v.channel_title) @@ plainto_tsquery('english', ?)
 		   UNION ALL
 		SELECT
@@ -165,7 +169,7 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
 		WHERE fvs.visibility_status = true
 			and to_tsvector('english', l.title || ' ' || l.description) @@ plainto_tsquery('english', ?)`
 
-	tx := db.Raw(searchQuery, args.Search, args.FacilityID, args.Search)
+	tx := db.Raw(searchQuery, args.FacilityID, args.Search, args.FacilityID, args.Search)
 	if err := tx.Scan(&items).Error; err != nil {
 		log.Errorln("Unable to perform content search")
 		return nil, newNotFoundDBError(err, "content search")

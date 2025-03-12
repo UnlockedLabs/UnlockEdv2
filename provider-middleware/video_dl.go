@@ -453,7 +453,6 @@ func (vs *VideoService) fetchYoutubeInfo(ctx context.Context, ytUrl string) (*mo
 		ChannelTitle:          &data.Items[0].Snippet.ChannelTitle,
 		Availability:          models.VideoProcessing,
 		ThumbnailUrl:          thumbnailUrl,
-		VisibilityStatus:      true,
 		OpenContentProviderID: vs.OpenContentProviderID,
 	}
 	err = vs.db.WithContext(ctx).Create(vid).Error
@@ -512,7 +511,6 @@ func (yt *VideoService) fetchAndSaveInitialVideoInfo(ctx context.Context, vidUrl
 		Description:           stripUrlsFromDescription(result.Info.Description),
 		ChannelTitle:          &result.Info.Channel,
 		ExternalID:            externId,
-		VisibilityStatus:      false,
 		Url:                   vidUrl,
 		ThumbnailUrl:          thumbnail,
 		Duration:              int(result.Info.Duration),

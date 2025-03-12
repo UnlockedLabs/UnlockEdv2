@@ -4,9 +4,16 @@ import (
 	"UnlockEdv2/src/models"
 )
 
-func (db *DB) GetVideoByID(id int) (*models.Video, error) {
+func (db *DB) GetVideoByID(id int, facilityId uint) (*models.Video, error) {
 	var video models.Video
-	if err := db.Preload("Attempts").First(&video, id).Error; err != nil {
+	query := db.Model(&models.Video{}).Preload("Attempts").
+		Select("videos.*, fvs.visibility_status").
+		Joins(`left outer join facility_visibility_statuses fvs on 
+			fvs.open_content_provider_id = videos.open_content_provider_id and 
+			fvs.content_id = videos.id and 
+			fvs.facility_id = ?`, facilityId)
+
+	if err := query.First(&video, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "videos")
 	}
 	return &video, nil
@@ -64,16 +71,23 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 	var videos []VideoResponse
 	tx := db.Model(&models.Video{}).Preload("Attempts").Select(`
 	videos.*,
+        CASE WHEN fvs.visibility_status is null then false 
+        else fvs.visibility_status
+    end as visibility_status,
 	EXISTS (
 		SELECT 1
 		FROM open_content_favorites f
 		WHERE f.content_id = videos.id
 		  AND f.open_content_provider_id = videos.open_content_provider_id
 		  AND f.user_id = ?
-	) AS is_favorited`, args.UserID)
+	) AS is_favorited`, args.UserID).
+		Joins(`left join facility_visibility_statuses fvs 
+        on fvs.open_content_provider_id = videos.open_content_provider_id
+        and fvs.content_id = videos.id 
+        and fvs.facility_id = ?`, args.FacilityID)
 
 	if onlyVisible {
-		tx = tx.Where("visibility_status = ?", true)
+		tx = tx.Where("fvs.visibility_status = ?", true)
 	}
 	if args.Search != "" {
 		args.Search = "%" + args.Search + "%"
@@ -95,15 +109,22 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 	return videos, nil
 }
 
-func (db *DB) ToggleVideoVisibility(id int) error {
+func (db *DB) ToggleVideoVisibility(id int, facilityId uint) error {
 	var video models.Video
-	if err := db.First(&video, id).Error; err != nil {
+	query := db.Model(&models.Video{}).
+		Select("videos.*, fvs.visibility_status").
+		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = videos.open_content_provider_id
+			and fvs.content_id = videos.id
+			and fvs.facility_id = ?`, facilityId)
+	if err := query.Find(&video, "videos.id = ?", id).Error; err != nil {
 		return newNotFoundDBError(err, "videos")
 	}
-	video.VisibilityStatus = !video.VisibilityStatus
-	if err := db.Save(&video).Error; err != nil {
-		return newUpdateDBError(err, "videos")
+	visibility := video.GetFacilityVisibilityStatus(facilityId)
+	visibility.VisibilityStatus = !visibility.VisibilityStatus
+	if err := db.Save(&visibility).Error; err != nil {
+		return newUpdateDBError(err, "video visibility")
 	}
+
 	return nil
 }
 
