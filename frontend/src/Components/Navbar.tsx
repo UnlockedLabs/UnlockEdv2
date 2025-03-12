@@ -29,7 +29,7 @@ import {
 } from '@/useAuth';
 import Modal from '@/Components/Modal';
 import ULIComponent from './ULIComponent';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import FeatureLevelCheckboxes from './FeatureLevelCheckboxes';
 import { FeatureAccess, ToastState, UserRole } from '@/common';
@@ -56,8 +56,7 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
-    const navigate = useNavigate();
-    const { tourState, setTourState } = useTourContext();
+    const { tourState } = useTourContext();
 
     const handleSeedDemoData = async () => {
         setSeedInProgress(true);
@@ -76,18 +75,8 @@ export default function Navbar({
         setSeedInProgress(false);
     };
 
-    const startTour = () => {
-        if (window.location.pathname !== '/home') {
-            navigate('/home');
-        }
-        setTourState({
-            tourActive: true
-        });
-    };
-
     return (
         <div className="w-60 min-w-[240px] flex flex-col bg-background group h-screen">
-            <button onClick={startTour}>Start Tour</button>
             <div className="hidden lg:flex self-end py-8 mr-4">
                 {isPinned ? (
                     <div
@@ -293,6 +282,14 @@ export default function Navbar({
                                     </Link>
                                 </li>
                             )} */}
+                            <li>
+                                <button onClick={onToggleHelpCenter}>
+                                    <ULIComponent
+                                        icon={QuestionMarkCircleIcon}
+                                    />
+                                    <span>Get Help</span>
+                                </button>
+                            </li>
                             <li>
                                 <button onClick={onToggleHelpCenter}>
                                     <ULIComponent
