@@ -46,7 +46,17 @@ export default function LoginForm() {
             if (resp.data.first_login) {
                 setTourState({ tourActive: true });
             }
-            navigate(resp.data.redirect_to ?? resp.data.redirect_browser_to);
+            if (
+                resp.data.redirect_to.startsWith('/') ||
+                resp.data.redirect_browser_to?.startsWith('/')
+            ) {
+                navigate(
+                    resp.data.redirect_to ?? resp.data.redirect_browser_to
+                );
+            } else {
+                window.location.href =
+                    resp.data.redirect_to ?? resp.data.redirect_browser_to;
+            }
             return;
         }
         setErrorMessage(true);
