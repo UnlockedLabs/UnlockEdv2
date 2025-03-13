@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
 import { Step } from 'react-joyride';
 
 interface TourContextType {
@@ -59,10 +59,6 @@ export function useTourContext(): {
             return newState;
         });
     };
-
-    useEffect(() => {
-        console.log(context.tourState.stepIndex);
-    }, [context.tourState.stepIndex]);
 
     return {
         tourState: context.tourState,

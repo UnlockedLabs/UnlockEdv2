@@ -188,12 +188,11 @@ func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 	return favRemoved, nil
 }
 
-func (db *DB) IncrementUserLogin(username string) error {
-	log.Printf("Incrementing login count for %s", username)
+func (db *DB) IncrementUserLogin(username string) (int64, error) {
 	user, err := db.GetUserByUsername(username)
 	if err != nil {
 		log.Errorf("Error getting user by username: %v", err)
-		return newGetRecordsDBError(err, "users")
+		return 0, newGetRecordsDBError(err, "users")
 	}
 	if err := db.Exec(
 		`INSERT INTO login_metrics (user_id, total, last_login) 
@@ -202,7 +201,7 @@ func (db *DB) IncrementUserLogin(username string) error {
 		 SET total = login_metrics.total + 1, last_login = CURRENT_TIMESTAMP`,
 		user.ID).Error; err != nil {
 		log.Errorf("Error incrementing login count: %v", err)
-		return newUpdateDBError(err, "login_metrics")
+		return 0, newUpdateDBError(err, "login_metrics")
 	}
 	now := time.Now()
 	rounded := now.Truncate(time.Hour)
@@ -214,10 +213,15 @@ func (db *DB) IncrementUserLogin(username string) error {
 		 DO UPDATE SET total_logins = login_activity.total_logins + 1`,
 		rounded, user.FacilityID, 1).Error; err != nil {
 		log.Errorf("Error incrementing login activity: %v", err)
-		return newUpdateDBError(err, "login_activity")
+		return 0, newUpdateDBError(err, "login_activity")
 	}
-	log.Printf("FINISHED Incremented login count for %s", username)
-	return nil
+	var count int64
+	err = db.Model(&models.LoginMetrics{}).Select("total").Where("user_id = ?", user.ID).Scan(&count).Error
+	if err != nil {
+		log.Errorf("Error counting login metrics: %v", err)
+		return 0, newGetRecordsDBError(err, "login_metrics")
+	}
+	return count, nil
 }
 
 func (db *DB) LogUserSessionStarted(userID uint, sessionID string) {

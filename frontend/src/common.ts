@@ -265,6 +265,7 @@ export interface AuthResponse {
     redirect_to: string;
     logout_url?: string;
     redirect_browser_to?: string;
+    first_login?: boolean;
 }
 export interface NewUserResponse {
     user: User;

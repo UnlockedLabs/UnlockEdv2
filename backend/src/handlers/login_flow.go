@@ -78,10 +78,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
-	err = s.Db.IncrementUserLogin(form.Username)
+	totalLogins, err := s.Db.IncrementUserLogin(form.Username)
 	if err != nil {
 		log.error("Error incrementing user login count", err)
 		return newDatabaseServiceError(err)
+	}
+	if totalLogins == 1 {
+		redirect["first_login"] = true
 	}
 	return writeJsonResponse(w, http.StatusOK, redirect)
 }
@@ -110,8 +113,8 @@ func buildKratosLoginForm(form LoginRequest) ([]byte, error) {
 	return json.Marshal(body)
 }
 
-func getKratosRedirect(resp *http.Response) (map[string]string, error) {
-	respBody := map[string]string{}
+func getKratosRedirect(resp *http.Response) (map[string]any, error) {
+	respBody := map[string]any{}
 	decoded := map[string]interface{}{}
 	var err error
 	defer resp.Body.Close()
@@ -131,6 +134,10 @@ func getKratosRedirect(resp *http.Response) (map[string]string, error) {
 		reset, ok := traits["password_reset"].(bool)
 		if !ok || reset {
 			respBody["redirect_to"] = "/reset-password"
+
+			// make sure it is a first login users.go
+			// select all from login metrics and check if its 0
+			// include another field if it does that
 		} else {
 			respBody["redirect_to"] = AuthCallbackRoute
 		}

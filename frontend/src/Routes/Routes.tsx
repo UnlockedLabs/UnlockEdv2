@@ -7,7 +7,6 @@ import { AUTHCALLBACK, hasFeature, useAuth } from '@/useAuth.ts';
 import Error from '@/Pages/Error.tsx';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.tsx';
 import { getFacilities } from '@/routeLoaders.ts';
-import { TourProvider } from '@/Context/TourContext.tsx';
 
 export const RouteGuard: React.FC<{
     allowedRoles?: UserRole[];
@@ -49,10 +48,8 @@ export function DeclareAuthenticatedRoutes(
 function LoggedInView() {
     return (
         <ToastProvider>
-            <TourProvider>
-                <TitleManager />
-                <AuthenticatedLayout />
-            </TourProvider>
+            <TitleManager />
+            <AuthenticatedLayout />
         </ToastProvider>
     );
 }
