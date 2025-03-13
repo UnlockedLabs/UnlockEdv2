@@ -47,7 +47,7 @@ export default function HelpfulLinksManagement() {
         ServerResponseOne<HelpfulLinkAndSort>,
         AxiosError
     >(
-        `/api/helpful-links?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
+        `/api/helpful-links?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}${sortQuery}`
     );
     const checkResponseForDelete = useCheckResponse({
         mutate: mutate,

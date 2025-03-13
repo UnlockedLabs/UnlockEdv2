@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 )
 
@@ -90,4 +91,8 @@ func (q QueryContext) IntoMeta() PaginationMeta {
 
 func (q QueryContext) CalcOffset() int {
 	return (q.Page - 1) * q.PerPage
+}
+
+func (q QueryContext) OrderClause() string {
+	return fmt.Sprintf("%s %s", q.OrderBy, q.Order)
 }

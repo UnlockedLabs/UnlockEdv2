@@ -169,18 +169,6 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 		countArgs = append(countArgs, searchTerm)
 	}
 
-	var allowedOrderBy = map[string]struct{}{
-		"title ASC":       {},
-		"title DESC":      {},
-		"created_at DESC": {},
-		"created_at ASC":  {},
-	}
-
-	_, ok := allowedOrderBy[args.OrderBy]
-	if !ok {
-		args.OrderBy = "created_at DESC"
-	}
-
 	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM (
 		SELECT fav.content_id
 		FROM open_content_favorites fav
@@ -301,7 +289,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
         WHERE f.user_id = ? %s
     ) AS all_favorites
     ORDER BY %s
-	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, args.OrderBy)
+	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, args.OrderClause())
 
 	var favorites []models.OpenContentItem
 	if err := db.Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
