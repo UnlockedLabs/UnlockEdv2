@@ -92,14 +92,11 @@ export default function LibraryCard({
                             alt={`${library.title} thumbnail`}
                         />
                     </figure>
-                    <ClampedText
-                        as="h3"
-                        className="w-3/4 flex-shrink-0 body my-auto mr-7"
-                    >
+                    <ClampedText as="h3" className="w-3/4 body my-auto">
                         {library.title}
                     </ClampedText>
                 </div>
-                <div className="flex items-center  space-x-2 flex-shrink-0">
+                <div className="flex self-start  space-x-2 flex-shrink-0">
                     {!route.pathname.includes('knowledge-insights') &&
                         onSearchClick && (
                             <div onClick={handleSearchClick}>
