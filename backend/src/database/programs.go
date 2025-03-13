@@ -2,7 +2,6 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
-	"strings"
 )
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
@@ -15,18 +14,17 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
-	tx := db.Model(&models.Program{}).
+	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Preload("Facilities").
 		Preload("Favorites", "user_id = ?", args.UserID)
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_tags t ON t.program_id = programs.id").Where("t.tag_id IN (?) AND t.facility_id = ?", args.Tags, args.FacilityID)
 	}
 	if args.OrderBy != "" {
-		tx = tx.Order(args.OrderBy + " " + args.Order)
+		tx = tx.Order(args.OrderClause())
 	}
 	if args.Search != "" {
-		search := "%" + strings.ToLower(args.Search) + "%"
-		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", search, search)
+		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
@@ -63,7 +61,7 @@ func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
 }
 
 func (db *DB) DeleteProgram(id int) error {
-	if err := db.Debug().Delete(&models.Program{}, id).Error; err != nil {
+	if err := db.Delete(&models.Program{}, id).Error; err != nil {
 		return newDeleteDBError(err, "programs")
 	}
 	return nil

@@ -95,12 +95,12 @@ func (srv *Server) handleRedirectVideosLocal(w http.ResponseWriter, r *http.Requ
 }
 
 func (srv *Server) handleRedirectVideosS3(w http.ResponseWriter, r *http.Request) {
-	logrus.Infof("Redirecting to S3 for video %s", r.URL.Path)
 	video := r.Context().Value(videoKey).(*models.Video)
 	if srv.dev || video == nil || srv.s3Bucket == "" {
 		srv.handleRedirectVideosLocal(w, r, video)
 		return
 	}
+	logrus.Tracef("Redirecting to S3 for video %s", r.URL.Path)
 	presignParams := &s3.GetObjectInput{
 		Bucket: aws.String(srv.s3Bucket),
 		Key:    aws.String(video.GetS3KeyMp4()),
@@ -109,7 +109,7 @@ func (srv *Server) handleRedirectVideosS3(w http.ResponseWriter, r *http.Request
 		opts.Expires = getTimeoutFromDuration(video.Duration)
 	})
 	if err != nil {
-		logrus.Printf("Error generating presigned URL: %v", err)
+		logrus.Errorf("Error generating presigned URL: %v", err)
 		srv.errorResponse(w, http.StatusInternalServerError, "Error generating presigned URL")
 		return
 	}

@@ -69,7 +69,7 @@ type VideoResponse struct {
 
 func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]VideoResponse, error) {
 	var videos []VideoResponse
-	tx := db.Model(&models.Video{}).Preload("Attempts").Select(`
+	tx := db.WithContext(args.Ctx).Model(&models.Video{}).Preload("Attempts").Select(`
 	videos.*,
         CASE WHEN fvs.visibility_status is null then false 
         else fvs.visibility_status
@@ -96,9 +96,9 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 	switch args.OrderBy {
 	case "most_popular":
 		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
-			Group("videos.id").Order("COUNT(f.id) DESC")
+			Group("videos.id, fvs.visibility_status").Order("COUNT(f.id) DESC")
 	default:
-		tx = tx.Order(args.OrderBy)
+		tx = tx.Order(args.OrderClause())
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "videos")

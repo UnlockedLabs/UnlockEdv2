@@ -94,5 +94,13 @@ func (q QueryContext) CalcOffset() int {
 }
 
 func (q QueryContext) OrderClause() string {
-	return fmt.Sprintf("%s %s", q.OrderBy, q.Order)
+	val := fmt.Sprintf("%s %s", q.OrderBy, q.Order)
+	if val == " " {
+		return "created_at desc"
+	}
+	return val
+}
+
+func (q QueryContext) SearchQuery() string {
+	return "%" + q.Search + "%"
 }

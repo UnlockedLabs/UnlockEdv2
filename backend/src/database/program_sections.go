@@ -4,7 +4,7 @@ import "UnlockEdv2/src/models"
 
 func (db *DB) GetSectionsForProgram(id int, args *models.QueryContext) ([]models.ProgramSection, error) {
 	content := []models.ProgramSection{}
-	if err := db.Find(&content, "program_id = ?", id).Preload("Events").Count(&args.Total).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Find(&content, "program_id = ?", id).Preload("Events").Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
@@ -20,9 +20,9 @@ func (db *DB) GetSectionByID(id int) (*models.ProgramSection, error) {
 
 func (db *DB) GetSectionsForFacility(args *models.QueryContext) ([]models.ProgramSection, error) {
 	content := []models.ProgramSection{}
-	tx := db.Find(&content, "facility_id = ?", args.FacilityID)
+	tx := db.WithContext(args.Ctx).Find(&content, "facility_id = ?", args.FacilityID)
 	if args.Search != "" {
-		tx = tx.Where("name LIKE ?", "%"+args.Search+"%")
+		tx = tx.Where("LOWER(name) LIKE ?", args.SearchQuery())
 	}
 	if err := tx.Count(&args.Total).Limit(args.PerPage).Offset(args.CalcOffset()).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program sections")

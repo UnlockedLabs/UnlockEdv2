@@ -3,7 +3,6 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -147,7 +146,7 @@ func (db *DB) GetUserFavoriteGroupings(args *models.QueryContext) ([]models.Open
 		UNION ALL
 		SELECT * FROM ordered_helpful_links WHERE row_num <= 10
 	)`
-	if err := db.Raw(favoritesQuery, args.FacilityID, args.UserID, args.FacilityID, args.UserID, args.UserID).Scan(&favorites).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(favoritesQuery, args.FacilityID, args.UserID, args.FacilityID, args.UserID, args.UserID).Scan(&favorites).Error; err != nil {
 		return nil, err
 	}
 	return favorites, nil
@@ -158,7 +157,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 	var searchTerm string
 
 	if args.Search != "" {
-		searchTerm = "%" + strings.ToLower(args.Search) + "%"
+		searchTerm = args.SearchQuery()
 		libSearchCond = "AND LOWER(lib.title) LIKE ?"
 		videoSearchCond = "AND LOWER(videos.title) LIKE ?"
 		hlSearchCond = "AND LOWER(hl.title) LIKE ?"
@@ -179,7 +178,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 		WHERE fav.user_id = ? %s
 	) AS total_favorites`, libSearchCond)
 
-	if err := db.Raw(countQuery, countArgs...).Scan(&args.Total).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(countQuery, countArgs...).Scan(&args.Total).Error; err != nil {
 		return nil, err
 	}
 
@@ -292,7 +291,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, args.OrderClause())
 
 	var favorites []models.OpenContentItem
-	if err := db.Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
 		return nil, err
 	}
 
@@ -328,8 +327,7 @@ func (db *DB) GetTopFacilityOpenContent(id int) ([]models.OpenContentItem, error
 
 func (db *DB) GetTopUserOpenContent(id int, args *models.QueryContext) ([]models.OpenContentItem, error) {
 	var content []models.OpenContentItem
-	log.Println(id)
-	if err := db.Raw("? UNION ? ORDER BY visits DESC LIMIT 5",
+	if err := db.WithContext(args.Ctx).Raw("? UNION ? ORDER BY visits DESC LIMIT 5",
 		db.Select("v.title, v.url, v.thumbnail_url, v.open_content_provider_id, v.id as content_id, 'video' as content_type, count(v.id) as visits").
 			Table("open_content_activities oca").
 			Joins("LEFT JOIN videos v ON v.id = oca.content_id AND v.open_content_provider_id = oca.open_content_provider_id ").
@@ -378,7 +376,7 @@ type OpenContentResponse struct {
 
 func (db *DB) GetTopFiveLibrariesByUserID(userID int, args *models.QueryContext) ([]OpenContentResponse, error) {
 	libraries := make([]OpenContentResponse, 0, 5)
-	query := db.Table("libraries lib ").
+	query := db.WithContext(args.Ctx).Table("libraries lib ").
 		Select(`lib.id as content_id,lib.title,
 			lib.url,
 			lib.thumbnail_url,
