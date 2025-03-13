@@ -140,7 +140,11 @@ export default function LibaryLayout({
                         return (
                             <div
                                 id="knowledge-center-enter-library"
-                                className={`${tourState.stepIndex === 8 && `animate-pulse border border-2 border-primary-yellow rounded-xl`} `}
+                                className={
+                                    tourState.stepIndex === 8
+                                        ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                        : ''
+                                }
                                 key={library.id}
                             >
                                 <LibraryCard
