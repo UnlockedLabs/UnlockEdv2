@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"encoding/xml"
@@ -101,18 +100,9 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		return writePaginatedResponse(w, http.StatusOK, channels, paginationData)
 	}
 	if len(libraryIDs) > 0 {
-		libraries, err = srv.Db.GetLibrariesByIDs(libraryIDs)
+		libraries, err = srv.Db.GetLibrariesByIDsAndLang(libraryIDs, "eng")
 	} else {
-		queryCtx.Search = ""
-		queryCtx.All = true
-		var librariesResp []database.LibraryResponse
-		librariesResp, err = srv.Db.GetAllLibraries(&queryCtx, "visible")
-		libraries = make([]models.Library, 0, len(librariesResp))
-		if err == nil {
-			for _, library := range librariesResp {
-				libraries = append(libraries, library.Library)
-			}
-		}
+		libraries, err = srv.Db.GetAllLibrariesByLang(&queryCtx, "eng")
 	}
 	if err != nil {
 		log.add("library_ids", libraryIDs)
