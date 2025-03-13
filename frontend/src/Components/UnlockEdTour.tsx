@@ -162,7 +162,6 @@ export default function UnlockEdTour() {
 
     const handleCallback = (data: CallBackProps) => {
         const { action, index, type } = data;
-        console.log(data);
         if (
             action === 'close' ||
             action === 'skip' ||
