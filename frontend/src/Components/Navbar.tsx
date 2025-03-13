@@ -227,7 +227,11 @@ export default function Navbar({
                                 <>
                                     <li
                                         id="navigate-homepage"
-                                        className={`${tourState.stepIndex === 11 && `animate-pulse border border-2 border-primary-yellow rounded-xl`} `}
+                                        className={
+                                            tourState.stepIndex === 11
+                                                ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                                : ''
+                                        }
                                     >
                                         <Link to="/home">
                                             <ULIComponent icon={HomeIcon} />
@@ -236,7 +240,11 @@ export default function Navbar({
                                     </li>
                                     <li
                                         id="visit-knowledge-center"
-                                        className={`${tourState.stepIndex === 1 && `animate-pulse border border-2 border-primary-yellow rounded-xl`} `}
+                                        className={
+                                            tourState.stepIndex === 1
+                                                ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                                : ''
+                                        }
                                     >
                                         <Link to="/knowledge-center/libraries">
                                             <ULIComponent icon={BookOpenIcon} />

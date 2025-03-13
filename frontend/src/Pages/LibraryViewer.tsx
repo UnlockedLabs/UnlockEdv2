@@ -214,7 +214,11 @@ export default function LibraryViewer() {
                     {user && !isAdministrator(user) && !isLoading && (
                         <div
                             id="library-viewer-favorite"
-                            className={`${tourState.stepIndex === 10 && `animate-pulse border border-2 border-primary-yellow rounded-xl`} `}
+                            className={
+                                tourState.stepIndex === 10
+                                    ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                    : ''
+                            }
                         >
                             {bookmarked ? (
                                 <StarIcon
