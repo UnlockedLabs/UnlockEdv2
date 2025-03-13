@@ -266,6 +266,7 @@ export default function Navbar({
                                     </li>
                                 </>
                             )}
+                            {/*
                             {hasFeature(user, FeatureAccess.ProgramAccess) && (
                                 <li>
                                     <Link to="/programs">
@@ -273,13 +274,15 @@ export default function Navbar({
                                         Programs
                                     </Link>
                                 </li>
-                            )}
-                                <li>
-                                    <button onClick={onToggleHelpCenter}>
-                                        <ULIComponent icon={QuestionMarkCircleIcon} />
-                                        <span>Get Help</span>
-                                    </button>
-                                </li>
+                            )} */}
+                            <li>
+                                <button onClick={onToggleHelpCenter}>
+                                    <ULIComponent
+                                        icon={QuestionMarkCircleIcon}
+                                    />
+                                    <span>Get Help</span>
+                                </button>
+                            </li>
                         </>
                     )}
                 </ul>

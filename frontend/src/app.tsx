@@ -4,7 +4,7 @@ import {
 } from './Routes/KnowledgeCenterRoutes.tsx';
 import { ProviderPlatformRoutes } from './Routes/ProviderRoutes.tsx';
 import { AdminRoutes, NonAdminRoutes } from './Routes/App.tsx';
-import { ProgramsRoutes } from './Routes/Programs.tsx';
+import { AdminProgramRoutes } from './Routes/Programs.tsx';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Loading from './Components/Loading.tsx';
 
@@ -14,7 +14,7 @@ const router = createBrowserRouter([
     KnowledgeCenterRoutes,
     KnowledgeCenterAdminRoutes,
     ProviderPlatformRoutes,
-    ProgramsRoutes
+    AdminProgramRoutes
 ]);
 
 export default function App() {
