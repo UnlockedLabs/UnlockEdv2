@@ -29,7 +29,7 @@ export default function FavoritesPage() {
         AxiosError
     >(
         user
-            ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}&order_by=${sortQuery}`
+            ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}${sortQuery}`
             : null,
         { shouldRetryOnError: false }
     );

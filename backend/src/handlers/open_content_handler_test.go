@@ -3,6 +3,7 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"slices"
 	"testing"
@@ -80,19 +81,20 @@ func TestHandleGetUserFavoriteOpenContentGroupings(t *testing.T) {
 
 func TestHandleGetUserFavoriteOpenContent(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestGetUserFavoriteOpenContentUser", "student", map[string]any{"user_id": uint(4), "page": 1, "per_page": 10}, http.StatusOK, ""},
+		{"TestGetUserFavoriteOpenContentUser", "student", map[string]any{"user_id": uint(4), "page": 1, "per_page": 10}, http.StatusOK, "?order_by=title&order=asc"},
 	}
 	search := ""
-	orderBy := ""
+	orderBy := "title"
+	order := "asc"
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, "/api/open-content/favorites", nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/open-content/favorites%s", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			handler := getHandlerByRole(server.handleGetUserFavoriteOpenContent, test.role)
 			rr := executeRequest(t, req, handler, test)
-			args := models.QueryContext{FacilityID: 1, Page: 1, PerPage: 10, UserID: 4, Search: search, OrderBy: orderBy}
+			args := models.QueryContext{FacilityID: 1, Page: 1, PerPage: 10, UserID: 4, Search: search, OrderBy: orderBy, Order: order}
 			favorites, err := server.Db.GetUserFavorites(&args)
 			if err != nil {
 				t.Fatalf("unable to get user favorites from db, error is %v", err)

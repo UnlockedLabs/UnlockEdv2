@@ -11,42 +11,44 @@ type HelpfulLinkResp struct {
 	IsFavorited bool `json:"is_favorited"`
 }
 
-func (db *DB) GetHelpfulLinks(page, perPage int, search, orderBy string, onlyVisible bool, userID uint) (int64, []HelpfulLinkResp, error) {
-	links := make([]HelpfulLinkResp, 0, perPage)
+func (db *DB) GetHelpfulLinks(args *models.QueryContext, onlyVisible bool) ([]HelpfulLinkResp, error) {
+	links := make([]HelpfulLinkResp, 0, args.PerPage)
 
 	subQuery := db.Table("open_content_favorites f").
 		Select("1").
 		Where(`f.content_id = helpful_links.id AND f.user_id = ?
-			AND f.open_content_provider_id = helpful_links.open_content_provider_id`, userID)
+			AND f.open_content_provider_id = helpful_links.open_content_provider_id`, args.UserID)
 	tx := db.Model(&models.HelpfulLink{}).Select("helpful_links.*, EXISTS(?) as is_favorited", subQuery)
-	var total int64
 
 	if onlyVisible {
 		tx = tx.Where("visibility_status = ?", true)
 	}
 
-	if search != "" {
-		search = "%" + strings.ToLower(search) + "%"
-		tx = tx.Where("LOWER(title) LIKE ?", search)
+	tx = tx.Where("helpful_links.facility_id = ?", args.FacilityID)
+
+	if args.Search != "" {
+		args.Search = "%" + strings.ToLower(args.Search) + "%"
+		tx = tx.Where("LOWER(title) LIKE ?", args.Search)
 	}
-	switch strings.ToLower(orderBy) {
+	switch strings.ToLower(args.OrderBy) {
 	case "most_popular":
-		tx = tx.Order("COUNT(f.id) DESC")
+		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = helpful_links.id AND f.open_content_provider_id = helpful_links.open_content_provider_id").
+			Group("helpful_links.id").Order("COUNT(f.id) DESC")
 	default:
-		tx = tx.Order(orderBy)
+		tx = tx.Order(args.OrderClause())
 	}
 
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "helpful_links")
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "helpful_links")
 	}
-	if err := tx.Offset(calcOffset(page, perPage)).Limit(perPage).Find(&links).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "helpful_links")
+	if err := tx.Offset(args.CalcOffset()).Limit(args.PerPage).Find(&links).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "helpful_links")
 	}
-	return total, links, nil
+	return links, nil
 }
 
 func (db *DB) AddHelpfulLink(link *models.HelpfulLink) error {
-	if db.Where("url = ?", link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
+	if db.Where("facility_id = ? and url = ?", link.FacilityID, link.Url).First(&models.HelpfulLink{}).RowsAffected > 0 {
 		return NewDBError(fmt.Errorf("link already exists"), "existing_helpful_link")
 	}
 	if err := db.Create(link).Error; err != nil {
