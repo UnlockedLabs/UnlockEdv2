@@ -10,29 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
-func getValidOrder(order string) string {
-	validMap := map[string]bool{
-		"created_at asc":  true,
-		"created_at desc": true,
-		"name_last asc":   true,
-		"name_last desc":  true,
-	}
-	_, ok := validMap[order]
-	if !ok {
-		order = "created_at desc"
-	}
-	return order
-}
-
 func calcOffset(page, perPage int) int {
 	return (page - 1) * perPage
 }
 
-func (db *DB) GetCurrentUsers(qCtx *models.QueryContext, role string) ([]models.User, error) {
-	if qCtx.Search != "" {
-		return db.SearchCurrentUsers(qCtx, role)
+func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
+	if args.Search != "" {
+		return db.SearchCurrentUsers(args, role)
 	}
-	tx := db.Model(&models.User{}).Where("facility_id = ?", qCtx.FacilityID)
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("facility_id = ?", args.FacilityID)
 	switch role {
 	case "system_admin":
 		tx = tx.Where("role IN ('system_admin',  'department_admin', 'facility_admin')")
@@ -43,13 +29,13 @@ func (db *DB) GetCurrentUsers(qCtx *models.QueryContext, role string) ([]models.
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
-	if err := tx.Count(&qCtx.Total).Error; err != nil {
+	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
-	users := make([]models.User, 0, qCtx.PerPage)
-	if err := tx.Order(getValidOrder(qCtx.Order)).
-		Offset(qCtx.CalcOffset()).
-		Limit(qCtx.PerPage).
+	users := make([]models.User, 0, args.PerPage)
+	if err := tx.Order(args.OrderClause()).
+		Offset(args.CalcOffset()).
+		Limit(args.PerPage).
 		Find(&users).
 		Error; err != nil {
 		log.Printf("Error fetching users: %v", err)
@@ -59,8 +45,8 @@ func (db *DB) GetCurrentUsers(qCtx *models.QueryContext, role string) ([]models.
 }
 
 func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
-	likeSearch := "%" + ctx.Search + "%"
-	tx := db.Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
+	likeSearch := ctx.SearchQuery()
+	tx := db.WithContext(ctx.Ctx).Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
 	switch role {
 	case "admin":
 		tx = tx.Where("role IN ('admin', 'system_admin')")
@@ -72,7 +58,7 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, ctx.PerPage)
-	if err := tx.Order(getValidOrder(ctx.Order)).
+	if err := tx.Order(ctx.OrderClause()).
 		Find(&users).
 		Offset(ctx.CalcOffset()).
 		Limit(ctx.PerPage).
@@ -92,11 +78,11 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 				log.Printf("Error fetching users: %v", err)
 				return nil, newGetRecordsDBError(err, "users")
 			}
-			if err := tx.Order(ctx.Order).
+			if err := tx.Order(ctx.OrderClause()).
 				Offset(ctx.CalcOffset()).
 				Limit(ctx.PerPage).
 				Find(&users).Error; err != nil {
-				log.Printf("Error fetching users: %v", err)
+				log.Errorf("Error fetching users: %v", err)
 				return nil, newGetRecordsDBError(err, "users")
 			}
 		}
@@ -189,7 +175,6 @@ func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 }
 
 func (db *DB) IncrementUserLogin(username string) error {
-	log.Printf("Incrementing login count for %s", username)
 	user, err := db.GetUserByUsername(username)
 	if err != nil {
 		log.Errorf("Error getting user by username: %v", err)
@@ -216,7 +201,7 @@ func (db *DB) IncrementUserLogin(username string) error {
 		log.Errorf("Error incrementing login activity: %v", err)
 		return newUpdateDBError(err, "login_activity")
 	}
-	log.Printf("FINISHED Incremented login count for %s", username)
+	log.Tracef("FINISHED Incremented login count for %s", username)
 	return nil
 }
 
@@ -397,11 +382,11 @@ func (db *DB) GetUserOpenContentEngagement(userID int) (*models.EngagementActivi
 
 func (db *DB) IncrementUserFAQClick(args *models.QueryContext, question string) error {
 	faq := models.FAQ{Question: question}
-	if err := db.Model(&models.FAQ{}).Where("LOWER(question) = ?", strings.ToLower(question)).FirstOrCreate(&faq).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Model(&models.FAQ{}).Where("LOWER(question) = ?", strings.ToLower(question)).FirstOrCreate(&faq).Error; err != nil {
 		log.Errorf("failed to find or create FAQ: %v", err)
 		return newUpdateDBError(err, "faqs")
 	}
-	if err := db.Exec(`INSERT INTO faq_click_metrics(user_id, faq_id, total) VALUES (?, ?, 1) 
+	if err := db.WithContext(args.Ctx).Exec(`INSERT INTO faq_click_metrics(user_id, faq_id, total) VALUES (?, ?, 1) 
 		 ON CONFLICT (user_id, faq_id) DO UPDATE SET total = faq_click_metrics.total + 1`,
 		args.UserID, faq.ID).Error; err != nil {
 		log.Errorf("Error incrementing faq clicks: %v", err)

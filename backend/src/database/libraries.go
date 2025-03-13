@@ -48,7 +48,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 	} else {
 		criteria, id = "f.user_id = ?", args.UserID
 	}
-	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), id)
+	tx := db.WithContext(args.Ctx).Model(&models.Library{}).Preload("OpenContentProvider").Select(fmt.Sprintf(selectIsFavoriteOrIsFeatured, criteria), id)
 	tx = tx.Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
 		and fvs.content_id = libraries.id
 		and fvs.facility_id = ?`, args.FacilityID)
@@ -73,7 +73,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 	}
 	var search string
 	if args.Search != "" {
-		search = "%" + strings.ToLower(args.Search) + "%"
+		search = args.SearchQuery()
 		tx = tx.Where("LOWER(libraries.title) LIKE ? OR LOWER(libraries.description) LIKE ?", search, search)
 	}
 	if len(args.Tags) > 0 {
@@ -106,7 +106,7 @@ func (db *DB) GetAllLibraries(args *models.QueryContext, visibility string) ([]L
 		}
 		tx = tx.Group("libraries.id, fvs.visibility_status").Order("favorite_count DESC")
 	default:
-		tx = tx.Order(args.OrderBy + " " + args.Order)
+		tx = tx.Order(args.OrderClause())
 	}
 	if !args.All {
 		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
@@ -169,7 +169,7 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
 		WHERE fvs.visibility_status = true
 			and to_tsvector('english', l.title || ' ' || l.description) @@ plainto_tsquery('english', ?)`
 
-	tx := db.Raw(searchQuery, args.FacilityID, args.Search, args.FacilityID, args.Search)
+	tx := db.WithContext(args.Ctx).Raw(searchQuery, args.FacilityID, args.Search, args.FacilityID, args.Search)
 	if err := tx.Scan(&items).Error; err != nil {
 		log.Errorln("Unable to perform content search")
 		return nil, newNotFoundDBError(err, "content search")
@@ -195,7 +195,7 @@ func (db *DB) GetLibrariesByIDsAndLang(ids []int, language string) ([]models.Lib
 // language - the language of the library to retrieve
 func (db *DB) GetAllLibrariesByLang(args *models.QueryContext, language string) ([]models.Library, error) {
 	var libraries []models.Library
-	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select("libraries.*").
+	tx := db.WithContext(args.Ctx).Model(&models.Library{}).Preload("OpenContentProvider").Select("libraries.*").
 		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
 			and fvs.content_id = libraries.id
 			and fvs.facility_id = ?`, args.FacilityID).
@@ -209,7 +209,7 @@ func (db *DB) GetAllLibrariesByLang(args *models.QueryContext, language string) 
 
 func (db *DB) ToggleVisibilityAndRetrieveLibrary(id int, args *models.QueryContext) (*models.Library, error) {
 	var library models.Library
-	query := db.Model(&models.Library{}).Preload("OpenContentProvider").
+	query := db.WithContext(args.Ctx).Model(&models.Library{}).Preload("OpenContentProvider").
 		Select("libraries.*, fvs.visibility_status").
 		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
 			and fvs.content_id = libraries.id

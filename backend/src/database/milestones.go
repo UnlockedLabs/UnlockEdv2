@@ -2,20 +2,20 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"slices"
 )
 
 func IsValidOrderBy(orderBy string) bool {
-	validOrderFields := map[string]bool{
-		"type":                 true,
-		"user_id":              true,
-		"username":             true,
-		"course_id":            true,
-		"provider_platform_id": true,
-		"name":                 true,
-		"description":          true,
+	validOrderFields := []string{
+		"type",
+		"user_id",
+		"username",
+		"course_id",
+		"provider_platform_id",
+		"name",
+		"description",
 	}
-	_, ok := validOrderFields[orderBy]
-	return ok
+	return slices.Contains(validOrderFields, orderBy)
 }
 
 func (db *DB) GetMilestonesByCourseID(page, perPage, id int) (int64, []models.Milestone, error) {
@@ -41,13 +41,13 @@ type MilestoneResponse struct {
 
 func (db *DB) GetMilestones(args *models.QueryContext) ([]MilestoneResponse, error) {
 	var content []MilestoneResponse
-	query := db.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, courses.name as course_name, users.username").
+	query := db.WithContext(args.Ctx).Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, courses.name as course_name, users.username").
 		Joins("JOIN courses ON milestones.course_id = courses.id").
 		Joins("JOIN provider_platforms ON courses.provider_platform_id = provider_platforms.id").
 		Joins("JOIN users ON milestones.user_id = users.id")
 	var search string
 	if args.Search != "" {
-		search = "%" + args.Search + "%"
+		search = args.SearchQuery()
 		query = query.Where("LOWER(milestones.type) LIKE ?", search).Or("LOWER(users.username) LIKE ?", search).Or("LOWER(courses.name) LIKE ?", search).Or("LOWER(provider_platforms.name) LIKE ?", search)
 	}
 	if err := query.Count(&args.Total).Error; err != nil {
@@ -68,7 +68,7 @@ func (db *DB) GetMilestones(args *models.QueryContext) ([]MilestoneResponse, err
 
 func (db *DB) GetMilestonesForUser(args *models.QueryContext) ([]MilestoneResponse, error) {
 	content := []MilestoneResponse{}
-	err := db.Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, courses.name as course_name, users.username").
+	err := db.WithContext(args.Ctx).Model(&models.Milestone{}).Select("milestones.*, provider_platforms.name as provider_platform_name, courses.name as course_name, users.username").
 		Joins("JOIN courses ON milestones.course_id = courses.id").
 		Joins("JOIN provider_platforms ON courses.provider_platform_id = provider_platforms.id").
 		Joins("JOIN users ON milestones.user_id = users.id").

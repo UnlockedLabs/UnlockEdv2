@@ -75,7 +75,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	page, perPage := srv.getPaginationInfo(r)
 	orderBy := strings.ToLower(r.URL.Query().Get("order_by"))
 	order := strings.ToLower(r.URL.Query().Get("order"))
-	if order == "" && orderBy != "" {
+	if orderBy != "" && order == "" {
 		orderBySplit := strings.Fields(orderBy)
 		if len(orderBySplit) > 1 {
 			orderBy = orderBySplit[0]

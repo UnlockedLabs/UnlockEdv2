@@ -16,7 +16,7 @@ func (db *DB) GetCourses(args *models.QueryContext) ([]models.Course, error) {
 	content := make([]models.Course, 0, args.PerPage)
 	total := int64(0)
 	if args.Search != "" {
-		search := "%" + args.Search + "%"
+		search := args.SearchQuery()
 		tx := db.Model(&models.Course{}).
 			Where("LOWER(courses.name) LIKE ?", search).
 			Or("LOWER(courses.alt_name) LIKE ?", search).
