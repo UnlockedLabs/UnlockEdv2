@@ -7,7 +7,14 @@ import {
     PencilSquareIcon,
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
-import { ServerResponseMany, ToastState, User, UserRole } from '@/common';
+import {
+    ServerResponseMany,
+    ToastState,
+    User,
+    UserRole,
+    ResetPasswordResponse,
+    ServerResponseOne
+} from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
@@ -22,7 +29,9 @@ import {
     EditUserModal,
     showModal,
     TextModalType,
-    TextOnlyModal
+    TextOnlyModal,
+    TargetItem,
+    CRUDActions
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth, isSysAdmin, isDeptAdmin, isFacilityAdmin } from '@/useAuth';
@@ -47,7 +56,7 @@ export default function AdminManagement() {
     const deleteUserModal = useRef<HTMLDialogElement>(null);
     const showUserPassword = useRef<HTMLDialogElement>(null);
 
-    const [targetUser, setTargetUser] = useState<User | null>(null);
+    const [targetUser, setTargetUser] = useState<TargetItem<User> | null>(null);
     const [tempPassword, setTempPassword] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
@@ -75,14 +84,14 @@ export default function AdminManagement() {
     const meta = data?.meta;
 
     const deleteUser = async () => {
-        if (targetUser?.role === UserRole.SystemAdmin) {
+        if (targetUser?.target.role === UserRole.SystemAdmin) {
             toaster(
                 'This is the primary administrator and cannot be deleted',
                 ToastState.error
             );
             return;
         }
-        const response = await API.delete('users/' + targetUser?.id);
+        const response = await API.delete('users/' + targetUser?.target.id);
         checkResponseForDelete(
             response.success,
             'Failed to delete administrator',
@@ -115,25 +124,23 @@ export default function AdminManagement() {
         setTempPassword('');
     }
 
-    const getUserIconData = {
-        'data-tip': (user: User) => {
-            return user.role === UserRole.SystemAdmin
-                ? 'Cannot Delete'
-                : 'Delete Admin';
-        },
-        icon: (user: User) => {
-            return user.role === UserRole.SystemAdmin
-                ? LockClosedIcon
-                : TrashIcon;
-        },
-        onClick: (user: User) => {
-            return user.role === UserRole.SystemAdmin
-                ? undefined
-                : () => {
-                      setTargetUser(user);
-                      showModal(deleteUserModal);
-                  };
+    const getTempPassword = async () => {
+        if (targetUser === null) return;
+        const response = (await API.post<
+            ResetPasswordResponse,
+            { user_id: number }
+        >('users/student-password', {
+            user_id: targetUser.target.id
+        })) as ServerResponseOne<ResetPasswordResponse>;
+        if (!response.success) {
+            toaster('Failed to reset password', ToastState.error);
+            return;
         }
+        setTempPassword(response.data.temp_password);
+        closeModal(resetUserPasswordModal);
+        showModal(showUserPassword);
+        toaster('Password reset successfully', ToastState.success);
+        return;
     };
 
     return (
@@ -240,48 +247,6 @@ export default function AdminManagement() {
                                             </td>
                                             <td className="justify-self-end">
                                                 <div className="flex space-x-4">
-                                                    <ULIComponent
-                                                        dataTip={'Edit Admin'}
-                                                        tooltipClassName="tooltip-left cursor-pointer"
-                                                        onClick={() => {
-                                                            setTargetUser(
-                                                                user!
-                                                            );
-                                                            showModal(
-                                                                editUserModal
-                                                            );
-                                                        }}
-                                                        icon={PencilSquareIcon}
-                                                    />
-                                                    <ULIComponent
-                                                        dataTip={
-                                                            'Reset Password'
-                                                        }
-                                                        tooltipClassName="tooltip-left cursor-pointer"
-                                                        onClick={() => {
-                                                            setTargetUser(
-                                                                user!
-                                                            );
-                                                            showModal(
-                                                                resetUserPasswordModal
-                                                            );
-                                                        }}
-                                                        icon={
-                                                            ArrowPathRoundedSquareIcon
-                                                        }
-                                                    />
-                                                    <ULIComponent
-                                                        dataTip={getUserIconData[
-                                                            'data-tip'
-                                                        ](user!)}
-                                                        tooltipClassName="tooltip-left cursor-pointer"
-                                                        onClick={getUserIconData.onClick(
-                                                            user!
-                                                        )}
-                                                        icon={getUserIconData.icon(
-                                                            user!
-                                                        )}
-                                                    />
                                                     {canEdit(
                                                         user!,
                                                         targetUser
@@ -292,9 +257,10 @@ export default function AdminManagement() {
                                                             }
                                                             tooltipClassName="tooltip-left cursor-pointer"
                                                             onClick={() => {
-                                                                setTargetUser(
-                                                                    targetUser
-                                                                );
+                                                                setTargetUser({
+                                                                    action: CRUDActions.Edit,
+                                                                    target: targetUser
+                                                                });
                                                                 editUserModal.current?.showModal();
                                                             }}
                                                             icon={
@@ -311,11 +277,15 @@ export default function AdminManagement() {
                                                                 'Reset Password'
                                                             }
                                                             tooltipClassName="tooltip-left cursor-pointer"
-                                                            onClick={() => {
-                                                                setTargetUser(
-                                                                    targetUser
+                                                            onClick={(e) => {
+                                                                e?.stopPropagation();
+                                                                setTargetUser({
+                                                                    action: CRUDActions.Reset,
+                                                                    target: targetUser
+                                                                });
+                                                                showModal(
+                                                                    resetUserPasswordModal
                                                                 );
-                                                                resetUserPasswordModal.current?.showModal();
                                                             }}
                                                             icon={
                                                                 ArrowPathRoundedSquareIcon
@@ -332,9 +302,10 @@ export default function AdminManagement() {
                                                             }
                                                             tooltipClassName="tooltip-left cursor-pointer"
                                                             onClick={() => {
-                                                                setTargetUser(
-                                                                    targetUser
-                                                                );
+                                                                setTargetUser({
+                                                                    action: CRUDActions.Delete,
+                                                                    target: targetUser
+                                                                });
                                                                 deleteUserModal.current?.showModal();
                                                             }}
                                                             icon={TrashIcon}
@@ -390,7 +361,7 @@ export default function AdminManagement() {
             />
             <EditUserModal
                 mutate={mutate}
-                target={targetUser ?? undefined}
+                target={targetUser?.target ?? undefined}
                 ref={editUserModal}
             />
             <TextOnlyModal
@@ -400,8 +371,16 @@ export default function AdminManagement() {
                 text={
                     'Are you sure you would like to delete this admin? This action cannot be undone.'
                 }
-                onSubmit={() => deleteUser}
+                onSubmit={() => void deleteUser()}
                 onClose={() => handleCancelModal(deleteUserModal)}
+            />
+            <TextOnlyModal
+                ref={resetUserPasswordModal}
+                type={TextModalType.Confirm}
+                title={'Reset Password'}
+                text={`Are you sure you would like to reset ${targetUser?.target.name_first + ' ' + targetUser?.target.name_last}'s password?`}
+                onSubmit={() => void getTempPassword()}
+                onClose={() => void handleCancelModal(resetUserPasswordModal)}
             />
             <TextOnlyModal
                 ref={showUserPassword}

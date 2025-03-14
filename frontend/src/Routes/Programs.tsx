@@ -5,7 +5,7 @@ import { FeatureAccess } from '@/common';
 import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 
-const routes = DeclareAuthenticatedRoutes(
+export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
         {
             path: 'programs',
@@ -13,7 +13,7 @@ const routes = DeclareAuthenticatedRoutes(
             loader: getFacilities,
             element: <Programs />,
             handle: {
-                title: 'Programs',
+                title: 'Programs Management',
                 path: ['programs']
             }
         },
@@ -26,5 +26,3 @@ const routes = DeclareAuthenticatedRoutes(
     AdminRoles,
     [FeatureAccess.ProgramAccess]
 );
-
-export const ProgramsRoutes = routes;

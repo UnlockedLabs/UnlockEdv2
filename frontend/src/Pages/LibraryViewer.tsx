@@ -247,7 +247,7 @@ export default function LibraryViewer() {
                     )}
                 </div>
                 <FormModal
-                    title="Favorite Library"
+                    title="Favorite Page"
                     inputs={[
                         {
                             type: FormInputTypes.Text,
