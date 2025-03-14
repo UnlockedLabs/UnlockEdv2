@@ -99,7 +99,10 @@ export default function LibraryCard({
                 <div className="flex self-start  space-x-2 flex-shrink-0">
                     {!route.pathname.includes('knowledge-insights') &&
                         onSearchClick && (
-                            <div onClick={handleSearchClick}>
+                            <div
+                                onClick={handleSearchClick}
+                                id="knowledge-center-search-lib"
+                            >
                                 <ULIComponent
                                     icon={MagnifyingGlassIcon}
                                     iconClassName="!w-5 !h-5"
@@ -109,6 +112,7 @@ export default function LibraryCard({
                         )}
                     <div
                         onClick={(e) => void handleToggleAction('favorite', e)}
+                        id="knowledge-center-fav-lib"
                     >
                         {!route.pathname.includes('knowledge-insights') && (
                             <ULIComponent

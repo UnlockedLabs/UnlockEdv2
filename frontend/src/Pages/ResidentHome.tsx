@@ -15,6 +15,8 @@ import TopContentList from '@/Components/dashboard/TopContentList';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
+import { useEffect } from 'react';
+import { useTourContext } from '@/Context/TourContext';
 
 export default function ResidentHome() {
     const navigate = useNavigate();
@@ -34,6 +36,7 @@ export default function ResidentHome() {
         ServerResponseOne<HelpfulLinkAndSort>,
         AxiosError
     >(`api/helpful-links`);
+    const { tourState, setTourState } = useTourContext();
 
     function navigateToOpenContent() {
         navigate('/knowledge-center/libraries');
@@ -45,8 +48,21 @@ export default function ResidentHome() {
         void mutateHelpfulFavs();
     }
 
+    useEffect(() => {
+        if (tourState.tourActive && tourState.stepIndex === 11) {
+            setTourState({
+                stepIndex: 13
+            });
+        } else if (tourState.tourActive) {
+            setTourState({
+                run: true,
+                stepIndex: 0
+            });
+        }
+    }, [tourState.tourActive]);
+
     return (
-        <div className="flex flex-row h-full">
+        <div className="flex flex-row h-full" id="resident-home">
             {/* main section */}
             <div className="w-full flex flex-col gap-6 px-5 pb-4">
                 <ExpandableCardGrid
@@ -64,17 +80,21 @@ export default function ResidentHome() {
                     )}
                 </ExpandableCardGrid>
                 <h2> Pick Up Where You Left Off</h2>
-                <div className="grid grid-cols-2 gap-6">
-                    <TopContentList
-                        heading="Your Top Content"
-                        items={topUserContent}
-                        navigateToOpenContent={navigateToOpenContent}
-                    />
-                    <TopContentList
-                        heading="Popular Content"
-                        items={topFacilityContent}
-                        navigateToOpenContent={navigateToOpenContent}
-                    />
+                <div className="grid grid-cols-2 gap-6" id="end-tour">
+                    <div id="top-content">
+                        <TopContentList
+                            heading="Your Top Content"
+                            items={topUserContent}
+                            navigateToOpenContent={navigateToOpenContent}
+                        />
+                    </div>
+                    <div id="popular-content">
+                        <TopContentList
+                            heading="Popular Content"
+                            items={topFacilityContent}
+                            navigateToOpenContent={navigateToOpenContent}
+                        />
+                    </div>
                 </div>
                 <ExpandableCardGrid
                     items={helpfulLinks?.data.helpful_links ?? []}

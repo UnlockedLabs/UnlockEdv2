@@ -16,6 +16,7 @@ import {
 } from '../inputs';
 import { forwardRef, useEffect } from 'react';
 import { FormInputTypes, Input, InputWithOptions } from '.';
+import { useTourContext } from '@/Context/TourContext';
 
 interface FormModalProps<T extends FieldValues> {
     title: string;
@@ -41,6 +42,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         setError,
         formState: { errors }
     } = useForm<T>({ defaultValues: defaultValues });
+    const { setTourState } = useTourContext();
 
     useEffect(() => {
         reset(defaultValues);
@@ -57,6 +59,10 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         if (response instanceof Error) return;
         else reset();
     };
+
+    useEffect(() => {
+        setTourState({ stepIndex: 11 });
+    }, []);
 
     return (
         <dialog ref={ref} className="modal relative" onClose={() => reset()}>

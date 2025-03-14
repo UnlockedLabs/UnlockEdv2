@@ -7,7 +7,7 @@ import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
 import WebsocketSession from '@/session_ws';
 import { useAuth } from '@/useAuth';
 import HelpCenter from '@/Pages/HelpCenter';
-import { CloseX } from '@/Components/inputs';
+import UnlockEdTour from '@/Components/UnlockEdTour';
 
 // Extend RouteMatch with custom RouteMeta
 interface CustomRouteMatch extends UIMatch {
@@ -57,6 +57,7 @@ export default function AuthenticatedLayout() {
         <PageTitleProvider>
             <div className="font-lato">
                 <div title={title} />
+                <UnlockEdTour />
                 <div
                     className={`drawer ${isNavPinned ? 'lg:drawer-open' : ''} `}
                 >
@@ -68,13 +69,14 @@ export default function AuthenticatedLayout() {
                                 onShowNav={showNav}
                             />
                             <div className="flex grow relative">
-                                <div className={`transition-all duration-100 ease-in-out ${isHelpOpen ? "w-[calc(100%-20rem)]" : "w-full"}`}>
+                                <div
+                                    className={`transition-all duration-100 ease-in-out ${isHelpOpen ? 'w-[calc(100%-20rem)]' : 'w-full'}`}
+                                >
                                     <Outlet />
                                 </div>
                                 {isHelpOpen && (
                                     <div className="w-80 bg-inner-background p-4 shadow-lg h-[85vh] max-h-full overflow-y-auto scrollbar">
-                                        <CloseX close={toggleHelpCenter} />
-                                        <HelpCenter />
+                                        <HelpCenter close={toggleHelpCenter} />
                                     </div>
                                 )}
                             </div>

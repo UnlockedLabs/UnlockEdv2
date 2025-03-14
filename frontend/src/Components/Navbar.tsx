@@ -37,6 +37,7 @@ import { useToast } from '@/Context/ToastCtx';
 import API from '@/api/api';
 import { useRef, useState } from 'react';
 import ConfirmSeedDemoDataForm from './forms/ConfirmSeedDemoData';
+import { useTourContext } from '@/Context/TourContext';
 
 export default function Navbar({
     isPinned,
@@ -55,6 +56,7 @@ export default function Navbar({
     const { toaster } = useToast();
     const confirmSeedModal = useRef<HTMLDialogElement | null>(null);
     const [seedInProgress, setSeedInProgress] = useState<boolean>(false);
+    const { tourState } = useTourContext();
 
     const handleSeedDemoData = async () => {
         setSeedInProgress(true);
@@ -102,7 +104,6 @@ export default function Navbar({
             <Link to="/" className="mt-14">
                 <Brand />
             </Link>
-
             <div className="mt-8 flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
                 <ul className="menu space-y-2 px-2 ">
                     {user && isAdministrator(user) ? (
@@ -224,13 +225,27 @@ export default function Navbar({
                                 FeatureAccess.OpenContentAccess
                             ) && (
                                 <>
-                                    <li>
+                                    <li
+                                        id="navigate-homepage"
+                                        className={
+                                            tourState.stepIndex === 11
+                                                ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                                : ''
+                                        }
+                                    >
                                         <Link to="/home">
                                             <ULIComponent icon={HomeIcon} />
                                             Home
                                         </Link>
                                     </li>
-                                    <li>
+                                    <li
+                                        id="visit-knowledge-center"
+                                        className={
+                                            tourState.stepIndex === 1
+                                                ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                                : ''
+                                        }
+                                    >
                                         <Link to="/knowledge-center/libraries">
                                             <ULIComponent icon={BookOpenIcon} />
                                             Knowledge Center
@@ -275,6 +290,14 @@ export default function Navbar({
                                     </Link>
                                 </li>
                             )} */}
+                            <li>
+                                <button onClick={onToggleHelpCenter}>
+                                    <ULIComponent
+                                        icon={QuestionMarkCircleIcon}
+                                    />
+                                    <span>Get Help</span>
+                                </button>
+                            </li>
                             <li>
                                 <button onClick={onToggleHelpCenter}>
                                     <ULIComponent

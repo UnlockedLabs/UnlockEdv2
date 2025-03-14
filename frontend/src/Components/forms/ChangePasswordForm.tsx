@@ -15,10 +15,10 @@ interface Inputs {
 }
 
 export default function ChangePasswordForm() {
+    const navigate = useNavigate();
     const [errorMessage, setErrorMessage] = useState('');
     const [processing, setProcessing] = useState(false);
     const [isFirstLogin, setIsFirstLogin] = useState<boolean>(false);
-    const navigate = useNavigate();
     const {
         control,
         register,
@@ -73,7 +73,7 @@ export default function ChangePasswordForm() {
             data
         )) as ServerResponseOne<AuthResponse>;
         if (response.success) {
-            window.location.href = response.data.redirect_to;
+            navigate(response.data.redirect_to);
         } else {
             setErrorMessage(`Your passwords did not pass validation, 
         please check that they match and are 8 or more characters with at least 1 number.`);

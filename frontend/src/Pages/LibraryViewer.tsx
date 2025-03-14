@@ -20,6 +20,7 @@ import { isAdministrator } from '@/useAuth';
 import { useAuth } from '@/useAuth';
 import { FormModal } from '@/Components/modals/FormModal';
 import { FormInputTypes } from '@/Components/modals';
+import { useTourContext } from '@/Context/TourContext';
 interface UrlNavState {
     url?: string;
 }
@@ -40,6 +41,7 @@ export default function LibraryViewer() {
     const location = useLocation() as { state: UrlNavState };
     const { url } = location.state || {};
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
+    const { tourState, setTourState } = useTourContext();
 
     const openModal = () => {
         if (modalRef.current) {
@@ -170,6 +172,14 @@ export default function LibraryViewer() {
         }
     };
 
+    useEffect(() => {
+        if (tourState.stepIndex === 12) {
+            setTourState({ stepIndex: 11 });
+        } else {
+            setTourState({ stepIndex: 9 });
+        }
+    }, []);
+
     const handleBookmarkSubmit: SubmitHandler<FieldValues> = async (data) => {
         try {
             const response = await API.put(
@@ -196,10 +206,20 @@ export default function LibraryViewer() {
     return (
         <div>
             <div className="px-5 pb-4">
-                <div className="flex items-center gap-4 mb-4">
+                <div
+                    className="flex items-center gap-4 mb-4"
+                    id="library-viewer-sub-page"
+                >
                     <h1>Library Viewer</h1>
                     {user && !isAdministrator(user) && !isLoading && (
-                        <>
+                        <div
+                            id="library-viewer-favorite"
+                            className={
+                                tourState.stepIndex === 10
+                                    ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                    : ''
+                            }
+                        >
                             {bookmarked ? (
                                 <StarIcon
                                     className="w-6 text-yellow-500 cursor-pointer"
@@ -211,7 +231,7 @@ export default function LibraryViewer() {
                                     onClick={toggleBookmark}
                                 />
                             )}
-                        </>
+                        </div>
                     )}
                     <div onClick={openModal}>
                         <LibrarySearchBar

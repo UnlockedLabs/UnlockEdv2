@@ -16,12 +16,14 @@ import { AxiosError } from 'axios';
 import { useLoaderData, useLocation } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import CategoryDropdownFilter from './CategoryDropdownFilter';
+import { useTourContext } from '@/Context/TourContext';
 
 export default function LibaryLayout({
     studentView
 }: {
     studentView?: boolean;
 }) {
+    const { tourState } = useTourContext();
     const { user } = useAuth();
     if (!user) {
         return null;
@@ -99,7 +101,10 @@ export default function LibaryLayout({
     return (
         <>
             <div className="flex flex-row gap-4">
-                <div onClick={() => setSearchModalLibrary({} as Library)}>
+                <div
+                    onClick={() => setSearchModalLibrary({} as Library)}
+                    id="knowledge-center-search"
+                >
                     <SearchBar
                         searchPlaceholder="Search..."
                         searchTerm={searchTerm}
@@ -113,11 +118,13 @@ export default function LibaryLayout({
                         setState={setFilterVisibilityAdmin}
                     />
                 )}
-                <CategoryDropdownFilter
-                    mutate={() => void mutateLibraries()}
-                    setCategoryQueryString={setCategoryQueryString}
-                    options={categories}
-                />
+                <div id="knowledge-center-filters">
+                    <CategoryDropdownFilter
+                        mutate={() => void mutateLibraries()}
+                        setCategoryQueryString={setCategoryQueryString}
+                        options={categories}
+                    />
+                </div>
                 {searchModalLibrary && (
                     <LibrarySearchResultsModal
                         ref={modalRef}
@@ -128,15 +135,46 @@ export default function LibaryLayout({
                 )}
             </div>
             <div className="grid grid-cols-4 gap-6">
-                {libraries?.data.map((library) => (
-                    <LibraryCard
-                        key={library.id}
-                        library={library}
-                        mutate={updateLibrary}
-                        role={adminWithStudentView() ? UserRole.Student : role}
-                        onSearchClick={() => openSearchModal(library)}
-                    />
-                ))}
+                {libraries?.data.map((library, index) => {
+                    if (index === 0) {
+                        return (
+                            <div
+                                id="knowledge-center-enter-library"
+                                className={
+                                    tourState.stepIndex === 8
+                                        ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
+                                        : ''
+                                }
+                                key={library.id}
+                            >
+                                <LibraryCard
+                                    key={library.id}
+                                    library={library}
+                                    mutate={updateLibrary}
+                                    role={
+                                        adminWithStudentView()
+                                            ? UserRole.Student
+                                            : role
+                                    }
+                                    onSearchClick={() =>
+                                        openSearchModal(library)
+                                    }
+                                />
+                            </div>
+                        );
+                    }
+                    return (
+                        <LibraryCard
+                            key={library.id}
+                            library={library}
+                            mutate={updateLibrary}
+                            role={
+                                adminWithStudentView() ? UserRole.Student : role
+                            }
+                            onSearchClick={() => openSearchModal(library)}
+                        />
+                    );
+                })}
             </div>
             {!librariesLoading && !librariesError && librariesMeta && (
                 <div className="flex justify-center">
