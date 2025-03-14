@@ -45,6 +45,10 @@ func (srv *Server) handleIndexLibraries(w http.ResponseWriter, r *http.Request, 
 	} else if userIsAdmin(r) {
 		showHidden = r.URL.Query().Get("visibility")
 	}
+	if len(args.Tags) > 0 {
+		log.add("category_ids", strings.Join(args.Tags, ","))
+		log.info("Libraries are being filtered by categories")
+	}
 	libraries, err := srv.Db.GetAllLibraries(&args, showHidden)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -68,6 +72,8 @@ func (srv *Server) handleGetLibrary(w http.ResponseWriter, r *http.Request, log 
 func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
+	log.add("search", search)
+	log.info("Executing open content search")
 	titleSearch := make([]models.OpenContentItem, 0, 1)
 	var (
 		err            error
