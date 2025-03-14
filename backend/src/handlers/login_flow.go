@@ -104,7 +104,7 @@ func buildKratosLoginForm(form LoginRequest) ([]byte, error) {
 	if form.Username == "" || form.Password == "" {
 		return nil, errors.New("username or password is empty")
 	}
-	body := map[string]interface{}{}
+	body := map[string]any{}
 	body["identifier"] = form.Username
 	body["password"] = form.Password
 	body["method"] = "password"
@@ -115,7 +115,7 @@ func buildKratosLoginForm(form LoginRequest) ([]byte, error) {
 
 func getKratosRedirect(resp *http.Response) (map[string]any, error) {
 	respBody := map[string]any{}
-	decoded := map[string]interface{}{}
+	decoded := map[string]any{}
 	var err error
 	defer resp.Body.Close()
 	if err = json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
@@ -128,16 +128,12 @@ func getKratosRedirect(resp *http.Response) (map[string]any, error) {
 		respBody["redirect_to"] = decoded["redirect_browser_to"].(string)
 	case 200:
 		// successful login from kratos without oauth2
-		session := decoded["session"].(map[string]interface{})
-		identity := session["identity"].(map[string]interface{})
-		traits := identity["traits"].(map[string]interface{})
+		session := decoded["session"].(map[string]any)
+		identity := session["identity"].(map[string]any)
+		traits := identity["traits"].(map[string]any)
 		reset, ok := traits["password_reset"].(bool)
 		if !ok || reset {
 			respBody["redirect_to"] = "/reset-password"
-
-			// make sure it is a first login users.go
-			// select all from login metrics and check if its 0
-			// include another field if it does that
 		} else {
 			respBody["redirect_to"] = AuthCallbackRoute
 		}

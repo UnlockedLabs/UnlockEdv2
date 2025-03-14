@@ -46,16 +46,12 @@ export default function LoginForm() {
             if (resp.data.first_login) {
                 setTourState({ tourActive: true });
             }
-            if (
-                resp.data.redirect_to.startsWith('/') ||
-                resp.data.redirect_browser_to?.startsWith('/')
-            ) {
-                navigate(
-                    resp.data.redirect_to ?? resp.data.redirect_browser_to
-                );
+            // if a relative URI, use DOM navigate
+            if (resp.data.redirect_to.startsWith('/')) {
+                navigate(resp.data.redirect_to);
             } else {
-                window.location.href =
-                    resp.data.redirect_to ?? resp.data.redirect_browser_to;
+                // if absolute URI, this is a kratos/hyra oauth2 redirect
+                window.location.href = resp.data.redirect_to;
             }
             return;
         }
