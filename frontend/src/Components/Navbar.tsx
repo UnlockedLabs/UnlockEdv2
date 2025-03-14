@@ -298,14 +298,6 @@ export default function Navbar({
                                     <span>Get Help</span>
                                 </button>
                             </li>
-                            <li>
-                                <button onClick={onToggleHelpCenter}>
-                                    <ULIComponent
-                                        icon={QuestionMarkCircleIcon}
-                                    />
-                                    <span>Get Help</span>
-                                </button>
-                            </li>
                         </>
                     )}
                 </ul>
