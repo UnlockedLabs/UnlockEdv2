@@ -73,7 +73,7 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 	page, perPage := srv.getPaginationInfo(r)
 	search := r.URL.Query().Get("search")
 	log.add("search", search)
-	log.info("Exectuting open content search")
+	log.info("Executing open content search")
 	titleSearch := make([]models.OpenContentItem, 0, 1)
 	var (
 		err            error
