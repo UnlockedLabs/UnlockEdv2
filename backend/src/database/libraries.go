@@ -177,14 +177,31 @@ func (db *DB) OpenContentTitleSearch(args *models.QueryContext) ([]models.OpenCo
 	return items, nil
 }
 
-func (db *DB) GetLibrariesByIDs(ids []int) ([]models.Library, error) {
+func (db *DB) GetLibrariesByIDsAndLang(ids []int, language string) ([]models.Library, error) {
 	var libraries []models.Library
 	tx := db.Preload("OpenContentProvider").Where("id in ?", ids)
 	if len(ids) > 1 {
-		tx.Where("language = 'eng'")
+		tx.Where("language = ?", language)
 	}
 	if err := tx.Find(&libraries).Error; err != nil {
-		log.Errorln("unable to find libraries with these IDs")
+		log.Errorln("unable to find libraries with these IDs with language as ", language)
+		return nil, newNotFoundDBError(err, "libraries")
+	}
+	return libraries, nil
+}
+
+// Retrieves all libraries by langauge using the given paramenters. A way to find out the different language values is to execute
+// an SQL query against the libraries table to see the different language values (column name is language).
+// language - the language of the library to retrieve
+func (db *DB) GetAllLibrariesByLang(args *models.QueryContext, language string) ([]models.Library, error) {
+	var libraries []models.Library
+	tx := db.Model(&models.Library{}).Preload("OpenContentProvider").Select("libraries.*").
+		Joins(`left outer join facility_visibility_statuses fvs on fvs.open_content_provider_id = libraries.open_content_provider_id
+			and fvs.content_id = libraries.id
+			and fvs.facility_id = ?`, args.FacilityID).
+		Where("fvs.visibility_status = true and libraries.language = ?", language)
+	if err := tx.Find(&libraries).Error; err != nil {
+		log.Errorln("unable to find libraries that are visible with language as ", language)
 		return nil, newNotFoundDBError(err, "libraries")
 	}
 	return libraries, nil
