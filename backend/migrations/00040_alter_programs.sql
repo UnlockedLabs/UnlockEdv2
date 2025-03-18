@@ -13,7 +13,7 @@ ALTER TABLE public.program_sections ADD COLUMN duration VARCHAR(32);
 ALTER TABLE public.program_sections ADD COLUMN total_hours INT;
 ALTER TABLE public.program_sections ADD COLUMN is_active boolean;
 ALTER TABLE public.program_section_enrollments ADD COLUMN enrollment_status VARCHAR(255);
-ALTER TABLE program_section_events RENAME COLUMN location TO room;
+ALTER TABLE public.program_section_events RENAME COLUMN location TO room;
 
 CREATE TABLE public.program_completions (
         id SERIAL NOT NULL PRIMARY KEY,
@@ -70,7 +70,7 @@ FOR EACH ROW
 -- +goose StatementBegin
 DROP TRIGGER IF EXISTS sql_trigger_programs_update ON programs;
 DROP TRIGGER IF EXISTS sql_trigger_program_sections_update ON program_sections;
-DROP FUNCTION IF EXISTS log_programs_sections_updates();
+DROP FUNCTION IF EXISTS public.log_programs_sections_updates();
 DROP TABLE IF EXISTS public.programs_sections_history CASCADE;
 DROP TABLE IF EXISTS public.program_completions CASCADE;
 ALTER TABLE public.programs DROP COLUMN program_owner;
@@ -86,5 +86,5 @@ ALTER TABLE public.program_sections DROP COLUMN duration;
 ALTER TABLE public.program_sections DROP COLUMN total_hours;
 ALTER TABLE public.program_sections DROP COLUMN is_active;
 ALTER TABLE public.program_section_enrollments DROP COLUMN enrollment_status;
-ALTER TABLE program_section_events RENAME COLUMN room TO location;
+ALTER TABLE public.program_section_events RENAME COLUMN room TO location;
 -- +goose StatementEnd
