@@ -336,7 +336,7 @@ func getProgramSectionEvent(facilityId uint) map[string]any {
 	form["sectionEvent"] = models.ProgramSectionEvent{
 		SectionID:      id,
 		RecurrenceRule: rule.String(),
-		Location:       "TBD",
+		Room:           "TBD",
 		Duration:       "2h45m0s",
 	}
 	return form

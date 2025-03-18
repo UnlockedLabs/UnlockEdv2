@@ -382,9 +382,50 @@ func getRandomURLForLibrary(urls []models.OpenContentUrl, libraryID int) uint {
 	return selectedURL.ID
 }
 
+func getRandomProgram(programMap map[string]models.PrgType) string {
+	keySlice := make([]string, 0, len(programMap))
+	for key := range programMap {
+		keySlice = append(keySlice, key)
+	}
+	return keySlice[rand.Intn(len(keySlice))]
+}
+
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 	facilities := []models.Facility{}
-	randNames := []string{"Anger Management", "Substance Abuse Treatment", "AA/NA", "Thinking for a Change", "A New Freedom", "Dog Training", "A New Path", "GED/Hi-SET", "Parenting", "Employment", "Life Skills", "Health and Wellness", "Financial Literacy", "Computer Skills", "Parenting", "Employment", "Life Skills"}
+	fundingTypes := []models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
+	creditTypes := []models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
+	programMap := map[string]models.PrgType{
+		"Anger Management":          models.Therapeutic,
+		"Substance Abuse Treatment": models.MntlHlth,
+		"AA/NA":                     models.MntlHlth,
+		"Thinking for a Change":     models.LifeSkills,
+		"A New Freedom":             models.LifeSkills,
+		"Dog Training":              models.Vocational,
+		"A New Path":                models.Therapeutic,
+		"GED/Hi-SET":                models.Educational,
+		"Parenting":                 models.LifeSkills,
+		"Employment":                models.Vocational,
+		"Life Skills":               models.LifeSkills,
+		"Health and Wellness":       models.MntlHlth,
+		"Financial Literacy":        models.Educational,
+		"Computer Skills":           models.Educational,
+	}
+	programSectionDescriptions := map[string]string{
+		"Anger Management":          "Techniques to control and express anger constructively.",
+		"Substance Abuse Treatment": "Support and strategies for overcoming addiction.",
+		"AA/NA":                     "Peer support groups for alcohol and drug recovery.",
+		"Thinking for a Change":     "Cognitive-based program for decision-making and behavior change.",
+		"A New Freedom":             "Life skills and personal growth program for better choices.",
+		"Dog Training":              "Hands-on program teaching dog training and care skills.",
+		"A New Path":                "Therapeutic program focused on personal healing and growth.",
+		"GED/Hi-SET":                "Education program to earn a high school equivalency diploma.",
+		"Parenting":                 "Guidance and skills for effective parenting strategies.",
+		"Employment":                "Job readiness, resume building, and interview preparation.",
+		"Life Skills":               "Essential skills for daily living and self-sufficiency.",
+		"Health and Wellness":       "Education on physical and mental well-being practices.",
+		"Financial Literacy":        "Budgeting, saving, and money management fundamentals.",
+		"Computer Skills":           "Basic to advanced computer literacy and digital skills.",
+	}
 	if err := db.Find(&facilities).Error; err != nil {
 		return nil, err
 	}
@@ -392,69 +433,64 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 	for idx := range facilities {
 		prog := []models.Program{
 			{
-				Name:          randNames[rand.Intn(len(randNames))],
-				Description:   "Testing program",
-				CreditType:    "Academic Credit",
-				ProgramStatus: "ACTIVE",
-				ProgramType:   "EDUCATIONAL",
+				Name:        getRandomProgram(programMap),
+				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 			},
 			{
-				Name:          randNames[rand.Intn(len(randNames))],
-				Description:   "Testing program",
-				CreditType:    "Participation Credit",
-				ProgramStatus: "AVAILABLE",
-				ProgramType:   "VOCATIONAL",
+				Name:        getRandomProgram(programMap),
+				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 			},
 			{
-				Name:          randNames[rand.Intn(len(randNames))],
-				Description:   "Testing program",
-				CreditType:    "Certificate of Completion",
-				ProgramStatus: "INACTIVE",
-				ProgramType:   "LIFE SKILLS",
+				Name:        getRandomProgram(programMap),
+				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 			},
 			{
-				Name:          randNames[rand.Intn(len(randNames))],
-				Description:   "Testing program",
-				CreditType:    "Earned-Time Credit",
-				ProgramStatus: "ARCHIVED",
-				ProgramType:   "EDUCATIONAL",
+				Name:        getRandomProgram(programMap),
+				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 			},
 			{
-				Name:          randNames[rand.Intn(len(randNames))],
-				Description:   "Testing program",
-				CreditType:    "Rehabilitation Credit",
-				ProgramStatus: "AVAILABLE",
-				ProgramType:   "EDUCATIONAL",
+				Name:        getRandomProgram(programMap),
+				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 			},
 			{
-				Name:          randNames[rand.Intn(len(randNames))],
-				Description:   "Testing program",
-				CreditType:    "Participation Credit",
-				ProgramStatus: "AVAILABLE",
-				ProgramType:   "THERAPEUTIC",
+				Name:        getRandomProgram(programMap),
+				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
 			},
 		}
+
+		capacities := []int64{15, 25, 30, 35, 40, 45}
+		durations := []string{"3mo", "30hrs", "6mo", "80hrs"}
+		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
+
 		for i := range prog {
+			prog[i].Description = programSectionDescriptions[prog[i].Name]
 			if err := db.Create(&prog[i]).Error; err != nil {
 				log.Fatalf("Failed to create program: %v", err)
 			}
-			var tags []models.Tag
-			if err := db.Model(&models.Tag{}).Order("RANDOM()").Limit(rand.Intn(3) + 1).Find(&tags).Error; err != nil {
-				log.Fatalf("Error getting random categories: %v", err)
+			programType := models.ProgramType{
+				ProgramType: programMap[prog[i].Name],
+				ProgramID:   prog[i].ID,
 			}
-			for _, tag := range tags {
-				programTag := models.ProgramTag{
-					TagID:      tag.ID,
-					ProgramID:  prog[i].ID,
-					FacilityID: facilities[idx].ID,
-				}
-				if err := db.Create(&programTag).Error; err != nil {
-					log.Fatalf("Failed to create program tag: %v", err)
-				}
+			if err := db.Create(&programType).Error; err != nil {
+				log.Fatalf("Failed to create program type: %v", err)
+			}
+			creditType := models.ProgramCreditType{
+				CreditType: creditTypes[rand.Intn(len(creditTypes))],
+				ProgramID:  prog[i].ID,
+			}
+			if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
+				log.Fatalf("Failed to create program credit type: %v", err)
 			}
 			section := models.ProgramSection{
-				FacilityID: facilities[idx].ID,
-				ProgramID:  prog[i].ID,
+				Capacity:       capacities[rand.Intn(len(capacities))],
+				Name:           prog[i].Name,
+				InstructorName: instructorNames[rand.Intn(len(instructorNames))],
+				Description:    programSectionDescriptions[prog[i].Name],
+				Duration:       durations[rand.Intn(len(durations))],
+				Status:         models.Scheduled, //this will change during new section development
+				StartDt:        time.Now().Add(14 * 24 * time.Hour),
+				FacilityID:     facilities[idx].ID,
+				ProgramID:      prog[i].ID,
 			}
 			if err := db.Create(&section).Error; err != nil {
 				log.Fatalf("Failed to create program section: %v", err)
@@ -479,7 +515,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 			event := models.ProgramSectionEvent{
 				SectionID:      section.ID,
 				RecurrenceRule: rule.String(),
-				Location:       "Classroom #" + strconv.Itoa(rand.Intn(10)),
+				Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
 				Duration:       "1h0m0s",
 			}
 			if err := db.Create(&event).Error; err != nil {

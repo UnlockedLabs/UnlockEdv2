@@ -15,7 +15,7 @@ type ProgramSectionEvent struct {
 	SectionID      uint   `json:"section_id" gorm:"not null" validate:"required"`
 	Duration       string `json:"duration" gorm:"not null" validate:"required"`
 	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" validate:"required"`
-	Location       string `json:"location" gorm:"not null;default:TBD"`
+	Room           string `json:"room" gorm:"not null;default:TBD"`
 
 	/* Foreign keys */
 	Section   *ProgramSection                 `json:"section" gorm:"foreignKey:SectionID;references:ID"`

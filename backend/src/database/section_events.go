@@ -307,8 +307,8 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramSectionEvent, month t
 				}
 				daysMap[dateStr] = day
 			}
-			if instance.Location == "" {
-				instance.Location = event.Location
+			if instance.Room == "" {
+				instance.Room = event.Room
 			}
 			instance.ProgramName = event.Section.Program.Name
 			day.Events = append(day.Events, instance)
@@ -400,7 +400,7 @@ func applyOverrides(event models.ProgramSectionEvent, start, end time.Time) []mo
 					Duration:    duration,
 					StartTime:   occ.UTC(),
 					IsCancelled: false,
-					Location:    event.Location,
+					Room:        event.Room,
 				}
 				if override.Duration != "" {
 					newDuration, err := time.ParseDuration(override.Duration)
@@ -409,7 +409,7 @@ func applyOverrides(event models.ProgramSectionEvent, start, end time.Time) []mo
 					}
 				}
 				if override.Location != "" {
-					rDateInstance.Location = override.Location
+					rDateInstance.Room = override.Location
 				}
 				rDates = append(rDates, rDateInstance)
 				mainSet.ExDate(occ.UTC())
@@ -425,7 +425,7 @@ func applyOverrides(event models.ProgramSectionEvent, start, end time.Time) []mo
 			StartTime:   occ.UTC(),
 			Duration:    duration,
 			IsCancelled: false,
-			Location:    event.Location,
+			Room:        event.Room,
 		}
 		instances = append(instances, instance)
 	}
