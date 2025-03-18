@@ -1,12 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TYPE public.program_type AS ENUM (
-    'Educational',
-    'Mental_Health_Behavioral',
-    'Religious_Faith-Based',
-    'Re-Entry',
-    'Life_Skills'
-);
 CREATE TYPE public.funding_type AS ENUM (
     'Federal_Grants',
     'State_Grants',
@@ -17,10 +10,8 @@ CREATE TYPE public.funding_type AS ENUM (
 );
 ALTER TABLE public.programs DROP COLUMN credit_type;
 ALTER TABLE public.programs DROP COLUMN program_type;
-ALTER TABLE public.programs ADD COLUMN program_type program_type;
 ALTER TABLE public.programs ADD COLUMN funding_type funding_type;
-ALTER TABLE public.program_tags RENAME TO program_types;
-ALTER TABLE public.program_types DROP COLUMN facility_id;
+DROP TABLE IF EXISTS public.program_tags CASCADE;
 ALTER TABLE public.facilities_programs ADD COLUMN program_owner VARCHAR(255);
 ALTER TABLE public.program_sections ADD COLUMN capacity INT;
 ALTER TABLE public.program_sections ADD COLUMN name VARCHAR(255);
@@ -34,6 +25,22 @@ ALTER TABLE public.program_sections ADD COLUMN credit_hours INT;
 ALTER TABLE public.program_sections ADD COLUMN is_active boolean;
 ALTER TABLE public.program_section_enrollments ADD COLUMN enrollment_status VARCHAR(255);
 ALTER TABLE public.program_section_events RENAME COLUMN location TO room;
+
+CREATE TYPE public.program_type AS ENUM (
+    'Educational',
+    'Mental_Health_Behavioral',
+    'Religious_Faith-Based',
+    'Re-Entry',
+    'Life_Skills'
+);
+
+CREATE TABLE public.program_types (
+        program_type program_type NOT NULL,
+        program_id INTEGER NOT NULL, 
+
+        FOREIGN KEY (program_id) REFERENCES public.programs(id) ON DELETE CASCADE,
+        PRIMARY KEY (program_id, program_type) 
+);
 
 CREATE TYPE public.credit_type AS ENUM (
     'Completion',
@@ -105,11 +112,16 @@ FOR EACH ROW
 
 -- +goose Down
 -- +goose StatementBegin
-ALTER TABLE public.programs DROP COLUMN program_type;
+CREATE TABLE public.program_tags (
+        tag_id INTEGER NOT NULL, 
+        program_id INTEGER NOT NULL, 
+        facility_id INTEGER DEFAULT 0, 
+        FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE, 
+        FOREIGN KEY (program_id) REFERENCES public.programs(id) ON DELETE CASCADE
+);
+DROP TABLE IF EXISTS public.program_types CASCADE;
 DROP TYPE IF EXISTS public.program_type;
 ALTER TABLE public.programs ADD COLUMN program_type CHARACTER VARYING(50);
-ALTER TABLE public.program_types ADD COLUMN facility_id INTEGER DEFAULT 0;
-ALTER TABLE public.program_types RENAME TO program_tags;
 DROP TRIGGER IF EXISTS sql_trigger_programs_update ON programs;
 DROP TRIGGER IF EXISTS sql_trigger_program_sections_update ON program_sections;
 DROP FUNCTION IF EXISTS public.log_programs_sections_updates();
