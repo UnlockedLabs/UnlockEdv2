@@ -10,6 +10,7 @@ CREATE TYPE public.section_status AS ENUM (
 );
 ALTER TABLE public.program_sections DROP COLUMN status;
 ALTER TABLE public.program_sections ADD COLUMN status section_status;
+ALTER TABLE public.program_sections DROP COLUMN is_active;
 ALTER TABLE public.programs DROP COLUMN program_status;
 DROP TABLE IF EXISTS public.program_types CASCADE;
 DROP TYPE IF EXISTS public.program_type;
@@ -37,6 +38,7 @@ CREATE TABLE public.program_types (
 -- +goose StatementBegin
 ALTER TABLE public.program_sections DROP COLUMN status;
 ALTER TABLE public.program_sections ADD COLUMN status VARCHAR(50);
+ALTER TABLE public.program_sections ADD COLUMN is_active boolean;
 DROP TYPE IF EXISTS public.section_status;
 ALTER TABLE public.programs ADD COLUMN program_status VARCHAR(50);
 DROP TABLE IF EXISTS public.program_types CASCADE;
