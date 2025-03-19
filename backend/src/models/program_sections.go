@@ -44,9 +44,9 @@ meaning they will need to attend the SectionEvents for that section: tracked by 
 */
 type ProgramSectionEnrollment struct {
 	DatabaseFields
-	SectionID uint   `json:"section_id" gorm:"not null"`
-	UserID    uint   `json:"user_id" gorm:"not null"`
-	Status    string `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
+	SectionID        uint   `json:"section_id" gorm:"not null"`
+	UserID           uint   `json:"user_id" gorm:"not null"`
+	EnrollmentStatus string `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
 
 	User    *User           `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	Section *ProgramSection `json:"section" gorm:"foreignKey:SectionID;references:ID"`

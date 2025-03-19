@@ -179,6 +179,7 @@ func seedTestData(db *gorm.DB) {
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
 	}
+	enrollmentStatuses := []string{"Enrolled"} //not sure what enrollment statuses will be
 	for _, user := range dbUsers {
 		for _, prog := range courses {
 			// all test courses are open_enrollment
@@ -241,8 +242,9 @@ func seedTestData(db *gorm.DB) {
 		for idx := range sections {
 			if sections[idx].FacilityID == user.FacilityID {
 				enrollment := models.ProgramSectionEnrollment{
-					UserID:    user.ID,
-					SectionID: sections[idx].ID,
+					UserID:           user.ID,
+					SectionID:        sections[idx].ID,
+					EnrollmentStatus: enrollmentStatuses[0], //we can randomize when we know the enrollment statuses
 				}
 				if err := db.Create(&enrollment).Error; err != nil {
 					log.Printf("Failed to create enrollment: %v", err)
