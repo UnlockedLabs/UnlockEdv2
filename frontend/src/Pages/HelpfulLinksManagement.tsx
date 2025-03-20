@@ -64,8 +64,8 @@ export default function HelpfulLinksManagement() {
         }
         checkResponseForDelete(
             response.success,
-            'Error deleting facility',
-            'Facility successfully deleted'
+            'Error deleting link',
+            'Link successfully deleted'
         );
         closeDeleteLink();
     }

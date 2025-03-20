@@ -107,6 +107,7 @@ export default function LibraryCard({
                                     icon={MagnifyingGlassIcon}
                                     iconClassName="!w-5 !h-5"
                                     dataTip={`Search ${library.title}`}
+                                    tooltipClassName="tooltip-left"
                                 />
                             </div>
                         )}
@@ -131,6 +132,7 @@ export default function LibraryCard({
                                         ? 'Feature Library'
                                         : 'Favorite Library'
                                 }
+                                tooltipClassName="tooltip-left"
                             />
                         )}
                     </div>

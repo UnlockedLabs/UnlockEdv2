@@ -65,7 +65,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
     }, []);
 
     return (
-        <dialog ref={ref} className="modal relative" onClose={() => reset()}>
+        <dialog ref={ref} className="modal" onClose={() => reset()}>
             <div className="modal-box">
                 <CloseX close={() => void reset()} />
                 <div className="flex flex-col">
