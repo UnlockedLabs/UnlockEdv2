@@ -72,11 +72,12 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 		program.Facilities = []int{int(claims.FacilityID)}
 	}
 	newProg := models.Program{
-		Name:          program.Name,
-		Description:   program.Description,
-		CreditType:    program.CreditType,
-		ProgramStatus: program.ProgramStatus,
-		ProgramType:   program.ProgramType,
+		Name:        program.Name,
+		Description: program.Description,
+		FundingType: models.EduGrants, //PLACEHOLDER!!!!THIS WILL CHANGE
+		// CreditType:    program.CreditType,
+		// ProgramStatus: program.ProgramStatus,
+		// ProgramType:   program.ProgramType,
 	}
 	err = srv.Db.CreateProgram(&newProg)
 	if err != nil {

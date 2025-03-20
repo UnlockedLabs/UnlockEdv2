@@ -271,7 +271,7 @@ func createFacilityPrograms(db *DB) ([]models.ProgramSection, error) {
 			event := models.ProgramSectionEvent{
 				SectionID:      section.ID,
 				RecurrenceRule: rule.String(),
-				Location:       "TBD",
+				Room:           "TBD",
 				Duration:       "1h0m0s",
 			}
 			if err := db.Create(&event).Error; err != nil {

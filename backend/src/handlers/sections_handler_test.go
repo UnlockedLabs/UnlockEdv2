@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -289,8 +290,15 @@ func getProgramSection(facilityId uint) map[string]any {
 		form["err"] = err
 	}
 	form["section"] = models.ProgramSection{
-		ProgramID:  programs[rand.Intn(len(programs))].ID,
-		FacilityID: facilityId,
+		ProgramID:      programs[rand.Intn(len(programs))].ID,
+		FacilityID:     facilityId,
+		Capacity:       30,
+		Name:           "Employment",
+		InstructorName: "Maria Gonzalez",
+		Description:    "Basic to advanced computer literacy and digital skills.",
+		Duration:       "3mo",
+		Status:         models.Scheduled, //this will change during new section development
+		StartDt:        time.Now().Add(14 * 24 * time.Hour),
 	}
 	return form
 }

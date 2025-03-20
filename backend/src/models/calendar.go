@@ -34,7 +34,7 @@ type EventInstance struct {
 	ProgramName string        `json:"program_name"`
 	StartTime   time.Time     `json:"start_time"`
 	Duration    time.Duration `json:"duration"`
-	Location    string        `json:"location"`
+	Room        string        `json:"location"`
 	IsCancelled bool          `json:"is_cancelled"`
 }
 
