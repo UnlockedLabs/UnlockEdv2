@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -186,6 +186,15 @@ export default function ProgramOverview() {
                                         isSelected ? 'bg-background ' : ''
                                     }`}
                                 >
+                                    <td>
+                                        <Link
+                                            className="text-red-500"
+                                            key={section.id}
+                                            to={`/programs/${section.id}/section-enrollment`}
+                                        >
+                                            Program Section Test Link
+                                        </Link>
+                                    </td>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <input
                                             type="checkbox"

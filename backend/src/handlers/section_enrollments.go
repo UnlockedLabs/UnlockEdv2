@@ -82,16 +82,22 @@ func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http
 	return writePaginatedResponse(w, http.StatusOK, enrollemnts, paginationData)
 }
 
+// TODO: Check uses, bc I would like to allow this take and array of users.... meaning one or many and add them to the database
 func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log sLog) error {
+
 	sectionID, err := strconv.Atoi(r.PathValue("section_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "section ID")
 	}
 	log.add("section_id", sectionID)
+
+	// the id of the credentialed user being enrolled
 	userID, err := strconv.Atoi(r.PathValue("user_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
+
+	// TODO: in observation,this should be running thru an array of usersID's passed to the handler from a form.
 	log.add("user_id", userID)
 	log.info("enrolling user")
 	err = srv.Db.CreateProgramSectionEnrollments(sectionID, userID)

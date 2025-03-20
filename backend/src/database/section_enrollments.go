@@ -55,6 +55,8 @@ func (db *DB) GetProgramSectionEnrollmentsForFacility(page, perPage int, facilit
 }
 
 func (db *DB) CreateProgramSectionEnrollments(sectionID, userID int) error {
+
+	// TODO: modify the logic and the signature of this func to support one or many userID's
 	enrollment := &models.ProgramSectionEnrollment{
 		SectionID: uint(sectionID),
 		UserID:    uint(userID),

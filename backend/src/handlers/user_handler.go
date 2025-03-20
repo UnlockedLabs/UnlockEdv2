@@ -24,9 +24,6 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	}
 }
 
-/**
-* GET: /api/users
-**/
 func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
 	include := r.URL.Query()["include"]
 	if slices.Contains(include, "only_unmapped") {
