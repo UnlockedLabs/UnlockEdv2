@@ -1,7 +1,17 @@
-import { OpenContentItem } from '@/common';
+import { OpenContentItem, ServerResponseOne } from '@/common';
 import { useNavigate } from 'react-router-dom';
 import ClampedText from '../ClampedText';
+import API from '@/api/api';
 
+async function handleHelpfulLinkClick(id: number): Promise<void> {
+    const resp = (await API.put<{ url: string }, object>(
+        `helpful-links/activity/${id}`,
+        {}
+    )) as ServerResponseOne<{ url: string }>;
+    if (resp.success) {
+        window.open(resp.data.url, '_blank');
+    }
+}
 export default function OpenContentCardRow({
     content
 }: {
@@ -11,6 +21,10 @@ export default function OpenContentCardRow({
     function redirectToViewer() {
         if (content.visibility_status != null && !content.visibility_status)
             return;
+        if (content.content_type === 'helpful_link') {
+            void handleHelpfulLinkClick(content.content_id);
+            return;
+        }
         const basePath =
             content.content_type === 'video'
                 ? `/viewer/videos/${content.content_id}`
