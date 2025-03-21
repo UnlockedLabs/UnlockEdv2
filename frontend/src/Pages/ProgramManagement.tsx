@@ -1,35 +1,27 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import ProgramCard from '@/Components/ProgramCard';
 import SearchBar from '@/Components/inputs/SearchBar';
-import {
-    Program,
-    ViewType,
-    Facility,
-    Option,
-    ServerResponseMany
-} from '@/common';
+import { Program, ViewType, Option, ServerResponseMany } from '@/common';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import ToggleView from '@/Components/ToggleView';
-import Modal from '@/Components/Modal';
-import CreateProgramForm from '@/Components/forms/CreateProgramForm';
 import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
-import { showModal } from '@/Components/modals';
+import { useNavigate } from 'react-router-dom';
 import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
 
 export enum sortPrograms {}
 
 export default function ProgramManagement() {
     const { user } = useAuth();
-    const addProgramModal = useRef<HTMLDialogElement>(null);
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
+    const navigate = useNavigate();
     const { data, error, mutate } = useSWR<
         ServerResponseMany<Program>,
         AxiosError
@@ -39,9 +31,8 @@ export default function ProgramManagement() {
     const programData = data?.data;
     const meta = data?.meta;
 
-    const { categories, facilities } = useLoaderData() as {
+    const { categories } = useLoaderData() as {
         categories: Option[];
-        facilities: Facility[];
     };
 
     function handleSearch(newSearch: string) {
@@ -72,7 +63,7 @@ export default function ProgramManagement() {
                         <button
                             className="button flex items-center space-x-2"
                             onClick={() => {
-                                showModal(addProgramModal);
+                                navigate('detail');
                             }}
                         >
                             <PlusCircleIcon className="w-4 my-auto" />
@@ -110,17 +101,6 @@ export default function ProgramManagement() {
                     />
                 </div>
             )}
-            <Modal
-                ref={addProgramModal}
-                type="Add"
-                item="Program"
-                form={
-                    <CreateProgramForm
-                        onSuccess={() => void mutate()}
-                        facilities={facilities}
-                    />
-                }
-            />
         </div>
     );
 }

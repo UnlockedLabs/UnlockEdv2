@@ -25,6 +25,7 @@
         "react-hook-form": "^7.51.3",
         "react-joyride": "^2.9.3",
         "react-router-dom": "^6.23.0",
+        "react-select": "^5.10.1",
         "recharts": "^2.12.7",
         "rrule": "^2.8.1",
         "swr": "^2.2.5",

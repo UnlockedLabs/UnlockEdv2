@@ -109,8 +109,8 @@ func TestHandleCreateProgram(t *testing.T) {
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if data.Message != "Program created successfully" {
-					t.Errorf("handler returned wrong body: got %v want %v", data.Message, "Program created successfully")
+				if data.Message != "Data fetched successfully" {
+					t.Errorf("handler returned wrong body: got %v want %v", data.Message, "Data fetched successfully")
 				}
 			}
 		})
@@ -122,20 +122,31 @@ func TestHandleUpdateProgram(t *testing.T) {
 		{"TestAdminCanUpdateProgram", "admin", map[string]any{"message": "Program deleted successfully"}, http.StatusOK, ""},
 		{"TestUserCannotUpdateProgram", "student", nil, http.StatusUnauthorized, ""},
 	}
+	typeInfo := models.ProgramTypeInfo{
+		ProgramTypes:       []models.PrgType{models.LifeSkills},
+		ProgramCreditTypes: []models.CreditType{models.EarnedTime},
+	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			form := getNewProgramForm()
 			if form["err"] != nil {
 				t.Fatalf("unable to create new program form, error is %v", form["err"])
 			}
-			programToUpdate := form["program"].(models.Program)
+			programToUpdate := form["program"].(ProgramForm)
 			var id uint
+			var program models.Program
+			program.Name = programToUpdate.Name
+			program.Description = programToUpdate.Description
+			program.FundingType = programToUpdate.FundingType
+			if programToUpdate.ProgramStatus == models.Available {
+				program.ProgramStatus = true
+			}
 			if test.expectedStatusCode == http.StatusOK {
-				err := server.Db.CreateProgram(&programToUpdate)
+				err := server.Db.CreateProgram(&program, &typeInfo)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
 				}
-				id = programToUpdate.ID
+				id = program.ID
 				t.Cleanup(func() {
 					if err := server.Db.DeleteProgram(int(id)); err != nil {
 						fmt.Println("unable to cleanup/delete program, error is ", err)
@@ -178,6 +189,10 @@ func TestHandleDeleteProgram(t *testing.T) {
 		{"TestUserCannotDeleteProgram", "student", nil, http.StatusUnauthorized, ""},
 		{"TestAdminCanDeleteProgram", "admin", map[string]any{"message": "Program deleted successfully"}, http.StatusNoContent, ""},
 	}
+	typeInfo := models.ProgramTypeInfo{
+		ProgramTypes:       []models.PrgType{models.LifeSkills},
+		ProgramCreditTypes: []models.CreditType{models.EarnedTime},
+	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			var id uint
@@ -186,12 +201,19 @@ func TestHandleDeleteProgram(t *testing.T) {
 				if form["err"] != nil {
 					t.Fatalf("unable to create new program form, error is %v", form["err"])
 				}
-				programToDelete := form["program"].(models.Program)
-				err := server.Db.CreateProgram(&programToDelete)
+				programToDelete := form["program"].(ProgramForm)
+				var program models.Program
+				program.Name = programToDelete.Name
+				program.Description = programToDelete.Description
+				program.FundingType = programToDelete.FundingType
+				if programToDelete.ProgramStatus == models.Available {
+					program.ProgramStatus = true
+				}
+				err := server.Db.CreateProgram(&program, &typeInfo)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
 				}
-				id = programToDelete.ID
+				id = program.ID
 			} else {
 				id = 1
 			}
@@ -268,10 +290,13 @@ func getNewProgramForm() map[string]any {
 	if err := server.Db.Find(&facilities).Error; err != nil {
 		form["err"] = err
 	}
-	form["program"] = models.Program{
-		Name:        "Program for facility: " + strconv.Itoa(rand.Intn(1000)) + facilities[rand.Intn(len(facilities))].Name,
-		Description: "Testing program",
-		FundingType: models.FederalGrants,
+	form["program"] = ProgramForm{
+		Name:          "Program for facility: " + strconv.Itoa(rand.Intn(1000)) + facilities[rand.Intn(len(facilities))].Name,
+		Description:   "Testing program",
+		FundingType:   models.FederalGrants,
+		ProgramStatus: models.Available,
+		CreditType:    []models.CreditType{models.EarnedTime},
+		ProgramType:   []models.PrgType{models.ReEntry},
 	}
 	return form
 }
@@ -281,8 +306,9 @@ func getUpdatedProgramForm() map[string]any {
 	form["name"] = "Introduction to Management"
 	form["description"] = "A course in human resource management, covering fundamental concepts such as how to deal with unruly employees, recruitment, and inteview strategies."
 	form["credit_type"] = "Earned-Time Credit"
-	form["program_status"] = "ARCHIVED"
-	form["program_type"] = "THERAPEUTIC"
+	form["program_status"] = true
+	form["funding_type"] = models.EduGrants
+	form["program_type"] = models.LifeSkills
 
 	return form
 }
