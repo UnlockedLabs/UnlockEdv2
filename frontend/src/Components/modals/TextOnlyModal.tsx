@@ -21,7 +21,7 @@ export const TextOnlyModal = forwardRef(function TextModal(
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     return (
-        <dialog ref={ref} className="modal relative">
+        <dialog ref={ref} className="modal">
             <div className="modal-box">
                 <CloseX close={onClose} />
                 <div className="flex flex-col gap-6">

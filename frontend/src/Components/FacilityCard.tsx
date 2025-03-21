@@ -30,6 +30,7 @@ export default function FacilityCard({
                     onClick={() => {
                         openDeleteFacility(facility);
                     }}
+                    tooltipClassName="tooltip-left"
                 />
             </td>
         </tr>
