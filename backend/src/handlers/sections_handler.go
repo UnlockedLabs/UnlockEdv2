@@ -14,8 +14,7 @@ func (srv *Server) registerSectionsRoutes() []routeDef {
 		{"GET /api/program-sections/{section_id}", srv.handleGetSection, false, axx},
 		{"GET /api/program-sections", srv.handleIndexSectionsForFacility, false, axx},
 		{"POST /api/programs/{id}/sections", srv.handleCreateSection, true, axx},
-		{"PATCH /api/program-sections/{id}", srv.handleUpdateSection, true, axx},
-		{"DELETE /api/program-sections/{section_id}", srv.handleDeleteSection, true, axx},
+		{"PATCH /api/program-sections", srv.handleUpdateSection, true, axx},
 	}
 }
 
@@ -79,30 +78,20 @@ func (srv *Server) handleCreateSection(w http.ResponseWriter, r *http.Request, l
 	return writeJsonResponse(w, http.StatusCreated, newSection)
 }
 
-func (srv *Server) handleDeleteSection(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("section_id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "section ID")
-	}
-	err = srv.Db.DeleteProgramSection(id)
-	if err != nil {
-		log.add("section_id", id)
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusNoContent, "Section deleted successfully")
-}
-
 func (srv *Server) handleUpdateSection(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "section ID")
+	ids := r.URL.Query()["id"]
+	sectionIDs := make([]int, 0, len(ids))
+	for _, id := range ids {
+		if sectionID, err := strconv.Atoi(id); err == nil {
+			sectionIDs = append(sectionIDs, sectionID)
+		}
 	}
 	defer r.Body.Close()
 	section := models.ProgramSection{}
 	if err := json.NewDecoder(r.Body).Decode(&section); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	updated, err := srv.Db.UpdateProgramSection(&section, id)
+	updated, err := srv.Db.UpdateProgramSection(&section, sectionIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

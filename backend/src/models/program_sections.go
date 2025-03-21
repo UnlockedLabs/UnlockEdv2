@@ -34,7 +34,7 @@ type ProgramSection struct {
 	CreditHours    *int64        `json:"credit_hours"`
 
 	Program  *Program              `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
-	Facility *Facility             `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
+	Facility *Facility             `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
 	Events   []ProgramSectionEvent `json:"events" gorm:"foreignKey:SectionID;references:ID"`
 }
 

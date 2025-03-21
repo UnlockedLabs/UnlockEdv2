@@ -5,7 +5,7 @@ import { TextModalType } from '.';
 interface TextModalProps {
     type: TextModalType;
     title: string;
-    text: string;
+    text: string | ReactNode;
     onSubmit: () => void;
     onClose: () => void;
 }
@@ -28,7 +28,7 @@ export const TextOnlyModal = forwardRef(function TextModal(
                     <span className={`text-3xl font-semibold text-neutral`}>
                         {title}
                     </span>
-                    <p>{text}</p>
+                    {typeof text === 'string' ? <p>{text}</p> : text}
                     {type === TextModalType.Information ? (
                         <>{children}</>
                     ) : (
@@ -36,6 +36,7 @@ export const TextOnlyModal = forwardRef(function TextModal(
                             type={type}
                             onCancel={onClose}
                             onSubmit={onSubmit}
+                            action={title}
                         />
                     )}
                 </div>

@@ -665,20 +665,43 @@ export interface Program {
     facilities: Facility[];
 }
 
-export interface ProgramSectionDetail {
+export interface Section {
     id: number;
-    instructor_name: string;
+    program_id: number;
+    facility_id: number;
     facility_name: string;
-    start_dt: Date;
-    end_dt: Date;
-    capacity: number;
+    instructor_name: string;
+    start_dt: string;
+    end_dt: string;
+    status: SelectedSectionStatus;
     enrolled: number;
+    capacity: number;
+    archived_at: string | null; // double check how this is returned, and if it would be null or undefined
 }
 
-export interface ProgramDashboard extends Program {
-    section_details: ProgramSectionDetail[];
-    meta: PaginationMeta;
+export enum SelectedSectionStatus {
+    Scheduled = 'Scheduled',
+    Active = 'Active',
+    Paused = 'Paused',
+    Completed = 'Completed',
+    Canceled = 'Cancelled'
 }
+
+export enum SectionStatusOptions {
+    Complete = 'Complete',
+    Pause = 'Pause',
+    Cancel = 'Cancel',
+    Schedule = 'Schedule',
+    Active = 'Active'
+}
+
+export const SectionStatusMap = {
+    [SectionStatusOptions.Complete]: SelectedSectionStatus.Completed,
+    [SectionStatusOptions.Pause]: SelectedSectionStatus.Paused,
+    [SectionStatusOptions.Cancel]: SelectedSectionStatus.Canceled,
+    [SectionStatusOptions.Schedule]: SelectedSectionStatus.Scheduled,
+    [SectionStatusOptions.Active]: SelectedSectionStatus.Active
+};
 
 export interface ProgramTag {
     id: string;
