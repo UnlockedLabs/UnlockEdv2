@@ -93,7 +93,7 @@ func InitDB(isTesting bool) *DB {
 }
 
 func MigrateTesting(db *gorm.DB) {
-	var TableList = []interface{}{
+	var TableList = []any{
 		&models.Role{},
 		&models.User{},
 		&models.ProviderPlatform{},
@@ -102,6 +102,8 @@ func MigrateTesting(db *gorm.DB) {
 		&models.Course{},
 		&models.Program{},
 		&models.ProgramSection{},
+		&models.ProgramCreditType{},
+		&models.ProgramType{},
 		&models.ProgramSectionEvent{},
 		&models.ProgramSectionEnrollment{},
 		&models.ProgramSectionEventOverride{},

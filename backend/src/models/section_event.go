@@ -70,7 +70,7 @@ type ProgramSectionEventOverride struct {
 	Duration      string `json:"duration" gorm:"not null"`
 	OverrideRrule string `json:"override_rrule" gorm:"not null"`
 	IsCancelled   bool   `json:"is_cancelled"`
-	Location      string `json:"location"`
+	Room          string `json:"room"`
 
 	/* Foreign keys */
 	Event *ProgramSectionEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`

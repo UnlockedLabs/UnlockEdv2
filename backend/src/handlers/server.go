@@ -514,7 +514,7 @@ func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
 func (srv *Server) errorResponse(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	resource := models.Resource[interface{}]{Message: message}
+	resource := models.Resource[any]{Message: message}
 	err := json.NewEncoder(w).Encode(resource)
 	if err != nil {
 		log.Error("error writing error response: ", err)

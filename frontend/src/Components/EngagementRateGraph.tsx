@@ -1,4 +1,4 @@
-import React, { useMemo, useContext, useState, useEffect } from 'react';
+import { useMemo, useContext, useState, useEffect } from 'react';
 import {
     LineChart,
     Line,
