@@ -461,7 +461,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 		}
 
 		capacities := []int64{15, 25, 30, 35, 40, 45}
-		durations := []string{"3mo", "30hrs", "6mo", "80hrs"}
+		durations := []string{"3mo", "30h", "6mo", "80h"}
 		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
 
 		for i := range prog {

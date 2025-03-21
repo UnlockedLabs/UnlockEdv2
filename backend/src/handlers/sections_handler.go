@@ -56,17 +56,25 @@ func (srv *Server) handleIndexSectionsForFacility(w http.ResponseWriter, r *http
 }
 
 func (srv *Server) handleCreateSection(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+
 	var section models.ProgramSection
-	err := json.NewDecoder(r.Body).Decode(&section)
+	err = json.NewDecoder(r.Body).Decode(&section)
 	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	newSection, err := srv.Db.CreateProgramSection(&section)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	section.FacilityID = claims.FacilityID
+	section.ProgramID = uint(id)
+	_, err = srv.Db.CreateProgramSection(&section)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusCreated, newSection)
+	return writeJsonResponse(w, http.StatusCreated, "program section created successfully")
 }
 
 func (srv *Server) handleDeleteSection(w http.ResponseWriter, r *http.Request, log sLog) error {

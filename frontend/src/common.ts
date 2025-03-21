@@ -461,6 +461,15 @@ export enum CreditType {
     REHABILITATION_CREDIT = 'Rehabilitation Credit'
 }
 
+export enum PrgSectionStatus {
+    SCHEDULED = 'Scheduled',
+    ACTIVE = 'Active',
+    PENDING = 'Pending',
+    CANCELLED = 'Cancelled',
+    COMPLETED = 'Completed',
+    PAUSED = 'Paused'
+}
+
 export enum ProgramStatus {
     AVAILABLE = 'AVAILABLE',
     ACTIVE = 'ACTIVE',
@@ -646,6 +655,21 @@ export interface Program {
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
+}
+
+export interface ProgramSectionDetail {
+    id: number;
+    instructor_name: string;
+    facility_name: string;
+    start_dt: Date;
+    end_dt: Date;
+    capacity: number;
+    enrolled: number;
+}
+
+export interface ProgramDashboard extends Program {
+    section_details: ProgramSectionDetail[];
+    meta: PaginationMeta;
 }
 
 export interface ProgramTag {
