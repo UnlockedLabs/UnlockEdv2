@@ -51,8 +51,8 @@ func (db *DB) NewEventOverride(eventId int, form *models.OverrideForm) (*models.
 	override := models.ProgramSectionEventOverride{
 		EventID: uint(eventId),
 	}
-	if form.Location != "" {
-		override.Location = form.Location
+	if form.Room != "" {
+		override.Room = form.Room
 	}
 	if form.Duration != "" {
 		override.Duration = form.Duration
@@ -408,8 +408,8 @@ func applyOverrides(event models.ProgramSectionEvent, start, end time.Time) []mo
 						rDateInstance.Duration = newDuration
 					}
 				}
-				if override.Location != "" {
-					rDateInstance.Room = override.Location
+				if override.Room != "" {
+					rDateInstance.Room = override.Room
 				}
 				rDates = append(rDates, rDateInstance)
 				mainSet.ExDate(occ.UTC())

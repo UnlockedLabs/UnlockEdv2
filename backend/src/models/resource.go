@@ -44,7 +44,7 @@ func NewPaginationInfo(currentPage, perPage int, total int64) PaginationMeta {
 	}
 }
 
-func UpdateStruct(dst, src interface{}) {
+func UpdateStruct(dst, src any) {
 	srcVal := reflect.ValueOf(src).Elem()
 	dstVal := reflect.ValueOf(dst).Elem()
 
