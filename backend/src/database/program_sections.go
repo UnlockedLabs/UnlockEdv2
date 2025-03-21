@@ -6,7 +6,7 @@ import (
 
 func (db *DB) GetSectionsForProgram(id int, args *models.QueryContext) ([]models.ProgramSection, error) {
 	content := []models.ProgramSection{}
-	if err := db.WithContext(args.Ctx).Find(&content, "program_id = ?", id).Preload("Events").Count(&args.Total).Error; err != nil {
+	if err := db.WithContext(args.Ctx).Preload("Events").Preload("Facility").Find(&content, "program_id = ?", id).Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
@@ -43,23 +43,11 @@ func (db *DB) CreateProgramSection(content *models.ProgramSection) (*models.Prog
 	return content, nil
 }
 
-func (db *DB) UpdateProgramSection(content *models.ProgramSection, id int) (*models.ProgramSection, error) {
-	existing := &models.ProgramSection{}
-	if err := db.First(existing, "id = ?", id).Error; err != nil {
-		return nil, newNotFoundDBError(err, "program sections")
-	}
-	models.UpdateStruct(existing, content)
-	if err := db.Save(content).Error; err != nil {
+func (db *DB) UpdateProgramSection(content *models.ProgramSection, ids []int) (*models.ProgramSection, error) {
+	if err := db.Model(&models.ProgramSection{}).Where("id IN ?", ids).Updates(content).Error; err != nil {
 		return nil, newUpdateDBError(err, "program sections")
 	}
 	return content, nil
-}
-
-func (db *DB) DeleteProgramSection(id int) error {
-	if err := db.Model(&models.ProgramSection{}).Delete(&models.ProgramSection{}, "id = ?", id).Error; err != nil {
-		return newDeleteDBError(err, "program sections")
-	}
-	return nil
 }
 
 func (db *DB) GetProgramSectionDetailsByID(id int, args *models.QueryContext) ([]models.ProgramSectionDetail, error) {
