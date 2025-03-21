@@ -61,7 +61,7 @@ const sections: { data: Section[] } = {
             facilitator: 'Alex Trebek',
             start_date: '2021-08-01',
             end_date: '2021-08-31',
-            status: SelectedSectionStatus.Completed,
+            status: SelectedSectionStatus.Active,
             enrolled_residents: 14,
             capacity: 30,
             archivedAt: null
@@ -141,17 +141,21 @@ export default function ProgramOverview() {
         <Error />;
     }
 
+    const nonArchivedSections = sections.data.filter(
+        (section) => section.archivedAt === null
+    );
+
     const allSelected =
-        selectedSections.length === sections.data.length &&
-        sections.data.length > 0;
+        selectedSections.length === nonArchivedSections.length &&
+        nonArchivedSections.length > 0;
 
     const filteredSections = includeArchived
         ? sections.data
-        : sections.data.filter((section) => section.archivedAt === null);
+        : nonArchivedSections;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedSections(sections.data.map((s) => s.id));
+            setSelectedSections(nonArchivedSections.map((s) => s.id));
         } else {
             setSelectedSections([]);
         }
@@ -173,8 +177,6 @@ export default function ProgramOverview() {
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPage(1);
-
-        setIncludeArchived(includeArchived); // Same deal just to get eslint to be quiet
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
 

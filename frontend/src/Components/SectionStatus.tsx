@@ -5,6 +5,7 @@ import {
     ChevronDownIcon,
     ClockIcon,
     PauseCircleIcon,
+    PresentationChartLineIcon,
     XCircleIcon
 } from '@heroicons/react/24/outline';
 import ModifySectionModal from './modals/ModifySectionModal';
@@ -23,7 +24,8 @@ export enum SectionStatusOptions {
     Complete = 'Complete',
     Pause = 'Pause',
     Cancel = 'Cancel',
-    Scheduled = 'Schedule'
+    Schedule = 'Schedule',
+    Active = 'Active'
 }
 
 function SelectedSectionStatusPill({
@@ -52,6 +54,9 @@ function SelectedSectionStatusPill({
             icon = ClockIcon;
             background = 'bg-[#FFF3D4] text-[#ECAA00]';
             break;
+        case SelectedSectionStatus.Active:
+            icon = PresentationChartLineIcon;
+            background = 'bg-[#B0DFDA] text-[#002E2A]';
     }
 
     if (!icon || !background) return;
@@ -79,7 +84,7 @@ export default function SectionStatus({
     status: SelectedSectionStatus;
 }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [selectedStatus] = useState(status);
+    const [selectedStatus, setSelectedStatus] = useState(status);
     const modifySectionRef = useRef<HTMLDialogElement>(null);
     const [selectedModifyOption, setSelectedModifyOption] =
         useState<SectionStatusOptions>();
@@ -123,18 +128,38 @@ export default function SectionStatus({
                         className="absolute left-0 bg-inner-background rounded-box shadow-lg p-2 overflow-y-auto z-10 w-full"
                         tabIndex={0}
                     >
-                        {Object.values(SectionStatusOptions).map((option) => (
-                            <li key={option} className="w-full">
-                                <div
-                                    className="flex items-center space-x-2 px-2 py-1 hover:bg-grey-2 rounded cursor-pointer"
-                                    onClick={(e) =>
-                                        openSelectionModal(e, option)
-                                    }
-                                >
-                                    <span className="text-sm">{option}</span>
-                                </div>
-                            </li>
-                        ))}
+                        {Object.values(SectionStatusOptions).map((option) => {
+                            const statusMap = {
+                                [SelectedSectionStatus.Scheduled]:
+                                    SectionStatusOptions.Schedule,
+                                [SelectedSectionStatus.Active]:
+                                    SectionStatusOptions.Active,
+                                [SelectedSectionStatus.Paused]:
+                                    SectionStatusOptions.Pause,
+                                [SelectedSectionStatus.Completed]:
+                                    SectionStatusOptions.Complete,
+                                [SelectedSectionStatus.Canceled]:
+                                    SectionStatusOptions.Cancel
+                            };
+
+                            if (statusMap[selectedStatus] === option)
+                                return null;
+
+                            return (
+                                <li key={option} className="w-full">
+                                    <div
+                                        className="flex items-center space-x-2 px-2 py-1 hover:bg-grey-2 rounded cursor-pointer"
+                                        onClick={(e) =>
+                                            openSelectionModal(e, option)
+                                        }
+                                    >
+                                        <span className="text-sm">
+                                            {option}
+                                        </span>
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
@@ -142,6 +167,7 @@ export default function SectionStatus({
                 ref={modifySectionRef}
                 action={selectedModifyOption}
                 section={section}
+                setSelectedStatus={setSelectedStatus}
             />
             {/* pause modal */}
             {/* cancel modal */}
