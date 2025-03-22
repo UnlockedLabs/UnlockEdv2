@@ -54,7 +54,6 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 type ProgramOverviewResponse struct {
 	models.Program
 	SectionDetails []models.ProgramSectionDetail `json:"section_details"`
-	Meta           models.PaginationMeta         `json:"meta"`
 }
 
 func (srv *Server) handleShowProgamOverview(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -80,12 +79,14 @@ func (srv *Server) handleShowProgamOverview(w http.ResponseWriter, r *http.Reque
 			return newBadRequestServiceError(err, "bad duration on program section")
 		}
 	}
-	response := ProgramOverviewResponse{
+	//need slice for calling writePaginatedDataResponse
+	response := make([]ProgramOverviewResponse, 0, 1)
+	overview := ProgramOverviewResponse{
 		Program:        *program,
 		SectionDetails: sectionDetails,
-		Meta:           args.IntoMeta(),
 	}
-	return writeJsonResponse(w, http.StatusOK, response)
+	response = append(response, overview)
+	return writePaginatedResponse(w, http.StatusOK, response, args.IntoMeta())
 }
 
 type ProgramForm struct {

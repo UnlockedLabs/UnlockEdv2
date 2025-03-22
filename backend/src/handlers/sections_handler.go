@@ -60,7 +60,6 @@ func (srv *Server) handleCreateSection(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-
 	var section models.ProgramSection
 	err = json.NewDecoder(r.Body).Decode(&section)
 	defer r.Body.Close()
@@ -74,6 +73,9 @@ func (srv *Server) handleCreateSection(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	//audit new section id and program id
+	log.add("program_id", id)
+	log.add("section_id", newSection.ID)
 	return writeJsonResponse(w, http.StatusCreated, newSection)
 }
 
