@@ -40,11 +40,38 @@ const LibrarySearchResultsModal = forwardRef<
     const [placeholder, setPlaceholder] = useState<string>(searchPlaceholder);
     const [isSearchValid, setIsSearchValid] = useState<boolean>(false);
     const searchBarRef = useRef<HTMLInputElement>(null);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [suggestionError, setSuggestionError] = useState<string | null>(null);
+    const [changesSinceLastSuggestion, setChangesSinceLastSuggestion] =
+        useState(0);
+
     useEffect(() => {
         if (ref && typeof ref !== 'function' && ref.current?.open) {
             searchBarRef.current?.focus();
         }
     }, [ref]);
+
+    const handleTermChange = (val: string) => {
+        setSearchTerm(val);
+        const trimmed = val.trim();
+        setIsSearchValid(trimmed !== '');
+        if (!trimmed) {
+            setSuggestions([]);
+            setChangesSinceLastSuggestion(0);
+            return;
+        }
+        const words = trimmed.split(/\s+/);
+        // trigger suggestions if there's more than one word or the first word's length is greater than 8
+        if (words.length > 1 || words[0].length > 8) {
+            if (suggestions.length !== 0) {
+                // if we already have suggested something, we wait for 8 character changes before suggesting again
+                setChangesSinceLastSuggestion(changesSinceLastSuggestion + 1);
+                if (changesSinceLastSuggestion % 8 !== 0) return;
+            }
+            void handleSuggestQueries();
+        }
+    };
+
     const EmptyResult = {
         title: 'Search',
         link: '',
@@ -67,6 +94,31 @@ const LibrarySearchResultsModal = forwardRef<
     const [isLoading, setIsLoading] = useState(false);
     const [searchError, setSearchError] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    type SuggestionResponse = [
+        originalQuery: string,
+        suggestions: string[],
+        extra: unknown[],
+        metadata: {
+            'google:suggestsubtypes': number[][];
+        }
+    ];
+    const handleSuggestQueries = async () => {
+        setSuggestions([]);
+        setSuggestionError(null);
+        if (!searchTerm.trim()) return;
+        try {
+            const res = await fetch(
+                `/api/open-content/suggestions?query=${encodeURIComponent(searchTerm)}`
+            );
+            const data = (await res.json()) as SuggestionResponse;
+            setSuggestions(data[1]);
+        } catch (error) {
+            console.error(error);
+            setSuggestionError('Failed to retrieve suggestions.');
+        }
+    };
+
     const handleSearch = async (
         page: number,
         perPage: number,
@@ -74,7 +126,7 @@ const LibrarySearchResultsModal = forwardRef<
     ) => {
         if (ref && typeof ref !== 'function') {
             if (ref.current?.open) {
-                searchResults.items = []; //clear results on pagination, prevents jumpiness
+                searchResults.items = []; // clear results on pagination, prevents jumpiness
             }
         }
         setIsLoading(true);
@@ -93,6 +145,10 @@ const LibrarySearchResultsModal = forwardRef<
                 `open-content/search?search=${term}&${urlParams}&page=${page}&per_page=${perPage}`
             )) as ServerResponseMany<SearchResult>;
             if (response.success) {
+                if (response.data[0].items?.length === 0) {
+                    await handleSuggestQueries();
+                    return;
+                }
                 setMeta(response.meta);
                 setSearchResults(response.data[0]);
             } else {
@@ -108,6 +164,7 @@ const LibrarySearchResultsModal = forwardRef<
             setIsLoading(false);
         }
     };
+
     const scrollToTop = () => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTop = 0;
@@ -150,12 +207,14 @@ const LibrarySearchResultsModal = forwardRef<
             1,
         parseNumber(searchResults.total_results)
     );
-    const currentPageDisplay = `Results ${searchResults.start_index}-${currentEndResultsPage.toLocaleString('en-US')} of ${searchResults.total_results}`;
+    const currentPageDisplay = `Results ${searchResults.start_index}-${currentEndResultsPage.toLocaleString(
+        'en-US'
+    )} of ${searchResults.total_results}`;
     useEffect(() => {
         setDefaultOption();
     }, []);
     useEffect(() => {
-        //used for externally hooking an event call to execute search
+        // Used for externally hooking an event call to execute search.
         const executeSearchListener = (event: CustomEvent<SearchEventPO>) => {
             const { searchTerm, page, perPage } = event.detail;
             setSearchTerm(searchTerm);
@@ -181,6 +240,7 @@ const LibrarySearchResultsModal = forwardRef<
         setDefaultOption();
         onModalClose();
         setSearchResults(EmptyResult);
+        setSuggestions([]);
     };
 
     const navToViewer = (
@@ -219,13 +279,19 @@ const LibrarySearchResultsModal = forwardRef<
                             searchTerm={searchTerm}
                             isSearchValid={isSearchValid}
                             searchPlaceholder={placeholder}
-                            changeCallback={(value: string) => {
-                                setSearchTerm(value);
-                                setIsSearchValid(value.trim() !== '');
-                            }}
+                            changeCallback={handleTermChange}
                             onSearchClick={() => void handleSearch(1, 10)}
                             ref={searchBarRef}
                         />
+                        {searchTerm.trim() && (
+                            <button
+                                type="button"
+                                onClick={() => void handleSuggestQueries()}
+                                className="button"
+                            >
+                                Spelling Suggestions
+                            </button>
+                        )}
                         <MultiSelectDropdown
                             label="Select Libraries"
                             options={libraryOptions}
@@ -235,6 +301,41 @@ const LibrarySearchResultsModal = forwardRef<
                         />
                         <CloseX close={onModalClose} />
                     </div>
+                    {suggestions.length > 0 && (
+                        <div className="relative mt-2 p-2 bg-grey-1 rounded">
+                            <button
+                                onClick={() => setSuggestions([])}
+                                className="btn btn-ghost btn-circle absolute top-1 right-1"
+                            >
+                                x
+                            </button>
+                            <p className="mb-1 text-sm font-semibold">
+                                Did you mean:
+                            </p>
+                            <ul className="flex flex-wrap gap-2">
+                                {suggestions.map((sug, index) => (
+                                    <li key={index}>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm"
+                                            onClick={() => {
+                                                setSearchTerm(sug);
+                                                setSuggestions([]);
+                                                void handleSearch(1, 10, sug);
+                                            }}
+                                        >
+                                            {sug}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            {suggestionError && (
+                                <p className="text-error text-sm mt-1">
+                                    {suggestionError}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <div
                     ref={scrollContainerRef}
