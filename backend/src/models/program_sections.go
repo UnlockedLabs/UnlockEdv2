@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+)
 
 type SectionStatus string
 
@@ -28,8 +33,8 @@ type ProgramSection struct {
 	ArchivedAt     time.Time     `json:"archived_at"`
 	StartDt        time.Time     `gorm:"type:date" json:"start_dt"`
 	Duration       string        `json:"duration" gorm:"not null" validate:"required,max=32"`
-	Status         SectionStatus `json:"status" gorm:"type:section_status" validate:"required"`
-	CreditHours    int64         `json:"total"`
+	Status         SectionStatus `json:"section_status" gorm:"type:section_status" validate:"required"`
+	CreditHours    int64         `json:"credit_hours"`
 
 	Program  *Program              `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Facility *Facility             `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
@@ -53,3 +58,41 @@ type ProgramSectionEnrollment struct {
 }
 
 func (ProgramSectionEnrollment) TableName() string { return "program_section_enrollments" }
+
+type ProgramSectionDetail struct {
+	ID             int64     `json:"id"`
+	FacilityName   string    `json:"facility_name"`
+	InstructorName string    `json:"instructor_name"`
+	StartDt        time.Time `json:"start_dt"`
+	Duration       string    `json:"duration"`
+	Capacity       string    `json:"capacity"`
+	Enrolled       int       `json:"enrolled"`
+	EndDt          time.Time `json:"end_dt"`
+}
+
+func (psd *ProgramSectionDetail) CalcuateEndDt() error {
+	var (
+		numStr string
+		num    int
+		err    error
+	)
+	if strings.HasSuffix(psd.Duration, "mo") {
+		numStr = strings.TrimSuffix(psd.Duration, "mo")
+		num, err = strconv.Atoi(numStr)
+		if err != nil {
+			return fmt.Errorf("bad month duration: %s", psd.Duration)
+		}
+		psd.EndDt = psd.StartDt.AddDate(0, num, 0)
+		return nil
+	}
+	if strings.HasSuffix(psd.Duration, "h") {
+		numStr = strings.TrimSuffix(psd.Duration, "h")
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return fmt.Errorf("bad hour duration: %s", psd.Duration)
+		}
+		psd.EndDt = psd.StartDt.Add(time.Duration(num) * time.Hour)
+		return nil
+	}
+	return fmt.Errorf("bad duration format: %s", psd.Duration)
+}

@@ -16,6 +16,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
 		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
 		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx},
+		{"GET /api/programs/{id}/overview", srv.handleShowProgamOverview, true, axx},
 	}
 }
 
@@ -48,6 +49,44 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, program)
+}
+
+type ProgramOverviewResponse struct {
+	models.Program
+	SectionDetails []models.ProgramSectionDetail `json:"section_details"`
+}
+
+func (srv *Server) handleShowProgamOverview(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	program, err := srv.Db.GetProgramByID(id)
+	if err != nil {
+		log.add("programId", id)
+		return newDatabaseServiceError(err)
+	}
+	sectionDetails, err := srv.Db.GetProgramSectionDetailsByID(id, &args)
+	if err != nil {
+		log.add("programId", id)
+		return newDatabaseServiceError(err)
+	}
+	for i := range sectionDetails {
+		err = sectionDetails[i].CalcuateEndDt()
+		if err != nil {
+			log.add("section_detail", sectionDetails[i])
+			return newBadRequestServiceError(err, "bad duration on program section")
+		}
+	}
+	//need slice for calling writePaginatedResponse
+	response := make([]ProgramOverviewResponse, 0, 1)
+	overview := ProgramOverviewResponse{
+		Program:        *program,
+		SectionDetails: sectionDetails,
+	}
+	response = append(response, overview)
+	return writePaginatedResponse(w, http.StatusOK, response, args.IntoMeta())
 }
 
 type ProgramForm struct {

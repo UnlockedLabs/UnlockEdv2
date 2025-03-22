@@ -151,6 +151,8 @@ func TestHandleCreateSection(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
+			id := sectionMap["program_id"].(uint)
+			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleCreateSection, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusCreated {
@@ -289,8 +291,9 @@ func getProgramSection(facilityId uint) map[string]any {
 	if err != nil {
 		form["err"] = err
 	}
+	programID := programs[rand.Intn(len(programs))].ID
 	form["section"] = models.ProgramSection{
-		ProgramID:      programs[rand.Intn(len(programs))].ID,
+		ProgramID:      programID,
 		FacilityID:     facilityId,
 		Capacity:       30,
 		Name:           "Employment",
@@ -300,6 +303,7 @@ func getProgramSection(facilityId uint) map[string]any {
 		Status:         models.Scheduled, //this will change during new section development
 		StartDt:        time.Now().Add(14 * 24 * time.Hour),
 	}
+	form["program_id"] = programID
 	return form
 }
 func getProgramId() map[string]any {
