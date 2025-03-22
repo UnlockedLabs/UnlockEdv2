@@ -5,7 +5,7 @@ import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { ProgramDashboard, ServerResponseOne } from '@/common';
+import { ProgramDashboard, ServerResponseMany } from '@/common';
 import { AxiosError } from 'axios';
 import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
@@ -27,10 +27,10 @@ export default function ProgramOverview() {
         data: programResp,
         error: programError,
         mutate
-    } = useSWR<ServerResponseOne<ProgramDashboard>, AxiosError>(
+    } = useSWR<ServerResponseMany<ProgramDashboard>, AxiosError>(
         `/api/programs/${id}/overview?page=${page}&per_page=${perPage}`
     );
-    const program = programResp?.data;
+    const program = programResp?.data[0];
     const meta = program?.meta ?? {
         total: 0,
         per_page: 20,
@@ -83,11 +83,6 @@ export default function ProgramOverview() {
         <div className="p-4 px-5">
             <h1 className=" mb-2">{program?.name}</h1>
             <p className="mb-4 body body-small ">{program?.description}</p>
-            <p>
-                {program?.section_details
-                    ? program.section_details.length
-                    : 'empty'}
-            </p>
             <div className="flex gap-4 mb-8 ">
                 <div className="flex flex-col gap-4 h-[250px]">
                     <StatsCard
@@ -206,7 +201,8 @@ export default function ProgramOverview() {
                                         ).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
-                                            day: 'numeric'
+                                            day: 'numeric',
+                                            timeZone: 'UTC'
                                         })}
                                     </td>
                                     <td>
@@ -215,7 +211,8 @@ export default function ProgramOverview() {
                                         ).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
-                                            day: 'numeric'
+                                            day: 'numeric',
+                                            timeZone: 'UTC'
                                         })}
                                     </td>
                                     <td>

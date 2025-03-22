@@ -79,7 +79,7 @@ func (srv *Server) handleShowProgamOverview(w http.ResponseWriter, r *http.Reque
 			return newBadRequestServiceError(err, "bad duration on program section")
 		}
 	}
-	//need slice for calling writePaginatedDataResponse
+	//need slice for calling writePaginatedResponse
 	response := make([]ProgramOverviewResponse, 0, 1)
 	overview := ProgramOverviewResponse{
 		Program:        *program,
