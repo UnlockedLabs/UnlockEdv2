@@ -15,9 +15,8 @@ import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { CancelButton, SubmitButton } from '@/Components/inputs';
+import { CancelButton } from '@/Components/inputs';
 import Pagination from '@/Components/Pagination';
-// import { SubmitHandler } from 'react-hook-form';
 
 interface Inputs {
     section_id: number;
@@ -38,19 +37,16 @@ export default function ProgramSectionManagement() {
     const [sortQuery] = useState<string>(
         FilterProgramSectionEnrollments['Last Name (A to Z)']
     );
-    // Grab my users
+
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
     );
-    // Test my users and make sure the section_id is being pulled from the url
+
     const credentialed_users = data?.data ?? [];
     const meta = data?.meta;
-    console.log(credentialed_users);
-    console.log(section_id);
-    // TODO: Remove these lines above
 
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
     const navigate = useNavigate();
@@ -78,8 +74,8 @@ export default function ProgramSectionManagement() {
         }
     };
 
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
+    const handleSearch = (newTerm: string) => {
+        setSearchTerm(newTerm);
         setPageQuery(1);
     };
 
@@ -132,8 +128,7 @@ export default function ProgramSectionManagement() {
 
             // onSubmit('Users successfully enrolled', ToastState.success);
             setSelectedUsers([]);
-            console.log('It saved i think');
-            // TODO: Look at what how the handler is saving the record, there is no enrollment status.
+            console.log('It Saved the record/s');
         } catch (error) {
             console.error('Enrollment failed:', error);
             setErrorMessage('Failed to enroll users');
@@ -152,8 +147,8 @@ export default function ProgramSectionManagement() {
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row gap-2 items-center">
                         <SearchBar
-                            searchTerm={'TEST'}
-                            changeCallback={handleChange}
+                            searchTerm={searchTerm}
+                            changeCallback={handleSearch}
                         />
                         <DropdownControl
                             label="Order by"
@@ -209,6 +204,9 @@ export default function ProgramSectionManagement() {
                                                                 user.id
                                                             )
                                                         }
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
                                                     />
                                                     <label>
                                                         {user.name_first}
@@ -234,6 +232,7 @@ export default function ProgramSectionManagement() {
                             )}
                         </tbody>
                     </table>
+                    {/* TODO: Test Pagination */}
                     <div className="flex justify-center m-2">
                         {' '}
                         {meta && (
@@ -246,11 +245,15 @@ export default function ProgramSectionManagement() {
                         </div>
                     )}
 
-                    {/* TODO: find a solution to the button sizing*/}
-                    <div className="flex justify-end m-2">
+                    <div className="flex flex-row justify-end m-2">
+                        {/* TODO: what to do on cancel */}
                         <CancelButton onClick={() => console.log('test me')} />
-                        {/* todo: check capacity or user on add */}
-                        <SubmitButton errorMessage={errorMessage} />
+                        {/* TODO: check capacity or user on add */}
+                        <input
+                            className="btn btn-primary ml-2"
+                            type="submit"
+                            value="Submit"
+                        />
                     </div>
                 </form>
                 <div className="flex flex-col">
