@@ -21,6 +21,14 @@ export default function OpenContentCardRow({
                 : {};
         navigate(basePath, obj);
     }
+    function getThumbnailUrl(oc: OpenContentItem): string {
+        switch (oc.content_type) {
+            case 'video':
+                return `/api/photos/${oc.external_id}.jpg`;
+            default:
+                return oc.thumbnail_url ?? '/ul-logo.png';
+        }
+    }
     return (
         <div
             className={`card ${content.visibility_status == null || content.visibility_status ? 'cursor-pointer' : 'bg-grey-2 cursor-not-allowed'} flex flex-row w-full gap-3 px-4 py-2 tooltip`}
@@ -33,7 +41,7 @@ export default function OpenContentCardRow({
             <div>
                 <img
                     className="h-8 mx-auto object-contain"
-                    src={content.thumbnail_url ?? ''}
+                    src={getThumbnailUrl(content)}
                 ></img>
             </div>
             <ClampedText
