@@ -47,6 +47,15 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
         }
     };
 
+    function getThumbnailUrl(oc: OpenContentItem): string {
+        switch (oc.content_type) {
+            case 'video':
+                return `/api/photos/${oc.external_id}.jpg`;
+            default:
+                return oc.thumbnail_url ?? '/ul-logo.png';
+        }
+    }
+
     const handleUnfavorite = async () => {
         let endpoint = '';
         let payload = {};
@@ -106,7 +115,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
                 </div>
             )}
             <img
-                src={favorite.thumbnail_url ?? '/ul-logo.png'}
+                src={getThumbnailUrl(favorite)}
                 alt={favorite.title}
                 className="h-16 mx-auto object-contain"
             />
