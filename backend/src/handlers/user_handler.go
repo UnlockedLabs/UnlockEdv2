@@ -220,6 +220,7 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 }
 
 func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	temp := struct {
 		UserID uint `json:"user_id"`
 	}{}
@@ -232,6 +233,9 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	log.add("student.user_id", temp.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	if !canResetUserPassword(claims, user) {
+		return newUnauthorizedServiceError()
 	}
 	newPass := user.CreateTempPassword()
 	response["temp_password"] = newPass
@@ -252,6 +256,17 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 		}
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
+}
+
+func canResetUserPassword(currentUser *Claims, toUpdate *models.User) bool {
+	switch toUpdate.Role {
+	case models.DepartmentAdmin: // department admin can only reset password of users in their department
+		return currentUser.canSwitchFacility()
+	case models.SystemAdmin: // system admin can only reset password of other system admins
+		return currentUser.Role == toUpdate.Role
+	default: // user is garaunteed to be admin already at this point, can reset facility + student passwords
+		return currentUser.isAdmin()
+	}
 }
 
 func validateUser(user *models.User) string {
