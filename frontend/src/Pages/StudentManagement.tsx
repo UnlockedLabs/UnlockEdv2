@@ -179,9 +179,10 @@ export default function StudentManagement() {
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
                         <thead>
-                            <tr className="grid grid-cols-5 px-4">
+                            <tr className="grid grid-cols-6 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
+                                <th>DOC ID</th>
                                 <th>Last Updated</th>
                                 <th>Created At</th>
                                 <th className="justify-self-end pr-4">
@@ -198,7 +199,7 @@ export default function StudentManagement() {
                                     return (
                                         <tr
                                             key={user.id}
-                                            className="card p-4 w-full grid-cols-5 justify-items-center cursor-pointer"
+                                            className="card p-4 w-full grid-cols-6 justify-items-center cursor-pointer"
                                             onClick={() =>
                                                 handleShowUserProfileClick(
                                                     user.id
@@ -210,6 +211,7 @@ export default function StudentManagement() {
                                                 {user.name_last}
                                             </td>
                                             <td>{user.username}</td>
+                                            <td>{user.doc_id}</td>
                                             <td>
                                                 <div
                                                     className="tooltip"

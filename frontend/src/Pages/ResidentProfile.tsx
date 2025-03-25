@@ -72,6 +72,14 @@ const ResidentProfile = () => {
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2">
+                                            <p>DOC ID</p>
+                                            <div className="flex flex-row justify-between">
+                                                <p>:</p>
+                                                {metrics.user.doc_id}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2">
                                             <p>Joined</p>
                                             <div className="flex flex-row justify-between">
                                                 <p>:</p>
