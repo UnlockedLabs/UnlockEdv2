@@ -3,7 +3,6 @@ package models
 type FundingType string
 type PrgType string
 type CreditType string
-type ProgramStatus string
 
 const (
 	//funding types
@@ -26,19 +25,15 @@ const (
 	Participation CreditType = "Participation"
 	EarnedTime    CreditType = "Earned-time"
 	Education     CreditType = "Education"
-
-	//program status
-	Available ProgramStatus = "available"
-	Inactive  ProgramStatus = "inactive"
 )
 
 type Program struct {
 	DatabaseFields
-	Name          string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
-	Description   string      `json:"description" gorm:"not null" validate:"required,max=255"`
-	FundingType   FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
-	ProgramStatus bool        `json:"program_status" gorm:"not null"`
-	IsFavorited   bool        `json:"is_favorited" gorm:"-"`
+	Name        string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
+	Description string      `json:"description" gorm:"not null" validate:"required,max=255"`
+	FundingType FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
+	IsActive    bool        `json:"is_active" gorm:"not null"`
+	IsFavorited bool        `json:"is_favorited" gorm:"-"`
 
 	ProgramTypes       []ProgramType       `json:"program_types" gorm:"foreignKey:ProgramID;references:ID"`
 	ProgramCreditTypes []ProgramCreditType `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID"`

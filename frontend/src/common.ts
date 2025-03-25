@@ -478,10 +478,6 @@ export enum CreditType {
     EDUCATION = 'Education',
     PARTICIPATION = 'Participation'
 }
-export enum ProgramStatus {
-    AVAILABLE = 'available',
-    INACTIVE = 'inactive'
-}
 
 export interface LearningInsight {
     course_name: string;
@@ -654,7 +650,7 @@ export interface Program {
     credit_type: CreditType;
     funding_type: FundingType;
     program_type: ProgramType;
-    status: ProgramStatus;
+    is_active: boolean;
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];

@@ -49,6 +49,7 @@ func (db *DB) CreateProgram(content *models.Program, types *models.ProgramTypeIn
 	if err != nil {
 		return NewDBError(err, "create programs validation error")
 	}
+
 	if err := db.Create(content).Error; err != nil {
 		return newCreateDBError(err, "programs")
 	}

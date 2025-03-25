@@ -52,13 +52,13 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 
 type ProgramForm struct {
 	// ... program
-	Name          string               `json:"name"`
-	Description   string               `json:"description"`
-	FundingType   models.FundingType   `json:"funding_type"`
-	CreditType    []models.CreditType  `json:"credit_type"`
-	ProgramStatus models.ProgramStatus `json:"program_status"`
-	ProgramType   []models.PrgType     `json:"program_type"`
-	Facilities    []int                `json:"facilities"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	FundingType models.FundingType  `json:"funding_type"`
+	CreditType  []models.CreditType `json:"credit_type"`
+	IsActive    bool                `json:"is_active"`
+	ProgramType []models.PrgType    `json:"program_type"`
+	Facilities  []int               `json:"facilities"`
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -72,15 +72,12 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	if len(program.Facilities) == 0 {
 		program.Facilities = []int{int(claims.FacilityID)}
 	}
-	var status bool
-	if program.ProgramStatus == models.Available {
-		status = true
-	}
+
 	newProg := models.Program{
-		Name:          program.Name,
-		Description:   program.Description,
-		FundingType:   program.FundingType,
-		ProgramStatus: status,
+		Name:        program.Name,
+		Description: program.Description,
+		FundingType: program.FundingType,
+		IsActive:    program.IsActive,
 	}
 	var programTypes models.ProgramTypeInfo
 	programTypes.ProgramTypes = program.ProgramType

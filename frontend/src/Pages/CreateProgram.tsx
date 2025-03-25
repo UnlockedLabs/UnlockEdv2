@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import {
     CreditType,
     Facility,
-    ProgramStatus,
     ProgramType,
     ToastState,
     FundingType,
@@ -28,7 +27,7 @@ interface ProgramInputs {
     description: string;
     credit_type: GenericOption<CreditType>[];
     program_type: GenericOption<ProgramType>[];
-    program_status: ProgramStatus;
+    is_active: boolean;
     funding_type: GenericOption<FundingType> | null;
     facilities: GenericOption<number>[];
 }
@@ -38,7 +37,7 @@ interface TransformedProgramInput {
     description: string;
     credit_type: CreditType[];
     program_type: ProgramType[];
-    program_status: ProgramStatus;
+    is_active: boolean;
     funding_type: FundingType;
     facilities: number[];
 }
@@ -177,8 +176,8 @@ export default function CreateProgramPage() {
     const onSubmit: SubmitHandler<ProgramInputs> = async (data) => {
         const transformedData: TransformedProgramInput = {
             ...data,
+            is_active: new Boolean(data.is_active).valueOf(),
             credit_type: data.credit_type.map((opt) => opt.value),
-            program_status: data.program_status,
             program_type: data.program_type.map((opt) => opt.value),
             funding_type: data.funding_type
                 ? data.funding_type.value
@@ -385,8 +384,8 @@ export default function CreateProgramPage() {
                         <label className="flex items-center cursor-pointer">
                             <input
                                 type="radio"
-                                value="available"
-                                {...register('program_status', {
+                                value="true"
+                                {...register('is_active', {
                                     required: 'Program Status is required'
                                 })}
                                 className="radio radio-primary my-auto mr-2"
@@ -396,8 +395,8 @@ export default function CreateProgramPage() {
                         <label className="flex items-center cursor-pointer">
                             <input
                                 type="radio"
-                                value="inactive"
-                                {...register('program_status', {
+                                value=""
+                                {...register('is_active', {
                                     required: 'Program Status is required'
                                 })}
                                 className="radio radio-primary my-auto mr-2"
@@ -405,9 +404,9 @@ export default function CreateProgramPage() {
                             <span>Inactive</span>
                         </label>
                     </div>
-                    {errors.program_status && (
+                    {errors.is_active && (
                         <p className="text-error text-sm">
-                            {errors.program_status.message}
+                            {errors.is_active.message}
                         </p>
                     )}
                 </div>
@@ -422,7 +421,7 @@ export default function CreateProgramPage() {
                             description: '',
                             credit_type: [],
                             program_type: [],
-                            program_status: undefined,
+                            is_active: undefined,
                             funding_type: null,
                             facilities: []
                         })

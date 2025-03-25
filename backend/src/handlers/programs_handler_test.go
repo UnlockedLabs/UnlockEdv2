@@ -138,9 +138,7 @@ func TestHandleUpdateProgram(t *testing.T) {
 			program.Name = programToUpdate.Name
 			program.Description = programToUpdate.Description
 			program.FundingType = programToUpdate.FundingType
-			if programToUpdate.ProgramStatus == models.Available {
-				program.ProgramStatus = true
-			}
+			program.IsActive = programToUpdate.IsActive
 			if test.expectedStatusCode == http.StatusOK {
 				err := server.Db.CreateProgram(&program, &typeInfo)
 				if err != nil {
@@ -206,9 +204,7 @@ func TestHandleDeleteProgram(t *testing.T) {
 				program.Name = programToDelete.Name
 				program.Description = programToDelete.Description
 				program.FundingType = programToDelete.FundingType
-				if programToDelete.ProgramStatus == models.Available {
-					program.ProgramStatus = true
-				}
+				program.IsActive = programToDelete.IsActive
 				err := server.Db.CreateProgram(&program, &typeInfo)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
@@ -291,12 +287,12 @@ func getNewProgramForm() map[string]any {
 		form["err"] = err
 	}
 	form["program"] = ProgramForm{
-		Name:          "Program for facility: " + strconv.Itoa(rand.Intn(1000)) + facilities[rand.Intn(len(facilities))].Name,
-		Description:   "Testing program",
-		FundingType:   models.FederalGrants,
-		ProgramStatus: models.Available,
-		CreditType:    []models.CreditType{models.EarnedTime},
-		ProgramType:   []models.PrgType{models.ReEntry},
+		Name:        "Program for facility: " + strconv.Itoa(rand.Intn(1000)) + facilities[rand.Intn(len(facilities))].Name,
+		Description: "Testing program",
+		FundingType: models.FederalGrants,
+		IsActive:    true,
+		CreditType:  []models.CreditType{models.EarnedTime},
+		ProgramType: []models.PrgType{models.ReEntry},
 	}
 	return form
 }
@@ -306,7 +302,7 @@ func getUpdatedProgramForm() map[string]any {
 	form["name"] = "Introduction to Management"
 	form["description"] = "A course in human resource management, covering fundamental concepts such as how to deal with unruly employees, recruitment, and inteview strategies."
 	form["credit_type"] = "Earned-Time Credit"
-	form["program_status"] = true
+	form["is_active"] = true
 	form["funding_type"] = models.EduGrants
 	form["program_type"] = models.LifeSkills
 
