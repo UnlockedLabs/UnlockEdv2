@@ -51,22 +51,19 @@ ALTER TABLE public.users RENAME COLUMN role_name TO role;
 
 -- +goose Down
 -- +goose StatementBegin
-ALTER TABLE public.users
-ADD COLUMN role character varying(255);
-
-UPDATE public.users
-   SET role = role_name;
-
-ALTER TABLE public.users DROP CONSTRAINT fk_role_name;
-
 ALTER TABLE public.users RENAME COLUMN role TO role_name;
 
-ALTER TABLE public.users DROP COLUMN role_name;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role VARCHAR(255);
 
-DROP TABLE IF EXISTS public.user_roles;
+UPDATE public.users SET role = role_name;
 
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_role_name_fkey;
+ALTER TABLE public.users DROP COLUMN IF EXISTS role_name;
+
+DROP INDEX IF EXISTS idx_feature_flags_name;
+DROP INDEX IF EXISTS idx_feature_flags_deleted_at;
 DROP TABLE IF EXISTS public.feature_flags;
 DROP TYPE IF EXISTS feature;
 
-DROP INDEX IF EXISTS idx_feature_flags_name;
+DROP TABLE IF EXISTS public.user_roles;
 -- +goose StatementEnd
