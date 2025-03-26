@@ -5,56 +5,13 @@ import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { Program, ServerResponseOne } from '@/common';
+import { ProgramDashboard, ServerResponseMany } from '@/common';
 import { AxiosError } from 'axios';
 import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
-
-const sections = {
-    data: [
-        {
-            id: 1,
-            program_id: 1,
-            facility_id: 1,
-            facility: {
-                name: 'MVCF'
-            },
-            facilitator: 'Linus Torvalds',
-            start_date: '2021-07-01',
-            end_date: '2021-07-31',
-            enrolled_residents: 10,
-            capacity: 15
-        },
-        {
-            id: 2,
-            program_id: 1,
-            facility_id: 1,
-            facility: {
-                name: 'BCF'
-            },
-            facilitator: 'Alex Trebek',
-            start_date: '2021-08-01',
-            end_date: '2021-08-31',
-            enrolled_residents: 14,
-            capacity: 30
-        },
-        {
-            id: 3,
-            program_id: 1,
-            facility_id: 1,
-            facility: {
-                name: 'Potosi'
-            },
-            facilitator: 'Mark Smith',
-            start_date: '2021-09-01',
-            end_date: '2021-09-30',
-            enrolled_residents: 16,
-            capacity: 40
-        }
-    ]
-};
+import { useNavigate } from 'react-router-dom';
 
 export default function ProgramOverview() {
     const { id } = useParams<{ id: string }>();
@@ -64,32 +21,38 @@ export default function ProgramOverview() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [sortQuery, setSortQuery] = useState<string>('name_last asc');
     const [includeActive, setIncludeActive] = useState(true);
-
+    const navigate = useNavigate();
     const [showAllSections, setShowAllSections] = useState(false);
-    const { data: programResp, error: programError } = useSWR<
-        ServerResponseOne<Program>,
-        AxiosError
-    >(`/api/programs/${id}`);
-    const program = programResp?.data;
-
-    const meta = {
-        current_page: page,
-        per_page: perPage,
-        total: sections.data.length,
-        last_page: Math.ceil(sections.data.length / perPage)
+    const {
+        data: programResp,
+        error: programError,
+        mutate
+    } = useSWR<ServerResponseMany<ProgramDashboard>, AxiosError>(
+        `/api/programs/${id}/overview?page=${page}&per_page=${perPage}`
+    );
+    const program = programResp?.data[0];
+    const meta = program?.meta ?? {
+        total: 0,
+        per_page: 20,
+        page: 1,
+        current_page: 1,
+        last_page: 1
     };
 
     if (programError) {
         <Error />;
     }
 
-    const allSelected =
-        selectedSections.length === sections.data.length &&
-        sections.data.length > 0;
+    const allSelected = selectedSections
+        ? selectedSections.length === program?.section_details.length &&
+          program?.section_details.length > 0
+        : false;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedSections(sections.data.map((s) => s.id));
+            setSelectedSections(
+                program?.section_details.map((s) => s.id) ?? []
+            );
         } else {
             setSelectedSections([]);
         }
@@ -111,16 +74,14 @@ export default function ProgramOverview() {
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPage(1);
-
+        void mutate();
         setIncludeActive(includeActive); // Same deal just to get eslint to be quiet
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
-
     return (
         <div className="p-4 px-5">
             <h1 className=" mb-2">{program?.name}</h1>
             <p className="mb-4 body body-small ">{program?.description}</p>
-
             <div className="flex gap-4 mb-8 ">
                 <div className="flex flex-col gap-4 h-[250px]">
                     <StatsCard
@@ -173,13 +134,20 @@ export default function ProgramOverview() {
                                 setIncludeActive(!e.target.checked);
                             }}
                         />
-                        <span className="text-sm">Show All Sections</span>
+                        <span className="text-sm">Show All Classes</span>
                     </div>
                 </div>
 
-                <button className="button flex items-center">
+                <button
+                    className="button flex items-center"
+                    onClick={() =>
+                        navigate(`/programs/${id}/class`, {
+                            state: { title: `Program: ${program?.name}` }
+                        })
+                    }
+                >
                     <PlusCircleIcon className="w-4 h-4 mr-1" />
-                    Add Section
+                    Add Class
                 </button>
             </div>
 
@@ -206,7 +174,7 @@ export default function ProgramOverview() {
                         </tr>
                     </thead>
                     <tbody>
-                        {sections.data.map((section) => {
+                        {program?.section_details.map((section) => {
                             const isSelected = selectedSections.includes(
                                 section.id
                             );
@@ -228,39 +196,41 @@ export default function ProgramOverview() {
                                             }
                                         />
                                     </td>
-                                    <td>{section.facility.name}</td>
-                                    <td>{section.facilitator}</td>
+                                    <td>{section.facility_name}</td>
+                                    <td>{section.instructor_name}</td>
                                     <td>
                                         {new Date(
-                                            section.start_date
+                                            section.start_dt
                                         ).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
-                                            day: 'numeric'
+                                            day: 'numeric',
+                                            timeZone: 'UTC'
                                         })}
                                     </td>
                                     <td>
-                                        {new Date(
-                                            section.end_date
-                                        ).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric'
-                                        })}
+                                        {section.end_dt
+                                            ? new Date(
+                                                  section.end_dt
+                                              ).toLocaleDateString('en-US', {
+                                                  year: 'numeric',
+                                                  month: 'short',
+                                                  day: 'numeric',
+                                                  timeZone: 'UTC'
+                                              })
+                                            : ''}
                                     </td>
                                     <td>
                                         <ProgressBar
                                             showPercentage={false}
                                             percent={parseFloat(
                                                 (
-                                                    (section.enrolled_residents /
+                                                    (section.enrolled /
                                                         section.capacity) *
                                                     100
                                                 ).toFixed(1)
                                             )}
-                                            numerator={
-                                                section.enrolled_residents
-                                            }
+                                            numerator={section.enrolled}
                                             denominator={section.capacity}
                                         />
                                     </td>

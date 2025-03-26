@@ -1,6 +1,8 @@
 package database
 
-import "UnlockEdv2/src/models"
+import (
+	"UnlockEdv2/src/models"
+)
 
 func (db *DB) GetSectionsForProgram(id int, args *models.QueryContext) ([]models.ProgramSection, error) {
 	content := []models.ProgramSection{}
@@ -58,4 +60,32 @@ func (db *DB) DeleteProgramSection(id int) error {
 		return newDeleteDBError(err, "program sections")
 	}
 	return nil
+}
+
+func (db *DB) GetProgramSectionDetailsByID(id int, args *models.QueryContext) ([]models.ProgramSectionDetail, error) {
+	var sectionDetails []models.ProgramSectionDetail
+	query := db.WithContext(args.Ctx).Table("program_sections ps").
+		Select(`ps.id,
+		fac.name as facility_name,
+		ps.instructor_name,
+		ps.start_dt,
+		ps.end_dt,
+		ps.capacity,
+		count(pse.id) as enrolled
+		`).
+		Joins(`join facilities fac on fac.id = ps.facility_id
+			AND fac.deleted_at IS NULL`).
+		Joins(`left outer join program_section_enrollments pse on pse.section_id = ps.id 
+			and enrollment_status = 'Enrolled'`). //TODO Enrolled may change here
+		Where(`ps.program_id = ? 
+			and ps.facility_id = ?`, id, args.FacilityID).
+		Group("ps.id,fac.name,ps.instructor_name,ps.start_dt,ps.end_dt,ps.capacity")
+	if err := query.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "programs")
+	}
+	query.Order("ps.start_dt desc")
+	if err := query.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&sectionDetails).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "programs")
+	}
+	return sectionDetails, nil
 }

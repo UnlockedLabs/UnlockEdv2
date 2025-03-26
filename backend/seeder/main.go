@@ -461,7 +461,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 		}
 
 		capacities := []int64{15, 25, 30, 35, 40, 45}
-		durations := []string{"3mo", "30hrs", "6mo", "80hrs"}
+		endDates := []time.Time{time.Now().Add(20 * 24 * time.Hour), time.Now().Add(25 * 24 * time.Hour), time.Now().Add(30 * 24 * time.Hour), time.Now().Add(35 * 24 * time.Hour)}
 		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
 
 		for i := range prog {
@@ -488,9 +488,9 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 				Name:           prog[i].Name,
 				InstructorName: instructorNames[rand.Intn(len(instructorNames))],
 				Description:    programSectionDescriptions[prog[i].Name],
-				Duration:       durations[rand.Intn(len(durations))],
 				Status:         models.Scheduled, //this will change during new section development
 				StartDt:        time.Now().Add(14 * 24 * time.Hour),
+				EndDt:          &endDates[rand.Intn(len(endDates))],
 				FacilityID:     facilities[idx].ID,
 				ProgramID:      prog[i].ID,
 			}

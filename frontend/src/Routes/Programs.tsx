@@ -32,6 +32,13 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             path: 'programs/:id',
             element: <ProgramOverviewDashboard />,
             handle: { title: 'Program Overview Dashboard' }
+        },
+        {
+            path: 'programs/:id/class',
+            element: <SectionManagementForm />,
+            handle: {
+                title: 'Class Details'
+            }
         }
     ],
     AdminRoles,

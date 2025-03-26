@@ -656,6 +656,21 @@ export interface Program {
     facilities: Facility[];
 }
 
+export interface ProgramSectionDetail {
+    id: number;
+    instructor_name: string;
+    facility_name: string;
+    start_dt: Date;
+    end_dt: Date;
+    capacity: number;
+    enrolled: number;
+}
+
+export interface ProgramDashboard extends Program {
+    section_details: ProgramSectionDetail[];
+    meta: PaginationMeta;
+}
+
 export interface ProgramTag {
     id: string;
     value: number;

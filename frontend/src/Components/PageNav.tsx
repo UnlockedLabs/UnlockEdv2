@@ -3,9 +3,13 @@ import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, TitleHandler } from '@/common';
-import { useMatches } from 'react-router-dom';
+import { useLocation, useMatches } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
+
+interface CustomTitle {
+    title?: string;
+}
 
 export default function PageNav({
     showOpenMenu,
@@ -21,7 +25,8 @@ export default function PageNav({
     const matches = useMatches();
     const currentRoute = matches[matches.length - 1];
     const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
-
+    const location = useLocation() as { state: CustomTitle }; //added for custom titles
+    const customTitle = location.state?.title ? location.state?.title : '';
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
 
     useEffect(() => {
@@ -77,7 +82,9 @@ export default function PageNav({
                 <h1>
                     {pageTitle == 'Library Viewer'
                         ? authLayoutPageTitle
-                        : pageTitle}
+                        : customTitle === ''
+                          ? pageTitle
+                          : customTitle}
                 </h1>
             </div>
             {user && canSwitchFacility(user) ? (
