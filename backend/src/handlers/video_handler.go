@@ -186,7 +186,7 @@ func (srv *Server) handleFavoriteVideo(w http.ResponseWriter, r *http.Request, l
 
 func getAddVideoNatsMsg(videoUrls []string, provider *models.OpenContentProvider) (*nats.Msg, error) {
 	msg := nats.NewMsg(models.AddVideosJob.PubName())
-	body := make(map[string]interface{})
+	body := make(map[string]any)
 	body["open_content_provider_id"] = provider.ID
 	body["job_type"] = models.AddVideosJob
 	body["video_urls"] = videoUrls

@@ -32,6 +32,7 @@ type Program struct {
 	Name        string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
 	Description string      `json:"description" gorm:"not null" validate:"required,max=255"`
 	FundingType FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
+	IsActive    bool        `json:"is_active" gorm:"not null"`
 	IsFavorited bool        `json:"is_favorited" gorm:"-"`
 
 	ProgramTypes       []ProgramType       `json:"program_types" gorm:"foreignKey:ProgramID;references:ID"`
@@ -60,11 +61,16 @@ type ProgramCreditType struct {
 
 func (ProgramCreditType) TableName() string { return "program_credit_types" }
 
+type ProgramTypeInfo struct {
+	ProgramTypes       []PrgType
+	ProgramCreditTypes []CreditType
+}
+
 type FacilitiesPrograms struct {
 	DatabaseFields
-	ProgramID  uint   `json:"program_id"`
-	FacilityID uint   `json:"facility_id"`
-	OwnerName  string `json:"program_owner_name" gorm:"size:255" validate:"required,max=255"`
+	ProgramID    uint   `json:"program_id"`
+	FacilityID   uint   `json:"facility_id"`
+	ProgramOwner string `json:"program_owner" gorm:"size:255;column:program_owner" validate:"max=255"`
 
 	Program  *Program  `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 	Facility *Facility `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
