@@ -5,6 +5,7 @@ import { FeatureAccess } from '@/common';
 import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
+import SectionManagementForm from '@/Pages/SectionManagementForm';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [

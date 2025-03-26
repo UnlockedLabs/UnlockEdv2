@@ -479,6 +479,15 @@ export enum CreditType {
     PARTICIPATION = 'Participation'
 }
 
+export enum PrgSectionStatus {
+    SCHEDULED = 'Scheduled',
+    ACTIVE = 'Active',
+    PENDING = 'Pending',
+    CANCELLED = 'Cancelled',
+    COMPLETED = 'Completed',
+    PAUSED = 'Paused'
+}
+
 export interface LearningInsight {
     course_name: string;
     total_students_enrolled: number;
