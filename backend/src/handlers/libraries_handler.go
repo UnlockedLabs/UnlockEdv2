@@ -20,6 +20,7 @@ func (srv *Server) registerLibraryRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/libraries", srv.handleIndexLibraries, false, axx},
 		{"GET /api/open-content/search", srv.handleSearchOpenContent, false, axx},
+		{"GET /api/open-content/suggestions", srv.handleGetQuerySuggestions, false, axx},
 		{"GET /api/libraries/{id}", srv.handleGetLibrary, false, axx},
 		{"PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, true, axx},
 		{"PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, false, axx},
@@ -67,6 +68,30 @@ func (srv *Server) handleGetLibrary(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, library)
+}
+
+func (srv *Server) handleGetQuerySuggestions(w http.ResponseWriter, r *http.Request, log sLog) error {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		return newBadRequestServiceError(errors.New("query parameter is required"), "query parameter is required")
+	}
+	log.add("search_query", query)
+	escapedQuery := url.QueryEscape(query)
+	searchUrl := fmt.Sprintf("https://suggestqueries.google.com/complete/search?safe=on&client=firefox&q=%s", escapedQuery)
+	resp, err := http.Get(searchUrl)
+	if err != nil {
+		return newInternalServerServiceError(err, "error executing request to google_suggest")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return newBadRequestServiceError(errors.New("api call to google suggest failed"), "response contained unexpected status code from google suggest")
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return newInternalServerServiceError(err, "error reading body of response")
+	}
+	_, err = w.Write(body)
+	return err
 }
 
 func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Request, log sLog) error {
