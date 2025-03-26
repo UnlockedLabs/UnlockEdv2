@@ -4,6 +4,24 @@ import { useContext, useEffect } from 'react';
 import Joyride, { CallBackProps, EVENTS } from 'react-joyride';
 import { useNavigate } from 'react-router-dom';
 
+export const targetToStepIndexMap = {
+    '#resident-home': 0,
+    '#visit-knowledge-center': 1,
+    '#knowledge-center-landing': 2,
+    '#knowledge-center-tabs': 3,
+    '#knowledge-center-search': 4,
+    '#knowledge-center-filters': 5,
+    '#knowledge-center-search-lib': 6,
+    '#knowledge-center-fav-lib': 7,
+    '#knowledge-center-enter-library': 8,
+    '#library-viewer-sub-page': 9,
+    '#library-viewer-favorite': 10,
+    '#navigate-homepage': 11,
+    '#top-content': 12,
+    '#popular-content': 13,
+    '#end-tour': 14
+};
+
 export default function UnlockEdTour() {
     const {
         tourState: { run, stepIndex, steps },
@@ -40,7 +58,8 @@ export default function UnlockEdTour() {
                         "Welcome to UnlockEd, a place for you to access and explore educational content. Let's take a quick tour to show you how things work.",
                     disableBeacon: true,
                     showSkipButton: true,
-                    placement: 'center'
+                    placement: 'center',
+                    showProgress: true
                 },
                 {
                     target: '#visit-knowledge-center',
@@ -58,21 +77,24 @@ export default function UnlockEdTour() {
                         'Welcome to the Knowledge Center. Here, you can find a range of resources in both written and video format, as well as helpful links.',
                     disableBeacon: true,
                     disableOverlayClose: true,
-                    placement: 'center'
+                    placement: 'center',
+                    showProgress: true
                 },
                 {
                     target: '#knowledge-center-tabs',
                     content:
                         'Use these tabs to switch between different types of resources.',
                     disableBeacon: true,
-                    disableOverlayClose: true
+                    disableOverlayClose: true,
+                    showProgress: true
                 },
                 {
                     target: '#knowledge-center-search',
                     content:
                         'To find something specific, you could type in a word or a title into the search bar.',
                     disableBeacon: true,
-                    disableOverlayClose: true
+                    disableOverlayClose: true,
+                    showProgress: true
                 },
                 {
                     target: '#knowledge-center-filters',
@@ -81,14 +103,16 @@ export default function UnlockEdTour() {
                     disableBeacon: true,
                     spotlightClicks: true,
                     disableOverlayClose: true,
-                    placement: 'left'
+                    placement: 'left',
+                    showProgress: true
                 },
                 {
                     target: '#knowledge-center-search-lib',
                     content:
                         "If you'd like to search within a specific library, you could use the magnifying glass.",
                     disableBeacon: true,
-                    disableOverlayClose: true
+                    disableOverlayClose: true,
+                    showProgress: true
                 },
                 {
                     target: '#knowledge-center-fav-lib',
@@ -96,7 +120,8 @@ export default function UnlockEdTour() {
                         'The star allows you to favorite the library for easy access later. Try favoriting a library to save it for later!',
                     disableBeacon: true,
                     spotlightClicks: true,
-                    disableOverlayClose: true
+                    disableOverlayClose: true,
+                    showProgress: true
                 },
                 {
                     target: '#knowledge-center-enter-library',
@@ -111,7 +136,8 @@ export default function UnlockEdTour() {
                     content: 'Here, you can see everything inside the library.',
                     disableBeacon: true,
                     disableOverlayClose: true,
-                    placement: 'center'
+                    placement: 'center',
+                    showProgress: true
                 },
                 {
                     target: '#library-viewer-favorite',
@@ -119,7 +145,8 @@ export default function UnlockEdTour() {
                         "If you're liking a page and want to return to it later, you could favorite it by giving it a name. Try it now!",
                     disableBeacon: true,
                     spotlightClicks: true,
-                    disableOverlayClose: true
+                    disableOverlayClose: true,
+                    showProgress: true
                 },
                 {
                     target: '#navigate-homepage',
@@ -138,7 +165,8 @@ export default function UnlockEdTour() {
                         'Your top content shows the libraries and videos you visit the most.',
                     disableBeacon: true,
                     disableOverlayClose: true,
-                    placement: 'top'
+                    placement: 'top',
+                    showProgress: true
                 },
                 {
                     target: '#popular-content',
@@ -146,7 +174,8 @@ export default function UnlockEdTour() {
                         'Find new content to explore based on what others in your facility are using!',
                     disableBeacon: true,
                     disableOverlayClose: true,
-                    placement: 'top'
+                    placement: 'top',
+                    showProgress: true
                 },
                 {
                     target: '#end-tour',
@@ -161,23 +190,66 @@ export default function UnlockEdTour() {
     }, []);
 
     const handleCallback = (data: CallBackProps) => {
-        const { action, index, type } = data;
+        const { action, index, type, step } = data;
+        const currentTarget = step.target;
         if (
             action === 'close' ||
             action === 'skip' ||
             type === EVENTS.TOUR_END
         ) {
-            setTourState({ tourActive: false, run: false, stepIndex: 0 });
+            setTourState({
+                tourActive: false,
+                run: false,
+                stepIndex: 0,
+                target: ''
+            });
         }
-
         if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
             if (action === 'next') {
-                setTourState({ stepIndex: index + 1 });
+                if (currentTarget === '#end-tour') {
+                    setTourState({
+                        tourActive: false,
+                        run: false,
+                        stepIndex: 0,
+                        target: ''
+                    });
+                }
+                const nextTarget = steps[index + 1]?.target as string;
+                if (nextTarget) {
+                    setTourState({
+                        stepIndex:
+                            targetToStepIndexMap[
+                                nextTarget as keyof typeof targetToStepIndexMap
+                            ],
+                        target: nextTarget
+                    });
+                }
             } else if (action === 'prev') {
-                if (stepIndex === 12) {
-                    navigate('/viewer/libraries/1');
-                } else {
-                    setTourState({ stepIndex: index - 1 });
+                const prevTarget = steps[index - 1]?.target as string;
+                switch (currentTarget) {
+                    case '#knowledge-center-landing':
+                        setTourState({
+                            stepIndex:
+                                targetToStepIndexMap['#visit-knowledge-center'],
+                            target: '#visit-knowledge-center'
+                        });
+                        navigate('/home');
+                        return;
+                    case '#library-viewer-sub-page':
+                        navigate('/knowledge-center/libraries');
+                        return;
+                    case '#top-content':
+                        navigate('/viewer/libraries/1');
+                        return;
+                    default:
+                        setTourState({
+                            stepIndex:
+                                targetToStepIndexMap[
+                                    prevTarget as keyof typeof targetToStepIndexMap
+                                ],
+                            target: prevTarget
+                        });
+                        break;
                 }
             }
         }
@@ -187,6 +259,9 @@ export default function UnlockEdTour() {
         <>
             <Joyride
                 steps={steps}
+                locale={{
+                    nextLabelWithProgress: 'Next ({step} of {steps})'
+                }}
                 continuous
                 stepIndex={stepIndex}
                 run={run}
