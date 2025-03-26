@@ -11,3 +11,6 @@ export { DeleteButton } from './DeleteButton';
 export { ConfirmButton } from './ConfirmButton';
 export { CancelSubmitRow } from './CancelSubmitRow';
 export { CheckboxInput } from './CheckboxInput';
+export { NumberInput } from './NumberInput';
+export { DurationInput } from './DurationInput';
+export { DateInput } from './DateInput';
