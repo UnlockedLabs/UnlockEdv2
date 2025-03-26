@@ -231,4 +231,30 @@ DROP PROCEDURE IF EXISTS insert_daily_activity_canvas;
 DROP TABLE IF EXISTS public.user_enrollments CASCADE;
 DROP TABLE IF EXISTS public.open_content_favorites CASCADE;
 
+CREATE TABLE public.library_favorites (
+        id SERIAL NOT NULL PRIMARY KEY,
+        created_at timestamp with time zone,
+        updated_at timestamp with time zone,
+        deleted_at timestamp with time zone,
+        user_id INTEGER NOT NULL,
+        name CHARACTER VARYING(255),
+        content_id INTEGER NOT NULL,
+        visibility_status BOOLEAN,
+        open_content_url_id INTEGER NOT NULL,
+        open_content_provider_id INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+        FOREIGN KEY (open_content_provider_id) REFERENCES public.open_content_providers(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE public.video_favorites (
+	id SERIAL NOT NULL PRIMARY KEY,
+	created_at timestamp with time zone,
+	updated_at timestamp with time zone,
+	deleted_at timestamp with time zone,
+	video_id integer NOT NULL,
+	user_id integer NOT NULL,
+	FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- +goose StatementEnd

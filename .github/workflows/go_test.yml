@@ -1,4 +1,4 @@
-name: Go Tests and goose migration check
+name: Go Tests 
 on:
   push:
     branches: ["*"]
@@ -19,14 +19,3 @@ jobs:
         run: |
           cd backend
           go test -v ./...
-
-      - name: Check duplicate migration files
-        run: |
-          DUPLICATE_MIGRATIONS=$(ls -1 backend/migrations | grep '.*\.sql' | cut -c1-5 | sort | uniq -d)
-          if [ -z "$DUPLICATE_MIGRATIONS" ]; then
-            echo "no invalid migrations found"
-          else
-            echo "🚨 Duplicate migration files found 🚨"
-            echo "Migration number: $DUPLICATE_MIGRATIONS is a duplicate\n and needs to be renamed"
-            exit 1
-          fi

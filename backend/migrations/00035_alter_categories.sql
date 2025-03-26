@@ -19,19 +19,18 @@ CREATE TABLE public.program_tags (
 
 -- +goose Down
 -- +goose StatementBegin
+ALTER TABLE public.open_content_tags DROP CONSTRAINT open_content_tags_tag_id_fkey;
+ALTER TABLE public.open_content_tags DROP CONSTRAINT open_content_tags_open_content_provider_id_fkey;
+ALTER TABLE public.open_content_tags RENAME COLUMN tag_id TO category_id;
 ALTER TABLE public.open_content_tags RENAME TO open_content_types;
-ALTER TABLE public.open_content_types RENAME COLUMN tag_id TO category_id;
-ALTER TABLE public.open_content_types DROP FOREIGN KEY (tag_id);
-ALTER TABLE public.open_content_types DROP FOREIGN KEY (open_content_provider_id);
 ALTER TABLE public.tags RENAME TO open_content_categories;
 DROP TABLE IF EXISTS public.program_tags;
 CREATE TABLE public.program_tags (
     id SERIAL PRIMARY KEY,
-	program_id integer NOT NULL,
+	program_id integer NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     value VARCHAR(255) NOT NULL,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
-    deleted_at timestamp with time zone,
-	FOREIGN KEY (program_id) REFERENCES programs(id)
+    deleted_at timestamp with time zone
 );
 -- +goose StatementEnd

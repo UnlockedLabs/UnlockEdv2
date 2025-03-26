@@ -163,3 +163,6 @@
     position: relative;
     z-index: 10;
 }
+.remove-input-txt-border input[type='text']:focus {
+    box-shadow: none;
+}

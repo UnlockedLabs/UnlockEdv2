@@ -44,7 +44,7 @@ type Day struct {
 }
 
 type OverrideForm struct {
-	Location     string `json:"location"`
+	Room         string `json:"room"`
 	Date         string `json:"date"`
 	StartTime    string `json:"start_time"`
 	Duration     string `json:"duration"`

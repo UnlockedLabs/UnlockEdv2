@@ -52,12 +52,13 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 
 type ProgramForm struct {
 	// ... program
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	CreditType    string `json:"credit_type"`
-	ProgramStatus string `json:"program_status"`
-	ProgramType   string `json:"program_type"`
-	Facilities    []int  `json:"facilities"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	FundingType models.FundingType  `json:"funding_type"`
+	CreditType  []models.CreditType `json:"credit_type"`
+	IsActive    bool                `json:"is_active"`
+	ProgramType []models.PrgType    `json:"program_type"`
+	Facilities  []int               `json:"facilities"`
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -71,15 +72,17 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	if len(program.Facilities) == 0 {
 		program.Facilities = []int{int(claims.FacilityID)}
 	}
+
 	newProg := models.Program{
 		Name:        program.Name,
 		Description: program.Description,
-		FundingType: models.EduGrants, //PLACEHOLDER!!!!THIS WILL CHANGE
-		// CreditType:    program.CreditType,
-		// ProgramStatus: program.ProgramStatus,
-		// ProgramType:   program.ProgramType,
+		FundingType: program.FundingType,
+		IsActive:    program.IsActive,
 	}
-	err = srv.Db.CreateProgram(&newProg)
+	var programTypes models.ProgramTypeInfo
+	programTypes.ProgramTypes = program.ProgramType
+	programTypes.ProgramCreditTypes = program.CreditType
+	err = srv.Db.CreateProgram(&newProg, &programTypes)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -90,12 +93,12 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 			ProgramID:  newProg.ID,
 		}
 		log.add("facility_id", facilityId)
-		if err := srv.Db.Create(&facilityProgram).Error; err != nil {
+		if err := srv.Db.Model(&models.FacilitiesPrograms{}).Create(&facilityProgram).Error; err != nil {
 			log.info("Error creating facility program: " + err.Error())
 			continue
 		}
 	}
-	return writeJsonResponse(w, http.StatusCreated, "Program created successfully")
+	return writeJsonResponse(w, http.StatusCreated, newProg)
 }
 
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {

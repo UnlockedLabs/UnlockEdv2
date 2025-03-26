@@ -16,9 +16,11 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	content := make([]models.Program, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Preload("Facilities").
-		Preload("Favorites", "user_id = ?", args.UserID)
+		Preload("Favorites", "user_id = ?", args.UserID).
+		Preload("ProgramTypes").
+		Preload("ProgramCreditTypes")
 	if len(args.Tags) > 0 {
-		tx = tx.Joins("JOIN program_tags t ON t.program_id = programs.id").Where("t.tag_id IN (?) AND t.facility_id = ?", args.Tags, args.FacilityID)
+		tx = tx.Joins("JOIN program_types t ON t.program_id = programs.id").Where("t.id IN (?)", args.Tags)
 	}
 	if args.OrderBy != "" {
 		tx = tx.Order(args.OrderClause())
@@ -42,13 +44,30 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	return programs, nil
 }
 
-func (db *DB) CreateProgram(content *models.Program) error {
+func (db *DB) CreateProgram(content *models.Program, types *models.ProgramTypeInfo) error {
 	err := Validate().Struct(content)
 	if err != nil {
 		return NewDBError(err, "create programs validation error")
 	}
+
 	if err := db.Create(content).Error; err != nil {
 		return newCreateDBError(err, "programs")
+	}
+	for _, credit := range types.ProgramCreditTypes {
+		var creditType models.ProgramCreditType
+		creditType.CreditType = credit
+		creditType.ProgramID = content.ID
+		if err := db.Create(creditType).Error; err != nil {
+			return newCreateDBError(err, "credit type")
+		}
+	}
+	for _, programType := range types.ProgramTypes {
+		var programTypes models.ProgramType
+		programTypes.ProgramType = programType
+		programTypes.ProgramID = content.ID
+		if err := db.Create(programTypes).Error; err != nil {
+			return newCreateDBError(err, "credit type")
+		}
 	}
 	return nil
 }

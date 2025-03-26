@@ -453,26 +453,30 @@ export enum ProviderPlatformType {
     BRIGHTSPACE = 'brightspace'
 }
 
-export enum CreditType {
-    ACADEMIC_CREDIT = 'Academic Credit',
-    PARTICIPATION_CREDIT = 'Participation Credit',
-    CERTIFICATE_OF_COMPLETION = 'Certificate of Completion',
-    EARNED_TIME_CREDIT = 'Earned-Time Credit',
-    REHABILITATION_CREDIT = 'Rehabilitation Credit'
-}
-
-export enum ProgramStatus {
-    AVAILABLE = 'AVAILABLE',
-    ACTIVE = 'ACTIVE',
-    INACTIVE = 'INACTIVE',
-    ARCHIVED = 'ARCHIVED'
+export enum FundingType {
+    EDUCATIONAL_GRANTS = 'Educational_Grants',
+    FEDERAL_GRANTS = 'Federal_Grants',
+    INMATE_WELFARE = 'Inmate_Welfare_Funds',
+    NON_PROFIT_ORGANIZATION = 'Nonprofit_Organizations',
+    OTHER = 'Other',
+    STATE_GRANTS = 'State_Grants'
 }
 
 export enum ProgramType {
-    EDUCATIONAL = 'EDUCATIONAL',
-    VOCATIONAL = 'VOCATIONAL',
-    LIFE_SKILLS = 'LIFE SKILLS',
-    THERAPEUTIC = 'THERAPEUTIC'
+    EDUCATIONAL = 'Educational',
+    LIFE_SKILLS = 'Life_Skills',
+    MENTAL_HEALTH = 'Mental_Health_Behavioral',
+    RELIGIOUS = 'Religious_Faith-Based',
+    RE_ENTRY = 'Re-Entry',
+    THERAPEUTIC = 'Therapeutic',
+    VOCATIONAL = 'Vocational'
+}
+
+export enum CreditType {
+    COMPLETION = 'Completion',
+    EARNED_TIME = 'Earned-time',
+    EDUCATION = 'Education',
+    PARTICIPATION = 'Participation'
 }
 
 export interface LearningInsight {
@@ -643,6 +647,10 @@ export interface Program {
     updated_at: Date;
     name: string;
     description: string;
+    credit_type: CreditType;
+    funding_type: FundingType;
+    program_type: ProgramType;
+    is_active: boolean;
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
