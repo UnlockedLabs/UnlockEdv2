@@ -5,6 +5,7 @@ import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { useTourContext } from '@/Context/TourContext';
+import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
 
 export default function OpenContent() {
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
@@ -45,9 +46,19 @@ export default function OpenContent() {
 
     useEffect(() => {
         if (tourState.tourActive) {
-            setTourState({
-                stepIndex: 2
-            });
+            if (tourState.target === '#library-viewer-sub-page') {
+                setTourState({
+                    stepIndex:
+                        targetToStepIndexMap['#knowledge-center-enter-library'],
+                    target: '#knowledge-center-enter-library'
+                });
+            } else {
+                setTourState({
+                    stepIndex:
+                        targetToStepIndexMap['#knowledge-center-landing'],
+                    target: '#knowledge-center-landing'
+                });
+            }
         }
     }, []);
 

@@ -10,7 +10,8 @@ const initialTourState: TourState = {
     run: false,
     stepIndex: 0,
     steps: [],
-    tourActive: false
+    tourActive: false,
+    target: ''
 };
 
 interface TourState {
@@ -18,6 +19,7 @@ interface TourState {
     stepIndex: number;
     steps: Step[];
     tourActive: boolean;
+    target: string;
 }
 
 export const TourContext = createContext<TourContextType | undefined>(

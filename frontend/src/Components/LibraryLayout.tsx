@@ -17,13 +17,14 @@ import { useLoaderData, useLocation } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import CategoryDropdownFilter from './CategoryDropdownFilter';
 import { useTourContext } from '@/Context/TourContext';
+import { targetToStepIndexMap } from './UnlockEdTour';
 
 export default function LibaryLayout({
     studentView
 }: {
     studentView?: boolean;
 }) {
-    const { tourState } = useTourContext();
+    const { tourState, setTourState } = useTourContext();
     const { user } = useAuth();
     if (!user) {
         return null;
@@ -98,6 +99,21 @@ export default function LibaryLayout({
         void mutateLibraries();
     }
 
+    useEffect(() => {
+        if (tourState.tourActive) {
+            if (
+                tourState.target === '#library-viewer-sub-page' ||
+                tourState.target === '#knowledge-center-fav-lib'
+            ) {
+                setTourState({
+                    stepIndex:
+                        targetToStepIndexMap['#knowledge-center-enter-library'],
+                    target: '#knowledge-center-enter-library'
+                });
+            }
+        }
+    }, []);
+
     return (
         <>
             <div className="flex flex-row gap-4">
@@ -141,7 +157,8 @@ export default function LibaryLayout({
                             <div
                                 id="knowledge-center-enter-library"
                                 className={
-                                    tourState.stepIndex === 8
+                                    tourState.target ===
+                                    '#knowledge-center-enter-library'
                                         ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
                                         : ''
                                 }

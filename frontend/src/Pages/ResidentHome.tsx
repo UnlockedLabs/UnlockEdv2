@@ -17,6 +17,7 @@ import { AxiosError } from 'axios';
 import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
 import { useEffect } from 'react';
 import { useTourContext } from '@/Context/TourContext';
+import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
 
 export default function ResidentHome() {
     const navigate = useNavigate();
@@ -49,14 +50,17 @@ export default function ResidentHome() {
     }
 
     useEffect(() => {
-        if (tourState.tourActive && tourState.stepIndex === 11) {
+        if (tourState.tourActive && tourState.target === '#navigate-homepage') {
             setTourState({
-                stepIndex: 13
+                // this is a bit buggy, not sure why I have to skip to popular-content, but if I don't, it messes up the tooltip.
+                stepIndex: targetToStepIndexMap['#popular-content'],
+                target: '#popular-content'
             });
-        } else if (tourState.tourActive) {
+        } else if (tourState.tourActive && tourState.stepIndex !== 1) {
             setTourState({
                 run: true,
-                stepIndex: 0
+                stepIndex: 0,
+                target: '#resident-home'
             });
         }
     }, [tourState.tourActive]);

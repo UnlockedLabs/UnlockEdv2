@@ -228,7 +228,8 @@ export default function Navbar({
                                     <li
                                         id="navigate-homepage"
                                         className={
-                                            tourState.stepIndex === 11
+                                            tourState.target ===
+                                            '#navigate-homepage'
                                                 ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
                                                 : ''
                                         }
@@ -241,7 +242,8 @@ export default function Navbar({
                                     <li
                                         id="visit-knowledge-center"
                                         className={
-                                            tourState.stepIndex === 1
+                                            tourState.target ===
+                                            '#visit-knowledge-center'
                                                 ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
                                                 : ''
                                         }
