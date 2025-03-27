@@ -28,6 +28,7 @@ import {
     TextOnlyModal
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function HelpfulLinksManagement() {
     const { user } = useAuth();
@@ -35,13 +36,17 @@ export default function HelpfulLinksManagement() {
     const editLinkModal = useRef<HTMLDialogElement>(null);
     const deleteLinkModal = useRef<HTMLDialogElement>(null);
     const [currentLink, setCurrentLink] = useState<HelpfulLink | null>(null);
-    const [perPage, setPerPage] = useState<number>(10);
-    const [pageQuery, setPageQuery] = useState<number>(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
     );
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseOne<HelpfulLinkAndSort>,
@@ -94,11 +99,6 @@ export default function HelpfulLinksManagement() {
         setPageQuery(1);
     };
 
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-        void mutate();
-    };
     return (
         <>
             <div className="flex flex-row justify-between">
@@ -161,7 +161,7 @@ export default function HelpfulLinksManagement() {
                     <Pagination
                         meta={meta}
                         setPage={setPageQuery}
-                        setPerPage={handleSetPerPage}
+                        setPerPage={setPerPage}
                     />
                 </div>
             )}

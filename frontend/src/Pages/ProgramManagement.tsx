@@ -11,6 +11,7 @@ import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
 import { useNavigate } from 'react-router-dom';
 import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export enum sortPrograms {}
 
@@ -18,8 +19,13 @@ export default function ProgramManagement() {
     const { user } = useAuth();
     const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
     const [searchTerm, setSearchTerm] = useState('');
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(20);
+    const {
+        page: page,
+        perPage,
+        setPage: setPage,
+        setPerPage
+    } = useUrlPagination(1, 20);
+
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
     const { data, error, mutate } = useSWR<
