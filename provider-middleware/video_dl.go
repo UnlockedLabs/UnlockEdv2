@@ -136,9 +136,10 @@ func (yt *VideoService) putAllCurrentVideoMetadata(ctx context.Context) error {
 			return err
 		}
 		input := &s3.PutObjectInput{
-			Bucket: aws.String(yt.bucketName),
-			Body:   bytes.NewReader(videoBytes),
-			Key:    aws.String(video.GetS3KeyJson()),
+			Bucket:      aws.String(yt.bucketName),
+			Body:        bytes.NewReader(videoBytes),
+			Key:         aws.String(video.GetS3KeyJson()),
+			IfNoneMatch: aws.String(video.GetS3KeyJson()),
 		}
 		resp, err := yt.s3Svc.PutObject(ctx, input)
 		if err != nil {

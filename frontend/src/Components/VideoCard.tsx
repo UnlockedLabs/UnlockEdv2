@@ -106,8 +106,8 @@ export default function VideoCard({
             <div className="flex flex-col p-4 gap-2 border-b-2">
                 <figure className="w-1/2 mx-auto bg-cover">
                     <img
-                        src={video?.thumbnail_url ?? '/youtube.png'}
-                        alt={`${video.title} thumbnail`}
+                        src={`/api/photos/${video.external_id}.jpg`}
+                        alt={`/youtube.png`}
                     />
                 </figure>
                 <ClampedText as="h3" className="body text-center h-10 my-auto">
