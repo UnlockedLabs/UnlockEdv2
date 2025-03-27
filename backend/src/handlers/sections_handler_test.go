@@ -22,15 +22,15 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			progamIdMap := test.mapKeyValues
-			if progamIdMap["err"] != nil {
-				t.Fatalf("unable to get program id from db, error is %v", progamIdMap["err"])
+			programIdMap := test.mapKeyValues
+			if programIdMap["err"] != nil {
+				t.Fatalf("unable to get program id from db, error is %v", programIdMap["err"])
 			}
 			req, err := http.NewRequest(http.MethodGet, "/api/programs/{id}/sections", nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			id := progamIdMap["id"].(uint)
+			id := programIdMap["id"].(uint)
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRole(server.handleGetSectionsForProgram, test.role)
 			rr := executeRequest(t, req, handler, test)
@@ -43,7 +43,7 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 				if err != nil {
 					t.Errorf("failed to get sections for program from db, error is %v", err)
 				}
-				data := models.PaginatedResource[models.ProgramSection]{}
+				data := models.PaginatedResource[models.ProgramSectionDetail]{}
 				received := rr.Body.String()
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
@@ -52,7 +52,7 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 					t.Errorf("handler returned unexpected total returned: got %v want %v", data.Meta.Total, args.Total)
 				}
 				for _, section := range sections {
-					if !slices.ContainsFunc(data.Data, func(sec models.ProgramSection) bool {
+					if !slices.ContainsFunc(data.Data, func(sec models.ProgramSectionDetail) bool {
 						return sec.ID == section.ID
 					}) {
 						t.Error("sections for program not found, out of sync")
