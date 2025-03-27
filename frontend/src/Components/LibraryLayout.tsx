@@ -3,7 +3,8 @@ import {
     Library,
     ServerResponseMany,
     UserRole,
-    Option
+    Option,
+    ViewType
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -18,6 +19,8 @@ import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import CategoryDropdownFilter from './CategoryDropdownFilter';
 import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
+import ToggleView from '@/Components/ToggleView';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export default function LibaryLayout({
     studentView
@@ -29,6 +32,7 @@ export default function LibaryLayout({
     if (!user) {
         return null;
     }
+    const [activeView, setActiveView] = useSessionViewType('libraryView');
     const [searchModalLibrary, setSearchModalLibrary] =
         useState<Library | null>(null);
     const modalRef = useRef<HTMLDialogElement>(null);
@@ -149,8 +153,17 @@ export default function LibaryLayout({
                         useInternalSearchBar={true}
                     />
                 )}
+                <div className="ml-auto">
+                    <ToggleView
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                    />
+                </div>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+
+            <div
+                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+            >
                 {libraries?.data.map((library, index) => {
                     if (index === 0) {
                         return (
@@ -176,6 +189,7 @@ export default function LibaryLayout({
                                     onSearchClick={() =>
                                         openSearchModal(library)
                                     }
+                                    view={activeView}
                                 />
                             </div>
                         );
@@ -189,6 +203,7 @@ export default function LibaryLayout({
                                 adminWithStudentView() ? UserRole.Student : role
                             }
                             onSearchClick={() => openSearchModal(library)}
+                            view={activeView}
                         />
                     );
                 })}

@@ -1,7 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { StarIcon as SolidStar } from '@heroicons/react/24/solid';
 import { KeyedMutator } from 'swr';
-import { ToastState, ServerResponseMany, OpenContentItem } from '@/common';
+import {
+    ToastState,
+    ServerResponseMany,
+    OpenContentItem,
+    ViewType
+} from '@/common';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
 
@@ -13,12 +18,14 @@ interface FavoriteCardProps {
     perPage: number;
     mutate: KeyedMutator<ServerResponseMany<OpenContentItem>>;
     isAdminInStudentView: boolean;
+    view: ViewType;
 }
 
 const FavoriteCard: React.FC<FavoriteCardProps> = ({
     favorite,
     mutate,
-    isAdminInStudentView
+    isAdminInStudentView,
+    view
 }) => {
     const navigate = useNavigate();
     const { toaster } = useToast();
@@ -27,7 +34,9 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
     const adminWithStudentView = (): boolean => {
         return !route.pathname.includes('management') && isAdministrator(user);
     };
-
+    if (!route.pathname.includes('knowledge-center')) {
+        view = ViewType.Grid;
+    }
     const handleCardClick = () => {
         if (!favorite.visibility_status) {
             return;
@@ -91,42 +100,95 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
             toaster('Failed to unfavorite', ToastState.error);
         }
     };
-    return (
-        <div
-            className={`card  p-4 space-y-2 ${
-                favorite.visibility_status
-                    ? 'bg-inner-background cursor-pointer'
-                    : 'bg-grey-2 cursor-not-allowed'
-            } tooltip `}
-            {...(!favorite.visibility_status && {
-                'data-tip': 'This content is no longer accessible'
-            })}
-            onClick={favorite.visibility_status ? handleCardClick : undefined}
-        >
-            {!isAdminInStudentView && (
-                <div
-                    className="absolute top-2 right-2 cursor-pointer"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        void handleUnfavorite();
-                    }}
-                >
-                    <SolidStar className="w-5 text-primary-yellow" />
+    if (view == ViewType.Grid) {
+        return (
+            <div
+                className={`card p-4 space-y-2
+            'w-full'}
+             ${
+                 favorite.visibility_status
+                     ? ' cursor-pointer'
+                     : 'bg-grey-2 cursor-not-allowed'
+             } tooltip`}
+                {...(!favorite.visibility_status && {
+                    'data-tip': 'This content is no longer accessible'
+                })}
+                onClick={
+                    favorite.visibility_status ? handleCardClick : undefined
+                }
+            >
+                {!isAdminInStudentView && (
+                    <div
+                        className="absolute top-2 right-2 cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            void handleUnfavorite();
+                        }}
+                    >
+                        <SolidStar className="w-5 text-primary-yellow" />
+                    </div>
+                )}
+                <img
+                    src={getThumbnailUrl(favorite)}
+                    alt={favorite.title}
+                    className="h-16 mx-auto object-contain"
+                />
+                <h3 className="body text-center line-clamp-1">
+                    {favorite.title}
+                </h3>
+                <p className="body-small text-center">
+                    {favorite.content_type === 'video'
+                        ? favorite.channel_title
+                        : favorite.provider_name}
+                </p>
+            </div>
+        );
+    } else {
+        return (
+            <div
+                className={`card p-4 flex flex-row items-center gap-4 cursor-pointer w-full ${
+                    favorite.visibility_status
+                        ? 'cursor-pointer'
+                        : 'bg-grey-2 cursor-not-allowed'
+                } tooltip`}
+                {...(!favorite.visibility_status && {
+                    'data-tip': 'This content is no longer accessible'
+                })}
+                onClick={
+                    favorite.visibility_status ? handleCardClick : undefined
+                }
+            >
+                <figure className="w-12 h-12 flex-shrink-0 bg-cover">
+                    <img
+                        src={getThumbnailUrl(favorite)}
+                        alt={favorite.title}
+                        className="object-contain"
+                    />
+                </figure>
+
+                <div className="flex flex-col flex-1 text-left">
+                    <h3 className="body">{favorite.title}</h3>
+                    <p className="body-small">
+                        {favorite.content_type === 'video'
+                            ? favorite.channel_title
+                            : favorite.provider_name}
+                    </p>
                 </div>
-            )}
-            <img
-                src={getThumbnailUrl(favorite)}
-                alt={favorite.title}
-                className="h-16 mx-auto object-contain"
-            />
-            <h3 className="body text-center line-clamp-1">{favorite.title}</h3>
-            <p className="body-small text-center">
-                {favorite.content_type === 'video'
-                    ? favorite.channel_title
-                    : favorite.provider_name}
-            </p>
-        </div>
-    );
+
+                {!isAdminInStudentView && (
+                    <div
+                        className="w-6 h-6 cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            void handleUnfavorite();
+                        }}
+                    >
+                        <SolidStar className="w-5 text-primary-yellow" />
+                    </div>
+                )}
+            </div>
+        );
+    }
 };
 
 export default FavoriteCard;
