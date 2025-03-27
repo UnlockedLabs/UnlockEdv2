@@ -240,6 +240,8 @@ func seedTestData(db *gorm.DB) {
 			}
 		}
 		for idx := range sections {
+			// TODO: add the capacity chek here firsst
+
 			if sections[idx].FacilityID == user.FacilityID {
 				enrollment := models.ProgramSectionEnrollment{
 					UserID:           user.ID,

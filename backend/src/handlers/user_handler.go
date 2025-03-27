@@ -32,12 +32,38 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 	}
 	role := r.URL.Query().Get("role")
 	args := srv.getQueryContext(r)
-	users, err := srv.Db.GetCurrentUsers(&args, role)
-	if err != nil {
-		log.add("facility_id", args.FacilityID)
-		log.add("search", args.Search)
-		return newDatabaseServiceError(err)
+
+	var users []models.User
+	var err error
+	// TODO: Should this be its own func or even in the user_handler
+	// Logic here to check for credentialed users not enrolled in a program section
+	program_section_status := r.URL.Query()["program_section_status"]
+	if slices.Contains(program_section_status, "not_enrolled") {
+
+		sectionIDStr := r.URL.Query().Get("section_id")
+		sectionID, err := strconv.Atoi(sectionIDStr)
+
+		if err != nil {
+			fmt.Println("Error converting section_id:", err)
+			return err
+		}
+
+		users, err = srv.Db.GetCredentialedUsers(&args, sectionID)
+		if err != nil {
+			log.add("facility_id", args.FacilityID)
+			log.add("search", args.Search)
+			return newDatabaseServiceError(err)
+		}
+
+	} else {
+		users, err = srv.Db.GetCurrentUsers(&args, role)
+		if err != nil {
+			log.add("facility_id", args.FacilityID)
+			log.add("search", args.Search)
+			return newDatabaseServiceError(err)
+		}
 	}
+
 	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
 }
 

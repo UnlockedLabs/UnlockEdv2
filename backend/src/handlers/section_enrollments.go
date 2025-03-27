@@ -95,6 +95,18 @@ func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
+	// test for capacity limit
+	// currentEnrollment, capacity, err := srv.Db.GetProgramSectionEnrollmentInfo(sectionID)
+
+	// if err != nil {
+	// 	fmt.Println(currentEnrollment,capacity,">>>>>>>>>>>>>>>")
+	// 	return newDatabaseServiceError(err)
+	// }
+
+	// if currentEnrollment >= capacity {
+	// 	log.warn("enrollment failed: section is full")
+	// 	return writeJsonResponse(w, http.StatusConflict, "section is full")
+	// }
 
 	log.add("user_id", userID)
 	log.info("enrolling user")

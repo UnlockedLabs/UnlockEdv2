@@ -43,7 +43,30 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	}
 	return users, nil
 }
+func (db *DB) GetCredentialedUsers(args *models.QueryContext, section_id int) ([]models.User, error) {
 
+	tx := db.WithContext(args.Ctx).
+		Model(&models.User{}).
+		Joins("LEFT JOIN program_section_enrollments pse ON users.id = pse.user_id").
+		Where("users.facility_id = ?", args.FacilityID).
+		Where("pse.user_id IS NULL"). //not enrolled in section
+		Where("users.role = ?", "student").
+		Where("pse.section_id = ?", section_id)
+
+	if err := tx.Debug().Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	users := make([]models.User, 0, args.PerPage)
+	if err := tx.Order(args.OrderClause()).
+		Offset(args.CalcOffset()).
+		Limit(args.PerPage).
+		Find(&users).
+		Error; err != nil {
+		log.Errorf("Error fetching users: %v", err)
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	return users, nil
+}
 func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
 	likeSearch := ctx.SearchQuery()
 	tx := db.WithContext(ctx.Ctx).Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)

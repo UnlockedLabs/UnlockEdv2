@@ -1,15 +1,12 @@
 import {
     FilterProgramSectionEnrollments,
     ServerResponseMany,
-    Tab,
     // ToastState,
     User
 } from '@/common';
-import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import API from '@/api/api';
-import TabView from '@/Components/TabView';
-import { useNavigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
@@ -27,7 +24,7 @@ export default function ProgramSectionManagement() {
     const { section_id } = useParams<{ section_id: string }>();
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
-    const [perPage] = useState(20);
+    const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
     // const [currentPage, setCurrentPage] = useState(1);
     // TODO: add search functionality
@@ -42,54 +39,21 @@ export default function ProgramSectionManagement() {
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&section_id=${section_id}&program_section_status=not_enrolled`
     );
 
     const credentialed_users = data?.data ?? [];
     const meta = data?.meta;
 
-    const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
-    const navigate = useNavigate();
-    const route = useLocation();
-    const tab = route.pathname.split('/')[2] ?? 'enrollment';
-    const id = route.pathname.split('/')[1];
-    const tabOptions: Tab[] = [
-        { name: 'Dashboad', value: 'dashboard' },
-        { name: 'Scheduling', value: 'scheduling' },
-        { name: 'Enrollment', value: 'enrollment' },
-        { name: 'Attendance', value: 'attendance' }
-    ];
-    const [activeTab, setActiveTab] = useState<Tab>(
-        tabOptions.find((t) => t.value === tab) ?? tabOptions[2]
-    );
-
-    useEffect(() => {
-        setAuthLayoutPageTitle(activeTab.value as string);
-    }, [activeTab]);
-
-    const handlePageChange = (tab: Tab) => {
-        if (tab.value == 'enrollment') {
-            setActiveTab(tab);
-            navigate(`/programs/${id}/${tab.value}`);
-        }
+    const handleSetPerPage = (perPage: number) => {
+        setPerPage(perPage);
+        setPageQuery(1);
     };
 
     const handleSearch = (newTerm: string) => {
         setSearchTerm(newTerm);
         setPageQuery(1);
     };
-
-    const allSelected =
-        selectedUsers.length === credentialed_users.length &&
-        credentialed_users.length > 0;
-
-    function handleToggleAll(checked: boolean) {
-        if (checked) {
-            setSelectedUsers(credentialed_users.map((u) => u.id));
-        } else {
-            setSelectedUsers([]);
-        }
-    }
 
     function handleToggleRow(userId: number) {
         setSelectedUsers((prev) =>
@@ -106,8 +70,6 @@ export default function ProgramSectionManagement() {
             setErrorMessage('Please select at least one user.');
             return;
         }
-
-        // Write logic here for checking the capacity of the section
 
         setErrorMessage('');
 
@@ -138,11 +100,6 @@ export default function ProgramSectionManagement() {
 
     return (
         <div className="px-5 pb-4">
-            <TabView
-                tabs={tabOptions}
-                activeTab={activeTab}
-                setActiveTab={handlePageChange}
-            />
             <div className="flex flex-col gap-8 py-8">
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row gap-2 items-center">
@@ -158,25 +115,15 @@ export default function ProgramSectionManagement() {
                     </div>
                 </div>
                 <form
-                    className="shadow-lg overflow-hidden border p-4"
+                    className="overflow-hidden border p-4"
                     onSubmit={(e) => {
                         void handleSubmit(e);
                     }}
                 >
-                    <table className="table w-full table-fixed mb-2 border">
-                        <thead className="bg-gray-200 dark:text-black">
-                            <tr className="">
-                                <th className="h-14 pr-2">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox mr-1"
-                                        checked={allSelected}
-                                        onChange={(e) =>
-                                            handleToggleAll(e.target.checked)
-                                        }
-                                    />
-                                    <label>{'First Name'}</label>
-                                </th>
+                    <table className="table w-full table-fixed mb-2 shadow-lg">
+                        <thead className="">
+                            <tr className="text-sm">
+                                <th className="h-14 pr-2">First Name</th>
                                 <th className="text-left h-14">Last Name</th>
                             </tr>
                         </thead>
@@ -196,7 +143,7 @@ export default function ProgramSectionManagement() {
                                             >
                                                 <td className="pr-2">
                                                     <input
-                                                        className="checkbox mr-1 text-left"
+                                                        className="checkbox mr-1 text-left border-teal-3"
                                                         type="checkbox"
                                                         checked={isSelected}
                                                         onChange={() =>
@@ -218,14 +165,14 @@ export default function ProgramSectionManagement() {
                                     })
                                 ) : (
                                     <tr>
-                                        <td className="p-2 text-gray-500">
+                                        <td className="pr-2">
                                             No Credentialed Residents
                                         </td>
                                     </tr>
                                 )
                             ) : (
                                 <tr>
-                                    <td className="p-2 text-blue-500">
+                                    <td className="pr-2 text-blue-500">
                                         Loading...
                                     </td>
                                 </tr>
@@ -236,7 +183,11 @@ export default function ProgramSectionManagement() {
                     <div className="flex justify-center m-2">
                         {' '}
                         {meta && (
-                            <Pagination meta={meta} setPage={setPageQuery} />
+                            <Pagination
+                                meta={meta}
+                                setPage={setPageQuery}
+                                setPerPage={handleSetPerPage}
+                            />
                         )}
                     </div>
                     {errorMessage && (
