@@ -39,7 +39,7 @@ export default function ProgramSectionManagement() {
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&section_id=${section_id}&program_section_status=not_enrolled`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&section_id=${section_id}&include=not_enrolled`
     );
 
     const credentialed_users = data?.data ?? [];
