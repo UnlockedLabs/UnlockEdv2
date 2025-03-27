@@ -57,12 +57,7 @@ type ProgramSectionEnrollment struct {
 func (ProgramSectionEnrollment) TableName() string { return "program_section_enrollments" }
 
 type ProgramSectionDetail struct {
-	ID             int64      `json:"id"`
-	FacilityName   string     `json:"facility_name"`
-	InstructorName string     `json:"instructor_name"`
-	StartDt        time.Time  `json:"start_dt"`
-	Duration       string     `json:"duration"`
-	Capacity       string     `json:"capacity"`
-	Enrolled       int        `json:"enrolled"`
-	EndDt          *time.Time `json:"end_dt"`
+	ProgramSection
+	FacilityName string `json:"facility_name"`
+	Enrolled     int    `json:"enrolled"`
 }

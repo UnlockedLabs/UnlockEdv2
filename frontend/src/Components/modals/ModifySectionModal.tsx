@@ -16,27 +16,27 @@ export const StatusMessagesMap = {
     [SectionStatusOptions.Complete]: {
         title: 'Mark as Complete',
         text: (status: string) =>
-            `Mark this ${status.toLocaleLowerCase()} section as complete?`
+            `Mark this ${status.toLocaleLowerCase()} class as complete?`
     },
     [SectionStatusOptions.Pause]: {
         title: 'Pause Section',
         text: (status: string) =>
-            `Are you sure you would like to pause this ${status.toLocaleLowerCase()} section?`
+            `Are you sure you would like to pause this ${status.toLocaleLowerCase()} class?`
     },
     [SectionStatusOptions.Cancel]: {
         title: 'Cancel Section',
         text: (status: string) =>
-            `Are you sure you would like to cancel this ${status.toLocaleLowerCase()} section?`
+            `Are you sure you would like to cancel this ${status.toLocaleLowerCase()} class?`
     },
     [SectionStatusOptions.Schedule]: {
         title: 'Mark as Scheduled',
         text: (status: string) =>
-            `Mark this ${status.toLocaleLowerCase()} section as scheduled?`
+            `Mark this ${status.toLocaleLowerCase()} class as scheduled?`
     },
     [SectionStatusOptions.Active]: {
         title: 'Mark as Active',
         text: (status: string) =>
-            `Mark this ${status.toLocaleLowerCase()} section as active?`
+            `Mark this ${status.toLocaleLowerCase()} class as active?`
     }
 };
 
@@ -66,11 +66,11 @@ const ModifySectionModal = forwardRef(function (
 
     async function onConfirm() {
         const updatedStatus = SectionStatusMap[action!];
-        setSelectedStatus(updatedStatus);
 
         const resp = await API.patch(`program-sections?id=${section.id}`, {
-            status: updatedStatus
+            section_status: updatedStatus
         });
+        if (resp.success) setSelectedStatus(updatedStatus);
 
         checkResponse(
             resp.success,
@@ -88,7 +88,7 @@ const ModifySectionModal = forwardRef(function (
                 ref={ref}
                 type={TextModalType.Confirm}
                 title={title}
-                text={text(section.status) ?? ''}
+                text={text(section.section_status) ?? ''}
                 onSubmit={() => void onConfirm()}
                 onClose={close}
             />

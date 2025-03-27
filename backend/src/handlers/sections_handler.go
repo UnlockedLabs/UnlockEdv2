@@ -24,7 +24,7 @@ func (srv *Server) handleGetSectionsForProgram(w http.ResponseWriter, r *http.Re
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	args := srv.getQueryContext(r)
-	sections, err := srv.Db.GetSectionsForProgram(id, &args)
+	sections, err := srv.Db.GetProgramSectionDetailsByID(id, &args)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)

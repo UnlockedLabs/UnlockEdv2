@@ -6,7 +6,6 @@ import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
-    ProgramDashboard,
     Program,
     Section,
     SelectedSectionStatus,
@@ -18,7 +17,7 @@ import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
-import SectionStatus from '@/Components/SectionStatus';
+import SectionStatus, { isArchived } from '@/Components/SectionStatus';
 import { showModal, TextModalType, TextOnlyModal } from '@/Components/modals';
 import ULIComponent from '@/Components/ULIComponent';
 import { XMarkIcon } from '@heroicons/react/24/solid';
@@ -54,10 +53,18 @@ export default function ProgramOverview() {
         error: sectionsError,
         mutate: mutateSections
     } = useSWR<ServerResponseMany<Section>, AxiosError>(
-        `/api/programs/${id}/sections`
+        `/api/programs/${id}/sections?page=${page}&per_page=${perPage}`
     );
 
     const sections = sectionsResp?.data;
+
+    const meta = sectionsResp?.meta ?? {
+        total: 0,
+        per_page: 20,
+        page: 1,
+        current_page: 1,
+        last_page: 1
+    };
 
     const checkResponse = useCheckResponse({
         mutate: mutateSections,
@@ -69,8 +76,9 @@ export default function ProgramOverview() {
         const unableToArchive = sections.filter(
             (section) =>
                 selectedSections.includes(section.id) &&
-                (section.status === SelectedSectionStatus.Active ||
-                    section.status === SelectedSectionStatus.Scheduled) &&
+                (section.section_status === SelectedSectionStatus.Active ||
+                    section.section_status ===
+                        SelectedSectionStatus.Scheduled) &&
                 section.enrolled >= 1
         );
 
@@ -82,23 +90,14 @@ export default function ProgramOverview() {
 
         setUnableToArchiveSections(unableToArchive);
         setAbleToArchiveSections(ableToArchive);
-    }, [selectedSections]);
+    }, [selectedSections, sections]);
 
     if (programError || sectionsError || sections === undefined) {
         return <Error />;
     }
 
-    const meta = {
-        current_page: page,
-        per_page: perPage,
-        total: sections.length,
-        last_page: Math.ceil(sections.length / perPage)
-    };
-
     const nonArchivedSections = sections.filter(
-        (section) =>
-            section.archived_at === null ||
-            section.archived_at === '0001-01-01T00:00:00Z'
+        (section) => !isArchived(section)
     );
 
     const allSelected =
@@ -146,7 +145,10 @@ export default function ProgramOverview() {
     }
 
     async function archiveSection() {
-        const idString = '?id=' + selectedSections.join('&id=');
+        const selectedAbleToArchiveSections = selectedSections.filter((id) =>
+            ableToArchiveSections.some((section) => section.id === id)
+        );
+        const idString = '?id=' + selectedAbleToArchiveSections.join('&id=');
         const resp = await API.patch(`program-sections${idString}`, {
             archived_at: new Date().toISOString()
         });
@@ -283,28 +285,27 @@ export default function ProgramOverview() {
                             const isSelected = selectedSections.includes(
                                 section.id
                             );
-                            const notArchived =
-                                section.archived_at === null ||
-                                section.archived_at === '0001-01-01T00:00:00Z';
                             return (
                                 <tr
                                     key={section.id}
                                     onClick={() => {
-                                        if (notArchived)
+                                        if (!isArchived(section))
                                             handleToggleRow(section.id);
                                     }}
                                     className={
-                                        notArchived
-                                            ? `cursor-pointer ${
+                                        isArchived(section)
+                                            ? 'bg-grey-1 cursor-not-allowed'
+                                            : `cursor-pointer ${
                                                   isSelected
                                                       ? 'bg-background '
                                                       : ''
                                               }`
-                                            : 'bg-grey-1 cursor-not-allowed'
                                     }
                                 >
                                     <td onClick={(e) => e.stopPropagation()}>
-                                        {notArchived ? (
+                                        {isArchived(section) ? (
+                                            <div></div>
+                                        ) : (
                                             <input
                                                 type="checkbox"
                                                 className="checkbox checkbox-sm"
@@ -312,10 +313,7 @@ export default function ProgramOverview() {
                                                 onChange={() =>
                                                     handleToggleRow(section.id)
                                                 }
-                                                disabled={!notArchived}
                                             />
-                                        ) : (
-                                            <div></div>
                                         )}
                                     </td>
                                     <td>{section.facility_name}</td>
@@ -358,7 +356,7 @@ export default function ProgramOverview() {
                                     </td>
                                     <td>
                                         <SectionStatus
-                                            status={section.status}
+                                            status={section.section_status}
                                             section={section}
                                             mutateSections={mutateSections}
                                         />
@@ -382,8 +380,12 @@ export default function ProgramOverview() {
 
             <TextOnlyModal
                 ref={archiveSectionsRef}
-                type={TextModalType.Confirm}
-                title={`Archive Section${selectedSections.length > 1 ? 's' : ''}`}
+                type={
+                    ableToArchiveSections.length == 0
+                        ? TextModalType.Information
+                        : TextModalType.Confirm
+                }
+                title={`Archive Class${selectedSections.length > 1 ? 'es' : ''}`}
                 text={
                     <div>
                         {unableToArchiveSections.length > 0 && (
@@ -391,8 +393,8 @@ export default function ProgramOverview() {
                                 <div className="text-error">
                                     <p className="text-error font-bold">
                                         We are unable to archive the following
-                                        sections due to their active or
-                                        scheduled status with enrolled students:
+                                        classes due to their active or scheduled
+                                        status with enrolled students:
                                     </p>
                                     <ul className="py-2">
                                         {unableToArchiveSections.map(
@@ -413,16 +415,21 @@ export default function ProgramOverview() {
                                 <br />
                             </>
                         )}
-                        <p>
-                            Archive these sections at the following facilities?
-                        </p>
-                        <ul className="list-disc list-inside py-2">
-                            {ableToArchiveSections.map((section) => (
-                                <li key={section.id}>
-                                    {section.facility_name}
-                                </li>
-                            ))}
-                        </ul>
+                        {ableToArchiveSections.length != 0 && (
+                            <>
+                                <p>
+                                    Archive these classes at the following
+                                    facilities?
+                                </p>
+                                <ul className="list-disc list-inside py-2">
+                                    {ableToArchiveSections.map((section) => (
+                                        <li key={section.id}>
+                                            {section.facility_name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
                     </div>
                 }
                 onSubmit={() => void archiveSection()}

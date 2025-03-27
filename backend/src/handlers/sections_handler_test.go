@@ -39,7 +39,7 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 					Page:    1,
 					PerPage: 10,
 				}
-				sections, err := server.Db.GetSectionsForProgram(int(id), &args)
+				sections, err := server.Db.GetProgramSectionDetailsByID(int(id), &args)
 				if err != nil {
 					t.Errorf("failed to get sections for program from db, error is %v", err)
 				}
@@ -282,7 +282,7 @@ func getSectionId() map[string]any {
 	if err != nil {
 		form["err"] = err
 	}
-	sections, err := server.Db.GetSectionsForProgram(int(programs[rand.Intn(len(programs))].ID), &args)
+	sections, err := server.Db.GetProgramSectionDetailsByID(int(programs[rand.Intn(len(programs))].ID), &args)
 	if err != nil {
 		form["err"] = err
 	}

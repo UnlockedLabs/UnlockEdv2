@@ -673,10 +673,10 @@ export interface Section {
     instructor_name: string;
     start_dt: string;
     end_dt: string;
-    status: SelectedSectionStatus;
+    section_status: SelectedSectionStatus;
     enrolled: number;
     capacity: number;
-    archived_at: string | null; // double check how this is returned, and if it would be null or undefined
+    archived_at: string | null;
 }
 
 export enum SelectedSectionStatus {

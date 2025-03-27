@@ -19,11 +19,20 @@ import {
 } from '@/common';
 import { KeyedMutator } from 'swr';
 
+export function isArchived(section: Section) {
+    if (
+        section.archived_at === null ||
+        section.archived_at === '0001-01-01T00:00:00Z'
+    )
+        return false;
+    return true;
+}
+
 function SelectedSectionStatusPill({
     archived,
     status
 }: {
-    archived: string | null;
+    archived: boolean;
     status: SelectedSectionStatus;
 }) {
     let icon, background;
@@ -58,11 +67,7 @@ function SelectedSectionStatusPill({
         >
             <ULIComponent icon={icon} />
             <span>{status}</span>
-            {archived === null || archived === '0001-01-01T00:00:00Z' ? (
-                <ULIComponent icon={ChevronDownIcon} />
-            ) : (
-                <div></div>
-            )}
+            {archived ? <div></div> : <ULIComponent icon={ChevronDownIcon} />}
         </div>
     );
 }
@@ -82,15 +87,11 @@ export default function SectionStatus({
     const [selectedModifyOption, setSelectedModifyOption] =
         useState<SectionStatusOptions>();
 
-    const notArchived =
-        section.archived_at === null ||
-        section.archived_at === '0001-01-01T00:00:00Z';
-
     function openSelectionModal(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>,
         option: SectionStatusOptions
     ) {
-        if (!notArchived) return;
+        if (isArchived(section)) return;
         setDropdownOpen(false);
         setSelectedModifyOption(option);
         e.stopPropagation();
@@ -105,7 +106,7 @@ export default function SectionStatus({
             <div
                 className="relative"
                 onClick={(e) => {
-                    if (!notArchived) return;
+                    if (isArchived(section)) return;
                     setDropdownOpen(!dropdownOpen);
                     e.stopPropagation();
                 }}
@@ -117,7 +118,7 @@ export default function SectionStatus({
                 tabIndex={0}
             >
                 <SelectedSectionStatusPill
-                    archived={section.archived_at}
+                    archived={isArchived(section)}
                     status={selectedStatus}
                 />
                 {dropdownOpen && (
