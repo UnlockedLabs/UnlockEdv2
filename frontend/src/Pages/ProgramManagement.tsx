@@ -11,12 +11,13 @@ import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
 import { useNavigate } from 'react-router-dom';
 import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export enum sortPrograms {}
 
 export default function ProgramManagement() {
     const { user } = useAuth();
-    const [activeView, setActiveView] = useState<ViewType>(ViewType.Grid);
+    const [activeView, setActiveView] = useSessionViewType('programView');
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);

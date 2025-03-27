@@ -8,7 +8,8 @@ import {
     UserRole,
     FilterLibrariesVidsandHelpfulLinksAdmin,
     MAX_DOWNLOAD_ATTEMPTS,
-    getVideoErrorMessage
+    getVideoErrorMessage,
+    ViewType
 } from '../common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
@@ -27,6 +28,8 @@ import {
 } from '@/Components/modals';
 import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
+import ToggleView from '@/Components/ToggleView';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export default function VideoManagement() {
     const { user } = useAuth();
@@ -41,6 +44,9 @@ export default function VideoManagement() {
         FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
     const modalRef = useRef<HTMLDialogElement>(null);
+    const [activeView, setActiveView] = useSessionViewType(
+        'videoManagementView'
+    );
     const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
         false
     );
@@ -123,38 +129,41 @@ export default function VideoManagement() {
 
     return (
         <>
-            <div className="flex justify-between">
-                <div className="flex flex-row gap-4">
-                    {videoData && videoData.length > 0 && (
-                        <>
-                            <div onClick={() => setSearchModalOpen(true)}>
-                                <LibrarySearchBar
-                                    onSearchClick={openSearchModal}
-                                    searchPlaceholder="Search..."
-                                    searchTerm={searchTerm}
-                                    changeCallback={setSearchTerm}
-                                    isSearchValid={searchTerm.trim() !== ''}
-                                />
-                            </div>
-                            <DropdownControl
-                                label="Order by"
-                                setState={setSortQuery}
-                                enumType={
-                                    FilterLibrariesVidsandHelpfulLinksAdmin
-                                }
-                            />
-                        </>
-                    )}
+            <div className="flex justify-between items-center">
+                <div className="flex flex-row gap-4 items-center">
+                    <div onClick={() => setSearchModalOpen(true)}>
+                        <LibrarySearchBar
+                            onSearchClick={openSearchModal}
+                            searchPlaceholder="Search..."
+                            searchTerm={searchTerm}
+                            changeCallback={setSearchTerm}
+                            isSearchValid={searchTerm.trim() !== ''}
+                        />
+                    </div>
+                    <DropdownControl
+                        label="Order by"
+                        setState={setSortQuery}
+                        enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
+                    />
                 </div>
-                <button
-                    className="button items-center"
-                    onClick={() => showModal(addVideoModal)}
-                >
-                    <PlusCircleIcon className="w-4 my-auto" />
-                    Add Videos
-                </button>
+
+                <div className="flex flex-row gap-4 items-center">
+                    <ToggleView
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                    />
+                    <button
+                        className="button items-center"
+                        onClick={() => showModal(addVideoModal)}
+                    >
+                        <PlusCircleIcon className="w-4 my-auto" />
+                        Add Videos
+                    </button>
+                </div>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div
+                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+            >
                 {videoData.map((video) => (
                     <VideoCard
                         key={video.id}
@@ -175,6 +184,7 @@ export default function VideoManagement() {
                             setTargetVideo(video);
                             showModal(videoErrorModal);
                         }}
+                        view={activeView}
                     />
                 ))}
             </div>

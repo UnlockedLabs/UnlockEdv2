@@ -1,18 +1,28 @@
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import ULIComponent from './ULIComponent';
+import { ViewType } from '@/common';
 
 export default function VisibleHiddenToggle({
     visible,
-    changeVisibility
+    changeVisibility,
+    view
 }: {
     visible: boolean;
     changeVisibility: (visibilityStatus: boolean) => void;
+    view?: ViewType;
 }) {
     const toggleClass =
-        'py-1 rounded-lg inline-flex items-center justify-center gap-2';
+        view === ViewType.List
+            ? 'flex-1 px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-base'
+            : 'flex-1 px-2 py-1 rounded-lg flex items-center justify-center gap-1 text-xs';
+
+    const containerClass =
+        view === ViewType.Grid
+            ? 'grid grid-cols-2 w-full'
+            : 'inline-flex w-fit ';
     return (
         <div
-            className="bg-grey-1 rounded-lg border border-grey-2 w-full p-1 grid grid-cols-2 shadow-md justify-self-end"
+            className={`bg-grey-1 rounded-lg border border-grey-2 p-1 shadow-md ${containerClass}`}
             onClick={(e) => e.stopPropagation()}
         >
             <button
