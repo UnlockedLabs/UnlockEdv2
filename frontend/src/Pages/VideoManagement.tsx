@@ -30,6 +30,7 @@ import { LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import ToggleView from '@/Components/ToggleView';
 import { useSessionViewType } from '@/Hooks/sessionView';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function VideoManagement() {
     const { user } = useAuth();
@@ -38,8 +39,12 @@ export default function VideoManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const videoErrorModal = useRef<HTMLDialogElement>(null);
     const [polling, setPolling] = useState<boolean>(false);
-    const [perPage, setPerPage] = useState(12);
-    const [pageQuery, setPageQuery] = useState(1);
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
     );
@@ -121,12 +126,6 @@ export default function VideoManagement() {
                    The video download will be retried every 3 hours`;
     };
 
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-        void mutate();
-    };
-
     return (
         <>
             <div className="flex justify-between items-center">
@@ -193,7 +192,7 @@ export default function VideoManagement() {
                     <Pagination
                         meta={meta}
                         setPage={setPageQuery}
-                        setPerPage={handleSetPerPage}
+                        setPerPage={setPerPage}
                         specialPageSelecton
                     />
                 </div>

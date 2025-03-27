@@ -35,6 +35,7 @@ import {
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth, isSysAdmin, isDeptAdmin, isFacilityAdmin } from '@/useAuth';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 const canEdit = (currentUser: User, targetUser: User): boolean => {
     return (
@@ -60,10 +61,15 @@ export default function AdminManagement() {
     const [tempPassword, setTempPassword] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
-    const [perPage, setPerPage] = useState(10);
-    const [pageQuery, setPageQuery] = useState(1);
+
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { toaster } = useToast();
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
 
     const { user } = useAuth();
     const newAdminRole: UserRole = isSysAdmin(user!)
@@ -110,12 +116,6 @@ export default function AdminManagement() {
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
         setPageQuery(1);
-    };
-
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-        void mutate();
     };
 
     function handleCancelModal(ref: ForwardedRef<HTMLDialogElement>) {
@@ -337,7 +337,7 @@ export default function AdminManagement() {
                                 <Pagination
                                     meta={meta}
                                     setPage={setPageQuery}
-                                    setPerPage={handleSetPerPage}
+                                    setPerPage={setPerPage}
                                 />
                             )}
                     </div>

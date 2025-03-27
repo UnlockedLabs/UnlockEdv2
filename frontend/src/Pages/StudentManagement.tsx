@@ -35,6 +35,7 @@ import {
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -47,9 +48,14 @@ export default function StudentManagement() {
     const { toaster } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
-    const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const [perPage, setPerPage] = useState(10);
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
+
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
@@ -129,11 +135,6 @@ export default function StudentManagement() {
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
         setPageQuery(1);
-    };
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-        void mutate();
     };
 
     const navigate = useNavigate();
@@ -322,7 +323,7 @@ export default function StudentManagement() {
                                 <Pagination
                                     meta={meta}
                                     setPage={setPageQuery}
-                                    setPerPage={handleSetPerPage}
+                                    setPerPage={setPerPage}
                                 />
                             )}
                     </div>
