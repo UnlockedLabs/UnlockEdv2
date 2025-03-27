@@ -35,7 +35,7 @@ type ProgramSection struct {
 
 	Program  *Program              `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Facility *Facility             `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
-	Events   []ProgramSectionEvent `json:"events" gorm:"foreignKey:SectionID;references:ID"`
+	Events   []ProgramSectionEvent `json:"events" gorm:"foreignKey:SectionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (ProgramSection) TableName() string { return "program_sections" }

@@ -166,3 +166,32 @@
 .remove-input-txt-border input[type='text']:focus {
     box-shadow: none;
 }
+
+.rbc-calendar {
+    @apply bg-base-100 text-body-text font-lexend;
+}
+.rbc-toolbar {
+    @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 border-b border-grey-2;
+}
+.rbc-toolbar-label {
+    @apply text-lg font-semibold text-header-text;
+}
+.rbc-btn-group > button {
+    @apply btn btn-sm btn-secondary;
+}
+.rbc-event {
+    @apply bg-primary text-white rounded-md px-2 py-1 text-sm font-medium;
+}
+.rbc-time-header,
+.rbc-time-content {
+    @apply border-grey-1;
+}
+.rbc-time-slot {
+    @apply border-t border-grey-2;
+}
+.rbc-time-view {
+    @apply text-sm;
+}
+.rbc-header {
+    @apply text-grey-4 font-medium;
+}
