@@ -19,7 +19,7 @@ export default function ProgramOverview() {
     const [perPage, setPerPage] = useState(20);
     const [selectedSections, setSelectedSections] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [sortQuery, setSortQuery] = useState<string>('name_last asc');
+    const [sortQuery, setSortQuery] = useState<string>('ps.created_at asc');
     const [includeActive, setIncludeActive] = useState(true);
     const navigate = useNavigate();
     const [showAllSections, setShowAllSections] = useState(false);
@@ -28,7 +28,7 @@ export default function ProgramOverview() {
         error: programError,
         mutate
     } = useSWR<ServerResponseMany<ProgramDashboard>, AxiosError>(
-        `/api/programs/${id}/overview?page=${page}&per_page=${perPage}`
+        `/api/programs/${id}/overview?page=${page}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
     );
     const program = programResp?.data[0];
     const meta = program?.meta ?? {
@@ -40,7 +40,7 @@ export default function ProgramOverview() {
     };
 
     if (programError) {
-        <Error />;
+        return <Error />;
     }
 
     const allSelected = selectedSections
@@ -118,10 +118,10 @@ export default function ProgramOverview() {
                         enumType={{
                             'Facility (A-Z)': 'facility_name asc',
                             'Facility (Z-A)': 'facility_name desc',
-                            'Enrollment Count (Most)': 'enrollment desc',
-                            'Enrollment Count (Least)': 'enrollment asc',
-                            'Start Date (Earliest)': 'start_date asc',
-                            'Start Date (Latest)': 'start_date desc'
+                            'Enrollment Count (Most)': 'enrolled desc',
+                            'Enrollment Count (Least)': 'enrolled asc',
+                            'Start Date (Earliest)': 'ps.start_dt asc',
+                            'Start Date (Latest)': 'ps.start_dt desc'
                         }}
                     />
                     <div className="flex items-center">

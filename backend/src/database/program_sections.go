@@ -83,8 +83,7 @@ func (db *DB) GetProgramSectionDetailsByID(id int, args *models.QueryContext) ([
 	if err := query.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
-	query.Order("ps.start_dt desc")
-	if err := query.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&sectionDetails).Error; err != nil {
+	if err := query.Limit(args.PerPage).Order(args.OrderClause()).Offset(args.CalcOffset()).Find(&sectionDetails).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
 	return sectionDetails, nil
