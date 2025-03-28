@@ -99,19 +99,14 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
 
         function isFormValidated(): boolean {
             let isValid = true;
-            setTimeErrors({ startTime: '', endTime: '' });
+            const errors = { startTime: '', endTime: '' };
+            setTimeErrors(errors);
             if (!startTime) {
-                setTimeErrors((prev) => ({
-                    ...prev,
-                    startTime: 'Start time is required'
-                }));
+                errors.startTime = 'Start time is required';
                 isValid = false;
             }
             if (!endTime) {
-                setTimeErrors((prev) => ({
-                    ...prev,
-                    endTime: 'End time is required'
-                }));
+                errors.endTime = 'End time is required';
                 isValid = false;
             }
 
@@ -119,10 +114,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 const startTotalMin = timeToMinutes(startTime);
                 const endTotalMin = timeToMinutes(endTime);
                 if (endTotalMin <= startTotalMin) {
-                    setTimeErrors((prev) => ({
-                        ...prev,
-                        endTime: 'End time must be after start time'
-                    }));
+                    errors.endTime = 'End time must be after start time';
                     isValid = false;
                 }
             }
