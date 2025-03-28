@@ -6,11 +6,13 @@ import { DeleteButton } from './DeleteButton';
 export function CancelSubmitRow({
     type,
     onCancel,
-    onSubmit
+    onSubmit,
+    action
 }: {
     type: TextModalType;
     onCancel: () => void;
     onSubmit: () => void;
+    action?: string;
 }) {
     return (
         <form method="dialog" className="flex flex-row justify-between">
@@ -18,7 +20,10 @@ export function CancelSubmitRow({
             {type === TextModalType.Delete ? (
                 <DeleteButton onClick={onSubmit} />
             ) : type === TextModalType.Confirm ? (
-                <ConfirmButton onClick={onSubmit} />
+                <ConfirmButton
+                    onClick={onSubmit}
+                    action={action ?? 'Confirm'}
+                />
             ) : null}
         </form>
     );

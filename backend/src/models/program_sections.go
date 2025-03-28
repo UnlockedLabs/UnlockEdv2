@@ -34,7 +34,7 @@ type ProgramSection struct {
 	CreditHours    *int64        `json:"credit_hours"`
 
 	Program  *Program              `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
-	Facility *Facility             `json:"-" gorm:"foreignKey:FacilityID;references:ID"`
+	Facility *Facility             `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
 	Events   []ProgramSectionEvent `json:"events" gorm:"foreignKey:SectionID;references:ID"`
 }
 
@@ -57,12 +57,7 @@ type ProgramSectionEnrollment struct {
 func (ProgramSectionEnrollment) TableName() string { return "program_section_enrollments" }
 
 type ProgramSectionDetail struct {
-	ID             int64      `json:"id"`
-	FacilityName   string     `json:"facility_name"`
-	InstructorName string     `json:"instructor_name"`
-	StartDt        time.Time  `json:"start_dt"`
-	Duration       string     `json:"duration"`
-	Capacity       string     `json:"capacity"`
-	Enrolled       int        `json:"enrolled"`
-	EndDt          *time.Time `json:"end_dt"`
+	ProgramSection
+	FacilityName string `json:"facility_name"`
+	Enrolled     int    `json:"enrolled"`
 }
