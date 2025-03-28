@@ -19,7 +19,7 @@ interface EventCalendarProps {
 }
 
 function parseDurationToMs(duration: string): number {
-    const regex = /((\d+)h)((\d+)m)((\d+)s)/;
+    const regex = /(\d+)h(\d+)m(\d)+s/;
     const groups = regex.exec(duration);
 
     if (!groups) return 0;
@@ -27,7 +27,6 @@ function parseDurationToMs(duration: string): number {
     const hours = parseInt(groups[1] || '0', 10);
     const minutes = parseInt(groups[2] || '0', 10);
     const seconds = parseInt(groups[3] || '0', 10);
-
     return hours * 3600000 + minutes * 60000 + seconds * 1000;
 }
 
