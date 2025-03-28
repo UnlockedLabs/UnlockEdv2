@@ -1,5 +1,5 @@
 import { ThemeContext } from '@/Context/ThemeContext';
-import { useTourContext } from '@/Context/TourContext';
+import { initialTourState, useTourContext } from '@/Context/TourContext';
 import { useContext, useEffect } from 'react';
 import Joyride, { CallBackProps, EVENTS } from 'react-joyride';
 import { useNavigate } from 'react-router-dom';
@@ -197,22 +197,12 @@ export default function UnlockEdTour() {
             action === 'skip' ||
             type === EVENTS.TOUR_END
         ) {
-            setTourState({
-                tourActive: false,
-                run: false,
-                stepIndex: 0,
-                target: ''
-            });
+            setTourState(initialTourState);
         }
         if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
             if (action === 'next') {
                 if (currentTarget === '#end-tour') {
-                    setTourState({
-                        tourActive: false,
-                        run: false,
-                        stepIndex: 0,
-                        target: ''
-                    });
+                    setTourState(initialTourState);
                 }
                 const nextTarget = steps[index + 1]?.target as string;
                 if (nextTarget) {

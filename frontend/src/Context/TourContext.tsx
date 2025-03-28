@@ -6,7 +6,7 @@ interface TourContextType {
     setTourState: React.Dispatch<React.SetStateAction<TourState>>;
 }
 
-const initialTourState: TourState = {
+export const initialTourState: TourState = {
     run: false,
     stepIndex: 0,
     steps: [],
