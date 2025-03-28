@@ -53,7 +53,8 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
-	tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?", likeSearch, likeSearch, likeSearch)
+	tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(doc_id) LIKE ?", likeSearch, likeSearch, likeSearch, likeSearch)
+
 	if err := tx.Count(&ctx.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
