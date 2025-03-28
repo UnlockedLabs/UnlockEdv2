@@ -1,6 +1,11 @@
 name: Migration check
+
 on:
-  workflow_dispatch
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/migrations/**'
+
 jobs:
   check-migrations:
     runs-on: ubuntu-latest
