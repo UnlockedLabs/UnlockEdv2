@@ -15,19 +15,25 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation } from 'react-router-dom';
 import { LibrarySearchBar } from './inputs';
 import LibrarySearchResultsModal from './LibrarySearchResultsModal';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function VideoContent() {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
-    const [perPage, setPerPage] = useState(12);
-    const [pageQuery, setPageQuery] = useState(1);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const route = useLocation();
     const modalRef = useRef<HTMLDialogElement>(null);
     const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
         null
     );
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
+
     const adminWithStudentView = (): boolean => {
         return !route.pathname.includes('management') && isAdministrator(user);
     };
@@ -63,11 +69,6 @@ export default function VideoContent() {
     if (!user) {
         return null;
     }
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-        void mutate();
-    };
 
     return (
         <>
@@ -113,7 +114,7 @@ export default function VideoContent() {
                     <Pagination
                         meta={meta}
                         setPage={setPageQuery}
-                        setPerPage={handleSetPerPage}
+                        setPerPage={setPerPage}
                     />
                 </div>
             )}

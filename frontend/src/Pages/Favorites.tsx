@@ -12,13 +12,17 @@ import { useDebounceValue } from 'usehooks-ts';
 import { AxiosError } from 'axios';
 import FavoriteCard from '@/Components/FavoriteCard';
 import { isAdministrator, useAuth } from '@/useAuth';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function FavoritesPage() {
     const { user } = useAuth();
-    const [perPage, setPerPage] = useState(12);
-    const [pageQuery, setPageQuery] = useState(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
-
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
@@ -36,10 +40,6 @@ export default function FavoritesPage() {
     const favorites = data?.data ?? [];
     const meta = data?.meta;
 
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-    };
     const handleChange = (newSearch: string) => {
         setSearchTerm(newSearch);
         setPageQuery(1);
@@ -86,7 +86,7 @@ export default function FavoritesPage() {
                     <Pagination
                         meta={meta}
                         setPage={setPageQuery}
-                        setPerPage={handleSetPerPage}
+                        setPerPage={setPerPage}
                     />
                 </div>
             )}

@@ -50,6 +50,13 @@ export default function OpenContent() {
             });
         }
     }, []);
+    const getTabFromPath = (pathname: string) =>
+        tabOptions.find((t) => t.value === pathname.split('/')[2]) ??
+        tabOptions[0];
+
+    useEffect(() => {
+        setActiveTab(getTabFromPath(location.pathname));
+    }, [location.pathname]);
 
     return (
         <div className="px-5 pb-4" id="knowledge-center-landing">

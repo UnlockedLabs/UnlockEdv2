@@ -23,13 +23,20 @@ export default function OpenContentManagement() {
     }, [activeTab]);
 
     const handlePageChange = (tab: Tab) => {
-        setActiveTab(tab);
         navigate(`/knowledge-center-management/${tab.value}`);
+        setActiveTab(tab);
     };
 
     function navigateToStudentView() {
         navigate(`/knowledge-center/${activeTab.value}`);
     }
+    const getTabFromPath = (pathname: string) =>
+        tabOptions.find((t) => t.value === pathname.split('/')[2]) ??
+        tabOptions[0];
+
+    useEffect(() => {
+        setActiveTab(getTabFromPath(location.pathname));
+    }, [location.pathname]);
 
     return (
         <div className="px-5 pb-4">
