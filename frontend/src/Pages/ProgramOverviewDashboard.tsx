@@ -187,10 +187,11 @@ export default function ProgramOverview() {
                                     }`}
                                 >
                                     <td>
+                                        {/* TODO: Where do we want this link */}
                                         <Link
                                             className="text-red-500"
                                             key={section.id}
-                                            to={`/programs/${section.id}/section-enrollment`}
+                                            to={`/programs/${program.id}/section-enrollment/${section.id}/`}
                                         >
                                             Program Section Test Link
                                         </Link>

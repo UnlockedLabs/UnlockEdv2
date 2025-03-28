@@ -708,10 +708,10 @@ export enum FilterLibrariesVidsandHelpfulLinksResident {
 }
 
 export enum FilterProgramSectionEnrollments {
-    'Last Name (A to Z)' = '&order_by=last_name&order=ASC',
-    'Last Name (Z to A)' = '&order_by=last_name&order=DESC',
-    'First Name (A to Z)' = '&order_by=first_name&order=ASC',
-    'First Name (Z to A)' = '&order_by=first_name&order=DESC'
+    'Last Name (A to Z)' = 'name_last asc',
+    'Last Name (Z to A)' = 'name_last desc',
+    'First Name (A to Z)' = 'name_first asc',
+    'First Name (Z to A)' = 'name_first desc'
 }
 export enum Timezones {
     'america/chicago' = 'America/Chicago',

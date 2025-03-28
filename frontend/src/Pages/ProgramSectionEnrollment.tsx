@@ -1,12 +1,11 @@
 import {
     FilterProgramSectionEnrollments,
     ServerResponseMany,
-    // ToastState,
     User
 } from '@/common';
 import { useState } from 'react';
 import API from '@/api/api';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
@@ -20,18 +19,17 @@ interface Inputs {
     user_id: number; //should be one or an array of users
 }
 
-export default function ProgramSectionManagement() {
+export default function ProgramSectionEnrollment() {
+    const navigate = useNavigate();
+    const { id } = useParams<{ id: string }>();
     const { section_id } = useParams<{ section_id: string }>();
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
-    // const [currentPage, setCurrentPage] = useState(1);
-    // TODO: add search functionality
-    // TODO: make decision on sort functionality...
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
-    const [sortQuery] = useState<string>(
+    const [sortQuery, setSortQuery] = useState<string>(
         FilterProgramSectionEnrollments['Last Name (A to Z)']
     );
 
@@ -39,7 +37,7 @@ export default function ProgramSectionManagement() {
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&section_id=${section_id}&include=not_enrolled`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&section_id=${section_id}&include=only_unenrolled`
     );
 
     const credentialed_users = data?.data ?? [];
@@ -87,14 +85,11 @@ export default function ProgramSectionManagement() {
                     );
                 })
             );
-
-            // onSubmit('Users successfully enrolled', ToastState.success);
             setSelectedUsers([]);
-            console.log('It Saved the record/s');
+            navigate(`/programs/${id}`);
         } catch (error) {
             console.error('Enrollment failed:', error);
             setErrorMessage('Failed to enroll users');
-            // onSubmit('Failed to enroll users', ToastState.error);
         }
     };
 
@@ -109,7 +104,7 @@ export default function ProgramSectionManagement() {
                         />
                         <DropdownControl
                             label="Order by"
-                            // setState={setSortQuery}
+                            setState={setSortQuery}
                             enumType={FilterProgramSectionEnrollments}
                         />
                     </div>
@@ -139,7 +134,7 @@ export default function ProgramSectionManagement() {
                                                 onClick={() =>
                                                     handleToggleRow(user.id)
                                                 }
-                                                className={`cursor-pointer ${isSelected ? 'bg-gray-200' : ''}`}
+                                                className={`cursor-pointer ${isSelected ? 'bg-gray-200 text-black' : ''}`}
                                             >
                                                 <td className="pr-2">
                                                     <input
@@ -179,7 +174,6 @@ export default function ProgramSectionManagement() {
                             )}
                         </tbody>
                     </table>
-                    {/* TODO: Test Pagination */}
                     <div className="flex justify-center m-2">
                         {' '}
                         {meta && (
@@ -195,11 +189,10 @@ export default function ProgramSectionManagement() {
                             {errorMessage}
                         </div>
                     )}
-
                     <div className="flex flex-row justify-end m-2">
-                        {/* TODO: what to do on cancel */}
-                        <CancelButton onClick={() => console.log('test me')} />
-                        {/* TODO: check capacity or user on add */}
+                        <CancelButton
+                            onClick={() => navigate(`/programs/${id}`)}
+                        />
                         <input
                             className="btn btn-primary ml-2"
                             type="submit"

@@ -29,58 +29,37 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 	role := r.URL.Query().Get("role")
 	args := srv.getQueryContext(r)
 
+	include := r.URL.Query()["include"]
+	
 	var users []models.User
 	var err error
 
-	
-	include := r.URL.Query()["include"]
-	if slices.Contains(include, "only_unmapped") {
-		providerId := r.URL.Query().Get("provider_id")
-		return srv.handleGetUnmappedUsers(w, r, providerId, log)
-	} else if slices.Contains(include,"only_unenrolled") {
-		
-	}
 	
 	switch {
 	case slices.Contains(include, "only_unmapped"):
 		providerId := r.URL.Query().Get("provider_id")
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
-	
+
 	case slices.Contains(include, "only_unenrolled"):
 		sectionIDStr := r.URL.Query().Get("section_id")
-		sectionID, err := strconv.Atoi(sectionIDStr)
+		var sectionID int
+		sectionID, err = strconv.Atoi(sectionIDStr)
 
 		if err != nil {
-			fmt.Println("Error converting section_id:", err)
+			log.add("credentialed users:",err)
 			return err
 		}
-
 		users, err = srv.Db.GetCredentialedUsers(&args, sectionID)
-		if err != nil {
-			log.add("facility_id", args.FacilityID)
-			log.add("search", args.Search)
-			return newDatabaseServiceError(err)
-		}
 	
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
-		if err != nil {
-			log.add("facility_id", args.FacilityID)
-			log.add("search", args.Search)
-			return newDatabaseServiceError(err)
-		}
-	}
-	// TODO: Should this be its own func or even in the user_handler
-	// Logic here to check for credentialed users not enrolled in a program section
-	program_section_status := r.URL.Query()["program_section_status"]
-	if slices.Contains(program_section_status, "not_enrolled") {
-
-		
-
-	} else {
 		
 	}
-
+	if err != nil {
+		log.add("facility_id", args.FacilityID)
+		log.add("search", args.Search)
+		return newDatabaseServiceError(err)
+	}
 	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
 }
 

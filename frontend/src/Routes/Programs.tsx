@@ -43,7 +43,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             }
         },
         {
-            path: 'programs/:section_id/section-enrollment',
+            path: 'programs/:id/section-enrollment/:section_id',
             element: <ProgramSectionEnrollment />,
             handle: { title: 'Add Resident' }
         }

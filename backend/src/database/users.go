@@ -50,10 +50,9 @@ func (db *DB) GetCredentialedUsers(args *models.QueryContext, section_id int) ([
 		Joins("LEFT JOIN program_section_enrollments pse ON users.id = pse.user_id").
 		Where("users.facility_id = ?", args.FacilityID).
 		Where("pse.user_id IS NULL"). //not enrolled in section
-		Where("users.role = ?", "student").
-		Where("pse.section_id = ?", section_id)
+		Where("users.role = ?", "student")
 
-	if err := tx.Debug().Count(&args.Total).Error; err != nil {
+	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
@@ -67,6 +66,7 @@ func (db *DB) GetCredentialedUsers(args *models.QueryContext, section_id int) ([
 	}
 	return users, nil
 }
+// TODO: Work the search to include credentialed users
 func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
 	likeSearch := ctx.SearchQuery()
 	tx := db.WithContext(ctx.Ctx).Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
@@ -77,6 +77,10 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 		tx = tx.Where("role = 'student'")
 	}
 	tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?", likeSearch, likeSearch, likeSearch)
+
+	
+
+
 	if err := tx.Count(&ctx.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
