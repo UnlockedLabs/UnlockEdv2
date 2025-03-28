@@ -36,8 +36,9 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				args := models.QueryContext{
-					Page:    1,
-					PerPage: 10,
+					Page:       1,
+					PerPage:    10,
+					FacilityID: 1,
 				}
 				sections, err := server.Db.GetProgramSectionDetailsByID(int(id), &args)
 				if err != nil {
