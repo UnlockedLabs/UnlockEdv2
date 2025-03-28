@@ -4,7 +4,8 @@ import {
     Video,
     ServerResponseMany,
     UserRole,
-    videoIsAvailable
+    videoIsAvailable,
+    ViewType
 } from '../common';
 import DropdownControl from '../Components/inputs/DropdownControl';
 import Pagination from '../Components/Pagination';
@@ -15,6 +16,8 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation } from 'react-router-dom';
 import { LibrarySearchBar } from './inputs';
 import LibrarySearchResultsModal from './LibrarySearchResultsModal';
+import ToggleView from '@/Components/ToggleView';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export default function VideoContent() {
     const { user } = useAuth();
@@ -28,6 +31,7 @@ export default function VideoContent() {
     const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
         null
     );
+    const [activeView, setActiveView] = useSessionViewType('videoView');
     const adminWithStudentView = (): boolean => {
         return !route.pathname.includes('management') && isAdministrator(user);
     };
@@ -97,14 +101,23 @@ export default function VideoContent() {
                         />
                     </>
                 )}
+                <div className="ml-auto">
+                    <ToggleView
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                    />
+                </div>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div
+                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+            >
                 {videoData.map((video) => (
                     <VideoCard
                         key={video.id}
                         video={video}
                         mutate={mutate}
                         role={UserRole.Student}
+                        view={activeView}
                     />
                 ))}
             </div>
