@@ -25,16 +25,11 @@ func (srv *Server) registerUserRoutes() []routeDef {
 }
 
 func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
-	
 	role := r.URL.Query().Get("role")
 	args := srv.getQueryContext(r)
-
 	include := r.URL.Query()["include"]
-	
 	var users []models.User
 	var err error
-
-	
 	switch {
 	case slices.Contains(include, "only_unmapped"):
 		providerId := r.URL.Query().Get("provider_id")
@@ -44,16 +39,12 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		sectionIDStr := r.URL.Query().Get("section_id")
 		var sectionID int
 		sectionID, err = strconv.Atoi(sectionIDStr)
-
 		if err != nil {
-			log.add("credentialed users:",err)
 			return err
 		}
 		users, err = srv.Db.GetCredentialedUsers(&args, sectionID)
-	
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
-		
 	}
 	if err != nil {
 		log.add("facility_id", args.FacilityID)

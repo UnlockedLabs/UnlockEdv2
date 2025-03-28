@@ -2,32 +2,16 @@ package database
 
 import "UnlockEdv2/src/models"
 
-func (db *DB) GetProgramSectionEnrollmentsForUser(userID, page, perPage int) (int64, []models.ProgramSectionEnrollment, error) {
+func (db *DB) GetProgramSectionEnrollmentsForUser(args *models.QueryContext) ([]models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
-	var total int64
-	tx := db.Model(&models.ProgramSectionEnrollment{}).Where("user_id = ?", userID)
-
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramSectionEnrollment{}).Where("user_id = ?", args.UserID)
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
 	if err := tx.Find(&content).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	return total, content, nil
-}
-
-func (db *DB) GetProgramSectionEnrollmentForUser(sectionID, userID int) (int64, []models.ProgramSectionEnrollment, error) {
-	content := []models.ProgramSectionEnrollment{}
-	var total int64
-	tx := db.Model(&models.ProgramSectionEnrollment{}).Where("user_id = ?", userID).Where("section_id=?", sectionID)
-
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
-	}
-	if err := tx.Find(&content).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
-	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) GetProgramSectionEnrollmentsByID(id int) (*models.ProgramSectionEnrollment, error) {
@@ -100,23 +84,22 @@ func (db *DB) UpdateProgramSectionEnrollments(content *models.ProgramSectionEnro
 	return content, nil
 }
 
-func (db *DB) GetProgramSectionEnrollmentssForProgram(page, perPage, facilityID, programID int) (int64, []models.ProgramSectionEnrollment, error) {
+func (db *DB) GetProgramSectionEnrollmentsForProgram(args *models.QueryContext, progId int) ([]models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
-	var total int64
-	tx := db.Model(&models.ProgramSectionEnrollment{}).
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramSectionEnrollment{}).
 		Joins("JOIN program_sections ps ON program_section_enrollments.section_id = ps.id and ps.deleted_at IS NULL").
-		Where("ps.facility_id = ?", facilityID).
-		Where("ps.program_id = ?", programID)
+		Where("ps.facility_id = ?", args.FacilityID).
+		Where("ps.program_id = ?", progId)
 
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	if err := tx.Limit(perPage).
-		Offset(calcOffset(page, perPage)).
+	if err := tx.Limit(args.PerPage).
+		Offset(args.CalcOffset()).
 		Find(&content).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) GetProgramSectionEnrollmentsAttendance(page, perPage, id int) (int64, []models.ProgramSectionEventAttendance, error) {

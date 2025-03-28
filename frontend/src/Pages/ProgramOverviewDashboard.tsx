@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -78,6 +78,15 @@ export default function ProgramOverview() {
         setIncludeActive(includeActive); // Same deal just to get eslint to be quiet
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
+
+    const handleNavigateEnrollment = () => {
+        if (selectedSections.length === 1) {
+            navigate(
+                `/programs/${program?.id}/section-enrollment/${selectedSections[0]}/`
+            );
+        }
+    };
+
     return (
         <div className="p-4 px-5">
             <h1 className=" mb-2">{program?.name}</h1>
@@ -138,17 +147,29 @@ export default function ProgramOverview() {
                     </div>
                 </div>
 
-                <button
-                    className="button flex items-center"
-                    onClick={() =>
-                        navigate(`/programs/${id}/class`, {
-                            state: { title: `Program: ${program?.name}` }
-                        })
-                    }
-                >
-                    <PlusCircleIcon className="w-4 h-4 mr-1" />
-                    Add Class
-                </button>
+                <div className="flex flex-row gap-x-2">
+                    {selectedSections.length === 1 && (
+                        <button
+                            hidden={selectedSections.length !== 1}
+                            className="button flex items-center"
+                            onClick={handleNavigateEnrollment}
+                        >
+                            <PlusCircleIcon className="w-4 h-4 mr-1" />
+                            Enroll Students
+                        </button>
+                    )}
+                    <button
+                        className="button flex items-center"
+                        onClick={() =>
+                            navigate(`/programs/${id}/class`, {
+                                state: { title: `Program: ${program?.name}` }
+                            })
+                        }
+                    >
+                        <PlusCircleIcon className="w-4 h-4 mr-1" />
+                        Add Class
+                    </button>
+                </div>
             </div>
 
             {/* sections table */}
@@ -186,16 +207,6 @@ export default function ProgramOverview() {
                                         isSelected ? 'bg-background ' : ''
                                     }`}
                                 >
-                                    <td>
-                                        {/* TODO: Where do we want this link */}
-                                        <Link
-                                            className="text-red-500"
-                                            key={section.id}
-                                            to={`/programs/${program.id}/section-enrollment/${section.id}/`}
-                                        >
-                                            Program Section Test Link
-                                        </Link>
-                                    </td>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <input
                                             type="checkbox"

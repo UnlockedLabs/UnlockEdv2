@@ -43,15 +43,16 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	}
 	return users, nil
 }
-func (db *DB) GetCredentialedUsers(args *models.QueryContext, section_id int) ([]models.User, error) {
 
-	tx := db.WithContext(args.Ctx).
-		Model(&models.User{}).
-		Joins("LEFT JOIN program_section_enrollments pse ON users.id = pse.user_id").
-		Where("users.facility_id = ?", args.FacilityID).
-		Where("pse.user_id IS NULL"). //not enrolled in section
+func (db *DB) GetCredentialedUsers(args *models.QueryContext, sectionId int) ([]models.User, error) {
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).
+		Joins("LEFT JOIN program_section_enrollments pse ON users.id = pse.user_id AND pse.section_id = ?", sectionId).
+		Where("user_id IS NULL"). //not enrolled in section
 		Where("users.role = ?", "student")
 
+	if args.Search != "" {
+		tx = tx.Where("LOWER(users.name_first) LIKE ? OR LOWER(users.username) LIKE ? OR LOWER(users.name_last) LIKE ?", args.Search, args.Search, args.Search)
+	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
 	}
@@ -61,12 +62,11 @@ func (db *DB) GetCredentialedUsers(args *models.QueryContext, section_id int) ([
 		Limit(args.PerPage).
 		Find(&users).
 		Error; err != nil {
-		log.Errorf("Error fetching users: %v", err)
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	return users, nil
 }
-// TODO: Work the search to include credentialed users
+
 func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
 	likeSearch := ctx.SearchQuery()
 	tx := db.WithContext(ctx.Ctx).Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
@@ -77,9 +77,6 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 		tx = tx.Where("role = 'student'")
 	}
 	tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?", likeSearch, likeSearch, likeSearch)
-
-	
-
 
 	if err := tx.Count(&ctx.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
