@@ -354,7 +354,9 @@ const LibrarySearchResultsModal = forwardRef<
                     </div>
                 ) : searchResults.title === 'Search' ? (
                     <div className="flex h-screen gap-4 justify-center content-center">
-                        <p className="my-auto text-lg">Execute a search</p>
+                        <p className="my-auto text-lg">
+                            Press 'Enter' to search
+                        </p>
                     </div>
                 ) : searchResults.items && searchResults.items.length === 0 ? (
                     <div className="flex h-screen gap-4 justify-center content-center">

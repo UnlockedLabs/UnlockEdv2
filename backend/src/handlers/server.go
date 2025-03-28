@@ -448,7 +448,7 @@ func (svr *Server) handleError(handler HttpFunc) http.Handler {
 				} else {
 					ip = strings.Split(ip, ",")[0]
 				}
-				log.add("user_id", claims.UserID)
+				log.add("admin_id", claims.UserID)
 				log.add("username", claims.Username)
 				log.add("role", claims.Role)
 				log.add("session_id", claims.SessionID)

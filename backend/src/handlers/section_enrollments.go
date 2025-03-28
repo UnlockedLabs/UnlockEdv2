@@ -53,33 +53,30 @@ func (srv *Server) handleGetUserEnrollments(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	page, perPage := srv.getPaginationInfo(r)
+	log.add("user_id", id)
+	args := srv.getQueryContext(r)
 	if !srv.canViewUserData(r, id) {
 		return newUnauthorizedServiceError()
 	}
-	total, enrollemnts, err := srv.Db.GetProgramSectionEnrollmentsForUser(id, page, perPage)
+	enrollemnts, err := srv.Db.GetProgramSectionEnrollmentsForUser(&args)
 	if err != nil {
-		log.add("userId", id)
 		return newDatabaseServiceError(err)
 	}
-	paginationData := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, enrollemnts, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, enrollemnts, args.IntoMeta())
 }
 
 func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	facilityID := r.Context().Value(ClaimsKey).(*Claims).FacilityID
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	log.add("program_id", id)
-	page, perPage := srv.getPaginationInfo(r)
-	total, enrollemnts, err := srv.Db.GetProgramSectionEnrollmentssForProgram(page, perPage, int(facilityID), id)
+	args := srv.getQueryContext(r)
+	enrollemnts, err := srv.Db.GetProgramSectionEnrollmentsForProgram(&args, id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	paginationData := models.NewPaginationInfo(page, perPage, total)
-	return writePaginatedResponse(w, http.StatusOK, enrollemnts, paginationData)
+	return writePaginatedResponse(w, http.StatusOK, enrollemnts, args.IntoMeta())
 }
 
 func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -88,6 +85,8 @@ func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log 
 		return newInvalidIdServiceError(err, "section ID")
 	}
 	log.add("section_id", sectionID)
+
+	// the id of the credentialed user being enrolled
 	userID, err := strconv.Atoi(r.PathValue("user_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
