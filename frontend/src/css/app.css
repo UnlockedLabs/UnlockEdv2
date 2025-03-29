@@ -195,3 +195,9 @@
 .rbc-header {
     @apply text-grey-4 font-medium;
 }
+.rbc-off-range-bg {
+    @apply bg-grey-1;
+}
+html[data-theme='dark'] .rbc-off-range-bg {
+    background-color: var(--teal-1);
+}
