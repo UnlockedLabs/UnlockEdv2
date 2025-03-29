@@ -10,7 +10,7 @@ import {
 } from '@/Components/inputs';
 import { PrgSectionStatus, ToastState } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
 import { useToast } from '@/Context/ToastCtx';
 import EventCalendar from '@/Components/EventCalendar';
@@ -34,6 +34,7 @@ interface SectionInputs {
 }
 
 export default function SectionManagementForm() {
+    const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
     const [calendarRule, setCalendarRule] = useState('');
     const [calendarDuration, setCalendarDuration] = useState('');
@@ -47,10 +48,12 @@ export default function SectionManagementForm() {
         register,
         handleSubmit,
         getValues,
+        watch,
         reset,
         formState: { errors }
     } = useForm<SectionInputs>();
-
+    const nameValue = watch('name');
+    const [canOpenCalendar, setCanOpenCalendar] = useState(false);
     const onSubmit: SubmitHandler<SectionInputs> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
@@ -86,6 +89,9 @@ export default function SectionManagementForm() {
         reset();
         navigate(`/programs/${id}`);
     };
+    useEffect(() => {
+        setCanOpenCalendar(!!nameValue && rruleIsValid);
+    }, [nameValue, rruleIsValid]);
 
     return (
         <div className="p-4 px-5">
@@ -167,6 +173,7 @@ export default function SectionManagementForm() {
                                             setShowCalendar(true);
                                         }
                                     }}
+                                    disabled={!canOpenCalendar}
                                     className="btn btn-primary"
                                     value="View Calendar"
                                 />
@@ -179,6 +186,7 @@ export default function SectionManagementForm() {
                             startDateRef="start_dt"
                             errors={errors}
                             register={register}
+                            onChange={setRruleIsValid}
                         />
                         <DropdownInput
                             label="Status"

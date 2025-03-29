@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { RRule, Weekday, Options } from 'rrule';
 import { DateInput } from '@/Components/inputs';
 import {
@@ -22,6 +22,7 @@ const weekdays = [
 ];
 
 interface RRuleControlProp {
+    onChange?: (isValid: boolean) => void;
     startDateRef: string;
     endDateRef: string;
     errors: FieldErrors<any>; // eslint-disable-line
@@ -30,12 +31,13 @@ interface RRuleControlProp {
 }
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
     function RRuleControl(
-        { startDateRef, endDateRef, getValues, errors, register },
+        { onChange, startDateRef, endDateRef, getValues, errors, register },
         ref
     ) {
         const [timeErrors, setTimeErrors] = useState({
             startTime: '',
-            endTime: ''
+            endTime: '',
+            weekDays: ''
         });
         const [frequency, setFrequency] = useState('WEEKLY');
         const [interval, setInterval] = useState(1);
@@ -99,7 +101,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
 
         function isFormValidated(): boolean {
             let isValid = true;
-            const errors = { startTime: '', endTime: '' };
+            const errors = { startTime: '', endTime: '', weekDays: '' };
             setTimeErrors(errors);
             if (!startTime) {
                 errors.startTime = 'Start time is required';
@@ -118,6 +120,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     isValid = false;
                 }
             }
+            if (frequency === 'WEEKLY' && byWeekDays.length == 0) {
+                errors.weekDays = 'Must select a day to repeat on';
+                isValid = false;
+            }
             return isValid;
         }
 
@@ -129,7 +135,11 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             const startMin = timeToMinutes(start);
             const endMin = timeToMinutes(end);
             return (
-                start !== '' && end !== '' && endMin > startMin && interval >= 1
+                start !== '' &&
+                end !== '' &&
+                endMin > startMin &&
+                interval >= 1 &&
+                !(frequency === 'WEEKLY' && byWeekDays.length == 0)
             );
         };
 
@@ -139,6 +149,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         }
 
         useImperativeHandle(ref, () => ({ createRule: createRule }));
+
+        useEffect(() => {
+            onChange?.(canCreateRule());
+        }, [startTime, endTime, interval, frequency, byWeekDays, endOption]);
 
         return (
             <div className="space-y-6">
@@ -222,6 +236,11 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                                 </button>
                             ))}
                         </div>
+                        {timeErrors.weekDays && (
+                            <div className="text-error text-sm">
+                                {timeErrors.weekDays}
+                            </div>
+                        )}
                     </div>
                 )}
 
