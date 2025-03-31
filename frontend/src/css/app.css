@@ -166,7 +166,14 @@
 .remove-input-txt-border input[type='text']:focus {
     box-shadow: none;
 }
-
+/* added the below css for coloring the calendar icon in dark mode */
+html[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
+html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    color: white;
+    filter: brightness(0) invert(1);
+    opacity: 1;
+}
 .rbc-calendar {
     @apply text-body-text font-lexend;
 }
