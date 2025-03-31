@@ -21,6 +21,7 @@ import { useAuth } from '@/useAuth';
 import { FormModal } from '@/Components/modals/FormModal';
 import { FormInputTypes } from '@/Components/modals';
 import { useTourContext } from '@/Context/TourContext';
+import { targetToStepIndexMap } from '@/Components/UnlockEdTour';
 interface UrlNavState {
     url?: string;
 }
@@ -173,10 +174,16 @@ export default function LibraryViewer() {
     };
 
     useEffect(() => {
-        if (tourState.stepIndex === 12) {
-            setTourState({ stepIndex: 11 });
+        if (tourState.target === '#top-content') {
+            setTourState({
+                stepIndex: targetToStepIndexMap['#library-viewer-favorite'],
+                target: '#library-viewer-favorite'
+            });
         } else {
-            setTourState({ stepIndex: 9 });
+            setTourState({
+                stepIndex: targetToStepIndexMap['#library-viewer-sub-page'],
+                target: '#library-viewer-sub-page'
+            });
         }
     }, []);
 
@@ -211,11 +218,11 @@ export default function LibraryViewer() {
                     id="library-viewer-sub-page"
                 >
                     <h1>Library Viewer</h1>
-                    {user && !isAdministrator(user) && !isLoading && (
+                    {user && !isAdministrator(user) && (
                         <div
                             id="library-viewer-favorite"
                             className={
-                                tourState.stepIndex === 10
+                                tourState.target === '#library-viewer-favorite'
                                     ? 'animate-pulse border border-2 border-primary-yellow rounded-xl'
                                     : ''
                             }

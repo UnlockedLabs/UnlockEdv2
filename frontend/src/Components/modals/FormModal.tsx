@@ -17,6 +17,7 @@ import {
 import { forwardRef, useEffect } from 'react';
 import { FormInputTypes, Input, InputWithOptions } from '.';
 import { useTourContext } from '@/Context/TourContext';
+import { targetToStepIndexMap } from '../UnlockEdTour';
 
 interface FormModalProps<T extends FieldValues> {
     title: string;
@@ -61,7 +62,10 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
     };
 
     useEffect(() => {
-        setTourState({ stepIndex: 11 });
+        setTourState({
+            stepIndex: targetToStepIndexMap['#navigate-homepage'],
+            target: '#navigate-homepage'
+        });
     }, []);
 
     return (
