@@ -51,8 +51,17 @@ func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, sectionId int) 
 		Where("pse.user_id IS NULL"). //not enrolled in section
 		Where("users.role = ?", "student")
 
-	if args.Search != "" {
-		tx = tx.Where("LOWER(users.name_first) LIKE ? OR LOWER(users.username) LIKE ? OR LOWER(users.name_last) LIKE ?", args.Search, args.Search, args.Search)
+	likeSearch := args.SearchQuery()
+
+	if likeSearch != "" {
+		_, err := strconv.Atoi(args.Search)
+		if err == nil {
+			// optimization if a number is entered, they are searching for their DOC#
+			tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
+		} else {
+			// in the case that the doc id has non-numeric charachters, include it in the search
+			tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(doc_id) LIKE ?", likeSearch, likeSearch, likeSearch, likeSearch)
+		}
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
