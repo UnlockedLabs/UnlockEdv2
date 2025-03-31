@@ -109,7 +109,8 @@ export default function UnlockEdTour() {
             <Joyride
                 steps={steps}
                 locale={{
-                    nextLabelWithProgress: 'Next ({step} of {steps})'
+                    nextLabelWithProgress: 'Next ({step} of {steps})',
+                    last: 'Done'
                 }}
                 continuous
                 stepIndex={stepIndex}
