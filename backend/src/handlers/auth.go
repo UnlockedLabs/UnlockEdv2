@@ -32,6 +32,7 @@ type (
 		KratosID      string                 `json:"kratos_id"`
 		FeatureAccess []models.FeatureAccess `json:"feature_access"`
 		SessionID     string                 `json:"session_id"`
+		DocID         string                 `json:"doc_id"`
 	}
 )
 
@@ -55,6 +56,7 @@ func (claims *Claims) getTraits() map[string]any {
 		"password_reset": claims.PasswordReset,
 		"facility_name":  claims.FacilityName,
 		"feature_access": claims.FeatureAccess,
+		"doc_id":         claims.DocID,
 	}
 }
 

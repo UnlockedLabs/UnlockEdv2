@@ -18,6 +18,7 @@ export interface User {
     name_first: string;
     name_last: string;
     username: string;
+    doc_id: string;
     role: UserRole;
     email: string;
     password_reset?: boolean;

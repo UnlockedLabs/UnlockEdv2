@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,7 +77,17 @@ func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]model
 	case "student":
 		tx = tx.Where("role = 'student'")
 	}
-	tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ?", likeSearch, likeSearch, likeSearch)
+
+	if likeSearch != "" {
+		_, err := strconv.Atoi(ctx.Search)
+		if err == nil {
+			// optimization if a number is entered, they are searching for their DOC#
+			tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
+		} else {
+			// in the case that the doc id has non-numeric charachters, include it in the search
+			tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(doc_id) LIKE ?", likeSearch, likeSearch, likeSearch, likeSearch)
+		}
+	}
 
 	if err := tx.Count(&ctx.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")

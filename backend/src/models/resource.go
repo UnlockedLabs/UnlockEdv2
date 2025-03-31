@@ -102,5 +102,8 @@ func (q QueryContext) OrderClause() string {
 }
 
 func (q QueryContext) SearchQuery() string {
+	if q.Search == "" {
+		return ""
+	}
 	return "%" + q.Search + "%"
 }

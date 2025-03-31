@@ -242,6 +242,13 @@ export const getUserInputs = (
                     'Username can only contain letters and numbers without spaces'
             },
             disabled: action === CRUDActions.Edit
+        },
+        {
+            type: FormInputTypes.Text,
+            label: 'Department of Corrections ID',
+            interfaceRef: 'doc_id',
+            required: true,
+            length: 25
         }
     ];
     if (AdminRoles.includes(userRole)) {

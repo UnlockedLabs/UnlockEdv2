@@ -217,6 +217,9 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 		// usernames are immutable
 		return newBadRequestServiceError(errors.New("username cannot be updated"), "username")
 	}
+	if user.DocID == "" && toUpdate.DocID != "" {
+		user.DocID = toUpdate.DocID
+	}
 	invalidUser := validateUser(&user)
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
