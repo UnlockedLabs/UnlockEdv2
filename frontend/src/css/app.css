@@ -205,9 +205,12 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
 .rbc-off-range-bg {
     @apply bg-grey-1;
 }
-html[data-theme='dark'] .rbc-off-range-bg {
+html[data-theme='dark'] .rbc-day-bg {
     background-color: var(--teal-1);
 }
+html[data-theme='dark'] .rbc-off-range-bg {
+    background-color: var(--inner-background);
+}
 html[data-theme='dark'] .rbc-today {
-    background-color: var(--teal-2);
+    background-color: var(--teal-3);
 }
