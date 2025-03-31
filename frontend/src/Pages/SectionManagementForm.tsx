@@ -97,6 +97,8 @@ export default function SectionManagementForm() {
         <div className="p-4 px-5">
             <form
                 onSubmit={(e) => {
+                    e.preventDefault();
+                    rruleFormRef.current?.validate();
                     void handleSubmit(onSubmit)(e);
                 }}
             >

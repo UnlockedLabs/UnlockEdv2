@@ -56,7 +56,7 @@ export default function EventCalendar({
     }, [recurrenceRule, durationStr, title]);
 
     return (
-        <div className="p-4 bg-base-100 rounded-lg shadow">
+        <div className="p-4">
             <Calendar
                 localizer={localizer}
                 events={events}

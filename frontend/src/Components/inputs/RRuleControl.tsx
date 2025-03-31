@@ -9,6 +9,7 @@ import {
 
 export interface RRuleFormHandle {
     createRule: () => { rule: string; duration: string };
+    validate: () => boolean;
 }
 
 const weekdays = [
@@ -148,11 +149,23 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             return hour * 60 + minute;
         }
 
-        useImperativeHandle(ref, () => ({ createRule: createRule }));
+        useImperativeHandle(ref, () => ({
+            createRule: createRule,
+            validate: isFormValidated
+        }));
 
         useEffect(() => {
             onChange?.(canCreateRule());
         }, [startTime, endTime, interval, frequency, byWeekDays, endOption]);
+
+        function resetErrors() {
+            const errors = {
+                startTime: '',
+                endTime: '',
+                weekDays: ''
+            };
+            setTimeErrors(errors);
+        }
 
         return (
             <div className="space-y-6">
@@ -169,7 +182,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                         <input
                             type="time"
                             value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
+                            onChange={(e) => {
+                                setStartTime(e.target.value);
+                                resetErrors();
+                            }}
                             className="input input-bordered w-full"
                         />
                         {timeErrors.startTime && (
@@ -183,7 +199,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                         <input
                             type="time"
                             value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
+                            onChange={(e) => {
+                                setEndTime(e.target.value);
+                                resetErrors();
+                            }}
                             className="input input-bordered w-full"
                         />
                         {timeErrors.endTime && (
@@ -229,7 +248,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                                 <button
                                     key={label}
                                     type="button"
-                                    onClick={() => toggleWeekday(value)}
+                                    onClick={() => {
+                                        toggleWeekday(value);
+                                        resetErrors();
+                                    }}
                                     className={`catalog-pill border ${byWeekDays.includes(value) ? 'bg-primary text-white' : 'border-grey-3 text-body-text'}`}
                                 >
                                     {label}

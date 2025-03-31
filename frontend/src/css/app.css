@@ -168,7 +168,7 @@
 }
 
 .rbc-calendar {
-    @apply bg-base-100 text-body-text font-lexend;
+    @apply text-body-text font-lexend;
 }
 .rbc-toolbar {
     @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 border-b border-grey-2;
