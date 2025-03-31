@@ -31,7 +31,7 @@ export default function ProgramOverview() {
     const [perPage, setPerPage] = useState(20);
     const [selectedSections, setSelectedSections] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [sortQuery, setSortQuery] = useState<string>('name_last asc');
+    const [sortQuery, setSortQuery] = useState<string>('ps.start_dt asc');
     const [includeArchived, setIncludeArchived] = useState(false);
     const archiveSectionsRef = useRef<HTMLDialogElement>(null);
     const [unableToArchiveSections, setUnableToArchiveSections] = useState<
@@ -53,7 +53,7 @@ export default function ProgramOverview() {
         error: sectionsError,
         mutate: mutateSections
     } = useSWR<ServerResponseMany<Section>, AxiosError>(
-        `/api/programs/${id}/sections?page=${page}&per_page=${perPage}`
+        `/api/programs/${id}/sections?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
     const sections = sectionsResp?.data;
@@ -198,12 +198,10 @@ export default function ProgramOverview() {
                         label="order by"
                         setState={setSortQuery}
                         enumType={{
-                            'Facility (A-Z)': 'facility_name asc',
-                            'Facility (Z-A)': 'facility_name desc',
-                            'Enrollment Count (Most)': 'enrollment desc',
-                            'Enrollment Count (Least)': 'enrollment asc',
-                            'Start Date (Earliest)': 'start_date asc',
-                            'Start Date (Latest)': 'start_date desc'
+                            'Enrollment Count (Most)': 'enrolled desc',
+                            'Enrollment Count (Least)': 'enrolled asc',
+                            'Start Date (Earliest)': 'ps.start_dt asc',
+                            'Start Date (Latest)': 'ps.start_dt desc'
                         }}
                     />
                     <div className="flex items-center">
