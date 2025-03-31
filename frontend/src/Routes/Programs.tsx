@@ -6,6 +6,7 @@ import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
 import SectionManagementForm from '@/Pages/SectionManagementForm';
+import ProgramSectionEnrollment from '@/Pages/ProgramSectionEnrollment';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -40,6 +41,11 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             handle: {
                 title: 'Class Details'
             }
+        },
+        {
+            path: 'programs/:id/section-enrollment/:section_id',
+            element: <ProgramSectionEnrollment />,
+            handle: { title: 'Add Resident' }
         }
     ],
     AdminRoles,

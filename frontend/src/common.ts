@@ -707,6 +707,12 @@ export enum FilterLibrariesVidsandHelpfulLinksResident {
     'Date Added  (Oldest First)' = '&order_by=created_at&order=ASC'
 }
 
+export enum FilterProgramSectionEnrollments {
+    'Last Name (A to Z)' = 'name_last asc',
+    'Last Name (Z to A)' = 'name_last desc',
+    'First Name (A to Z)' = 'name_first asc',
+    'First Name (Z to A)' = 'name_first desc'
+}
 export enum Timezones {
     'america/chicago' = 'America/Chicago',
     'america/new_york' = 'America/New_York',

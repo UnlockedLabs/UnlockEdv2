@@ -2,18 +2,16 @@ package database
 
 import "UnlockEdv2/src/models"
 
-func (db *DB) GetProgramSectionEnrollmentsForUser(userID, page, perPage int) (int64, []models.ProgramSectionEnrollment, error) {
+func (db *DB) GetProgramSectionEnrollmentsForUser(args *models.QueryContext) ([]models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
-	var total int64
-	tx := db.Model(&models.ProgramSectionEnrollment{}).Where("user_id = ?", userID)
-
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramSectionEnrollment{}).Where("user_id = ?", args.UserID)
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
 	if err := tx.Find(&content).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) GetProgramSectionEnrollmentsByID(id int) (*models.ProgramSectionEnrollment, error) {
@@ -55,9 +53,11 @@ func (db *DB) GetProgramSectionEnrollmentsForFacility(page, perPage int, facilit
 }
 
 func (db *DB) CreateProgramSectionEnrollments(sectionID, userID int) error {
+
 	enrollment := &models.ProgramSectionEnrollment{
-		SectionID: uint(sectionID),
-		UserID:    uint(userID),
+		SectionID:        uint(sectionID),
+		UserID:           uint(userID),
+		EnrollmentStatus: "Enrolled",
 	}
 	if err := db.Create(enrollment).Error; err != nil {
 		return newCreateDBError(err, "section enrollment")
@@ -84,23 +84,22 @@ func (db *DB) UpdateProgramSectionEnrollments(content *models.ProgramSectionEnro
 	return content, nil
 }
 
-func (db *DB) GetProgramSectionEnrollmentssForProgram(page, perPage, facilityID, programID int) (int64, []models.ProgramSectionEnrollment, error) {
+func (db *DB) GetProgramSectionEnrollmentsForProgram(args *models.QueryContext, progId int) ([]models.ProgramSectionEnrollment, error) {
 	content := []models.ProgramSectionEnrollment{}
-	var total int64
-	tx := db.Model(&models.ProgramSectionEnrollment{}).
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramSectionEnrollment{}).
 		Joins("JOIN program_sections ps ON program_section_enrollments.section_id = ps.id and ps.deleted_at IS NULL").
-		Where("ps.facility_id = ?", facilityID).
-		Where("ps.program_id = ?", programID)
+		Where("ps.facility_id = ?", args.FacilityID).
+		Where("ps.program_id = ?", progId)
 
-	if err := tx.Count(&total).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	if err := tx.Limit(perPage).
-		Offset(calcOffset(page, perPage)).
+	if err := tx.Limit(args.PerPage).
+		Offset(args.CalcOffset()).
 		Find(&content).Error; err != nil {
-		return 0, nil, newNotFoundDBError(err, "program section enrollments")
+		return nil, newNotFoundDBError(err, "program section enrollments")
 	}
-	return total, content, nil
+	return content, nil
 }
 
 func (db *DB) GetProgramSectionEnrollmentsAttendance(page, perPage, id int) (int64, []models.ProgramSectionEventAttendance, error) {
@@ -123,4 +122,24 @@ func (db *DB) GetProgramSectionEnrollmentsAttendance(page, perPage, id int) (int
 		return 0, nil, newNotFoundDBError(err, "section event attendance")
 	}
 	return total, content, nil
+}
+
+func (db *DB) GetProgramSectionEnrollmentInfo(sectionID int) (int, int, error) {
+	var result struct {
+		CurrentEnrollment int
+		Capacity          int
+	}
+
+	err := db.Table("program_section_enrollments").
+		Select("COUNT(program_section_enrollments.id) AS current_enrollment, ps.capacity").
+		Joins("JOIN program_sections ps ON program_section_enrollments.section_id = ps.id AND ps.deleted_at IS NULL").
+		Where("program_section_enrollments.section_id = ?", sectionID).
+		Group("ps.capacity").
+		Find(&result).Error
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return result.CurrentEnrollment, result.Capacity, nil
 }

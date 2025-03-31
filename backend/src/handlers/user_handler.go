@@ -24,18 +24,28 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	}
 }
 
-/**
-* GET: /api/users
-**/
 func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
-	include := r.URL.Query()["include"]
-	if slices.Contains(include, "only_unmapped") {
-		providerId := r.URL.Query().Get("provider_id")
-		return srv.handleGetUnmappedUsers(w, r, providerId, log)
-	}
 	role := r.URL.Query().Get("role")
 	args := srv.getQueryContext(r)
-	users, err := srv.Db.GetCurrentUsers(&args, role)
+	include := r.URL.Query()["include"]
+	var users []models.User
+	var err error
+	switch {
+	case slices.Contains(include, "only_unmapped"):
+		providerId := r.URL.Query().Get("provider_id")
+		return srv.handleGetUnmappedUsers(w, r, providerId, log)
+
+	case slices.Contains(include, "only_unenrolled"):
+		sectionIDStr := r.URL.Query().Get("section_id")
+		var sectionID int
+		sectionID, err = strconv.Atoi(sectionIDStr)
+		if err != nil {
+			return err
+		}
+		users, err = srv.Db.GetNonEnrolledResidents(&args, sectionID)
+	default:
+		users, err = srv.Db.GetCurrentUsers(&args, role)
+	}
 	if err != nil {
 		log.add("facility_id", args.FacilityID)
 		log.add("search", args.Search)
