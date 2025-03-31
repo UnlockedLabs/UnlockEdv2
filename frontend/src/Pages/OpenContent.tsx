@@ -49,8 +49,8 @@ export default function OpenContent() {
             if (tourState.target === '#library-viewer-sub-page') {
                 setTourState({
                     stepIndex:
-                        targetToStepIndexMap['#knowledge-center-enter-library'],
-                    target: '#knowledge-center-enter-library'
+                        targetToStepIndexMap['#knowledge-center-fav-lib'],
+                    target: '#knowledge-center-fav-lib'
                 });
             } else {
                 setTourState({

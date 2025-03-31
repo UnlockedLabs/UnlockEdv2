@@ -79,9 +79,8 @@ export default function UnlockEdTour() {
                 switch (currentTarget) {
                     case '#knowledge-center-landing':
                         setTourState({
-                            stepIndex:
-                                targetToStepIndexMap['#visit-knowledge-center'],
-                            target: '#visit-knowledge-center'
+                            stepIndex: targetToStepIndexMap['#resident-home'],
+                            target: '#resident-home'
                         });
                         navigate('/home');
                         return;
