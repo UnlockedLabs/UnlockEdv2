@@ -161,8 +161,8 @@ export default function ProgramSectionEnrollment() {
                                 ) : (
                                     <tr>
                                         <td className="pr-2">
-                                            No credentialed residents available
-                                            at this facility.
+                                            No eligible residents available at
+                                            this facility.
                                         </td>
                                     </tr>
                                 )
@@ -186,7 +186,7 @@ export default function ProgramSectionEnrollment() {
                         )}
                     </div>
                     {errorMessage && (
-                        <div className="text-red-500 text-sm mt-2">
+                        <div className="text-error text-sm mt-2">
                             {errorMessage}
                         </div>
                     )}

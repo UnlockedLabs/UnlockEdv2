@@ -44,10 +44,10 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	return users, nil
 }
 
-func (db *DB) GetCredentialedUsers(args *models.QueryContext, sectionId int) ([]models.User, error) {
+func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, sectionId int) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_section_enrollments pse ON users.id = pse.user_id AND pse.section_id = ?", sectionId).
-		Where("user_id IS NULL"). //not enrolled in section
+		Where("pse.user_id IS NULL"). //not enrolled in section
 		Where("users.role = ?", "student")
 
 	if args.Search != "" {

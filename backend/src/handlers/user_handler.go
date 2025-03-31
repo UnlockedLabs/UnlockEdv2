@@ -42,7 +42,7 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		if err != nil {
 			return err
 		}
-		users, err = srv.Db.GetCredentialedUsers(&args, sectionID)
+		users, err = srv.Db.GetNonEnrolledResidents(&args, sectionID)
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 	}
