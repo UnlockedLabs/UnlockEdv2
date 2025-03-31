@@ -201,3 +201,6 @@
 html[data-theme='dark'] .rbc-off-range-bg {
     background-color: var(--teal-1);
 }
+html[data-theme='dark'] .rbc-today {
+    background-color: var(--teal-2);
+}
