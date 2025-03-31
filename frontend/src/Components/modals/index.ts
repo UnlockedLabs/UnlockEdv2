@@ -245,9 +245,9 @@ export const getUserInputs = (
         },
         {
             type: FormInputTypes.Text,
-            label: 'Department Of Corrections ID',
+            label: 'Department of Corrections ID',
             interfaceRef: 'doc_id',
-            required: false,
+            required: true,
             length: 25
         }
     ];
