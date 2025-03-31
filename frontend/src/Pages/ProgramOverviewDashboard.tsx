@@ -1,16 +1,28 @@
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { ProgramDashboard, ServerResponseMany } from '@/common';
+import {
+    Program,
+    Section,
+    SelectedSectionStatus,
+    ServerResponseOne,
+    ServerResponseMany
+} from '@/common';
 import { AxiosError } from 'axios';
 import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
+import SectionStatus, { isArchived } from '@/Components/SectionStatus';
+import { showModal, TextModalType, TextOnlyModal } from '@/Components/modals';
+import ULIComponent from '@/Components/ULIComponent';
+import { XMarkIcon } from '@heroicons/react/24/solid';
+import API from '@/api/api';
+import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
 
 export default function ProgramOverview() {
@@ -19,19 +31,34 @@ export default function ProgramOverview() {
     const [perPage, setPerPage] = useState(20);
     const [selectedSections, setSelectedSections] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [sortQuery, setSortQuery] = useState<string>('name_last asc');
-    const [includeActive, setIncludeActive] = useState(true);
+    const [sortQuery, setSortQuery] = useState<string>('ps.start_dt asc');
+    const [includeArchived, setIncludeArchived] = useState(false);
+    const archiveSectionsRef = useRef<HTMLDialogElement>(null);
+    const [unableToArchiveSections, setUnableToArchiveSections] = useState<
+        Section[]
+    >([]);
+    const [ableToArchiveSections, setAbleToArchiveSections] = useState<
+        Section[]
+    >([]);
     const navigate = useNavigate();
-    const [showAllSections, setShowAllSections] = useState(false);
+
+    const { data: programResp, error: programError } = useSWR<
+        ServerResponseOne<Program>,
+        AxiosError
+    >(`/api/programs/${id}`);
+    const program = programResp?.data;
+
     const {
-        data: programResp,
-        error: programError,
-        mutate
-    } = useSWR<ServerResponseMany<ProgramDashboard>, AxiosError>(
-        `/api/programs/${id}/overview?page=${page}&per_page=${perPage}`
+        data: sectionsResp,
+        error: sectionsError,
+        mutate: mutateSections
+    } = useSWR<ServerResponseMany<Section>, AxiosError>(
+        `/api/programs/${id}/sections?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
-    const program = programResp?.data[0];
-    const meta = program?.meta ?? {
+
+    const sections = sectionsResp?.data;
+
+    const meta = sectionsResp?.meta ?? {
         total: 0,
         per_page: 20,
         page: 1,
@@ -39,20 +66,49 @@ export default function ProgramOverview() {
         last_page: 1
     };
 
-    if (programError) {
-        <Error />;
+    const checkResponse = useCheckResponse({
+        mutate: mutateSections,
+        refModal: archiveSectionsRef
+    });
+
+    useEffect(() => {
+        if (sections === undefined) return;
+        const unableToArchive = sections.filter(
+            (section) =>
+                selectedSections.includes(section.id) &&
+                (section.section_status === SelectedSectionStatus.Active ||
+                    section.section_status ===
+                        SelectedSectionStatus.Scheduled) &&
+                section.enrolled >= 1
+        );
+
+        const ableToArchive = sections.filter(
+            (section) =>
+                selectedSections.includes(section.id) &&
+                !unableToArchive.includes(section)
+        );
+
+        setUnableToArchiveSections(unableToArchive);
+        setAbleToArchiveSections(ableToArchive);
+    }, [selectedSections, sections]);
+
+    if (programError || sectionsError || sections === undefined) {
+        return <Error />;
     }
 
-    const allSelected = selectedSections
-        ? selectedSections.length === program?.section_details.length &&
-          program?.section_details.length > 0
-        : false;
+    const nonArchivedSections = sections.filter(
+        (section) => !isArchived(section)
+    );
+
+    const allSelected =
+        selectedSections.length === nonArchivedSections.length &&
+        nonArchivedSections.length > 0;
+
+    const filteredSections = includeArchived ? sections : nonArchivedSections;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedSections(
-                program?.section_details.map((s) => s.id) ?? []
-            );
+            setSelectedSections(nonArchivedSections.map((s) => s.id));
         } else {
             setSelectedSections([]);
         }
@@ -74,8 +130,6 @@ export default function ProgramOverview() {
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPage(1);
-        void mutate();
-        setIncludeActive(includeActive); // Same deal just to get eslint to be quiet
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
 
@@ -86,6 +140,25 @@ export default function ProgramOverview() {
             );
         }
     };
+    function confirmArchiveSections() {
+        showModal(archiveSectionsRef);
+    }
+
+    async function archiveSection() {
+        const selectedAbleToArchiveSections = selectedSections.filter((id) =>
+            ableToArchiveSections.some((section) => section.id === id)
+        );
+        const idString = '?id=' + selectedAbleToArchiveSections.join('&id=');
+        const resp = await API.patch(`program-sections${idString}`, {
+            archived_at: new Date().toISOString()
+        });
+        checkResponse(
+            resp.success,
+            'Unable to update section',
+            'Section updated successfully'
+        );
+        if (resp.success) setSelectedSections([]);
+    }
 
     return (
         <div className="p-4 px-5">
@@ -125,28 +198,25 @@ export default function ProgramOverview() {
                         label="order by"
                         setState={setSortQuery}
                         enumType={{
-                            'Facility (A-Z)': 'facility_name asc',
-                            'Facility (Z-A)': 'facility_name desc',
-                            'Enrollment Count (Most)': 'enrollment desc',
-                            'Enrollment Count (Least)': 'enrollment asc',
-                            'Start Date (Earliest)': 'start_date asc',
-                            'Start Date (Latest)': 'start_date desc'
+                            'Enrollment Count (Most)': 'enrolled desc',
+                            'Enrollment Count (Least)': 'enrolled asc',
+                            'Start Date (Earliest)': 'ps.start_dt asc',
+                            'Start Date (Latest)': 'ps.start_dt desc'
                         }}
                     />
                     <div className="flex items-center">
                         <input
                             type="checkbox"
                             className="checkbox checkbox-sm mr-2"
-                            checked={showAllSections}
                             onChange={(e) => {
-                                setShowAllSections(e.target.checked);
-                                setIncludeActive(!e.target.checked);
+                                setIncludeArchived(e.target.checked);
                             }}
                         />
-                        <span className="text-sm">Show All Classes</span>
+                        <span className="text-sm">
+                            Include Archived Classes
+                        </span>
                     </div>
                 </div>
-
                 <div className="flex flex-row gap-x-2">
                     {selectedSections.length === 1 && (
                         <button
@@ -158,17 +228,30 @@ export default function ProgramOverview() {
                             Enroll Students
                         </button>
                     )}
-                    <button
-                        className="button flex items-center"
-                        onClick={() =>
-                            navigate(`/programs/${id}/class`, {
-                                state: { title: `Program: ${program?.name}` }
-                            })
-                        }
-                    >
-                        <PlusCircleIcon className="w-4 h-4 mr-1" />
-                        Add Class
-                    </button>
+                    {selectedSections.length > 0 ? (
+                        <button
+                            className="button flex items-center bg-pale-yellow border border-dark-yellow text-body-text"
+                            onClick={confirmArchiveSections}
+                        >
+                            <ArchiveBoxIcon className="w-4 h-4 mr-1" />
+                            Archive Class
+                            {selectedSections.length > 1 ? 'es' : ''}
+                        </button>
+                    ) : (
+                        <button
+                            className="button flex items-center"
+                            onClick={() =>
+                                navigate(`/programs/${id}/class`, {
+                                    state: {
+                                        title: `Program: ${program?.name}`
+                                    }
+                                })
+                            }
+                        >
+                            <PlusCircleIcon className="w-4 h-4 mr-1" />
+                            Add Class
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -188,34 +271,48 @@ export default function ProgramOverview() {
                                 />
                             </th>
                             <th>Facility Name</th>
-                            <th>Facilitator</th>
+                            <th>Instructor Name</th>
                             <th>Start Date</th>
                             <th>End Date</th>
-                            <th>Enrollment</th>
+                            <th className="w-[200px]">Enrollment</th>
+                            <th className="w-[150px]">Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {program?.section_details.map((section) => {
+                        {filteredSections.map((section) => {
                             const isSelected = selectedSections.includes(
                                 section.id
                             );
                             return (
                                 <tr
                                     key={section.id}
-                                    onClick={() => handleToggleRow(section.id)}
-                                    className={`cursor-pointer ${
-                                        isSelected ? 'bg-background ' : ''
-                                    }`}
+                                    onClick={() => {
+                                        if (!isArchived(section))
+                                            handleToggleRow(section.id);
+                                    }}
+                                    className={
+                                        isArchived(section)
+                                            ? 'bg-grey-1 cursor-not-allowed'
+                                            : `cursor-pointer ${
+                                                  isSelected
+                                                      ? 'bg-background '
+                                                      : ''
+                                              }`
+                                    }
                                 >
                                     <td onClick={(e) => e.stopPropagation()}>
-                                        <input
-                                            type="checkbox"
-                                            className="checkbox checkbox-sm"
-                                            checked={isSelected}
-                                            onChange={() =>
-                                                handleToggleRow(section.id)
-                                            }
-                                        />
+                                        {isArchived(section) ? (
+                                            <div></div>
+                                        ) : (
+                                            <input
+                                                type="checkbox"
+                                                className="checkbox checkbox-sm"
+                                                checked={isSelected}
+                                                onChange={() =>
+                                                    handleToggleRow(section.id)
+                                                }
+                                            />
+                                        )}
                                     </td>
                                     <td>{section.facility_name}</td>
                                     <td>{section.instructor_name}</td>
@@ -255,6 +352,13 @@ export default function ProgramOverview() {
                                             denominator={section.capacity}
                                         />
                                     </td>
+                                    <td>
+                                        <SectionStatus
+                                            status={section.section_status}
+                                            section={section}
+                                            mutateSections={mutateSections}
+                                        />
+                                    </td>
                                 </tr>
                             );
                         })}
@@ -271,6 +375,64 @@ export default function ProgramOverview() {
                     </div>
                 )}
             </div>
+
+            <TextOnlyModal
+                ref={archiveSectionsRef}
+                type={
+                    ableToArchiveSections.length == 0
+                        ? TextModalType.Information
+                        : TextModalType.Confirm
+                }
+                title={`Archive Class${selectedSections.length > 1 ? 'es' : ''}`}
+                text={
+                    <div>
+                        {unableToArchiveSections.length > 0 && (
+                            <>
+                                <div className="text-error">
+                                    <p className="text-error font-bold">
+                                        We are unable to archive the following
+                                        classes due to their active or scheduled
+                                        status with enrolled students:
+                                    </p>
+                                    <ul className="py-2">
+                                        {unableToArchiveSections.map(
+                                            (section) => (
+                                                <li
+                                                    key={section.id}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <ULIComponent
+                                                        icon={XMarkIcon}
+                                                    />
+                                                    {section.facility_name}
+                                                </li>
+                                            )
+                                        )}
+                                    </ul>
+                                </div>
+                                <br />
+                            </>
+                        )}
+                        {ableToArchiveSections.length != 0 && (
+                            <>
+                                <p>
+                                    Archive these classes at the following
+                                    facilities?
+                                </p>
+                                <ul className="list-disc list-inside py-2">
+                                    {ableToArchiveSections.map((section) => (
+                                        <li key={section.id}>
+                                            {section.facility_name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+                }
+                onSubmit={() => void archiveSection()}
+                onClose={() => console.log('close archive section')}
+            ></TextOnlyModal>
         </div>
     );
 }

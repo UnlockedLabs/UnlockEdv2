@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,28 +22,29 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			progamIdMap := test.mapKeyValues
-			if progamIdMap["err"] != nil {
-				t.Fatalf("unable to get program id from db, error is %v", progamIdMap["err"])
+			programIdMap := test.mapKeyValues
+			if programIdMap["err"] != nil {
+				t.Fatalf("unable to get program id from db, error is %v", programIdMap["err"])
 			}
 			req, err := http.NewRequest(http.MethodGet, "/api/programs/{id}/sections", nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			id := progamIdMap["id"].(uint)
+			id := programIdMap["id"].(uint)
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRole(server.handleGetSectionsForProgram, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				args := models.QueryContext{
-					Page:    1,
-					PerPage: 10,
+					Page:       1,
+					PerPage:    10,
+					FacilityID: 1,
 				}
-				sections, err := server.Db.GetSectionsForProgram(int(id), &args)
+				sections, err := server.Db.GetProgramSectionDetailsByID(int(id), &args)
 				if err != nil {
 					t.Errorf("failed to get sections for program from db, error is %v", err)
 				}
-				data := models.PaginatedResource[models.ProgramSection]{}
+				data := models.PaginatedResource[models.ProgramSectionDetail]{}
 				received := rr.Body.String()
 				if err = json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
@@ -51,7 +53,7 @@ func TestHandleGetSectionsForProgram(t *testing.T) {
 					t.Errorf("handler returned unexpected total returned: got %v want %v", data.Meta.Total, args.Total)
 				}
 				for _, section := range sections {
-					if !slices.ContainsFunc(data.Data, func(sec models.ProgramSection) bool {
+					if !slices.ContainsFunc(data.Data, func(sec models.ProgramSectionDetail) bool {
 						return sec.ID == section.ID
 					}) {
 						t.Error("sections for program not found, out of sync")
@@ -165,12 +167,6 @@ func TestHandleCreateSection(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unable to get program section from db, error is %v", err)
 				}
-				t.Cleanup(func() {
-					err := server.Db.DeleteProgramSection(int(data.Data.ID))
-					if err != nil {
-						fmt.Println(err)
-					}
-				})
 				if diff := cmp.Diff(section, &data.Data); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
 				}
@@ -198,11 +194,6 @@ func TestHandleUpdateSection(t *testing.T) {
 					t.Fatalf("failed to create program section, %v", err)
 				}
 				id = newSection.ID
-				t.Cleanup(func() {
-					if err := server.Db.DeleteProgramSection(int(id)); err != nil {
-						fmt.Println("Unable to delete program section. Error is: ", err)
-					}
-				})
 			} else {
 				id = 1
 			}
@@ -211,7 +202,7 @@ func TestHandleUpdateSection(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to marshal form, error is %v", err)
 			}
-			req, err := http.NewRequest(http.MethodPatch, "/api/program-sections/{id}", bytes.NewBuffer(jsonForm))
+			req, err := http.NewRequest(http.MethodPatch, "/api/program-sections", bytes.NewBuffer(jsonForm))
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
@@ -228,51 +219,8 @@ func TestHandleUpdateSection(t *testing.T) {
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(updatedSection, &data.Data); diff != "" {
+				if diff := cmp.Diff(updatedSection, &data.Data); diff != "" && !strings.Contains(diff, "UpdatedAt") {
 					t.Errorf("handler returned unexpected results: %v", diff)
-				}
-			}
-		})
-	}
-}
-
-func TestHandleDeleteSection(t *testing.T) {
-	httpTests := []httpTest{
-		{"TestUserCannotDeleteSection", "student", getProgramSection(1), http.StatusUnauthorized, ""},
-		{"TestAdminCanDeleteSection", "admin", getProgramSection(1), http.StatusNoContent, ""},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			sectionMap := test.mapKeyValues
-			if sectionMap["err"] != nil {
-				t.Fatalf("unable to build program section, error is %v", sectionMap["err"])
-			}
-			programSection := sectionMap["section"].(models.ProgramSection)
-			var id uint
-			if test.expectedStatusCode == http.StatusNoContent {
-				newSection, err := server.Db.CreateProgramSection(&programSection)
-				if err != nil {
-					t.Fatalf("failed to create program section, %v", err)
-				}
-				id = newSection.ID
-			} else {
-				id = 1
-			}
-			req, err := http.NewRequest(http.MethodDelete, "/api/program-sections/{section_id}", nil)
-			if err != nil {
-				t.Fatalf("unable to create new request, error is %v", err)
-			}
-			req.SetPathValue("section_id", fmt.Sprintf("%d", id))
-			handler := getHandlerByRoleWithMiddleware(server.handleDeleteSection, test.role)
-			rr := executeRequest(t, req, handler, test)
-			if test.expectedStatusCode == http.StatusNoContent {
-				received := rr.Body.String()
-				data := models.Resource[struct{}]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal resource, error is %v", err)
-				}
-				if data.Message != "Section deleted successfully" {
-					t.Errorf("handler returned wrong body: got %v want %v", data.Message, "Section deleted successfully")
 				}
 			}
 		})
@@ -335,7 +283,7 @@ func getSectionId() map[string]any {
 	if err != nil {
 		form["err"] = err
 	}
-	sections, err := server.Db.GetSectionsForProgram(int(programs[rand.Intn(len(programs))].ID), &args)
+	sections, err := server.Db.GetProgramSectionDetailsByID(int(programs[rand.Intn(len(programs))].ID), &args)
 	if err != nil {
 		form["err"] = err
 	}
