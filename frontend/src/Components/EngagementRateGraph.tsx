@@ -107,7 +107,7 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
         <ResponsiveContainer width="100%" height="100%" className="pt-2">
             <LineChart
                 data={processedData}
-                margin={{ top: 20, right: 30, left: 50, bottom: 40 }}
+                margin={{ left: 20, right: 30, top: 20, bottom: 20 }}
             >
                 <CartesianGrid stroke={strokeColor} strokeDasharray="3 3" />
                 <XAxis
@@ -115,6 +115,10 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
                     interval={xTicks}
                     stroke={strokeColor}
                     label={{
+                        value:
+                            viewType === 'peakLogin'
+                                ? 'Time of day'
+                                : 'Last 30 days',
                         style: { fill: strokeColor },
                         dy: 20,
                         zIndex: 100
