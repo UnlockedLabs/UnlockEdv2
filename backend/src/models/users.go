@@ -91,3 +91,53 @@ func (user *User) GetTraits() map[string]interface{} {
 func (user *User) IsAdmin() bool {
 	return slices.Contains(AdminRoles, user.Role)
 }
+
+type UserAccountHistory struct {
+	UserID                  uint                     `json:"user_id" gorm:"primaryKey"`
+	AdminID                 *uint                    `json:"admin_id"`
+	Action                  UserAccountHistoryAction `json:"action" gorm:"size:255;primaryKey"`
+	ProgramClassesHistoryID *uint                    `json:"program_classes_history_id"`
+	FacilityID              *uint                    `json:"facility_id"`
+	CreatedAt               time.Time                `json:"created_at" gorm:"primaryKey"`
+
+	User                  *User                  `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	Admin                 *User                  `json:"admin,omitempty" gorm:"foreignKey:AdminID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	ProgramClassesHistory *ProgramClassesHistory `json:"program_classes_history,omitempty" gorm:"foreignKey:ProgramClassesHistoryID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	Facility              *Facility              `json:"facility,omitempty" gorm:"foreignKey:FacilityID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+}
+
+func (UserAccountHistory) TableName() string {
+	return "user_account_history"
+}
+
+type UserAccountHistoryAction string
+
+const (
+	AccountCreation  UserAccountHistoryAction = "account_creation"
+	FacilityTransfer UserAccountHistoryAction = "facility_transfer"
+	SetPassword      UserAccountHistoryAction = "set_password"
+	ResetPassword    UserAccountHistoryAction = "reset_password"
+)
+
+type UserAccountHistoryResponse struct {
+	Action                  UserAccountHistoryAction `json:"action"`
+	CreatedAt               time.Time                `json:"created_at"`
+	UserID                  uint                     `json:"user_id"`
+	UserUsername            string                   `json:"user_username"`
+	AdminUsername           *string                  `json:"admin_username"`
+	FacilityName            *string                  `json:"facility_name"`
+	ProgramClassesHistoryID *uint                    `json:"program_classes_history_id"`
+
+	ProgramClassesHistory *ProgramClassesHistory `json:"program_classes_history,omitempty" gorm:"foreignKey:ProgramClassesHistoryID;constraint:OnDelete:SET NULL"`
+}
+
+func NewUserAccountHistory(userID uint, action UserAccountHistoryAction, adminID *uint, programClassesHistoryID *uint, facilityID *uint) *UserAccountHistory {
+	return &UserAccountHistory{
+		UserID:                  userID,
+		AdminID:                 adminID,
+		Action:                  action,
+		ProgramClassesHistoryID: programClassesHistoryID,
+		FacilityID:              facilityID,
+		CreatedAt:               time.Now(),
+	}
+}

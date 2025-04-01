@@ -98,20 +98,18 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 		trans.Rollback()
 		return newUpdateDBError(err, "users")
 	}
-	/* HISTORY ACTION START */
-	// uintFacID := uint(transFacilityID)
-	// history := models.UserAccountHistory{
-	// 	UserID:     uint(userID),
-	// 	AdminID:    &ctx.UserID,
-	// 	Action:     models.FacilityTransfer,
-	// 	FacilityID: &uintFacID,
-	// 	CreatedAt:  time.Now(),
-	// }
-	// if err := trans.Create(&history).Error; err != nil {
-	// 	trans.Rollback()
-	// 	return newCreateDBError(err, "user_account_history")
-	// }
-	/* HISTORY ACTION END */
+	uintFacID := uint(transFacilityID)
+	history := models.UserAccountHistory{
+		UserID:     uint(userID),
+		AdminID:    &ctx.UserID,
+		Action:     models.FacilityTransfer,
+		FacilityID: &uintFacID,
+		CreatedAt:  time.Now(),
+	}
+	if err := trans.Create(&history).Error; err != nil {
+		trans.Rollback()
+		return newCreateDBError(err, "user_account_history")
+	}
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit DB transaction")
 	}
@@ -517,4 +515,38 @@ func (db *DB) IncrementUserFAQClick(args *models.QueryContext, question string) 
 		return newUpdateDBError(err, "faq_click_metrics")
 	}
 	return nil
+}
+
+func (db *DB) InsertUserAccountHistoryAction(ctx context.Context, accountHistory *models.UserAccountHistory) error {
+	if err := db.WithContext(ctx).Create(&accountHistory).Error; err != nil {
+		log.Errorf("Error inserting user account history action: %v", err)
+		return newCreateDBError(err, "user_account_history")
+	}
+	return nil
+}
+
+func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]models.UserAccountHistoryResponse, error) {
+	history := make([]models.UserAccountHistoryResponse, 0, args.PerPage)
+	tx := db.WithContext(args.Ctx).
+		Table("user_account_history uah").
+		Select(`uah.action, uah.created_at, uah.user_id, 
+				users.username AS user_username, 
+				admins.username AS admin_username, 
+				facilities.name AS facility_name, 
+				psh.*`).
+		Joins("INNER JOIN users ON uah.user_id = users.id").
+		Joins("LEFT JOIN users admins ON uah.admin_id = admins.id").
+		Joins("LEFT JOIN facilities ON uah.facility_id = facilities.id").
+		Joins("LEFT JOIN program_classes_history psh ON uah.program_classes_history_id = psh.id").
+		Where("uah.user_id = ?", userID)
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "user_account_history")
+	}
+	if err := tx.Order("uah." + args.OrderClause()).
+		Offset(args.CalcOffset()).
+		Limit(args.PerPage).
+		Scan(&history).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "user_account_history")
+	}
+	return history, nil
 }

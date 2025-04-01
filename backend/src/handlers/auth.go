@@ -310,6 +310,10 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	}
 	resp := map[string]string{}
 	resp["redirect_to"] = AuthCallbackRoute
+	setPassword := models.NewUserAccountHistory(claims.UserID, models.SetPassword, nil, nil, nil)
+	if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), setPassword); err != nil {
+		return newCreateRequestServiceError(err)
+	}
 	return writeJsonResponse(w, http.StatusOK, resp)
 }
 

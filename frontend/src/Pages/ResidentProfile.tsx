@@ -4,7 +4,9 @@ import {
     OpenContentResponse,
     ResidentAccountAction,
     ResidentEngagementProfile,
+    ServerResponseMany,
     ServerResponseOne,
+    UserAccountHistoryResponse,
     ValidResident
 } from '@/common';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
@@ -12,7 +14,8 @@ import { ResponsiveContainer } from 'recharts';
 import StatsCard from '@/Components/StatsCard';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
-import ClampedText from '@/Components/ClampedText';
+import OpenContentCardRow from '@/Components/cards/OpenContentCard';
+import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
     closeModal,
@@ -26,6 +29,85 @@ import { VerifyResidentModal } from '@/Components/modals/VerifyResidentModal';
 import API from '@/api/api';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
+
+function UserProfileInfoRow({
+    column,
+    value
+}: {
+    column: string;
+    value: string;
+}) {
+    return (
+        <div className="grid grid-cols-2">
+            <p className="body">{column}</p>
+            <div className="flex">
+                <p className="body">:</p>
+                <p className="body pl-3">{value}</p>
+            </div>
+        </div>
+    );
+}
+
+function OpenContentCardToggle({
+    activeTab,
+    setActiveTab
+}: {
+    activeTab: 'libraries' | 'videos';
+    setActiveTab: React.Dispatch<React.SetStateAction<'libraries' | 'videos'>>;
+}) {
+    const activeTabStyle = 'font-bold text-teal-4';
+    return (
+        <div className="flex flex-row gap-4">
+            <h2
+                className={`cursor-pointer ${activeTab === 'libraries' ? activeTabStyle : ''}`}
+                onClick={() => setActiveTab('libraries')}
+            >
+                Top Viewed Libraries
+            </h2>
+            <span>|</span>
+            <h2
+                className={`cursor-pointer ${activeTab === 'videos' ? activeTabStyle : ''}`}
+                onClick={() => setActiveTab('videos')}
+            >
+                Recently Viewed Videos
+            </h2>
+        </div>
+    );
+}
+
+function AccountHistoryRowCard({
+    activity
+}: {
+    activity: UserAccountHistoryResponse;
+}) {
+    let introText;
+    switch (activity.action) {
+        case 'account_creation':
+            introText = 'Account created by ' + activity.admin_username;
+            break;
+        case 'facility_transfer':
+            introText =
+                'Account assigned to ' +
+                activity.facility_name +
+                ' by ' +
+                activity.admin_username;
+            break;
+        case 'set_password':
+            introText = 'New password set by ' + activity.user_username;
+            break;
+        case 'reset_password':
+            introText =
+                'Password reset initiated by ' + activity.admin_username;
+            break;
+    }
+    if (!introText) return;
+    return (
+        <p className="body">
+            {introText} (
+            {new Date(activity.created_at).toLocaleDateString('en-US')})
+        </p>
+    );
+}
 
 const ResidentProfile = () => {
     const { user } = useAuth();
@@ -41,6 +123,15 @@ const ResidentProfile = () => {
     const [controlKey, setControlKey] = useState<number>(0);
     const [resident, setResident] = useState<ValidResident | null>();
     const metrics = data?.data;
+    const [page, setPage] = useState(1);
+    const { data: activityHistory, error: activityHistoryError } = useSWR<
+        ServerResponseMany<UserAccountHistoryResponse>,
+        AxiosError
+    >(`/api/user-account-history/${user_id}?page=${page}&per_page=5`);
+
+    const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(
+        'libraries'
+    );
     const isLessAvgThanOneHour =
         (metrics?.activity_engagement.total_hours_active_weekly ?? 0) < 1;
     const isLessThanOneHour =
@@ -114,263 +205,246 @@ const ResidentProfile = () => {
     }
     //end transfer logic
     return (
-        <>
-            <div className="overflow-x-hidden px-5 pb-4">
-                {error && <div>Error loading data</div>}
-                {!data || (isLoading && <div>Loading...</div>)}
-                {data && metrics && (
-                    <>
-                        <div className="flex flex-row gap-6 items-stretch">
-                            <div className="w-[300px] flex flex-col gap-4">
-                                <div className="card p-4 overflow-hidden flex-1 h-full text-grey-4">
-                                    <div className="justify-items-center">
-                                        <UserCircleIcon className="w-[80px] h-[80px]" />
-                                    </div>
-                                    <div className="mt-auto">
-                                        <div className="text-2xl text-center">
-                                            {metrics?.user.name_first}{' '}
-                                            {metrics?.user.name_last}
-                                        </div>
-                                        <div className="text-base">
-                                            <div className="grid grid-cols-2">
-                                                <p>Username</p>
-                                                <div className="flex flex-row justify-between">
-                                                    <p>:</p>
-                                                    {metrics.user.username}
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2">
-                                                <p>DOC ID</p>
-                                                <div className="flex flex-row justify-between">
-                                                    <p>:</p>
-                                                    {metrics.user.doc_id}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2">
-                                                <p>Joined</p>
-                                                <div className="flex flex-row justify-between">
-                                                    <p>:</p>
-                                                    {metrics?.user.created_at
-                                                        ? new Date(
-                                                              metrics.activity_engagement.joined
-                                                          ).toLocaleDateString(
-                                                              'en-US',
-                                                              {
-                                                                  year: 'numeric',
-                                                                  month: 'short',
-                                                                  day: 'numeric'
-                                                              }
-                                                          )
-                                                        : 'No Date Available'}
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2">
-                                                <p>Last Active</p>
-                                                <div className="flex flex-row justify-between">
-                                                    <p>:</p>
-                                                    {metrics.activity_engagement
-                                                        .last_active_date
-                                                        ? new Date().toLocaleDateString(
-                                                              'en-US',
-                                                              {
-                                                                  year: 'numeric',
-                                                                  month: 'short',
-                                                                  day: 'numeric'
-                                                              }
-                                                          )
-                                                        : 'N/A'}
-                                                </div>
-                                            </div>
-                                            {user && canSwitchFacility(user) ? (
-                                                <>
-                                                    <div className="grid grid-cols-2">
-                                                        <div className="col-span-2 mt-2">
-                                                            <DropdownControl
-                                                                key={controlKey}
-                                                                useLabel={true}
-                                                                label="Manage Account"
-                                                                enumType={
-                                                                    ResidentAccountAction
-                                                                }
-                                                                customCallback={
-                                                                    executeAccountAction
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                ''
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+        <div className="overflow-x-hidden px-5 pb-4">
+            {error && <div>Error loading data</div>}
+            {!data || (isLoading && <div>Loading...</div>)}
+            {data && metrics && (
+                <div className="space-y-6">
+                    <div className="flex flex-row gap-6">
+                        <div className="card card-row-padding flex flex-col justify-center">
+                            <div className="justify-items-center">
+                                <UserCircleIcon className="w-24" />
                             </div>
-                            {/* Chart */}
-                            <div className="flex-1 flex flex-col gap-4">
-                                <div className="card card-row-padding overflow-hidden h-full flex flex-col">
-                                    <h1 className="">
-                                        {metrics?.user.name_first +
-                                            "'s Recent Activity"}
-                                    </h1>
-                                    <div className=" items-stretch">
-                                        <div className="w-full h-[240px] overflow-visible">
-                                            <ResponsiveContainer
-                                                className="w-full h-full overflow-visible pb-10"
-                                                width="100%"
-                                                height="100%"
-                                                debounce={500}
-                                            >
-                                                <EngagementRateGraph
-                                                    data={
-                                                        metrics?.session_engagement ??
-                                                        []
-                                                    }
-                                                    viewType="userEngagement"
-                                                />
-                                            </ResponsiveContainer>
+                            <h1 className="text-center mb-2">
+                                {metrics?.user.name_first}{' '}
+                                {metrics?.user.name_last}
+                            </h1>
+                            <UserProfileInfoRow
+                                column="Username"
+                                value={metrics.user.username}
+                            />
+                            <UserProfileInfoRow
+                                column="DOC ID"
+                                value={metrics.user.doc_id ?? 'N/a'}
+                            />
+                            <UserProfileInfoRow
+                                column="Joined"
+                                value={
+                                    metrics?.user.created_at
+                                        ? new Date(
+                                              metrics.activity_engagement.joined
+                                          ).toLocaleDateString('en-US', {
+                                              year: 'numeric',
+                                              month: 'short',
+                                              day: 'numeric'
+                                          })
+                                        : 'No Date Available'
+                                }
+                            />
+                            <UserProfileInfoRow
+                                column="Last Active"
+                                value={
+                                    metrics.activity_engagement.last_active_date
+                                        ? new Date().toLocaleDateString(
+                                              'en-US',
+                                              {
+                                                  year: 'numeric',
+                                                  month: 'short',
+                                                  day: 'numeric'
+                                              }
+                                          )
+                                        : 'N/A'
+                                }
+                            />
+                            {user && canSwitchFacility(user) ? (
+                                <>
+                                    <div className="grid grid-cols-2">
+                                        <div className="col-span-2 mt-2">
+                                            <DropdownControl
+                                                key={controlKey}
+                                                useLabel={true}
+                                                label="Manage Account"
+                                                enumType={ResidentAccountAction}
+                                                customCallback={
+                                                    executeAccountAction
+                                                }
+                                            />
                                         </div>
                                     </div>
-                                </div>
-                            </div>
+                                </>
+                            ) : (
+                                ''
+                            )}
                         </div>
-                        {/* Cards */}
-                        <div className="w-[1/2] grid grid-cols-3 gap-4 mb-6 mt-6">
-                            <StatsCard
-                                title="Days Active"
-                                number={metrics.activity_engagement.total_active_days_monthly.toFixed(
-                                    0
-                                )}
-                                label="Days"
-                                tooltip="Total days active in UnlockEd"
-                                useToLocaleString={false}
-                            />
-                            <StatsCard
-                                title="Avg Time Per Week"
-                                number={
-                                    parseFloat(avgNumber) === 0
-                                        ? '0'
-                                        : parseFloat(avgNumber) < 1
-                                          ? '<1'
-                                          : avgNumber
-                                }
-                                label={avgLabel}
-                                tooltip="Average time spent in UnlockEd per week"
-                                useToLocaleString={false}
-                            />
-                            <StatsCard
-                                title="Total Time This Week"
-                                number={
-                                    parseFloat(weekNumber) === 0
-                                        ? '0'
-                                        : parseFloat(weekNumber) < 1
-                                          ? '<1'
-                                          : weekNumber
-                                }
-                                label={weekLabel}
-                                tooltip="Total time spent in UnlockEd this week"
-                            />
+                        {/* Chart */}
+                        <div className="card card-row-padding grow">
+                            <h2>
+                                {metrics?.user.name_first +
+                                    "'s Recent Activity"}
+                            </h2>
+                            <ResponsiveContainer>
+                                <EngagementRateGraph
+                                    data={metrics?.session_engagement ?? []}
+                                    viewType="userEngagement"
+                                />
+                            </ResponsiveContainer>
                         </div>
-                        {/* Tables */}
-                        <div className="grid grid-cols-2 gap-3 mb-6 mt-6">
-                            <div className="card pt-2 px-3">
-                                <div className="text-teal-4 text-center text-lg font-semibold">
-                                    Top 5 Most Viewed Libraries
-                                </div>
-                                <table className="table-2 mb-4">
-                                    <thead>
-                                        <tr className="grid-col-2">
-                                            <th className="justify-self-start">
-                                                Library Name
-                                            </th>
-                                            <th># Hours</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="">
-                                        {metrics.top_libraries.map(
-                                            (items: OpenContentResponse) => {
-                                                return (
-                                                    <tr
-                                                        className="justify-items-center cursor-pointer"
-                                                        key={items.content_id}
-                                                        onClick={() =>
-                                                            handleShowLibraryClick(
-                                                                items.content_id
-                                                            )
-                                                        }
-                                                    >
-                                                        <td className="justify-self-start">
-                                                            {items.is_featured
-                                                                ? `* ${
-                                                                      items.title ??
-                                                                      'Untitled'
-                                                                  }`
-                                                                : items.title ??
-                                                                  'Untitled'}
-                                                        </td>
-                                                        <td className="justify-self-end">
-                                                            {items.total_hours.toFixed(
-                                                                2
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            }
-                                        )}
-                                    </tbody>
-                                </table>
-                                <div className="border-t border-grey-300 mt-2"></div>
-                                <p className="text-xs text-grey-4 italic">
-                                    * Featured library
+                    </div>
+                    {/* Cards */}
+                    <div className="grid grid-cols-3 gap-6">
+                        <StatsCard
+                            title="Days Active"
+                            number={metrics.activity_engagement.total_active_days_monthly.toFixed(
+                                0
+                            )}
+                            label="Days"
+                            tooltip="Total days active in UnlockEd"
+                            useToLocaleString={false}
+                        />
+                        <StatsCard
+                            title="Avg Time Per Week"
+                            number={
+                                parseFloat(avgNumber) === 0
+                                    ? '0'
+                                    : parseFloat(avgNumber) < 1
+                                      ? '<1'
+                                      : avgNumber
+                            }
+                            label={avgLabel}
+                            tooltip="Average time spent in UnlockEd per week"
+                            useToLocaleString={false}
+                        />
+                        <StatsCard
+                            title="Total Time This Week"
+                            number={
+                                parseFloat(weekNumber) === 0
+                                    ? '0'
+                                    : parseFloat(weekNumber) < 1
+                                      ? '<1'
+                                      : weekNumber
+                            }
+                            label={weekLabel}
+                            tooltip="Total time spent in UnlockEd this week"
+                        />
+                    </div>
+                    {/* Tables */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="card card-row-padding flex flex-col gap-2">
+                            <h2>Account Overview</h2>
+                            {activityHistoryError ||
+                            activityHistory === undefined ? (
+                                <p className="body text-error">
+                                    Unable to retrieve account history
                                 </p>
-                            </div>
-                            {/* <div></div> */}
-                            <div className="card pt-2 px-3">
-                                <div className="text-teal-4 text-center text-lg font-semibold border-b border-b-grey-300">
-                                    Recently Watched Videos
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4 mt-4">
+                            ) : (
+                                <>
+                                    <div className="flex-grow">
+                                        {activityHistory?.data.map(
+                                            (
+                                                item: UserAccountHistoryResponse,
+                                                index
+                                            ) => (
+                                                <AccountHistoryRowCard
+                                                    key={
+                                                        index +
+                                                        item.created_at.toString()
+                                                    }
+                                                    activity={item}
+                                                />
+                                            )
+                                        )}
+                                    </div>
+                                    <div className="mx-auto">
+                                        <Pagination
+                                            meta={activityHistory?.meta}
+                                            setPage={setPage}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="card card-row-padding">
+                            <OpenContentCardToggle
+                                activeTab={activeTab}
+                                setActiveTab={setActiveTab}
+                            />
+                            {activeTab === 'libraries' ? (
+                                <>
+                                    <table className="table-2 mb-4">
+                                        <thead>
+                                            <tr className="grid-col-2">
+                                                <th className="justify-self-start">
+                                                    Library Name
+                                                </th>
+                                                <th># Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {metrics.top_libraries.map(
+                                                (
+                                                    items: OpenContentResponse
+                                                ) => {
+                                                    return (
+                                                        <tr
+                                                            className="justify-items-center cursor-pointer"
+                                                            key={
+                                                                items.content_id
+                                                            }
+                                                            onClick={() =>
+                                                                handleShowLibraryClick(
+                                                                    items.content_id
+                                                                )
+                                                            }
+                                                        >
+                                                            <td className="justify-self-start">
+                                                                {items.is_featured
+                                                                    ? `${
+                                                                          items.title ??
+                                                                          'Untitled'
+                                                                      } *`
+                                                                    : items.title ??
+                                                                      'Untitled'}
+                                                            </td>
+                                                            <td className="justify-self-end">
+                                                                {items.total_hours.toFixed(
+                                                                    2
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )}
+                                        </tbody>
+                                    </table>
+                                    <div className="border-t border-grey-1 mt-2"></div>
+                                    <p className="text-xs text-grey-4 italic">
+                                        * Featured library
+                                    </p>
+                                </>
+                            ) : (
+                                <div className="mt-2">
                                     {metrics.recent_videos.length > 0 ? (
                                         metrics.recent_videos.map(
-                                            (item, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="flex flex-col items-center"
-                                                >
-                                                    <img
-                                                        className="h-8 object-contain"
-                                                        src={
-                                                            item.thumbnail_url ??
-                                                            ''
-                                                        }
-                                                        alt={
-                                                            item.title ??
-                                                            'Untitled'
-                                                        }
+                                            (item, index) => {
+                                                return (
+                                                    <OpenContentCardRow
+                                                        key={index}
+                                                        content={item}
                                                     />
-                                                    <ClampedText
-                                                        className="text-xs"
-                                                        as={'span'}
-                                                        lines={2}
-                                                    >
-                                                        {item.title ??
-                                                            'Untitled'}
-                                                    </ClampedText>
-                                                </div>
-                                            )
+                                                );
+                                            }
                                         )
                                     ) : (
-                                        <div className="col-span-2 text-center">
-                                            No Videos Found
+                                        <div className="body">
+                                            No videos to display
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            )}
                         </div>
-                    </>
-                )}
-            </div>
+                    </div>
+                </div>
+            )}
             <VerifyResidentModal
                 target={metrics}
                 onSuccess={openConfirmTransfer}
@@ -389,7 +463,7 @@ const ResidentProfile = () => {
                     setResident(null);
                 }}
             />
-        </>
+        </div>
     );
 };
 
