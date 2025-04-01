@@ -8,53 +8,53 @@ import {
     PresentationChartLineIcon,
     XCircleIcon
 } from '@heroicons/react/24/outline';
-import ModifySectionModal from './modals/ModifySectionModal';
+import ModifyClassModal from './modals/ModifyClassModal';
 import { showModal } from './modals';
 import {
-    Section,
-    SectionStatusMap,
-    SectionStatusOptions,
-    SelectedSectionStatus,
+    Class,
+    ClassStatusMap,
+    ClassStatusOptions,
+    SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
 import { KeyedMutator } from 'swr';
 
-export function isArchived(section: Section) {
+export function isArchived(program_class: Class) {
     if (
-        section.archived_at === null ||
-        section.archived_at === '0001-01-01T00:00:00Z'
+        program_class.archived_at === null ||
+        program_class.archived_at === '0001-01-01T00:00:00Z'
     )
         return false;
     return true;
 }
 
-function SelectedSectionStatusPill({
+function SelectedClassStatusPill({
     archived,
     status
 }: {
     archived: boolean;
-    status: SelectedSectionStatus;
+    status: SelectedClassStatus;
 }) {
     let icon, background;
 
     switch (status) {
-        case SelectedSectionStatus.Completed:
+        case SelectedClassStatus.Completed:
             icon = CheckCircleIcon;
             background = 'bg-[#DDFFCD] text-[#408D1C]';
             break;
-        case SelectedSectionStatus.Canceled:
+        case SelectedClassStatus.Canceled:
             icon = XCircleIcon;
             background = 'bg-[#FFDFDF] text-[#CA0000]';
             break;
-        case SelectedSectionStatus.Paused:
+        case SelectedClassStatus.Paused:
             icon = PauseCircleIcon;
             background = 'bg-grey-2 text-body-text';
             break;
-        case SelectedSectionStatus.Scheduled:
+        case SelectedClassStatus.Scheduled:
             icon = ClockIcon;
             background = 'bg-[#FFF3D4] text-[#ECAA00]';
             break;
-        case SelectedSectionStatus.Active:
+        case SelectedClassStatus.Active:
             icon = PresentationChartLineIcon;
             background = 'bg-[#B0DFDA] text-[#002E2A]';
     }
@@ -72,33 +72,33 @@ function SelectedSectionStatusPill({
     );
 }
 
-export default function SectionStatus({
-    section,
+export default function ClassStatus({
+    program_class,
     status,
-    mutateSections
+    mutateClasses
 }: {
-    section: Section;
-    status: SelectedSectionStatus;
-    mutateSections: KeyedMutator<ServerResponseMany<Section>>;
+    program_class: Class;
+    status: SelectedClassStatus;
+    mutateClasses: KeyedMutator<ServerResponseMany<Class>>;
 }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(status);
-    const modifySectionRef = useRef<HTMLDialogElement>(null);
+    const modifyClassRef = useRef<HTMLDialogElement>(null);
     const [selectedModifyOption, setSelectedModifyOption] =
-        useState<SectionStatusOptions>();
+        useState<ClassStatusOptions>();
 
     function openSelectionModal(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-        option: SectionStatusOptions
+        option: ClassStatusOptions
     ) {
-        if (isArchived(section)) return;
+        if (isArchived(program_class)) return;
         setDropdownOpen(false);
         setSelectedModifyOption(option);
         e.stopPropagation();
     }
 
     useEffect(() => {
-        showModal(modifySectionRef);
+        showModal(modifyClassRef);
     }, [selectedModifyOption]);
 
     return (
@@ -106,7 +106,7 @@ export default function SectionStatus({
             <div
                 className="relative"
                 onClick={(e) => {
-                    if (isArchived(section)) return;
+                    if (isArchived(program_class)) return;
                     setDropdownOpen(!dropdownOpen);
                     e.stopPropagation();
                 }}
@@ -117,8 +117,8 @@ export default function SectionStatus({
                 }}
                 tabIndex={0}
             >
-                <SelectedSectionStatusPill
-                    archived={isArchived(section)}
+                <SelectedClassStatusPill
+                    archived={isArchived(program_class)}
                     status={selectedStatus}
                 />
                 {dropdownOpen && (
@@ -126,8 +126,8 @@ export default function SectionStatus({
                         className="absolute left-0 bg-inner-background rounded-box shadow-lg p-2 overflow-y-auto z-10 w-full"
                         tabIndex={0}
                     >
-                        {Object.values(SectionStatusOptions).map((option) => {
-                            if (SectionStatusMap[option] === selectedStatus)
+                        {Object.values(ClassStatusOptions).map((option) => {
+                            if (ClassStatusMap[option] === selectedStatus)
                                 return null;
 
                             return (
@@ -148,11 +148,11 @@ export default function SectionStatus({
                     </ul>
                 )}
             </div>
-            <ModifySectionModal
-                ref={modifySectionRef}
+            <ModifyClassModal
+                ref={modifyClassRef}
                 action={selectedModifyOption}
-                section={section}
-                mutate={mutateSections}
+                program_class={program_class}
+                mutate={mutateClasses}
                 setSelectedStatus={setSelectedStatus}
             />
         </>

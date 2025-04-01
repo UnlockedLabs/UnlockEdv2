@@ -480,7 +480,7 @@ export enum CreditType {
     PARTICIPATION = 'Participation'
 }
 
-export enum PrgSectionStatus {
+export enum PrgClassStatus {
     SCHEDULED = 'Scheduled',
     ACTIVE = 'Active',
     PENDING = 'Pending',
@@ -523,7 +523,7 @@ export interface Day {
 }
 export interface Event {
     event_id: number;
-    section_id: number;
+    class_id: number;
     start_time: string;
     duration: number;
     is_cancelled: boolean;
@@ -666,7 +666,7 @@ export interface Program {
     facilities: Facility[];
 }
 
-export interface Section {
+export interface Class {
     id: number;
     program_id: number;
     facility_id: number;
@@ -674,13 +674,13 @@ export interface Section {
     instructor_name: string;
     start_dt: string;
     end_dt: string;
-    section_status: SelectedSectionStatus;
+    class_status: SelectedClassStatus;
     enrolled: number;
     capacity: number;
     archived_at: string | null;
 }
 
-export enum SelectedSectionStatus {
+export enum SelectedClassStatus {
     Scheduled = 'Scheduled',
     Active = 'Active',
     Paused = 'Paused',
@@ -688,7 +688,7 @@ export enum SelectedSectionStatus {
     Canceled = 'Cancelled'
 }
 
-export enum SectionStatusOptions {
+export enum ClassStatusOptions {
     Complete = 'Complete',
     Pause = 'Pause',
     Cancel = 'Cancel',
@@ -696,12 +696,12 @@ export enum SectionStatusOptions {
     Active = 'Active'
 }
 
-export const SectionStatusMap = {
-    [SectionStatusOptions.Complete]: SelectedSectionStatus.Completed,
-    [SectionStatusOptions.Pause]: SelectedSectionStatus.Paused,
-    [SectionStatusOptions.Cancel]: SelectedSectionStatus.Canceled,
-    [SectionStatusOptions.Schedule]: SelectedSectionStatus.Scheduled,
-    [SectionStatusOptions.Active]: SelectedSectionStatus.Active
+export const ClassStatusMap = {
+    [ClassStatusOptions.Complete]: SelectedClassStatus.Completed,
+    [ClassStatusOptions.Pause]: SelectedClassStatus.Paused,
+    [ClassStatusOptions.Cancel]: SelectedClassStatus.Canceled,
+    [ClassStatusOptions.Schedule]: SelectedClassStatus.Scheduled,
+    [ClassStatusOptions.Active]: SelectedClassStatus.Active
 };
 
 export interface ProgramTag {
@@ -731,7 +731,7 @@ export enum FilterLibrariesVidsandHelpfulLinksResident {
     'Date Added  (Oldest First)' = '&order_by=created_at&order=ASC'
 }
 
-export enum FilterProgramSectionEnrollments {
+export enum FilterProgramClassEnrollments {
     'Last Name (A to Z)' = 'name_last asc',
     'Last Name (Z to A)' = 'name_last desc',
     'First Name (A to Z)' = 'name_first asc',

@@ -1,5 +1,5 @@
 import {
-    FilterProgramSectionEnrollments,
+    FilterProgramClassEnrollments,
     ServerResponseMany,
     User
 } from '@/common';
@@ -15,14 +15,14 @@ import { CancelButton } from '@/Components/inputs';
 import Pagination from '@/Components/Pagination';
 
 interface Inputs {
-    section_id: number;
+    class_id: number;
     user_id: number; //should be one or an array of users
 }
 
-export default function ProgramSectionEnrollment() {
+export default function ProgramClassEnrollment() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
-    const { section_id } = useParams<{ section_id: string }>();
+    const { class_id } = useParams<{ class_id: string }>();
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [perPage, setPerPage] = useState(20);
@@ -30,14 +30,14 @@ export default function ProgramSectionEnrollment() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
-        FilterProgramSectionEnrollments['Last Name (A to Z)']
+        FilterProgramClassEnrollments['Last Name (A to Z)']
     );
 
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         AxiosError
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&section_id=${section_id}&include=only_unenrolled`
+        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
     );
 
     const credentialed_users = data?.data ?? [];
@@ -75,12 +75,12 @@ export default function ProgramSectionEnrollment() {
             await Promise.all(
                 selectedUsers.map((user_id) => {
                     const requestData: Inputs = {
-                        section_id: Number(section_id),
+                        class_id: Number(class_id),
                         user_id: user_id
                     };
 
                     return API.post(
-                        `section-enrollments/${section_id}/enroll/${user_id}`,
+                        `class-enrollments/${class_id}/enroll/${user_id}`,
                         requestData
                     );
                 })
@@ -105,7 +105,7 @@ export default function ProgramSectionEnrollment() {
                         <DropdownControl
                             label="Order by"
                             setState={setSortQuery}
-                            enumType={FilterProgramSectionEnrollments}
+                            enumType={FilterProgramClassEnrollments}
                         />
                     </div>
                 </div>

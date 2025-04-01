@@ -7,8 +7,8 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
     Program,
-    Section,
-    SelectedSectionStatus,
+    Class,
+    SelectedClassStatus,
     ServerResponseOne,
     ServerResponseMany
 } from '@/common';
@@ -17,7 +17,7 @@ import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
-import SectionStatus, { isArchived } from '@/Components/SectionStatus';
+import ClassStatus, { isArchived } from '@/Components/ClassStatus';
 import { showModal, TextModalType, TextOnlyModal } from '@/Components/modals';
 import ULIComponent from '@/Components/ULIComponent';
 import { XMarkIcon } from '@heroicons/react/24/solid';
@@ -29,17 +29,17 @@ export default function ProgramOverview() {
     const { id } = useParams<{ id: string }>();
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
-    const [selectedSections, setSelectedSections] = useState<number[]>([]);
+    const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [sortQuery, setSortQuery] = useState<string>('ps.start_dt asc');
     const [includeArchived, setIncludeArchived] = useState(false);
-    const archiveSectionsRef = useRef<HTMLDialogElement>(null);
-    const [unableToArchiveSections, setUnableToArchiveSections] = useState<
-        Section[]
+    const archiveClassesRef = useRef<HTMLDialogElement>(null);
+    const [unableToArchiveClasses, setUnableToArchiveClasses] = useState<
+        Class[]
     >([]);
-    const [ableToArchiveSections, setAbleToArchiveSections] = useState<
-        Section[]
-    >([]);
+    const [ableToArchiveClasses, setAbleToArchiveClasses] = useState<Class[]>(
+        []
+    );
     const navigate = useNavigate();
 
     const { data: programResp, error: programError } = useSWR<
@@ -49,16 +49,16 @@ export default function ProgramOverview() {
     const program = programResp?.data;
 
     const {
-        data: sectionsResp,
-        error: sectionsError,
-        mutate: mutateSections
-    } = useSWR<ServerResponseMany<Section>, AxiosError>(
-        `/api/programs/${id}/sections?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
+        data: classesResp,
+        error: classesError,
+        mutate: mutateClasses
+    } = useSWR<ServerResponseMany<Class>, AxiosError>(
+        `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    const sections = sectionsResp?.data;
+    const classes = classesResp?.data;
 
-    const meta = sectionsResp?.meta ?? {
+    const meta = classesResp?.meta ?? {
         total: 0,
         per_page: 20,
         page: 1,
@@ -67,58 +67,58 @@ export default function ProgramOverview() {
     };
 
     const checkResponse = useCheckResponse({
-        mutate: mutateSections,
-        refModal: archiveSectionsRef
+        mutate: mutateClasses,
+        refModal: archiveClassesRef
     });
 
     useEffect(() => {
-        if (sections === undefined) return;
-        const unableToArchive = sections.filter(
-            (section) =>
-                selectedSections.includes(section.id) &&
-                (section.section_status === SelectedSectionStatus.Active ||
-                    section.section_status ===
-                        SelectedSectionStatus.Scheduled) &&
-                section.enrolled >= 1
+        if (classes === undefined) return;
+        const unableToArchive = classes.filter(
+            (program_class) =>
+                selectedClasses.includes(program_class.id) &&
+                (program_class.class_status === SelectedClassStatus.Active ||
+                    program_class.class_status ===
+                        SelectedClassStatus.Scheduled) &&
+                program_class.enrolled >= 1
         );
 
-        const ableToArchive = sections.filter(
-            (section) =>
-                selectedSections.includes(section.id) &&
-                !unableToArchive.includes(section)
+        const ableToArchive = classes.filter(
+            (program_class) =>
+                selectedClasses.includes(program_class.id) &&
+                !unableToArchive.includes(program_class)
         );
 
-        setUnableToArchiveSections(unableToArchive);
-        setAbleToArchiveSections(ableToArchive);
-    }, [selectedSections, sections]);
+        setUnableToArchiveClasses(unableToArchive);
+        setAbleToArchiveClasses(ableToArchive);
+    }, [selectedClasses, classes]);
 
-    if (programError || sectionsError || sections === undefined) {
+    if (programError || classesError || classes === undefined) {
         return <Error />;
     }
 
-    const nonArchivedSections = sections.filter(
-        (section) => !isArchived(section)
+    const nonArchivedClasses = classes.filter(
+        (program_class) => !isArchived(program_class)
     );
 
     const allSelected =
-        selectedSections.length === nonArchivedSections.length &&
-        nonArchivedSections.length > 0;
+        selectedClasses.length === nonArchivedClasses.length &&
+        nonArchivedClasses.length > 0;
 
-    const filteredSections = includeArchived ? sections : nonArchivedSections;
+    const filteredClasses = includeArchived ? classes : nonArchivedClasses;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedSections(nonArchivedSections.map((s) => s.id));
+            setSelectedClasses(nonArchivedClasses.map((s) => s.id));
         } else {
-            setSelectedSections([]);
+            setSelectedClasses([]);
         }
     }
 
-    function handleToggleRow(sectionId: number) {
-        setSelectedSections((prev) =>
-            prev.includes(sectionId)
-                ? prev.filter((id) => id !== sectionId)
-                : [...prev, sectionId]
+    function handleToggleRow(classId: number) {
+        setSelectedClasses((prev) =>
+            prev.includes(classId)
+                ? prev.filter((id) => id !== classId)
+                : [...prev, classId]
         );
     }
 
@@ -134,30 +134,32 @@ export default function ProgramOverview() {
     };
 
     const handleNavigateEnrollment = () => {
-        if (selectedSections.length === 1) {
+        if (selectedClasses.length === 1) {
             navigate(
-                `/programs/${program?.id}/section-enrollment/${selectedSections[0]}/`
+                `/programs/${program?.id}/class-enrollment/${selectedClasses[0]}/`
             );
         }
     };
-    function confirmArchiveSections() {
-        showModal(archiveSectionsRef);
+    function confirmArchiveClasses() {
+        showModal(archiveClassesRef);
     }
 
-    async function archiveSection() {
-        const selectedAbleToArchiveSections = selectedSections.filter((id) =>
-            ableToArchiveSections.some((section) => section.id === id)
+    async function archiveClass() {
+        const selectedAbleToArchiveClasses = selectedClasses.filter((id) =>
+            ableToArchiveClasses.some(
+                (program_class) => program_class.id === id
+            )
         );
-        const idString = '?id=' + selectedAbleToArchiveSections.join('&id=');
-        const resp = await API.patch(`program-sections${idString}`, {
+        const idString = '?id=' + selectedAbleToArchiveClasses.join('&id=');
+        const resp = await API.patch(`program-classes${idString}`, {
             archived_at: new Date().toISOString()
         });
         checkResponse(
             resp.success,
-            'Unable to update section',
-            'Section updated successfully'
+            'Unable to update class',
+            'Class updated successfully'
         );
-        if (resp.success) setSelectedSections([]);
+        if (resp.success) setSelectedClasses([]);
     }
 
     return (
@@ -218,9 +220,9 @@ export default function ProgramOverview() {
                     </div>
                 </div>
                 <div className="flex flex-row gap-x-2">
-                    {selectedSections.length === 1 && (
+                    {selectedClasses.length === 1 && (
                         <button
-                            hidden={selectedSections.length !== 1}
+                            hidden={selectedClasses.length !== 1}
                             className="button flex items-center"
                             onClick={handleNavigateEnrollment}
                         >
@@ -228,14 +230,14 @@ export default function ProgramOverview() {
                             Enroll Students
                         </button>
                     )}
-                    {selectedSections.length > 0 ? (
+                    {selectedClasses.length > 0 ? (
                         <button
                             className="button flex items-center bg-pale-yellow border border-dark-yellow text-body-text"
-                            onClick={confirmArchiveSections}
+                            onClick={confirmArchiveClasses}
                         >
                             <ArchiveBoxIcon className="w-4 h-4 mr-1" />
                             Archive Class
-                            {selectedSections.length > 1 ? 'es' : ''}
+                            {selectedClasses.length > 1 ? 'es' : ''}
                         </button>
                     ) : (
                         <button
@@ -255,7 +257,7 @@ export default function ProgramOverview() {
                 </div>
             </div>
 
-            {/* sections table */}
+            {/* classes table */}
             <div className="card p-4">
                 <table className="table w-full mb-4">
                     <thead className="bg-background">
@@ -279,19 +281,19 @@ export default function ProgramOverview() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredSections.map((section) => {
-                            const isSelected = selectedSections.includes(
-                                section.id
+                        {filteredClasses.map((program_class) => {
+                            const isSelected = selectedClasses.includes(
+                                program_class.id
                             );
                             return (
                                 <tr
-                                    key={section.id}
+                                    key={program_class.id}
                                     onClick={() => {
-                                        if (!isArchived(section))
-                                            handleToggleRow(section.id);
+                                        if (!isArchived(program_class))
+                                            handleToggleRow(program_class.id);
                                     }}
                                     className={
-                                        isArchived(section)
+                                        isArchived(program_class)
                                             ? 'bg-grey-1 cursor-not-allowed'
                                             : `cursor-pointer ${
                                                   isSelected
@@ -301,7 +303,7 @@ export default function ProgramOverview() {
                                     }
                                 >
                                     <td onClick={(e) => e.stopPropagation()}>
-                                        {isArchived(section) ? (
+                                        {isArchived(program_class) ? (
                                             <div></div>
                                         ) : (
                                             <input
@@ -309,16 +311,18 @@ export default function ProgramOverview() {
                                                 className="checkbox checkbox-sm"
                                                 checked={isSelected}
                                                 onChange={() =>
-                                                    handleToggleRow(section.id)
+                                                    handleToggleRow(
+                                                        program_class.id
+                                                    )
                                                 }
                                             />
                                         )}
                                     </td>
-                                    <td>{section.facility_name}</td>
-                                    <td>{section.instructor_name}</td>
+                                    <td>{program_class.facility_name}</td>
+                                    <td>{program_class.instructor_name}</td>
                                     <td>
                                         {new Date(
-                                            section.start_dt
+                                            program_class.start_dt
                                         ).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
@@ -327,9 +331,9 @@ export default function ProgramOverview() {
                                         })}
                                     </td>
                                     <td>
-                                        {section.end_dt
+                                        {program_class.end_dt
                                             ? new Date(
-                                                  section.end_dt
+                                                  program_class.end_dt
                                               ).toLocaleDateString('en-US', {
                                                   year: 'numeric',
                                                   month: 'short',
@@ -343,20 +347,20 @@ export default function ProgramOverview() {
                                             showPercentage={false}
                                             percent={parseFloat(
                                                 (
-                                                    (section.enrolled /
-                                                        section.capacity) *
+                                                    (program_class.enrolled /
+                                                        program_class.capacity) *
                                                     100
                                                 ).toFixed(1)
                                             )}
-                                            numerator={section.enrolled}
-                                            denominator={section.capacity}
+                                            numerator={program_class.enrolled}
+                                            denominator={program_class.capacity}
                                         />
                                     </td>
                                     <td>
-                                        <SectionStatus
-                                            status={section.section_status}
-                                            section={section}
-                                            mutateSections={mutateSections}
+                                        <ClassStatus
+                                            status={program_class.class_status}
+                                            program_class={program_class}
+                                            mutateClasses={mutateClasses}
                                         />
                                     </td>
                                 </tr>
@@ -377,16 +381,16 @@ export default function ProgramOverview() {
             </div>
 
             <TextOnlyModal
-                ref={archiveSectionsRef}
+                ref={archiveClassesRef}
                 type={
-                    ableToArchiveSections.length == 0
+                    ableToArchiveClasses.length == 0
                         ? TextModalType.Information
                         : TextModalType.Confirm
                 }
-                title={`Archive Class${selectedSections.length > 1 ? 'es' : ''}`}
+                title={`Archive Class${selectedClasses.length > 1 ? 'es' : ''}`}
                 text={
                     <div>
-                        {unableToArchiveSections.length > 0 && (
+                        {unableToArchiveClasses.length > 0 && (
                             <>
                                 <div className="text-error">
                                     <p className="text-error font-bold">
@@ -395,16 +399,18 @@ export default function ProgramOverview() {
                                         status with enrolled students:
                                     </p>
                                     <ul className="py-2">
-                                        {unableToArchiveSections.map(
-                                            (section) => (
+                                        {unableToArchiveClasses.map(
+                                            (program_class) => (
                                                 <li
-                                                    key={section.id}
+                                                    key={program_class.id}
                                                     className="flex items-center gap-2"
                                                 >
                                                     <ULIComponent
                                                         icon={XMarkIcon}
                                                     />
-                                                    {section.facility_name}
+                                                    {
+                                                        program_class.facility_name
+                                                    }
                                                 </li>
                                             )
                                         )}
@@ -413,25 +419,27 @@ export default function ProgramOverview() {
                                 <br />
                             </>
                         )}
-                        {ableToArchiveSections.length != 0 && (
+                        {ableToArchiveClasses.length != 0 && (
                             <>
                                 <p>
                                     Archive these classes at the following
                                     facilities?
                                 </p>
                                 <ul className="list-disc list-inside py-2">
-                                    {ableToArchiveSections.map((section) => (
-                                        <li key={section.id}>
-                                            {section.facility_name}
-                                        </li>
-                                    ))}
+                                    {ableToArchiveClasses.map(
+                                        (program_class) => (
+                                            <li key={program_class.id}>
+                                                {program_class.facility_name}
+                                            </li>
+                                        )
+                                    )}
                                 </ul>
                             </>
                         )}
                     </div>
                 }
-                onSubmit={() => void archiveSection()}
-                onClose={() => console.log('close archive section')}
+                onSubmit={() => void archiveClass()}
+                onClose={() => console.log('close archive class')}
             ></TextOnlyModal>
         </div>
     );

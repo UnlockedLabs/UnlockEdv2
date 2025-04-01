@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Event, OverrideForm } from '@/common';
 import API from '@/api/api';
 
-export interface SectionEventProps {
+export interface ClassEventProps {
     event: Event;
     onClose: () => void;
 }
@@ -17,7 +17,7 @@ export interface EditEventForm {
     override_type: string;
 }
 
-function EditEventForm({ event, onClose }: SectionEventProps) {
+function EditEventForm({ event, onClose }: ClassEventProps) {
     const [showApplyChanges, setShowApplyChanges] = useState(false);
     const [form, setForm] = useState<EditEventForm>({
         date: event.start_time.split('T')[0],

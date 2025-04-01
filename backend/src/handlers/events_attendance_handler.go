@@ -9,13 +9,13 @@ import (
 func (srv *Server) registerAttendanceRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
-		{"GET /api/program-sections/{id}/attendees", srv.handleGetAttendeesForSection, true, axx},
+		{"GET /api/program-classes/{id}/attendees", srv.handleGetAttendeesForClass, true, axx},
 		{"POST /api/events/{id}/attendees/{user_id}", srv.handleLogAttendeeForEvent, true, axx},
 		{"DELETE /api/events/{id}/attendees/{user_id}", srv.handleDeleteAttendee, true, axx},
 	}
 }
 
-func (srv *Server) handleGetAttendeesForSection(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetAttendeesForClass(w http.ResponseWriter, r *http.Request, log sLog) error {
 	eventID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")

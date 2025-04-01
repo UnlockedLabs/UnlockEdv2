@@ -5,8 +5,8 @@ import { FeatureAccess } from '@/common';
 import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
-import SectionManagementForm from '@/Pages/SectionManagementForm';
-import ProgramSectionEnrollment from '@/Pages/ProgramSectionEnrollment';
+import ClassManagementForm from '@/Pages/ClassManagementForm';
+import ProgramClassEnrollment from '@/Pages/ProgramClassEnrollment';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -37,14 +37,14 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'programs/:id/class',
-            element: <SectionManagementForm />,
+            element: <ClassManagementForm />,
             handle: {
                 title: 'Class Details'
             }
         },
         {
-            path: 'programs/:id/section-enrollment/:section_id',
-            element: <ProgramSectionEnrollment />,
+            path: 'programs/:id/class-enrollment/:class_id',
+            element: <ProgramClassEnrollment />,
             handle: { title: 'Add Resident' }
         }
     ],

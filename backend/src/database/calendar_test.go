@@ -18,11 +18,11 @@ func TestGenerateEventInstances_SimpleRecurrence_NoOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create rrule", err)
 	}
-	event := models.ProgramSectionEvent{
-		SectionID:      100,
+	event := models.ProgramClassEvent{
+		ClassID:        100,
 		Duration:       time.Hour.String(),
 		RecurrenceRule: rule.String(),
-		Overrides:      []models.ProgramSectionEventOverride{},
+		Overrides:      []models.ProgramClassEventOverride{},
 	}
 
 	startDate := time.Date(2024, 9, 1, 0, 0, 0, 0, time.UTC)
@@ -42,7 +42,7 @@ func TestGenerateEventInstances_SimpleRecurrence_NoOverrides(t *testing.T) {
 
 	for i, instance := range instances {
 		assert.Equal(t, event.ID, instance.EventID, "EventID should match")
-		assert.Equal(t, event.SectionID, instance.SectionID, "SectionID should match")
+		assert.Equal(t, event.ClassID, instance.ClassID, "ClassID should match")
 		assert.Equal(t, expectedDates[i], instance.StartTime, "StartTime should match")
 		assert.Equal(t, event.Duration, instance.Duration.String(), "Duration should match")
 		assert.False(t, instance.IsCancelled, "IsCancelled should be false")
@@ -50,12 +50,12 @@ func TestGenerateEventInstances_SimpleRecurrence_NoOverrides(t *testing.T) {
 }
 
 func TestGenerateEventInstances_CancellationOverride(t *testing.T) {
-	event := models.ProgramSectionEvent{
-		SectionID: 200,
-		Duration:  time.Hour.String(),
+	event := models.ProgramClassEvent{
+		ClassID:  200,
+		Duration: time.Hour.String(),
 		RecurrenceRule: "DTSTART:20240901T090000Z\n" +
 			"RRULE:FREQ=DAILY;COUNT=7",
-		Overrides: []models.ProgramSectionEventOverride{
+		Overrides: []models.ProgramClassEventOverride{
 			{
 				EventID:       2,
 				OverrideRrule: "DTSTART:20240904T090000Z\nRRULE:FREQ=DAILY;COUNT=1",
@@ -107,11 +107,11 @@ func TestGenerateEventInstances_ModificationOverride(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create rrule: %v", err)
 	}
-	event := models.ProgramSectionEvent{
-		SectionID:      300,
+	event := models.ProgramClassEvent{
+		ClassID:        300,
 		Duration:       time.Hour.String(),
 		RecurrenceRule: rule.String(),
-		Overrides: []models.ProgramSectionEventOverride{
+		Overrides: []models.ProgramClassEventOverride{
 			{
 				EventID:       3,
 				OverrideRrule: overRule.String(),
@@ -183,7 +183,7 @@ func TestGenerateEventInstances_MultipleOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create rrule", err)
 	}
-	override1 := models.ProgramSectionEventOverride{
+	override1 := models.ProgramClassEventOverride{
 		EventID:       4,
 		OverrideRrule: rule1.String(),
 		IsCancelled:   true,
@@ -197,17 +197,17 @@ func TestGenerateEventInstances_MultipleOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create rrule", err)
 	}
-	override2 := models.ProgramSectionEventOverride{
+	override2 := models.ProgramClassEventOverride{
 		EventID:       4,
 		IsCancelled:   false,
 		Duration:      newDuration.String(),
 		OverrideRrule: rule2.String(),
 	}
-	event := models.ProgramSectionEvent{
-		SectionID:      400,
+	event := models.ProgramClassEvent{
+		ClassID:        400,
 		Duration:       time.Hour.String(),
 		RecurrenceRule: rule.String(),
-		Overrides:      []models.ProgramSectionEventOverride{override1, override2},
+		Overrides:      []models.ProgramClassEventOverride{override1, override2},
 	}
 	startDate := time.Date(2024, 9, 1, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2024, 9, 7, 23, 59, 59, 0, time.UTC)
@@ -273,11 +273,11 @@ func TestGenerateEventInstances_NoOccurrencesInRange(t *testing.T) {
 	if err != nil {
 		t.Fatal("failed to create rrule", err)
 	}
-	event := models.ProgramSectionEvent{
-		SectionID:      500,
+	event := models.ProgramClassEvent{
+		ClassID:        500,
 		Duration:       time.Hour.String(),
 		RecurrenceRule: rule.String(),
-		Overrides:      []models.ProgramSectionEventOverride{},
+		Overrides:      []models.ProgramClassEventOverride{},
 	}
 
 	startDate := time.Date(2024, 9, 1, 0, 0, 0, 0, time.UTC)
@@ -288,11 +288,11 @@ func TestGenerateEventInstances_NoOccurrencesInRange(t *testing.T) {
 }
 
 func TestGenerateEventInstances_InvalidRRULE(t *testing.T) {
-	event := models.ProgramSectionEvent{
-		SectionID:      600,
+	event := models.ProgramClassEvent{
+		ClassID:        600,
 		Duration:       time.Hour.String(),
 		RecurrenceRule: "INVALID_RRULE",
-		Overrides:      []models.ProgramSectionEventOverride{},
+		Overrides:      []models.ProgramClassEventOverride{},
 	}
 
 	startDate := time.Date(2024, 9, 1, 0, 0, 0, 0, time.UTC)

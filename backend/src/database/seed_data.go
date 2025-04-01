@@ -27,7 +27,7 @@ func (db *DB) SeedTestData() {
 	seedAuthClients(db)
 	seedUsers(db, platforms)
 	courses := seedCourses(db)
-	sections := seedProgramData(db)
+	classes := seedProgramData(db)
 
 	var dbUsers []models.User
 	if db.Find(&dbUsers).Error != nil {
@@ -135,7 +135,7 @@ func (db *DB) SeedTestData() {
 		}
 	}
 
-	events := []models.ProgramSectionEvent{}
+	events := []models.ProgramClassEvent{}
 	if err := db.Find(&events).Error; err != nil {
 		logrus.Fatalf("Failed to get events from db")
 	}
@@ -202,11 +202,11 @@ func (db *DB) SeedTestData() {
 
 			}
 		}
-		for kdx := range sections {
-			if sections[kdx].FacilityID == dbUsers[idx].FacilityID {
-				enrollment := models.ProgramSectionEnrollment{
-					UserID:    dbUsers[idx].ID,
-					SectionID: sections[kdx].ID,
+		for kdx := range classes {
+			if classes[kdx].FacilityID == dbUsers[idx].FacilityID {
+				enrollment := models.ProgramClassEnrollment{
+					UserID:  dbUsers[idx].ID,
+					ClassID: classes[kdx].ID,
 				}
 				if err := db.Create(&enrollment).Error; err != nil {
 					logrus.Printf("Failed to create enrollment: %v", err)
@@ -215,7 +215,7 @@ func (db *DB) SeedTestData() {
 			}
 		}
 		for kdx := range events {
-			attendance := models.ProgramSectionEventAttendance{
+			attendance := models.ProgramClassEventAttendance{
 				EventID: events[kdx].ID,
 				UserID:  dbUsers[idx].ID,
 				Date:    time.Now().Format("2006-01-02"),
@@ -227,12 +227,12 @@ func (db *DB) SeedTestData() {
 	}
 }
 
-func createFacilityPrograms(db *DB) ([]models.ProgramSection, error) {
+func createFacilityPrograms(db *DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	if err := db.Find(&facilities).Error; err != nil {
 		return nil, err
 	}
-	toReturn := make([]models.ProgramSection, 0)
+	toReturn := make([]models.ProgramClass, 0)
 	for idx := range facilities {
 		prog := models.Program{
 			Name:        "Program for facility: " + facilities[idx].Name,
@@ -242,15 +242,15 @@ func createFacilityPrograms(db *DB) ([]models.ProgramSection, error) {
 			logrus.Fatalf("Failed to create program: %v", err)
 		}
 		for i := 0; i < 5; i++ {
-			section := models.ProgramSection{
+			class := models.ProgramClass{
 				FacilityID: facilities[idx].ID,
 				ProgramID:  prog.ID,
 			}
-			if err := db.Create(&section).Error; err != nil {
-				logrus.Fatalf("Failed to create program section: %v", err)
+			if err := db.Create(&class).Error; err != nil {
+				logrus.Fatalf("Failed to create program class: %v", err)
 			}
-			logrus.Println("Creating program section ", section.ID)
-			toReturn = append(toReturn, section)
+			logrus.Println("Creating program class ", class.ID)
+			toReturn = append(toReturn, class)
 			daysMap := make(map[int]rrule.Weekday)
 			daysMap[0] = rrule.TU
 			daysMap[1] = rrule.WE
@@ -268,8 +268,8 @@ func createFacilityPrograms(db *DB) ([]models.ProgramSection, error) {
 			if err != nil {
 				logrus.Fatalf("Failed to create rrule: %v", err)
 			}
-			event := models.ProgramSectionEvent{
-				SectionID:      section.ID,
+			event := models.ProgramClassEvent{
+				ClassID:        class.ID,
 				RecurrenceRule: rule.String(),
 				Room:           "TBD",
 				Duration:       "1h0m0s",
@@ -384,8 +384,8 @@ func seedCourses(db *DB) []models.Course {
 	return courses
 }
 
-func seedProgramData(db *DB) []models.ProgramSection {
-	sections, err := createFacilityPrograms(db)
+func seedProgramData(db *DB) []models.ProgramClass {
+	classes, err := createFacilityPrograms(db)
 	if err != nil {
 		logrus.Fatalf("Failed to create facility programs: %v", err)
 	}
@@ -394,5 +394,5 @@ func seedProgramData(db *DB) []models.ProgramSection {
 	if err := db.Find(&programs).Error; err != nil {
 		logrus.Fatalf("Failed to create facility programs: %v", err)
 	}
-	return sections
+	return classes
 }
