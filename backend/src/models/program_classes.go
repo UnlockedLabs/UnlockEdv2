@@ -61,3 +61,14 @@ type ProgramClassDetail struct {
 	FacilityName string `json:"facility_name"`
 	Enrolled     int    `json:"enrolled"`
 }
+
+type ProgramsClassesHistory struct {
+	ID           uint        `json:"id"`
+	ParentRefID  uint        `json:"parent_ref_id"`
+	NameTable    string      `json:"table_name" gorm:"size:255"` // cant use TableName because used below
+	BeforeUpdate interface{} `json:"before_update" gorm:"type:json"`
+	AfterUpdate  interface{} `json:"after_update" gorm:"type:json"`
+	CreatedAt    time.Time   `json:"created_at"`
+}
+
+func (ProgramsClassesHistory) TableName() string { return "programs_classes_history" }
