@@ -42,7 +42,8 @@ FOR EACH ROW
 ALTER TABLE public.program_completions ADD COLUMN user_id integer NOT NULL REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE public.program_completions ALTER COLUMN program_class_start_dt SET DATA TYPE timestamp with time zone USING to_timestamp(program_class_start_dt, 'YYYY-MM-DD HH24:MI:SS');
 
-CREATE TABLE public.user_history (
+CREATE TABLE public.user_account_history (
+        id SERIAL NOT NULL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         admin_id INTEGER,
         action CHARACTER VARYING(255) NOT NULL,
@@ -50,12 +51,14 @@ CREATE TABLE public.user_history (
         facility_id INTEGER,
         created_at timestamp with time zone,
 
-        PRIMARY KEY (user_id, action, created_at),
         FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
 		FOREIGN KEY (admin_id) REFERENCES public.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY (program_classes_history_id) REFERENCES public.program_classes_history(id) ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY (facility_id) REFERENCES public.facilities(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE INDEX idx_user_account_history_user_id ON public.user_history USING btree(user_id);
+CREATE INDEX idx_user_account_history_admin_id ON public.user_history USING btree(admin_id);
+CREATE INDEX idx_user_account_history_program_classes_history_id ON public.user_history USING btree(program_classes_history_id);
 -- +goose StatementEnd
 
 -- +goose Down
@@ -63,7 +66,7 @@ CREATE TABLE public.user_history (
 DROP TRIGGER IF EXISTS sql_trigger_programs_update ON public.programs;
 DROP TRIGGER IF EXISTS sql_trigger_program_classes_update ON public.program_classes;
 DROP FUNCTION IF EXISTS public.log_program_classes_updates();
-DROP TABLE IF EXISTS public.user_history;
+DROP TABLE IF EXISTS public.user_account_history;
 
 CREATE OR REPLACE FUNCTION public.log_programs_sections_updates()
 RETURNS TRIGGER AS $$
