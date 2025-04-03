@@ -56,9 +56,9 @@ CREATE TABLE public.user_account_history (
         FOREIGN KEY (program_classes_history_id) REFERENCES public.program_classes_history(id) ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY (facility_id) REFERENCES public.facilities(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE INDEX idx_user_account_history_user_id ON public.user_history USING btree(user_id);
-CREATE INDEX idx_user_account_history_admin_id ON public.user_history USING btree(admin_id);
-CREATE INDEX idx_user_account_history_program_classes_history_id ON public.user_history USING btree(program_classes_history_id);
+CREATE INDEX idx_user_account_history_user_id ON public.user_account_history USING btree(user_id);
+CREATE INDEX idx_user_account_history_admin_id ON public.user_account_history USING btree(admin_id);
+CREATE INDEX idx_user_account_history_program_classes_history_id ON public.user_account_history USING btree(program_classes_history_id);
 -- +goose StatementEnd
 
 -- +goose Down
