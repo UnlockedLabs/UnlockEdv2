@@ -74,7 +74,7 @@ const ModifyClassModal = forwardRef(function (
 
         checkResponse(
             resp.success,
-            'Unable to update section',
+            'Unable to update class',
             'Class updated successfully'
         );
         return;
