@@ -195,24 +195,24 @@ func TestHandleEventOverride(t *testing.T) {
 
 func TestHandleCreateEvent(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestUserCannotCreateEvent", "student", getProgramSectionEvent(1), http.StatusUnauthorized, ""},
-		{"TestAdminCanCreateEvent", "admin", getProgramSectionEvent(1), http.StatusCreated, ""},
+		{"TestUserCannotCreateEvent", "student", getProgramClassEvent(1), http.StatusUnauthorized, ""},
+		{"TestAdminCanCreateEvent", "admin", getProgramClassEvent(1), http.StatusCreated, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			sectionEventMap := test.mapKeyValues
-			if sectionEventMap["err"] != nil {
-				t.Fatalf("unable to build program section event, error is %v", sectionEventMap["err"])
+			classEventMap := test.mapKeyValues
+			if classEventMap["err"] != nil {
+				t.Fatalf("unable to build program class event, error is %v", classEventMap["err"])
 			}
-			jsonForm, err := json.Marshal(sectionEventMap["sectionEvent"])
+			jsonForm, err := json.Marshal(classEventMap["classEvent"])
 			if err != nil {
 				t.Fatalf("unable to marshal form, error is %v", err)
 			}
-			req, err := http.NewRequest(http.MethodPost, "/api/program-sections/{id}/events", bytes.NewBuffer(jsonForm))
+			req, err := http.NewRequest(http.MethodPost, "/api/program-classes/{id}/events", bytes.NewBuffer(jsonForm))
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			id := sectionEventMap["section_id"].(uint)
+			id := classEventMap["class_id"].(uint)
 			req.SetPathValue("id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleCreateEvent, test.role)
 			rr := executeRequest(t, req, handler, test)
@@ -262,7 +262,7 @@ func TestHandleGetStudentAttendanceData(t *testing.T) {
 					if programsEqual {
 						attendedEqual = true
 						for _, eventAtt := range programData.AttendanceRecords {
-							if !slices.ContainsFunc(progData.AttendanceRecords, func(evtAtt models.ProgramSectionEventAttendance) bool {
+							if !slices.ContainsFunc(progData.AttendanceRecords, func(evtAtt models.ProgramClassEventAttendance) bool {
 								return evtAtt.EventID == eventAtt.EventID
 							}) {
 								attendedEqual = false
@@ -283,12 +283,12 @@ func getOverideForm(facilityId uint) map[string]any {
 	form := make(map[string]any)
 	args := getDefaultQueryCtx()
 	args.FacilityID = facilityId
-	sections, err := server.Db.GetSectionsForFacility(&args)
+	classes, err := server.Db.GetClassesForFacility(&args)
 	if err != nil {
 		form["err"] = err
 	}
 	for {
-		_, events, err := server.Db.GetSectionEvents(1, 10, int(sections[rand.Intn(len(sections))].ID))
+		_, events, err := server.Db.GetClassEvents(1, 10, int(classes[rand.Intn(len(classes))].ID))
 		if err != nil {
 			form["err"] = err
 			break
@@ -319,11 +319,11 @@ func buildStaticRRule() (*rrule.RRule, error) {
 	return rule, err
 }
 
-func getProgramSectionEvent(facilityId uint) map[string]any {
+func getProgramClassEvent(facilityId uint) map[string]any {
 	form := make(map[string]any)
 	args := getDefaultQueryCtx()
 	args.FacilityID = facilityId
-	sections, err := server.Db.GetSectionsForFacility(&args)
+	classes, err := server.Db.GetClassesForFacility(&args)
 	if err != nil {
 		form["err"] = err
 	}
@@ -331,10 +331,10 @@ func getProgramSectionEvent(facilityId uint) map[string]any {
 	if err != nil {
 		form["err"] = err
 	}
-	id := sections[rand.Intn(len(sections))].ID
-	form["section_id"] = id
-	form["sectionEvent"] = models.ProgramSectionEvent{
-		SectionID:      id,
+	id := classes[rand.Intn(len(classes))].ID
+	form["class_id"] = id
+	form["classEvent"] = models.ProgramClassEvent{
+		ClassID:        id,
 		RecurrenceRule: rule.String(),
 		Room:           "TBD",
 		Duration:       "2h45m0s",

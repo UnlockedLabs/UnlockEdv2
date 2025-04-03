@@ -52,7 +52,7 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 
 type ProgramOverviewResponse struct {
 	models.Program
-	SectionDetails []models.ProgramSectionDetail `json:"section_details"`
+	ClassDetails []models.ProgramClassDetail `json:"class_details"`
 }
 
 type ProgramForm struct {

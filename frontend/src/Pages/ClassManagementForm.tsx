@@ -8,7 +8,7 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { PrgSectionStatus, ToastState } from '@/common';
+import { PrgClassStatus, ToastState } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -19,21 +19,21 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 
-interface SectionInputs {
+interface ClassInputs {
     capacity: number;
     name: string;
     instructor_name: string;
     description: string;
     start_dt: Date;
     end_dt: Date;
-    section_id: number;
+    class_id: number;
     room: string;
-    section_status: string;
+    class_status: string;
     credit_hours: number;
     recurrence_rule: string;
 }
 
-export default function SectionManagementForm() {
+export default function ClassManagementForm() {
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
     const [calendarRule, setCalendarRule] = useState('');
@@ -51,10 +51,10 @@ export default function SectionManagementForm() {
         watch,
         reset,
         formState: { errors }
-    } = useForm<SectionInputs>();
+    } = useForm<ClassInputs>();
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
-    const onSubmit: SubmitHandler<SectionInputs> = async (data) => {
+    const onSubmit: SubmitHandler<ClassInputs> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
         if (rruleString?.rule === '') {
@@ -75,7 +75,7 @@ export default function SectionManagementForm() {
             ]
         };
         const response = await API.post(
-            `programs/${id}/sections`,
+            `programs/${id}/classes`,
             formattedJson
         );
         if (!response.success) {
@@ -193,8 +193,8 @@ export default function SectionManagementForm() {
                         <DropdownInput
                             label="Status"
                             register={register}
-                            enumType={PrgSectionStatus}
-                            interfaceRef="section_status"
+                            enumType={PrgClassStatus}
+                            interfaceRef="class_status"
                             required
                             errors={errors}
                         />

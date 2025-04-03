@@ -5,53 +5,53 @@ import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { KeyedMutator } from 'swr';
 import {
-    Section,
-    SectionStatusMap,
-    SectionStatusOptions,
-    SelectedSectionStatus,
+    Class,
+    ClassStatusMap,
+    ClassStatusOptions,
+    SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
 
 export const StatusMessagesMap = {
-    [SectionStatusOptions.Complete]: {
+    [ClassStatusOptions.Complete]: {
         title: 'Mark as Complete',
         text: (status: string) =>
             `Mark this ${status.toLocaleLowerCase()} class as complete?`
     },
-    [SectionStatusOptions.Pause]: {
-        title: 'Pause Section',
+    [ClassStatusOptions.Pause]: {
+        title: 'Pause Class',
         text: (status: string) =>
             `Are you sure you would like to pause this ${status.toLocaleLowerCase()} class?`
     },
-    [SectionStatusOptions.Cancel]: {
-        title: 'Cancel Section',
+    [ClassStatusOptions.Cancel]: {
+        title: 'Cancel Class',
         text: (status: string) =>
             `Are you sure you would like to cancel this ${status.toLocaleLowerCase()} class?`
     },
-    [SectionStatusOptions.Schedule]: {
+    [ClassStatusOptions.Schedule]: {
         title: 'Mark as Scheduled',
         text: (status: string) =>
             `Mark this ${status.toLocaleLowerCase()} class as scheduled?`
     },
-    [SectionStatusOptions.Active]: {
+    [ClassStatusOptions.Active]: {
         title: 'Mark as Active',
         text: (status: string) =>
             `Mark this ${status.toLocaleLowerCase()} class as active?`
     }
 };
 
-const ModifySectionModal = forwardRef(function (
+const ModifyClassModal = forwardRef(function (
     {
         action,
-        section,
+        program_class,
         mutate,
         setSelectedStatus
     }: {
-        action: SectionStatusOptions | undefined;
-        section: Section;
-        mutate: KeyedMutator<ServerResponseMany<Section>>;
+        action: ClassStatusOptions | undefined;
+        program_class: Class;
+        mutate: KeyedMutator<ServerResponseMany<Class>>;
         setSelectedStatus: React.Dispatch<
-            React.SetStateAction<SelectedSectionStatus>
+            React.SetStateAction<SelectedClassStatus>
         >;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
@@ -65,17 +65,17 @@ const ModifySectionModal = forwardRef(function (
     if (title === undefined || text === undefined) return;
 
     async function onConfirm() {
-        const updatedStatus = SectionStatusMap[action!];
+        const updatedStatus = ClassStatusMap[action!];
 
-        const resp = await API.patch(`program-sections?id=${section.id}`, {
-            section_status: updatedStatus
+        const resp = await API.patch(`program-classes?id=${program_class.id}`, {
+            class_status: updatedStatus
         });
         if (resp.success) setSelectedStatus(updatedStatus);
 
         checkResponse(
             resp.success,
-            'Unable to update section',
-            'Section updated successfully'
+            'Unable to update class',
+            'Class updated successfully'
         );
         return;
     }
@@ -88,7 +88,7 @@ const ModifySectionModal = forwardRef(function (
                 ref={ref}
                 type={TextModalType.Confirm}
                 title={title}
-                text={text(section.section_status) ?? ''}
+                text={text(program_class.class_status) ?? ''}
                 onSubmit={() => void onConfirm()}
                 onClose={close}
             />
@@ -96,4 +96,4 @@ const ModifySectionModal = forwardRef(function (
     );
 });
 
-export default ModifySectionModal;
+export default ModifyClassModal;

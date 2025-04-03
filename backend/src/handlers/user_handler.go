@@ -36,13 +36,13 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 
 	case slices.Contains(include, "only_unenrolled"):
-		sectionIDStr := r.URL.Query().Get("section_id")
-		var sectionID int
-		sectionID, err = strconv.Atoi(sectionIDStr)
+		classIDStr := r.URL.Query().Get("class_id")
+		var classID int
+		classID, err = strconv.Atoi(classIDStr)
 		if err != nil {
 			return err
 		}
-		users, err = srv.Db.GetNonEnrolledResidents(&args, sectionID)
+		users, err = srv.Db.GetNonEnrolledResidents(&args, classID)
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 	}

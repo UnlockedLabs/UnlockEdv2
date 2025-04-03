@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-func (srv *Server) registerSectionEventsRoutes() []routeDef {
+func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx},
 		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx},
 		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx},
 		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx},
-		{"POST /api/program-sections/{id}/events", srv.handleCreateEvent, true, axx},
+		{"POST /api/program-classes/{id}/events", srv.handleCreateEvent, true, axx},
 	}
 }
 
@@ -85,15 +85,15 @@ func (srv *Server) handleEventOverride(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	sectionID, err := strconv.Atoi(r.PathValue("id"))
+	classID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		return newInvalidIdServiceError(err, "section_id")
+		return newInvalidIdServiceError(err, "class_id")
 	}
-	event := &models.ProgramSectionEvent{}
+	event := &models.ProgramClassEvent{}
 	if err := json.NewDecoder(r.Body).Decode(event); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	_, err = srv.Db.CreateNewEvent(sectionID, event)
+	_, err = srv.Db.CreateNewEvent(classID, event)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

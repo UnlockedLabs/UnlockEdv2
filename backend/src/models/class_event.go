@@ -9,21 +9,21 @@ import (
 	"gorm.io/gorm"
 )
 
-/** Events are a physical time/place where a 'section' is held in a facility **/
-type ProgramSectionEvent struct {
+/** Events are a physical time/place where a 'class' is held in a facility **/
+type ProgramClassEvent struct {
 	DatabaseFields
-	SectionID      uint   `json:"section_id" gorm:"not null" validate:"required"`
+	ClassID        uint   `json:"class_id" gorm:"not null" validate:"required"`
 	Duration       string `json:"duration" gorm:"not null" validate:"required"`
 	RecurrenceRule string `json:"recurrence_rule" gorm:"not null" validate:"required"`
 	Room           string `json:"room" gorm:"not null;default:TBD"`
 
 	/* Foreign keys */
-	Section   *ProgramSection                 `json:"section" gorm:"foreignKey:SectionID;references:ID"`
-	Attendees []ProgramSectionEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
-	Overrides []ProgramSectionEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
+	Class     *ProgramClass                 `json:"class" gorm:"foreignKey:ClassID;references:ID"`
+	Attendees []ProgramClassEventAttendance `json:"attendees" gorm:"foreignKey:EventID;references:ID"`
+	Overrides []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
 }
 
-func (secEvent *ProgramSectionEvent) BeforeCreate(tx *gorm.DB) (err error) {
+func (secEvent *ProgramClassEvent) BeforeCreate(tx *gorm.DB) (err error) {
 	duration, parseErr := time.ParseDuration(secEvent.Duration)
 	if parseErr != nil {
 		err = parseErr
@@ -40,9 +40,9 @@ func (secEvent *ProgramSectionEvent) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (ProgramSectionEvent) TableName() string { return "program_section_events" }
+func (ProgramClassEvent) TableName() string { return "program_class_events" }
 
-func (e *ProgramSectionEvent) GetRRule() (*rrule.RRule, error) {
+func (e *ProgramClassEvent) GetRRule() (*rrule.RRule, error) {
 	rruleOptions, err := rrule.StrToROption(e.RecurrenceRule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse event recurrence rule: %w", err)
@@ -55,7 +55,7 @@ func (e *ProgramSectionEvent) GetRRule() (*rrule.RRule, error) {
 	return rule, nil
 }
 
-func (event *ProgramSectionEvent) RRuleUntil() (time.Time, error) {
+func (event *ProgramClassEvent) RRuleUntil() (time.Time, error) {
 	rrule, err := event.GetRRule()
 	if err != nil {
 		return time.Time{}, err
@@ -64,7 +64,7 @@ func (event *ProgramSectionEvent) RRuleUntil() (time.Time, error) {
 }
 
 /** Overrides are used to cancel or reschedule events **/
-type ProgramSectionEventOverride struct {
+type ProgramClassEventOverride struct {
 	DatabaseFields
 	EventID       uint   `json:"event_id" gorm:"not null"`
 	Duration      string `json:"duration" gorm:"not null"`
@@ -73,21 +73,21 @@ type ProgramSectionEventOverride struct {
 	Room          string `json:"room"`
 
 	/* Foreign keys */
-	Event *ProgramSectionEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
 }
 
-func (ProgramSectionEventOverride) TableName() string { return "program_section_event_overrides" }
+func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
 
 /** Attendance records for Events **/
-type ProgramSectionEventAttendance struct {
+type ProgramClassEventAttendance struct {
 	DatabaseFields
 	EventID uint   `json:"event_id" gorm:"not null"`
 	UserID  uint   `json:"user_id" gorm:"not null"`
 	Date    string `json:"date" gorm:"not null" validate:"required,datetime"`
 
 	/* Foreign Keys */
-	Event *ProgramSectionEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
-	User  *User                `json:"user" gorm:"foreignKey:UserID;references:ID"`
+	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
+	User  *User              `json:"user" gorm:"foreignKey:UserID;references:ID"`
 }
 
-func (ProgramSectionEventAttendance) TableName() string { return "program_section_event_attendance" }
+func (ProgramClassEventAttendance) TableName() string { return "program_class_event_attendance" }

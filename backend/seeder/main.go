@@ -132,7 +132,7 @@ func seedTestData(db *gorm.DB) {
 	if err := json.Unmarshal([]byte(usersStr), &users); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
-	sections, err := createFacilityPrograms(db)
+	classes, err := createFacilityPrograms(db)
 	if err != nil {
 		log.Fatalf("Failed to create facility programs: %v", err)
 	}
@@ -175,7 +175,7 @@ func seedTestData(db *gorm.DB) {
 		log.Fatalf("Failed to get users from db")
 		return
 	}
-	events := []models.ProgramSectionEvent{}
+	events := []models.ProgramClassEvent{}
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
 	}
@@ -239,11 +239,11 @@ func seedTestData(db *gorm.DB) {
 				log.Printf("Creating milestone for user %s", user.Username)
 			}
 		}
-		for idx := range sections {
-			if sections[idx].FacilityID == user.FacilityID {
-				enrollment := models.ProgramSectionEnrollment{
+		for idx := range classes {
+			if classes[idx].FacilityID == user.FacilityID {
+				enrollment := models.ProgramClassEnrollment{
 					UserID:           user.ID,
-					SectionID:        sections[idx].ID,
+					ClassID:        classes[idx].ID,
 					EnrollmentStatus: enrollmentStatuses[0], //we can randomize when we know the enrollment statuses
 				}
 				if err := db.Create(&enrollment).Error; err != nil {
@@ -265,7 +265,7 @@ func seedTestData(db *gorm.DB) {
 
 			for _, occ := range occurrences {
 				attendanceDate := occ.Format("2006-01-02")
-				attendance := models.ProgramSectionEventAttendance{
+				attendance := models.ProgramClassEventAttendance{
 					EventID: event.ID,
 					UserID:  user.ID,
 					Date:    attendanceDate,
@@ -277,7 +277,7 @@ func seedTestData(db *gorm.DB) {
 				} else if result.RowsAffected == 0 {
 					log.Printf("Attendance already exists for user %d on %s for event %d. Skipping.", user.ID, attendanceDate, event.ID)
 				} else {
-					log.Printf("Created attendance for user %s at event: %d on %s", user.Username, event.SectionID, attendanceDate)
+					log.Printf("Created attendance for user %s at event: %d on %s", user.Username, event.ClassID, attendanceDate)
 				}
 			}
 		}
@@ -392,7 +392,7 @@ func getRandomProgram(programMap map[string]models.PrgType) string {
 	return keySlice[rand.Intn(len(keySlice))]
 }
 
-func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
+func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	fundingTypes := []models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
 	creditTypes := []models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
@@ -412,7 +412,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 		"Financial Literacy":        models.Educational,
 		"Computer Skills":           models.Educational,
 	}
-	programSectionDescriptions := map[string]string{
+	programClassDescriptions := map[string]string{
 		"Anger Management":          "Techniques to control and express anger constructively.",
 		"Substance Abuse Treatment": "Support and strategies for overcoming addiction.",
 		"AA/NA":                     "Peer support groups for alcohol and drug recovery.",
@@ -431,7 +431,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 	if err := db.Find(&facilities).Error; err != nil {
 		return nil, err
 	}
-	toReturn := make([]models.ProgramSection, 0)
+	toReturn := make([]models.ProgramClass, 0)
 	for idx := range facilities {
 		prog := []models.Program{
 			{
@@ -465,7 +465,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
 
 		for i := range prog {
-			prog[i].Description = programSectionDescriptions[prog[i].Name]
+			prog[i].Description = programClassDescriptions[prog[i].Name]
 			if err := db.Create(&prog[i]).Error; err != nil {
 				log.Fatalf("Failed to create program: %v", err)
 			}
@@ -483,22 +483,22 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 			if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
 				log.Fatalf("Failed to create program credit type: %v", err)
 			}
-			section := models.ProgramSection{
+			class := models.ProgramClass{
 				Capacity:       capacities[rand.Intn(len(capacities))],
 				Name:           prog[i].Name,
 				InstructorName: instructorNames[rand.Intn(len(instructorNames))],
-				Description:    programSectionDescriptions[prog[i].Name],
-				Status:         models.Scheduled, //this will change during new section development
+				Description:    programClassDescriptions[prog[i].Name],
+				Status:         models.Scheduled, //this will change during new class development
 				StartDt:        time.Now().Add(14 * 24 * time.Hour),
 				EndDt:          &endDates[rand.Intn(len(endDates))],
 				FacilityID:     facilities[idx].ID,
 				ProgramID:      prog[i].ID,
 			}
-			if err := db.Create(&section).Error; err != nil {
-				log.Fatalf("Failed to create program section: %v", err)
+			if err := db.Create(&class).Error; err != nil {
+				log.Fatalf("Failed to create program class: %v", err)
 			}
-			log.Println("Creating program section ", section.ID)
-			toReturn = append(toReturn, section)
+			log.Println("Creating program class ", class.ID)
+			toReturn = append(toReturn, class)
 
 			randDays := []rrule.Weekday{}
 			days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
@@ -514,8 +514,8 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramSection, error) {
 			if err != nil {
 				log.Fatalf("Failed to create rrule: %v", err)
 			}
-			event := models.ProgramSectionEvent{
-				SectionID:      section.ID,
+			event := models.ProgramClassEvent{
+				ClassID:      class.ID,
 				RecurrenceRule: rule.String(),
 				Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
 				Duration:       "1h0m0s",
