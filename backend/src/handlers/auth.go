@@ -24,6 +24,7 @@ type (
 	contextKey string
 	Claims     struct {
 		Username      string                 `json:"username"`
+		Email         string                 `json:"email"`
 		UserID        uint                   `json:"user_id"`
 		PasswordReset bool                   `json:"password_reset"`
 		Role          models.UserRole        `json:"role"`
@@ -51,6 +52,7 @@ func (srv *Server) registerAuthRoutes() []routeDef {
 func (claims *Claims) getTraits() map[string]any {
 	return map[string]any{
 		"username":       claims.Username,
+		"email":          claims,
 		"facility_id":    claims.FacilityID,
 		"role":           claims.Role,
 		"password_reset": claims.PasswordReset,
@@ -162,6 +164,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	}
 	traits := claims.getTraits()
 	traits["id"] = user.ID
+	traits["email"] = user.Email
 	traits["session_id"] = claims.SessionID
 	traits["kratos_id"] = claims.KratosID
 	traits["created_at"] = user.CreatedAt
@@ -240,6 +243,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				}
 				claims := &Claims{
 					Username:      user.Username,
+					Email:         user.Email,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
 					FacilityName:  facilityName,

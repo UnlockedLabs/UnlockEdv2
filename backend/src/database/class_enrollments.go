@@ -1,6 +1,10 @@
 package database
 
-import "UnlockEdv2/src/models"
+import (
+	"UnlockEdv2/src/models"
+	"context"
+	"fmt"
+)
 
 func (db *DB) GetProgramClassEnrollmentsForUser(args *models.QueryContext) ([]models.ProgramClassEnrollment, error) {
 	content := []models.ProgramClassEnrollment{}
@@ -72,30 +76,66 @@ func (db *DB) DeleteProgramClassEnrollments(id int) error {
 	return nil
 }
 
-func (db *DB) UpdateProgramClassEnrollments(content *models.ProgramClassEnrollment) (*models.ProgramClassEnrollment, error) {
-	existing := &models.ProgramClassEnrollment{}
-	if err := db.First(existing, "id = ?", content.ID).Error; err != nil {
-		return nil, newNotFoundDBError(err, "class enrollment")
+func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, completions []models.ProgramCompletion) error {
+	// Get the relevant data to attach to the completion
+	enrollment := models.ProgramClassEnrollment{}
+	err := db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
+		Preload("User.Facility").
+		Preload("Class.Program.ProgramCreditTypes").
+		Preload("Class.FacilityProg").
+		First(&enrollment, "class_id = ?", completions[0].ProgramClassID).Error
+	if err != nil {
+		return newNotFoundDBError(err, "class enrollment")
 	}
-	models.UpdateStruct(existing, content)
-	if err := db.Save(existing).Error; err != nil {
-		return nil, newUpdateDBError(err, "class enrollment")
+	creditType := ""
+	for i, ct := range enrollment.Class.Program.ProgramCreditTypes {
+		if i == len(enrollment.Class.Program.ProgramCreditTypes)-1 {
+			creditType += fmt.Sprintf("%s", ct.CreditType)
+		} else {
+			creditType += fmt.Sprintf("%s,", ct.CreditType)
+		}
 	}
-	return content, nil
+	for i := range completions {
+		completions[i].FacilityName = enrollment.User.Facility.Name
+		completions[i].ProgramName = enrollment.Class.Program.Name
+		completions[i].ProgramOwner = enrollment.Class.FacilityProg.ProgramOwner
+		completions[i].ProgramID = enrollment.Class.ProgramID
+		completions[i].AdminEmail = adminEmail
+		completions[i].ProgramClassStartDt = enrollment.Class.StartDt
+		completions[i].CreditType = creditType
+		completions[i].ProgramClassName = enrollment.Class.Name
+	}
+	if err = db.WithContext(ctx).Create(&completions).Error; err != nil {
+		return newCreateDBError(err, "enrollment completion")
+	}
+	return nil
 }
 
-func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, progId int) ([]models.ProgramClassEnrollment, error) {
-	content := []models.ProgramClassEnrollment{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramClassEnrollment{}).
-		Joins("JOIN program_classes ps ON program_class_enrollments.class_id = ps.id and ps.deleted_at IS NULL").
-		Where("ps.facility_id = ?", args.FacilityID).
-		Where("ps.program_id = ?", progId)
+type EnrollmentDetails struct {
+	models.ProgramClassEnrollment
+	NameFull     string `json:"name_full"`
+	DocID        string `json:"doc_id"`
+	ClassName    string `json:"class_name"`
+	StartDt      string `json:"start_dt"`
+	CompletionDt string `json:"completion_dt"`
+}
+
+func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, progId, classId int, status string) ([]EnrollmentDetails, error) {
+	content := make([]EnrollmentDetails, 0, args.PerPage)
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ' ' || u.name_first as name_full, u.doc_id, s.name, s.start_dt, pc.created_at as completion_dt").
+		Joins("JOIN program_classes ON pse.class_id = s.id AND s.deleted_at IS NULL").
+		Joins("JOIN users u ON pse.user_id = u.id AND u.deleted_at IS NULL").
+		Joins("LEFT JOIN program_completions pc ON pse.class_id = pc.program_class_id AND pc.user_id = pse.user_id").
+		Where("pse.class_id = ?", classId)
+	if status != "" {
+		tx = tx.Where("LOWER(pse.enrollment_status) = ?", status)
+	}
 
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
 	if err := tx.Limit(args.PerPage).
-		Offset(args.CalcOffset()).
+		Offset(args.CalcOffset()).Order(args.OrderClause()).
 		Find(&content).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}

@@ -33,9 +33,10 @@ type ProgramClass struct {
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 
-	Program  *Program            `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
-	Facility *Facility           `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
-	Events   []ProgramClassEvent `json:"events" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Program      *Program            `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
+	Facility     *Facility           `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
+	Events       []ProgramClassEvent `json:"events" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	FacilityProg *FacilitiesPrograms `json:"facility_program" gorm:"foreignKey:ProgramID;references:ProgramID"`
 }
 
 func (ProgramClass) TableName() string { return "program_classes" }
@@ -61,3 +62,30 @@ type ProgramClassDetail struct {
 	FacilityName string `json:"facility_name"`
 	Enrolled     int    `json:"enrolled"`
 }
+type ProgramEnrollmentStatus string
+
+const (
+	Enrolled                   ProgramEnrollmentStatus = "Enrolled"
+	EnrollmentCancelled        ProgramEnrollmentStatus = "Cancelled"
+	EnrollmentCompleted        ProgramEnrollmentStatus = "Completed"
+	EnrollmentPending          ProgramEnrollmentStatus = "Pending"
+	IncompleteWithdrawn        ProgramEnrollmentStatus = "Withdrawn"
+	IncompleteDropped          ProgramEnrollmentStatus = "Dropped"
+	IncompleteFailedToComplete ProgramEnrollmentStatus = "Failed to Complete"
+)
+
+type ProgramCompletion struct {
+	DatabaseFields
+	UserID              uint      `json:"user_id" gorm:"not null"`
+	ProgramClassID      uint      `json:"program_class_id" gorm:"not null"`
+	FacilityName        string    `json:"facility_name" gorm:"not null"`
+	CreditType          string    `json:"credit_type" gorm:"not null"`
+	AdminEmail          string    `json:"admin_email" gorm:"not null"`
+	ProgramOwner        string    `json:"program_owner" gorm:"not null"`
+	ProgramName         string    `json:"program_name" gorm:"not null"`
+	ProgramID           uint      `json:"program_id" gorm:"not null"`
+	ProgramClassName    string    `json:"program_class_name"`
+	ProgramClassStartDt time.Time `json:"program_class_start_dt"`
+}
+
+func (ProgramCompletion) TableName() string { return "program_completions" }

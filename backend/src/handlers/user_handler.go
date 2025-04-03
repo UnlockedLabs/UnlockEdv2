@@ -39,12 +39,11 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 
 	case slices.Contains(include, "only_unenrolled"):
 		classIDStr := r.URL.Query().Get("class_id")
-		var classID int
-		classID, err = strconv.Atoi(classIDStr)
+		classID, err := strconv.Atoi(classIDStr)
 		if err != nil {
 			return err
 		}
-		users, err = srv.Db.GetNonEnrolledResidents(&args, classID)
+		users, err = srv.Db.GetEligibleResidentsForClass(&args, classID)
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
 	}

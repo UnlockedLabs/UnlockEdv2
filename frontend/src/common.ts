@@ -714,6 +714,32 @@ export enum SelectedClassStatus {
     Completed = 'Completed',
     Canceled = 'Cancelled'
 }
+export interface ClassEnrollment {
+    id: number;
+    created_at: string;
+    updated_at: string;
+    class_id: number;
+    user_id: number;
+    enrollment_status: string;
+    name_full: string;
+    doc_id: string;
+    completion_date?: string;
+}
+
+export interface ProgramCompletion {
+    id: number;
+    program_class_id: number;
+    facility_name: string;
+    credit_type: string;
+    admin_email: string;
+    program_owner: string;
+    program_id: number;
+    program_class_name: string;
+    program_class_start_dt: string;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string;
+}
 
 export enum ClassStatusOptions {
     Complete = 'Complete',
