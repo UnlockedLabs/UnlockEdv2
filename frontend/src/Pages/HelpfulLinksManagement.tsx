@@ -5,8 +5,10 @@ import {
     ServerResponseOne,
     ToastState,
     HelpfulLinkAndSort,
-    UserRole
+    UserRole,
+    ViewType
 } from '@/common';
+import ToggleView from '@/Components/ToggleView';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import SearchBar from '@/Components/inputs/SearchBar';
 import Pagination from '@/Components/Pagination';
@@ -28,6 +30,7 @@ import {
     TextOnlyModal
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export default function HelpfulLinksManagement() {
     const { user } = useAuth();
@@ -39,6 +42,9 @@ export default function HelpfulLinksManagement() {
     const [pageQuery, setPageQuery] = useState<number>(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const searchQuery = useDebounceValue(searchTerm, 500);
+    const [activeView, setActiveView] = useSessionViewType(
+        'helpfulLinkManagementView'
+    );
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
     );
@@ -101,8 +107,7 @@ export default function HelpfulLinksManagement() {
     };
     return (
         <>
-            <div className="flex flex-row justify-between">
-                {/* TO DO: make this a common enum? */}
+            <div className="flex flex-row justify-between items-center">
                 <div className="flex flex-row gap-2 items-center">
                     <SearchBar
                         searchTerm={searchTerm}
@@ -114,18 +119,25 @@ export default function HelpfulLinksManagement() {
                         enumType={FilterLibrariesVidsandHelpfulLinksResident}
                     />
                 </div>
-                {/* add links button */}
-                <div
-                    className="button cursor-pointer items-center"
-                    onClick={() => {
-                        showModal(addLinkModal);
-                    }}
-                >
-                    <PlusCircleIcon className="w-4 my-auto" />
-                    Add Link
+                <div className="flex flex-row items-center gap-4">
+                    <ToggleView
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                    />
+                    <div
+                        className="button cursor-pointer items-center"
+                        onClick={() => {
+                            showModal(addLinkModal);
+                        }}
+                    >
+                        <PlusCircleIcon className="w-4 my-auto" />
+                        Add Link
+                    </div>
                 </div>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div
+                className={`mt-8 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+            >
                 {/* map through the helpful links */}
                 {helpfulLinks.map((link: HelpfulLink, index: number) => {
                     return (
@@ -135,6 +147,7 @@ export default function HelpfulLinksManagement() {
                             mutate={() => void mutate()}
                             showModal={showModifyLink}
                             role={user ? user?.role : UserRole.Student}
+                            view={activeView}
                         />
                     );
                 })}

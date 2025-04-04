@@ -3,7 +3,8 @@ import useSWR from 'swr';
 import {
     FilterLibrariesVidsandHelpfulLinksResident,
     OpenContentItem,
-    ServerResponseMany
+    ServerResponseMany,
+    ViewType
 } from '@/common';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -12,13 +13,15 @@ import { useDebounceValue } from 'usehooks-ts';
 import { AxiosError } from 'axios';
 import FavoriteCard from '@/Components/FavoriteCard';
 import { isAdministrator, useAuth } from '@/useAuth';
+import ToggleView from '@/Components/ToggleView';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export default function FavoritesPage() {
     const { user } = useAuth();
     const [perPage, setPerPage] = useState(12);
     const [pageQuery, setPageQuery] = useState(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
-
+    const [activeView, setActiveView] = useSessionViewType('favoritesView');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
@@ -59,8 +62,16 @@ export default function FavoritesPage() {
                         enumType={FilterLibrariesVidsandHelpfulLinksResident}
                     />
                 </div>
+                <div className="ml-auto">
+                    <ToggleView
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                    />
+                </div>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+            <div
+                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+            >
                 {favorites.map((favorite) => (
                     <FavoriteCard
                         key={`${favorite.open_content_provider_id}-${favorite.content_id}-${favorite.title}`}
@@ -69,6 +80,7 @@ export default function FavoritesPage() {
                         favorite={favorite}
                         mutate={mutate}
                         isAdminInStudentView={isAdministrator(user)}
+                        view={activeView}
                     />
                 ))}
             </div>

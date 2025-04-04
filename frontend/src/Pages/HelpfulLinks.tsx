@@ -3,7 +3,8 @@ import {
     HelpfulLinkAndSort,
     ServerResponseOne,
     UserRole,
-    FilterLibrariesVidsandHelpfulLinksResident
+    FilterLibrariesVidsandHelpfulLinksResident,
+    ViewType
 } from '@/common';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -13,11 +14,13 @@ import { useDebounceValue } from 'usehooks-ts';
 import { AxiosError } from 'axios';
 import { useState } from 'react';
 import useSWR from 'swr';
+import ToggleView from '@/Components/ToggleView';
+import { useSessionViewType } from '@/Hooks/sessionView';
 
 export default function HelpfulLinks() {
     const [perPage, setPerPage] = useState(20);
     const [searchTerm, setSearchTerm] = useState<string>('');
-
+    const [activeView, setActiveView] = useSessionViewType('helpfulLinksView');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
@@ -66,14 +69,24 @@ export default function HelpfulLinks() {
                         enumType={FilterLibrariesVidsandHelpfulLinksResident}
                     />
                 </div>
+                <div>
+                    <ToggleView
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                    />
+                </div>
             </div>
-            <div className="grid grid-cols-4 gap-6">
+
+            <div
+                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+            >
                 {helpfulLinks?.data?.helpful_links.map((link: HelpfulLink) => (
                     <HelpfulLinkCard
                         key={link.id}
                         link={link}
                         mutate={updateFavorites}
                         role={UserRole.Student}
+                        view={activeView}
                     />
                 ))}
                 {error && (
