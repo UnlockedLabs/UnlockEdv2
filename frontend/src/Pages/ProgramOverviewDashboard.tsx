@@ -56,7 +56,7 @@ export default function ProgramOverview() {
         `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
-    const classes = classesResp?.data;
+    const classes = classesResp?.data ?? [];
 
     const meta = classesResp?.meta ?? {
         total: 0,
@@ -92,7 +92,7 @@ export default function ProgramOverview() {
         setAbleToArchiveClasses(ableToArchive);
     }, [selectedClasses, classes]);
 
-    if (programError || classesError || classes === undefined) {
+    if (programError || classesError) {
         return <Error />;
     }
 
