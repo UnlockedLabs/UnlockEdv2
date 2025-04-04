@@ -4,7 +4,7 @@ import { INIT_KRATOS_LOGIN_FLOW, ServerResponse, User } from '@/common';
 import API from '@/api/api';
 import { Link } from 'react-router-dom';
 import { AUTHCALLBACK } from '@/useAuth';
-import Timeline from '@/Components/Timline';
+import Timeline from '@/Components/Timeline';
 
 export default function Welcome() {
     const [imgSrc, setImgSrc] = useState('unlockedv2Sm.webp');
