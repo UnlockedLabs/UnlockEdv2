@@ -36,7 +36,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             handle: { title: 'Program Overview Dashboard' }
         },
         {
-            path: 'programs/:id/class',
+            path: 'programs/:id/class/:class_id?',
             element: <ClassManagementForm />,
             handle: {
                 title: 'Class Details'

@@ -672,12 +672,24 @@ export interface Class {
     facility_id: number;
     facility_name: string;
     instructor_name: string;
+    name: string;
+    description: string;
     start_dt: string;
     end_dt: string;
     class_status: SelectedClassStatus;
     enrolled: number;
     capacity: number;
+    credit_hours: number;
     archived_at: string | null;
+    events: ProgramClassEvent[];
+}
+
+export interface ProgramClassEvent {
+    id: number;
+    class_id: number;
+    duration: string;
+    room: string;
+    recurrence_rule: string;
 }
 
 export enum SelectedClassStatus {

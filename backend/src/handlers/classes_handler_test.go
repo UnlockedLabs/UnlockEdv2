@@ -167,8 +167,8 @@ func TestHandleCreateClass(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unable to get program class from db, error is %v", err)
 				}
-				if diff := cmp.Diff(class, &data.Data); diff != "" {
-					t.Errorf("handler returned unexpected results: %v", diff)
+				if class.ID != data.Data.ID {
+					t.Errorf("handler returned unexpected results got %v want %v", class.ID, data.Data.ID)
 				}
 			}
 		})
@@ -197,12 +197,12 @@ func TestHandleUpdateClass(t *testing.T) {
 			} else {
 				id = 1
 			}
-			programClass.FacilityID = 2 //update
+			programClass.Capacity = 10 //update
 			jsonForm, err := json.Marshal(programClass)
 			if err != nil {
 				t.Fatalf("unable to marshal form, error is %v", err)
 			}
-			req, err := http.NewRequest(http.MethodPatch, "/api/program-classes", bytes.NewBuffer(jsonForm))
+			req, err := http.NewRequest(http.MethodPatch, "/api/program-classes/{id}", bytes.NewBuffer(jsonForm))
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}

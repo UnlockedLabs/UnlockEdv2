@@ -2,11 +2,13 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+
+	"gorm.io/gorm"
 )
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	return content, nil
@@ -29,17 +31,37 @@ func (db *DB) CreateProgramClass(content *models.ProgramClass) (*models.ProgramC
 	if err != nil {
 		return nil, newCreateDBError(err, "create program classes validation error")
 	}
-	if err := db.Create(content).Error; err != nil {
+	if err := db.Create(&content).Error; err != nil {
 		return nil, newCreateDBError(err, "program classes")
 	}
 	return content, nil
 }
 
-func (db *DB) UpdateProgramClass(content *models.ProgramClass, ids []int) (*models.ProgramClass, error) {
-	if err := db.Model(&models.ProgramClass{}).Where("id IN ?", ids).Updates(content).Error; err != nil {
+func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.ProgramClass, error) {
+	existing := &models.ProgramClass{}
+	if err := db.Preload("Events").First(existing, "id = ?", id).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program classes")
+	}
+	models.UpdateStruct(existing, content)
+	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
 		return nil, newUpdateDBError(err, "program classes")
 	}
-	return content, nil
+	return existing, nil
+}
+
+func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
+	var count int64
+	if err := db.Model(&models.ProgramClassEnrollment{}).Where("class_id = ? and enrollment_status = 'Enrolled'", id).Count(&count).Error; err != nil {
+		return 0, NewDBError(err, "program_class_enrollments")
+	}
+	return count, nil
+}
+
+func (db *DB) UpdateProgramClasses(classMap map[string]interface{}, ids []int) error {
+	if err := db.Model(&models.ProgramClass{}).Where("id IN ?", ids).Updates(classMap).Error; err != nil {
+		return newUpdateDBError(err, "program classes")
+	}
+	return nil
 }
 
 func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]models.ProgramClassDetail, error) {
