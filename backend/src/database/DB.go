@@ -126,7 +126,7 @@ func MigrateTesting(db *gorm.DB) {
 		&models.OpenContentFavorite{},
 		&models.UserEnrollment{},
 		&models.UserCourseActivityTotals{},
-		&models.ProgramsSectionsHistory{},
+		&models.ProgramClassesHistory{},
 		&models.UserAccountHistory{},
 	}
 	for _, table := range TableList {

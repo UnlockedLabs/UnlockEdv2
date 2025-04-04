@@ -62,7 +62,7 @@ type ProgramClassDetail struct {
 	Enrolled     int    `json:"enrolled"`
 }
 
-type ProgramsClassesHistory struct {
+type ProgramClassesHistory struct {
 	ID           uint        `json:"id"`
 	ParentRefID  uint        `json:"parent_ref_id"`
 	NameTable    string      `json:"table_name" gorm:"size:255"` // cant use TableName because used below
@@ -71,4 +71,4 @@ type ProgramsClassesHistory struct {
 	CreatedAt    time.Time   `json:"created_at"`
 }
 
-func (ProgramsClassesHistory) TableName() string { return "programs_classes_history" }
+func (ProgramClassesHistory) TableName() string { return "program_classes_history" }

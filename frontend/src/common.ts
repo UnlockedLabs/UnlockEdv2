@@ -860,11 +860,11 @@ export interface UserAccountHistoryResponse {
     user_username: string;
     admin_username?: string;
     facility_name?: string;
-    programs_classes_history_id?: number;
-    programs_classes_history?: ProgramsClassesHistory;
+    program_classes_history_id?: number;
+    program_classes_history?: ProgramClassesHistory;
 }
 
-export interface ProgramsClassesHistory {
+export interface ProgramClassesHistory {
     id: number;
     parent_ref_id: number;
     table_name: string; // renamed from NameTable for consistency

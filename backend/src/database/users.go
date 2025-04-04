@@ -438,12 +438,12 @@ func (db *DB) IncrementUserFAQClick(args *models.QueryContext, question string) 
 
 func (db *DB) InsertUserAccountHistoryAction(userID uint, action models.UserAccountHistoryAction, adminID *uint, facilityID *uint, programsHistoryID *uint) error {
 	history := models.UserAccountHistory{
-		UserID:                   userID,
-		AdminID:                  adminID,
-		Action:                   action,
-		ProgramsClassesHistoryID: programsHistoryID,
-		FacilityID:               facilityID,
-		CreatedAt:                time.Now(),
+		UserID:                  userID,
+		AdminID:                 adminID,
+		Action:                  action,
+		ProgramClassesHistoryID: programsHistoryID,
+		FacilityID:              facilityID,
+		CreatedAt:               time.Now(),
 	}
 	if err := db.Create(&history).Error; err != nil {
 		log.Errorf("Error inserting user account history action: %v", err)
@@ -464,7 +464,7 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 		Joins("LEFT JOIN users ON uah.user_id = users.id").
 		Joins("LEFT JOIN users admins ON uah.admin_id = admins.id").
 		Joins("LEFT JOIN facilities ON uah.facility_id = facilities.id").
-		Joins("LEFT JOIN programs_classes_history psh ON uah.programs_classes_history_id = psh.id").
+		Joins("LEFT JOIN program_classes_history psh ON uah.program_classes_history_id = psh.id").
 		Where("uah.user_id = ?", userID)
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "user_account_history")
