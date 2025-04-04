@@ -98,20 +98,21 @@ export default function ProgramOverview() {
     if (programError || classesError) {
         return <Error />;
     }
+    if (classes === undefined) return <br />;
 
-    const nonArchivedClasses = classes.filter(
+    const nonArchivedClasses = classes?.filter(
         (program_class) => !isArchived(program_class)
     );
 
     const allSelected =
-        selectedClasses.length === nonArchivedClasses.length &&
-        nonArchivedClasses.length > 0;
+        selectedClasses.length === nonArchivedClasses?.length &&
+        nonArchivedClasses?.length > 0;
 
     const filteredClasses = includeArchived ? classes : nonArchivedClasses;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedClasses(nonArchivedClasses.map((s) => s.id));
+            setSelectedClasses(nonArchivedClasses?.map((s) => s.id) ?? []);
         } else {
             setSelectedClasses([]);
         }

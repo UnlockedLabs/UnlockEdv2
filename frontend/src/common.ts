@@ -723,7 +723,7 @@ export interface ClassEnrollment {
     enrollment_status: string;
     name_full: string;
     doc_id: string;
-    completion_date?: string;
+    completion_dt?: string;
 }
 
 export interface ProgramCompletion {
@@ -732,13 +732,15 @@ export interface ProgramCompletion {
     facility_name: string;
     credit_type: string;
     admin_email: string;
-    program_owner: string;
+    program_owner?: string;
+    program_name: string;
     program_id: number;
     program_class_name: string;
     program_class_start_dt: string;
     created_at: string;
     updated_at: string;
     deleted_at: string;
+    user?: User;
 }
 
 export enum ClassStatusOptions {

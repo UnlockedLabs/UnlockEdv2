@@ -47,9 +47,9 @@ meaning they will need to attend the ClassEvents for that class: tracked by Clas
 */
 type ProgramClassEnrollment struct {
 	DatabaseFields
-	ClassID          uint   `json:"class_id" gorm:"not null"`
-	UserID           uint   `json:"user_id" gorm:"not null"`
-	EnrollmentStatus string `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
+	ClassID          uint                    `json:"class_id" gorm:"not null"`
+	UserID           uint                    `json:"user_id" gorm:"not null"`
+	EnrollmentStatus ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
 
 	User  *User         `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	Class *ProgramClass `json:"class" gorm:"foreignKey:ClassID;references:ID"`
@@ -86,6 +86,8 @@ type ProgramCompletion struct {
 	ProgramID           uint      `json:"program_id" gorm:"not null"`
 	ProgramClassName    string    `json:"program_class_name"`
 	ProgramClassStartDt time.Time `json:"program_class_start_dt"`
+
+	User *User `json:"user" gorm:"foreignKey:UserID;references:ID"`
 }
 
 func (ProgramCompletion) TableName() string { return "program_completions" }

@@ -65,14 +65,9 @@ export default function ProgramSectionEnrollment() {
         }
 
         setErrorMessage('');
-        const queryParams = new URLSearchParams();
-        selectedUsers.forEach((user_id) => {
-            queryParams.append('user_id', user_id.toString());
+        await API.post(`programs/${id}/classes/${class_id}/enrollments`, {
+            user_ids: selectedUsers
         });
-        await API.post(
-            `programs/${id}/classes/${class_id}/enroll?${queryParams.toString()}`,
-            {}
-        );
         setSelectedUsers([]);
         navigate(`/programs/${id}`);
     };
