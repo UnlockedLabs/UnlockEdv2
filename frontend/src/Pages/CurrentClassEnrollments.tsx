@@ -5,11 +5,24 @@ import { AxiosError } from 'axios';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
-import { ClassEnrollment, ServerResponseMany } from '@/common';
+import {
+    ClassEnrollment,
+    ProgramCompletion,
+    ServerResponseMany,
+    ServerResponseOne
+} from '@/common';
 import API from '@/api/api';
 import { TextModalType, TextOnlyModal } from '@/Components/modals';
+import CompletionDetailsModal from '@/Components/modals/CompletionDetailsModal';
+import EnrollmentTable from '@/Components/EnrollmentsTable';
 
-export default function EnrollmentList() {
+interface StatusChange {
+    name_full: string;
+    user_id: number;
+    status: string;
+}
+
+export default function CurrentEnrollmentDetails() {
     const { id, class_id } = useParams<{ id: string; class_id: string }>();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
@@ -18,28 +31,31 @@ export default function EnrollmentList() {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [selectedResidents, setSelectedResidents] = useState<number[]>([]);
-    const [hasUpdated, setHasUpdated] = useState(false);
-    const confirmGraduateModal = useRef<HTMLDialogElement>(null);
+    const [completionDetails, setCompletionDetails] =
+        useState<ProgramCompletion | null>(null);
+    const [changeStatusValue, setChangeStatusValue] = useState<StatusChange>();
+    const confirmStateChangeModal = useRef<HTMLDialogElement>(null);
+    const completionDetailsModal = useRef<HTMLDialogElement>(null);
 
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>,
         AxiosError
     >(
-        `/api/programs/${id}/sections/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
+        `/api/programs/${id}/classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
     );
 
     const enrollments = data?.data ?? [];
     const meta = data?.meta;
 
-    const handleChange = async (value: string, userId: number) => {
-        await API.patch(
-            `programs/${id}/sections/${class_id}?user_id=${userId}`,
-            {
-                enrollment_status: value
-            }
-        );
-        setHasUpdated(true);
-        await mutate();
+    const handleChange = (value: string, enrollment: ClassEnrollment) => {
+        setChangeStatusValue({
+            status: value,
+            user_id: enrollment.user_id,
+            name_full: enrollment.name_full
+        });
+        if (confirmStateChangeModal.current) {
+            confirmStateChangeModal.current.showModal();
+        }
     };
 
     const toggleSelection = (userId: number) => {
@@ -51,22 +67,41 @@ export default function EnrollmentList() {
     };
 
     const handleSelectAll = () => {
-        if (selectedResidents.length === enrollments.length) {
+        if (
+            selectedResidents.length ===
+            enrollments.filter((e) => e.completion_dt === '').length
+        ) {
             setSelectedResidents([]);
         } else {
-            setSelectedResidents(enrollments.map((e) => e.id));
+            setSelectedResidents(
+                enrollments
+                    .filter((e) => e.completion_dt === '' && isEditable(e))
+                    .map((e) => e.user_id)
+            );
         }
     };
 
-    const handleOpenGraduateModal = () => {
-        if (selectedResidents.length > 0 && confirmGraduateModal.current) {
-            confirmGraduateModal.current.showModal();
+    const handleOpenModalGraduate = () => {
+        if (selectedResidents.length > 0 && confirmStateChangeModal.current) {
+            confirmStateChangeModal.current.showModal();
+        }
+    };
+
+    const handleShowCompletionDetails = async (enrollment: ClassEnrollment) => {
+        const response = (await API.get<ProgramCompletion>(
+            `users/${enrollment.user_id}/program-completions?class_id=${enrollment.class_id}`
+        )) as ServerResponseOne<ProgramCompletion>;
+        if (response.success) {
+            setCompletionDetails(response.data);
+            if (completionDetailsModal.current) {
+                completionDetailsModal.current.showModal();
+            }
         }
     };
 
     const handleGraduate = async () => {
         if (selectedResidents.length === 0) return;
-        await API.patch(`programs/${id}/sections/${class_id}/enrollments`, {
+        await API.patch(`programs/${id}/classes/${class_id}/enrollments`, {
             enrollment_status: 'Completed',
             user_ids: selectedResidents
         });
@@ -84,17 +119,20 @@ export default function EnrollmentList() {
 
     const isEditable = (enrollment: ClassEnrollment) =>
         enrollment.enrollment_status === 'Enrolled' &&
-        !hasUpdated &&
         !selectedResidents.includes(enrollment.user_id);
 
     const areAllSelected =
         enrollments.length > 0 &&
-        selectedResidents.length === enrollments.length;
+        enrollments.filter((e) => e.completion_dt === '').length ===
+            selectedResidents.length;
+
+    const canToggle = (e: ClassEnrollment): boolean => {
+        return e.completion_dt === '' && e.enrollment_status === 'Enrolled';
+    };
 
     return (
         <div className="px-5 pb-4">
             <div className="flex flex-col gap-8 py-8">
-                {/* Search, sorting, filtering, and action buttons */}
                 <div className="flex flex-row justify-between items-center">
                     <div className="flex flex-row gap-2 items-center">
                         <SearchBar
@@ -135,9 +173,9 @@ export default function EnrollmentList() {
                         {selectedResidents.length > 0 && (
                             <button
                                 className="button btn-secondary"
-                                onClick={handleOpenGraduateModal}
+                                onClick={handleOpenModalGraduate}
                             >
-                                Graduate Class
+                                Graduate Selected
                             </button>
                         )}
                         <button
@@ -152,159 +190,59 @@ export default function EnrollmentList() {
                         </button>
                     </div>
                 </div>
-                {/* Enrollment table */}
-                <div className="overflow-hidden border p-4">
-                    <table className="table w-full table-fixed mb-2 shadow-lg">
-                        <thead>
-                            <tr className="text-sm">
-                                <th className="h-14 pr-2">
-                                    <input
-                                        className="checkbox"
-                                        type="checkbox"
-                                        checked={areAllSelected}
-                                        onChange={handleSelectAll}
-                                    />
-                                </th>
-                                <th className="h-14 pr-2">Resident Name</th>
-                                <th className="h-14 pr-2">Resident ID</th>
-                                <th className="h-14">Enrolled Date</th>
-                                <th className="h-14">Completion</th>
-                                <th className="h-14">Enrollment Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {!isLoading && !error ? (
-                                enrollments.length > 0 ? (
-                                    enrollments.map(
-                                        (enrollment: ClassEnrollment) => (
-                                            <tr
-                                                key={enrollment.id}
-                                                className="cursor-pointer"
-                                                onClick={() =>
-                                                    toggleSelection(
-                                                        enrollment.user_id
-                                                    )
-                                                }
-                                            >
-                                                <td className="pr-2">
-                                                    <input
-                                                        className="checkbox"
-                                                        type="checkbox"
-                                                        checked={selectedResidents.includes(
-                                                            enrollment.user_id
-                                                        )}
-                                                        onChange={() =>
-                                                            toggleSelection(
-                                                                enrollment.user_id
-                                                            )
-                                                        }
-                                                        onClick={(e) =>
-                                                            e.stopPropagation()
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="pr-2">
-                                                    {enrollment.name_full}
-                                                </td>
-                                                <td className="pr-2">
-                                                    {enrollment.doc_id}
-                                                </td>
-                                                <td>
-                                                    {new Date(
-                                                        enrollment.created_at
-                                                    ).toLocaleDateString()}
-                                                </td>
-                                                <td>
-                                                    {enrollment.completion_date ? (
-                                                        <span>
-                                                            {
-                                                                enrollment.enrollment_status
-                                                            }
-                                                            {enrollment.completion_date
-                                                                ? ` on ${new Date(
-                                                                      enrollment.completion_date
-                                                                  ).toLocaleDateString()}`
-                                                                : ''}
-                                                        </span>
-                                                    ) : (
-                                                        'N/A'
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {isEditable(enrollment) ? (
-                                                        <DropdownControl
-                                                            enumType={
-                                                                inlineOptions
-                                                            }
-                                                            customCallback={(
-                                                                val
-                                                            ) => {
-                                                                void handleChange(
-                                                                    val,
-                                                                    enrollment.id
-                                                                );
-                                                            }}
-                                                            label={
-                                                                enrollment.enrollment_status
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        <span>
-                                                            {
-                                                                enrollment.enrollment_status
-                                                            }
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )
-                                    )
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={6}
-                                            className="text-center text-gray-500"
-                                        >
-                                            No enrollments found.
-                                        </td>
-                                    </tr>
-                                )
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="text-center text-blue-500"
-                                    >
-                                        Loading...
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                    <div className="flex justify-center m-2">
-                        {meta && (
-                            <Pagination
-                                meta={meta}
-                                setPage={setPage}
-                                setPerPage={setPerPage}
-                            />
-                        )}
-                    </div>
-                    <TextOnlyModal
-                        ref={confirmGraduateModal}
-                        type={TextModalType.Confirm}
-                        title={'Confirm Graduate Class'}
-                        text={
-                            'Are you sure you want to graduate the selected residents from this class? This action cannot be undone.'
+                {!isLoading && !error && (
+                    <EnrollmentTable
+                        enrollments={enrollments}
+                        inlineOptions={inlineOptions}
+                        selectedResidents={selectedResidents}
+                        toggleSelection={toggleSelection}
+                        handleSelectAll={handleSelectAll}
+                        areAllSelected={areAllSelected}
+                        canToggle={canToggle}
+                        isEditable={isEditable}
+                        handleChange={handleChange}
+                        handleShowCompletionDetails={
+                            handleShowCompletionDetails
                         }
-                        onSubmit={() => void handleGraduate()}
-                        onClose={() => {
-                            if (confirmGraduateModal.current) {
-                                confirmGraduateModal.current.close();
-                            }
-                        }}
                     />
+                )}
+                <div className="flex justify-center m-2">
+                    {meta && (
+                        <Pagination
+                            meta={meta}
+                            setPage={setPage}
+                            setPerPage={setPerPage}
+                        />
+                    )}
                 </div>
+                <div className="flex flex-row justify-end m-2">
+                    <button
+                        className="button bg-grey"
+                        onClick={() => navigate(`/programs/${id}`)}
+                    >
+                        Back
+                    </button>
+                </div>
+                <TextOnlyModal
+                    ref={confirmStateChangeModal}
+                    type={TextModalType.Confirm}
+                    title={'Confirm Enrollment Action'}
+                    text={`Are you sure you want to permanently change the status to ${
+                        changeStatusValue?.status ?? 'Graduated'
+                    } for ${changeStatusValue?.name_full ?? 'the selected users'}? This action cannot be undone.`}
+                    onSubmit={() => void handleGraduate()}
+                    onClose={() => {
+                        if (confirmStateChangeModal.current) {
+                            confirmStateChangeModal.current.close();
+                        }
+                        setChangeStatusValue(undefined);
+                    }}
+                />
+                <CompletionDetailsModal
+                    enrollment={completionDetails}
+                    modalRef={completionDetailsModal}
+                    onClose={() => setCompletionDetails(null)}
+                />
             </div>
         </div>
     );

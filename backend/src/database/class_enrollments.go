@@ -6,16 +6,16 @@ import (
 	"fmt"
 )
 
-func (db *DB) GetProgramClassEnrollmentsForUser(args *models.QueryContext) ([]models.ProgramClassEnrollment, error) {
-	content := []models.ProgramClassEnrollment{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramClassEnrollment{}).Where("user_id = ?", args.UserID)
+func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId, classId int) (*models.ProgramCompletion, error) {
+	content := models.ProgramCompletion{}
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramCompletion{}).Preload("User").Where("user_id = ? AND program_class_id = ?", userId, classId)
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
 	if err := tx.Find(&content).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
-	return content, nil
+	return &content, nil
 }
 
 func (db *DB) GetProgramClassEnrollmentsByID(id int) (*models.ProgramClassEnrollment, error) {
@@ -56,14 +56,16 @@ func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityI
 	return total, content, nil
 }
 
-func (db *DB) CreateProgramClassEnrollments(classID, userID int) error {
-
-	enrollment := &models.ProgramClassEnrollment{
-		ClassID:          uint(classID),
-		UserID:           uint(userID),
-		EnrollmentStatus: "Enrolled",
+func (db *DB) CreateProgramClassEnrollments(classID int, userIds []int) error {
+	enrollments := make([]models.ProgramClassEnrollment, 0, len(userIds))
+	for i := range userIds {
+		enrollments = append(enrollments, models.ProgramClassEnrollment{
+			ClassID:          uint(classID),
+			UserID:           uint(userIds[i]),
+			EnrollmentStatus: models.Enrolled,
+		})
 	}
-	if err := db.Create(enrollment).Error; err != nil {
+	if err := db.Create(enrollments).Error; err != nil {
 		return newCreateDBError(err, "class enrollment")
 	}
 	return nil
@@ -76,37 +78,69 @@ func (db *DB) DeleteProgramClassEnrollments(id int) error {
 	return nil
 }
 
-func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, completions []models.ProgramCompletion) error {
-	// Get the relevant data to attach to the completion
+func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userIds []int, classId int) error {
 	enrollment := models.ProgramClassEnrollment{}
-	err := db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
+	// begin transaction
+	tx := db.WithContext(ctx).Begin()
+
+	// preload necessary relationships
+	err := tx.Model(&models.ProgramClassEnrollment{}).
 		Preload("User.Facility").
 		Preload("Class.Program.ProgramCreditTypes").
 		Preload("Class.FacilityProg").
-		First(&enrollment, "class_id = ?", completions[0].ProgramClassID).Error
+		First(&enrollment, "class_id = ?", classId).Error
 	if err != nil {
+		tx.Rollback()
 		return newNotFoundDBError(err, "class enrollment")
 	}
+
 	creditType := ""
 	for i, ct := range enrollment.Class.Program.ProgramCreditTypes {
 		if i == len(enrollment.Class.Program.ProgramCreditTypes)-1 {
-			creditType += fmt.Sprintf("%s", ct.CreditType)
+			creditType += string(ct.CreditType)
 		} else {
 			creditType += fmt.Sprintf("%s,", ct.CreditType)
 		}
 	}
-	for i := range completions {
-		completions[i].FacilityName = enrollment.User.Facility.Name
-		completions[i].ProgramName = enrollment.Class.Program.Name
-		completions[i].ProgramOwner = enrollment.Class.FacilityProg.ProgramOwner
-		completions[i].ProgramID = enrollment.Class.ProgramID
-		completions[i].AdminEmail = adminEmail
-		completions[i].ProgramClassStartDt = enrollment.Class.StartDt
-		completions[i].CreditType = creditType
-		completions[i].ProgramClassName = enrollment.Class.Name
+
+	completions := make([]models.ProgramCompletion, 0, len(userIds))
+	for i := range userIds {
+		completions = append(completions, models.ProgramCompletion{
+			ProgramClassID:      uint(classId),
+			FacilityName:        enrollment.User.Facility.Name,
+			ProgramName:         enrollment.Class.Program.Name,
+			ProgramOwner:        enrollment.Class.FacilityProg.ProgramOwner,
+			ProgramID:           enrollment.Class.ProgramID,
+			AdminEmail:          adminEmail,
+			ProgramClassStartDt: enrollment.Class.StartDt,
+			CreditType:          creditType,
+			ProgramClassName:    enrollment.Class.Name,
+			UserID:              uint(userIds[i]),
+		})
 	}
-	if err = db.WithContext(ctx).Create(&completions).Error; err != nil {
+
+	if err = tx.Create(&completions).Error; err != nil {
+		tx.Rollback()
 		return newCreateDBError(err, "enrollment completion")
+	}
+
+	// update enrollment status to "Completed"
+	if err = tx.Model(&models.ProgramClassEnrollment{}).
+		Where("user_id IN (?) AND class_id = ?", userIds, classId).
+		Update("enrollment_status", models.Completed).Error; err != nil {
+		tx.Rollback()
+		return newUpdateDBError(err, "enrollment status")
+	}
+
+	// commit the transaction
+	return tx.Commit().Error
+}
+
+func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status string) error {
+	if err := db.Model(&models.ProgramClassEnrollment{}).
+		Where("class_id = ? AND user_id IN (?)", classId, userIds).
+		Update("enrollment_status", status).Error; err != nil {
+		return newUpdateDBError(err, "class enrollment status")
 	}
 	return nil
 }
@@ -122,8 +156,8 @@ type EnrollmentDetails struct {
 
 func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, progId, classId int, status string) ([]EnrollmentDetails, error) {
 	content := make([]EnrollmentDetails, 0, args.PerPage)
-	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ' ' || u.name_first as name_full, u.doc_id, s.name, s.start_dt, pc.created_at as completion_dt").
-		Joins("JOIN program_classes ON pse.class_id = s.id AND s.deleted_at IS NULL").
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ' ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
+		Joins("JOIN program_classes c ON pse.class_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN users u ON pse.user_id = u.id AND u.deleted_at IS NULL").
 		Joins("LEFT JOIN program_completions pc ON pse.class_id = pc.program_class_id AND pc.user_id = pse.user_id").
 		Where("pse.class_id = ?", classId)
