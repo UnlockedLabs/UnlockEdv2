@@ -71,7 +71,7 @@ export default function ClassManagementForm() {
         };
 
         const response = class_id
-            ? await API.patch(`program-classes/${class_id}`, formattedJson)
+            ? await API.patch(`program-class/${class_id}`, formattedJson)
             : await API.post(`programs/${id}/classes`, formattedJson);
         if (!response.success) {
             const toasterMsg =

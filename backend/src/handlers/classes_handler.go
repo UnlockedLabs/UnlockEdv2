@@ -14,7 +14,8 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
 		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
 		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
-		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx},
+		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx},
+		{"PATCH /api/program-class/{id}", srv.handleUpdateClass, true, axx},
 	}
 }
 
@@ -83,25 +84,6 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	if id == 0 {
-		ids := r.URL.Query()["id"]
-		classIDs := make([]int, 0, len(ids))
-		for _, id := range ids {
-			if classID, err := strconv.Atoi(id); err == nil {
-				classIDs = append(classIDs, classID)
-			}
-		}
-		defer r.Body.Close()
-		classMap := make(map[string]interface{})
-		if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
-			return newJSONReqBodyServiceError(err)
-		}
-		err := srv.Db.UpdateProgramClasses(classMap, classIDs)
-		if err != nil {
-			return newDatabaseServiceError(err)
-		}
-		return writeJsonResponse(w, http.StatusOK, "Successfully updated program class")
-	}
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -118,4 +100,24 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
+}
+
+func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, log sLog) error {
+	ids := r.URL.Query()["id"]
+	classIDs := make([]int, 0, len(ids))
+	for _, id := range ids {
+		if classID, err := strconv.Atoi(id); err == nil {
+			classIDs = append(classIDs, classID)
+		}
+	}
+	defer r.Body.Close()
+	classMap := make(map[string]interface{})
+	if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	err := srv.Db.UpdateProgramClasses(classMap, classIDs)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "Successfully updated program class")
 }
