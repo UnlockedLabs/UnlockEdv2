@@ -14,7 +14,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
 		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
 		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
-		{"PATCH /api/program-classes", srv.handleUpdateClass, true, axx},
+		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx},
 	}
 }
 
@@ -79,19 +79,41 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	ids := r.URL.Query()["id"]
-	classIDs := make([]int, 0, len(ids))
-	for _, id := range ids {
-		if classID, err := strconv.Atoi(id); err == nil {
-			classIDs = append(classIDs, classID)
-		}
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
 	}
-	defer r.Body.Close()
+	if id == 0 {
+		ids := r.URL.Query()["id"]
+		classIDs := make([]int, 0, len(ids))
+		for _, id := range ids {
+			if classID, err := strconv.Atoi(id); err == nil {
+				classIDs = append(classIDs, classID)
+			}
+		}
+		defer r.Body.Close()
+		classMap := make(map[string]interface{})
+		if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
+			return newJSONReqBodyServiceError(err)
+		}
+		err := srv.Db.UpdateProgramClasses(classMap, classIDs)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		return writeJsonResponse(w, http.StatusOK, "Successfully updated program class")
+	}
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	updated, err := srv.Db.UpdateProgramClass(&class, classIDs)
+	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if enrolled > class.Capacity {
+		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
+	}
+	updated, err := srv.Db.UpdateProgramClass(&class, id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

@@ -1,7 +1,11 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import { ArchiveBoxIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import {
+    ArchiveBoxIcon,
+    PlusCircleIcon,
+    PencilSquareIcon
+} from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -151,7 +155,7 @@ export default function ProgramOverview() {
             )
         );
         const idString = '?id=' + selectedAbleToArchiveClasses.join('&id=');
-        const resp = await API.patch(`program-classes${idString}`, {
+        const resp = await API.patch(`program-classes/0${idString}`, {
             archived_at: new Date().toISOString()
         });
         checkResponse(
@@ -303,20 +307,38 @@ export default function ProgramOverview() {
                                     }
                                 >
                                     <td onClick={(e) => e.stopPropagation()}>
-                                        {isArchived(program_class) ? (
-                                            <div></div>
-                                        ) : (
-                                            <input
-                                                type="checkbox"
-                                                className="checkbox checkbox-sm"
-                                                checked={isSelected}
-                                                onChange={() =>
-                                                    handleToggleRow(
-                                                        program_class.id
-                                                    )
+                                        <div className="flex items-center gap-2">
+                                            {isArchived(program_class) ? (
+                                                <div></div>
+                                            ) : (
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-sm"
+                                                    checked={isSelected}
+                                                    onChange={() =>
+                                                        handleToggleRow(
+                                                            program_class.id
+                                                        )
+                                                    }
+                                                />
+                                            )}
+                                            <ULIComponent
+                                                icon={PencilSquareIcon}
+                                                iconClassName={
+                                                    '!w-5 !h-5 cursor-pointer'
                                                 }
+                                                onClick={() => {
+                                                    navigate(
+                                                        `/programs/${id}/class/${program_class.id}`,
+                                                        {
+                                                            state: {
+                                                                title: `Program: ${program?.name}`
+                                                            }
+                                                        }
+                                                    );
+                                                }}
                                             />
-                                        )}
+                                        </div>
                                     </td>
                                     <td>{program_class.facility_name}</td>
                                     <td>{program_class.instructor_name}</td>

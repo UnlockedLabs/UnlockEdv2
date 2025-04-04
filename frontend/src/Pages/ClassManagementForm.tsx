@@ -8,7 +8,7 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { PrgClassStatus, ToastState } from '@/common';
+import { PrgClassStatus, Class, ServerResponseOne, ToastState } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -19,27 +19,14 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 
-interface ClassInputs {
-    capacity: number;
-    name: string;
-    instructor_name: string;
-    description: string;
-    start_dt: Date;
-    end_dt: Date;
-    class_id: number;
-    room: string;
-    class_status: string;
-    credit_hours: number;
-    recurrence_rule: string;
-}
-
 export default function ClassManagementForm() {
+    const [cls, setClass] = useState<Class | null>(null);
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
     const [calendarRule, setCalendarRule] = useState('');
     const [calendarDuration, setCalendarDuration] = useState('');
     const [calendarEventTitle, setCalendarEventTitle] = useState('');
-    const { id } = useParams<{ id: string }>();
+    const { id, class_id } = useParams<{ id: string; class_id?: string }>();
     const navigate = useNavigate();
     const [showCalendar, setShowCalendar] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -51,10 +38,15 @@ export default function ClassManagementForm() {
         watch,
         reset,
         formState: { errors }
-    } = useForm<ClassInputs>();
+    } = useForm<Class>({
+        defaultValues: {
+            events: [{ room: '', recurrence_rule: '', duration: '' }]
+        }
+    });
+
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);
-    const onSubmit: SubmitHandler<ClassInputs> = async (data) => {
+    const onSubmit: SubmitHandler<Class> = async (data) => {
         setErrorMessage('');
         const rruleString = rruleFormRef.current?.createRule();
         if (rruleString?.rule === '') {
@@ -62,36 +54,87 @@ export default function ClassManagementForm() {
         }
         const formattedJson = {
             ...data,
+            ...(class_id && { id: Number(class_id) }),
             start_dt: new Date(data.start_dt),
             end_dt: new Date(data.end_dt),
             capacity: Number(data.capacity),
             credit_hours: Number(data.credit_hours),
             events: [
                 {
+                    ...(class_id && { id: Number(data?.events[0].id) }),
+                    ...(class_id && { class_id: Number(class_id) }),
                     recurrence_rule: rruleString?.rule,
-                    room: data.room,
+                    room: data.events[0].room,
                     duration: rruleString?.duration
                 }
             ]
         };
-        const response = await API.post(
-            `programs/${id}/classes`,
-            formattedJson
-        );
+
+        const response = class_id
+            ? await API.patch(`program-classes/${class_id}`, formattedJson)
+            : await API.post(`programs/${id}/classes`, formattedJson);
         if (!response.success) {
-            toaster('Failed to create class', ToastState.error);
+            const toasterMsg =
+                class_id && response.message.includes('unenrolling')
+                    ? 'Cannot update class until unenrolling residents'
+                    : class_id
+                      ? 'Failed to update class'
+                      : 'Failed to create class';
+            toaster(toasterMsg, ToastState.error);
             console.log(
-                `error occurred while trying to create class, error message: ${response.message}`
+                `error occurred while trying to create/update class, error message: ${response.message}`
             );
             return;
         }
-        toaster('Class created successfully', ToastState.success);
+        toaster(
+            class_id
+                ? 'Class updated successfully'
+                : 'Class created successfully',
+            ToastState.success
+        );
         reset();
         navigate(`/programs/${id}`);
     };
     useEffect(() => {
         setCanOpenCalendar(!!nameValue && rruleIsValid);
     }, [nameValue, rruleIsValid]);
+
+    useEffect(() => {
+        if (!class_id) return;
+
+        async function fetchClassDetails() {
+            try {
+                const response = (await API.get(
+                    `program-classes/${class_id}`
+                )) as ServerResponseOne<Class>;
+                if (!response.success) {
+                    toaster('Failed to fetch class data', ToastState.error);
+                    return;
+                }
+
+                const cls = response.data;
+                setClass(cls);
+                setEditFormValues(cls);
+            } catch (error) {
+                toaster('Error loading class details', ToastState.error);
+                console.error('Fetch error:', error);
+            }
+        }
+
+        void fetchClassDetails();
+    }, [id, class_id, reset]);
+
+    function setEditFormValues(editCls: Class) {
+        const { credit_hours, ...values } = editCls;
+        reset({
+            ...values,
+            ...(credit_hours > 0 ? { credit_hours } : {}),
+            start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
+            end_dt: editCls.end_dt
+                ? new Date(editCls.end_dt).toISOString().split('T')[0]
+                : editCls.end_dt
+        });
+    }
 
     return (
         <div className="p-4 px-5">
@@ -142,7 +185,7 @@ export default function ClassManagementForm() {
                         <TextInput
                             label="Room"
                             register={register}
-                            interfaceRef="room"
+                            interfaceRef="events.0.room"
                             required
                             length={255}
                             errors={errors}
@@ -189,6 +232,9 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                             onChange={setRruleIsValid}
+                            recurrenceRule={cls?.events?.[0]?.recurrence_rule}
+                            duration={cls?.events?.[0]?.duration}
+                            disabled={!!class_id}
                         />
                         <DropdownInput
                             label="Status"
@@ -197,6 +243,7 @@ export default function ClassManagementForm() {
                             interfaceRef="class_status"
                             required
                             errors={errors}
+                            disabled={!!class_id}
                         />
                     </div>
                     <div className="col-span-4 flex justify-end gap-4 mt-4">
