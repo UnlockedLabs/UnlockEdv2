@@ -35,7 +35,7 @@ export function DateInput({
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const validateRules: Record<string, Validate<any, any>> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (!allowPastDate) {
+    if (!allowPastDate && !disabled) {
         validateRules.noPast = (userVal: string) => {
             if (userVal === '') {
                 return;

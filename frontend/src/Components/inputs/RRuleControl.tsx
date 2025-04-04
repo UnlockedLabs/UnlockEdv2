@@ -23,6 +23,9 @@ const weekdays = [
 ];
 
 interface RRuleControlProp {
+    recurrenceRule?: string;
+    duration?: string;
+    disabled?: boolean; //TODO using flag for edits only can remove later
     onChange?: (isValid: boolean) => void;
     startDateRef: string;
     endDateRef: string;
@@ -32,7 +35,17 @@ interface RRuleControlProp {
 }
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
     function RRuleControl(
-        { onChange, startDateRef, endDateRef, getValues, errors, register },
+        {
+            recurrenceRule,
+            duration,
+            disabled,
+            onChange,
+            startDateRef,
+            endDateRef,
+            getValues,
+            errors,
+            register
+        },
         ref
     ) {
         const [timeErrors, setTimeErrors] = useState({
@@ -158,6 +171,48 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             onChange?.(canCreateRule());
         }, [startTime, endTime, interval, frequency, byWeekDays, endOption]);
 
+        useEffect(() => {
+            if (!recurrenceRule || !duration) return;
+            try {
+                const rule = RRule.fromString(recurrenceRule);
+                const dtStart = rule.options.dtstart;
+                const startTime = dtStart
+                    ? dtStart.toTimeString().slice(0, 5)
+                    : '';
+
+                let endTime = '';
+                const matches = /(\d+)h(\d+)m/.exec(duration);
+                if (matches && dtStart) {
+                    const hours = parseInt(matches[1]);
+                    const minutes = parseInt(matches[2]);
+                    const endDt = new Date(
+                        dtStart.getTime() + (hours * 60 + minutes) * 60000
+                    );
+                    endTime = endDt.toTimeString().slice(0, 5);
+                }
+
+                const frequency =
+                    Object.keys(RRule.FREQUENCIES).find(
+                        (key) =>
+                            RRule.FREQUENCIES[
+                                key as keyof typeof RRule.FREQUENCIES
+                            ] === rule.options.freq
+                    ) ?? 'WEEKLY';
+                const weekDays =
+                    (rule.options.byweekday as number[] | undefined)?.map(
+                        (n) => weekdays[n].value
+                    ) ?? [];
+                setFrequency(frequency);
+                setByWeekDays(weekDays);
+                setStartTime(startTime);
+                setEndTime(endTime);
+                setInterval(rule.options.interval ?? 1);
+                setEndOption(rule.options.until ? 'until' : 'never');
+            } catch (err) {
+                console.error('Failed to parse recurrenceRule', err);
+            }
+        }, [recurrenceRule, duration]);
+
         function resetErrors() {
             const errors = {
                 startTime: '',
@@ -175,6 +230,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     interfaceRef={startDateRef}
                     required
                     errors={errors}
+                    disabled={disabled}
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -187,6 +243,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                                 resetErrors();
                             }}
                             className="input input-bordered w-full"
+                            disabled={disabled}
                         />
                         {timeErrors.startTime && (
                             <div className="text-error text-sm">
@@ -204,6 +261,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                                 resetErrors();
                             }}
                             className="input input-bordered w-full"
+                            disabled={disabled}
                         />
                         {timeErrors.endTime && (
                             <div className="text-error text-sm">
@@ -218,6 +276,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                         value={frequency}
                         onChange={(e) => setFrequency(e.target.value)}
                         className="select select-bordered w-full"
+                        disabled={disabled}
                     >
                         <option value="DAILY">Daily</option>
                         <option value="WEEKLY">Weekly</option>
@@ -232,6 +291,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                         min={1}
                         onChange={(e) => setInterval(parseInt(e.target.value))}
                         className="input input-bordered w-full"
+                        disabled={disabled}
                     />
                     {frequency === 'WEEKLY'
                         ? 'week(s)'
@@ -253,6 +313,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                                         resetErrors();
                                     }}
                                     className={`catalog-pill border ${byWeekDays.includes(value) ? 'bg-primary text-white' : 'border-grey-3 text-body-text'}`}
+                                    disabled={disabled}
                                 >
                                     {label}
                                 </button>
@@ -274,6 +335,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                             setEndOption(e.target.value as 'never' | 'until');
                         }}
                         className="select select-bordered w-full"
+                        disabled={disabled}
                     >
                         <option value="never">Never</option>
                         <option value="until">Until Date</option>
@@ -288,6 +350,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                             getValues={getValues}
                             errors={errors}
                             required={endOption === 'until'}
+                            disabled={disabled}
                         />
                     </>
                 )}
