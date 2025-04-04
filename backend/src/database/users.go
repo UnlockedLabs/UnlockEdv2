@@ -45,14 +45,21 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	return users, nil
 }
 
-func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, classId int) ([]models.User, error) {
+func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
+	likeSearch := args.SearchQuery()
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
 		Where("users.role = ?", "student")
-
-	if args.Search != "" {
-		tx = tx.Where("LOWER(users.name_first) LIKE ? OR LOWER(users.username) LIKE ? OR LOWER(users.name_last) LIKE ?", args.Search, args.Search, args.Search)
+	if likeSearch != "" {
+		_, err := strconv.Atoi(args.Search)
+		if err == nil {
+			// optimization if a number is entered, they are searching for their DOC#
+			tx = tx.Where("LOWER(users.doc_id) LIKE ?", likeSearch)
+		} else {
+			// in the case that the doc id has non-numeric charachters, include it in the search
+			tx = tx.Where("LOWER(users.name_first) LIKE ? OR LOWER(users.username) LIKE ? OR LOWER(users.name_last) LIKE ? OR LOWER(users.doc_id) LIKE ?", likeSearch, likeSearch, likeSearch, likeSearch)
+		}
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")

@@ -95,20 +95,21 @@ export default function ProgramOverview() {
     if (programError || classesError) {
         return <Error />;
     }
+    if (classes === undefined) return <br />;
 
-    const nonArchivedClasses = classes.filter(
+    const nonArchivedClasses = classes?.filter(
         (program_class) => !isArchived(program_class)
     );
 
     const allSelected =
-        selectedClasses.length === nonArchivedClasses.length &&
-        nonArchivedClasses.length > 0;
+        selectedClasses.length === nonArchivedClasses?.length &&
+        nonArchivedClasses?.length > 0;
 
     const filteredClasses = includeArchived ? classes : nonArchivedClasses;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedClasses(nonArchivedClasses.map((s) => s.id));
+            setSelectedClasses(nonArchivedClasses?.map((s) => s.id) ?? []);
         } else {
             setSelectedClasses([]);
         }
@@ -133,10 +134,10 @@ export default function ProgramOverview() {
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
 
-    const handleNavigateEnrollment = () => {
+    const handleNavigateEnrollmentDetails = () => {
         if (selectedClasses.length === 1) {
             navigate(
-                `/programs/${program?.id}/class-enrollment/${selectedClasses[0]}/`
+                `/programs/${program?.id}/classes/${selectedClasses[0]}/enrollments`
             );
         }
     };
@@ -224,10 +225,10 @@ export default function ProgramOverview() {
                         <button
                             hidden={selectedClasses.length !== 1}
                             className="button flex items-center"
-                            onClick={handleNavigateEnrollment}
+                            onClick={handleNavigateEnrollmentDetails}
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
-                            Enroll Students
+                            View Enrollment Details
                         </button>
                     )}
                     {selectedClasses.length > 0 ? (
