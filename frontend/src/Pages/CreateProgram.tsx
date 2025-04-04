@@ -194,10 +194,7 @@ export default function CreateProgramPage() {
             return;
         }
         const program = response?.data;
-        toaster(
-            response.message || 'Program created successfully',
-            ToastState.success
-        );
+        toaster('Program created successfully', ToastState.success);
         navigate(`/programs/${program.id}`);
         reset();
     };
