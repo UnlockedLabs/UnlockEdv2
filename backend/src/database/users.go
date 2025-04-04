@@ -435,3 +435,45 @@ func (db *DB) IncrementUserFAQClick(args *models.QueryContext, question string) 
 	}
 	return nil
 }
+
+func (db *DB) InsertUserAccountHistoryAction(userID uint, action models.UserAccountHistoryAction, adminID *uint, facilityID *uint, programsHistoryID *uint) error {
+	history := models.UserAccountHistory{
+		UserID:                  userID,
+		AdminID:                 adminID,
+		Action:                  action,
+		ProgramClassesHistoryID: programsHistoryID,
+		FacilityID:              facilityID,
+		CreatedAt:               time.Now(),
+	}
+	if err := db.Create(&history).Error; err != nil {
+		log.Errorf("Error inserting user account history action: %v", err)
+		return newCreateDBError(err, "user_account_history")
+	}
+	return nil
+}
+
+func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]models.UserAccountHistoryResponse, error) {
+	history := make([]models.UserAccountHistoryResponse, 0, args.PerPage)
+	tx := db.WithContext(args.Ctx).
+		Table("user_account_history uah").
+		Select(`uah.action, uah.created_at, uah.user_id, 
+				users.username AS user_username, 
+				admins.username AS admin_username, 
+				facilities.name AS facility_name, 
+				psh.*`).
+		Joins("LEFT JOIN users ON uah.user_id = users.id").
+		Joins("LEFT JOIN users admins ON uah.admin_id = admins.id").
+		Joins("LEFT JOIN facilities ON uah.facility_id = facilities.id").
+		Joins("LEFT JOIN program_classes_history psh ON uah.program_classes_history_id = psh.id").
+		Where("uah.user_id = ?", userID)
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "user_account_history")
+	}
+	if err := tx.Order("uah." + args.OrderClause()).
+		Offset(args.CalcOffset()).
+		Limit(args.PerPage).
+		Scan(&history).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "user_account_history")
+	}
+	return history, nil
+}

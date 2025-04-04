@@ -21,6 +21,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
 		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
+		{"GET /api/user-account-history/{id}", srv.handleGetUserAccountHistory, true, axx},
 	}
 }
 
@@ -96,6 +97,7 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 * TODO: transactional
 **/
 func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	reqForm := struct {
 		User      models.User `json:"user"`
 		Providers []int       `json:"provider_platforms"`
@@ -145,6 +147,14 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}{
 		User:         reqForm.User,
 		TempPassword: tempPw,
+	}
+	if reqForm.User.Role == models.Student {
+		if err := srv.Db.InsertUserAccountHistoryAction(reqForm.User.ID, models.AccountCreation, &claims.UserID, nil, nil); err != nil {
+			return newCreateRequestServiceError(err)
+		}
+		if err := srv.Db.InsertUserAccountHistoryAction(reqForm.User.ID, models.FacilityTransfer, &claims.UserID, &claims.FacilityID, nil); err != nil {
+			return newCreateRequestServiceError(err)
+		}
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
@@ -268,6 +278,9 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 			}
 		}
 	}
+	if err := srv.Db.InsertUserAccountHistoryAction(temp.UserID, models.ResetPassword, &claims.UserID, nil, nil); err != nil {
+		return newCreateRequestServiceError(err)
+	}
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
@@ -289,4 +302,17 @@ func validateUser(user *models.User) string {
 		return "alphanum"
 	}
 	return ""
+}
+
+func (srv *Server) handleGetUserAccountHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
+	args := srv.getQueryContext(r)
+	history, err := srv.Db.GetUserAccountHistory(&args, uint(id))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writePaginatedResponse(w, http.StatusOK, history, args.IntoMeta())
 }
