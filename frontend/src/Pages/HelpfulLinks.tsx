@@ -16,17 +16,23 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import ToggleView from '@/Components/ToggleView';
 import { useSessionViewType } from '@/Hooks/sessionView';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function HelpfulLinks() {
-    const [perPage, setPerPage] = useState(20);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [activeView, setActiveView] = useSessionViewType('helpfulLinksView');
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
+
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
     );
 
-    const [pageQuery, setPageQuery] = useState<number>(1);
     const {
         data: helpfulLinks,
         mutate: mutateHelpfulFavs,
@@ -38,11 +44,7 @@ export default function HelpfulLinks() {
     function updateFavorites() {
         void mutateHelpfulFavs();
     }
-    const handleSetPerPage = (perPage: number) => {
-        setPerPage(perPage);
-        setPageQuery(1);
-        updateFavorites();
-    };
+
     const helpfulLinksMeta = helpfulLinks?.data?.meta ?? {
         total: 0,
         per_page: 20,
@@ -105,7 +107,7 @@ export default function HelpfulLinks() {
                     <Pagination
                         meta={helpfulLinksMeta}
                         setPage={setPageQuery}
-                        setPerPage={handleSetPerPage}
+                        setPerPage={setPerPage}
                     />
                 </div>
             )}

@@ -21,6 +21,7 @@ import { useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
 import ToggleView from '@/Components/ToggleView';
 import { useSessionViewType } from '@/Hooks/sessionView';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function LibaryLayout({
     studentView
@@ -66,12 +67,18 @@ export default function LibaryLayout({
     if (studentView) {
         role = UserRole.Student;
     }
-    const [perPage, setPerPage] = useState(20);
-    const [pageQuery, setPageQuery] = useState<number>(1);
+
     const route = useLocation();
     const adminWithStudentView = (): boolean => {
         return !route.pathname.includes('management') && isAdministrator(user);
     };
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
+
     const {
         data: libraries,
         mutate: mutateLibraries,
@@ -80,23 +87,10 @@ export default function LibaryLayout({
     } = useSWR<ServerResponseMany<Library>, AxiosError>(
         `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=title&order=asc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
     );
-
-    const librariesMeta = libraries?.meta ?? {
-        total: 0,
-        per_page: 20,
-        page: 1,
-        current_page: 1,
-        last_page: 1
-    };
-
-    const handleSetPerPage = (perPage: number) => {
-        setPerPage(perPage);
-        setPageQuery(1);
-        void mutateLibraries();
-    };
+    const librariesMeta = libraries?.meta;
 
     useEffect(() => {
-        setPageQuery(1);
+        setPageQuery(1, { replace: true });
     }, [filterVisibilityAdmin, searchTerm, categoryQueryString]);
 
     function updateLibrary() {
@@ -213,7 +207,7 @@ export default function LibaryLayout({
                     <Pagination
                         meta={librariesMeta}
                         setPage={setPageQuery}
-                        setPerPage={handleSetPerPage}
+                        setPerPage={setPerPage}
                     />
                 </div>
             )}
