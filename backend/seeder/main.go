@@ -243,7 +243,7 @@ func seedTestData(db *gorm.DB) {
 			if classes[idx].FacilityID == user.FacilityID {
 				enrollment := models.ProgramClassEnrollment{
 					UserID:           user.ID,
-					ClassID:        classes[idx].ID,
+					ClassID:          classes[idx].ID,
 					EnrollmentStatus: enrollmentStatuses[0], //we can randomize when we know the enrollment statuses
 				}
 				if err := db.Create(&enrollment).Error; err != nil {
@@ -463,11 +463,21 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 		capacities := []int64{15, 25, 30, 35, 40, 45}
 		endDates := []time.Time{time.Now().Add(20 * 24 * time.Hour), time.Now().Add(25 * 24 * time.Hour), time.Now().Add(30 * 24 * time.Hour), time.Now().Add(35 * 24 * time.Hour)}
 		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
+		ownerNames := []string{"Aaliyah Bennett", "Luca Moretti", "Haruto Tanaka", "Anika Patel", "Thiago da Silva", "Nora Svensson", "Omar Al-Fulan", "Zara Kowalski", "Kaiya Nguyen", "Elijah Okafor"}
 
 		for i := range prog {
 			prog[i].Description = programClassDescriptions[prog[i].Name]
+			prog[i].IsActive = true
 			if err := db.Create(&prog[i]).Error; err != nil {
 				log.Fatalf("Failed to create program: %v", err)
+			}
+			facilityProgram := models.FacilitiesPrograms{
+				ProgramID:    prog[i].ID,
+				FacilityID:   facilities[idx].ID,
+				ProgramOwner: ownerNames[rand.Intn(len(ownerNames))],
+			}
+			if err := db.Create(&facilityProgram).Error; err != nil {
+				log.Fatalf("Failed to create facility program: %v", err)
 			}
 			programType := models.ProgramType{
 				ProgramType: programMap[prog[i].Name],
@@ -515,7 +525,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 				log.Fatalf("Failed to create rrule: %v", err)
 			}
 			event := models.ProgramClassEvent{
-				ClassID:      class.ID,
+				ClassID:        class.ID,
 				RecurrenceRule: rule.String(),
 				Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
 				Duration:       "1h0m0s",
