@@ -9,7 +9,10 @@ import {
     ActivityMapData,
     UserRole,
     Option,
-    ProviderPlatform
+    ProviderPlatform,
+    Program,
+    TitleHandler,
+    RouteTitleHandler
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -143,3 +146,27 @@ export const getProviderPlatforms: LoaderFunction = async () => {
     }
     return json({ providerPlatforms: [] });
 };
+
+export const getProgramTitle: LoaderFunction = async ({
+    params
+}): Promise<TitleHandler> => {
+    const { id } = params;
+    let programName = 'Class Details';
+    if (id) {
+        const resp = await API.get(`programs/${id}`);
+        if (resp.success) {
+            programName = 'Program: ' + (resp.data as Program).name;
+        }
+    }
+    return { title: programName };
+};
+
+export function resolveTitle<T>(
+    handle: RouteTitleHandler<T> | undefined,
+    data: T
+): string {
+    if (!handle) return '';
+    return typeof handle.title === 'function'
+        ? handle.title(data)
+        : handle.title;
+}

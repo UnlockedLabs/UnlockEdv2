@@ -2,12 +2,18 @@ import { useState } from 'react';
 import Navbar from '@/Components/Navbar';
 import { useMatches, UIMatch, Outlet, useLoaderData } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
-import { Facility, RouteLabel } from '@/common';
+import {
+    Facility,
+    RouteLabel,
+    RouteTitleHandler,
+    TitleHandler
+} from '@/common';
 import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
 import WebsocketSession from '@/session_ws';
 import { useAuth } from '@/useAuth';
 import HelpCenter from '@/Pages/HelpCenter';
 import UnlockEdTour from '@/Components/UnlockEdTour';
+import { resolveTitle } from '@/routeLoaders';
 
 // Extend RouteMatch with custom RouteMeta
 interface CustomRouteMatch extends UIMatch {
@@ -20,9 +26,14 @@ export default function AuthenticatedLayout() {
         window.websocket = new WebsocketSession(user);
     }
     const matches = useMatches() as CustomRouteMatch[];
-    const currentMatch = matches.find((match) => match?.handle?.title);
+    // const currentMatch = matches.find((match) => match?.handle?.title);
     const facilities = useLoaderData() as Facility[] | null;
-    const title = currentMatch?.handle?.title ?? 'UnlockEd';
+
+    const currentRoute = matches[matches.length - 1];
+    const routeData = currentRoute?.data as TitleHandler;
+    const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
+    const title = resolveTitle(routeHandle, routeData) ?? 'UnlockEd';
+
     // We have three states we need to factor for.
     // 1. If the nav is open & pinned (Large screens only & uses lg:drawer-open)
     // 2. If the nav is open & not pinned (Large screens only)

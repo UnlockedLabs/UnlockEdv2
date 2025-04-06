@@ -1,6 +1,7 @@
 import { useMatches, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { TitleHandler } from '@/common';
+import { RouteTitleHandler, TitleHandler } from '@/common';
+import { resolveTitle } from '@/routeLoaders';
 
 export function TitleManager() {
     const matches = useMatches();
@@ -31,13 +32,18 @@ export function TitleManager() {
                 return;
             }
 
-            const activeHandle = matches
-                .filter((match) =>
-                    Boolean((match.handle as TitleHandler)?.title)
+            const activeMatch = [...matches]
+                .filter(
+                    (match) =>
+                        typeof match.handle === 'object' &&
+                        match.handle !== null &&
+                        'title' in match.handle
                 )
                 .pop();
-            const title =
-                (activeHandle?.handle as TitleHandler)?.title ?? 'UnlockEd';
+            const title = resolveTitle(
+                activeMatch?.handle as RouteTitleHandler<TitleHandler>,
+                activeMatch?.data as TitleHandler
+            );
             document.title = title + ' - UnlockEd';
         };
 
