@@ -56,15 +56,17 @@ func (db *DB) GetUserByDocIDAndID(ctx *models.QueryContext, docID string, userID
 func (db *DB) GetTransferProgramConflicts(ctx *models.QueryContext, id uint, transferFacilityId int) ([]string, error) {
 	var programNames []string
 	query := `with transfer_facility_programs as (
-			select pc.name from program_classes pc 
-			where pc.facility_id = ?
-				and archived_at is null
+			select name from programs p
+			inner join facilities_programs fp on fp.program_id = p.id
+					and fp.facility_id = ?
+			where p.is_active = true
 		)
 		select pc.name from program_class_enrollments pce
 		inner join users u on u.id = pce.user_id
 			and u.id = ?
 		inner join program_classes pc on pc.id = pce.class_id
 			and pc.facility_id = u.facility_id
+		inner join programs p on p.id = pc.program_id
 		where enrollment_status = 'Enrolled'
 			and pc.name not in (select name from transfer_facility_programs)`
 	if err := db.WithContext(ctx.Ctx).Raw(query, transferFacilityId, id).Scan(&programNames).Error; err != nil {
