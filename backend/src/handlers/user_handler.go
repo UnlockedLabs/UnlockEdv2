@@ -20,6 +20,8 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"POST /api/users", srv.handleCreateUser, true, axx},
 		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
 		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
+		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx},
+		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
 	}
 }
@@ -289,4 +291,65 @@ func validateUser(user *models.User) string {
 		return "alphanum"
 	}
 	return ""
+}
+
+func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	transferFacilityId, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "facility ID")
+	}
+	log.add("trans_facility_id", transferFacilityId)
+	userID, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
+	log.add("user_id", userID)
+	docID := r.URL.Query().Get("doc_id")
+	user, err := srv.Db.GetUserByDocIDAndID(&args, docID, userID)
+	if err != nil {
+		return writeJsonResponse(w, http.StatusNotFound, "Resident not found")
+	}
+	log.add("doc_id", docID)
+	programNames, err := srv.Db.GetTransferProgramConflicts(&args, user.ID, transferFacilityId)
+	if err != nil {
+		return writeJsonResponse(w, http.StatusNotFound, "Resident not found")
+	}
+	validResident := struct {
+		User            models.User `json:"user"`
+		ProgramNames    []string    `json:"program_names"`
+		TransFacilityID int         `json:"trans_facility_id"`
+	}{
+		User:            *user,
+		ProgramNames:    programNames,
+		TransFacilityID: transferFacilityId,
+	}
+	return writeJsonResponse(w, http.StatusOK, validResident)
+}
+
+func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	var transRequest struct {
+		UserID          int `json:"user_id"`
+		TransFacilityID int `json:"trans_facility_id"`
+		CurrFacilityID  int `json:"curr_facility_id"`
+	}
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&transRequest); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	log.add("user_id", transRequest.UserID)
+	log.add("admin_id", args.UserID)
+	log.add("transfer_facility_id", transRequest.TransFacilityID)
+	log.add("current_facility_id", transRequest.CurrFacilityID)
+	err := srv.Db.TransferResident(&args, transRequest.UserID, transRequest.CurrFacilityID, transRequest.TransFacilityID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	err = srv.updateFacilityInKratosIdentity(transRequest.UserID, transRequest.TransFacilityID)
+	if err != nil {
+		return newInternalServerServiceError(err, "error updating facility in kratos")
+	}
+	log.info("successfully transferred resident")
+	return writeJsonResponse(w, int(http.StatusNoContent), "successfully transferred resident")
 }

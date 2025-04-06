@@ -2,6 +2,7 @@ import { OpenContentItem, ServerResponseOne } from '@/common';
 import { useNavigate } from 'react-router-dom';
 import ClampedText from '../ClampedText';
 import API from '@/api/api';
+import { isAdministrator, useAuth } from '@/useAuth';
 
 async function handleHelpfulLinkClick(id: number): Promise<void> {
     const resp = (await API.put<{ url: string }, object>(
@@ -17,9 +18,13 @@ export default function OpenContentCardRow({
 }: {
     content: OpenContentItem;
 }) {
+    const { user } = useAuth();
     const navigate = useNavigate();
     function redirectToViewer() {
-        if (content.visibility_status != null && !content.visibility_status)
+        if (
+            !isAdministrator(user) &&
+            (content.visibility_status == null || !content.visibility_status)
+        )
             return;
         if (content.content_type === 'helpful_link') {
             void handleHelpfulLinkClick(content.content_id);
@@ -45,11 +50,11 @@ export default function OpenContentCardRow({
     }
     return (
         <div
-            className={`card ${content.visibility_status == null || content.visibility_status ? 'cursor-pointer' : 'bg-grey-2 cursor-not-allowed'} flex flex-row w-full gap-3 px-4 py-2 tooltip`}
-            {...(content.visibility_status != null &&
-                !content.visibility_status && {
-                    'data-tip': 'This content is no longer accessible'
-                })}
+            className={`card ${isAdministrator(user) || (content.visibility_status != null && content.visibility_status) ? 'cursor-pointer' : 'bg-grey-2 cursor-not-allowed'} flex flex-row w-full gap-3 px-4 py-2 tooltip`}
+            {...(!isAdministrator(user) &&
+            (content.visibility_status == null || !content.visibility_status)
+                ? { 'data-tip': 'This content is no longer accessible' }
+                : {})}
             onClick={redirectToViewer}
         >
             <div>

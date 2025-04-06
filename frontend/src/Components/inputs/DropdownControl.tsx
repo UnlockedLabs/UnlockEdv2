@@ -2,6 +2,10 @@ import { Dispatch, SetStateAction } from 'react';
 
 interface DropdownControlProps {
     label?: string;
+    /**
+     * Optional attribute is used for enabling the lable for being the first item displayed in the list
+     */
+    useLabel?: boolean;
     setState?: Dispatch<SetStateAction<string>>;
     customCallback?: (value: string) => void;
     enumType: Record<string, string>;
@@ -12,7 +16,8 @@ export default function DropdownControl({
     label,
     setState: callback,
     customCallback,
-    enumType
+    enumType,
+    useLabel = false
 }: DropdownControlProps) {
     return (
         <label className="form-control">
@@ -28,10 +33,12 @@ export default function DropdownControl({
                     }
                 }}
             >
-                {label ? (
+                {label && !useLabel ? (
                     <option value="" disabled>
                         {label}
                     </option>
+                ) : label && useLabel ? (
+                    <option value={label}>{label}</option>
                 ) : (
                     ''
                 )}

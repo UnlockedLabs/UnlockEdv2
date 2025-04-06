@@ -200,3 +200,37 @@ func (srv *Server) handleUpdatePasswordKratos(claims *Claims, password string, r
 	log.Infof("password updated successfully for user: %s and KratosID: %s", claims.Username, identity.GetId())
 	return nil
 }
+
+func (srv *Server) updateFacilityInKratosIdentity(userID int, transFacilityID int) error {
+	ctx := context.Background()
+	user, err := srv.Db.GetUserByID(uint(userID))
+	if err != nil {
+		log.Errorf("error retrieving user with id %d: %v", userID, err)
+		return err
+	}
+	identity, resp, err := srv.OryClient.IdentityAPI.GetIdentity(ctx, user.KratosID).Execute()
+	if err != nil {
+		log.Errorf("error fetching identity using id %s: %v", user.KratosID, err)
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Errorf("error fetching identity using id %s; status code: %s", user.KratosID, resp.Status)
+		return errors.New("error fetching identity")
+	}
+	traits := identity.GetTraits().(map[string]interface{})
+	traits["facility_id"] = transFacilityID
+	update := client.UpdateIdentityBody{
+		Traits: traits,
+	}
+	updated, resp, err := srv.OryClient.IdentityAPI.UpdateIdentity(ctx, user.KratosID).UpdateIdentityBody(update).Execute()
+	if err != nil {
+		log.Errorf("error updating identity with new facility id %d: %v", transFacilityID, err)
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Errorf("error updating identity with new facility id %d: %v", transFacilityID, resp.Status)
+		return errors.New("failed to update identity")
+	}
+	log.Infof("Identity updated successfully: %v", updated.GetId())
+	return nil
+}

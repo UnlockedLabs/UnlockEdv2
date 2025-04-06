@@ -2,12 +2,24 @@ import { forwardRef, ReactNode } from 'react';
 import { CancelSubmitRow, CloseX } from '../inputs';
 import { TextModalType } from '.';
 
+type ModalWidth =
+    | 'max-w-lg'
+    | 'max-w-xl'
+    | 'max-w-2xl'
+    | 'max-w-3xl'
+    | 'max-w-4xl';
 interface TextModalProps {
     type: TextModalType;
     title: string;
     text: string | ReactNode;
     onSubmit: () => void;
     onClose: () => void;
+    /**
+     * Optional attribute sets the width of the modal box. If you need it to be wider just add one of these options below.
+     * @default "max-w-md"
+     * Allowed: "max-w-lg" | "max-w-xl" | "max-w-2xl" | "max-w-3xl" | "max-w-4xl"
+     */
+    width?: ModalWidth;
 }
 export const TextOnlyModal = forwardRef(function TextModal(
     {
@@ -16,13 +28,14 @@ export const TextOnlyModal = forwardRef(function TextModal(
         text,
         onSubmit,
         onClose,
-        children
+        children,
+        width
     }: TextModalProps & { children?: ReactNode },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     return (
         <dialog ref={ref} className="modal">
-            <div className="modal-box">
+            <div className={`modal-box ` + (width ? width : '')}>
                 <CloseX close={onClose} />
                 <div className="flex flex-col gap-6">
                     <span className={`text-3xl font-semibold text-neutral`}>

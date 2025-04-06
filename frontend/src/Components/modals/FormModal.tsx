@@ -6,6 +6,7 @@ import {
     useForm
 } from 'react-hook-form';
 import {
+    CancelButton,
     CheckboxInput,
     CloseX,
     DropdownInput,
@@ -25,6 +26,12 @@ interface FormModalProps<T extends FieldValues> {
     defaultValues?: DefaultValues<T>;
     error?: FormError;
     onSubmit: SubmitHandler<T>;
+    showCancel?: boolean;
+    submitText?: string;
+    /**
+     * Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs
+     */
+    extValidationIsValid?: () => void;
 }
 
 export interface FormError {
@@ -33,7 +40,16 @@ export interface FormError {
 }
 
 export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
-    { title, inputs, onSubmit, defaultValues, error }: FormModalProps<T>,
+    {
+        title,
+        inputs,
+        onSubmit,
+        defaultValues,
+        showCancel = false,
+        submitText,
+        extValidationIsValid = () => {}, //eslint-disable-line
+        error
+    }: FormModalProps<T>,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     const {
@@ -79,6 +95,8 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                     <form
                         key={inputs.length}
                         onSubmit={(e) => {
+                            e.preventDefault();
+                            extValidationIsValid();
                             void handleSubmit(onSubmitHandler)(e);
                         }}
                     >
@@ -159,12 +177,40 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                     );
                                 }
                                 if (input.type === FormInputTypes.Unique) {
-                                    return input.uniqueComponent;
+                                    return (
+                                        <div key={index}>
+                                            {input.uniqueComponent}
+                                        </div>
+                                    );
                                 }
                                 return;
                             }
                         )}
-                        <SubmitButton />
+                        {showCancel ? (
+                            <div className="col-span-4 flex justify-end gap-4 mt-4">
+                                <div className="w-32">
+                                    <label className="form-control pt-4">
+                                        <CancelButton
+                                            onClick={() => {
+                                                reset();
+                                                (
+                                                    ref as React.RefObject<HTMLDialogElement>
+                                                )?.current?.close();
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+                                <div
+                                    className={
+                                        submitText ? 'min-w-max' : 'w-32'
+                                    }
+                                >
+                                    <SubmitButton label={submitText} />
+                                </div>
+                            </div>
+                        ) : (
+                            <SubmitButton label={submitText} />
+                        )}
                     </form>
                 </div>
             </div>
