@@ -45,6 +45,74 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	return users, nil
 }
 
+func (db *DB) GetUserByDocIDAndID(ctx *models.QueryContext, docID string, userID int) (*models.User, error) {
+	user := models.User{}
+	if err := db.WithContext(ctx.Ctx).First(&user, "doc_id = ? and id = ?", docID, userID).Error; err != nil {
+		return nil, newNotFoundDBError(err, "users")
+	}
+	return &user, nil
+}
+
+func (db *DB) GetTransferProgramConflicts(ctx *models.QueryContext, id uint, transferFacilityId int) ([]string, error) {
+	var programNames []string
+	query := `with transfer_facility_programs as (
+			select pc.name from program_classes pc 
+			where pc.facility_id = ?
+				and archived_at is null
+		)
+		select pc.name from program_class_enrollments pce
+		inner join users u on u.id = pce.user_id
+			and u.id = ?
+		inner join program_classes pc on pc.id = pce.class_id
+			and pc.facility_id = u.facility_id
+		where enrollment_status = 'Enrolled'
+			and pc.name not in (select name from transfer_facility_programs)`
+	if err := db.WithContext(ctx.Ctx).Raw(query, transferFacilityId, id).Scan(&programNames).Error; err != nil {
+		return nil, err
+	}
+	return programNames, nil
+}
+
+func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilityID int, transFacilityID int) error {
+	trans := db.Begin()
+	if trans.Error != nil {
+		return NewDBError(trans.Error, "unable to start DB transaction")
+	}
+	updateQuery := `UPDATE program_class_enrollments AS pce SET enrollment_status = ?
+		FROM program_classes pc
+		WHERE pce.class_id = pc.id
+			AND pce.user_id = ?
+			AND pc.facility_id = ?
+			AND pce.enrollment_status = 'Enrolled'
+	`
+	if err := trans.Debug().Exec(updateQuery, "Incomplete: Transferred", userID, currFacilityID).Error; err != nil {
+		trans.Rollback()
+		return newUpdateDBError(err, "program_class_enrollments")
+	}
+	if err := trans.Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("facility_id", transFacilityID).Error; err != nil {
+		trans.Rollback()
+		return newUpdateDBError(err, "users")
+	}
+	uintFacID := uint(transFacilityID)
+	history := models.UserAccountHistory{
+		UserID:     uint(userID),
+		AdminID:    &ctx.UserID,
+		Action:     models.FacilityTransfer,
+		FacilityID: &uintFacID,
+		CreatedAt:  time.Now(),
+	}
+	if err := trans.Create(&history).Error; err != nil {
+		trans.Rollback()
+		return newCreateDBError(err, "user_account_history")
+	}
+	if err := trans.Commit().Error; err != nil {
+		return NewDBError(err, "unable to commit DB transaction")
+	}
+	return nil
+}
+
 func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, classId int) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).

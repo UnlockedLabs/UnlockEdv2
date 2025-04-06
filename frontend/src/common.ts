@@ -6,6 +6,12 @@ export enum UserRole {
     FacilityAdmin = 'facility_admin',
     Student = 'student'
 }
+
+export enum ResidentAccountAction {
+    'Transfer Resident' = 'transfer',
+    'Delete Resident' = 'delete'
+}
+
 export enum FeatureAccess {
     ProviderAccess = 'provider_platforms',
     OpenContentAccess = 'open_content',
@@ -25,9 +31,18 @@ export interface User {
     session_id: string;
     created_at: string;
     updated_at: string;
+    facility_id: number;
     facility_name?: string;
     feature_access: FeatureAccess[];
     [key: string]: number | string | boolean | undefined | FeatureAccess[];
+}
+
+export interface ValidResident {
+    user: User;
+    program_names: string[];
+    trans_facility_id: number;
+    transfer_to?: string;
+    transfer_from?: string;
 }
 
 export interface OpenContentProvider {
