@@ -2,14 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { Facility, TitleHandler } from '@/common';
-import { useLocation, useMatches } from 'react-router-dom';
+import { Facility, RouteTitleHandler, TitleHandler } from '@/common';
+import { useMatches } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
-
-interface CustomTitle {
-    title?: string;
-}
+import { resolveTitle } from '@/routeLoaders';
 
 export default function PageNav({
     showOpenMenu,
@@ -24,11 +21,10 @@ export default function PageNav({
     const detailsRef = useRef<HTMLDetailsElement>(null);
     const matches = useMatches();
     const currentRoute = matches[matches.length - 1];
-    const pageTitle = (currentRoute?.handle as TitleHandler)?.title;
-    const location = useLocation() as { state: CustomTitle }; //added for custom titles
-    const customTitle = location.state?.title ? location.state?.title : '';
+    const routeData = currentRoute?.data as TitleHandler;
+    const routeHandle = currentRoute?.handle as RouteTitleHandler<TitleHandler>;
+    const pageTitle = resolveTitle(routeHandle, routeData);
     const { pageTitle: authLayoutPageTitle, setPageTitle } = usePageTitle();
-
     useEffect(() => {
         const closeDropdown = ({ target }: MouseEvent) => {
             if (
@@ -82,9 +78,7 @@ export default function PageNav({
                 <h1>
                     {pageTitle == 'Library Viewer'
                         ? authLayoutPageTitle
-                        : customTitle === ''
-                          ? pageTitle
-                          : customTitle}
+                        : pageTitle}
                 </h1>
             </div>
             {user && canSwitchFacility(user) ? (

@@ -779,10 +779,19 @@ export interface OpenContentItem {
     provider_name?: string;
     channel_title?: string;
 }
+
+export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
+
 export interface TitleHandler {
     title: string;
     path?: string[];
 }
+
+export interface DynamicTitleHandler<T> {
+    title: (data: T) => string;
+    path?: string[];
+}
+
 export interface ActivityMapData {
     date: string;
     total_time: string;

@@ -1,7 +1,7 @@
-import { getProgramData } from '@/routeLoaders';
+import { getProgramData, getProgramTitle } from '@/routeLoaders';
 import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
-import { FeatureAccess } from '@/common';
+import { FeatureAccess, TitleHandler } from '@/common';
 import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
@@ -37,9 +37,10 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'programs/:id/class/:class_id?',
+            loader: getProgramTitle,
             element: <ClassManagementForm />,
             handle: {
-                title: 'Class Details'
+                title: (data: TitleHandler) => data.title
             }
         },
         {
