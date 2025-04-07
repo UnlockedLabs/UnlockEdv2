@@ -56,7 +56,7 @@ export default function ClassManagementForm() {
             ...data,
             ...(class_id && { id: Number(class_id) }),
             start_dt: new Date(data.start_dt),
-            end_dt: new Date(data.end_dt),
+            end_dt: data.end_dt ? new Date(data.end_dt) : null,
             capacity: Number(data.capacity),
             credit_hours: Number(data.credit_hours),
             events: [
