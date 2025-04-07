@@ -11,8 +11,10 @@ import {
     Option,
     ProviderPlatform,
     Program,
-    TitleHandler,
-    RouteTitleHandler
+    RouteTitleHandler,
+    Class,
+    ServerResponseOne,
+    ClassLoaderData
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -149,8 +151,9 @@ export const getProviderPlatforms: LoaderFunction = async () => {
 
 export const getProgramTitle: LoaderFunction = async ({
     params
-}): Promise<TitleHandler> => {
-    const { id } = params;
+}): Promise<ClassLoaderData> => {
+    const { id, class_id } = params;
+    let cls: Class | undefined;
     let programName = 'Class Details';
     if (id) {
         const resp = await API.get(`programs/${id}`);
@@ -158,7 +161,18 @@ export const getProgramTitle: LoaderFunction = async ({
             programName = 'Program: ' + (resp.data as Program).name;
         }
     }
-    return { title: programName };
+    if (class_id) {
+        const classResp = (await API.get(
+            `program-classes/${class_id}`
+        )) as ServerResponseOne<Class>;
+        if (classResp.success) {
+            cls = classResp.data;
+        }
+    }
+    return {
+        title: programName,
+        class: cls
+    };
 };
 
 export function resolveTitle<T>(

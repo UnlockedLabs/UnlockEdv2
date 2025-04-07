@@ -780,6 +780,10 @@ export interface OpenContentItem {
     channel_title?: string;
 }
 
+export interface ClassLoaderData extends TitleHandler {
+    class?: Class;
+}
+
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
 
 export interface TitleHandler {

@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
 import {
     DropdownInput,
     NumberInput,
@@ -8,7 +8,7 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { PrgClassStatus, Class, ServerResponseOne, ToastState } from '@/common';
+import { PrgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -20,7 +20,7 @@ import {
 } from '@/Components/inputs/RRuleControl';
 
 export default function ClassManagementForm() {
-    const [cls, setClass] = useState<Class | null>(null);
+    const clsLoader = useLoaderData() as ClassLoaderData;
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
     const [calendarRule, setCalendarRule] = useState('');
@@ -101,27 +101,9 @@ export default function ClassManagementForm() {
 
     useEffect(() => {
         if (!class_id) return;
-
-        async function fetchClassDetails() {
-            try {
-                const response = (await API.get(
-                    `program-classes/${class_id}`
-                )) as ServerResponseOne<Class>;
-                if (!response.success) {
-                    toaster('Failed to fetch class data', ToastState.error);
-                    return;
-                }
-
-                const cls = response.data;
-                setClass(cls);
-                setEditFormValues(cls);
-            } catch (error) {
-                toaster('Error loading class details', ToastState.error);
-                console.error('Fetch error:', error);
-            }
+        if (clsLoader.class) {
+            setEditFormValues(clsLoader.class);
         }
-
-        void fetchClassDetails();
     }, [id, class_id, reset]);
 
     function setEditFormValues(editCls: Class) {
@@ -232,8 +214,6 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                             onChange={setRruleIsValid}
-                            recurrenceRule={cls?.events?.[0]?.recurrence_rule}
-                            duration={cls?.events?.[0]?.duration}
                             disabled={!!class_id}
                         />
                         <DropdownInput

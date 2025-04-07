@@ -6,7 +6,8 @@ import {
     FieldErrors,
     UseFormGetValues
 } from 'react-hook-form';
-
+import { useLoaderData } from 'react-router';
+import { ClassLoaderData } from '@/common';
 export interface RRuleFormHandle {
     createRule: () => { rule: string; duration: string };
     validate: () => boolean;
@@ -23,8 +24,6 @@ const weekdays = [
 ];
 
 interface RRuleControlProp {
-    recurrenceRule?: string;
-    duration?: string;
     disabled?: boolean; //TODO using flag for edits only can remove later
     onChange?: (isValid: boolean) => void;
     startDateRef: string;
@@ -36,8 +35,6 @@ interface RRuleControlProp {
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
     function RRuleControl(
         {
-            recurrenceRule,
-            duration,
             disabled,
             onChange,
             startDateRef,
@@ -48,6 +45,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         },
         ref
     ) {
+        const clsLoader = useLoaderData() as ClassLoaderData;
         const [timeErrors, setTimeErrors] = useState({
             startTime: '',
             endTime: '',
@@ -172,6 +170,12 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         }, [startTime, endTime, interval, frequency, byWeekDays, endOption]);
 
         useEffect(() => {
+            let recurrenceRule;
+            let duration;
+            if (clsLoader.class) {
+                recurrenceRule = clsLoader.class.events?.[0]?.recurrence_rule;
+                duration = clsLoader.class.events?.[0]?.duration;
+            }
             if (!recurrenceRule || !duration) return;
             try {
                 const rule = RRule.fromString(recurrenceRule);
@@ -211,7 +215,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             } catch (err) {
                 console.error('Failed to parse recurrenceRule', err);
             }
-        }, [recurrenceRule, duration]);
+        }, []);
 
         function resetErrors() {
             const errors = {
