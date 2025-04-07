@@ -323,12 +323,7 @@ export default function ProgramOverview() {
                                                 }
                                                 onClick={() => {
                                                     navigate(
-                                                        `/programs/${id}/class/${program_class.id}`,
-                                                        {
-                                                            state: {
-                                                                title: `Program: ${program?.name}`
-                                                            }
-                                                        }
+                                                        `/programs/${id}/class/${program_class.id}`
                                                     );
                                                 }}
                                             />
