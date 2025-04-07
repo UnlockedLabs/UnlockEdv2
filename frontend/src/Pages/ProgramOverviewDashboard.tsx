@@ -80,9 +80,8 @@ export default function ProgramOverview() {
         const unableToArchive = classes.filter(
             (program_class) =>
                 selectedClasses.includes(program_class.id) &&
-                (program_class.class_status === SelectedClassStatus.Active ||
-                    program_class.class_status ===
-                        SelectedClassStatus.Scheduled) &&
+                (program_class.status === SelectedClassStatus.Active ||
+                    program_class.status === SelectedClassStatus.Scheduled) &&
                 program_class.enrolled >= 1
         );
 
@@ -369,7 +368,7 @@ export default function ProgramOverview() {
                                     </td>
                                     <td>
                                         <ClassStatus
-                                            status={program_class.class_status}
+                                            status={program_class.status}
                                             program_class={program_class}
                                             mutateClasses={mutateClasses}
                                         />

@@ -30,7 +30,7 @@ type ProgramClass struct {
 	ArchivedAt     *time.Time  `json:"archived_at"`
 	StartDt        time.Time   `gorm:"type:date" json:"start_dt"`
 	EndDt          *time.Time  `gorm:"type:date" json:"end_dt"`
-	Status         ClassStatus `json:"class_status" gorm:"type:class_status" validate:"required"`
+	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 
 	Program  *Program            `json:"program" gorm:"foreignKey:ProgramID;references:ID"`

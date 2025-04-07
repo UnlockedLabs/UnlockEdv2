@@ -240,7 +240,7 @@ export default function ClassManagementForm() {
                             label="Status"
                             register={register}
                             enumType={PrgClassStatus}
-                            interfaceRef="class_status"
+                            interfaceRef="status"
                             required
                             errors={errors}
                             disabled={!!class_id}
