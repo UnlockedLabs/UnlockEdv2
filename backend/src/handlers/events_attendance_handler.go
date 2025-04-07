@@ -9,14 +9,14 @@ import (
 func (srv *Server) registerAttendanceRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
-		{"GET /api/program-classes/{id}/attendees", srv.handleGetAttendeesForClass, true, axx},
-		{"POST /api/events/{id}/attendees/{user_id}", srv.handleLogAttendeeForEvent, true, axx},
-		{"DELETE /api/events/{id}/attendees/{user_id}", srv.handleDeleteAttendee, true, axx},
+		{"GET /api/class-enrollments/{id}/events/{e_id}/attendees", srv.handleGetAttendeesForClass, true, axx},
+		{"POST /api/class-enrollments/{id}/events/{e_id}/attendees/{user_id}", srv.handleLogAttendeeForEvent, true, axx},
+		{"DELETE /api/class-enrollments/{id}/events/{e_id}/attendees/{user_id}", srv.handleDeleteAttendee, true, axx},
 	}
 }
 
 func (srv *Server) handleGetAttendeesForClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	eventID, err := strconv.Atoi(r.PathValue("id"))
+	eventID, err := strconv.Atoi(r.PathValue("e_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
 	}
@@ -29,7 +29,7 @@ func (srv *Server) handleGetAttendeesForClass(w http.ResponseWriter, r *http.Req
 }
 
 func (srv *Server) handleLogAttendeeForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	eventID, err := strconv.Atoi(r.PathValue("id"))
+	eventID, err := strconv.Atoi(r.PathValue("e_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
 	}
@@ -46,7 +46,7 @@ func (srv *Server) handleLogAttendeeForEvent(w http.ResponseWriter, r *http.Requ
 }
 
 func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, log sLog) error {
-	eventID, err := strconv.Atoi(r.PathValue("id"))
+	eventID, err := strconv.Atoi(r.PathValue("e_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
 	}

@@ -67,9 +67,12 @@ const ModifyClassModal = forwardRef(function (
     async function onConfirm() {
         const updatedStatus = ClassStatusMap[action!];
 
-        const resp = await API.patch(`program-classes?id=${program_class.id}`, {
-            class_status: updatedStatus
-        });
+        const resp = await API.patch(
+            `programs/${program_class.program_id}/classes?id=${program_class.id}`,
+            {
+                class_status: updatedStatus
+            }
+        );
         if (resp.success) setSelectedStatus(updatedStatus);
 
         checkResponse(

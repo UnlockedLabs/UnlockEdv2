@@ -11,10 +11,9 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx},
-		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
-		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
+		{"GET /api/programs/{id}/classes/{class_id}", srv.handleGetClass, false, axx},
 		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
-		{"PATCH /api/program-classes", srv.handleUpdateClass, true, axx},
+		{"PATCH /api/programs/{id}/classes/{c_id}", srv.handleUpdateClass, true, axx},
 	}
 }
 
@@ -43,15 +42,6 @@ func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sL
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, class)
-}
-
-func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
-	classes, err := srv.Db.GetClassesForFacility(&args)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
 }
 
 func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log sLog) error {

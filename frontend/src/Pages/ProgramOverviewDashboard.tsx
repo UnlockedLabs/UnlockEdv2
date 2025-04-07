@@ -151,7 +151,7 @@ export default function ProgramOverview() {
             )
         );
         const idString = '?id=' + selectedAbleToArchiveClasses.join('&id=');
-        const resp = await API.patch(`program-classes${idString}`, {
+        const resp = await API.patch(`programs/${id}/classes${idString}`, {
             archived_at: new Date().toISOString()
         });
         checkResponse(
