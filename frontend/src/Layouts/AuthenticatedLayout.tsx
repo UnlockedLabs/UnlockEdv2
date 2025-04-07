@@ -26,7 +26,6 @@ export default function AuthenticatedLayout() {
         window.websocket = new WebsocketSession(user);
     }
     const matches = useMatches() as CustomRouteMatch[];
-    // const currentMatch = matches.find((match) => match?.handle?.title);
     const facilities = useLoaderData() as Facility[] | null;
 
     const currentRoute = matches[matches.length - 1];
