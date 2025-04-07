@@ -49,7 +49,8 @@ func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, classId int) ([
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
-		Where("users.role = ?", "student")
+		Where("users.role = ?", "student").
+		Where("facility_id =?", args.FacilityID)
 
 	likeSearch := args.SearchQuery()
 
