@@ -22,11 +22,11 @@ func TestHandleGetAttendeesForClass(t *testing.T) {
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/program-classes/{id}/attendees%s", test.queryParams), nil)
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/class-enrollments/{id}/events/{e_id}/attendees%s", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			req.SetPathValue("id", fmt.Sprintf("%d", 5)) //static...doesn't use 5
+			req.SetPathValue("e_id", fmt.Sprintf("%d", 5)) //static...doesn't use 5
 			handler := getHandlerByRoleWithMiddleware(server.handleGetAttendeesForClass, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
@@ -62,13 +62,13 @@ func TestHandleLogAttendeeForEvent(t *testing.T) {
 			if logAttendeeMap["err"] != nil {
 				t.Fatalf("unable get event id and user id for log attendee, error is %v", logAttendeeMap["err"])
 			}
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/events/{id}/attendees/{user_id}%s", test.queryParams), nil)
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/class-enrollments/{id}/events/{e_id}/attendees/{user_id}%s", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			eventId := logAttendeeMap["event_id"].(uint)
 			userId := logAttendeeMap["user_id"].(uint)
-			req.SetPathValue("id", strconv.Itoa(int(eventId)))
+			req.SetPathValue("e_id", strconv.Itoa(int(eventId)))
 			req.SetPathValue("user_id", strconv.Itoa(int(userId)))
 			handler := getHandlerByRoleWithMiddleware(server.handleLogAttendeeForEvent, test.role)
 			rr := executeRequest(t, req, handler, test)
@@ -103,13 +103,13 @@ func TestHandleDeleteAttendee(t *testing.T) {
 			if logAttendeeMap["err"] != nil {
 				t.Fatalf("unable get event id and user id for log attendee, error is %v", logAttendeeMap["err"])
 			}
-			req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/events/{id}/attendees/{user_id}%s", fmt.Sprintf(test.queryParams, logAttendeeMap["date"].(string))), nil)
+			req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/class-enrollments/{id}/events/{e_id}/attendees/{user_id}%s", fmt.Sprintf(test.queryParams, logAttendeeMap["date"].(string))), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			eventId := logAttendeeMap["event_id"].(uint)
 			userId := logAttendeeMap["user_id"].(uint)
-			req.SetPathValue("id", strconv.Itoa(int(eventId)))
+			req.SetPathValue("e_id", strconv.Itoa(int(eventId)))
 			req.SetPathValue("user_id", strconv.Itoa(int(userId)))
 			handler := getHandlerByRoleWithMiddleware(server.handleDeleteAttendee, test.role)
 			rr := executeRequest(t, req, handler, test)

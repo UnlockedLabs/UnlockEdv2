@@ -52,14 +52,16 @@ func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityI
 	return total, content, nil
 }
 
-func (db *DB) CreateProgramClassEnrollments(classID, userID int) error {
-
-	enrollment := &models.ProgramClassEnrollment{
-		ClassID:          uint(classID),
-		UserID:           uint(userID),
-		EnrollmentStatus: "Enrolled",
+func (db *DB) CreateProgramClassEnrollments(classID int, userIDs []int) error {
+	enrollments := make([]models.ProgramClassEnrollment, len(userIDs))
+	for i := range userIDs {
+		enrollments = append(enrollments, models.ProgramClassEnrollment{
+			ClassID:          uint(classID),
+			UserID:           uint(userIDs[i]),
+			EnrollmentStatus: "Enrolled",
+		})
 	}
-	if err := db.Create(enrollment).Error; err != nil {
+	if err := db.Create(enrollments).Error; err != nil {
 		return newCreateDBError(err, "class enrollment")
 	}
 	return nil

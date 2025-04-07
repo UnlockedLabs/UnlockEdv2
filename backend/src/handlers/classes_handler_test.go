@@ -75,7 +75,7 @@ func TestHandleGetClass(t *testing.T) {
 			if classIdMap["err"] != nil {
 				t.Fatalf("unable to get class id from db, error is %v", classIdMap["err"])
 			}
-			req, err := http.NewRequest(http.MethodGet, "/api/program-classes/{class_id}", nil)
+			req, err := http.NewRequest(http.MethodGet, "/api/programs/{id}/classes/{class_id}", nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
@@ -94,41 +94,6 @@ func TestHandleGetClass(t *testing.T) {
 			}
 			if diff := cmp.Diff(class, &data.Data); diff != "" {
 				t.Errorf("handler returned unexpected response body: %v", diff)
-			}
-		})
-	}
-}
-
-func TestHandleIndexClassesForFacility(t *testing.T) {
-	httpTests := []httpTest{
-		{"TestGetAllClassesForFacilityAsAdmin", "admin", getClassesSearch(1, ""), http.StatusOK, ""},
-		{"TestGetAllClassesForFacilityAsUser", "student", getClassesSearch(1, ""), http.StatusOK, ""},
-		//{"TestGetSeachClassesForFacilityAsAdmin", "student", getClassesSearch(1, "Potosi"), http.StatusOK, "?search=Potosi"},
-		//{"TestGetSearchClassesForFacilityAsUser", "student", getClassesSearch(1, "Correctional"), http.StatusOK, "?search=Correctional"},
-	}
-	for _, test := range httpTests {
-		t.Run(test.testName, func(t *testing.T) {
-			classesMap := test.mapKeyValues
-			if classesMap["err"] != nil {
-				t.Fatalf("unable to get classes from db, error is %v", classesMap["err"])
-			}
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/program-classes%s", test.queryParams), nil)
-			if err != nil {
-				t.Fatalf("unable to create new request, error is %v", err)
-			}
-			handler := getHandlerByRole(server.handleIndexClassesForFacility, test.role)
-			rr := executeRequest(t, req, handler, test)
-			data := models.PaginatedResource[models.ProgramClass]{}
-			received := rr.Body.String()
-			if err = json.Unmarshal([]byte(received), &data); err != nil {
-				t.Errorf("failed to unmarshal resource, error is %v", err)
-			}
-			for _, class := range classesMap["classes"].([]models.ProgramClass) {
-				if !slices.ContainsFunc(data.Data, func(sec models.ProgramClass) bool {
-					return sec.ID == class.ID
-				}) {
-					t.Error("program classes not found, out of sync")
-				}
 			}
 		})
 	}
@@ -202,11 +167,11 @@ func TestHandleUpdateClass(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to marshal form, error is %v", err)
 			}
-			req, err := http.NewRequest(http.MethodPatch, "/api/program-classes", bytes.NewBuffer(jsonForm))
+			req, err := http.NewRequest(http.MethodPatch, "/api/programs/{id}/classes/{c_id}", bytes.NewBuffer(jsonForm))
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			req.SetPathValue("id", fmt.Sprintf("%d", id))
+			req.SetPathValue("c_id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleUpdateClass, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
@@ -292,21 +257,5 @@ func getClassId() map[string]any {
 	} else {
 		form["id"] = uint(3)
 	}
-	return form
-}
-
-func getClassesSearch(facilityId uint, search string) map[string]any {
-	args := models.QueryContext{
-		Page:       1,
-		PerPage:    10,
-		UserID:     1,
-		FacilityID: facilityId,
-		Search:     search,
-	}
-	classes, err := server.Db.GetClassesForFacility(&args)
-	form := make(map[string]any)
-	form["classes"] = classes
-	form["err"] = err
-	form["total"] = args.Total
 	return form
 }

@@ -10,13 +10,12 @@ import (
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
-		{"GET /api/class-enrollments", srv.handleIndexProgramClassEnrollments, true, axx},
-		{"GET /api/class-enrollments/{id}", srv.handleGetProgramClassEnrollments, false, axx},
-		{"GET /api/programs/{id}/classes/enrollments", srv.handleGetEnrollmentsForProgram, false, axx},
-		{"POST /api/class-enrollments/{class_id}/enroll/{user_id}", srv.handleEnrollUser, false, axx},
-		{"DELETE /api/class-enrollments/{id}", srv.handleDeleteProgramClassEnrollments, true, axx},
-		{"PATCH /api/class-enrollments/{id}", srv.handleUpdateProgramClassEnrollments, true, axx},
-		{"GET /api/class-enrollments/{id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx},
+		{"GET /api/program-classes/{id}/enrollments", srv.handleIndexProgramClassEnrollments, true, axx},
+		{"GET /api/program-classes/{id}/enrollments/{e_id}", srv.handleGetProgramClassEnrollments, true, axx},
+		{"POST /api/program-classes/{id}/enrollments", srv.handleEnrollUsers, true, axx},
+		{"DELETE /api/program-classes/{id}/enrollments/{e_id}", srv.handleDeleteProgramClassEnrollments, true, axx},
+		{"PATCH /api/program-classes/{id}/enrollments/{e_id}", srv.handleUpdateProgramClassEnrollments, true, axx},
+		{"GET /api/program-classes/{id}/enrollments/{e_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx},
 		{"GET /api/users/{id}/class-enrollments", srv.handleGetUserEnrollments, false, axx},
 	}
 }
@@ -35,14 +34,13 @@ func (srv *Server) handleIndexProgramClassEnrollments(w http.ResponseWriter, r *
 }
 
 func (srv *Server) handleGetProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("e_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}
 	log.add("class_enrollment_id", id)
 	enrollment, err := srv.Db.GetProgramClassEnrollmentsByID(id)
 	if err != nil {
-		log.add("classEnrollmentId", id)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, enrollment)
@@ -65,35 +63,21 @@ func (srv *Server) handleGetUserEnrollments(w http.ResponseWriter, r *http.Reque
 	return writePaginatedResponse(w, http.StatusOK, enrollemnts, args.IntoMeta())
 }
 
-func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "program ID")
-	}
-	log.add("program_id", id)
-	args := srv.getQueryContext(r)
-	enrollemnts, err := srv.Db.GetProgramClassEnrollmentsForProgram(&args, id)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writePaginatedResponse(w, http.StatusOK, enrollemnts, args.IntoMeta())
-}
-
-func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
+func (srv *Server) handleEnrollUsers(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
-
-	// the id of the credentialed user being enrolled
-	userID, err := strconv.Atoi(r.PathValue("user_id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "user ID")
+	info := struct {
+		UserIDs []int `json:"user_ids"`
+		ClassID int   `json:"class_id"`
+	}{}
+	if err = json.NewDecoder(r.Body).Decode(&info); err != nil {
+		return newJSONReqBodyServiceError(err)
 	}
-	log.add("user_id", userID)
-	log.info("enrolling user")
-	err = srv.Db.CreateProgramClassEnrollments(classID, userID)
+	log.info("enrolling users")
+	err = srv.Db.CreateProgramClassEnrollments(classID, info.UserIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -101,7 +85,7 @@ func (srv *Server) handleEnrollUser(w http.ResponseWriter, r *http.Request, log 
 }
 
 func (srv *Server) handleDeleteProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("e_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program class enrollment ID")
 	}
@@ -115,7 +99,7 @@ func (srv *Server) handleDeleteProgramClassEnrollments(w http.ResponseWriter, r 
 }
 
 func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("e_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}

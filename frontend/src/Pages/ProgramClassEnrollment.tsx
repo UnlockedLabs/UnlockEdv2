@@ -14,11 +14,6 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import { CancelButton } from '@/Components/inputs';
 import Pagination from '@/Components/Pagination';
 
-interface Inputs {
-    class_id: number;
-    user_id: number; //should be one or an array of users
-}
-
 export default function ProgramClassEnrollment() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -70,27 +65,12 @@ export default function ProgramClassEnrollment() {
         }
 
         setErrorMessage('');
-
-        try {
-            await Promise.all(
-                selectedUsers.map((user_id) => {
-                    const requestData: Inputs = {
-                        class_id: Number(class_id),
-                        user_id: user_id
-                    };
-
-                    return API.post(
-                        `class-enrollments/${class_id}/enroll/${user_id}`,
-                        requestData
-                    );
-                })
-            );
-            setSelectedUsers([]);
-            navigate(`/programs/${id}`);
-        } catch (error) {
-            console.error('Enrollment failed:', error);
-            setErrorMessage('Failed to enroll users');
-        }
+        await API.post(`program-classes/${class_id}/enrollments`, {
+            user_ids: selectedUsers,
+            class_id: class_id
+        });
+        setSelectedUsers([]);
+        navigate(`/programs/${id}`);
     };
 
     return (
