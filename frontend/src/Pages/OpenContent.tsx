@@ -29,8 +29,8 @@ export default function OpenContent() {
     }, [activeTab]);
 
     const handlePageChange = (tab: Tab) => {
-        setActiveTab(tab);
         navigate(`/knowledge-center/${String(tab.value).toLowerCase()}`);
+        setActiveTab(tab);
     };
     const handleReturnToAdminView = () => {
         if (currentTabValue === 'favorites') {

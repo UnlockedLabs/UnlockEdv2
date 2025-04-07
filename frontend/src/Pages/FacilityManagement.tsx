@@ -18,6 +18,7 @@ import {
     TextOnlyModal
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
+import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
@@ -27,8 +28,12 @@ export default function FacilityManagement() {
     const [targetFacility, setTargetFacility] =
         useState<TargetItem<Facility> | null>(null);
 
-    const [perPage, setPerPage] = useState(10);
-    const [pageQuery, setPageQuery] = useState(1);
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
 
     const {
         data: facility,
@@ -58,12 +63,6 @@ export default function FacilityManagement() {
             showModal(ref);
         }
     }, [targetFacility]);
-
-    const handleSetPerPage = (val: number) => {
-        setPerPage(val);
-        setPageQuery(1);
-        void mutate();
-    };
 
     const deleteFacility = async () => {
         if (targetFacility?.target.id == 1) {
@@ -149,7 +148,7 @@ export default function FacilityManagement() {
                         <Pagination
                             meta={facility?.meta}
                             setPage={setPageQuery}
-                            setPerPage={handleSetPerPage}
+                            setPerPage={setPerPage}
                         />
                     )}
             </div>
