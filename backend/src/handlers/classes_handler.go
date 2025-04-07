@@ -15,7 +15,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
 		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
 		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx},
-		{"PATCH /api/program-class/{id}", srv.handleUpdateClass, true, axx},
+		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx},
 	}
 }
 

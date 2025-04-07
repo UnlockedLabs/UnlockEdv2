@@ -43,7 +43,6 @@ export default function EventCalendar({
         }
         const durationMs = parseDurationToMs(durationStr);
         const rule = RRule.fromString(recurrenceRule);
-        //rule.options.byweekday = rule.options.byweekday.map((idx) => idx + 1);
         const occurrences = rule.between(
             new Date(),
             moment().add(1, 'year').toDate()
