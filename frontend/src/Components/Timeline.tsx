@@ -74,7 +74,7 @@ export default function Timeline() {
                         </div>
                         <p>{event.description}</p>
                     </div>
-                    <hr />
+                    {index < timelineEvents.length - 1 && <hr />}
                 </li>
             ))}
         </ul>
