@@ -676,7 +676,7 @@ export interface Class {
     description: string;
     start_dt: string;
     end_dt: string;
-    class_status: SelectedClassStatus;
+    status: SelectedClassStatus;
     enrolled: number;
     capacity: number;
     credit_hours: number;
