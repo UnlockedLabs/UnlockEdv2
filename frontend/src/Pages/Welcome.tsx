@@ -6,15 +6,53 @@ import { Link } from 'react-router-dom';
 import { AUTHCALLBACK } from '@/useAuth';
 import Timeline from '@/Components/Timeline';
 
-export default function Welcome() {
-    const [imgSrc, setImgSrc] = useState('unlockedv2Sm.webp');
-    const [authUser, setAuthUser] = useState<User | undefined>();
+function useSystemTheme(): 'light' | 'dark' {
+    const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light'
+    );
 
     useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        const handleChange = (event: MediaQueryListEvent) => {
+            setTheme(event.matches ? 'dark' : 'light');
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+        };
+    }, []);
+
+    return theme;
+}
+
+export default function Welcome() {
+    const [authUser, setAuthUser] = useState<User | undefined>();
+    const systemTheme = useSystemTheme();
+    const [imgSrc, setImgSrc] = useState(() =>
+        systemTheme === 'light' ? 'unlockedv2DkSm.webp' : 'unlockedv2LtSm.webp'
+    );
+
+    useEffect(() => {
+        setImgSrc(
+            systemTheme === 'light'
+                ? 'unlockedv2DkSm.webp'
+                : 'unlockedv2LtSm.webp'
+        );
+    }, [systemTheme]);
+
+    useEffect(() => {
+        const imgPath =
+            systemTheme === 'light' ? 'unlockedv2Dk.png' : 'unlockedv2Lt.png';
+
         const img = new Image();
-        img.src = 'unlockedv2.png';
+        img.src = imgPath;
         img.onload = () => {
-            setImgSrc('unlockedv2.png');
+            setImgSrc(imgPath);
         };
         API.get<User>(`auth`)
             .then((user: ServerResponse<User>) => {
@@ -59,7 +97,7 @@ export default function Welcome() {
                         institutions allowing for a faster and more equitable
                         re-entry process.
                     </p>
-                    <div className="flex items-center h-8 border rounded-[15px] text-lg justify-center text-black bg-emerald-200 overflow-hidden">
+                    <div className="flex items-center h-8 border rounded-[15px] text-lg justify-center text-black bg-teal-2 overflow-hidden">
                         <img
                             src="/emoji_image_new.png"
                             className="w-8 h-8 object-contain"
