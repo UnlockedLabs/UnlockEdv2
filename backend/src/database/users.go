@@ -47,7 +47,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 
 func (db *DB) GetUserByDocIDAndID(ctx *models.QueryContext, docID string, userID int) (*models.User, error) {
 	user := models.User{}
-	if err := db.WithContext(ctx.Ctx).First(&user, "doc_id = ? and id = ?", docID, userID).Error; err != nil {
+	if err := db.WithContext(ctx.Ctx).First(&user, "LOWER(doc_id) = ? and id = ?", strings.ToLower(docID), userID).Error; err != nil {
 		return nil, newNotFoundDBError(err, "users")
 	}
 	return &user, nil
