@@ -186,18 +186,16 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         )}
                         {showCancel ? (
                             <div className="col-span-4 flex justify-end gap-4 mt-4">
-                                <div className="w-32">
-                                    <label className="form-control pt-4">
-                                        <CancelButton
-                                            onClick={() => {
-                                                reset();
-                                                (
-                                                    ref as React.RefObject<HTMLDialogElement>
-                                                )?.current?.close();
-                                            }}
-                                        />
-                                    </label>
-                                </div>
+                                <label className="form-control pt-4">
+                                    <CancelButton
+                                        onClick={() => {
+                                            reset();
+                                            (
+                                                ref as React.RefObject<HTMLDialogElement>
+                                            )?.current?.close();
+                                        }}
+                                    />
+                                </label>
                                 <div>
                                     <SubmitButton label={submitText} />
                                 </div>

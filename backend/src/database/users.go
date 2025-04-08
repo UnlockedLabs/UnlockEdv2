@@ -97,18 +97,20 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 		trans.Rollback()
 		return newUpdateDBError(err, "users")
 	}
-	uintFacID := uint(transFacilityID)
-	history := models.UserAccountHistory{
-		UserID:     uint(userID),
-		AdminID:    &ctx.UserID,
-		Action:     models.FacilityTransfer,
-		FacilityID: &uintFacID,
-		CreatedAt:  time.Now(),
-	}
-	if err := trans.Create(&history).Error; err != nil {
-		trans.Rollback()
-		return newCreateDBError(err, "user_account_history")
-	}
+	/* HISTORY ACTION START */
+	// uintFacID := uint(transFacilityID)
+	// history := models.UserAccountHistory{
+	// 	UserID:     uint(userID),
+	// 	AdminID:    &ctx.UserID,
+	// 	Action:     models.FacilityTransfer,
+	// 	FacilityID: &uintFacID,
+	// 	CreatedAt:  time.Now(),
+	// }
+	// if err := trans.Create(&history).Error; err != nil {
+	// 	trans.Rollback()
+	// 	return newCreateDBError(err, "user_account_history")
+	// }
+	/* HISTORY ACTION END */
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit DB transaction")
 	}
