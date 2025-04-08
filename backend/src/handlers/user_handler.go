@@ -315,7 +315,7 @@ func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return writeJsonResponse(w, http.StatusNotFound, "Resident not found")
 	}
-	validResident := struct {
+	transferNotes := struct {
 		User            models.User `json:"user"`
 		ProgramNames    []string    `json:"program_names"`
 		TransFacilityID int         `json:"trans_facility_id"`
@@ -324,7 +324,7 @@ func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Req
 		ProgramNames:    programNames,
 		TransFacilityID: transferFacilityId,
 	}
-	return writeJsonResponse(w, http.StatusOK, validResident)
+	return writeJsonResponse(w, http.StatusOK, transferNotes)
 }
 
 func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request, log sLog) error {
