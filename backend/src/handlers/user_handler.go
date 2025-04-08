@@ -294,7 +294,6 @@ func validateUser(user *models.User) string {
 }
 
 func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Request, log sLog) error {
-	args := srv.getQueryContext(r)
 	transferFacilityId, err := strconv.Atoi(r.URL.Query().Get("facility_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
@@ -306,12 +305,13 @@ func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Req
 	}
 	log.add("user_id", userID)
 	docID := r.URL.Query().Get("doc_id")
-	user, err := srv.Db.GetUserByDocIDAndID(&args, docID, userID)
+	ctx := r.Context()
+	user, err := srv.Db.GetUserByDocIDAndID(ctx, docID, userID)
 	if err != nil {
 		return writeJsonResponse(w, http.StatusNotFound, "Resident not found")
 	}
 	log.add("doc_id", docID)
-	programNames, err := srv.Db.GetTransferProgramConflicts(&args, user.ID, transferFacilityId)
+	programNames, err := srv.Db.GetTransferProgramConflicts(ctx, user.ID, transferFacilityId)
 	if err != nil {
 		return writeJsonResponse(w, http.StatusNotFound, "Resident not found")
 	}

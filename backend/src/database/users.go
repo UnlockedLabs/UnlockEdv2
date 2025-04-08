@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"context"
 	"errors"
 	"strconv"
 	"strings"
@@ -45,15 +46,15 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 	return users, nil
 }
 
-func (db *DB) GetUserByDocIDAndID(ctx *models.QueryContext, docID string, userID int) (*models.User, error) {
+func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int) (*models.User, error) {
 	user := models.User{}
-	if err := db.WithContext(ctx.Ctx).First(&user, "LOWER(doc_id) = ? and id = ?", strings.ToLower(docID), userID).Error; err != nil {
+	if err := db.WithContext(ctx).First(&user, "LOWER(doc_id) = ? and id = ?", strings.ToLower(docID), userID).Error; err != nil {
 		return nil, newNotFoundDBError(err, "users")
 	}
 	return &user, nil
 }
 
-func (db *DB) GetTransferProgramConflicts(ctx *models.QueryContext, id uint, transferFacilityId int) ([]string, error) {
+func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transferFacilityId int) ([]string, error) {
 	var programNames []string
 	query := `with transfer_facility_programs as (
 			select name from programs p
@@ -69,7 +70,7 @@ func (db *DB) GetTransferProgramConflicts(ctx *models.QueryContext, id uint, tra
 		inner join programs p on p.id = pc.program_id
 		where enrollment_status = 'Enrolled'
 			and pc.name not in (select name from transfer_facility_programs)`
-	if err := db.WithContext(ctx.Ctx).Raw(query, transferFacilityId, id).Scan(&programNames).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(query, transferFacilityId, id).Scan(&programNames).Error; err != nil {
 		return nil, err
 	}
 	return programNames, nil
