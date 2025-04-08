@@ -17,7 +17,7 @@ import ResetPassword from '@/Pages/Auth/ResetPassword';
 import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
 import UnauthorizedNotFound from '@/Pages/Unauthorized';
-import { getProviderPlatforms } from '@/routeLoaders';
+import { getFacilities, getProviderPlatforms } from '@/routeLoaders';
 import ResidentProfile from '@/Pages/ResidentProfile';
 
 const deptAdminRoutes = DeclareAuthenticatedRoutes(
@@ -95,6 +95,7 @@ const adminRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'residents/:user_id',
+            loader: getFacilities,
             element: <ResidentProfile />,
             handle: {
                 title: 'Resident Profile',

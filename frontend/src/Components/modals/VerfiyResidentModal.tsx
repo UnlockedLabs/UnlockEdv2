@@ -9,7 +9,7 @@ import {
 } from '@/common';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
-import useSWR from 'swr';
+import { useLoaderData } from 'react-router-dom';
 
 export const VerifyResidentModal = forwardRef(function (
     {
@@ -23,9 +23,7 @@ export const VerifyResidentModal = forwardRef(function (
 ) {
     const [errors, setErrors] = useState('');
     const [facility, setFacility] = useState('');
-    const { data: facilitiesData } =
-        useSWR<ServerResponseOne<Facility[]>>('/api/facilities');
-    const facilities = facilitiesData?.data;
+    const facilities = useLoaderData() as Facility[];
     const checkResponse = useCheckResponse({
         mutate: mutate,
         refModal: verifyResidentModal
