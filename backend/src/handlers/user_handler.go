@@ -38,19 +38,23 @@ func (srv *Server) handleIndexUsers(w http.ResponseWriter, r *http.Request, log 
 		return srv.handleGetUnmappedUsers(w, r, providerId, log)
 
 	case slices.Contains(include, "only_unenrolled"):
-		classIDStr := r.URL.Query().Get("class_id")
-		classID, err := strconv.Atoi(classIDStr)
+		classID, err := strconv.Atoi(r.URL.Query().Get("class_id"))
 		if err != nil {
-			return err
+			return newInvalidIdServiceError(err, "class ID")
 		}
 		users, err = srv.Db.GetEligibleResidentsForClass(&args, classID)
+		if err != nil {
+			log.add("facility_id", args.FacilityID)
+			log.add("search", args.Search)
+			return newDatabaseServiceError(err)
+		}
 	default:
 		users, err = srv.Db.GetCurrentUsers(&args, role)
-	}
-	if err != nil {
-		log.add("facility_id", args.FacilityID)
-		log.add("search", args.Search)
-		return newDatabaseServiceError(err)
+		if err != nil {
+			log.add("facility_id", args.FacilityID)
+			log.add("search", args.Search)
+			return newDatabaseServiceError(err)
+		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, users, args.IntoMeta())
 }
