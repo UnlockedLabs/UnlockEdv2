@@ -22,7 +22,7 @@ import {
 } from '@/Components/modals';
 import { useRef, useState } from 'react';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
-import { VerifyResidentModal } from '@/Components/modals/VerfiyResidentModal';
+import { VerifyResidentModal } from '@/Components/modals/VerifyResidentModal';
 import API from '@/api/api';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
