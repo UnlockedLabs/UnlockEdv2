@@ -28,9 +28,7 @@ interface FormModalProps<T extends FieldValues> {
     onSubmit: SubmitHandler<T>;
     showCancel?: boolean;
     submitText?: string;
-    /**
-     * Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs
-     */
+    /** Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs */
     extValidationIsValid?: () => void;
 }
 
@@ -200,11 +198,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                         />
                                     </label>
                                 </div>
-                                <div
-                                    className={
-                                        submitText ? 'min-w-max' : 'w-32'
-                                    }
-                                >
+                                <div>
                                     <SubmitButton label={submitText} />
                                 </div>
                             </div>
