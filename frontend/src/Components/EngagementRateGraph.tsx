@@ -107,7 +107,7 @@ const EngagementRateGraph = ({ data, viewType }: EngagementRateGraphProps) => {
         <ResponsiveContainer width="100%" height="100%" className="pt-2">
             <LineChart
                 data={processedData}
-                margin={{ top: 10, right: 20, bottom: 0, left: 10 }}
+                margin={{ top: 20, right: 30, left: 50, bottom: 40 }}
             >
                 <CartesianGrid stroke={strokeColor} strokeDasharray="3 3" />
                 <XAxis
