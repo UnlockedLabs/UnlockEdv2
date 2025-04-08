@@ -1,19 +1,24 @@
 import { forwardRef, useState } from 'react';
-import { CRUDModalProps, FormInputTypes, FormModal, Input } from '.';
+import {
+    closeModal,
+    CRUDModalProps,
+    FormInputTypes,
+    FormModal,
+    Input
+} from '.';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import {
     Facility,
     ResidentEngagementProfile,
     ServerResponseOne,
+    ToastState,
     ValidResident
 } from '@/common';
 import API from '@/api/api';
-import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useLoaderData } from 'react-router-dom';
-
+import { useToast } from '@/Context/ToastCtx';
 export const VerifyResidentModal = forwardRef(function (
     {
-        mutate,
         onSuccess,
         target
     }: CRUDModalProps<ResidentEngagementProfile> & {
@@ -21,13 +26,10 @@ export const VerifyResidentModal = forwardRef(function (
     },
     verifyResidentModal: React.ForwardedRef<HTMLDialogElement>
 ) {
+    const { toaster } = useToast();
     const [errors, setErrors] = useState('');
     const [facility, setFacility] = useState('');
     const facilities = useLoaderData() as Facility[];
-    const checkResponse = useCheckResponse({
-        mutate: mutate,
-        refModal: verifyResidentModal
-    });
     const executeResidentCheck: SubmitHandler<FieldValues> = async (data) => {
         if (!validateFacility()) {
             return;
@@ -35,11 +37,6 @@ export const VerifyResidentModal = forwardRef(function (
         const response = (await API.get(
             `users/resident-verify?user_id=${target?.user.id}&doc_id=${data.doc_id}&facility_id=${facility}`
         )) as ServerResponseOne<ValidResident>;
-        checkResponse(
-            response.success,
-            'Resident not found, try again',
-            'Resident found, please confirm transfer'
-        );
         if (response.success) {
             response.data.transfer_from = facilities?.find(
                 (fac) => fac.id === target?.user.facility_id
@@ -49,6 +46,9 @@ export const VerifyResidentModal = forwardRef(function (
             )?.name;
             onSuccess(response.data);
             setFacility('');
+            closeModal(verifyResidentModal);
+        } else {
+            toaster('Resident not found, try again', ToastState.error);
         }
     };
     const validateFacility = (): boolean => {
