@@ -20,12 +20,14 @@ export default function OpenContentCardRow({
 }) {
     const { user } = useAuth();
     const navigate = useNavigate();
-    function redirectToViewer() {
-        if (
+    function isContentRestricted(): boolean {
+        return (
             !isAdministrator(user) &&
             (content.visibility_status == null || !content.visibility_status)
-        )
-            return;
+        );
+    }
+    function redirectToViewer() {
+        if (isContentRestricted()) return;
         if (content.content_type === 'helpful_link') {
             void handleHelpfulLinkClick(content.content_id);
             return;
@@ -50,9 +52,8 @@ export default function OpenContentCardRow({
     }
     return (
         <div
-            className={`card ${isAdministrator(user) || (content.visibility_status != null && content.visibility_status) ? 'cursor-pointer' : 'bg-grey-2 cursor-not-allowed'} flex flex-row w-full gap-3 px-4 py-2 tooltip`}
-            {...(!isAdministrator(user) &&
-            (content.visibility_status == null || !content.visibility_status)
+            className={`card ${!isContentRestricted() ? 'cursor-pointer' : 'bg-grey-2 cursor-not-allowed'} flex flex-row w-full gap-3 px-4 py-2 tooltip`}
+            {...(isContentRestricted()
                 ? { 'data-tip': 'This content is no longer accessible' }
                 : {})}
             onClick={redirectToViewer}
