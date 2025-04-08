@@ -42,7 +42,7 @@ export default function TransferSummaryPanel({
                     Resident account will be removed from the current facility.
                 </li>
                 <li>
-                    Resident will be unenrolled from any active classes or
+                    Resident will no longer be enrolled in any active classes or
                     programs.
                 </li>
                 {resident?.program_names &&
@@ -50,8 +50,7 @@ export default function TransferSummaryPanel({
                         <>
                             <li>
                                 Resident is enrolled in the following classes
-                                that are not available at facility being
-                                transferred to:
+                                not offered at the new facility:
                                 <ul className="list-disc list-outside pl-5">
                                     {resident?.program_names.map((name) => (
                                         <li key={name}>{name}</li>

@@ -85,7 +85,6 @@ export const getStudentLayer2Data: LoaderFunction = async () => {
 export const getFacilities: LoaderFunction = async () => {
     const response: ServerResponse<Facility[]> =
         await API.get<Facility[]>(`facilities`);
-    console.log(json<Facility[]>(response.data as Facility[]));
     if (response.success) {
         return json<Facility[]>(response.data as Facility[]);
     }
