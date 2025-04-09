@@ -54,7 +54,7 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                         enrollments.map((enrollment: ClassEnrollment) => (
                             <tr
                                 key={enrollment.id}
-                                className="card p-4 w-full grid-cols-6 justify-items-center cursor-pointer"
+                                className={`card h-16 w-full grid-cols-6 justify-items-center cursor-pointer ${!canToggle(enrollment) ? 'bg-gray-100' : ''}`}
                                 onClick={() => {
                                     if (canToggle(enrollment))
                                         toggleSelection(enrollment.user_id);
@@ -77,9 +77,9 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </td>
-                                <td>{enrollment.name_full}</td>
-                                <td>{enrollment.doc_id}</td>
-                                <td>
+                                <td className="px-2">{enrollment.name_full}</td>
+                                <td className="px-2">{enrollment.doc_id}</td>
+                                <td className="px-2">
                                     {new Date(
                                         enrollment.created_at
                                     ).toLocaleDateString()}
@@ -108,7 +108,10 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                         'N/A'
                                     )}
                                 </td>
-                                <td onClick={(e) => e.stopPropagation()}>
+                                <td
+                                    className="pr-4"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
                                     {isEditable(enrollment) ? (
                                         <DropdownControl
                                             enumType={inlineOptions}
@@ -118,9 +121,11 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                             label={enrollment.enrollment_status}
                                         />
                                     ) : (
-                                        <span>
-                                            {enrollment.enrollment_status}
-                                        </span>
+                                        <div className="h-12 w-64 bg-white border-2 border-gray-300 rounded-md flex items-center justify-center">
+                                            <span className="text-md font-bold">
+                                                {enrollment.enrollment_status}
+                                            </span>
+                                        </div>
                                     )}
                                 </td>
                             </tr>
