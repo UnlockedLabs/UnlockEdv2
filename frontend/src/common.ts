@@ -712,9 +712,6 @@ export interface ClassEventInstance {
     date: string;
     attendance_records: ProgramClassEventAttendance[];
 }
-//export enum DateOrdering {
-//
-//}
 
 export interface ProgramClassEventAttendance {
     id: number;
@@ -736,12 +733,10 @@ export interface ProgramClassEnrollment {
 }
 export interface EnrollmentAttendance {
     enrollment: ProgramClassEnrollment;
-    attendance_status: string;
-    note: string;
     attendance: {
-        attendance_status: Attendance;
+        attendance_status: string;
         note: string;
-    } | null;
+    };
 }
 
 export enum Attendance {

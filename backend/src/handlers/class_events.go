@@ -111,8 +111,7 @@ func (srv *Server) handleGetStudentAttendanceData(w http.ResponseWriter, r *http
 }
 
 func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classIDStr := r.PathValue("class_id")
-	classID, err := strconv.Atoi(classIDStr)
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
