@@ -2,7 +2,6 @@ import useSWR from 'swr';
 import { AxiosError } from 'axios';
 import {
     OpenContentResponse,
-    ResidentAccountAction,
     ResidentEngagementProfile,
     ServerResponseMany,
     ServerResponseOne,
@@ -16,7 +15,6 @@ import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
 import OpenContentCardRow from '@/Components/cards/OpenContentCard';
 import Pagination from '@/Components/Pagination';
-import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
     closeModal,
     showModal,
@@ -29,6 +27,8 @@ import { VerifyResidentModal } from '@/Components/modals/VerifyResidentModal';
 import API from '@/api/api';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
+import { AccountHistoryRowCard } from '@/Components/cards';
+import calculateEngagementMetrics from '@/Components/helperFunctions/calculateEngagementMetrics';
 
 function UserProfileInfoRow({
     column,
@@ -39,7 +39,7 @@ function UserProfileInfoRow({
 }) {
     return (
         <div className="grid grid-cols-2">
-            <p className="body">{column}</p>
+            <p className="body text-right">{column}</p>
             <div className="flex">
                 <p className="body">:</p>
                 <p className="body pl-3">{value}</p>
@@ -75,85 +75,33 @@ function OpenContentCardToggle({
     );
 }
 
-function AccountHistoryRowCard({
-    activity
-}: {
-    activity: UserAccountHistoryResponse;
-}) {
-    let introText;
-    switch (activity.action) {
-        case 'account_creation':
-            introText = 'Account created by ' + activity.admin_username;
-            break;
-        case 'facility_transfer':
-            introText =
-                'Account assigned to ' +
-                activity.facility_name +
-                ' by ' +
-                activity.admin_username;
-            break;
-        case 'set_password':
-            introText = 'New password set by ' + activity.user_username;
-            break;
-        case 'reset_password':
-            introText =
-                'Password reset initiated by ' + activity.admin_username;
-            break;
-    }
-    if (!introText) return;
-    return (
-        <p className="body">
-            {introText} (
-            {new Date(activity.created_at).toLocaleDateString('en-US')})
-        </p>
-    );
-}
-
 const ResidentProfile = () => {
     const { user } = useAuth();
-    const { user_id } = useParams<{ user_id: string }>();
+    const navigate = useNavigate();
+    const { user_id: residentId } = useParams<{ user_id: string }>();
     const {
         data,
         error,
         mutate: mutateResident,
         isLoading
     } = useSWR<ServerResponseOne<ResidentEngagementProfile>, AxiosError>(
-        `/api/users/${user_id}/profile`
+        `/api/users/${residentId}/profile`
     );
-    const [controlKey, setControlKey] = useState<number>(0);
     const [resident, setResident] = useState<ValidResident | null>();
     const metrics = data?.data;
     const [page, setPage] = useState(1);
     const { data: activityHistory, error: activityHistoryError } = useSWR<
         ServerResponseMany<UserAccountHistoryResponse>,
         AxiosError
-    >(`/api/user-account-history/${user_id}?page=${page}&per_page=5`);
+    >(`/api/user-account-history/${residentId}?page=${page}&per_page=5`);
 
     const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(
         'libraries'
     );
-    const isLessAvgThanOneHour =
-        (metrics?.activity_engagement.total_hours_active_weekly ?? 0) < 1;
-    const isLessThanOneHour =
-        (metrics?.activity_engagement.total_hours_engaged ?? 0) < 1;
 
-    const avgNumber = isLessAvgThanOneHour
-        ? (
-              metrics?.activity_engagement.total_minutes_active_weekly ?? 0
-          ).toFixed(2)
-        : (metrics?.activity_engagement.total_hours_active_weekly ?? 0).toFixed(
-              2
-          );
+    const { avgNumber, weekNumber, avgLabel, weekLabel } =
+        calculateEngagementMetrics(metrics);
 
-    const weekNumber = isLessThanOneHour
-        ? (metrics?.activity_engagement.total_minutes_engaged ?? 0).toFixed(2)
-        : (metrics?.activity_engagement.total_hours_engaged ?? 0).toFixed(2);
-
-    const avgLabel = isLessAvgThanOneHour ? 'Min' : 'Hrs';
-
-    const weekLabel = isLessThanOneHour ? 'Minutes' : 'Hours';
-
-    const navigate = useNavigate();
     const handleShowLibraryClick = (id: number) => {
         navigate(`/viewer/libraries/${id}`);
     };
@@ -165,19 +113,6 @@ const ResidentProfile = () => {
         mutate: mutateResident,
         refModal: confirmTransferModal
     });
-    function executeAccountAction(val: string) {
-        switch (val) {
-            case 'transfer':
-                showModal(verifyResidentModal);
-                break;
-            case 'delete':
-                console.log('no delete logic exists');
-                break;
-            default:
-                break;
-        }
-        setControlKey(controlKey + 1);
-    }
     function openConfirmTransfer(user: ValidResident) {
         setResident(user);
         showModal(confirmTransferModal);
@@ -256,25 +191,21 @@ const ResidentProfile = () => {
                                         : 'N/A'
                                 }
                             />
-                            {user && canSwitchFacility(user) ? (
-                                <>
-                                    <div className="grid grid-cols-2">
-                                        <div className="col-span-2 mt-2">
-                                            <DropdownControl
-                                                key={controlKey}
-                                                useLabel={true}
-                                                label="Manage Account"
-                                                enumType={ResidentAccountAction}
-                                                customCallback={
-                                                    executeAccountAction
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                ''
-                            )}
+                            <div className="flex flex-row gap-2 mt-4">
+                                <button className="button bg-grey-1 text-error">
+                                    Delete Resident
+                                </button>
+                                {user && canSwitchFacility(user) && (
+                                    <button
+                                        className="button bg-grey-1 text-teal-4"
+                                        onClick={() =>
+                                            showModal(verifyResidentModal)
+                                        }
+                                    >
+                                        Transfer Resident
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         {/* Chart */}
                         <div className="card card-row-padding grow">
