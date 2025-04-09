@@ -39,6 +39,7 @@ type Program struct {
 	ProgramCreditTypes []ProgramCreditType `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID"`
 	Facilities         []Facility          `json:"facilities" gorm:"many2many:facilities_programs;"`
 	Favorites          []ProgramFavorite   `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
+	Classes            []ProgramClass      `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 }
 
 func (Program) TableName() string { return "programs" }
