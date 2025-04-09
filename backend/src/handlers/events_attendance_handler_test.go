@@ -2,13 +2,16 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -53,8 +56,8 @@ func TestHandleGetAttendeesForClass(t *testing.T) {
 
 func TestHandleLogAttendeeForEvent(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestUserCannotLogAttendeeForEvent", "student", getIdsForLogAttendee(), http.StatusUnauthorized, "?date=2024-09-23"},
-		{"TestAdminCanLogAttendeeForEvent", "admin", getIdsForLogAttendee(), http.StatusOK, "?date=2024-09-23"},
+		{"TestUserCannotLogAttendeeForEvent", "student", getIdsForLogAttendee(), http.StatusUnauthorized, ""},
+		{"TestAdminCanLogAttendeeForEvent", "admin", getIdsForLogAttendee(), http.StatusOK, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -62,21 +65,39 @@ func TestHandleLogAttendeeForEvent(t *testing.T) {
 			if logAttendeeMap["err"] != nil {
 				t.Fatalf("unable get event id and user id for log attendee, error is %v", logAttendeeMap["err"])
 			}
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("/api/events/{id}/attendees/{user_id}%s", test.queryParams), nil)
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprint("/api/events/{id}/attendee", test.queryParams), nil)
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
 			eventId := logAttendeeMap["event_id"].(uint)
 			userId := logAttendeeMap["user_id"].(uint)
-			req.SetPathValue("id", strconv.Itoa(int(eventId)))
-			req.SetPathValue("user_id", strconv.Itoa(int(userId)))
+			date, ok := logAttendeeMap["date"].(string)
+			if !ok || date == "" {
+				date = time.Now().Format("2006-01-02")
+			}
+
+			attendance_status := logAttendeeMap["attendance_status"].(models.Attendance)
+
+			attendancePayload := models.ProgramClassEventAttendance{
+				EventID:          eventId,
+				UserID:           userId,
+				Date:             date,
+				AttendanceStatus: models.Attendance(attendance_status),
+			}
+			payloadBytes, err := json.Marshal(attendancePayload)
+			if err != nil {
+				t.Fatalf("unable to marshal JSON payload: %v", err)
+			}
+			req.Body = io.NopCloser(bytes.NewReader(payloadBytes))
+
 			handler := getHandlerByRoleWithMiddleware(server.handleLogAttendeeForEvent, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
 				att := &models.ProgramClassEventAttendance{
-					EventID: eventId,
-					UserID:  userId,
-					Date:    req.URL.Query().Get("date"),
+					EventID:          eventId,
+					UserID:           userId,
+					Date:             date,
+					AttendanceStatus: models.Present,
 				}
 				received := rr.Body.String()
 				data := models.Resource[models.ProgramClassEventAttendance]{}
@@ -147,5 +168,6 @@ func getIdsForLogAttendee() map[string]any {
 	form["event_id"] = attendance.EventID
 	form["user_id"] = attendance.UserID
 	form["date"] = attendance.Date
+	form["attendance_status"] = models.Present
 	return form
 }

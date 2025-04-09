@@ -9,6 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Attendance string
+
+const (
+	Present          Attendance = "present"
+	Absent_Excused   Attendance = "absent_excused"
+	Absent_Unexcused Attendance = "absent_unexcused"
+)
+
 /** Events are a physical time/place where a 'class' is held in a facility **/
 type ProgramClassEvent struct {
 	DatabaseFields
@@ -81,9 +89,11 @@ func (ProgramClassEventOverride) TableName() string { return "program_class_even
 /** Attendance records for Events **/
 type ProgramClassEventAttendance struct {
 	DatabaseFields
-	EventID uint   `json:"event_id" gorm:"not null"`
-	UserID  uint   `json:"user_id" gorm:"not null"`
-	Date    string `json:"date" gorm:"not null" validate:"required,datetime"`
+	EventID          uint       `json:"event_id" gorm:"not null;uniqueIndex:idx_event_user_date"`
+	UserID           uint       `json:"user_id" gorm:"not null; uniqueIndex:idx_event_user_date"`
+	Date             string     `json:"date" gorm:"not null; uniqueIndex:idx_event_user_date" validate:"required,datetime"`
+	AttendanceStatus Attendance `json:"attendance_status" gorm:"column:attendance_status"`
+	Note             string     `json:"note" gorm:"column:note"`
 
 	/* Foreign Keys */
 	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
@@ -91,3 +101,15 @@ type ProgramClassEventAttendance struct {
 }
 
 func (ProgramClassEventAttendance) TableName() string { return "program_class_event_attendance" }
+
+type ClassEventInstance struct {
+	EventID           uint                          `json:"event_id"`
+	ClassTime         string                        `json:"class_time"`
+	Date              string                        `json:"date"`
+	AttendanceRecords []ProgramClassEventAttendance `json:"attendance_records"`
+}
+
+type EnrollmentAttendance struct {
+	Enrollment ProgramClassEnrollment       `json:"enrollment"`
+	Attendance *ProgramClassEventAttendance `json:"attendance,omitempty"`
+}

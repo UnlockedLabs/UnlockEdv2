@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 	"sort"
 	"time"
 
@@ -441,4 +442,120 @@ func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []mode
 func generateEventInstances(event models.ProgramClassEvent, startDate, endDate time.Time) []models.EventInstance {
 	eventInstances := applyOverrides(event, startDate, endDate)
 	return eventInstances
+}
+
+func (db *DB) GetCalendarForClassEvents(month time.Month, year int, facilityId uint, classId int) (*models.Calendar, error) {
+	var tz string
+	if err := db.Table("facilities f").Select("timezone").Where("id = ?", facilityId).Row().Scan(&tz); err != nil {
+		return nil, newGetRecordsDBError(err, "calendar")
+	}
+
+	events := []models.ProgramClassEvent{}
+	if err := db.Model(&models.ProgramClassEvent{}).
+		Preload("Overrides").
+		Preload("Class.Program").
+		Where("class_id = ?", classId).
+		Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+
+	return db.getCalendarFromEvents(events, month, year, tz)
+}
+
+// GetClassEventInstancesWithAttendanceForRecurrence returns all occurrences for events
+// for a given class based on each event's recurrence rule (from DTSTART until UNTIL)
+// along with their associated attendance records.
+func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext) ([]models.ClassEventInstance, error) {
+	var tz string
+	if err := db.WithContext(qryCtx.Ctx).
+		Table("facilities f").
+		Select("timezone").
+		Where("id = ?", qryCtx.FacilityID).
+		Row().
+		Scan(&tz); err != nil {
+		return nil, newGetRecordsDBError(err, "calendar")
+	}
+
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load timezone: %w", err)
+	}
+
+	var events []models.ProgramClassEvent
+	if err := db.WithContext(qryCtx.Ctx).
+		Model(&models.ProgramClassEvent{}).
+		Preload("Overrides").
+		Where("class_id = ?", classId).
+		Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+
+	var instances []models.ClassEventInstance
+
+	for _, event := range events {
+		rRule, err := event.GetRRule()
+		if err != nil {
+			logrus.Errorf("event has invalid rule, event: %v", event)
+			continue
+		}
+
+		startTime := rRule.OrigOptions.Dtstart
+		untilTime := rRule.GetUntil()
+		if untilTime.IsZero() {
+			// we default to one year if until is not set.
+			untilTime = startTime.AddDate(1, 0, 0)
+		}
+
+		occurrences := rRule.Between(startTime, untilTime, true)
+
+		duration, err := time.ParseDuration(event.Duration)
+		if err != nil {
+			logrus.Errorf("error parsing duration for event: %v", err)
+			continue
+		}
+
+		for _, occ := range occurrences {
+			occInLoc := occ.In(loc)
+			occDateStr := occInLoc.Format("2006-01-02")
+			startTimeStr := occInLoc.Format("15:04")
+			endTimeStr := occInLoc.Add(duration).Format("15:04")
+			classTime := fmt.Sprintf("%s-%s", startTimeStr, endTimeStr)
+
+			var attendances []models.ProgramClassEventAttendance
+			if err := db.WithContext(qryCtx.Ctx).
+				Model(&models.ProgramClassEventAttendance{}).
+				Where("event_id = ? AND date = ?", event.ID, occDateStr).
+				Find(&attendances).Error; err != nil {
+				continue
+			}
+
+			instance := models.ClassEventInstance{
+				EventID:           event.ID,
+				ClassTime:         classTime,
+				Date:              occDateStr,
+				AttendanceRecords: attendances,
+			}
+			instances = append(instances, instance)
+		}
+	}
+
+	sort.Slice(instances, func(i, j int) bool {
+		return instances[i].Date < instances[j].Date
+	})
+
+	qryCtx.Total = int64(len(instances))
+
+	if !qryCtx.All {
+		offset := qryCtx.CalcOffset()
+		end := offset + qryCtx.PerPage
+		if offset >= len(instances) {
+			instances = []models.ClassEventInstance{}
+		} else if end > len(instances) {
+			instances = instances[offset:]
+		} else {
+			instances = instances[offset:end]
+		}
+	}
+
+	return instances, nil
 }
