@@ -32,6 +32,7 @@ type ProgramClass struct {
 	EndDt          *time.Time  `gorm:"type:date" json:"end_dt"`
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
+	Enrolled       int64       `json:"enrolled" gorm:"-"`
 
 	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
