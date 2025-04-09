@@ -481,62 +481,59 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, fmt.Errorf("failed to load timezone: %w", err)
 	}
 
-	var events []models.ProgramClassEvent
+	var event models.ProgramClassEvent
 	if err := db.WithContext(qryCtx.Ctx).
 		Model(&models.ProgramClassEvent{}).
 		Preload("Overrides").
 		Where("class_id = ?", classId).
-		Find(&events).Error; err != nil {
+		Find(&event).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
 
 	var instances []models.ClassEventInstance
 
-	for _, event := range events {
-		rRule, err := event.GetRRule()
-		if err != nil {
-			logrus.Errorf("event has invalid rule, event: %v", event)
+	rRule, err := event.GetRRule()
+	if err != nil {
+		logrus.Errorf("event has invalid rule, event: %v", event)
+	}
+
+	startTime := rRule.OrigOptions.Dtstart
+	untilTime := rRule.GetUntil()
+	if untilTime.IsZero() {
+		// we default to one year if until is not set.
+		untilTime = startTime.AddDate(1, 0, 0)
+	}
+
+	occurrences := rRule.Between(startTime, untilTime, true)
+
+	duration, err := time.ParseDuration(event.Duration)
+	if err != nil {
+		logrus.Errorf("error parsing duration for event: %v", err)
+	}
+
+	for _, occ := range occurrences {
+		occInLoc := occ.In(loc)
+		occDateStr := occInLoc.Format("2006-01-02")
+		startTimeStr := occInLoc.Format("15:04")
+		endTimeStr := occInLoc.Add(duration).Format("15:04")
+		classTime := fmt.Sprintf("%s-%s", startTimeStr, endTimeStr)
+		fmt.Printf(">>>>> CLASS TIME >>>> : %s", classTime)
+
+		var attendances []models.ProgramClassEventAttendance
+		if err := db.WithContext(qryCtx.Ctx).
+			Model(&models.ProgramClassEventAttendance{}).
+			Where("event_id = ? AND date = ?", event.ID, occDateStr).
+			Find(&attendances).Error; err != nil {
 			continue
 		}
 
-		startTime := rRule.OrigOptions.Dtstart
-		untilTime := rRule.GetUntil()
-		if untilTime.IsZero() {
-			// we default to one year if until is not set.
-			untilTime = startTime.AddDate(1, 0, 0)
+		instance := models.ClassEventInstance{
+			EventID:           event.ID,
+			ClassTime:         classTime,
+			Date:              occDateStr,
+			AttendanceRecords: attendances,
 		}
-
-		occurrences := rRule.Between(startTime, untilTime, true)
-
-		duration, err := time.ParseDuration(event.Duration)
-		if err != nil {
-			logrus.Errorf("error parsing duration for event: %v", err)
-			continue
-		}
-
-		for _, occ := range occurrences {
-			occInLoc := occ.In(loc)
-			occDateStr := occInLoc.Format("2006-01-02")
-			startTimeStr := occInLoc.Format("15:04")
-			endTimeStr := occInLoc.Add(duration).Format("15:04")
-			classTime := fmt.Sprintf("%s-%s", startTimeStr, endTimeStr)
-
-			var attendances []models.ProgramClassEventAttendance
-			if err := db.WithContext(qryCtx.Ctx).
-				Model(&models.ProgramClassEventAttendance{}).
-				Where("event_id = ? AND date = ?", event.ID, occDateStr).
-				Find(&attendances).Error; err != nil {
-				continue
-			}
-
-			instance := models.ClassEventInstance{
-				EventID:           event.ID,
-				ClassTime:         classTime,
-				Date:              occDateStr,
-				AttendanceRecords: attendances,
-			}
-			instances = append(instances, instance)
-		}
+		instances = append(instances, instance)
 	}
 
 	sort.Slice(instances, func(i, j int) bool {

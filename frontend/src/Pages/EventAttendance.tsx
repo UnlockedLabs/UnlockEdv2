@@ -17,8 +17,10 @@ interface LocalRowData {
     doc_id: string;
     nameLast: string;
     nameFirst: string;
-    attendance_status: Attendance;
-    note: string;
+    attendance: {
+        attendance_status: Attendance;
+        note: string;
+    };
 }
 
 type FormData = Record<string, string>;
@@ -44,7 +46,7 @@ export default function EventAttendance() {
         ServerResponseMany<EnrollmentAttendance>,
         AxiosError
     >(
-        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}}`
+        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}`
     );
 
     const meta = data?.meta;
@@ -58,10 +60,12 @@ export default function EventAttendance() {
                 doc_id: item.enrollment.user.doc_id ?? '',
                 nameLast: item.enrollment.user.name_last,
                 nameFirst: item.enrollment.user.name_first,
-                attendance_status:
-                    item.attendance?.attendance_status ??
-                    Attendance.Absent_Unexcused,
-                note: item.attendance?.note ?? ''
+                attendance: {
+                    attendance_status:
+                        (item.attendance?.attendance_status as Attendance) ??
+                        Attendance.Absent_Unexcused,
+                    note: item.attendance?.note ?? ''
+                }
             }));
             setRows(localData);
         }
@@ -95,7 +99,13 @@ export default function EventAttendance() {
         setRows((prev) =>
             prev.map((row) =>
                 row.user_id === user_id
-                    ? { ...row, attendance_status: newStatus }
+                    ? {
+                          ...row,
+                          attendance: {
+                              ...row.attendance,
+                              attendance_status: newStatus
+                          }
+                      }
                     : row
             )
         );
@@ -109,22 +119,23 @@ export default function EventAttendance() {
                 user_id: row.user_id,
                 event_id: Number(event_id),
                 date: date,
-                attendance_status: row.attendance_status,
+                attendance_status: row.attendance?.attendance_status,
                 note: notes[`note_${row.user_id}`] ?? ''
             }));
         if (payload.length > 0) {
             await API.post(`events/${event_id}/attendances`, payload);
         }
     }
-
-    async function handleMarkAllPresent() {
-        const newRows = rows.map((row) =>
-            row.selected
-                ? { ...row, attendance_status: Attendance.Present }
-                : row
-        );
+    function handleMarkAllPresent() {
+        const newRows = rows.map((row) => ({
+            ...row,
+            selected: true,
+            attendance: {
+                ...row.attendance,
+                attendance_status: Attendance.Present
+            }
+        }));
         setRows(newRows);
-        await submitAttendanceForRows(newRows);
     }
 
     async function onSubmit() {
@@ -156,7 +167,7 @@ export default function EventAttendance() {
                     />
                 </div>
                 <button
-                    onClick={() => void handleMarkAllPresent}
+                    onClick={() => void handleMarkAllPresent()}
                     className="button"
                 >
                     Mark All Present
@@ -166,7 +177,12 @@ export default function EventAttendance() {
             {isLoading && <div>Loading...</div>}
             {error && <div className="error">Error loading data</div>}
             {!isLoading && !error && rows.length > 0 && (
-                <form onSubmit={() => void handleSubmit(onSubmit)}>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleSubmit(onSubmit)(e);
+                    }}
+                >
                     <div
                         className="relative w-full"
                         style={{ overflowX: 'clip' }}
@@ -221,7 +237,8 @@ export default function EventAttendance() {
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
                                                     checked={
-                                                        row.attendance_status ===
+                                                        row.attendance
+                                                            .attendance_status ===
                                                         Attendance.Present
                                                     }
                                                     onChange={() =>
@@ -239,7 +256,8 @@ export default function EventAttendance() {
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
                                                     checked={
-                                                        row.attendance_status ===
+                                                        row.attendance
+                                                            .attendance_status ===
                                                         Attendance.Absent_Excused
                                                     }
                                                     onChange={() =>
@@ -257,7 +275,8 @@ export default function EventAttendance() {
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
                                                     checked={
-                                                        row.attendance_status ===
+                                                        row.attendance
+                                                            .attendance_status ===
                                                         Attendance.Absent_Unexcused
                                                     }
                                                     onChange={() =>
@@ -275,7 +294,9 @@ export default function EventAttendance() {
                                         <td className="justify-self-end align-middle">
                                             <TextInput
                                                 label=""
-                                                defaultValue={row.note}
+                                                defaultValue={
+                                                    row.attendance.note
+                                                }
                                                 interfaceRef={`note_${row.user_id}`}
                                                 required={false}
                                                 length={500}
