@@ -163,7 +163,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 		hlSearchCond = "AND LOWER(hl.title) LIKE ?"
 	}
 
-	countArgs := []interface{}{args.UserID}
+	countArgs := []any{args.UserID}
 	if args.Search != "" {
 		countArgs = append(countArgs, searchTerm)
 	}
@@ -182,7 +182,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
 		return nil, err
 	}
 
-	queryArgs := make([]interface{}, 0, 8)
+	queryArgs := make([]any, 0, 8)
 
 	// Libraries
 	queryArgs = append(queryArgs, args.FacilityID, args.UserID)
