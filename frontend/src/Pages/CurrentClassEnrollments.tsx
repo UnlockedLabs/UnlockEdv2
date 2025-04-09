@@ -233,7 +233,7 @@ export default function CurrentEnrollmentDetails() {
                     type={TextModalType.Confirm}
                     title={'Confirm Enrollment Action'}
                     text={`Are you sure you want to permanently change the status to ${
-                        changeStatusValue?.status ?? 'Graduated'
+                        changeStatusValue?.status ?? 'Completed'
                     } for ${changeStatusValue?.name_full ?? 'the selected users'}? This action cannot be undone.`}
                     onSubmit={() => {
                         void handleSubmitEnrollmentChange();
