@@ -28,11 +28,11 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
     handleShowCompletionDetails
 }) => {
     return (
-        <div className="overflow-hidden border p-4">
-            <table className="table table-fixed w-full mb-2 shadow-lg">
+        <div className="relative w-full" style={{ overflowX: 'clip' }}>
+            <table className="table-2 mb-4">
                 <thead>
-                    <tr className="text-sm">
-                        <th className="h-14 pr-2">
+                    <tr className="grid grid-cols-6 pb-4">
+                        <th className="justify-self-start pl-4">
                             <input
                                 className="checkbox"
                                 type="checkbox"
@@ -40,11 +40,13 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                 onChange={handleSelectAll}
                             />
                         </th>
-                        <th className="h-14 pr-2">Resident Name</th>
-                        <th className="h-14 pr-2">Resident ID</th>
-                        <th className="h-14">Enrolled Date</th>
-                        <th className="h-14 px-2 text-center">Completion</th>
-                        <th className="h-14">Enrollment Status</th>
+                        <th>Name</th>
+                        <th>DOC ID</th>
+                        <th>Enrolled Date</th>
+                        <th>Completion</th>
+                        <th className="justify-self-end pr-4">
+                            Enrollment Status
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,15 +54,15 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                         enrollments.map((enrollment: ClassEnrollment) => (
                             <tr
                                 key={enrollment.id}
-                                className="cursor-pointer h-16"
+                                className="card p-4 w-full grid-cols-6 justify-items-center cursor-pointer"
                                 onClick={() => {
                                     if (canToggle(enrollment))
                                         toggleSelection(enrollment.user_id);
                                 }}
                             >
-                                <td className="pr-2">
+                                <td className="justify-self-start pl-4">
                                     <input
-                                        className="checkbox"
+                                        className="checkbox justify-self-start"
                                         type="checkbox"
                                         checked={selectedResidents.includes(
                                             enrollment.user_id
@@ -75,8 +77,8 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </td>
-                                <td className="pr-2">{enrollment.name_full}</td>
-                                <td className="pr-2">{enrollment.doc_id}</td>
+                                <td>{enrollment.name_full}</td>
+                                <td>{enrollment.doc_id}</td>
                                 <td>
                                     {new Date(
                                         enrollment.created_at
@@ -106,7 +108,7 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                         'N/A'
                                     )}
                                 </td>
-                                <td>
+                                <td onClick={(e) => e.stopPropagation()}>
                                     {isEditable(enrollment) ? (
                                         <DropdownControl
                                             enumType={inlineOptions}

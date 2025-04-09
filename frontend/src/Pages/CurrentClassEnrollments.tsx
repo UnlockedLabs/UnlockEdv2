@@ -99,11 +99,16 @@ export default function CurrentEnrollmentDetails() {
         }
     };
 
-    const handleGraduate = async () => {
-        if (selectedResidents.length === 0) return;
+    const handleSubmitEnrollmentChange = async () => {
         await API.patch(`programs/${id}/classes/${class_id}/enrollments`, {
-            enrollment_status: 'Completed',
-            user_ids: selectedResidents
+            // If one or more users are selected with the check-boxes, then they are going to be
+            // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
+            // to change an individual status inline.
+            enrollment_status: changeStatusValue?.status ?? 'Completed',
+            user_ids:
+                selectedResidents.length === 0
+                    ? [changeStatusValue?.user_id]
+                    : selectedResidents
         });
         setSelectedResidents([]);
         await mutate();
@@ -230,7 +235,9 @@ export default function CurrentEnrollmentDetails() {
                     text={`Are you sure you want to permanently change the status to ${
                         changeStatusValue?.status ?? 'Graduated'
                     } for ${changeStatusValue?.name_full ?? 'the selected users'}? This action cannot be undone.`}
-                    onSubmit={() => void handleGraduate()}
+                    onSubmit={() => {
+                        void handleSubmitEnrollmentChange();
+                    }}
                     onClose={() => {
                         if (confirmStateChangeModal.current) {
                             confirmStateChangeModal.current.close();
