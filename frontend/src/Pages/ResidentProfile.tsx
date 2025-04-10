@@ -59,14 +59,14 @@ function OpenContentCardToggle({
     return (
         <div className="flex flex-row gap-4">
             <h2
-                className={`cursor-pointer ${activeTab === 'libraries' ? activeTabStyle : ''}`}
+                className={`cursor-pointer font-normal ${activeTab === 'libraries' ? activeTabStyle : ''}`}
                 onClick={() => setActiveTab('libraries')}
             >
                 Top Viewed Libraries
             </h2>
             <span>|</span>
             <h2
-                className={`cursor-pointer ${activeTab === 'videos' ? activeTabStyle : ''}`}
+                className={`cursor-pointer font-normal ${activeTab === 'videos' ? activeTabStyle : ''}`}
                 onClick={() => setActiveTab('videos')}
             >
                 Recently Viewed Videos
@@ -93,7 +93,7 @@ const ResidentProfile = () => {
     const { data: activityHistory, error: activityHistoryError } = useSWR<
         ServerResponseMany<UserAccountHistoryResponse>,
         AxiosError
-    >(`/api/user-account-history/${residentId}?page=${page}&per_page=5`);
+    >(`/api/users/${residentId}/account-history?page=${page}&per_page=5`);
 
     const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(
         'libraries'
@@ -191,7 +191,7 @@ const ResidentProfile = () => {
                                         : 'N/A'
                                 }
                             />
-                            <div className="flex flex-row gap-2 mt-4">
+                            <div className="flex flex-row gap-2 mt-4 justify-center">
                                 <button className="button bg-grey-1 text-error">
                                     Delete Resident
                                 </button>

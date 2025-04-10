@@ -23,7 +23,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx},
 		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
-		{"GET /api/user-account-history/{id}", srv.handleGetUserAccountHistory, true, axx},
+		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
 	}
 }
 
