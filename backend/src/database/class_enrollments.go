@@ -58,30 +58,42 @@ func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityI
 
 // Returns the number of enrollments that were skipped, and possible error
 func (db *DB) CreateProgramClassEnrollments(classID int, userIds []int) (int, error) {
-	// query to find out how many available enrollments are left in the class
-	var available int64
-	if err := db.Model(&models.ProgramClass{}).Select("program_classes.capacity - COUNT(pce.id)").Joins("JOIN program_class_enrollments pce ON pce.class_id = program_classes.id").Where("id = ?", classID).Scan(&available).Error; err != nil {
+	var result struct {
+		Available int
+	}
+	err := db.
+		Table("program_classes").
+		Select("program_classes.capacity - COALESCE(COUNT(pce.id), 0) AS available").
+		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = program_classes.id").
+		Where("program_classes.id = ?", classID).
+		Group("program_classes.id, program_classes.capacity").
+		Scan(&result).Error
+	if err != nil {
 		return 0, newNotFoundDBError(err, "program_classes")
 	}
-	if available <= 0 {
+
+	if result.Available <= 0 {
 		return len(userIds), newNotFoundDBError(fmt.Errorf("class is full"), "program_classes")
 	}
-	enrollments := make([]models.ProgramClassEnrollment, 0, min(len(userIds), int(available)))
-	for i := range userIds {
-		if available <= 0 {
+
+	enrollments := make([]models.ProgramClassEnrollment, 0, min(len(userIds), result.Available))
+	for _, uid := range userIds {
+		if result.Available <= 0 {
 			break
 		}
 		enrollments = append(enrollments, models.ProgramClassEnrollment{
 			ClassID:          uint(classID),
-			UserID:           uint(userIds[i]),
+			UserID:           uint(uid),
 			EnrollmentStatus: models.Enrolled,
 		})
-		available--
+		result.Available--
 	}
+
 	skipped := len(userIds) - len(enrollments)
-	if err := db.Create(enrollments).Error; err != nil {
+	if err := db.Create(&enrollments).Error; err != nil {
 		return 0, newCreateDBError(err, "class enrollment")
 	}
+
 	return skipped, nil
 }
 

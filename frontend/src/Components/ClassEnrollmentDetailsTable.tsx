@@ -4,7 +4,7 @@ import { ClassEnrollment } from '@/common';
 
 interface EnrollmentTableProps {
     enrollments: ClassEnrollment[];
-    inlineOptions: Record<string, string>;
+    statusOptions: Record<string, string>;
     selectedResidents: number[];
     toggleSelection: (userId: number) => void;
     handleSelectAll: () => void;
@@ -17,7 +17,7 @@ interface EnrollmentTableProps {
 
 const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
     enrollments,
-    inlineOptions,
+    statusOptions: inlineOptions,
     selectedResidents,
     toggleSelection,
     handleSelectAll,
@@ -46,13 +46,11 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                                 onChange={handleSelectAll}
                             />
                         </th>
-                        <th>Name</th>
+                        <th className="pr-4">Name</th>
                         <th>DOC ID</th>
                         <th>Enrolled Date</th>
                         <th>Completion</th>
-                        <th className="justify-self-end pr-4">
-                            Enrollment Status
-                        </th>
+                        <th>Enrollment Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,7 +58,7 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                         enrollments.map((enrollment: ClassEnrollment) => (
                             <tr
                                 key={enrollment.id}
-                                className={`card h-16 w-full grid-cols-6 justify-items-center cursor-pointer ${!canToggle(enrollment) ? 'bg-gray-100' : ''}`}
+                                className={`card h-16 w-full grid-cols-6 justify-items-center cursor-pointer ${!canToggle(enrollment) ? 'bg-background' : ''}`}
                                 onClick={() => {
                                     if (canToggle(enrollment))
                                         toggleSelection(enrollment.user_id);
@@ -131,8 +129,8 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                                             )}
                                         />
                                     ) : (
-                                        <div className="h-12 w-48 bg-white border-2 grey-1 rounded-md flex items-center justify-center">
-                                            <span className="text-md font-bold">
+                                        <div className="h-12 w-48 border-2 grey-3 rounded-md flex items-center justify-center">
+                                            <span className="menu-title">
                                                 {translateEnrollmentStatus(
                                                     enrollment.enrollment_status
                                                 )}

@@ -246,7 +246,9 @@ export default function ProgramOverview() {
                     ) : (
                         <button
                             className="button flex items-center"
-                            onClick={() => navigate(`/programs/${id}/class`)}
+                            onClick={() =>
+                                navigate(`/programs/${id}/classes/new`)
+                            }
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
                             Add Class
@@ -270,11 +272,11 @@ export default function ProgramOverview() {
                                     }
                                 />
                             </th>
-                            <th>Facility Name</th>
+                            <th>Class Name</th>
                             <th>Instructor Name</th>
                             <th>Start Date</th>
                             <th>End Date</th>
-                            <th className="w-[200px]">Enrollment</th>
+                            <th className="w-[200px]">Enrollments</th>
                             <th className="w-[150px]">Status</th>
                         </tr>
                     </thead>
@@ -323,13 +325,13 @@ export default function ProgramOverview() {
                                                 }
                                                 onClick={() => {
                                                     navigate(
-                                                        `/programs/${id}/class/${program_class.id}`
+                                                        `/programs/${id}/classes/${program_class.id}`
                                                     );
                                                 }}
                                             />
                                         </div>
                                     </td>
-                                    <td>{program_class.facility_name}</td>
+                                    <td>{program_class.name}</td>
                                     <td>{program_class.instructor_name}</td>
                                     <td>
                                         {new Date(

@@ -6,7 +6,7 @@ import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
-import ProgramClassEnrollment from '@/Pages/ProgramClassEnrollment';
+import AddClassEnrollments from '@/Pages/AddClassEnrollments';
 import ClassEnrollmentDetails from '@/Pages/ClassEnrollmentDetails';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
@@ -30,14 +30,13 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
                 path: ['programs', 'detail']
             }
         },
-
         {
             path: 'programs/:id',
             element: <ProgramOverviewDashboard />,
             handle: { title: 'Program Overview Dashboard' }
         },
         {
-            path: 'programs/:id/class/:class_id?',
+            path: 'programs/:id/classes/:class_id?',
             loader: getProgramTitle,
             element: <ClassManagementForm />,
             handle: {
@@ -45,16 +44,17 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             }
         },
         {
-            path: 'programs/:id/classes/:class_id/add',
-            element: <ProgramClassEnrollment />,
-            handle: { title: 'Add Resident' }
-        },
-        {
             path: 'programs/:id/classes/:class_id/enrollments',
             element: <ClassEnrollmentDetails />,
             handle: {
                 title: 'Class Enrollments'
             }
+        },
+        {
+            path: 'programs/:id/classes/:class_id/enrollments/add',
+            loader: getProgramTitle,
+            element: <AddClassEnrollments />,
+            handle: { title: 'Add Resident' }
         }
     ],
     AdminRoles,

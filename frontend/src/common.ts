@@ -495,11 +495,11 @@ export enum CreditType {
     PARTICIPATION = 'Participation'
 }
 
-export enum PrgClassStatus {
+export enum ProgClassStatus {
     SCHEDULED = 'Scheduled',
     ACTIVE = 'Active',
     PENDING = 'Pending',
-    CANCELLED = 'Cancelled',
+    CANCELED = 'Canceled',
     COMPLETED = 'Completed',
     PAUSED = 'Paused'
 }
@@ -696,6 +696,7 @@ export interface Class {
     capacity: number;
     credit_hours: number;
     archived_at: string | null;
+    enrollments?: ClassEnrollment[];
     events: ProgramClassEvent[];
 }
 
@@ -712,8 +713,20 @@ export enum SelectedClassStatus {
     Active = 'Active',
     Paused = 'Paused',
     Completed = 'Completed',
-    Canceled = 'Cancelled'
+    Cancelled = 'Cancelled'
 }
+
+export enum EnrollmentStatus {
+    Enrolled = 'Enrolled',
+    Cancelled = 'Cancelled',
+    Completed = 'Completed',
+    Pending = 'Pending',
+    Withdrawn = 'Incomplete: Withdrawn',
+    Dropped = 'Incomplete: Dropped',
+    'Failed To Complete' = 'Incomplete: Failed to Complete',
+    Transfered = 'Incomplete: Transfered'
+}
+
 export interface ClassEnrollment {
     id: number;
     created_at: string;
@@ -754,7 +767,7 @@ export enum ClassStatusOptions {
 export const ClassStatusMap = {
     [ClassStatusOptions.Complete]: SelectedClassStatus.Completed,
     [ClassStatusOptions.Pause]: SelectedClassStatus.Paused,
-    [ClassStatusOptions.Cancel]: SelectedClassStatus.Canceled,
+    [ClassStatusOptions.Cancel]: SelectedClassStatus.Cancelled,
     [ClassStatusOptions.Schedule]: SelectedClassStatus.Scheduled,
     [ClassStatusOptions.Active]: SelectedClassStatus.Active
 };

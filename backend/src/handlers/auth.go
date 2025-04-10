@@ -52,7 +52,7 @@ func (srv *Server) registerAuthRoutes() []routeDef {
 func (claims *Claims) getTraits() map[string]any {
 	return map[string]any{
 		"username":       claims.Username,
-		"email":          claims,
+		"email":          claims.Email,
 		"facility_id":    claims.FacilityID,
 		"role":           claims.Role,
 		"password_reset": claims.PasswordReset,
@@ -73,6 +73,7 @@ func claimsFromUser(user *models.User) *Claims {
 		Role:       user.Role,
 		FacilityID: user.FacilityID,
 		KratosID:   user.KratosID,
+		Email:      user.Email,
 	}
 }
 
@@ -126,14 +127,6 @@ func userIsSystemAdmin(r *http.Request) bool {
 
 func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	facilityId := claims.FacilityID
-	user, err := srv.Db.GetUserByID(uint(id))
-	if err != nil {
-		return false
-	}
-	if facilityId != user.FacilityID && !claims.canSwitchFacility() {
-		return false
-	}
 	return slices.Contains(models.AdminRoles, claims.Role) || claims.UserID == uint(id)
 }
 
@@ -172,7 +165,6 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	}
 	traits := claims.getTraits()
 	traits["id"] = user.ID
-	traits["email"] = user.Email
 	traits["session_id"] = claims.SessionID
 	traits["kratos_id"] = claims.KratosID
 	traits["created_at"] = user.CreatedAt

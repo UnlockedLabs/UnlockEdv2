@@ -7,6 +7,7 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import {
     ClassEnrollment,
+    EnrollmentStatus,
     ProgramCompletion,
     ServerResponseMany,
     ServerResponseOne
@@ -115,14 +116,6 @@ export default function ClassEnrollmentDetails() {
         await mutate();
     };
 
-    const inlineOptions = {
-        Enrolled: 'Enrolled',
-        Canceled: 'Canceled',
-        Withdrawn: 'Incomplete: Withdrawn',
-        Dropped: 'Incomplete: Dropped',
-        'Failed-to-Complete': 'Incomplete: Failed-to-Complete'
-    };
-
     const isEditable = (enrollment: ClassEnrollment) =>
         enrollment.enrollment_status === 'Enrolled' &&
         !selectedResidents.includes(enrollment.user_id);
@@ -171,9 +164,12 @@ export default function ClassEnrollmentDetails() {
                                 All: 'all',
                                 Enrolled: 'enrolled',
                                 Completed: 'completed',
+                                Withdrawn: 'incomplete: withdrawn',
                                 Dropped: 'incomplete: dropped',
                                 'Failed To Complete':
-                                    'incomplete: failed-to-complete'
+                                    'incomplete: failed to complete',
+                                Transferred: 'incomplete: transferred',
+                                Canceled: 'incomplete: canceled'
                             }}
                         />
                     </div>
@@ -190,7 +186,7 @@ export default function ClassEnrollmentDetails() {
                             className="button btn-primary"
                             onClick={() =>
                                 navigate(
-                                    `/programs/${id}/classes/${class_id}/add`
+                                    `/programs/${id}/classes/${class_id}/enrollments/add`
                                 )
                             }
                         >
@@ -201,7 +197,7 @@ export default function ClassEnrollmentDetails() {
                 {!isLoading && !error && (
                     <ClassEnrollmentDetailsTable
                         enrollments={enrollments}
-                        inlineOptions={inlineOptions}
+                        statusOptions={EnrollmentStatus}
                         selectedResidents={selectedResidents}
                         toggleSelection={toggleSelection}
                         handleSelectAll={handleSelectAll}
@@ -225,10 +221,10 @@ export default function ClassEnrollmentDetails() {
                 </div>
                 <div className="flex flex-row justify-end m-2">
                     <button
-                        className="button bg-grey"
+                        className="btn button w-24"
                         onClick={() => navigate(`/programs/${id}`)}
                     >
-                        Back
+                        <span className="snap-center">Back</span>
                     </button>
                 </div>
                 <TextOnlyModal

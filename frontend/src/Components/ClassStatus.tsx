@@ -42,7 +42,7 @@ function SelectedClassStatusPill({
             icon = CheckCircleIcon;
             background = 'bg-[#DDFFCD] text-[#408D1C]';
             break;
-        case SelectedClassStatus.Canceled:
+        case SelectedClassStatus.Cancelled:
             icon = XCircleIcon;
             background = 'bg-[#FFDFDF] text-[#CA0000]';
             break;
