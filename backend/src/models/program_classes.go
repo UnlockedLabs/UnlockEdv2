@@ -65,13 +65,13 @@ type ProgramClassDetail struct {
 type ProgramEnrollmentStatus string
 
 const (
-	Enrolled                   ProgramEnrollmentStatus = "Enrolled"
-	EnrollmentCancelled        ProgramEnrollmentStatus = "Cancelled"
-	EnrollmentCompleted        ProgramEnrollmentStatus = "Completed"
-	EnrollmentPending          ProgramEnrollmentStatus = "Pending"
-	IncompleteWithdrawn        ProgramEnrollmentStatus = "Withdrawn"
-	IncompleteDropped          ProgramEnrollmentStatus = "Dropped"
-	IncompleteFailedToComplete ProgramEnrollmentStatus = "Failed to Complete"
+	Enrolled                             ProgramEnrollmentStatus = "Enrolled"
+	EnrollmentCancelled                  ProgramEnrollmentStatus = "Cancelled"
+	EnrollmentCompleted                  ProgramEnrollmentStatus = "Completed"
+	EnrollmentPending                    ProgramEnrollmentStatus = "Pending"
+	EnrollmentIncompleteWithdrawn        ProgramEnrollmentStatus = "Withdrawn"
+	EnrollmentIncompleteDropped          ProgramEnrollmentStatus = "Dropped"
+	EnrollmentIncompleteFailedToComplete ProgramEnrollmentStatus = "Failed to Complete"
 )
 
 type ProgramCompletion struct {

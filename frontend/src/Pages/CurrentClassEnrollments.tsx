@@ -48,6 +48,7 @@ export default function CurrentEnrollmentDetails() {
     const meta = data?.meta;
 
     const handleChange = (value: string, enrollment: ClassEnrollment) => {
+        setSelectedResidents([]);
         setChangeStatusValue({
             status: value,
             user_id: enrollment.user_id,

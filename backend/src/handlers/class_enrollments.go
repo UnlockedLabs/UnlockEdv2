@@ -13,26 +13,12 @@ func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
 		{"GET /api/programs/{id}/classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, false, axx},
-		{"GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}", srv.handleGetProgramClassEnrollments, false, axx},
 		{"POST /api/programs/{id}/classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx},
 		{"DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, true, axx},
 		{"PATCH /api/programs/{id}/classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx},
 		{"GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx},
 		{"GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, false, axx},
 	}
-}
-
-func (srv *Server) handleGetProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("enrollment_id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "class enrollment ID")
-	}
-	log.add("class_enrollment_id", id)
-	enrollment, err := srv.Db.GetProgramClassEnrollmentsByID(id)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, enrollment)
 }
 
 func (srv *Server) handleGetUserProgramCompletions(w http.ResponseWriter, r *http.Request, log sLog) error {

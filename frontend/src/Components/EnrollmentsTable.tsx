@@ -110,7 +110,9 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                 </td>
                                 <td
                                     className="pr-4"
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                    }}
                                 >
                                     {isEditable(enrollment) ? (
                                         <DropdownControl

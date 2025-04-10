@@ -126,6 +126,14 @@ func userIsSystemAdmin(r *http.Request) bool {
 
 func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facilityId := claims.FacilityID
+	user, err := srv.Db.GetUserByID(uint(id))
+	if err != nil {
+		return false
+	}
+	if facilityId != user.FacilityID && !claims.canSwitchFacility() {
+		return false
+	}
 	return slices.Contains(models.AdminRoles, claims.Role) || claims.UserID == uint(id)
 }
 
