@@ -44,7 +44,7 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 	}
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
-		log.add("programId", id)
+		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, program)
@@ -62,7 +62,7 @@ type ProgramForm struct {
 	FundingType models.FundingType  `json:"funding_type"`
 	CreditType  []models.CreditType `json:"credit_type"`
 	IsActive    bool                `json:"is_active"`
-	ProgramType []models.PrgType    `json:"program_type"`
+	ProgramType []models.ProgType   `json:"program_type"`
 	Facilities  []int               `json:"facilities"`
 }
 
@@ -117,7 +117,7 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	log.add("programId", id)
+	log.add("program_id", id)
 	toUpdate, err := srv.Db.GetProgramByID(id)
 	if err != nil {
 		log.error("Error getting program:" + err.Error())
@@ -135,7 +135,7 @@ func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	log.add("programID", id)
+	log.add("program_id", id)
 	if err = srv.Db.DeleteProgram(id); err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -151,8 +151,8 @@ func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request,
 	user_id := srv.getUserID(r)
 	favoriteRemoved, err := srv.Db.ToggleProgramFavorite(user_id, uint(id))
 	if err != nil {
-		log.add("programId", id)
-		log.add("userId", user_id)
+		log.add("program_id", id)
+		log.add("user_id", user_id)
 		return newDatabaseServiceError(err)
 	}
 	log.debugf("Favorite removed: %v", favoriteRemoved)

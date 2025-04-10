@@ -69,7 +69,6 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
-	fmt.Printf("CLASS_ID: %d", classID)
 	log.add("class_id", classID)
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
@@ -79,11 +78,15 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	err = srv.Db.CreateProgramClassEnrollments(classID, enrollment.UserIDs)
+	skipped, err := srv.Db.CreateProgramClassEnrollments(classID, enrollment.UserIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusCreated, "user enrolled")
+	response := "users enrolled"
+	if skipped > 0 {
+		response = fmt.Sprintf("%d users were enrolled, %d were not added because capacity is full.", len(enrollment.UserIDs)-skipped, skipped)
+	}
+	return writeJsonResponse(w, http.StatusCreated, response)
 }
 
 func (srv *Server) handleDeleteProgramClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {

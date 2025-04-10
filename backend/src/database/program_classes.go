@@ -8,7 +8,7 @@ import (
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Enrollments").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	return content, nil

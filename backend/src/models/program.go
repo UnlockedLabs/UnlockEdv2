@@ -1,7 +1,7 @@
 package models
 
 type FundingType string
-type PrgType string
+type ProgType string
 type CreditType string
 
 const (
@@ -13,13 +13,13 @@ const (
 	InmateWelfare FundingType = "Inmate_Welfare_Funds"
 	Other         FundingType = "Other"
 	//program types
-	Educational PrgType = "Educational"
-	Vocational  PrgType = "Vocational"
-	MntlHlth    PrgType = "Mental_Health_Behavioral"
-	Religious   PrgType = "Religious_Faith-Based"
-	ReEntry     PrgType = "Re-Entry"
-	Therapeutic PrgType = "Therapeutic"
-	LifeSkills  PrgType = "Life_Skills"
+	Educational  ProgType = "Educational"
+	Vocational   ProgType = "Vocational"
+	MentalHealth ProgType = "Mental_Health_Behavioral"
+	Religious    ProgType = "Religious_Faith-Based"
+	ReEntry      ProgType = "Re-Entry"
+	Therapeutic  ProgType = "Therapeutic"
+	LifeSkills   ProgType = "Life_Skills"
 	//credit types
 	Completion    CreditType = "Completion"
 	Participation CreditType = "Participation"
@@ -45,8 +45,8 @@ type Program struct {
 func (Program) TableName() string { return "programs" }
 
 type ProgramType struct {
-	ProgramType PrgType `json:"program_type" gorm:"type:program_type" validate:"required"`
-	ProgramID   uint    `json:"program_id" gorm:"not null" validate:"required"`
+	ProgramType ProgType `json:"program_type" gorm:"type:program_type" validate:"required"`
+	ProgramID   uint     `json:"program_id" gorm:"not null" validate:"required"`
 
 	Program *Program `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 }
@@ -63,7 +63,7 @@ type ProgramCreditType struct {
 func (ProgramCreditType) TableName() string { return "program_credit_types" }
 
 type ProgramTypeInfo struct {
-	ProgramTypes       []PrgType
+	ProgramTypes       []ProgType
 	ProgramCreditTypes []CreditType
 }
 

@@ -8,7 +8,6 @@
     "created_at": "2024-04-09T18:55:27.000000Z",
     "updated_at": "2024-04-09T18:55:27.000000Z",
     "username": "RichardSchoen13",
-    "password_reset": true,
     "facility_id": 1
   },
   {
@@ -20,7 +19,6 @@
     "created_at": "2024-04-09T18:55:33.000000Z",
     "updated_at": "2024-04-09T22:17:17.000000Z",
     "username": "MeaganDouglas13",
-    "password_reset": false,
     "facility_id": 3
   },
   {
@@ -32,7 +30,6 @@
     "created_at": "2024-04-09T18:55:48.000000Z",
     "updated_at": "2024-04-09T21:57:50.000000Z",
     "username": "ClaraFrami10",
-    "password_reset": false,
     "facility_id": 4
   },
   {
@@ -44,7 +41,6 @@
     "created_at": "2024-04-09T18:55:45.000000Z",
     "updated_at": "2024-04-09T18:55:45.000000Z",
     "username": "OpheliaNienow13",
-    "password_reset": false,
     "facility_id": 1
   },
   {
@@ -56,7 +52,6 @@
     "created_at": "2024-04-09T18:55:27.000000Z",
     "updated_at": "2024-04-09T18:55:27.000000Z",
     "username": "OrvalKoelpin12",
-    "password_reset": false,
     "facility_id": 1
   },
   {
@@ -68,7 +63,6 @@
     "created_at": "2024-04-09T18:55:27.000000Z",
     "updated_at": "2024-04-09T18:55:27.000000Z",
     "username": "LavadaLittel12",
-    "password_reset": true,
     "facility_id": 4
   },
   {
@@ -80,7 +74,6 @@
     "created_at": "2024-04-09T18:55:42.000000Z",
     "updated_at": "2024-04-09T18:55:42.000000Z",
     "username": "JulietFriesen13",
-    "password_reset": false,
     "facility_id": 5
   },
   {
@@ -92,7 +85,6 @@
     "created_at": "2024-04-09T18:55:28.000000Z",
     "updated_at": "2024-04-09T18:55:28.000000Z",
     "username": "HeidiVonRueden14",
-    "password_reset": true,
     "facility_id": 3
   },
   {
@@ -104,7 +96,6 @@
     "created_at": "2024-04-09T18:55:40.000000Z",
     "updated_at": "2024-04-09T18:55:40.000000Z",
     "username": "AshleeGaylord13",
-    "password_reset": false,
     "facility_id": 1
   },
   {
@@ -116,7 +107,6 @@
     "created_at": "2024-04-09T18:55:40.000000Z",
     "updated_at": "2024-04-09T18:55:40.000000Z",
     "username": "darlafragle13",
-    "password_reset": false,
     "facility_id": 1
   }
 ]

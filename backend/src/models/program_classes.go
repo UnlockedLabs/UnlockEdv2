@@ -33,10 +33,11 @@ type ProgramClass struct {
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 
-	Program      *Program            `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
-	Facility     *Facility           `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
-	Events       []ProgramClassEvent `json:"events" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	FacilityProg *FacilitiesPrograms `json:"facility_program" gorm:"foreignKey:ProgramID;references:ProgramID"`
+	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
+	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Facility     *Facility                `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
+	Events       []ProgramClassEvent      `json:"events" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	FacilityProg *FacilitiesPrograms      `json:"facility_program" gorm:"foreignKey:ProgramID;references:ProgramID"`
 }
 
 func (ProgramClass) TableName() string { return "program_classes" }
@@ -69,9 +70,10 @@ const (
 	EnrollmentCancelled                  ProgramEnrollmentStatus = "Cancelled"
 	EnrollmentCompleted                  ProgramEnrollmentStatus = "Completed"
 	EnrollmentPending                    ProgramEnrollmentStatus = "Pending"
-	EnrollmentIncompleteWithdrawn        ProgramEnrollmentStatus = "Withdrawn"
-	EnrollmentIncompleteDropped          ProgramEnrollmentStatus = "Dropped"
-	EnrollmentIncompleteFailedToComplete ProgramEnrollmentStatus = "Failed to Complete"
+	EnrollmentIncompleteWithdrawn        ProgramEnrollmentStatus = "Incomplete: Withdrawn"
+	EnrollmentIncompleteDropped          ProgramEnrollmentStatus = "Incomplete: Dropped"
+	EnrollmentIncompleteFailedToComplete ProgramEnrollmentStatus = "Incomplete: Failed to Complete"
+	EnrollmentIncompleteTransfered       ProgramEnrollmentStatus = "Incomplete: Transfered"
 )
 
 type ProgramCompletion struct {

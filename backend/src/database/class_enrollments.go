@@ -56,19 +56,33 @@ func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityI
 	return total, content, nil
 }
 
-func (db *DB) CreateProgramClassEnrollments(classID int, userIds []int) error {
-	enrollments := make([]models.ProgramClassEnrollment, 0, len(userIds))
+// Returns the number of enrollments that were skipped, and possible error
+func (db *DB) CreateProgramClassEnrollments(classID int, userIds []int) (int, error) {
+	// query to find out how many available enrollments are left in the class
+	var available int64
+	if err := db.Model(&models.ProgramClass{}).Select("program_classes.capacity - COUNT(pce.id)").Joins("JOIN program_class_enrollments pce ON pce.class_id = program_classes.id").Where("id = ?", classID).Scan(&available).Error; err != nil {
+		return 0, newNotFoundDBError(err, "program_classes")
+	}
+	if available <= 0 {
+		return len(userIds), newNotFoundDBError(fmt.Errorf("class is full"), "program_classes")
+	}
+	enrollments := make([]models.ProgramClassEnrollment, 0, min(len(userIds), int(available)))
 	for i := range userIds {
+		if available <= 0 {
+			break
+		}
 		enrollments = append(enrollments, models.ProgramClassEnrollment{
 			ClassID:          uint(classID),
 			UserID:           uint(userIds[i]),
 			EnrollmentStatus: models.Enrolled,
 		})
+		available--
 	}
+	skipped := len(userIds) - len(enrollments)
 	if err := db.Create(enrollments).Error; err != nil {
-		return newCreateDBError(err, "class enrollment")
+		return 0, newCreateDBError(err, "class enrollment")
 	}
-	return nil
+	return skipped, nil
 }
 
 func (db *DB) DeleteProgramClassEnrollments(id int) error {
@@ -159,10 +173,10 @@ func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, pr
 	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ' ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
 		Joins("JOIN program_classes c ON pse.class_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN users u ON pse.user_id = u.id AND u.deleted_at IS NULL").
-		Joins("LEFT JOIN program_completions pc ON pse.class_id = pc.program_class_id AND pc.user_id = pse.user_id").
+		Joins("LEFT JOIN program_completions pc ON pc.user_id = pse.user_id AND pc.program_class_id = ?", classId).
 		Where("pse.class_id = ?", classId)
 	if status != "" {
-		tx = tx.Where("LOWER(pse.enrollment_status) = ?", status)
+		tx = tx.Where("pse.enrollment_status ILIKE ?", status)
 	}
 
 	if err := tx.Count(&args.Total).Error; err != nil {
