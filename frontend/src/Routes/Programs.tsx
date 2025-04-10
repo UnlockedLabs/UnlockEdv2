@@ -7,7 +7,7 @@ import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
 import ProgramClassEnrollment from '@/Pages/ProgramClassEnrollment';
-import CurrentEnrollmentDetails from '@/Pages/CurrentClassEnrollments';
+import ClassEnrollmentDetails from '@/Pages/ClassEnrollmentDetails';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -51,7 +51,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'programs/:id/classes/:class_id/enrollments',
-            element: <CurrentEnrollmentDetails />,
+            element: <ClassEnrollmentDetails />,
             handle: {
                 title: 'Class Enrollments'
             }

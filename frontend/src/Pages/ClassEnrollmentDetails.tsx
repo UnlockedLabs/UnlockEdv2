@@ -14,7 +14,7 @@ import {
 import API from '@/api/api';
 import { TextModalType, TextOnlyModal } from '@/Components/modals';
 import CompletionDetailsModal from '@/Components/modals/CompletionDetailsModal';
-import EnrollmentTable from '@/Components/EnrollmentsTable';
+import ClassEnrollmentDetailsTable from '@/Components/ClassEnrollmentDetailsTable';
 
 interface StatusChange {
     name_full: string;
@@ -22,7 +22,7 @@ interface StatusChange {
     status: string;
 }
 
-export default function CurrentEnrollmentDetails() {
+export default function ClassEnrollmentDetails() {
     const { id, class_id } = useParams<{ id: string; class_id: string }>();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
@@ -118,9 +118,9 @@ export default function CurrentEnrollmentDetails() {
     const inlineOptions = {
         Enrolled: 'Enrolled',
         Canceled: 'Canceled',
-        'Incomplete: Withdrawn': 'Incomplete: Withdrawn',
-        'Incomplete: Dropped': 'Incomplete: Dropped',
-        'Incomplete: Failed-to-Complete': 'Incomplete: Failed-to-Complete'
+        Withdrawn: 'Incomplete: Withdrawn',
+        Dropped: 'Incomplete: Dropped',
+        'Failed-to-Complete': 'Incomplete: Failed-to-Complete'
     };
 
     const isEditable = (enrollment: ClassEnrollment) =>
@@ -171,7 +171,9 @@ export default function CurrentEnrollmentDetails() {
                                 All: 'all',
                                 Enrolled: 'enrolled',
                                 Completed: 'completed',
-                                Dropped: 'dropped'
+                                Dropped: 'incomplete: dropped',
+                                'Failed To Complete':
+                                    'incomplete: failed-to-complete'
                             }}
                         />
                     </div>
@@ -197,7 +199,7 @@ export default function CurrentEnrollmentDetails() {
                     </div>
                 </div>
                 {!isLoading && !error && (
-                    <EnrollmentTable
+                    <ClassEnrollmentDetailsTable
                         enrollments={enrollments}
                         inlineOptions={inlineOptions}
                         selectedResidents={selectedResidents}

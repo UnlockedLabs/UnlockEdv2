@@ -15,7 +15,7 @@ interface EnrollmentTableProps {
     handleShowCompletionDetails: (enrollment: ClassEnrollment) => Promise<void>;
 }
 
-const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
+const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
     enrollments,
     inlineOptions,
     selectedResidents,
@@ -27,6 +27,12 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
     handleChange,
     handleShowCompletionDetails
 }) => {
+    const translateEnrollmentStatus = (status: string) => {
+        if (status.startsWith('Incomplete: ')) {
+            return status.replace('Incomplete: ', '');
+        }
+        return status;
+    };
     return (
         <div className="relative w-full" style={{ overflowX: 'clip' }}>
             <table className="table-2 mb-4">
@@ -120,12 +126,16 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                                             customCallback={(val) =>
                                                 handleChange(val, enrollment)
                                             }
-                                            label={enrollment.enrollment_status}
+                                            label={translateEnrollmentStatus(
+                                                enrollment.enrollment_status
+                                            )}
                                         />
                                     ) : (
-                                        <div className="h-12 w-64 bg-white border-2 border-gray-300 rounded-md flex items-center justify-center">
+                                        <div className="h-12 w-48 bg-white border-2 grey-1 rounded-md flex items-center justify-center">
                                             <span className="text-md font-bold">
-                                                {enrollment.enrollment_status}
+                                                {translateEnrollmentStatus(
+                                                    enrollment.enrollment_status
+                                                )}
                                             </span>
                                         </div>
                                     )}
@@ -134,10 +144,7 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
                         ))
                     ) : (
                         <tr>
-                            <td
-                                colSpan={6}
-                                className="text-center text-gray-500"
-                            >
+                            <td colSpan={6} className="text-center">
                                 No enrollments found.
                             </td>
                         </tr>
@@ -148,4 +155,4 @@ const EnrollmentsTable: React.FC<EnrollmentTableProps> = ({
     );
 };
 
-export default EnrollmentsTable;
+export default ClassEnrollmentDetailsTable;
