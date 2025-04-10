@@ -155,7 +155,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), accountCreation); err != nil {
 			return newCreateRequestServiceError(err)
 		}
-		facilityTransfer := models.NewUserAccountHistory(reqForm.User.ID, models.FacilityTransfer, &claims.UserID, &claims.FacilityID, nil)
+		facilityTransfer := models.NewUserAccountHistory(reqForm.User.ID, models.FacilityTransfer, &claims.UserID, nil, &claims.FacilityID)
 		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), facilityTransfer); err != nil {
 			return newCreateRequestServiceError(err)
 		}
@@ -380,5 +380,10 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		return newInternalServerServiceError(err, "error updating facility in kratos")
 	}
 	log.info("successfully transferred resident")
+	transFacilityID := uint(transRequest.TransFacilityID)
+	facilityTransfer := models.NewUserAccountHistory(uint(transRequest.UserID), models.FacilityTransfer, &args.UserID, nil, &transFacilityID)
+	if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), facilityTransfer); err != nil {
+		return newCreateRequestServiceError(err)
+	}
 	return writeJsonResponse(w, int(http.StatusNoContent), "successfully transferred resident")
 }
