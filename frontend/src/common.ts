@@ -733,11 +733,15 @@ export interface ProgramClassEnrollment {
     user: User;
 }
 export interface EnrollmentAttendance {
-    enrollment: ProgramClassEnrollment;
-    attendance: {
-        attendance_status: string;
-        note: string;
-    };
+    enrollment_id: number;
+    class_id: number;
+    user_id: number;
+    enrollment_status: string;
+    doc_id: string;
+    name_first: string;
+    name_last: string;
+    attendance_status: string;
+    note: string;
 }
 
 export enum Attendance {
