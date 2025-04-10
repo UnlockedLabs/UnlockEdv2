@@ -104,12 +104,22 @@ func (ProgramClassEventAttendance) TableName() string { return "program_class_ev
 
 type ClassEventInstance struct {
 	EventID           uint                          `json:"event_id"`
-	ClassTime         string                        `json:"class_time"`
+	ClassTime         string                        `json:"class_time"` // e.g. "12:00-14:00"
 	Date              string                        `json:"date"`
 	AttendanceRecords []ProgramClassEventAttendance `json:"attendance_records"`
 }
 
 type EnrollmentAttendance struct {
-	Enrollment ProgramClassEnrollment       `json:"enrollment"`
-	Attendance *ProgramClassEventAttendance `json:"attendance,omitempty"`
+	EnrollmentID     uint    `json:"enrollment_id"`
+	ClassID          uint    `json:"class_id"`
+	EnrollmentStatus string  `json:"enrollment_status"`
+	UserID           uint    `json:"user_id"`
+	NameFirst        string  `json:"name_first"`
+	NameLast         string  `json:"name_last"`
+	DocID            string  `json:"doc_id"`
+	AttendanceID     *uint   `json:"attendance_id"`
+	EventID          *uint   `json:"event_id"`
+	EventDate        *string `json:"date"`
+	AttendanceStatus *string `json:"attendance_status"`
+	Note             *string `json:"note"`
 }

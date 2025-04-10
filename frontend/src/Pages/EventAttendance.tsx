@@ -10,23 +10,23 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
+import DropdownControl from '@/Components/inputs/DropdownControl';
 
 interface LocalRowData {
     selected: boolean;
     user_id: number;
     doc_id: string;
-    nameLast: string;
-    nameFirst: string;
-    attendance: {
-        attendance_status: Attendance;
-        note: string;
-    };
+    name_last: string;
+    name_first: string;
+    attendance_status: Attendance;
+    note: string;
 }
 
 type FormData = Record<string, string>;
 
 export default function EventAttendance() {
-    const { event_id, date, class_id } = useParams<{
+    const { id, event_id, date, class_id } = useParams<{
+        id: string;
         event_id: string;
         date: string;
         class_id: string;
@@ -40,13 +40,13 @@ export default function EventAttendance() {
     } = useUrlPagination(1, 20);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchQuery] = useDebounceValue(searchTerm, 500);
-
+    const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const searchQuery = useDebounceValue(searchTerm, 300);
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
         AxiosError
     >(
-        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}`
+        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}&order_by=${sortQuery}`
     );
 
     const meta = data?.meta;
@@ -56,16 +56,12 @@ export default function EventAttendance() {
         if (data?.data) {
             const localData = data.data.map((item) => ({
                 selected: false,
-                user_id: item.enrollment.user.id,
-                doc_id: item.enrollment.user.doc_id ?? '',
-                nameLast: item.enrollment.user.name_last,
-                nameFirst: item.enrollment.user.name_first,
-                attendance: {
-                    attendance_status:
-                        (item.attendance?.attendance_status as Attendance) ??
-                        Attendance.Absent_Unexcused,
-                    note: item.attendance?.note ?? ''
-                }
+                user_id: item.user_id,
+                doc_id: item.doc_id ?? '',
+                name_last: item.name_last,
+                name_first: item.name_first,
+                attendance_status: item.attendance_status as Attendance,
+                note: item.note ?? ''
             }));
             setRows(localData);
         }
@@ -101,10 +97,8 @@ export default function EventAttendance() {
                 row.user_id === user_id
                     ? {
                           ...row,
-                          attendance: {
-                              ...row.attendance,
-                              attendance_status: newStatus
-                          }
+                          selected: true,
+                          attendance_status: newStatus
                       }
                     : row
             )
@@ -119,7 +113,7 @@ export default function EventAttendance() {
                 user_id: row.user_id,
                 event_id: Number(event_id),
                 date: date,
-                attendance_status: row.attendance?.attendance_status,
+                attendance_status: row?.attendance_status,
                 note: notes[`note_${row.user_id}`] ?? ''
             }));
         if (payload.length > 0) {
@@ -130,33 +124,21 @@ export default function EventAttendance() {
         const newRows = rows.map((row) => ({
             ...row,
             selected: true,
-            attendance: {
-                ...row.attendance,
-                attendance_status: Attendance.Present
-            }
+            attendance_status: Attendance.Present
         }));
         setRows(newRows);
     }
 
     async function onSubmit() {
         await submitAttendanceForRows(rows);
-        navigate(-1);
+        navigate(`/programs/${id}/class/${class_id}/events`);
     }
-
-    const filteredRows = rows.filter((row) => {
-        const fullName = `${row.nameFirst} ${row.nameLast}`.toLowerCase();
-        const doc = row.doc_id;
-        return (
-            fullName.includes(searchQuery.toLowerCase()) ??
-            doc.includes(searchQuery.toLowerCase())
-        );
-    });
-
     const handleSearch = (newTerm: string) => {
         setSearchTerm(newTerm);
         setPageQuery(1);
     };
 
+    const anyRowSelected = rows.some((row) => row.selected);
     return (
         <div className="p-4 space-y-4">
             <div className="flex justify-between items-center">
@@ -165,10 +147,21 @@ export default function EventAttendance() {
                         searchTerm={searchTerm}
                         changeCallback={handleSearch}
                     />
+                    <DropdownControl
+                        label="order by"
+                        setState={setSortQuery}
+                        enumType={{
+                            'Last Name (A-Z)': 'name_last asc',
+                            'Last Name (Z-A)': 'name_last desc',
+                            'First Name (A-Z)': 'name_first asc',
+                            'First Name (Z-A)': 'name_first desc'
+                        }}
+                    />
                 </div>
                 <button
                     onClick={() => void handleMarkAllPresent()}
-                    className="button"
+                    disabled={anyRowSelected}
+                    className={`button ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
                 >
                     Mark All Present
                 </button>
@@ -207,7 +200,7 @@ export default function EventAttendance() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredRows.map((row) => (
+                                {rows.map((row) => (
                                     <tr
                                         key={row.user_id}
                                         className="card grid-cols-3 cursor-pointer items-center p-2"
@@ -224,7 +217,8 @@ export default function EventAttendance() {
                                                 className="checkbox cursor-pointer"
                                             />
                                             <span>
-                                                {row.nameLast}, {row.nameFirst}{' '}
+                                                {row.name_last},{' '}
+                                                {row.name_first}{' '}
                                                 {row.doc_id == ''
                                                     ? ' '
                                                     : `(${row.doc_id})`}
@@ -237,8 +231,7 @@ export default function EventAttendance() {
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
                                                     checked={
-                                                        row.attendance
-                                                            .attendance_status ===
+                                                        row.attendance_status ===
                                                         Attendance.Present
                                                     }
                                                     onChange={() =>
@@ -256,8 +249,7 @@ export default function EventAttendance() {
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
                                                     checked={
-                                                        row.attendance
-                                                            .attendance_status ===
+                                                        row.attendance_status ===
                                                         Attendance.Absent_Excused
                                                     }
                                                     onChange={() =>
@@ -275,8 +267,7 @@ export default function EventAttendance() {
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
                                                     checked={
-                                                        row.attendance
-                                                            .attendance_status ===
+                                                        row.attendance_status ===
                                                         Attendance.Absent_Unexcused
                                                     }
                                                     onChange={() =>
@@ -294,9 +285,7 @@ export default function EventAttendance() {
                                         <td className="justify-self-end align-middle">
                                             <TextInput
                                                 label=""
-                                                defaultValue={
-                                                    row.attendance.note
-                                                }
+                                                defaultValue={row.note}
                                                 interfaceRef={`note_${row.user_id}`}
                                                 required={false}
                                                 length={500}

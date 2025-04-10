@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"net/url"
+	"strings"
 	"time"
 
 	"gorm.io/gorm/clause"
@@ -56,44 +57,72 @@ func (db *DB) DeleteAttendance(eventId, userId int, date string) error {
 	return nil
 }
 
-func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, classID, eventID int, date string) ([]models.EnrollmentAttendance, error) {
-	var enrollments []models.ProgramClassEnrollment
-	tx := db.WithContext(qryCtx.Ctx).Preload("User").Where("class_id = ?", classID)
+func (db *DB) GetEnrollmentsWithAttendanceForEvent(
+	qryCtx *models.QueryContext,
+	classID, eventID int,
+	date string,
+) ([]models.EnrollmentAttendance, error) {
+	baseQuery := `
+		FROM program_class_enrollments AS e
+		JOIN users AS u ON u.id = e.user_id
+		LEFT JOIN program_class_event_attendance AS a
+			ON a.user_id = e.user_id AND a.event_id = ? AND a.date = ?
+		WHERE e.class_id = ?`
 
-	if err := tx.Model(&models.ProgramClassEnrollment{}).Count(&qryCtx.Total).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	args := []any{eventID, date, classID}
+
+	if qryCtx.Search != "" {
+		searchTerm := "%" + strings.ToLower(qryCtx.Search) + "%"
+		baseQuery += ` AND (LOWER(u.name_first) LIKE ? OR LOWER(u.name_last) LIKE ? OR LOWER(u.doc_id) LIKE ?)`
+		args = append(args, searchTerm, searchTerm, searchTerm)
 	}
 
-	if err := tx.
-		Offset(qryCtx.CalcOffset()).
-		Limit(qryCtx.PerPage).
-		Find(&enrollments).
-		Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	var total int64
+	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&total).Error; err != nil {
+		return nil, err
+	}
+	qryCtx.Total = total
+
+	selectClause := `
+		SELECT
+			e.id AS enrollment_id,
+			e.class_id AS class_id,
+			e.enrollment_status AS enrollment_status,
+			u.id AS user_id,
+			u.username AS username,
+			u.name_first AS name_first,
+			u.name_last AS name_last,
+            u.doc_id AS doc_id,
+			a.id AS attendance_id,
+			a.event_id AS event_id,
+			a.date AS date,
+			a.attendance_status AS attendance_status,
+			a.note AS note`
+	finalQuery := selectClause + baseQuery
+
+	allowedOrderColumns := map[string]string{
+		"name_first": "u.name_first",
+		"name_last":  "u.name_last",
 	}
 
-	var attendanceRecords []models.ProgramClassEventAttendance
-	if err := db.WithContext(qryCtx.Ctx).
-		Where("event_id = ? AND date = ?", eventID, date).
-		Find(&attendanceRecords).
-		Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_class_event_attendance")
-	}
-
-	attendanceMap := make(map[uint]models.ProgramClassEventAttendance)
-	for _, att := range attendanceRecords {
-		attendanceMap[att.UserID] = att
-	}
-
-	var combined []models.EnrollmentAttendance
-	for _, enrollment := range enrollments {
-		ea := models.EnrollmentAttendance{
-			Enrollment: enrollment,
+	if dbColumn, ok := allowedOrderColumns[qryCtx.OrderBy]; ok {
+		orderDir := "ASC"
+		if qryCtx.Order == "DESC" {
+			orderDir = "DESC"
 		}
-		if att, ok := attendanceMap[enrollment.UserID]; ok {
-			ea.Attendance = &att
-		}
-		combined = append(combined, ea)
+		finalQuery += " ORDER BY " + dbColumn + " " + orderDir
+	} else {
+		finalQuery += " ORDER BY e.id ASC"
 	}
-	return combined, nil
+
+	finalQuery += " LIMIT ? OFFSET ?"
+	args = append(args, qryCtx.PerPage, qryCtx.CalcOffset())
+
+	var results []models.EnrollmentAttendance
+	if err := db.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }

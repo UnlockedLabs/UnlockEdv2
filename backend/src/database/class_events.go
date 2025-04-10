@@ -478,7 +478,8 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 
 	loc, err := time.LoadLocation(tz)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load timezone: %w", err)
+		logrus.Error("failed to load timezone")
+		return nil, err
 	}
 
 	var event models.ProgramClassEvent
@@ -517,7 +518,6 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		startTimeStr := occInLoc.Format("15:04")
 		endTimeStr := occInLoc.Add(duration).Format("15:04")
 		classTime := fmt.Sprintf("%s-%s", startTimeStr, endTimeStr)
-		fmt.Printf(">>>>> CLASS TIME >>>> : %s", classTime)
 
 		var attendances []models.ProgramClassEventAttendance
 		if err := db.WithContext(qryCtx.Ctx).
