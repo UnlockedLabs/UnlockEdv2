@@ -3,7 +3,10 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"net/url"
+	"strings"
 	"time"
+
+	"gorm.io/gorm/clause"
 )
 
 func (db *DB) GetAttendees(page, perPage int, params url.Values, classId int) ([]models.ProgramClassEventAttendance, error) {
@@ -29,19 +32,18 @@ func (db *DB) GetAttendees(page, perPage int, params url.Values, classId int) ([
 	return attendance, nil
 }
 
-func (db *DB) LogUserAttendance(eventId, userId int, date string) (*models.ProgramClassEventAttendance, error) {
-	if date == "" {
-		date = time.Now().Format("2006-01-02")
+func (db *DB) LogUserAttendance(attendance_params *models.ProgramClassEventAttendance) (*models.ProgramClassEventAttendance, error) {
+	if attendance_params.Date == "" {
+		attendance_params.Date = time.Now().Format("2006-01-02")
 	}
-	attendance := models.ProgramClassEventAttendance{
-		EventID: uint(eventId),
-		UserID:  uint(userId),
-		Date:    date,
-	}
-	if err := db.Create(&attendance).Error; err != nil {
+	err := db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},
+		DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note"}),
+	}).Create(&attendance_params).Error
+	if err != nil {
 		return nil, newCreateDBError(err, "class_event_attendance")
 	}
-	return &attendance, nil
+	return attendance_params, nil
 }
 
 func (db *DB) DeleteAttendance(eventId, userId int, date string) error {
@@ -53,4 +55,74 @@ func (db *DB) DeleteAttendance(eventId, userId int, date string) error {
 		return newDeleteDBError(err, "class_event_attendance")
 	}
 	return nil
+}
+
+func (db *DB) GetEnrollmentsWithAttendanceForEvent(
+	qryCtx *models.QueryContext,
+	classID, eventID int,
+	date string,
+) ([]models.EnrollmentAttendance, error) {
+	baseQuery := `
+		FROM program_class_enrollments AS e
+		JOIN users AS u ON u.id = e.user_id
+		LEFT JOIN program_class_event_attendance AS a
+			ON a.user_id = e.user_id AND a.event_id = ? AND a.date = ?
+		WHERE e.class_id = ?`
+
+	args := []any{eventID, date, classID}
+
+	if qryCtx.Search != "" {
+		searchTerm := "%" + strings.ToLower(qryCtx.Search) + "%"
+		baseQuery += ` AND (LOWER(u.name_first) LIKE ? OR LOWER(u.name_last) LIKE ? OR LOWER(u.doc_id) LIKE ?)`
+		args = append(args, searchTerm, searchTerm, searchTerm)
+	}
+
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	var total int64
+	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&total).Error; err != nil {
+		return nil, err
+	}
+	qryCtx.Total = total
+
+	selectClause := `
+		SELECT
+			e.id AS enrollment_id,
+			e.class_id AS class_id,
+			e.enrollment_status AS enrollment_status,
+			u.id AS user_id,
+			u.username AS username,
+			u.name_first AS name_first,
+			u.name_last AS name_last,
+            u.doc_id AS doc_id,
+			a.id AS attendance_id,
+			a.event_id AS event_id,
+			a.date AS date,
+			a.attendance_status AS attendance_status,
+			a.note AS note`
+	finalQuery := selectClause + baseQuery
+
+	allowedOrderColumns := map[string]string{
+		"name_first": "u.name_first",
+		"name_last":  "u.name_last",
+	}
+
+	if dbColumn, ok := allowedOrderColumns[qryCtx.OrderBy]; ok {
+		orderDir := "ASC"
+		if qryCtx.Order == "DESC" {
+			orderDir = "DESC"
+		}
+		finalQuery += " ORDER BY " + dbColumn + " " + orderDir
+	} else {
+		finalQuery += " ORDER BY e.id ASC"
+	}
+
+	finalQuery += " LIMIT ? OFFSET ?"
+	args = append(args, qryCtx.PerPage, qryCtx.CalcOffset())
+
+	var results []models.EnrollmentAttendance
+	if err := db.WithContext(qryCtx.Ctx).Raw(finalQuery, args...).Scan(&results).Error; err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }

@@ -13,6 +13,7 @@ func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 		{"GET /api/class-enrollments", srv.handleIndexProgramClassEnrollments, true, axx},
 		{"GET /api/class-enrollments/{id}", srv.handleGetProgramClassEnrollments, false, axx},
 		{"GET /api/programs/{id}/classes/enrollments", srv.handleGetEnrollmentsForProgram, false, axx},
+		{"GET /api/class-enrollments/{class_id}/all", srv.handleGetAllClassEnrollments, true, axx},
 		{"POST /api/class-enrollments/{class_id}/enroll/{user_id}", srv.handleEnrollUser, false, axx},
 		{"DELETE /api/class-enrollments/{id}", srv.handleDeleteProgramClassEnrollments, true, axx},
 		{"PATCH /api/class-enrollments/{id}", srv.handleUpdateProgramClassEnrollments, true, axx},
@@ -58,11 +59,11 @@ func (srv *Server) handleGetUserEnrollments(w http.ResponseWriter, r *http.Reque
 	if !srv.canViewUserData(r, id) {
 		return newUnauthorizedServiceError()
 	}
-	enrollemnts, err := srv.Db.GetProgramClassEnrollmentsForUser(&args)
+	enrollments, err := srv.Db.GetProgramClassEnrollmentsForUser(&args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writePaginatedResponse(w, http.StatusOK, enrollemnts, args.IntoMeta())
+	return writePaginatedResponse(w, http.StatusOK, enrollments, args.IntoMeta())
 }
 
 func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -148,4 +149,20 @@ func (srv *Server) handleGetProgramClassEnrollmentsAttendance(w http.ResponseWri
 	log.info("class enrollment attendance fetched")
 	paginationData := models.NewPaginationInfo(page, perPage, total)
 	return writePaginatedResponse(w, http.StatusOK, attendance, paginationData)
+}
+func (srv *Server) handleGetAllClassEnrollments(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class enrollment ID")
+	}
+	page, perPage := srv.getPaginationInfo(r)
+	total, enrollments, err := srv.Db.GetEnrollmentsForClass(page, perPage, classID)
+	if err != nil {
+		log.add("class_enrollment_id", classID)
+		return newDatabaseServiceError(err)
+	}
+	log.add("total", total)
+	log.info("complete class enrollment fetched")
+	paginationData := models.NewPaginationInfo(page, perPage, total)
+	return writePaginatedResponse(w, http.StatusOK, enrollments, paginationData)
 }

@@ -7,6 +7,8 @@ import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
 import ProgramClassEnrollment from '@/Pages/ProgramClassEnrollment';
+import ClassEvents from '@/Pages/ClassEvents';
+import EventAttendance from '@/Pages/EventAttendance';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -47,6 +49,16 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             path: 'programs/:id/class-enrollment/:class_id',
             element: <ProgramClassEnrollment />,
             handle: { title: 'Add Resident' }
+        },
+        {
+            path: 'programs/:id/class/:class_id/events',
+            element: <ClassEvents />,
+            handle: { title: 'Class Events' }
+        },
+        {
+            path: 'programs/:id/class/:class_id/events/:event_id/attendance/:date',
+            element: <EventAttendance />,
+            handle: { title: 'Event Attendance' }
         }
     ],
     AdminRoles,

@@ -80,8 +80,8 @@ func (user *User) CreateTempPassword() string {
 	return string(b)
 }
 
-func (user *User) GetTraits() map[string]interface{} {
-	return map[string]interface{}{
+func (user *User) GetTraits() map[string]any {
+	return map[string]any{
 		"username":    user.Username,
 		"role":        user.Role,
 		"facility_id": user.FacilityID,
