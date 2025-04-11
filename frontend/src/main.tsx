@@ -13,7 +13,16 @@ ReactDOM.createRoot(document.querySelector('#root')!).render(
                 value={{
                     fetcher: (url) =>
                         // eslint-disable-next-line
-                        window.axios.get(url).then((res) => res.data)
+                        fetch(url, {
+                            credentials: 'include',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                Accept: 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        }).then((res) => {
+                            return res.json();
+                        })
                 }}
             >
                 <ThemeProvider>

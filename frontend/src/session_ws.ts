@@ -36,9 +36,9 @@ export class WebsocketSession {
     }
 
     private handleFocusChange = (): void => {
-        if (this.socket && document.hidden){
+        if (this.socket && document.hidden) {
             this.tearDownConnection(false);
-        }else if (!this.socket) {
+        } else if (!this.socket) {
             this.createConnection();
         }
     };
@@ -46,7 +46,7 @@ export class WebsocketSession {
     private handleVisibilityChange = (): void => {
         if (!document.hidden && !this.socket) {
             this.createConnection();
-        } else if (document.hidden && this.socket){
+        } else if (document.hidden && this.socket) {
             this.tearDownConnection(false);
         }
     };
@@ -89,7 +89,7 @@ export class WebsocketSession {
             console.warn('WebSocket closed:', event.reason);
             this.socket = null;
             setTimeout(() => {
-                if (!document.hidden){
+                if (!document.hidden) {
                     this.createConnection();
                 }
             }, this.reconnectInterval);
@@ -175,12 +175,6 @@ export class WebsocketSession {
             console.error('Error parsing WebSocket message:', error);
         }
         return {} as Partial<WsMsg>;
-    }
-}
-
-declare global {
-    interface Window {
-        websocket?: WebsocketSession;
     }
 }
 

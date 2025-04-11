@@ -1,104 +1,113 @@
-import axios, { AxiosError, AxiosResponse } from 'axios';
-import {
-    ServerResponse,
-    ServerResponseMany,
-    ServerResponseOne
-} from '@/common';
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-axios.defaults.headers.common.Accept = 'application/json';
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-
-axios.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
-        const status = error?.response?.status;
-        let message = 'An error occurred';
-        if (status === 401 || status === 403) {
-            message = 'Unauthorized';
-        } else if (error?.response?.data) {
-            message = (error.response.data as ServerResponse<null>).message;
-        }
-
-        const customError = new Error(message) as Error & {
-            response: ServerResponse<null>;
-        };
-        return Promise.reject(customError);
-    }
-);
+import { ServerResponse, ServerResponseMany } from '@/common';
 
 class API {
-    private static getReturnData<T>(resp: AxiosResponse): ServerResponse<T> {
-        const respData = resp.data as ServerResponse<T>;
+    private static defaultHeaders: HeadersInit = {
+        'X-Requested-With': 'XMLHttpRequest',
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+    };
 
+    private static async fetchWithHandling<T>(
+        method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+        url: string,
+        body?: unknown
+    ): Promise<ServerResponse<T>> {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            const resp = await fetch('/api/' + url, {
+                method,
+                headers: API.defaultHeaders,
+                credentials: 'include',
+                body: body ? JSON.stringify(body) : undefined,
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+
+            const json = (await resp.json()) as ServerResponse<T>;
+
+            if (!resp.ok) {
+                let message = 'An error occurred';
+                if (resp.status === 401 || resp.status === 403) {
+                    message = 'Unauthorized';
+                } else if (json?.message) {
+                    message = json.message;
+                }
+
+                const error = new Error(message) as Error & {
+                    response: ServerResponse<null>;
+                };
+                error.response = {
+                    type: 'one',
+                    success: false,
+                    data: null,
+                    message
+                };
+                throw error;
+            }
+
+            return API.getReturnData<T>(json);
+        } catch (err) {
+            const error = err as Error & {
+                response?: ServerResponse<null>;
+            };
+            return {
+                type: 'one',
+                success: false,
+                message: error.message || 'An error occurred',
+                data: {} as T
+            };
+        }
+    }
+
+    private static getReturnData<T>(
+        respData: ServerResponse<T>
+    ): ServerResponse<T> {
         if (Array.isArray(respData.data)) {
             const manyResp = respData as ServerResponseMany<T>;
             return {
                 type: 'many',
                 success: true,
-                data: respData.data,
-                message: respData.message ?? 'Request successful',
+                data: manyResp.data,
+                message: manyResp.message ?? 'Request successful',
                 meta: manyResp.meta ?? {
                     total: 0,
                     current_page: 1,
                     last_page: 1,
-                    per_page: respData.data.length
+                    per_page: manyResp.data.length
                 }
-            } as ServerResponseMany<T>;
+            };
         } else {
             return {
                 type: 'one',
                 success: true,
                 data: respData.data,
                 message: respData.message ?? 'Request successful'
-            } as ServerResponseOne<T>;
-        }
-    }
-
-    public static async request<T, D>(
-        method: 'get' | 'post' | 'put' | 'patch' | 'delete',
-        url: string,
-        data?: D
-    ): Promise<ServerResponse<T>> {
-        try {
-            const resp = await axios({
-                method,
-                url: '/api/' + url,
-                data
-            });
-            return API.getReturnData<T>(resp);
-        } catch (error) {
-            const err = error as Error & { response?: ServerResponse<null> };
-            return {
-                type: 'one',
-                success: false,
-                message: err.message ?? 'An error occurred',
-                data: null
-            } as ServerResponse<T>;
+            };
         }
     }
 
     public static get<T>(url: string): Promise<ServerResponse<T>> {
-        return API.request<T, null>('get', url);
+        return API.fetchWithHandling<T>('GET', url);
     }
 
     public static post<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
-        return API.request<T, D>('post', url, data);
+        return API.fetchWithHandling<T>('POST', url, data);
     }
 
     public static put<T, D>(url: string, data: D): Promise<ServerResponse<T>> {
-        return API.request<T, D>('put', url, data);
+        return API.fetchWithHandling<T>('PUT', url, data);
     }
 
     public static patch<T, D>(
         url: string,
         data: D
     ): Promise<ServerResponse<T>> {
-        return API.request<T, D>('patch', url, data);
+        return API.fetchWithHandling<T>('PATCH', url, data);
     }
 
     public static delete<T>(url: string): Promise<ServerResponse<T>> {
-        return API.request<T, null>('delete', url);
+        return API.fetchWithHandling<T>('DELETE', url);
     }
 }
 

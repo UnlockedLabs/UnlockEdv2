@@ -1,8 +1,8 @@
-import { AxiosInstance } from 'axios';
+import WebsocketSession from '@/session_ws';
 
 declare global {
     interface Window {
-        axios: AxiosInstance;
+        websocket?: WebsocketSession;
     }
 
     interface HTMLDialogElement {

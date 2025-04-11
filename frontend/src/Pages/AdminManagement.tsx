@@ -19,7 +19,6 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
 import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
-import { AxiosError } from 'axios';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { useToast } from '@/Context/ToastCtx';
@@ -82,7 +81,7 @@ export default function AdminManagement() {
 
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
-        AxiosError
+        Error
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=${user?.role}`
     );

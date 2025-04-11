@@ -134,7 +134,7 @@ func seedTestData(db *gorm.DB) {
 	}
 	classes, err := createFacilityPrograms(db)
 	if err != nil {
-		log.Fatalf("Failed to create facility programs: %v", err)
+		log.Printf("Failed to create facility programs: %v", err)
 	}
 	for idx := range users {
 		log.Printf("Creating user %s", users[idx].Username)
@@ -165,7 +165,7 @@ func seedTestData(db *gorm.DB) {
 	}
 	for idx := range courses {
 		if err := db.Create(&courses[idx]).Error; err != nil {
-			log.Fatalf("Failed to create course: %v", err)
+			log.Printf("Failed to create course: %v", err)
 		}
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
@@ -460,7 +460,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 			programs[i].Description = programClassDescriptions[programs[i].Name]
 			programs[i].IsActive = true
 			if err := db.Create(&programs[i]).Error; err != nil {
-				log.Fatalf("Failed to create program: %v", err)
+				log.Printf("Failed to create program: %v", err)
 			}
 			facilityProgram := models.FacilitiesPrograms{
 				ProgramID:    programs[i].ID,
@@ -468,7 +468,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 				ProgramOwner: ownerNames[rand.Intn(len(ownerNames))],
 			}
 			if err := db.Create(&facilityProgram).Error; err != nil {
-				log.Fatalf("Failed to create facility program: %v", err)
+				log.Printf("Failed to create facility program: %v", err)
 			}
 			for range rand.Intn(4) {
 				programType := models.ProgramType{
@@ -476,7 +476,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 					ProgramID:   programs[i].ID,
 				}
 				if err := db.Create(&programType).Error; err != nil {
-					log.Fatalf("Failed to create program type: %v", err)
+					log.Printf("Failed to create program type: %v", err)
 				}
 				creditType := models.ProgramCreditType{
 					CreditType: creditTypes[rand.Intn(len(creditTypes))],

@@ -1,5 +1,4 @@
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import {
     OpenContentResponse,
     ResidentEngagementProfile,
@@ -84,7 +83,7 @@ const ResidentProfile = () => {
         error,
         mutate: mutateResident,
         isLoading
-    } = useSWR<ServerResponseOne<ResidentEngagementProfile>, AxiosError>(
+    } = useSWR<ServerResponseOne<ResidentEngagementProfile>, Error>(
         `/api/users/${residentId}/profile`
     );
     const [resident, setResident] = useState<ValidResident | null>();
@@ -92,7 +91,7 @@ const ResidentProfile = () => {
     const [page, setPage] = useState(1);
     const { data: activityHistory, error: activityHistoryError } = useSWR<
         ServerResponseMany<UserAccountHistoryResponse>,
-        AxiosError
+        Error
     >(`/api/users/${residentId}/account-history?page=${page}&per_page=5`);
 
     const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(

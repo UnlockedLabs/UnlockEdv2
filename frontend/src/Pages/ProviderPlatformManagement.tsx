@@ -1,5 +1,4 @@
 import ProviderCard from '@/Components/ProviderCard';
-import { AxiosError } from 'axios';
 import {
     OidcClient,
     ProviderPlatform,
@@ -44,7 +43,7 @@ export default function ProviderPlatformManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponseMany<ProviderPlatform>, AxiosError>(
+    } = useSWR<ServerResponseMany<ProviderPlatform>, Error>(
         `/api/provider-platforms`
     );
     const providerData = providers?.data ?? [];

@@ -10,7 +10,6 @@ import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { useDebounceValue } from 'usehooks-ts';
-import { AxiosError } from 'axios';
 import FavoriteCard from '@/Components/FavoriteCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import ToggleView from '@/Components/ToggleView';
@@ -34,7 +33,7 @@ export default function FavoritesPage() {
 
     const { data, error, mutate, isLoading } = useSWR<
         ServerResponseMany<OpenContentItem>,
-        AxiosError
+        Error
     >(
         user
             ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}${sortQuery}`

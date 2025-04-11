@@ -11,7 +11,6 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
-import { AxiosError } from 'axios';
 import { useState } from 'react';
 import useSWR from 'swr';
 import ToggleView from '@/Components/ToggleView';
@@ -38,7 +37,7 @@ export default function HelpfulLinks() {
         mutate: mutateHelpfulFavs,
         isLoading,
         error
-    } = useSWR<ServerResponseOne<HelpfulLinkAndSort>, AxiosError>(
+    } = useSWR<ServerResponseOne<HelpfulLinkAndSort>, Error>(
         `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}${sortQuery}`
     );
     function updateFavorites() {

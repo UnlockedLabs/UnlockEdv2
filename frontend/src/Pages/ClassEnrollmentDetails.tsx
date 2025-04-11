@@ -1,7 +1,6 @@
 import { useRef, useState, startTransition } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
@@ -40,7 +39,7 @@ export default function ClassEnrollmentDetails() {
 
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>,
-        AxiosError
+        Error
     >(
         `/api/programs/${id}/classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
     );
