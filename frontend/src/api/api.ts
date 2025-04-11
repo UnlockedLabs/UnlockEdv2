@@ -13,12 +13,16 @@ class API {
         body?: unknown
     ): Promise<ServerResponse<T>> {
         try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
             const resp = await fetch('/api/' + url, {
                 method,
                 headers: API.defaultHeaders,
                 credentials: 'include',
-                body: body ? JSON.stringify(body) : undefined
+                body: body ? JSON.stringify(body) : undefined,
+                signal: controller.signal
             });
+            clearTimeout(timeout);
 
             const json = (await resp.json()) as ServerResponse<T>;
 
