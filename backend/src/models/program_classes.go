@@ -95,7 +95,6 @@ type ProgramCompletion struct {
 
 func (ProgramCompletion) TableName() string { return "program_completions" }
 
-
 type ProgramClassesHistory struct {
 	ID           uint        `json:"id"`
 	ParentRefID  uint        `json:"parent_ref_id"`
@@ -106,4 +105,3 @@ type ProgramClassesHistory struct {
 }
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
-

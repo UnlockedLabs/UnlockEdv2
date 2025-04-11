@@ -171,13 +171,15 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                 <thead>{renderTableHeader(true)}</thead>
                 <tbody>{renderTableBody(enrolledStudents, true)}</tbody>
             </table>
-            <button
-                type="button"
-                className="btn btn-outline mb-2"
-                onClick={() => setShowOthers(!showOthers)}
-            >
-                {showOthers ? 'Hide Other' : 'Show Other'}
-            </button>
+            {otherStatusStudents.length > 0 && (
+                <button
+                    type="button"
+                    className="btn btn-outline mb-2"
+                    onClick={() => setShowOthers(!showOthers)}
+                >
+                    {showOthers ? 'Hide Other' : 'Show Other'}
+                </button>
+            )}
 
             {showOthers && (
                 <>
