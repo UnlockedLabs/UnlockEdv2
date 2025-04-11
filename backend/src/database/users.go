@@ -17,9 +17,6 @@ func calcOffset(page, perPage int) int {
 }
 
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
-	if args.Search != "" {
-		return db.SearchCurrentUsers(args, role)
-	}
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("facility_id = ?", args.FacilityID)
 	switch role {
 	case "system_admin":
@@ -30,6 +27,9 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		tx = tx.Where("role = 'facility_admin'")
 	case "student":
 		tx = tx.Where("role = 'student'")
+	}
+	if args.Search != "" {
+		return db.SearchCurrentUsers(tx, args, role)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
@@ -150,16 +150,8 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 	return users, nil
 }
 
-func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
+func (db *DB) SearchCurrentUsers(tx *gorm.DB, ctx *models.QueryContext, role string) ([]models.User, error) {
 	likeSearch := ctx.SearchQuery()
-	tx := db.WithContext(ctx.Ctx).Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
-	switch role {
-	case "admin":
-		tx = tx.Where("role IN ('admin', 'system_admin')")
-	case "student":
-		tx = tx.Where("role = 'student'")
-	}
-
 	if likeSearch != "" {
 		_, err := strconv.Atoi(ctx.Search)
 		if err == nil {

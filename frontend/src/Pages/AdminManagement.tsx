@@ -1,4 +1,4 @@
-import { ForwardedRef, useRef, useState } from 'react';
+import { ForwardedRef, useRef, useState, startTransition } from 'react';
 import useSWR from 'swr';
 import {
     ArrowPathRoundedSquareIcon,
@@ -61,7 +61,11 @@ export default function AdminManagement() {
     const [tempPassword, setTempPassword] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
-
+    const handleSetSearchTerm = (newTerm: string) => {
+        startTransition(() => {
+            setSearchTerm(newTerm);
+        });
+    };
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const { toaster } = useToast();
     const {
@@ -113,11 +117,6 @@ export default function AdminManagement() {
         toaster('Password Successfully Reset', ToastState.success);
     };
 
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPageQuery(1);
-    };
-
     function handleCancelModal(ref: ForwardedRef<HTMLDialogElement>) {
         closeModal(ref);
         setTargetUser(null);
@@ -150,7 +149,10 @@ export default function AdminManagement() {
                     <div className="flex flex-row gap-x-2">
                         <SearchBar
                             searchTerm={searchTerm}
-                            changeCallback={handleChange}
+                            changeCallback={(newTerm) => {
+                                handleSetSearchTerm(newTerm);
+                                setPageQuery(1);
+                            }}
                         />
                         <DropdownControl
                             label="order by"

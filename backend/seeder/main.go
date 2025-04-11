@@ -404,8 +404,8 @@ func getRandomProgram(programMap map[string]models.ProgType) string {
 
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
-	fundingTypes := []models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
-	creditTypes := []models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
+	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
+	creditTypes := [4]models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
 	programMap := map[string]models.ProgType{
 		"Anger Management":          models.Therapeutic,
 		"Substance Abuse Treatment": models.MentalHealth,
@@ -470,59 +470,61 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 			if err := db.Create(&facilityProgram).Error; err != nil {
 				log.Fatalf("Failed to create facility program: %v", err)
 			}
-			programType := models.ProgramType{
-				ProgramType: programMap[programs[i].Name],
-				ProgramID:   programs[i].ID,
-			}
-			if err := db.Create(&programType).Error; err != nil {
-				log.Fatalf("Failed to create program type: %v", err)
-			}
-			creditType := models.ProgramCreditType{
-				CreditType: creditTypes[rand.Intn(len(creditTypes))],
-				ProgramID:  programs[i].ID,
-			}
-			if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
-				log.Fatalf("Failed to create program credit type: %v", err)
-			}
-			class := models.ProgramClass{
-				Capacity:       capacities[rand.Intn(len(capacities))],
-				Name:           programs[i].Name,
-				InstructorName: instructorNames[rand.Intn(len(instructorNames))],
-				Description:    programClassDescriptions[programs[i].Name],
-				Status:         models.Scheduled, //this will change during new class development
-				StartDt:        time.Now().Add(14 * 24 * time.Hour),
-				EndDt:          &endDates[rand.Intn(len(endDates))],
-				FacilityID:     facilities[idx].ID,
-				ProgramID:      programs[i].ID,
-			}
-			if err := db.Create(&class).Error; err != nil {
-				log.Fatalf("Failed to create program class: %v", err)
-			}
-			log.Println("Creating program class ", class.ID)
-			toReturn = append(toReturn, class)
+			for range rand.Intn(4) {
+				programType := models.ProgramType{
+					ProgramType: programMap[programs[i].Name],
+					ProgramID:   programs[i].ID,
+				}
+				if err := db.Create(&programType).Error; err != nil {
+					log.Fatalf("Failed to create program type: %v", err)
+				}
+				creditType := models.ProgramCreditType{
+					CreditType: creditTypes[rand.Intn(len(creditTypes))],
+					ProgramID:  programs[i].ID,
+				}
+				if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
+					log.Printf("Failed to create program credit type: %v", err)
+				}
+				class := models.ProgramClass{
+					Capacity:       capacities[rand.Intn(len(capacities))],
+					Name:           programs[i].Name,
+					InstructorName: instructorNames[rand.Intn(len(instructorNames))],
+					Description:    programClassDescriptions[programs[i].Name],
+					Status:         models.Scheduled, //this will change during new class development
+					StartDt:        time.Now().Add(14 * 24 * time.Hour),
+					EndDt:          &endDates[rand.Intn(len(endDates))],
+					FacilityID:     facilities[idx].ID,
+					ProgramID:      programs[i].ID,
+				}
+				if err := db.Create(&class).Error; err != nil {
+					log.Printf("Failed to create program class: %v", err)
+				}
+				log.Println("Creating program class ", class.ID)
+				toReturn = append(toReturn, class)
 
-			randDays := []rrule.Weekday{}
-			days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
-			for range rand.Intn(3) {
-				randDays = append(randDays, days[rand.Intn(len(days))])
-			}
-			rule, err := rrule.NewRRule(rrule.ROption{
-				Freq:      rrule.WEEKLY,
-				Dtstart:   startDate,
-				Until:     endDate,
-				Byweekday: randDays,
-			})
-			if err != nil {
-				log.Fatalf("Failed to create rrule: %v", err)
-			}
-			event := models.ProgramClassEvent{
-				ClassID:        class.ID,
-				RecurrenceRule: rule.String(),
-				Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
-				Duration:       "1h0m0s",
-			}
-			if err := db.Create(&event).Error; err != nil {
-				log.Fatalf("Failed to create event: %v", err)
+				randDays := []rrule.Weekday{}
+				days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
+				for range rand.Intn(3) {
+					randDays = append(randDays, days[rand.Intn(len(days))])
+				}
+				rule, err := rrule.NewRRule(rrule.ROption{
+					Freq:      rrule.WEEKLY,
+					Dtstart:   startDate,
+					Until:     endDate,
+					Byweekday: randDays,
+				})
+				if err != nil {
+					log.Printf("Failed to create rrule: %v", err)
+				}
+				event := models.ProgramClassEvent{
+					ClassID:        class.ID,
+					RecurrenceRule: rule.String(),
+					Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
+					Duration:       "1h0m0s",
+				}
+				if err := db.Create(&event).Error; err != nil {
+					log.Printf("Failed to create event: %v", err)
+				}
 			}
 		}
 	}

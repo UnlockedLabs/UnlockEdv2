@@ -499,7 +499,7 @@ export enum ProgClassStatus {
     SCHEDULED = 'Scheduled',
     ACTIVE = 'Active',
     PENDING = 'Pending',
-    CANCELED = 'Canceled',
+    CANCELLED = 'Cancelled',
     COMPLETED = 'Completed',
     PAUSED = 'Paused'
 }
@@ -733,7 +733,7 @@ export interface ClassEnrollment {
     updated_at: string;
     class_id: number;
     user_id: number;
-    enrollment_status: string;
+    enrollment_status: EnrollmentStatus;
     name_full: string;
     doc_id: string;
     completion_dt?: string;

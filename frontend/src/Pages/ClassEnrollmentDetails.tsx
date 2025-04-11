@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, startTransition } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { AxiosError } from 'axios';
@@ -9,8 +9,7 @@ import {
     ClassEnrollment,
     EnrollmentStatus,
     ProgramCompletion,
-    ServerResponseMany,
-    ServerResponseOne
+    ServerResponseMany
 } from '@/common';
 import API from '@/api/api';
 import { TextModalType, TextOnlyModal } from '@/Components/modals';
@@ -37,6 +36,7 @@ export default function ClassEnrollmentDetails() {
     const [changeStatusValue, setChangeStatusValue] = useState<StatusChange>();
     const confirmStateChangeModal = useRef<HTMLDialogElement>(null);
     const completionDetailsModal = useRef<HTMLDialogElement>(null);
+    const [showOthers, setShowOthers] = useState(false);
 
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>,
@@ -44,7 +44,11 @@ export default function ClassEnrollmentDetails() {
     >(
         `/api/programs/${id}/classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
     );
-
+    const handleSearchTermChange = (newTerm: string) => {
+        startTransition(() => {
+            setSearchTerm(newTerm);
+        });
+    };
     const enrollments = data?.data ?? [];
     const meta = data?.meta;
 
@@ -92,9 +96,9 @@ export default function ClassEnrollmentDetails() {
     const handleShowCompletionDetails = async (enrollment: ClassEnrollment) => {
         const response = (await API.get<ProgramCompletion>(
             `users/${enrollment.user_id}/program-completions?class_id=${enrollment.class_id}`
-        )) as ServerResponseOne<ProgramCompletion>;
-        if (response.success) {
-            setCompletionDetails(response.data);
+        )) as ServerResponseMany<ProgramCompletion>;
+        if (response.success && response.data.length > 0) {
+            setCompletionDetails(response.data[0]);
             if (completionDetailsModal.current) {
                 completionDetailsModal.current.showModal();
             }
@@ -117,7 +121,7 @@ export default function ClassEnrollmentDetails() {
     };
 
     const isEditable = (enrollment: ClassEnrollment) =>
-        enrollment.enrollment_status === 'Enrolled' &&
+        enrollment.enrollment_status === EnrollmentStatus.Enrolled &&
         !selectedResidents.includes(enrollment.user_id);
 
     const areAllSelected =
@@ -126,8 +130,21 @@ export default function ClassEnrollmentDetails() {
             selectedResidents.length;
 
     const canToggle = (e: ClassEnrollment): boolean => {
-        return e.completion_dt === '' && e.enrollment_status === 'Enrolled';
+        return (
+            e.completion_dt === '' &&
+            e.enrollment_status === EnrollmentStatus.Enrolled
+        );
     };
+
+    // limited options for the user to select so we cannot pass in the EnrollmentStatus enum
+    enum EnrollmentStatusOptions {
+        Enrolled = 'Enrolled',
+        Cancelled = 'Cancelled',
+        Completed = 'Completed',
+        Withdrawn = 'Incomplete: Withdrawn',
+        Dropped = 'Incomplete: Dropped',
+        'Failed To Complete' = 'Incomplete: Failed to Complete'
+    }
 
     return (
         <div className="px-5 pb-4">
@@ -137,7 +154,7 @@ export default function ClassEnrollmentDetails() {
                         <SearchBar
                             searchTerm={searchTerm}
                             changeCallback={(term) => {
-                                setSearchTerm(term);
+                                handleSearchTermChange(term);
                                 setPage(1);
                             }}
                         />
@@ -151,7 +168,9 @@ export default function ClassEnrollmentDetails() {
                                 'Resident Name (A-Z)': 'name_full asc',
                                 'Resident Name (Z-A)': 'name_full desc',
                                 'Resident ID (Asc)': 'doc_id asc',
-                                'Resident ID (Desc)': 'doc_id desc'
+                                'Resident ID (Desc)': 'doc_id desc',
+                                'Enrollment Date (Asc)': 'start_dt asc',
+                                'Enrollment Date (Desc)': 'start_dt desc'
                             }}
                         />
                         <DropdownControl
@@ -169,7 +188,7 @@ export default function ClassEnrollmentDetails() {
                                 'Failed To Complete':
                                     'incomplete: failed to complete',
                                 Transferred: 'incomplete: transferred',
-                                Canceled: 'incomplete: canceled'
+                                Canceled: 'incomplete: cancelled'
                             }}
                         />
                     </div>
@@ -197,7 +216,7 @@ export default function ClassEnrollmentDetails() {
                 {!isLoading && !error && (
                     <ClassEnrollmentDetailsTable
                         enrollments={enrollments}
-                        statusOptions={EnrollmentStatus}
+                        statusOptions={EnrollmentStatusOptions}
                         selectedResidents={selectedResidents}
                         toggleSelection={toggleSelection}
                         handleSelectAll={handleSelectAll}
@@ -208,6 +227,8 @@ export default function ClassEnrollmentDetails() {
                         handleShowCompletionDetails={
                             handleShowCompletionDetails
                         }
+                        showOthers={showOthers}
+                        setShowOthers={setShowOthers}
                     />
                 )}
                 <div className="flex justify-center m-2">

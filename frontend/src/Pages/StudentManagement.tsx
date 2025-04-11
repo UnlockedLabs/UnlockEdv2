@@ -1,4 +1,10 @@
-import { ForwardedRef, useEffect, useRef, useState } from 'react';
+import {
+    ForwardedRef,
+    startTransition,
+    useEffect,
+    useRef,
+    useState
+} from 'react';
 import useSWR from 'swr';
 
 import {
@@ -46,6 +52,7 @@ export default function StudentManagement() {
     const [tempPassword, setTempPassword] = useState<string>('');
     const showUserPassword = useRef<HTMLDialogElement>(null);
     const { toaster } = useToast();
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 300);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
@@ -62,6 +69,11 @@ export default function StudentManagement() {
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
     );
+    const handleSearchTermChange = (newTerm: string) => {
+        startTransition(() => {
+            setSearchTerm(newTerm);
+        });
+    };
     const checkResponseForDelete = useCheckResponse({
         mutate: mutate,
         refModal: deleteUserModal
@@ -132,13 +144,6 @@ export default function StudentManagement() {
         setTempPassword('');
     }
 
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPageQuery(1);
-    };
-
-    const navigate = useNavigate();
-
     const handleShowUserProfileClick = (id: number) => {
         navigate(`/residents/${id}`);
     };
@@ -150,7 +155,10 @@ export default function StudentManagement() {
                     <div className="flex flex-row gap-x-2">
                         <SearchBar
                             searchTerm={searchTerm}
-                            changeCallback={handleChange}
+                            changeCallback={(newSearch) => {
+                                handleSearchTermChange(newSearch);
+                                setPageQuery(1);
+                            }}
                         />
                         <DropdownControl
                             label="order by"

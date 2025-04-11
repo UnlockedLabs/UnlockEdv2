@@ -127,7 +127,19 @@ func userIsSystemAdmin(r *http.Request) bool {
 
 func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return slices.Contains(models.AdminRoles, claims.Role) || claims.UserID == uint(id)
+	if claims.canSwitchFacility() || claims.UserID == uint(id) {
+		// early return
+		return true
+	}
+	user, err := srv.Db.GetUserByID(uint(id))
+	if err != nil {
+		return false
+	}
+	// we know they are not a system or dept admin by now
+	if user.FacilityID != claims.FacilityID {
+		return false
+	}
+	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {

@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useLoaderData, useParams } from 'react-router-dom';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import {
     ArchiveBoxIcon,
@@ -13,7 +13,6 @@ import {
     Program,
     Class,
     SelectedClassStatus,
-    ServerResponseOne,
     ServerResponseMany
 } from '@/common';
 import { AxiosError } from 'axios';
@@ -31,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function ProgramOverview() {
     const { id } = useParams<{ id: string }>();
+    const program = useLoaderData() as Program;
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
@@ -45,12 +45,11 @@ export default function ProgramOverview() {
         []
     );
     const navigate = useNavigate();
-
-    const { data: programResp, error: programError } = useSWR<
-        ServerResponseOne<Program>,
-        AxiosError
-    >(`/api/programs/${id}`);
-    const program = programResp?.data;
+    const handleSetSearchTerm = (newTerm: string) => {
+        startTransition(() => {
+            setSearchTerm(newTerm);
+        });
+    };
 
     const {
         data: classesResp,
@@ -95,7 +94,7 @@ export default function ProgramOverview() {
         setAbleToArchiveClasses(ableToArchive);
     }, [selectedClasses, classes]);
 
-    if (programError || classesError) {
+    if (classesError) {
         return <Error />;
     }
     if (classes === undefined) return <br />;
@@ -125,11 +124,6 @@ export default function ProgramOverview() {
                 : [...prev, classId]
         );
     }
-
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPage(1);
-    };
 
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
@@ -168,7 +162,7 @@ export default function ProgramOverview() {
 
     return (
         <div className="p-4 px-5">
-            <h1 className=" mb-2">{program?.name}</h1>
+            <h1 className=" mb-2">{program.name}</h1>
             <p className="mb-4 body body-small ">{program?.description}</p>
             <div className="flex gap-4 mb-8 ">
                 <div className="flex flex-col gap-4 h-[250px]">
@@ -198,7 +192,10 @@ export default function ProgramOverview() {
                 <div className="flex flex-row gap-x-2">
                     <SearchBar
                         searchTerm={searchTerm}
-                        changeCallback={handleChange}
+                        changeCallback={(newTerm) => {
+                            handleSetSearchTerm(newTerm);
+                            setPage(1);
+                        }}
                     />
                     <DropdownControl
                         label="order by"

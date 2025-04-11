@@ -6,16 +6,19 @@ import (
 	"fmt"
 )
 
-func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId, classId int) (*models.ProgramCompletion, error) {
-	content := models.ProgramCompletion{}
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramCompletion{}).Preload("User").Where("user_id = ? AND program_class_id = ?", userId, classId)
+func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
+	content := make([]models.ProgramCompletion, 0)
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramCompletion{}).Preload("User").Where("user_id = ?", userId)
+	if classId != nil {
+		tx = tx.Where("program_class_id = ?", *classId)
+	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
 	if err := tx.Find(&content).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
-	return &content, nil
+	return content, nil
 }
 
 func (db *DB) GetProgramClassEnrollmentsByID(id int) (*models.ProgramClassEnrollment, error) {
@@ -182,13 +185,17 @@ type EnrollmentDetails struct {
 
 func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, progId, classId int, status string) ([]EnrollmentDetails, error) {
 	content := make([]EnrollmentDetails, 0, args.PerPage)
-	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ' ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
+	search := args.SearchQuery()
+	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ', ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").
 		Joins("JOIN program_classes c ON pse.class_id = c.id AND c.deleted_at IS NULL").
 		Joins("JOIN users u ON pse.user_id = u.id AND u.deleted_at IS NULL").
 		Joins("LEFT JOIN program_completions pc ON pc.user_id = pse.user_id AND pc.program_class_id = ?", classId).
 		Where("pse.class_id = ?", classId)
 	if status != "" {
 		tx = tx.Where("pse.enrollment_status ILIKE ?", status)
+	}
+	if search != "" {
+		tx = tx.Where("u.name_last ILIKE ? OR u.name_first ILIKE ? OR u.doc_id ILIKE ?", search, search, search)
 	}
 
 	if err := tx.Count(&args.Total).Error; err != nil {

@@ -1,4 +1,4 @@
-import { getProgramData, getProgramTitle } from '@/routeLoaders';
+import { getProgram, getProgramData, getProgramTitle } from '@/routeLoaders';
 import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
 import { FeatureAccess, TitleHandler } from '@/common';
@@ -32,6 +32,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'programs/:id',
+            loader: getProgram,
             element: <ProgramOverviewDashboard />,
             handle: { title: 'Program Overview Dashboard' }
         },

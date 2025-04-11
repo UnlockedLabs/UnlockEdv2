@@ -1,5 +1,6 @@
 import {
     ClassLoaderData,
+    EnrollmentStatus,
     FilterProgramClassEnrollments,
     ServerResponseMany,
     User
@@ -39,9 +40,18 @@ export default function AddClassEnrollments() {
 
     const credentialed_users = data?.data ?? [];
     const meta = data?.meta;
+    const getEnrollmentCount = (): number => {
+        return (
+            classInfo?.enrollments?.filter(
+                (enrollment) =>
+                    enrollment.enrollment_status === EnrollmentStatus.Enrolled
+            ).length ?? 0
+        );
+    };
+
     const remainingCapacity =
         (classInfo?.capacity ?? 0) -
-        (classInfo?.enrollments?.length ?? 0) -
+        getEnrollmentCount() -
         selectedUsers.length;
 
     if (remainingCapacity < 0) {
@@ -69,7 +79,6 @@ export default function AddClassEnrollments() {
                 : [...prev, userId]
         );
     }
-
     const handleSubmit = async () => {
         if (selectedUsers.length === 0) {
             setErrorMessage('Please select at least one user.');
@@ -85,9 +94,9 @@ export default function AddClassEnrollments() {
         navigate(`/programs/${id}`);
     };
 
-    const allAreSelected = credentialed_users.every((user) =>
-        selectedUsers.includes(user.id)
-    );
+    const allAreSelected =
+        credentialed_users.length > 0 &&
+        credentialed_users.every((user) => selectedUsers.includes(user.id));
     const handleSelectAll = () => {
         setSelectedUsers(
             selectedUsers.length === credentialed_users.length
@@ -110,8 +119,7 @@ export default function AddClassEnrollments() {
                             {classInfo?.name ?? ''}
                         </span>
                         <span className="text-left text-lg font-bold badge badge-lg">
-                            {classInfo?.enrollments?.length ?? 0} /{' '}
-                            {classInfo?.capacity}
+                            {getEnrollmentCount()} / {classInfo?.capacity}
                         </span>
                         <span className="text-left text-lg font-bold badge badge-lg">
                             {remainingCapacity}
@@ -137,12 +145,12 @@ export default function AddClassEnrollments() {
                     }}
                 >
                     <div
-                        className="w-9/12 justify-items-start"
+                        className="w-2/3 justify-items-start"
                         style={{ overflowX: 'clip' }}
                     >
                         <table className="table-2 card p-6">
                             <thead>
-                                <tr className="grid grid-cols-4">
+                                <tr className="grid grid-cols-5 justify-items-start">
                                     <th className="justify-self-start">
                                         <div className="flex flex-col cols-span-1 gap-2">
                                             <label className="text-sm">
@@ -158,10 +166,10 @@ export default function AddClassEnrollments() {
                                             </span>
                                         </div>
                                     </th>
-                                    <th className="h-14 pr-4">Last Name</th>
-                                    <th className="h-14 pr-4">First Name</th>
+                                    <th className="h-14 pr-4">Name</th>
                                     <th className="h-14 pr-4">Resident ID</th>
-                                    <th className="h-14 pr-4"></th>
+                                    <th className="h-14 pr-4">Username</th>
+                                    <th className="h-14 pr-4" />
                                 </tr>
                             </thead>
                             <tbody>
@@ -176,7 +184,7 @@ export default function AddClassEnrollments() {
                                                     onClick={() =>
                                                         handleToggleRow(user.id)
                                                     }
-                                                    className={`card h-16 w-full grid-cols-4 justify-items-center cursor-pointer ${isSelected ? 'gray-1' : ''}`}
+                                                    className={`card h-16 w-full grid-cols-5 justify-items-start cursor-pointer ${isSelected ? 'gray-1' : ''}`}
                                                 >
                                                     <td className="pr-2 justify-self-start pl-4">
                                                         <input
@@ -195,16 +203,18 @@ export default function AddClassEnrollments() {
                                                     </td>
                                                     <td className="text-center pr-4">
                                                         <label>
+                                                            {user.name_last}
+                                                            {', '}
                                                             {user.name_first}
                                                         </label>
                                                     </td>
                                                     <td className="text-center pr-4">
-                                                        {user.name_last}
-                                                    </td>
-                                                    <td className="text-center pr-4">
                                                         {user.doc_id}
                                                     </td>
-                                                    <td className="text-center pr-4"></td>
+                                                    <td className="text-center pr-4">
+                                                        {user.username}
+                                                    </td>
+                                                    <td className="text-center pr-4" />
                                                 </tr>
                                             );
                                         })

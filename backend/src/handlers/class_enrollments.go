@@ -10,9 +10,9 @@ import (
 )
 
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.Feature(models.ProgramAccess)
 	return []routeDef{
-		{"GET /api/programs/{id}/classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, false, axx},
+		{"GET /api/programs/{id}/classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, true, axx},
 		{"POST /api/programs/{id}/classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx},
 		{"DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, true, axx},
 		{"PATCH /api/programs/{id}/classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx},
@@ -26,19 +26,24 @@ func (srv *Server) handleGetUserProgramCompletions(w http.ResponseWriter, r *htt
 	if err != nil {
 		return newInvalidIdServiceError(err, "User ID")
 	}
-	classId, err := strconv.Atoi(r.URL.Query().Get("class_id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "Class ID")
-	}
-	args := srv.getQueryContext(r)
 	if !srv.canViewUserData(r, userId) {
 		return newUnauthorizedServiceError()
 	}
-	enrollemnt, err := srv.Db.GetProgramCompletionsForUser(&args, userId, classId)
+	var classID *int
+	classId := r.URL.Query().Get("class_id")
+	if classId != "" {
+		classIdInt, err := strconv.Atoi(classId)
+		if err != nil {
+			return newInvalidIdServiceError(err, "Class ID")
+		}
+		classID = &classIdInt
+	}
+	args := srv.getQueryContext(r)
+	enrollemnt, err := srv.Db.GetProgramCompletionsForUser(&args, userId, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, enrollemnt)
+	return writePaginatedResponse(w, http.StatusOK, enrollemnt, args.IntoMeta())
 }
 
 func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
