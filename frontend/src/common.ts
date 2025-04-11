@@ -933,3 +933,29 @@ export interface ResidentEngagementProfile {
     top_libraries: OpenContentResponse[];
     recent_videos: OpenContentResponse[];
 }
+
+export interface UserAccountHistoryResponse {
+    action: UserAccountHistoryAction;
+    created_at: Date;
+    user_id: number;
+    user_username: string;
+    admin_username?: string;
+    facility_name?: string;
+    program_classes_history_id?: number;
+    program_classes_history?: ProgramClassesHistory;
+}
+
+export interface ProgramClassesHistory {
+    id: number;
+    parent_ref_id: number;
+    table_name: string; // renamed from NameTable for consistency
+    before_update: Record<string, unknown>; // using Record to represent JSON structure
+    after_update: Record<string, unknown>; // using Record to represent JSON structure
+    created_at: Date;
+}
+
+export type UserAccountHistoryAction =
+    | 'account_creation'
+    | 'facility_transfer'
+    | 'set_password'
+    | 'reset_password';

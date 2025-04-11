@@ -23,6 +23,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx},
 		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
+		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
 	}
 }
 
@@ -101,6 +102,7 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 * TODO: transactional
 **/
 func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log sLog) error {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	reqForm := struct {
 		User      models.User `json:"user"`
 		Providers []int       `json:"provider_platforms"`
@@ -150,6 +152,16 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	}{
 		User:         reqForm.User,
 		TempPassword: tempPw,
+	}
+	if reqForm.User.Role == models.Student {
+		accountCreation := models.NewUserAccountHistory(reqForm.User.ID, models.AccountCreation, &claims.UserID, nil, nil)
+		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), accountCreation); err != nil {
+			return newCreateRequestServiceError(err)
+		}
+		facilityTransfer := models.NewUserAccountHistory(reqForm.User.ID, models.FacilityTransfer, &claims.UserID, nil, &claims.FacilityID)
+		if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), facilityTransfer); err != nil {
+			return newCreateRequestServiceError(err)
+		}
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
 	if !srv.isTesting(r) {
@@ -273,6 +285,10 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 			}
 		}
 	}
+	resetPassword := models.NewUserAccountHistory(temp.UserID, models.ResetPassword, &claims.UserID, nil, nil)
+	if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), resetPassword); err != nil {
+		return newCreateRequestServiceError(err)
+	}
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
@@ -294,6 +310,22 @@ func validateUser(user *models.User) string {
 		return "alphanum"
 	}
 	return ""
+}
+
+func (srv *Server) handleGetUserAccountHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
+	args := srv.getQueryContext(r)
+	if !srv.canViewUserData(r, id) {
+		return newUnauthorizedServiceError()
+	}
+	history, err := srv.Db.GetUserAccountHistory(&args, uint(id))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writePaginatedResponse(w, http.StatusOK, history, args.IntoMeta())
 }
 
 func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -354,5 +386,10 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		return newInternalServerServiceError(err, "error updating facility in kratos")
 	}
 	log.info("successfully transferred resident")
+	transFacilityID := uint(transRequest.TransFacilityID)
+	facilityTransfer := models.NewUserAccountHistory(uint(transRequest.UserID), models.FacilityTransfer, &args.UserID, nil, &transFacilityID)
+	if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), facilityTransfer); err != nil {
+		return newCreateRequestServiceError(err)
+	}
 	return writeJsonResponse(w, int(http.StatusNoContent), "successfully transferred resident")
 }

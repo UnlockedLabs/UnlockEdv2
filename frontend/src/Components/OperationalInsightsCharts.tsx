@@ -172,24 +172,19 @@ const OperationalInsights = () => {
                     </div>
 
                     <div className="card card-row-padding overflow-hidden">
-                        <h1 className="">Peak Login Times</h1>
-                        <div className=" items-stretch gap-12 px-10 pt-10 ">
-                            <div className="w-full h-[500px] overflow-visible">
-                                <ResponsiveContainer
-                                    className="w-full h-full overflow-visible"
-                                    width="100%"
-                                    height="100%"
-                                    debounce={500}
-                                >
-                                    <EngagementRateGraph
-                                        data={
-                                            metrics?.data.peak_login_times || []
-                                        }
-                                        viewType="peakLogin"
-                                    />
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
+                        <h2>Peak Login Times</h2>
+                        <ResponsiveContainer
+                            className="w-full h-full overflow-visible"
+                            width="100%"
+                            height="250px"
+                            debounce={500}
+                            maxHeight={250}
+                        >
+                            <EngagementRateGraph
+                                data={metrics?.data.peak_login_times || []}
+                                viewType="peakLogin"
+                            />
+                        </ResponsiveContainer>
                     </div>
                 </>
             )}
