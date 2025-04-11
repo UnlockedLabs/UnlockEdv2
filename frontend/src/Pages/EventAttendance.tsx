@@ -42,7 +42,7 @@ export default function EventAttendance() {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const searchQuery = useDebounceValue(searchTerm, 300);
-    const { data, error, isLoading } = useSWR<
+    const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
         AxiosError
     >(
@@ -52,21 +52,50 @@ export default function EventAttendance() {
     const meta = data?.meta;
     const [rows, setRows] = useState<LocalRowData[]>([]);
 
+    const [modifiedRows, setModifiedRows] = useState<
+        Record<number, LocalRowData>
+    >({});
+
     useEffect(() => {
         if (data?.data) {
-            const localData = data.data.map((item) => ({
-                selected: false,
-                user_id: item.user_id,
-                doc_id: item.doc_id ?? '',
-                name_last: item.name_last,
-                name_first: item.name_first,
-                attendance_status: item.attendance_status as Attendance,
-                note: item.note ?? ''
-            }));
-            setRows(localData);
+            const mergedRows = data.data.map((item) => {
+                return modifiedRows[item.user_id]
+                    ? { ...item, ...modifiedRows[item.user_id] }
+                    : {
+                          selected: false,
+                          user_id: item.user_id,
+                          doc_id: item.doc_id ?? '',
+                          name_last: item.name_last,
+                          name_first: item.name_first,
+                          attendance_status:
+                              item.attendance_status as Attendance,
+                          note: item.note ?? ''
+                      };
+            });
+            setRows(mergedRows);
         }
-    }, [data]);
+    }, [data, modifiedRows]);
 
+    function handleNoteChange(user_id: number, newNote: string) {
+        const currentRow = rows.find((r) => r.user_id === user_id);
+        setModifiedRows((prev) => ({
+            ...prev,
+            [user_id]: {
+                ...(currentRow ?? {}),
+                ...(prev[user_id] ?? {}),
+                selected: true,
+                note: newNote
+            }
+        }));
+
+        setRows((prevRows) =>
+            prevRows.map((row) =>
+                row.user_id === user_id
+                    ? { ...row, selected: true, note: newNote }
+                    : row
+            )
+        );
+    }
     const {
         register,
         handleSubmit,
@@ -131,6 +160,7 @@ export default function EventAttendance() {
 
     async function onSubmit() {
         await submitAttendanceForRows(rows);
+        void mutate();
         navigate(`/programs/${id}/class/${class_id}/events`);
     }
     const handleSearch = (newTerm: string) => {
@@ -138,6 +168,16 @@ export default function EventAttendance() {
         setPageQuery(1);
     };
 
+    //function handleNoteChange(user_id: number, newNote: string) {
+    //    setRows((prevRows) =>
+    //        prevRows.map((row) =>
+    //            row.user_id === user_id
+    //                ? { ...row, selected: true, note: newNote }
+    //                : row
+    //        )
+    //    );
+    //}
+    //
     const anyRowSelected = rows.some((row) => row.selected);
     return (
         <div className="p-4 space-y-4">
@@ -291,6 +331,12 @@ export default function EventAttendance() {
                                                 length={500}
                                                 errors={errors}
                                                 register={register}
+                                                onChange={(e) =>
+                                                    handleNoteChange(
+                                                        row.user_id,
+                                                        e.target.value
+                                                    )
+                                                }
                                             />
                                         </td>
                                     </tr>
