@@ -6,7 +6,6 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import { CourseCatalogResponse, ServerResponse, ViewType } from '@/common';
 import useSWR from 'swr';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { AxiosError } from 'axios';
 // TO DO: make it paginated
 
 export default function CourseCatalog() {
@@ -19,7 +18,7 @@ export default function CourseCatalog() {
     const [order, setOrder] = useState('asc');
     const { data, error } = useSWR<
         ServerResponse<CourseCatalogResponse>,
-        AxiosError
+        Error
     >(`/api/users/${user.id}/catalog?search=${searchTerm}&order=${order}`);
     const courseData = data?.data as CourseCatalogResponse[];
 

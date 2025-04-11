@@ -9,7 +9,6 @@ import TopContentList from '@/Components/dashboard/TopContentList';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import { ExpandableCardGrid } from '@/Components/dashboard';
 import LibraryCard from '@/Components/LibraryCard';
-import { AxiosError } from 'axios';
 import { useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -22,11 +21,11 @@ export default function AdminLayer1() {
     const [timeFilter, setTimeFilter] = useState('7');
     const { data: facilityLibraries } = useSWR<
         ServerResponseMany<OpenContentItem>,
-        AxiosError
+        Error
     >(`api/libraries/activity?days=${timeFilter}&per_page=5`);
     const { data: favoritedLibraries } = useSWR<
         ServerResponseMany<OpenContentItem>,
-        AxiosError
+        Error
     >(`api/libraries?order_by=most_popular&per_page=5`);
     function navigateToOpenContent() {
         navigate('/knowledge-center-management/libraries');

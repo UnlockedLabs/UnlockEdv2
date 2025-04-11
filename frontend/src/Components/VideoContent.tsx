@@ -10,7 +10,6 @@ import {
 import DropdownControl from '../Components/inputs/DropdownControl';
 import Pagination from '../Components/Pagination';
 import { useDebounceValue } from 'usehooks-ts';
-import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation } from 'react-router-dom';
@@ -61,7 +60,7 @@ export default function VideoContent() {
     };
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
-        AxiosError
+        Error
     >(
         `/api/videos?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&visibility=${adminWithStudentView() ? UserRole.Student : user?.role}`
     );

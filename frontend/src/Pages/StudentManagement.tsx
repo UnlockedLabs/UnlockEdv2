@@ -21,7 +21,6 @@ import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
 import {
     AddUserModal,
@@ -58,7 +57,7 @@ export default function StudentManagement() {
 
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
-        AxiosError
+        Error
     >(
         `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student`
     );

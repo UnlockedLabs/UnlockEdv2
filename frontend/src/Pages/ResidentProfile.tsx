@@ -1,5 +1,4 @@
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import {
     OpenContentResponse,
     ResidentEngagementProfile,
@@ -16,7 +15,7 @@ const ResidentProfile = () => {
     const { user_id } = useParams<{ user_id: string }>();
     const { data, error, isLoading } = useSWR<
         ServerResponseOne<ResidentEngagementProfile>,
-        AxiosError
+        Error
     >(`/api/users/${user_id}/profile`);
     const metrics = data?.data;
 

@@ -1,6 +1,5 @@
 import { useAuth } from '@/useAuth';
 import { useState } from 'react';
-import { AxiosError } from 'axios';
 import StatsCard from '@/Components/StatsCard';
 import DarkGreenPill from '@/Components/pill-labels/DarkGreenPill';
 import TealPill from '@/Components/pill-labels/TealPill';
@@ -20,7 +19,7 @@ export default function MyProgress() {
     }
     const { data, isLoading, error } = useSWR<
         ServerResponse<UserCoursesInfo>,
-        AxiosError
+        Error
     >(`/api/users/${user.id}/courses?${sortCourses}`);
 
     const courseData = data?.data

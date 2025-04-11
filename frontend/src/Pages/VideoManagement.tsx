@@ -14,7 +14,6 @@ import {
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
-import { AxiosError } from 'axios';
 import VideoCard from '@/Components/VideoCard';
 import { useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
@@ -77,7 +76,7 @@ export default function VideoManagement() {
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
-        AxiosError
+        Error
     >(
         `/api/videos?page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
     );

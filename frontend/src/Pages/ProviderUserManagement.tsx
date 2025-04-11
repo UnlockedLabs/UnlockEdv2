@@ -19,7 +19,6 @@ import ConfirmImportAllUsersForm from '@/Components/forms/ConfirmImportAllUsersF
 import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
-import { AxiosError } from 'axios';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useToast } from '@/Context/ToastCtx';
 
@@ -48,10 +47,7 @@ export default function ProviderUserManagement() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
     const { toaster } = useToast();
-    const { data, mutate } = useSWR<
-        ServerResponseMany<ProviderUser>,
-        AxiosError
-    >(
+    const { data, mutate } = useSWR<ServerResponseMany<ProviderUser>, Error>(
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${searchQuery[0]}&clear_cache=${cache}`
     );
     const providerData = data?.data ?? [];

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import { Facility, LoginMetrics, ServerResponseOne } from '@/common';
 import StatsCard from './StatsCard';
 import { ResponsiveContainer } from 'recharts';
@@ -15,7 +14,7 @@ const OperationalInsights = () => {
 
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseOne<LoginMetrics>,
-        AxiosError
+        Error
     >(
         `/api/login-metrics?facility=${facility}&days=${days}&reset=${resetCache}`
     );

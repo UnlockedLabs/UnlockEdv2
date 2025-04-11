@@ -12,7 +12,6 @@ import {
     ServerResponseOne,
     ServerResponseMany
 } from '@/common';
-import { AxiosError } from 'axios';
 import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
@@ -44,7 +43,7 @@ export default function ProgramOverview() {
 
     const { data: programResp, error: programError } = useSWR<
         ServerResponseOne<Program>,
-        AxiosError
+        Error
     >(`/api/programs/${id}`);
     const program = programResp?.data;
 
@@ -52,7 +51,7 @@ export default function ProgramOverview() {
         data: classesResp,
         error: classesError,
         mutate: mutateClasses
-    } = useSWR<ServerResponseMany<Class>, AxiosError>(
+    } = useSWR<ServerResponseMany<Class>, Error>(
         `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
