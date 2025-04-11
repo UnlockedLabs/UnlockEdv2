@@ -495,7 +495,7 @@ export enum CreditType {
     PARTICIPATION = 'Participation'
 }
 
-export enum PrgClassStatus {
+export enum ProgClassStatus {
     SCHEDULED = 'Scheduled',
     ACTIVE = 'Active',
     PENDING = 'Pending',
@@ -696,6 +696,7 @@ export interface Class {
     capacity: number;
     credit_hours: number;
     archived_at: string | null;
+    enrollments?: ClassEnrollment[];
     events: ProgramClassEvent[];
 }
 
@@ -712,7 +713,47 @@ export enum SelectedClassStatus {
     Active = 'Active',
     Paused = 'Paused',
     Completed = 'Completed',
-    Canceled = 'Cancelled'
+    Cancelled = 'Cancelled'
+}
+
+export enum EnrollmentStatus {
+    Enrolled = 'Enrolled',
+    Cancelled = 'Cancelled',
+    Completed = 'Completed',
+    Pending = 'Pending',
+    Withdrawn = 'Incomplete: Withdrawn',
+    Dropped = 'Incomplete: Dropped',
+    'Failed To Complete' = 'Incomplete: Failed to Complete',
+    Transfered = 'Incomplete: Transfered'
+}
+
+export interface ClassEnrollment {
+    id: number;
+    created_at: string;
+    updated_at: string;
+    class_id: number;
+    user_id: number;
+    enrollment_status: EnrollmentStatus;
+    name_full: string;
+    doc_id: string;
+    completion_dt?: string;
+}
+
+export interface ProgramCompletion {
+    id: number;
+    program_class_id: number;
+    facility_name: string;
+    credit_type: string;
+    admin_email: string;
+    program_owner?: string;
+    program_name: string;
+    program_id: number;
+    program_class_name: string;
+    program_class_start_dt: string;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string;
+    user?: User;
 }
 
 export enum ClassStatusOptions {
@@ -726,7 +767,7 @@ export enum ClassStatusOptions {
 export const ClassStatusMap = {
     [ClassStatusOptions.Complete]: SelectedClassStatus.Completed,
     [ClassStatusOptions.Pause]: SelectedClassStatus.Paused,
-    [ClassStatusOptions.Cancel]: SelectedClassStatus.Canceled,
+    [ClassStatusOptions.Cancel]: SelectedClassStatus.Cancelled,
     [ClassStatusOptions.Schedule]: SelectedClassStatus.Scheduled,
     [ClassStatusOptions.Active]: SelectedClassStatus.Active
 };

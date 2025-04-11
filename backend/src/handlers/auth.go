@@ -24,6 +24,7 @@ type (
 	contextKey string
 	Claims     struct {
 		Username      string                 `json:"username"`
+		Email         string                 `json:"email"`
 		UserID        uint                   `json:"user_id"`
 		PasswordReset bool                   `json:"password_reset"`
 		Role          models.UserRole        `json:"role"`
@@ -51,6 +52,7 @@ func (srv *Server) registerAuthRoutes() []routeDef {
 func (claims *Claims) getTraits() map[string]any {
 	return map[string]any{
 		"username":       claims.Username,
+		"email":          claims.Email,
 		"facility_id":    claims.FacilityID,
 		"role":           claims.Role,
 		"password_reset": claims.PasswordReset,
@@ -71,6 +73,7 @@ func claimsFromUser(user *models.User) *Claims {
 		Role:       user.Role,
 		FacilityID: user.FacilityID,
 		KratosID:   user.KratosID,
+		Email:      user.Email,
 	}
 }
 
@@ -124,7 +127,19 @@ func userIsSystemAdmin(r *http.Request) bool {
 
 func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	return slices.Contains(models.AdminRoles, claims.Role) || claims.UserID == uint(id)
+	if claims.canSwitchFacility() || claims.UserID == uint(id) {
+		// early return
+		return true
+	}
+	user, err := srv.Db.GetUserByID(uint(id))
+	if err != nil {
+		return false
+	}
+	// we know they are not a system or dept admin by now
+	if user.FacilityID != claims.FacilityID {
+		return false
+	}
+	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
@@ -240,6 +255,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				}
 				claims := &Claims{
 					Username:      user.Username,
+					Email:         user.Email,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
 					FacilityName:  facilityName,

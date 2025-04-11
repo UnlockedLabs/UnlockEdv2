@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useLoaderData, useParams } from 'react-router-dom';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import {
     ArchiveBoxIcon,
@@ -13,7 +13,6 @@ import {
     Program,
     Class,
     SelectedClassStatus,
-    ServerResponseOne,
     ServerResponseMany
 } from '@/common';
 import { AxiosError } from 'axios';
@@ -31,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function ProgramOverview() {
     const { id } = useParams<{ id: string }>();
+    const program = useLoaderData() as Program;
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
@@ -45,12 +45,11 @@ export default function ProgramOverview() {
         []
     );
     const navigate = useNavigate();
-
-    const { data: programResp, error: programError } = useSWR<
-        ServerResponseOne<Program>,
-        AxiosError
-    >(`/api/programs/${id}`);
-    const program = programResp?.data;
+    const handleSetSearchTerm = (newTerm: string) => {
+        startTransition(() => {
+            setSearchTerm(newTerm);
+        });
+    };
 
     const {
         data: classesResp,
@@ -95,23 +94,24 @@ export default function ProgramOverview() {
         setAbleToArchiveClasses(ableToArchive);
     }, [selectedClasses, classes]);
 
-    if (programError || classesError) {
+    if (classesError) {
         return <Error />;
     }
+    if (classes === undefined) return <br />;
 
-    const nonArchivedClasses = classes.filter(
+    const nonArchivedClasses = classes?.filter(
         (program_class) => !isArchived(program_class)
     );
 
     const allSelected =
-        selectedClasses.length === nonArchivedClasses.length &&
-        nonArchivedClasses.length > 0;
+        selectedClasses.length === nonArchivedClasses?.length &&
+        nonArchivedClasses?.length > 0;
 
     const filteredClasses = includeArchived ? classes : nonArchivedClasses;
 
     function handleToggleAll(checked: boolean) {
         if (checked) {
-            setSelectedClasses(nonArchivedClasses.map((s) => s.id));
+            setSelectedClasses(nonArchivedClasses?.map((s) => s.id) ?? []);
         } else {
             setSelectedClasses([]);
         }
@@ -125,21 +125,16 @@ export default function ProgramOverview() {
         );
     }
 
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPage(1);
-    };
-
     const handleSetPerPage = (val: number) => {
         setPerPage(val);
         setPage(1);
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
 
-    const handleNavigateEnrollment = () => {
+    const handleNavigateEnrollmentDetails = () => {
         if (selectedClasses.length === 1) {
             navigate(
-                `/programs/${program?.id}/class-enrollment/${selectedClasses[0]}/`
+                `/programs/${program?.id}/classes/${selectedClasses[0]}/enrollments`
             );
         }
     };
@@ -167,7 +162,7 @@ export default function ProgramOverview() {
 
     return (
         <div className="p-4 px-5">
-            <h1 className=" mb-2">{program?.name}</h1>
+            <h1 className=" mb-2">{program.name}</h1>
             <p className="mb-4 body body-small ">{program?.description}</p>
             <div className="flex gap-4 mb-8 ">
                 <div className="flex flex-col gap-4 h-[250px]">
@@ -197,7 +192,10 @@ export default function ProgramOverview() {
                 <div className="flex flex-row gap-x-2">
                     <SearchBar
                         searchTerm={searchTerm}
-                        changeCallback={handleChange}
+                        changeCallback={(newTerm) => {
+                            handleSetSearchTerm(newTerm);
+                            setPage(1);
+                        }}
                     />
                     <DropdownControl
                         label="order by"
@@ -227,10 +225,10 @@ export default function ProgramOverview() {
                         <button
                             hidden={selectedClasses.length !== 1}
                             className="button flex items-center"
-                            onClick={handleNavigateEnrollment}
+                            onClick={handleNavigateEnrollmentDetails}
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
-                            Enroll Students
+                            View Enrollment Details
                         </button>
                     )}
                     {selectedClasses.length > 0 ? (
@@ -245,7 +243,9 @@ export default function ProgramOverview() {
                     ) : (
                         <button
                             className="button flex items-center"
-                            onClick={() => navigate(`/programs/${id}/class`)}
+                            onClick={() =>
+                                navigate(`/programs/${id}/classes/new`)
+                            }
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
                             Add Class
@@ -269,11 +269,11 @@ export default function ProgramOverview() {
                                     }
                                 />
                             </th>
-                            <th>Facility Name</th>
+                            <th>Class Name</th>
                             <th>Instructor Name</th>
                             <th>Start Date</th>
                             <th>End Date</th>
-                            <th className="w-[200px]">Enrollment</th>
+                            <th className="w-[200px]">Enrollments</th>
                             <th className="w-[150px]">Status</th>
                         </tr>
                     </thead>
@@ -322,13 +322,13 @@ export default function ProgramOverview() {
                                                 }
                                                 onClick={() => {
                                                     navigate(
-                                                        `/programs/${id}/class/${program_class.id}`
+                                                        `/programs/${id}/classes/${program_class.id}`
                                                     );
                                                 }}
                                             />
                                         </div>
                                     </td>
-                                    <td>{program_class.facility_name}</td>
+                                    <td>{program_class.name}</td>
                                     <td>{program_class.instructor_name}</td>
                                     <td>
                                         {new Date(

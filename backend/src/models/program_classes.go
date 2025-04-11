@@ -33,9 +33,11 @@ type ProgramClass struct {
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 
-	Program  *Program            `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
-	Facility *Facility           `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
-	Events   []ProgramClassEvent `json:"events" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
+	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Facility     *Facility                `json:"facility" gorm:"foreignKey:FacilityID;references:ID"`
+	Events       []ProgramClassEvent      `json:"events" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	FacilityProg *FacilitiesPrograms      `json:"facility_program" gorm:"foreignKey:ProgramID;references:ProgramID"`
 }
 
 func (ProgramClass) TableName() string { return "program_classes" }
@@ -46,9 +48,9 @@ meaning they will need to attend the ClassEvents for that class: tracked by Clas
 */
 type ProgramClassEnrollment struct {
 	DatabaseFields
-	ClassID          uint   `json:"class_id" gorm:"not null"`
-	UserID           uint   `json:"user_id" gorm:"not null"`
-	EnrollmentStatus string `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
+	ClassID          uint                    `json:"class_id" gorm:"not null"`
+	UserID           uint                    `json:"user_id" gorm:"not null"`
+	EnrollmentStatus ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
 
 	User  *User         `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	Class *ProgramClass `json:"class" gorm:"foreignKey:ClassID;references:ID"`
@@ -62,6 +64,38 @@ type ProgramClassDetail struct {
 	Enrolled     int    `json:"enrolled"`
 }
 
+type ProgramEnrollmentStatus string
+
+const (
+	Enrolled                             ProgramEnrollmentStatus = "Enrolled"
+	EnrollmentCancelled                  ProgramEnrollmentStatus = "Cancelled"
+	EnrollmentCompleted                  ProgramEnrollmentStatus = "Completed"
+	EnrollmentPending                    ProgramEnrollmentStatus = "Pending"
+	EnrollmentIncompleteWithdrawn        ProgramEnrollmentStatus = "Incomplete: Withdrawn"
+	EnrollmentIncompleteDropped          ProgramEnrollmentStatus = "Incomplete: Dropped"
+	EnrollmentIncompleteFailedToComplete ProgramEnrollmentStatus = "Incomplete: Failed to Complete"
+	EnrollmentIncompleteTransfered       ProgramEnrollmentStatus = "Incomplete: Transfered"
+)
+
+type ProgramCompletion struct {
+	DatabaseFields
+	UserID              uint      `json:"user_id" gorm:"not null"`
+	ProgramClassID      uint      `json:"program_class_id" gorm:"not null"`
+	FacilityName        string    `json:"facility_name" gorm:"not null"`
+	CreditType          string    `json:"credit_type" gorm:"not null"`
+	AdminEmail          string    `json:"admin_email" gorm:"not null"`
+	ProgramOwner        string    `json:"program_owner" gorm:"not null"`
+	ProgramName         string    `json:"program_name" gorm:"not null"`
+	ProgramID           uint      `json:"program_id" gorm:"not null"`
+	ProgramClassName    string    `json:"program_class_name"`
+	ProgramClassStartDt time.Time `json:"program_class_start_dt"`
+
+	User *User `json:"user" gorm:"foreignKey:UserID;references:ID"`
+}
+
+func (ProgramCompletion) TableName() string { return "program_completions" }
+
+
 type ProgramClassesHistory struct {
 	ID           uint        `json:"id"`
 	ParentRefID  uint        `json:"parent_ref_id"`
@@ -72,3 +106,4 @@ type ProgramClassesHistory struct {
 }
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
+

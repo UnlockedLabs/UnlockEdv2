@@ -251,6 +251,7 @@ func getProgramClass(facilityId uint) map[string]any {
 		Status:         models.Scheduled, //this will change during new class development
 		StartDt:        time.Now().Add(14 * 24 * time.Hour),
 		EndDt:          &endDt,
+		Enrollments:    []models.ProgramClassEnrollment{},
 	}
 	form["program_id"] = programID
 	return form

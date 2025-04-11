@@ -2,112 +2,111 @@
   {
     "name_first": "Dr. Opal Murphy DDS",
     "name_last": "Agnes Bailey",
+    "doc_id": "123456789",
     "email": "cedrick.donnelly@example.org",
     "role": "student",
     "created_at": "2024-04-09T18:55:27.000000Z",
     "updated_at": "2024-04-09T18:55:27.000000Z",
     "username": "RichardSchoen13",
-    "password_reset": true,
     "facility_id": 1
   },
   {
     "name_first": "Cindy Murphy I",
     "name_last": "Ahmed Parker",
     "email": "trycia.jenkins@example.com",
+    "doc_id": "133456789",
     "role": "student",
     "created_at": "2024-04-09T18:55:33.000000Z",
     "updated_at": "2024-04-09T22:17:17.000000Z",
     "username": "MeaganDouglas13",
-    "password_reset": false,
     "facility_id": 3
   },
   {
     "name_first": "Mr. Garett Willms",
     "name_last": "Aracely McLaughlin",
     "email": "katrina98@example.org",
+    "doc_id": "133456780",
     "role": "student",
     "created_at": "2024-04-09T18:55:48.000000Z",
     "updated_at": "2024-04-09T21:57:50.000000Z",
     "username": "ClaraFrami10",
-    "password_reset": false,
     "facility_id": 4
   },
   {
     "name_first": "Rebeka Gleichner",
     "name_last": "Ardith Becker",
     "email": "ygulgowski@example.net",
+    "doc_id": "133456787",
     "role": "student",
     "created_at": "2024-04-09T18:55:45.000000Z",
     "updated_at": "2024-04-09T18:55:45.000000Z",
     "username": "OpheliaNienow13",
-    "password_reset": false,
     "facility_id": 1
   },
   {
     "name_first": "Miss Loyce Borer",
     "name_last": "Arely King",
     "email": "gustave59@example.org",
+    "doc_id": "133456797",
     "role": "student",
     "created_at": "2024-04-09T18:55:27.000000Z",
     "updated_at": "2024-04-09T18:55:27.000000Z",
     "username": "OrvalKoelpin12",
-    "password_reset": false,
     "facility_id": 1
   },
   {
     "name_first": "Keaton Waters",
     "name_last": "Ashleigh Kunde Jr.",
     "email": "smorar@example.com",
+    "doc_id": "143456797",
     "role": "student",
     "created_at": "2024-04-09T18:55:27.000000Z",
     "updated_at": "2024-04-09T18:55:27.000000Z",
     "username": "LavadaLittel12",
-    "password_reset": true,
     "facility_id": 4
   },
   {
     "name_first": "Eliseo Reichert",
     "name_last": "Earline Ruecker",
     "email": "rbarton@example.net",
+    "doc_id": "244456797",
     "role": "student",
     "created_at": "2024-04-09T18:55:42.000000Z",
     "updated_at": "2024-04-09T18:55:42.000000Z",
     "username": "JulietFriesen13",
-    "password_reset": false,
     "facility_id": 5
   },
   {
     "name_first": "Santino Kautzer",
     "name_last": "Elwyn Kreiger Jr.",
     "email": "alexandre.bergstrom@example.org",
+    "doc_id": "144456797",
     "role": "student",
     "created_at": "2024-04-09T18:55:28.000000Z",
     "updated_at": "2024-04-09T18:55:28.000000Z",
     "username": "HeidiVonRueden14",
-    "password_reset": true,
     "facility_id": 3
   },
   {
     "name_first": "Raina Upton",
     "name_last": "Euna Halvorson",
     "email": "grimes.olin@example.org",
+    "doc_id": "145456897",
     "role": "student",
     "created_at": "2024-04-09T18:55:40.000000Z",
     "updated_at": "2024-04-09T18:55:40.000000Z",
     "username": "AshleeGaylord13",
-    "password_reset": false,
     "facility_id": 1
   },
   {
     "name_first": "Darla Fragle",
     "name_last": "Deana Traits",
     "email": "darla.fragle@example.org",
+    "doc_id": "145456797",
     "role": "student",
     "created_at": "2024-04-09T18:55:40.000000Z",
     "updated_at": "2024-04-09T18:55:40.000000Z",
     "username": "darlafragle13",
-    "password_reset": false,
     "facility_id": 1
   }
-
 ]

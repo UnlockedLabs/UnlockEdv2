@@ -175,6 +175,13 @@ export const getProgramTitle: LoaderFunction = async ({
     };
 };
 
+export const getProgram: LoaderFunction = async ({ params }) => {
+    const resp = (await API.get(
+        `programs/${params.id}`
+    )) as ServerResponseOne<Program>;
+    return json(resp.data);
+};
+
 export function resolveTitle<T>(
     handle: RouteTitleHandler<T> | undefined,
     data: T

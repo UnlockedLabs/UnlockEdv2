@@ -1,4 +1,4 @@
-import { getProgramData, getProgramTitle } from '@/routeLoaders';
+import { getProgram, getProgramData, getProgramTitle } from '@/routeLoaders';
 import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
 import { FeatureAccess, TitleHandler } from '@/common';
@@ -6,7 +6,8 @@ import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
-import ProgramClassEnrollment from '@/Pages/ProgramClassEnrollment';
+import AddClassEnrollments from '@/Pages/AddClassEnrollments';
+import ClassEnrollmentDetails from '@/Pages/ClassEnrollmentDetails';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -29,14 +30,14 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
                 path: ['programs', 'detail']
             }
         },
-
         {
             path: 'programs/:id',
+            loader: getProgram,
             element: <ProgramOverviewDashboard />,
             handle: { title: 'Program Overview Dashboard' }
         },
         {
-            path: 'programs/:id/class/:class_id?',
+            path: 'programs/:id/classes/:class_id?',
             loader: getProgramTitle,
             element: <ClassManagementForm />,
             handle: {
@@ -44,8 +45,16 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             }
         },
         {
-            path: 'programs/:id/class-enrollment/:class_id',
-            element: <ProgramClassEnrollment />,
+            path: 'programs/:id/classes/:class_id/enrollments',
+            element: <ClassEnrollmentDetails />,
+            handle: {
+                title: 'Class Enrollments'
+            }
+        },
+        {
+            path: 'programs/:id/classes/:class_id/enrollments/add',
+            loader: getProgramTitle,
+            element: <AddClassEnrollments />,
             handle: { title: 'Add Resident' }
         }
     ],

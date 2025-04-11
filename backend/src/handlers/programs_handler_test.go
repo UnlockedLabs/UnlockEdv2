@@ -123,7 +123,7 @@ func TestHandleUpdateProgram(t *testing.T) {
 		{"TestUserCannotUpdateProgram", "student", nil, http.StatusUnauthorized, ""},
 	}
 	typeInfo := models.ProgramTypeInfo{
-		ProgramTypes:       []models.PrgType{models.LifeSkills},
+		ProgramTypes:       []models.ProgType{models.LifeSkills},
 		ProgramCreditTypes: []models.CreditType{models.EarnedTime},
 	}
 	for _, test := range httpTests {
@@ -188,7 +188,7 @@ func TestHandleDeleteProgram(t *testing.T) {
 		{"TestAdminCanDeleteProgram", "admin", map[string]any{"message": "Program deleted successfully"}, http.StatusNoContent, ""},
 	}
 	typeInfo := models.ProgramTypeInfo{
-		ProgramTypes:       []models.PrgType{models.LifeSkills},
+		ProgramTypes:       []models.ProgType{models.LifeSkills},
 		ProgramCreditTypes: []models.CreditType{models.EarnedTime},
 	}
 	for _, test := range httpTests {
@@ -292,7 +292,7 @@ func getNewProgramForm() map[string]any {
 		FundingType: models.FederalGrants,
 		IsActive:    true,
 		CreditType:  []models.CreditType{models.EarnedTime},
-		ProgramType: []models.PrgType{models.ReEntry},
+		ProgramType: []models.ProgType{models.ReEntry},
 	}
 	return form
 }

@@ -145,7 +145,7 @@ func seedTestData(db *gorm.DB) {
 			log.Fatalf("unable to create test user in kratos")
 		}
 		var mapping models.ProviderUserMapping
-		for i := 0; i < len(platforms); i++ {
+		for i := range len(platforms) {
 			if platforms[i].Type != models.Brightspace { //omitting brightspace here, we don't want bad users in the seeded data...we want real users
 				mapping = models.ProviderUserMapping{
 					UserID:             users[idx].ID,
@@ -179,7 +179,6 @@ func seedTestData(db *gorm.DB) {
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
 	}
-	enrollmentStatuses := []string{"Enrolled"} //not sure what enrollment statuses will be
 	for _, user := range dbUsers {
 		for _, prog := range courses {
 			// all test courses are open_enrollment
@@ -194,7 +193,7 @@ func seedTestData(db *gorm.DB) {
 				continue
 			}
 			startTime := 0
-			for i := 0; i < 365; i++ {
+			for i := range 365 {
 				if i%5 == 0 {
 					continue
 				}
@@ -239,12 +238,23 @@ func seedTestData(db *gorm.DB) {
 				log.Printf("Creating milestone for user %s", user.Username)
 			}
 		}
+		statuses := []models.ProgramEnrollmentStatus{
+			models.Enrolled,
+			models.EnrollmentCancelled,
+			models.EnrollmentCompleted,
+			models.EnrollmentPending,
+			models.EnrollmentIncompleteWithdrawn,
+			models.EnrollmentIncompleteDropped,
+			models.EnrollmentIncompleteFailedToComplete,
+			models.EnrollmentIncompleteTransfered,
+		}
+
 		for idx := range classes {
 			if classes[idx].FacilityID == user.FacilityID {
 				enrollment := models.ProgramClassEnrollment{
 					UserID:           user.ID,
 					ClassID:          classes[idx].ID,
-					EnrollmentStatus: enrollmentStatuses[0], //we can randomize when we know the enrollment statuses
+					EnrollmentStatus: statuses[rand.Intn(len(statuses))],
 				}
 				if err := db.Create(&enrollment).Error; err != nil {
 					log.Printf("Failed to create enrollment: %v", err)
@@ -290,7 +300,7 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 	threeMonthsInPast := now.AddDate(0, -3, 0)
 	for _, user := range dbUsers {
 		numSessions := rand.Intn(90)
-		for i := 0; i < numSessions; i++ {
+		for range numSessions {
 			randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
 			sessionDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
 			sessionHours := rand.Intn(24)
@@ -340,7 +350,7 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 		}
 		for _, kiwix := range libraries {
 			numSessions := rand.Intn(90)
-			for i := 0; i < numSessions; i++ {
+			for range numSessions {
 				// Select random facility, provider, and content
 				urlID := getRandomURLForLibrary(openContentUrls, int(kiwix.ID))
 				randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
@@ -384,7 +394,7 @@ func getRandomURLForLibrary(urls []models.OpenContentUrl, libraryID int) uint {
 	return selectedURL.ID
 }
 
-func getRandomProgram(programMap map[string]models.PrgType) string {
+func getRandomProgram(programMap map[string]models.ProgType) string {
 	keySlice := make([]string, 0, len(programMap))
 	for key := range programMap {
 		keySlice = append(keySlice, key)
@@ -394,12 +404,12 @@ func getRandomProgram(programMap map[string]models.PrgType) string {
 
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
-	fundingTypes := []models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
-	creditTypes := []models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
-	programMap := map[string]models.PrgType{
+	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
+	creditTypes := [4]models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
+	programMap := map[string]models.ProgType{
 		"Anger Management":          models.Therapeutic,
-		"Substance Abuse Treatment": models.MntlHlth,
-		"AA/NA":                     models.MntlHlth,
+		"Substance Abuse Treatment": models.MentalHealth,
+		"AA/NA":                     models.MentalHealth,
 		"Thinking for a Change":     models.LifeSkills,
 		"A New Freedom":             models.LifeSkills,
 		"Dog Training":              models.Vocational,
@@ -408,7 +418,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 		"Parenting":                 models.LifeSkills,
 		"Employment":                models.Vocational,
 		"Life Skills":               models.LifeSkills,
-		"Health and Wellness":       models.MntlHlth,
+		"Health and Wellness":       models.MentalHealth,
 		"Financial Literacy":        models.Educational,
 		"Computer Skills":           models.Educational,
 	}
@@ -433,31 +443,12 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	}
 	toReturn := make([]models.ProgramClass, 0)
 	for idx := range facilities {
-		prog := []models.Program{
-			{
+		programs := make([]models.Program, 0, 6)
+		for range 6 {
+			programs = append(programs, models.Program{
 				Name:        getRandomProgram(programMap),
 				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			},
-			{
-				Name:        getRandomProgram(programMap),
-				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			},
-			{
-				Name:        getRandomProgram(programMap),
-				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			},
-			{
-				Name:        getRandomProgram(programMap),
-				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			},
-			{
-				Name:        getRandomProgram(programMap),
-				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			},
-			{
-				Name:        getRandomProgram(programMap),
-				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			},
+			})
 		}
 
 		capacities := []int64{15, 25, 30, 35, 40, 45}
@@ -465,73 +456,75 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
 		ownerNames := []string{"Aaliyah Bennett", "Luca Moretti", "Haruto Tanaka", "Anika Patel", "Thiago da Silva", "Nora Svensson", "Omar Al-Fulan", "Zara Kowalski", "Kaiya Nguyen", "Elijah Okafor"}
 
-		for i := range prog {
-			prog[i].Description = programClassDescriptions[prog[i].Name]
-			prog[i].IsActive = true
-			if err := db.Create(&prog[i]).Error; err != nil {
+		for i := range programs {
+			programs[i].Description = programClassDescriptions[programs[i].Name]
+			programs[i].IsActive = true
+			if err := db.Create(&programs[i]).Error; err != nil {
 				log.Fatalf("Failed to create program: %v", err)
 			}
 			facilityProgram := models.FacilitiesPrograms{
-				ProgramID:    prog[i].ID,
+				ProgramID:    programs[i].ID,
 				FacilityID:   facilities[idx].ID,
 				ProgramOwner: ownerNames[rand.Intn(len(ownerNames))],
 			}
 			if err := db.Create(&facilityProgram).Error; err != nil {
 				log.Fatalf("Failed to create facility program: %v", err)
 			}
-			programType := models.ProgramType{
-				ProgramType: programMap[prog[i].Name],
-				ProgramID:   prog[i].ID,
-			}
-			if err := db.Create(&programType).Error; err != nil {
-				log.Fatalf("Failed to create program type: %v", err)
-			}
-			creditType := models.ProgramCreditType{
-				CreditType: creditTypes[rand.Intn(len(creditTypes))],
-				ProgramID:  prog[i].ID,
-			}
-			if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
-				log.Fatalf("Failed to create program credit type: %v", err)
-			}
-			class := models.ProgramClass{
-				Capacity:       capacities[rand.Intn(len(capacities))],
-				Name:           prog[i].Name,
-				InstructorName: instructorNames[rand.Intn(len(instructorNames))],
-				Description:    programClassDescriptions[prog[i].Name],
-				Status:         models.Scheduled, //this will change during new class development
-				StartDt:        time.Now().Add(14 * 24 * time.Hour),
-				EndDt:          &endDates[rand.Intn(len(endDates))],
-				FacilityID:     facilities[idx].ID,
-				ProgramID:      prog[i].ID,
-			}
-			if err := db.Create(&class).Error; err != nil {
-				log.Fatalf("Failed to create program class: %v", err)
-			}
-			log.Println("Creating program class ", class.ID)
-			toReturn = append(toReturn, class)
+			for range rand.Intn(4) {
+				programType := models.ProgramType{
+					ProgramType: programMap[programs[i].Name],
+					ProgramID:   programs[i].ID,
+				}
+				if err := db.Create(&programType).Error; err != nil {
+					log.Fatalf("Failed to create program type: %v", err)
+				}
+				creditType := models.ProgramCreditType{
+					CreditType: creditTypes[rand.Intn(len(creditTypes))],
+					ProgramID:  programs[i].ID,
+				}
+				if err := db.Create(&creditType).Error; err != nil { //we can do multiple credit types if we want, add this during new development if needed
+					log.Printf("Failed to create program credit type: %v", err)
+				}
+				class := models.ProgramClass{
+					Capacity:       capacities[rand.Intn(len(capacities))],
+					Name:           programs[i].Name,
+					InstructorName: instructorNames[rand.Intn(len(instructorNames))],
+					Description:    programClassDescriptions[programs[i].Name],
+					Status:         models.Scheduled, //this will change during new class development
+					StartDt:        time.Now().Add(14 * 24 * time.Hour),
+					EndDt:          &endDates[rand.Intn(len(endDates))],
+					FacilityID:     facilities[idx].ID,
+					ProgramID:      programs[i].ID,
+				}
+				if err := db.Create(&class).Error; err != nil {
+					log.Printf("Failed to create program class: %v", err)
+				}
+				log.Println("Creating program class ", class.ID)
+				toReturn = append(toReturn, class)
 
-			randDays := []rrule.Weekday{}
-			days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
-			for i := 0; i < rand.Intn(3); i++ {
-				randDays = append(randDays, days[rand.Intn(len(days))])
-			}
-			rule, err := rrule.NewRRule(rrule.ROption{
-				Freq:      rrule.WEEKLY,
-				Dtstart:   startDate,
-				Until:     endDate,
-				Byweekday: randDays,
-			})
-			if err != nil {
-				log.Fatalf("Failed to create rrule: %v", err)
-			}
-			event := models.ProgramClassEvent{
-				ClassID:        class.ID,
-				RecurrenceRule: rule.String(),
-				Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
-				Duration:       "1h0m0s",
-			}
-			if err := db.Create(&event).Error; err != nil {
-				log.Fatalf("Failed to create event: %v", err)
+				randDays := []rrule.Weekday{}
+				days := []rrule.Weekday{rrule.MO, rrule.TU, rrule.WE, rrule.TH, rrule.FR, rrule.SA, rrule.SU}
+				for range rand.Intn(3) {
+					randDays = append(randDays, days[rand.Intn(len(days))])
+				}
+				rule, err := rrule.NewRRule(rrule.ROption{
+					Freq:      rrule.WEEKLY,
+					Dtstart:   startDate,
+					Until:     endDate,
+					Byweekday: randDays,
+				})
+				if err != nil {
+					log.Printf("Failed to create rrule: %v", err)
+				}
+				event := models.ProgramClassEvent{
+					ClassID:        class.ID,
+					RecurrenceRule: rule.String(),
+					Room:           "Classroom #" + strconv.Itoa(rand.Intn(10)),
+					Duration:       "1h0m0s",
+				}
+				if err := db.Create(&event).Error; err != nil {
+					log.Printf("Failed to create event: %v", err)
+				}
 			}
 		}
 	}
@@ -544,6 +537,7 @@ var usersStr string = `
     "name_first": "Dr. Opal Murphy DDS",
     "name_last": "Agnes Bailey",
     "email": "cedrick.donnelly@example.org",
+	"doc_id": "123456789",
     "role": "student",
     "username": "RichardSchoen13",
     "facility_id": 1
@@ -552,6 +546,7 @@ var usersStr string = `
     "name_first": "Cindy Murphy I",
     "name_last": "Ahmed Parker",
     "email": "trycia.jenkins@example.com",
+	"doc_id": "123456780",
     "role": "student",
     "username": "MeaganDouglas13",
     "facility_id": 1
@@ -560,6 +555,7 @@ var usersStr string = `
     "name_first": "Mr. Garett Willms",
     "name_last": "Aracely McLaughlin",
     "email": "katrina98@example.org",
+	"doc_id": "123456790",
     "role": "student",
     "username": "ClaraFrami10",
     "facility_id": 1
@@ -567,6 +563,7 @@ var usersStr string = `
   {
     "name_first": "Rebeka Gleichner",
     "name_last": "Ardith Becker",
+	"doc_id": "123458790",
     "email": "ygulgowski@example.net",
     "role": "student",
     "username": "OpheliaNienow13",
@@ -576,6 +573,7 @@ var usersStr string = `
     "name_first": "Miss Loyce Borer",
     "name_last": "Arely King",
     "email": "gustave59@example.org",
+	"doc_id": "173458790",
     "role": "student",
     "username": "OrvalKoelpin12",
     "facility_id": 1
@@ -584,6 +582,7 @@ var usersStr string = `
     "name_first": "Keaton Waters",
     "name_last": "Ashleigh Kunde Jr.",
     "email": "smorar@example.com",
+	"doc_id": "273458790",
     "role": "student",
     "username": "LavadaLittel12",
     "facility_id": 1
@@ -592,6 +591,7 @@ var usersStr string = `
     "name_first": "Eliseo Reichert",
     "name_last": "Earline Ruecker",
     "email": "rbarton@example.net",
+	"doc_id": "603458790",
     "role": "student",
     "username": "JulietFriesen13",
     "facility_id": 2
@@ -600,6 +600,7 @@ var usersStr string = `
     "name_first": "Santino Kautzer",
     "name_last": "Elwyn Kreiger Jr.",
     "email": "alexandre.bergstrom@example.org",
+	"doc_id": "203458790",
     "role": "student",
     "username": "HeidiVonRueden14",
     "facility_id": 2
@@ -608,6 +609,7 @@ var usersStr string = `
     "name_first": "Raina Upton",
     "name_last": "Euna Halvorson",
     "email": "grimes.olin@example.org",
+	"doc_id": "603468790",
     "role": "student",
     "username": "AshleeGaylord13",
     "facility_id": 2

@@ -17,9 +17,6 @@ func calcOffset(page, perPage int) int {
 }
 
 func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.User, error) {
-	if args.Search != "" {
-		return db.SearchCurrentUsers(args, role)
-	}
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("facility_id = ?", args.FacilityID)
 	switch role {
 	case "system_admin":
@@ -30,6 +27,9 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		tx = tx.Where("role = 'facility_admin'")
 	case "student":
 		tx = tx.Where("role = 'student'")
+	}
+	if args.Search != "" {
+		return db.SearchCurrentUsers(tx, args, role)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
@@ -104,14 +104,13 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 	return nil
 }
 
-func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, classId int) ([]models.User, error) {
+func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
+	likeSearch := args.SearchQuery()
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
 		Where("users.role = ?", "student").
 		Where("facility_id =?", args.FacilityID)
-
-	likeSearch := args.SearchQuery()
 
 	if likeSearch != "" {
 		_, err := strconv.Atoi(args.Search)
@@ -137,16 +136,8 @@ func (db *DB) GetNonEnrolledResidents(args *models.QueryContext, classId int) ([
 	return users, nil
 }
 
-func (db *DB) SearchCurrentUsers(ctx *models.QueryContext, role string) ([]models.User, error) {
+func (db *DB) SearchCurrentUsers(tx *gorm.DB, ctx *models.QueryContext, role string) ([]models.User, error) {
 	likeSearch := ctx.SearchQuery()
-	tx := db.WithContext(ctx.Ctx).Model(&models.User{}).Where("facility_id = ?", ctx.FacilityID)
-	switch role {
-	case "admin":
-		tx = tx.Where("role IN ('admin', 'system_admin')")
-	case "student":
-		tx = tx.Where("role = 'student'")
-	}
-
 	if likeSearch != "" {
 		_, err := strconv.Atoi(ctx.Search)
 		if err == nil {

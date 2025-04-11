@@ -8,7 +8,7 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { PrgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
+import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -70,9 +70,9 @@ export default function ClassManagementForm() {
             ]
         };
 
-        const response = class_id
-            ? await API.patch(`program-classes/${class_id}`, formattedJson)
-            : await API.post(`programs/${id}/classes`, formattedJson);
+        const response = isNewClass
+            ? await API.post(`programs/${id}/classes`, formattedJson)
+            : await API.patch(`program-classes/${class_id}`, formattedJson);
         if (!response.success) {
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')
@@ -81,7 +81,7 @@ export default function ClassManagementForm() {
                       ? 'Failed to update class'
                       : 'Failed to create class';
             toaster(toasterMsg, ToastState.error);
-            console.log(
+            console.error(
                 `error occurred while trying to create/update class, error message: ${response.message}`
             );
             return;
@@ -100,7 +100,7 @@ export default function ClassManagementForm() {
     }, [nameValue, rruleIsValid]);
 
     useEffect(() => {
-        if (!class_id) return;
+        if (isNewClass) return;
         if (clsLoader.class) {
             setEditFormValues(clsLoader.class);
         }
@@ -117,6 +117,8 @@ export default function ClassManagementForm() {
                 : editCls.end_dt
         });
     }
+
+    const isNewClass = class_id === 'new' || !class_id;
 
     return (
         <div className="p-4 px-5">
@@ -214,16 +216,16 @@ export default function ClassManagementForm() {
                             errors={errors}
                             register={register}
                             onChange={setRruleIsValid}
-                            disabled={!!class_id}
+                            disabled={!isNewClass}
                         />
                         <DropdownInput
                             label="Status"
                             register={register}
-                            enumType={PrgClassStatus}
+                            enumType={ProgClassStatus}
                             interfaceRef="status"
                             required
                             errors={errors}
-                            disabled={!!class_id}
+                            disabled={!isNewClass}
                         />
                     </div>
                     <div className="col-span-4 flex justify-end gap-4 mt-4">

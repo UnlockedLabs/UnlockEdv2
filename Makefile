@@ -25,16 +25,17 @@ ascii_art:
 help: ascii_art
 	@echo " ⚡Usage: make [target] ⚡"
 	@echo " Targets:"
-	@echo " ⚡ init				  Install initial development dependencies for the project"
-	@echo "   dev				  Run containers in development mode with hot-reloading for server and frontend only"
-	@echo " 󱗆  kolibri			  Run all containers with Kolibri (requires login to UL ECR | team only)"
-	@echo "   migrate			  Apply the migrations"
-	@echo "   migrate-fresh	  Drop the tables in the main application and to reset the database to a fresh state"
-	@echo "   migration NAME=x	  Create a new migration with the provided name"
-	@echo " 󱗆  install-dep NAME=x Install a dependency on the front-end while the containers are running"
-	@echo " 󱘤  seed				  Run the seeder script"
-	@echo "   build			  Build Go binaries for different platforms"
-	@echo " 󰑙  reset			  Drop all volumes and reset all data in the database"
+	@echo " ⚡ init                   Install initial development dependencies for the project"
+	@echo "   dev                    Run containers in development mode with hot-reloading for server and frontend only"
+	@echo " 󱗆  kolibri                Run all containers with Kolibri (requires login to UL ECR | team only)"
+	@echo "   migrate                Apply the migrations"
+	@echo "   migrate-fresh          Drop the tables in the main application and to reset the database to a fresh state"
+	@echo "   migration NAME=x       Create a new migration with the provided name"
+	@echo " 󱗆  install-dep NAME=x     Install a dependency on the front-end while the containers are running"
+	@echo " 󱘤  seed                   Run the seeder script"
+	@echo "   build                  Build Go binaries for different platforms"
+	@echo " 󰑙  reset                  Drop all volumes and reset all data in the database"
+	@echo " ➕ merge PR=x             Merge a PR (requires GitHub CLI and permissions | team only)"
 
 
 reset: ascii_art
@@ -84,3 +85,11 @@ migration: ascii_art
 	@echo "Creating migration with name $(NAME)..."
 	goose -dir backend/migrations create $(NAME) sql
 	goose -dir backend/migrations fix
+
+merge: ascii_art
+	@if [-z "$(PR)" ];then \
+		echo "Error: PR is not set"; \
+		exit 1; \
+	fi
+	@echo "Merging PR $(PR)..."
+	./.github/merge.sh $(PR)
