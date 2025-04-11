@@ -315,6 +315,9 @@ func (srv *Server) handleGetUserAccountHistory(w http.ResponseWriter, r *http.Re
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	args := srv.getQueryContext(r)
+	if !srv.canViewUserData(r, id) {
+		return newUnauthorizedServiceError()
+	}
 	history, err := srv.Db.GetUserAccountHistory(&args, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)

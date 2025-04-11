@@ -530,7 +530,7 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "user_account_history")
 	}
-	if err := tx.Order("uah." + args.OrderClause()).
+	if err := tx.Order("uah.created_at desc").
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Scan(&history).Error; err != nil {
