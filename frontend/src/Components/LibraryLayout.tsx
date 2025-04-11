@@ -13,7 +13,6 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useEffect, useState, useRef } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
-import { AxiosError } from 'axios';
 import { useLoaderData, useLocation } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import CategoryDropdownFilter from './CategoryDropdownFilter';
@@ -84,7 +83,7 @@ export default function LibaryLayout({
         mutate: mutateLibraries,
         error: librariesError,
         isLoading: librariesLoading
-    } = useSWR<ServerResponseMany<Library>, AxiosError>(
+    } = useSWR<ServerResponseMany<Library>, Error>(
         `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=title&order=asc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
     );
     const librariesMeta = libraries?.meta;

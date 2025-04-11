@@ -13,7 +13,6 @@ import {
 } from '@/common';
 import useSWR from 'swr';
 import TabView from '@/Components/TabView';
-import { AxiosError } from 'axios';
 
 // TO DO: make sure this lives in the right place
 export default function MyCourses() {
@@ -32,7 +31,7 @@ export default function MyCourses() {
 
     const { data, isLoading, error } = useSWR<
         ServerResponse<UserCoursesInfo>,
-        AxiosError
+        Error
     >(
         `/api/users/${user.id}/courses?${
             sort +

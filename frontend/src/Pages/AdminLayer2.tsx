@@ -8,7 +8,6 @@ import {
     ServerResponseOne
 } from '@/common';
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import UnauthorizedNotFound from './Unauthorized';
 import { useEffect, useState } from 'react';
 
@@ -18,12 +17,12 @@ export default function AdminLayer2() {
     const [resetCache, setResetCache] = useState(false);
     const { data: facilities, error: errorFacilitiesFetch } = useSWR<
         ServerResponseMany<Facility>,
-        AxiosError
+        Error
     >('/api/facilities');
 
     const { data, error, isLoading } = useSWR<
         ServerResponseOne<AdminLayer2Join>,
-        AxiosError
+        Error
     >(
         `/api/users/${user?.id}/admin-layer2?facility=${facility}&reset=${resetCache}`
     );

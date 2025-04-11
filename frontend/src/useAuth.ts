@@ -13,7 +13,6 @@ import {
     FeatureAccess
 } from './common';
 import API from './api/api';
-import axios from 'axios';
 
 interface AuthContextType {
     user: User | undefined;
@@ -75,15 +74,18 @@ export function useAuth(): AuthContextType {
 
 export const initFlow = async (flow: string): Promise<AuthFlow> => {
     try {
-        const resp = await axios.get<OryFlow>(KRATOS_CHECK_FLOW_URL + flow);
+        const resp = await fetch(KRATOS_CHECK_FLOW_URL + flow, {
+            credentials: 'include'
+        });
         if (resp.status !== 200) {
             // bad flow id, redirect to login
             return redirectTo(INIT_KRATOS_LOGIN_FLOW);
         }
+        const jsonResp = (await resp.json()) as OryFlow;
         return {
-            flow_id: resp.data.id,
-            challenge: resp.data.oauth2_login_challenge,
-            csrf_token: resp.data.ui.nodes[0].attributes.value
+            flow_id: jsonResp.id,
+            challenge: jsonResp.oauth2_login_challenge,
+            csrf_token: jsonResp.ui.nodes[0].attributes.value
         };
     } catch {
         return redirectTo(INIT_KRATOS_LOGIN_FLOW);
@@ -122,32 +124,31 @@ export const checkExistingFlow: LoaderFunction = async ({ request }) => {
     }
     const attributes = await initFlow(flow);
     try {
-        const checkResp = await axios.get<OrySessionWhoami>(SESSION_URL, {
-            withCredentials: true
+        const checkResp = await fetch(SESSION_URL, {
+            credentials: 'include'
         });
-        if (
-            checkResp.status === 200 &&
-            checkResp.data.active &&
-            checkResp.data.identity.traits
-        ) {
-            if (!attributes.challenge) {
-                // if the user is logged in and there is no oauth2 challenge:
-                // redirect to the auth callback
-                return json<AuthFlow>(redirectTo(AUTHCALLBACK));
+        if (checkResp.status === 200) {
+            const jsonResp = (await checkResp.json()) as OrySessionWhoami;
+            if (jsonResp.active && jsonResp.identity.traits) {
+                if (!attributes.challenge) {
+                    // if the user is logged in and there is no oauth2 challenge:
+                    // redirect to the auth callback
+                    return json<AuthFlow>(redirectTo(AUTHCALLBACK));
+                }
+                const reqBody = {
+                    username: jsonResp.identity.traits.username,
+                    identity: jsonResp.identity.id,
+                    csrf_token: attributes?.csrf_token,
+                    session: jsonResp,
+                    challenge: attributes?.challenge
+                };
+                const resp = (await API.post(
+                    'auth/refresh',
+                    reqBody
+                )) as ServerResponseOne<AuthResponse>;
+                if (resp.success)
+                    return json<AuthFlow>(redirectTo(resp.data.redirect_to));
             }
-            const reqBody = {
-                username: checkResp.data.identity.traits.username,
-                identity: checkResp.data.identity.id,
-                csrf_token: attributes?.csrf_token,
-                session: checkResp.data,
-                challenge: attributes?.challenge
-            };
-            const resp = (await API.post(
-                'auth/refresh',
-                reqBody
-            )) as ServerResponseOne<AuthResponse>;
-            if (resp.success)
-                return json<AuthFlow>(redirectTo(resp.data.redirect_to));
         }
     } catch {
         console.error('No active sessions found for this user');
@@ -159,12 +160,13 @@ export async function handleLogout(): Promise<void> {
     try {
         const resp = await API.post<AuthResponse, object>('logout', {});
         if (resp.success) {
-            const logout = await axios.get(
-                (resp.data as AuthResponse).redirect_to
+            const logout = await fetch(
+                (resp.data as AuthResponse).redirect_to,
+                { credentials: 'include' }
             );
             if (logout.status === 200) {
-                window.dispatchEvent(new Event("logoutEvent"));
-                const logoutResp = logout.data as AuthResponse;
+                window.dispatchEvent(new Event('logoutEvent'));
+                const logoutResp = (await logout.json()) as AuthResponse;
                 window.location.replace(
                     logoutResp.logout_url ?? INIT_KRATOS_LOGIN_FLOW
                 );
@@ -172,7 +174,7 @@ export async function handleLogout(): Promise<void> {
         }
     } catch (error) {
         window.location.href = INIT_KRATOS_LOGIN_FLOW;
-        console.log('Logout failed', error);
+        console.error('Logout failed', error);
     }
 }
 

@@ -5,7 +5,6 @@ import useSWR from 'swr';
 import FacilityCard from '@/Components/FacilityCard.tsx';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination.tsx';
-import { AxiosError } from 'axios';
 import { useToast } from '@/Context/ToastCtx';
 import {
     AddFacilityModal,
@@ -40,7 +39,7 @@ export default function FacilityManagement() {
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponseMany<Facility>, AxiosError>(
+    } = useSWR<ServerResponseMany<Facility>, Error>(
         `/api/facilities?page=${pageQuery}&per_page=${perPage}`
     );
     const checkResponseForDelete = useCheckResponse({

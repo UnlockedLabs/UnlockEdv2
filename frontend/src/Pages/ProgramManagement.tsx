@@ -4,7 +4,6 @@ import ProgramCard from '@/Components/ProgramCard';
 import SearchBar from '@/Components/inputs/SearchBar';
 import { Program, ViewType, Option, ServerResponseMany } from '@/common';
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import ToggleView from '@/Components/ToggleView';
 import { useLoaderData } from 'react-router-dom';
@@ -29,10 +28,7 @@ export default function ProgramManagement() {
 
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
-    const { data, error, mutate } = useSWR<
-        ServerResponseMany<Program>,
-        AxiosError
-    >(
+    const { data, error, mutate } = useSWR<ServerResponseMany<Program>, Error>(
         `/api/programs?page=${page}&per_page=${perPage}&search=${searchTerm}&${categoryQueryString}&order=asc&order_by=name`
     );
     const programData = data?.data;

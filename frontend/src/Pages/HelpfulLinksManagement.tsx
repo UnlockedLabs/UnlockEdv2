@@ -17,7 +17,6 @@ import React, { useRef, useState } from 'react';
 import { useToast } from '@/Context/ToastCtx';
 import { useDebounceValue } from 'usehooks-ts';
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import API from '@/api/api';
 import { useAuth } from '@/useAuth';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -56,7 +55,7 @@ export default function HelpfulLinksManagement() {
     const { toaster } = useToast();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseOne<HelpfulLinkAndSort>,
-        AxiosError
+        Error
     >(
         `/api/helpful-links?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}${sortQuery}`
     );

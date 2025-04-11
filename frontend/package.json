@@ -13,7 +13,6 @@
     },
     "dependencies": {
         "autoprefixer": "^10.4.19",
-        "axios": "^1.6.8",
         "daisyui": "^4.10.5",
         "eslint-plugin-prettier": "^5.2.1",
         "moment": "^2.30.1",

@@ -13,7 +13,6 @@ import { useLoaderData, useNavigate } from 'react-router-dom';
 import { ExpandableCardGrid } from '@/Components/dashboard';
 import TopContentList from '@/Components/dashboard/TopContentList';
 import useSWR from 'swr';
-import { AxiosError } from 'axios';
 import OpenContentItemAccordion from '@/Components/OpenContentItemAccordion';
 import { useEffect } from 'react';
 import { useTourContext } from '@/Context/TourContext';
@@ -27,15 +26,15 @@ export default function ResidentHome() {
     };
     const { data: featured, mutate: mutateFeatLibs } = useSWR<
         ServerResponseMany<Library>,
-        AxiosError
+        Error
     >('api/libraries?visibility=featured&order_by=created_at');
     const { data: favorites, mutate: mutateFavLibs } = useSWR<
         ServerResponseMany<OpenContentItem>,
-        AxiosError
+        Error
     >('api/open-content/favorite-groupings');
     const { data: helpfulLinks, mutate: mutateHelpfulFavs } = useSWR<
         ServerResponseOne<HelpfulLinkAndSort>,
-        AxiosError
+        Error
     >(`api/helpful-links`);
     const { tourState, setTourState } = useTourContext();
 

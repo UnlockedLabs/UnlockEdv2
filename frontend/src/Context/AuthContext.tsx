@@ -1,4 +1,3 @@
-import '@/bootstrap';
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { INIT_KRATOS_LOGIN_FLOW, User } from '@/common';

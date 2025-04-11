@@ -5,7 +5,6 @@ import { UserCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '../Pagination';
 import useSWR from 'swr';
 import API from '@/api/api';
-import { AxiosError } from 'axios';
 interface Props {
     externalUser?: ProviderUser;
     providerId: number;
@@ -31,7 +30,7 @@ export default function MapUserForm({
         data: allUnmappedUsers,
         isLoading: isLoadingUnmapped,
         error: errorUnmappedUsers
-    } = useSWR<ServerResponseMany<User>, AxiosError>(
+    } = useSWR<ServerResponseMany<User>, Error>(
         `/api/users?page=${currentPage}&per_page=5&include=only_unmapped&provider_id=${providerId}`
     );
     const unmappedUsers = allUnmappedUsers?.data;
