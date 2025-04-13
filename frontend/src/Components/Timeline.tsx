@@ -73,7 +73,7 @@ export default function Timeline() {
                             {event.title}
                         </div>
                         <p
-                            className={`timeline-${index % 2 === 0 ? 'text-left' : 'text-right'}`}
+                            className={`${index % 2 === 0 ? 'text-right' : 'text-left'}`}
                         >
                             {event.description}
                         </p>

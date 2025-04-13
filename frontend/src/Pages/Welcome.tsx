@@ -6,54 +6,14 @@ import { Link } from 'react-router-dom';
 import { AUTHCALLBACK } from '@/useAuth';
 import Timeline from '@/Components/Timeline';
 
-function useDomTheme(): 'light' | 'dark' {
-    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-        return (document.documentElement.getAttribute('data-theme') ??
-            'light') as 'light' | 'dark';
-    });
-
-    useEffect(() => {
-        const observer = new MutationObserver(() => {
-            const newTheme =
-                document.documentElement.getAttribute('data-theme') ?? 'light';
-            setTheme(newTheme as 'light' | 'dark');
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-        });
-
-        return () => {
-            observer.disconnect();
-        };
-    }, []);
-
-    return theme;
-}
-
 export default function Welcome() {
-    const theme = document.documentElement.getAttribute('data-theme');
-    console.log(theme, '>>>>>>>>>'); // "light" or "dark"
-
     const [authUser, setAuthUser] = useState<User | undefined>();
-    const systemTheme = useDomTheme();
-
-    const [imgSrc, setImgSrc] = useState(() =>
-        systemTheme === 'light' ? 'unlockedv2DkSm.webp' : 'unlockedv2LtSm.webp'
-    );
+    const [imgSrc, setImgSrc] = useState('unlockedv2DkSm.webp');
 
     useEffect(() => {
-        setImgSrc(
-            systemTheme === 'light'
-                ? 'unlockedv2DkSm.webp'
-                : 'unlockedv2LtSm.webp'
-        );
-    }, [systemTheme]);
-
-    useEffect(() => {
+        const theme = document.documentElement.getAttribute('data-theme');
         const imgPath =
-            systemTheme === 'light' ? 'unlockedv2Dk.png' : 'unlockedv2Lt.png';
+            theme === 'light' ? 'unlockedv2Dk.png' : 'unlockedv2Lt.png';
 
         const img = new Image();
         img.src = imgPath;
@@ -93,7 +53,6 @@ export default function Welcome() {
             </div>
 
             <div className="flex justify-center p-10 bg-background">
-                <h1>{systemTheme}</h1>
                 <div className="prose prose-lg prose-gray text-justify">
                     <h1>Built from the inside out...</h1>
 
