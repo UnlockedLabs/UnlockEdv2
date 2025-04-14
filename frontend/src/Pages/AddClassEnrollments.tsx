@@ -25,13 +25,14 @@ export default function AddClassEnrollments() {
     const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const searchQuery = useDebounceValue(searchTerm, 500);
+    const [searchQuery] = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterProgramClassEnrollments['Last Name (A to Z)']
     );
+    const encodedSearchQuery = encodeURIComponent(searchQuery);
 
     const { data, error, isLoading } = useSWR<ServerResponseMany<User>, Error>(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
+        `/api/users?search=${encodedSearchQuery}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
     );
 
     const credentialed_users = data?.data ?? [];
