@@ -1,5 +1,5 @@
 import { MouseEvent, useEffect, useState, useRef } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { SubmitHandler, FieldValues } from 'react-hook-form';
 import Error from '@/Pages/Error';
 import API from '@/api/api';
@@ -33,6 +33,7 @@ export default function LibraryViewer() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const { toaster } = useToast();
+    const navigate = useNavigate();
     const [bookmarked, setBookmarked] = useState<boolean>(false);
     const [providerID, setProviderID] = useState<number>();
     const favoriteModalRef = useRef<HTMLDialogElement>(null);
@@ -98,12 +99,12 @@ export default function LibraryViewer() {
                         setSrc(response.url);
                     }
                 } else if (response.status === 404) {
-                    setError('Library not found');
+                    navigate('/404');
                 } else {
-                    setError('Error loading library');
+                    navigate('/error');
                 }
             } catch {
-                setError('Error loading library');
+                navigate('/404');
             } finally {
                 setIsLoading(false);
             }

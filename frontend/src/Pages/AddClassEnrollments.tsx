@@ -17,7 +17,7 @@ import Pagination from '@/Components/Pagination';
 
 export default function AddClassEnrollments() {
     const navigate = useNavigate();
-    const { class: classInfo } = useLoaderData() as ClassLoaderData;
+    const { class: classInfo, redirect } = useLoaderData() as ClassLoaderData;
     const { id } = useParams<{ id: string }>();
     const { class_id } = useParams<{ class_id: string }>();
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
@@ -34,7 +34,9 @@ export default function AddClassEnrollments() {
     const { data, error, isLoading } = useSWR<ServerResponseMany<User>, Error>(
         `/api/users?search=${encodedSearchQuery}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
     );
-
+    if (redirect) {
+        navigate(redirect);
+    }
     const credentialed_users = data?.data ?? [];
     const meta = data?.meta;
     const getEnrollmentCount = (): number => {
@@ -108,8 +110,8 @@ export default function AddClassEnrollments() {
                 <div className="grid grid-cols-5 gap-4 items-start">
                     <div className="flex flex-col gap-2">
                         <div className="text-xl font-bold">Class Name:</div>
-                        <div className="pt-2">Currently Enrolled:</div>
-                        <div>Remaining Capacity:</div>
+                        <div className="pt-2 text-lg">Currently Enrolled:</div>
+                        <div className="pt-2 text-lg">Remaining Capacity:</div>
                     </div>
                     <div className="flex pr-16 flex-col gap-3 items-start">
                         <span className="text-xl pl-2 font-bold text-left">

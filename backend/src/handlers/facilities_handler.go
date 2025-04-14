@@ -55,13 +55,15 @@ func (srv *Server) handleChangeAdminFacility(w http.ResponseWriter, r *http.Requ
 		return newInvalidIdServiceError(err, "facility ID")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if !claims.canSwitchFacility() {
+		return newUnauthorizedServiceError()
+	}
 	claims.FacilityID = uint(id)
 	if err := srv.updateUserTraitsInKratos(claims); err != nil {
 		log.add("facility_id", id)
 		return newInternalServerServiceError(err, "error updating user traits in kratos")
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+	return writeJsonResponse(w, http.StatusOK, "facility updated successfully")
 }
 
 func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {

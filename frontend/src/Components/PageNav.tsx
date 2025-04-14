@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuth, canSwitchFacility } from '@/useAuth';
+import { useAuth, canSwitchFacility, AUTHCALLBACK } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
 import { Facility, RouteTitleHandler, TitleHandler } from '@/common';

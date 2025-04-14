@@ -57,6 +57,11 @@ export default function ProgramOverview() {
     } = useSWR<ServerResponseMany<Class>, Error>(
         `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
+    if (!program) {
+        navigate('/404');
+    } else if (classesError) {
+        navigate('/error');
+    }
 
     const classes = classesResp?.data ?? [];
 
@@ -93,9 +98,6 @@ export default function ProgramOverview() {
         setAbleToArchiveClasses(ableToArchive);
     }, [selectedClasses, classes]);
 
-    if (classesError) {
-        return <Error />;
-    }
     if (classes === undefined) return <br />;
 
     const nonArchivedClasses = classes?.filter(
@@ -327,7 +329,7 @@ export default function ProgramOverview() {
                                             />
                                         </div>
                                     </td>
-                                    <td>{program_class.name}</td>
+                                    <td> {program_class.name}</td>
                                     <td>{program_class.instructor_name}</td>
                                     <td>
                                         {new Date(

@@ -86,6 +86,11 @@ const ResidentProfile = () => {
     } = useSWR<ServerResponseOne<ResidentEngagementProfile>, Error>(
         `/api/users/${residentId}/profile`
     );
+    if (error?.message === 'Not Found') {
+        navigate('/404');
+    } else if (error) {
+        navigate('/error');
+    }
     const [resident, setResident] = useState<ValidResident | null>();
     const metrics = data?.data;
     const [page, setPage] = useState(1);
@@ -140,7 +145,6 @@ const ResidentProfile = () => {
     //end transfer logic
     return (
         <div className="overflow-x-hidden px-5 pb-4">
-            {error && <div>Error loading data</div>}
             {!data || (isLoading && <div>Loading...</div>)}
             {data && metrics && (
                 <div className="space-y-6">
