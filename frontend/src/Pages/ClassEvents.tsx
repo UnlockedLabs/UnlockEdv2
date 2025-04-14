@@ -1,5 +1,4 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { AxiosError } from 'axios';
 import useSWR from 'swr';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import {
@@ -24,15 +23,14 @@ export default function ClassAttendance() {
 
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<ClassEventInstance>,
-        AxiosError
+        Error
     >(
         `/api/program-classes/class/${class_id}/events?page=${pageQuery}&per_page=${perPage}`
     );
 
-    const { data: program_class } = useSWR<
-        ServerResponseOne<Class>,
-        AxiosError
-    >(`/api/program-classes/${class_id}`);
+    const { data: program_class } = useSWR<ServerResponseOne<Class>, Error>(
+        `/api/program-classes/${class_id}`
+    );
 
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;

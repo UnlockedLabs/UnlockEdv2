@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AxiosError } from 'axios';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
@@ -41,12 +40,12 @@ export default function EventAttendance() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const searchQuery = useDebounceValue(searchTerm, 300);
+    const [searchQuery] = useDebounceValue(searchTerm, 300);
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
-        AxiosError
+        Error
     >(
-        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}&order_by=${sortQuery}`
+        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchQuery}&order_by=${sortQuery}`
     );
 
     const meta = data?.meta;
@@ -87,14 +86,6 @@ export default function EventAttendance() {
                 note: newNote
             }
         }));
-
-        setRows((prevRows) =>
-            prevRows.map((row) =>
-                row.user_id === user_id
-                    ? { ...row, selected: true, note: newNote }
-                    : row
-            )
-        );
     }
     const {
         register,
@@ -121,17 +112,24 @@ export default function EventAttendance() {
     }
 
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {
-        setRows((prev) =>
-            prev.map((row) =>
-                row.user_id === user_id
-                    ? {
-                          ...row,
-                          selected: true,
-                          attendance_status: newStatus
-                      }
-                    : row
-            )
-        );
+        const currentRow = rows.find((r) => r.user_id === user_id) ?? {
+            selected: false,
+            user_id: user_id,
+            doc_id: '',
+            name_last: '',
+            name_first: '',
+            attendance_status: newStatus,
+            note: ''
+        };
+        setModifiedRows((prev) => ({
+            ...prev,
+            [user_id]: {
+                ...currentRow,
+                ...prev[user_id],
+                selected: true,
+                attendance_status: newStatus
+            }
+        }));
     }
 
     async function submitAttendanceForRows(updatedRows: LocalRowData[]) {
@@ -168,16 +166,6 @@ export default function EventAttendance() {
         setPageQuery(1);
     };
 
-    //function handleNoteChange(user_id: number, newNote: string) {
-    //    setRows((prevRows) =>
-    //        prevRows.map((row) =>
-    //            row.user_id === user_id
-    //                ? { ...row, selected: true, note: newNote }
-    //                : row
-    //        )
-    //    );
-    //}
-    //
     const anyRowSelected = rows.some((row) => row.selected);
     return (
         <div className="p-4 space-y-4">
@@ -222,7 +210,7 @@ export default function EventAttendance() {
                     >
                         <table className="table-2 mb-5">
                             <thead>
-                                <tr className="grid grid-cols-3 ">
+                                <tr className="grid-cols-4 grid ">
                                     <th className="justify-self-start space-x-2 px-3">
                                         <input
                                             type="checkbox"
@@ -233,8 +221,9 @@ export default function EventAttendance() {
                                             onChange={handleSelectAll}
                                             className="checkbox cursor-pointer"
                                         />
-                                        <span>Last, First (DOC #)</span>
+                                        <span>Last, First</span>
                                     </th>
+                                    <th>DOC ID</th>
                                     <th className="">Attendance</th>
                                     <th className="">Note</th>
                                 </tr>
@@ -243,7 +232,7 @@ export default function EventAttendance() {
                                 {rows.map((row) => (
                                     <tr
                                         key={row.user_id}
-                                        className="card grid-cols-3 cursor-pointer items-center p-2"
+                                        className="card w-full justify-items-center grid-cols-4 cursor-pointer p-2"
                                     >
                                         <td className="justify-self-start space-x-2">
                                             <input
@@ -259,12 +248,14 @@ export default function EventAttendance() {
                                             <span>
                                                 {row.name_last},{' '}
                                                 {row.name_first}{' '}
-                                                {row.doc_id == ''
-                                                    ? ' '
-                                                    : `(${row.doc_id})`}
                                             </span>
                                         </td>
-
+                                        <td className="items-center">
+                                            {' '}
+                                            {row.doc_id == ''
+                                                ? ' '
+                                                : `${row.doc_id}`}
+                                        </td>
                                         <td className="flex justify-center space-x-2">
                                             <label className="flex items-center space-x-1 cursor-pointer">
                                                 <input
