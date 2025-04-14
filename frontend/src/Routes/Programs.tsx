@@ -8,7 +8,6 @@ import CreateProgramPage from '@/Pages/CreateProgram';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
 import AddClassEnrollments from '@/Pages/AddClassEnrollments';
 import ClassEnrollmentDetails from '@/Pages/ClassEnrollmentDetails';
-import ProgramClassEnrollment from '@/Pages/ProgramClassEnrollment';
 import ClassEvents from '@/Pages/ClassEvents';
 import EventAttendance from '@/Pages/EventAttendance';
 
