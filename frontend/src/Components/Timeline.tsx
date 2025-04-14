@@ -27,7 +27,7 @@ const timelineEvents: TimelineEvent[] = [
         year: '2022',
         title: 'Unlocked Labs Is Born',
         description:
-            'After a Supreme Court ruling led to their release, Jessica and Chris teamed up with Haley Shoaf to found Unlocked Labs, a nonprofit building tech tools to improve outcomes in the justice system.'
+            'After a Supreme Court ruling led to their release, Jessica and Chris teamed up with Haley Shoaf to found Unlocked Labs, a nonprofit, building tech tools to improve outcomes in the justice system.'
     },
     {
         year: '2022 - present',
