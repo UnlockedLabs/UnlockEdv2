@@ -838,6 +838,7 @@ export interface OpenContentItem {
 
 export interface ClassLoaderData extends TitleHandler {
     class?: Class;
+    redirect?: string;
 }
 
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;

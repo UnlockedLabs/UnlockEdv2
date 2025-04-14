@@ -11,18 +11,26 @@ ReactDOM.createRoot(document.querySelector('#root')!).render(
         <TourProvider>
             <SWRConfig
                 value={{
-                    fetcher: (url) =>
-                        // eslint-disable-next-line
-                        fetch(url, {
+                    fetcher: async (url: string) => {
+                        const res = await fetch(url, {
                             credentials: 'include',
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest',
                                 Accept: 'application/json',
                                 'Content-Type': 'application/json'
                             }
-                        }).then((res) => {
-                            return res.json();
-                        })
+                        });
+
+                        if (!res.ok) {
+                            const error = new Error(
+                                'An error occurred while fetching the data'
+                            );
+                            error.message = res.statusText;
+                            throw error;
+                        }
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                        return res.json();
+                    }
                 }}
             >
                 <ThemeProvider>

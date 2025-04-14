@@ -46,6 +46,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'programs/:id/classes/:class_id/enrollments',
+            loader: getProgramTitle,
             element: <ClassEnrollmentDetails />,
             handle: {
                 title: 'Class Enrollments'

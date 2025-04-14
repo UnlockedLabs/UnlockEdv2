@@ -1,11 +1,12 @@
 import { useRef, useState, startTransition } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import {
     ClassEnrollment,
+    ClassLoaderData,
     EnrollmentStatus,
     ProgramCompletion,
     ServerResponseMany
@@ -24,6 +25,7 @@ interface StatusChange {
 export default function ClassEnrollmentDetails() {
     const { id, class_id } = useParams<{ id: string; class_id: string }>();
     const navigate = useNavigate();
+    const { redirect } = useLoaderData() as ClassLoaderData;
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>('name_full asc');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -43,6 +45,11 @@ export default function ClassEnrollmentDetails() {
     >(
         `/api/programs/${id}/classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
     );
+    if (error || redirect) {
+        navigate(
+            error?.message === 'Not Found' || redirect ? '/404' : '/error'
+        );
+    }
     const handleSearchTermChange = (newTerm: string) => {
         startTransition(() => {
             setSearchTerm(newTerm);

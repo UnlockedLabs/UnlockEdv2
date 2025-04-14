@@ -107,9 +107,10 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
+		Joins("JOIN program_classes c ON c.id = ?", classId).
+		Joins("JOIN facilities_programs fp ON users.facility_id = fp.facility_id AND fp.program_id = c.program_id").
 		Where("pse.user_id IS NULL"). //not enrolled in class
-		Where("users.role = ?", "student").
-		Where("facility_id =?", args.FacilityID)
+		Where("users.role = ? AND users.facility_id = ?", "student", args.FacilityID)
 
 	if args.SearchQuery() != "" {
 		tx = fuzzySearchUsers(tx, args)

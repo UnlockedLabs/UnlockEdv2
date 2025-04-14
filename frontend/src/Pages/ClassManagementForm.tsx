@@ -43,6 +43,9 @@ export default function ClassManagementForm() {
             events: [{ room: '', recurrence_rule: '', duration: '' }]
         }
     });
+    if (clsLoader.redirect) {
+        navigate(clsLoader.redirect);
+    }
 
     const nameValue = watch('name');
     const [canOpenCalendar, setCanOpenCalendar] = useState(false);

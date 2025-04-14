@@ -1,4 +1,4 @@
-import { json, LoaderFunction } from 'react-router-dom';
+import { json, LoaderFunction, redirect } from 'react-router-dom';
 import {
     Facility,
     OpenContentItem,
@@ -159,6 +159,8 @@ export const getProgramTitle: LoaderFunction = async ({
         const resp = await API.get(`programs/${id}`);
         if (resp.success) {
             programName = 'Program: ' + (resp.data as Program).name;
+        } else {
+            return { title: programName, redirect: '/404' };
         }
     }
     if (class_id) {
@@ -167,6 +169,8 @@ export const getProgramTitle: LoaderFunction = async ({
         )) as ServerResponseOne<Class>;
         if (classResp.success) {
             cls = classResp.data;
+        } else {
+            return { title: programName, redirect: '/404' };
         }
     }
     return {
@@ -179,6 +183,9 @@ export const getProgram: LoaderFunction = async ({ params }) => {
     const resp = (await API.get(
         `programs/${params.id}`
     )) as ServerResponseOne<Program>;
+    if (!resp.success) {
+        return redirect('/404');
+    }
     return json(resp.data);
 };
 
