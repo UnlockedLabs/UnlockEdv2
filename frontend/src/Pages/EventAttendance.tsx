@@ -95,15 +95,17 @@ export default function EventAttendance() {
     } = useForm<FormData>();
 
     function handleToggleSelect(user_id: number) {
-        setRows((prev) =>
-            prev.map((row) =>
-                row.user_id === user_id
-                    ? { ...row, selected: !row.selected }
-                    : row
-            )
-        );
+        const currentRow =
+            modifiedRows[user_id] || rows.find((r) => r.user_id === user_id);
+        const newSelected = !(currentRow?.selected ?? false);
+        setModifiedRows((prev) => ({
+            ...prev,
+            [user_id]: {
+                ...currentRow,
+                selected: newSelected
+            }
+        }));
     }
-
     function handleSelectAll() {
         const allSelected = rows.every((row) => row.selected);
         setRows((prev) =>
