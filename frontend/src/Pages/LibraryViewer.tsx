@@ -1,7 +1,6 @@
 import { MouseEvent, useEffect, useState, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { SubmitHandler, FieldValues } from 'react-hook-form';
-import Error from '@/Pages/Error';
 import API from '@/api/api';
 import {
     Library,
@@ -30,7 +29,6 @@ export default function LibraryViewer() {
     const { user } = useAuth();
     const { id: libraryId } = useParams();
     const [src, setSrc] = useState<string>('');
-    const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const { toaster } = useToast();
     const navigate = useNavigate();
@@ -271,7 +269,7 @@ export default function LibraryViewer() {
                             src={src}
                         />
                     ) : (
-                        error && <Error />
+                        <div />
                     )}
                 </div>
                 <FormModal
