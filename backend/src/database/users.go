@@ -105,7 +105,7 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 }
 
 func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
-	likeSearch := args.SearchQuery()
+	likeSearch := "%" + args.SearchQuery() + "%"
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
@@ -119,7 +119,15 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 			tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
 		} else {
 			// in the case that the doc id has non-numeric charachters, include it in the search
-			tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(doc_id) LIKE ?", likeSearch, likeSearch, likeSearch, likeSearch)
+			tx = tx.Where(
+				`LOWER(name_first) LIKE ? 
+			 OR LOWER(username) LIKE ? 
+			 OR LOWER(name_last) LIKE ? 
+			 OR LOWER(doc_id) LIKE ? 
+			 OR (LOWER(name_first) || ' ' || LOWER(name_last)) LIKE ? 
+			 OR (LOWER(name_last) || ' ' || LOWER(name_first)) LIKE ?`,
+				likeSearch, likeSearch, likeSearch, likeSearch, likeSearch, likeSearch,
+			)
 		}
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
@@ -145,7 +153,15 @@ func (db *DB) SearchCurrentUsers(tx *gorm.DB, ctx *models.QueryContext, role str
 			tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
 		} else {
 			// in the case that the doc id has non-numeric charachters, include it in the search
-			tx = tx.Where("LOWER(name_first) LIKE ? OR LOWER(username) LIKE ? OR LOWER(name_last) LIKE ? OR LOWER(doc_id) LIKE ?", likeSearch, likeSearch, likeSearch, likeSearch)
+			tx = tx.Where(
+				`LOWER(name_first) LIKE ? 
+			 OR LOWER(username) LIKE ? 
+			 OR LOWER(name_last) LIKE ? 
+			 OR LOWER(doc_id) LIKE ? 
+			 OR (LOWER(name_first) || ' ' || LOWER(name_last)) LIKE ? 
+			 OR (LOWER(name_last) || ' ' || LOWER(name_first)) LIKE ?`,
+				likeSearch, likeSearch, likeSearch, likeSearch, likeSearch, likeSearch,
+			)
 		}
 	}
 
@@ -168,7 +184,7 @@ func (db *DB) SearchCurrentUsers(tx *gorm.DB, ctx *models.QueryContext, role str
 			last := "%" + split[1] + "%"
 			tx := db.Model(&models.User{}).
 				Where("facility_id = ?", ctx.FacilityID).
-				Where("(LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?)", first, last, last, first)
+				Where("(LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (lOWER(name_first) || ' ' || LOWER(name_last)) LIKE ? OR (LOWER(name_last) || ' ' || LOWER(name_first)) LIKE ?", first, last, last, first, last+" "+first, first+" "+last)
 			if err := tx.Count(&ctx.Total).Error; err != nil {
 				log.Errorf("Error fetching users: %v", err)
 				return nil, newGetRecordsDBError(err, "users")
