@@ -34,6 +34,7 @@ const LibrarySearchResultsModal = forwardRef<
     const { libraryOptions } = (useLoaderData() as {
         libraryOptions: Option[];
     }) || { libraryOptions: [] };
+
     const navigate = useNavigate();
     const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
