@@ -12,9 +12,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 // THIS Handler may be reworked as the actual handler doesn't seem finished
@@ -78,34 +75,32 @@ func TestHandleLogAttendeeForEvent(t *testing.T) {
 
 			attendance_status := logAttendeeMap["attendance_status"].(models.Attendance)
 
-			attendancePayload := models.ProgramClassEventAttendance{
-				EventID:          eventId,
-				UserID:           userId,
-				Date:             date,
-				AttendanceStatus: models.Attendance(attendance_status),
+			attendancePayloads := []models.ProgramClassEventAttendance{
+				{
+					EventID:          eventId,
+					UserID:           userId,
+					Date:             date,
+					AttendanceStatus: models.Attendance(attendance_status),
+				},
 			}
-			payloadBytes, err := json.Marshal(attendancePayload)
+			payloadBytes, err := json.Marshal(attendancePayloads)
 			if err != nil {
 				t.Fatalf("unable to marshal JSON payload: %v", err)
 			}
 			req.Body = io.NopCloser(bytes.NewReader(payloadBytes))
 
-			handler := getHandlerByRoleWithMiddleware(server.handleLogAttendeeForEvent, test.role)
+			handler := getHandlerByRoleWithMiddleware(server.handleAddAttendanceForEvent, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {
-				att := &models.ProgramClassEventAttendance{
-					EventID:          eventId,
-					UserID:           userId,
-					Date:             date,
-					AttendanceStatus: models.Present,
+				var response struct {
+					Message string `json:"message"`
 				}
-				received := rr.Body.String()
-				data := models.Resource[models.ProgramClassEventAttendance]{}
-				if err := json.Unmarshal([]byte(received), &data); err != nil {
-					t.Errorf("failed to unmarshal resource, error is %v", err)
+				if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+					t.Errorf("failed to unmarshal response, error: %v", err)
 				}
-				if diff := cmp.Diff(att, &data.Data, cmpopts.IgnoreFields(models.ProgramClassEventAttendance{}, "ID", "CreatedAt", "UpdatedAt")); diff != "" {
-					t.Errorf("handler returned unexpected results: %v", diff)
+				expectedMessage := "Attendance updated"
+				if response.Message != expectedMessage {
+					t.Errorf("expected message %q, got %q", expectedMessage, response.Message)
 				}
 
 			}

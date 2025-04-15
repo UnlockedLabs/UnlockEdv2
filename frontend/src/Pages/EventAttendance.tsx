@@ -108,9 +108,16 @@ export default function EventAttendance() {
     }
     function handleSelectAll() {
         const allSelected = rows.every((row) => row.selected);
-        setRows((prev) =>
-            prev.map((row) => ({ ...row, selected: !allSelected }))
-        );
+        setModifiedRows((prev) => {
+            const newModifications = { ...prev };
+            rows.forEach((row) => {
+                newModifications[row.user_id] = {
+                    ...(prev[row.user_id] || row),
+                    selected: !allSelected
+                };
+            });
+            return newModifications;
+        });
     }
 
     function handleAttendanceChange(user_id: number, newStatus: Attendance) {

@@ -34,6 +34,7 @@ type (
 		FeatureAccess []models.FeatureAccess `json:"feature_access"`
 		SessionID     string                 `json:"session_id"`
 		DocID         string                 `json:"doc_id"`
+		TimeZone      string                 `json:"timezone"`
 	}
 )
 
@@ -59,6 +60,7 @@ func (claims *Claims) getTraits() map[string]any {
 		"facility_name":  claims.FacilityName,
 		"feature_access": claims.FeatureAccess,
 		"doc_id":         claims.DocID,
+		"timezone":       claims.TimeZone,
 	}
 }
 
@@ -253,6 +255,14 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				if err := srv.Db.Model(&models.Facility{}).Select("name").Where("id = ?", facilityId).Find(&facilityName).Error; err != nil {
 					return nil, hasCookie, err
 				}
+				var timezone string
+				if err := srv.Db.
+					Table("facilities f").
+					Select("timezone").
+					Where("id = ?", facilityId).
+					Scan(&timezone).Error; err != nil {
+					return nil, hasCookie, err
+				}
 				claims := &Claims{
 					Username:      user.Username,
 					Email:         user.Email,
@@ -264,6 +274,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					Role:          user.Role,
 					FeatureAccess: srv.features,
 					SessionID:     sessionID,
+					TimeZone:      timezone,
 				}
 				if string(user.Role) != traits["role"].(string) {
 					err := srv.updateUserTraitsInKratos(claims)

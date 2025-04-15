@@ -13,7 +13,6 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/program-classes/{id}/attendees", srv.handleGetAttendeesForClass, true, axx},
 		{"GET /api/program-classes/{class_id}/event-attendance", srv.handleGetEventAttendance, true, axx},
-		{"POST /api/events/{id}/attendee/{user_id}", srv.handleLogAttendeeForEvent, true, axx},
 		{"POST /api/events/{id}/attendances", srv.handleAddAttendanceForEvent, true, axx},
 		{"DELETE /api/events/{id}/attendees/{user_id}", srv.handleDeleteAttendee, true, axx},
 	}
@@ -30,20 +29,6 @@ func (srv *Server) handleGetAttendeesForClass(w http.ResponseWriter, r *http.Req
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, attendees)
-}
-
-func (srv *Server) handleLogAttendeeForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var eventAttendance models.ProgramClassEventAttendance
-
-	err := json.NewDecoder(r.Body).Decode(&eventAttendance)
-	if err != nil {
-		return newJSONReqBodyServiceError(err)
-	}
-	attendance, err := srv.Db.LogUserAttendance(&eventAttendance)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, attendance)
 }
 
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {

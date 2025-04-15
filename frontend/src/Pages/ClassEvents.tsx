@@ -10,8 +10,10 @@ import {
     ServerResponseOne
 } from '@/common';
 import Pagination from '@/Components/Pagination';
+import { useForm } from 'react-hook-form';
+import { DateInput } from '@/Components/inputs/DateInput';
 
-export default function ClassAttendance() {
+export default function ClassEvents() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
     const {
@@ -21,11 +23,19 @@ export default function ClassAttendance() {
         setPerPage
     } = useUrlPagination(1, 20);
 
+    const defaultMonth = new Date().toISOString().substring(0, 7);
+    const { register, watch } = useForm<{ selectedMonth: string }>({
+        defaultValues: { selectedMonth: defaultMonth }
+    });
+    const selectedMonthValue = watch('selectedMonth');
+
+    const [year, month] = selectedMonthValue.split('-');
+
     const { data, error, isLoading } = useSWR<
         ServerResponseMany<ClassEventInstance>,
         Error
     >(
-        `/api/program-classes/class/${class_id}/events?page=${pageQuery}&per_page=${perPage}`
+        `/api/program-classes/class/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
     );
 
     const { data: program_class } = useSWR<ServerResponseOne<Class>, Error>(
@@ -34,9 +44,9 @@ export default function ClassAttendance() {
 
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;
-    const capacity = this_program?.capacity;
     const meta = data?.meta;
     const events = data?.data ?? [];
+
     function getPresentCount(records: ProgramClassEventAttendance[]): number {
         return records.filter(
             (record) => record.attendance_status === Attendance.Present
@@ -60,35 +70,37 @@ export default function ClassAttendance() {
     }
 
     function getStatus(event: ClassEventInstance): string {
-        const eventDate = new Date(event.date);
-        eventDate.setHours(0, 0, 0, 0);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (eventDate > today) {
-            return 'Scheduled';
-        } else {
-            if (
-                enrolled !== undefined &&
-                event.attendance_records.length === enrolled
-            ) {
-                return 'Marked';
-            } else {
-                return 'Not Marked';
-            }
-        }
+        const eventDate = new Date(event.date).setHours(0, 0, 0, 0);
+        const today = new Date().setHours(0, 0, 0, 0);
+        return eventDate > today
+            ? 'Scheduled'
+            : event.attendance_records.length === enrolled
+              ? 'Marked'
+              : 'Not Marked';
     }
 
     return (
         <div className="p-4">
+            <div className="flex mb-4 justify-start">
+                <DateInput
+                    label="Select Month"
+                    interfaceRef="selectedMonth"
+                    required={true}
+                    errors={{}}
+                    register={register}
+                    monthOnly={true}
+                    disabled={false}
+                />
+            </div>
+
             {isLoading && <div>Loading...</div>}
-            {error && <div className="error">Error loading data</div>}
             {data && events.length > 0 ? (
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-5">
                         <thead>
                             <tr className="grid grid-cols-5 px-4">
                                 <th className="justify-self-start">Date</th>
-                                <th className="">Class Time</th>
+                                <th>Class Time</th>
                                 <th>Attended</th>
                                 <th>Status</th>
                                 <th className="justify-self-end pr-5">
@@ -113,10 +125,13 @@ export default function ClassAttendance() {
                                             event.class_time
                                         )}
                                     </td>
-                                    <td className="px-5">{`${getPresentCount(event.attendance_records)} ${capacity ? `/ ${enrolled}` : ''}`}</td>
+                                    <td className="px-5">{`${event.attendance_records ? getPresentCount(event.attendance_records) : 0} ${
+                                        enrolled ? `/ ${enrolled}` : ''
+                                    }`}</td>
                                     <td className="px-5">{getStatus(event)}</td>
                                     <td className="justify-self-end">
-                                        {event.attendance_records.length > 0 ? (
+                                        {event.attendance_records?.length >
+                                        0 ? (
                                             <button
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
@@ -148,7 +163,11 @@ export default function ClassAttendance() {
                     </table>
                 </div>
             ) : (
-                <div></div>
+                error && (
+                    <div className="text-error">
+                        No events found for this month.
+                    </div>
+                )
             )}
             {!isLoading && !error && meta && (
                 <div className="flex justify-center">
