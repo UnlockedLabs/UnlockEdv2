@@ -163,7 +163,10 @@ export const getProgramTitle: LoaderFunction = async ({
             return { title: programName, redirect: '/404' };
         }
     }
-    if (class_id) {
+    // one of the routes this is assigned to, uses either /:program_id || /new
+    // so if the program_id is provided and it's not new, then we make the request and
+    // return a redirect if the class is not found
+    if (class_id && class_id != 'new') {
         const classResp = (await API.get(
             `program-classes/${class_id}`
         )) as ServerResponseOne<Class>;
