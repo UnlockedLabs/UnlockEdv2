@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { startTransition, useState } from 'react';
 import useSWR from 'swr';
 import {
     FilterLibrariesVidsandHelpfulLinksResident,
@@ -9,7 +9,6 @@ import {
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-import { useDebounceValue } from 'usehooks-ts';
 import FavoriteCard from '@/Components/FavoriteCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import ToggleView from '@/Components/ToggleView';
@@ -26,7 +25,6 @@ export default function FavoritesPage() {
         setPage: setPageQuery,
         setPerPage
     } = useUrlPagination(1, 20);
-    const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
     );
@@ -36,7 +34,7 @@ export default function FavoritesPage() {
         Error
     >(
         user
-            ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchQuery[0]}${sortQuery}`
+            ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
             : null,
         { shouldRetryOnError: false }
     );
@@ -44,7 +42,9 @@ export default function FavoritesPage() {
     const meta = data?.meta;
 
     const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
+        startTransition(() => {
+            setSearchTerm(encodeURIComponent(newSearch));
+        });
         setPageQuery(1);
     };
     return (

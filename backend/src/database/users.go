@@ -29,7 +29,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		tx = tx.Where("role = 'student'")
 	}
 	if args.Search != "" {
-		return db.SearchCurrentUsers(tx, args, role)
+		db.FuzzySearchUsers(tx, args)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
@@ -86,9 +86,9 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 		WHERE pce.class_id = pc.id
 			AND pce.user_id = ?
 			AND pc.facility_id = ?
-			AND pce.enrollment_status = 'Enrolled'
-	`
-	if err := trans.Debug().Exec(updateQuery, "Incomplete: Transferred", userID, currFacilityID).Error; err != nil {
+			AND pce.enrollment_status = 'Enrolled'`
+
+	if err := trans.Exec(updateQuery, "Incomplete: Transferred", userID, currFacilityID).Error; err != nil {
 		trans.Rollback()
 		return newUpdateDBError(err, "program_class_enrollments")
 	}
@@ -105,30 +105,14 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 }
 
 func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
-	likeSearch := "%" + args.SearchQuery() + "%"
 	tx := db.WithContext(args.Ctx).Model(&models.User{}).
 		Joins("LEFT JOIN program_class_enrollments pse ON users.id = pse.user_id AND pse.class_id = ?", classId).
 		Where("pse.user_id IS NULL"). //not enrolled in class
 		Where("users.role = ?", "student").
 		Where("facility_id =?", args.FacilityID)
 
-	if likeSearch != "" {
-		_, err := strconv.Atoi(args.Search)
-		if err == nil {
-			// optimization if a number is entered, they are searching for their DOC#
-			tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
-		} else {
-			// in the case that the doc id has non-numeric charachters, include it in the search
-			tx = tx.Where(
-				`LOWER(name_first) LIKE ? 
-			 OR LOWER(username) LIKE ? 
-			 OR LOWER(name_last) LIKE ? 
-			 OR LOWER(doc_id) LIKE ? 
-			 OR (LOWER(name_first) || ' ' || LOWER(name_last)) LIKE ? 
-			 OR (LOWER(name_last) || ' ' || LOWER(name_first)) LIKE ?`,
-				likeSearch, likeSearch, likeSearch, likeSearch, likeSearch, likeSearch,
-			)
-		}
+	if args.SearchQuery() != "" {
+		db.FuzzySearchUsers(tx, args)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
@@ -144,61 +128,19 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 	return users, nil
 }
 
-func (db *DB) SearchCurrentUsers(tx *gorm.DB, ctx *models.QueryContext, role string) ([]models.User, error) {
+// This method takes an existing transaction and applies proper searching through first, last, username + doc_id
+func (db *DB) FuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) {
 	likeSearch := ctx.SearchQuery()
-	if likeSearch != "" {
-		_, err := strconv.Atoi(ctx.Search)
-		if err == nil {
-			// optimization if a number is entered, they are searching for their DOC#
-			tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
-		} else {
-			// in the case that the doc id has non-numeric charachters, include it in the search
-			tx = tx.Where(
-				`LOWER(name_first) LIKE ? 
-			 OR LOWER(username) LIKE ? 
-			 OR LOWER(name_last) LIKE ? 
-			 OR LOWER(doc_id) LIKE ? 
-			 OR (LOWER(name_first) || ' ' || LOWER(name_last)) LIKE ? 
-			 OR (LOWER(name_last) || ' ' || LOWER(name_first)) LIKE ?`,
-				likeSearch, likeSearch, likeSearch, likeSearch, likeSearch, likeSearch,
-			)
-		}
+	_, err := strconv.Atoi(ctx.Search)
+	if err == nil {
+		// optimization if a number is entered, they are searching for their DOC#
+		tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
+	} else {
+		// in the case that the doc id has non-numeric charachters, include it in the search
+		tx = tx.Where(`(? <% concat_ws(' ', name_first, name_last, username) 
+				OR concat_ws(' ', name_first, name_last, username, doc_id) ILIKE ?)`,
+			likeSearch, likeSearch)
 	}
-
-	if err := tx.Count(&ctx.Total).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "users")
-	}
-	users := make([]models.User, 0, ctx.PerPage)
-	if err := tx.Order(ctx.OrderClause()).
-		Find(&users).
-		Offset(ctx.CalcOffset()).
-		Limit(ctx.PerPage).
-		Error; err != nil {
-		log.Errorf("Error fetching users: %v", err)
-		return nil, newGetRecordsDBError(err, "users")
-	}
-	if len(users) == 0 {
-		split := strings.Fields(ctx.Search)
-		if len(split) > 1 {
-			first := "%" + split[0] + "%"
-			last := "%" + split[1] + "%"
-			tx := db.Model(&models.User{}).
-				Where("facility_id = ?", ctx.FacilityID).
-				Where("(LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (LOWER(name_first) LIKE ? AND LOWER(name_last) LIKE ?) OR (lOWER(name_first) || ' ' || LOWER(name_last)) LIKE ? OR (LOWER(name_last) || ' ' || LOWER(name_first)) LIKE ?", first, last, last, first, last+" "+first, first+" "+last)
-			if err := tx.Count(&ctx.Total).Error; err != nil {
-				log.Errorf("Error fetching users: %v", err)
-				return nil, newGetRecordsDBError(err, "users")
-			}
-			if err := tx.Order(ctx.OrderClause()).
-				Offset(ctx.CalcOffset()).
-				Limit(ctx.PerPage).
-				Find(&users).Error; err != nil {
-				log.Errorf("Error fetching users: %v", err)
-				return nil, newGetRecordsDBError(err, "users")
-			}
-		}
-	}
-	return users, nil
 }
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {

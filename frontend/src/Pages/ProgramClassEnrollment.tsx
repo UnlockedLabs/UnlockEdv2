@@ -3,12 +3,11 @@ import {
     ServerResponseMany,
     User
 } from '@/common';
-import { useState } from 'react';
+import { startTransition, useState } from 'react';
 import API from '@/api/api';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import useSWR from 'swr';
-import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
 import { CancelButton } from '@/Components/inputs';
 import Pagination from '@/Components/Pagination';
@@ -27,13 +26,12 @@ export default function ProgramClassEnrollment() {
     const [perPage, setPerPage] = useState(20);
     const [pageQuery, setPageQuery] = useState<number>(1);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const searchQuery = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
         FilterProgramClassEnrollments['Last Name (A to Z)']
     );
 
     const { data, error, isLoading } = useSWR<ServerResponseMany<User>, Error>(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
+        `/api/users?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=student&class_id=${class_id}&include=only_unenrolled`
     );
 
     const credentialed_users = data?.data ?? [];
@@ -45,7 +43,9 @@ export default function ProgramClassEnrollment() {
     };
 
     const handleSearch = (newTerm: string) => {
-        setSearchTerm(newTerm);
+        startTransition(() => {
+            setSearchTerm(newTerm);
+        });
         setPageQuery(1);
     };
 
