@@ -220,9 +220,9 @@ export default function ProviderUserManagement() {
                                         className="border-gray-600 table-row"
                                     >
                                         <td>
-                                            {user.name_first +
-                                                ' ' +
-                                                user.name_last}
+                                            {user.name_last +
+                                                ', ' +
+                                                user.name_first}
                                         </td>
                                         <td>{user.username}</td>
                                         <td>{user.email}</td>
