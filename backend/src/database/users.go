@@ -29,7 +29,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		tx = tx.Where("role = 'student'")
 	}
 	if args.Search != "" {
-		db.FuzzySearchUsers(tx, args)
+		tx = fuzzySearchUsers(tx, args)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
@@ -112,7 +112,7 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		Where("facility_id =?", args.FacilityID)
 
 	if args.SearchQuery() != "" {
-		db.FuzzySearchUsers(tx, args)
+		tx = fuzzySearchUsers(tx, args)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "users")
@@ -128,19 +128,19 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 	return users, nil
 }
 
-// This method takes an existing transaction and applies proper searching through first, last, username + doc_id
-func (db *DB) FuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) {
+// This function takes an existing transaction and applies proper searching through first, last, username + doc_id
+func fuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) *gorm.DB {
 	likeSearch := ctx.SearchQuery()
 	_, err := strconv.Atoi(ctx.Search)
 	if err == nil {
 		// optimization if a number is entered, they are searching for their DOC#
 		tx = tx.Where("LOWER(doc_id) LIKE ?", likeSearch)
 	} else {
-		// in the case that the doc id has non-numeric charachters, include it in the search
-		tx = tx.Where(`(? <% concat_ws(' ', name_first, name_last, username) 
+		tx = tx.Where(`(? <% concat_ws(' ', name_first, name_last, username)
 				OR concat_ws(' ', name_first, name_last, username, doc_id) ILIKE ?)`,
 			likeSearch, likeSearch)
 	}
+	return tx
 }
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
