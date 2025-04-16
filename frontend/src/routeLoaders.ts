@@ -116,7 +116,7 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
             ? '&visibility=all'
             : '&visibility=visible';
     const libraryResp = await API.get(
-        `libraries?all=true&order_by=title${visibilityParam}`
+        `libraries?all=true&order_by=title&order=asc${visibilityParam}`
     );
     const libraryOptions = libraryResp.success
         ? (libraryResp.data as Library[]).map(
