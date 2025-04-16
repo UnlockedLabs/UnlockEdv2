@@ -3,7 +3,6 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"net/url"
-	"strings"
 	"time"
 
 	"gorm.io/gorm/clause"
@@ -72,9 +71,8 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(
 	args := []any{eventID, date, classID}
 
 	if qryCtx.Search != "" {
-		searchTerm := "%" + strings.ToLower(qryCtx.Search) + "%"
 		baseQuery += ` AND (LOWER(u.name_first) LIKE ? OR LOWER(u.name_last) LIKE ? OR LOWER(u.doc_id) LIKE ?)`
-		args = append(args, searchTerm, searchTerm, searchTerm)
+		args = append(args, qryCtx.SearchQuery(), qryCtx.SearchQuery(), qryCtx.SearchQuery())
 	}
 
 	countQuery := "SELECT COUNT(*) " + baseQuery
