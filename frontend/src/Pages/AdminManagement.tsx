@@ -17,7 +17,6 @@ import {
 } from '@/common';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { useDebounceValue } from 'usehooks-ts';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import ULIComponent from '@/Components/ULIComponent.tsx';
@@ -59,10 +58,9 @@ export default function AdminManagement() {
     const [targetUser, setTargetUser] = useState<TargetItem<User> | null>(null);
     const [tempPassword, setTempPassword] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
-    const searchQuery = useDebounceValue(searchTerm, 300);
     const handleSetSearchTerm = (newTerm: string) => {
         startTransition(() => {
-            setSearchTerm(newTerm);
+            setSearchTerm(encodeURIComponent(newTerm));
         });
     };
     const [sortQuery, setSortQuery] = useState('created_at DESC');
@@ -83,7 +81,7 @@ export default function AdminManagement() {
         ServerResponseMany<User>,
         Error
     >(
-        `/api/users?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=${user?.role}`
+        `/api/users?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&role=${user?.role}`
     );
     const checkResponseForDelete = useCheckResponse({
         mutate: mutate,

@@ -1,5 +1,5 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
-import { forwardRef } from 'react';
+import { forwardRef, startTransition } from 'react';
 
 interface LibrarySearchBarProps {
     searchTerm: string;
@@ -45,7 +45,11 @@ export const LibrarySearchBar = forwardRef<
                     placeholder={searchPlaceholder}
                     className="input input-bordered w-full max-w-xs"
                     value={searchTerm}
-                    onChange={(e) => changeCallback(e.target.value)}
+                    onChange={(e) => {
+                        startTransition(() => {
+                            changeCallback(e.target.value);
+                        });
+                    }}
                     onKeyDown={handleKeyDown}
                 />
             </div>

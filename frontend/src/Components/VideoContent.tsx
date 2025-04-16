@@ -9,7 +9,6 @@ import {
 } from '../common';
 import DropdownControl from '../Components/inputs/DropdownControl';
 import Pagination from '../Components/Pagination';
-import { useDebounceValue } from 'usehooks-ts';
 import VideoCard from '@/Components/VideoCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { useLocation } from 'react-router-dom';
@@ -22,7 +21,6 @@ import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 export default function VideoContent() {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
-    const searchQuery = useDebounceValue(searchTerm, 300);
     const [sortQuery, setSortQuery] = useState('created_at DESC');
     const route = useLocation();
     const modalRef = useRef<HTMLDialogElement>(null);
@@ -62,7 +60,7 @@ export default function VideoContent() {
         ServerResponseMany<Video>,
         Error
     >(
-        `/api/videos?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&visibility=${adminWithStudentView() ? UserRole.Student : user?.role}`
+        `/api/videos?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}&visibility=${adminWithStudentView() ? UserRole.Student : user?.role}`
     );
 
     const videoData =
