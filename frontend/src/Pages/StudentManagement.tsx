@@ -213,8 +213,9 @@ export default function StudentManagement() {
                                             }
                                         >
                                             <td className="justify-self-start">
-                                                {user.name_first}{' '}
                                                 {user.name_last}
+                                                {', '}
+                                                {user.name_first}
                                             </td>
                                             <td>{user.username}</td>
                                             <td>{user.doc_id}</td>

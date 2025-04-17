@@ -202,8 +202,9 @@ export default function AdminManagement() {
                                             className="card p-4 w-full grid-cols-5 justify-items-center"
                                         >
                                             <td className="justify-self-start">
-                                                {targetUser.name_first}{' '}
                                                 {targetUser.name_last}
+                                                {', '}
+                                                {targetUser.name_first}
                                             </td>
                                             <td>{targetUser.username}</td>
                                             <td>

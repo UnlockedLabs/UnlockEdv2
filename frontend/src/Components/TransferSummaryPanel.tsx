@@ -14,8 +14,9 @@ export default function TransferSummaryPanel({
                     <tr>
                         <td className="font-bold text-right">Resident Name:</td>
                         <td>
-                            {resident?.user.name_first}{' '}
                             {resident?.user.name_last}
+                            {', '}
+                            {resident?.user.name_first}
                         </td>
                     </tr>
                     <tr>

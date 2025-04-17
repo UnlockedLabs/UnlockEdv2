@@ -31,7 +31,7 @@ export default function CompletionDetailsModal({
                             </h3>
                             <p>
                                 <span className="font-semibold">Name:</span>{' '}
-                                {`${completionDetails.user?.name_first} ${completionDetails.user?.name_last}`}
+                                {`${completionDetails.user?.name_last}, ${completionDetails.user?.name_first}`}
                             </p>
                             <p>
                                 <span className="font-semibold">
