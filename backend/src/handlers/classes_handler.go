@@ -80,6 +80,7 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
+	ctx := srv.getQueryContext(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
@@ -95,7 +96,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if enrolled > class.Capacity {
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
-	updated, err := srv.Db.UpdateProgramClass(&class, id)
+	updated, err := srv.Db.UpdateProgramClass(&ctx, &class, id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -103,6 +104,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, log sLog) error {
+	ctx := srv.getQueryContext(r)
 	ids := r.URL.Query()["id"]
 	classIDs := make([]int, 0, len(ids))
 	for _, id := range ids {
@@ -111,11 +113,11 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 		}
 	}
 	defer r.Body.Close()
-	classMap := make(map[string]interface{})
+	classMap := make(map[string]any)
 	if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	err := srv.Db.UpdateProgramClasses(classMap, classIDs)
+	err := srv.Db.UpdateProgramClasses(&ctx, classMap, classIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

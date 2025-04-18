@@ -241,10 +241,17 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
-	models.UpdateStruct(toUpdate, &user)
+	changes := models.UpdateStruct(toUpdate, &user)
 	err = srv.Db.UpdateUser(toUpdate)
 	if err != nil {
 		return newDatabaseServiceError(err)
+	}
+	ctx := srv.getAdminQueryContext(r, toUpdate.ID)
+	for field, value := range changes {
+		err := srv.Db.CreateAuditHistory("users", "update", int(user.ID), field, value, &ctx)
+		if err != nil {
+			log.errorf("error recording audit history for event: %v", err)
+		}
 	}
 	return writeJsonResponse(w, http.StatusOK, toUpdate)
 }

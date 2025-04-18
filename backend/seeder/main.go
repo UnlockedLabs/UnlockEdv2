@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -36,8 +35,6 @@ func main() {
 	if err != nil {
 		log.Printf("Error loading .env file: %v", err)
 	}
-	args := os.Args[1:]
-	axx := parseArgs(args)
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
 		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 	db, err := gorm.Open(postgres.New(postgres.Config{
@@ -46,35 +43,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
 	}
-	seedTestData(db, axx)
+	seedTestData(db)
 }
 
-func parseArgs(args []string) []models.FeatureAccess {
-	if len(args) == 0 {
-		return models.AllFeatures
-	}
-	axx := make([]models.FeatureAccess, 0, 3)
-	for _, arg := range args {
-		switch strings.ToLower(arg) {
-		case "programs", "program":
-			axx = append(axx, models.ProgramAccess)
-		case "providers", "provider-platforms":
-			axx = append(axx, models.ProviderAccess)
-		case "open-content", "content", "knowledge-center", "kc", "oc":
-			axx = append(axx, models.OpenContentAccess)
-		}
-	}
-	if len(axx) == 0 {
-		log.Printf("No valid arguments provided. Defaulting to all features.")
-		return models.AllFeatures
-	}
-	return axx
-}
-
-func seedTestData(db *gorm.DB, features []models.FeatureAccess) {
-	hasFeature := func(feat models.FeatureAccess) bool {
-		return slices.Contains(features, feat)
-	}
+func seedTestData(db *gorm.DB) {
 	// isTesting is false because this needs to seed real users w/ kratos
 	testServer := handlers.NewServer(false)
 	facilities := []models.Facility{
@@ -93,48 +65,50 @@ func seedTestData(db *gorm.DB, features []models.FeatureAccess) {
 		}
 	}
 	platforms := []models.ProviderPlatform{}
-	if hasFeature(models.ProviderAccess) {
-		platforms = []models.ProviderPlatform{
-			{
-				Name:      "Canvas",
-				BaseUrl:   "https://canvas.staging.unlockedlabs.xyz",
-				AccountID: "1",
-				Type:      models.CanvasOSS,
-				State:     models.Enabled,
-				AccessKey: "testing_key_replace_me",
-			}, {
-				Name:      "Kolibri",
-				BaseUrl:   "https://kolibri.staging.unlockedlabs.xyz",
-				AccountID: "1234567890",
-				Type:      models.Kolibri,
-				State:     models.Enabled,
-				AccessKey: "testing_key_replace_me",
-			},
-			{
-				Name:      "Brightspace",
-				BaseUrl:   "https://unlocked.brightspacedemo.com",
-				AccountID: "testing_client_id_replace_me", //clientID
-				Type:      models.Brightspace,
-				State:     models.Disabled,
-				AccessKey: "testing_client_secret_replace_me", //ClientSecret;refresh-token
-			}}
-		for idx := range platforms {
-			if err := db.Create(&platforms[idx]).Error; err != nil {
-				log.Printf("Failed to create platform: %v", err)
-			}
+	platforms = []models.ProviderPlatform{
+		{
+			Name:      "Canvas",
+			BaseUrl:   "https://canvas.staging.unlockedlabs.xyz",
+			AccountID: "1",
+			Type:      models.CanvasOSS,
+			State:     models.Enabled,
+			AccessKey: "testing_key_replace_me",
+		}, {
+			Name:      "Kolibri",
+			BaseUrl:   "https://kolibri.staging.unlockedlabs.xyz",
+			AccountID: "1234567890",
+			Type:      models.Kolibri,
+			State:     models.Enabled,
+			AccessKey: "testing_key_replace_me",
+		},
+		{
+			Name:      "Brightspace",
+			BaseUrl:   "https://unlocked.brightspacedemo.com",
+			AccountID: "testing_client_id_replace_me", //clientID
+			Type:      models.Brightspace,
+			State:     models.Disabled,
+			AccessKey: "testing_client_secret_replace_me", //ClientSecret;refresh-token
+		}}
+	for idx := range platforms {
+		if err := db.Create(&platforms[idx]).Error; err != nil {
+			log.Printf("Failed to create platform: %v", err)
 		}
+	}
+
+	facilities = []models.Facility{}
+	err := db.Find(&facilities).Error
+	if err != nil {
+		log.Printf("Failed to get facilities: %v", err)
 	}
 	videos := []models.Video{}
 	libraries := []models.Library{}
-	if hasFeature(models.OpenContentAccess) {
-		libraries = generateFakeLibraries(2, 50)
-		videos = generateFakeVideos(3, 50)
-		for i := range videos {
-			// create open_content_url for each video
-			_ = db.Create(&models.OpenContentUrl{
-				ContentURL: fmt.Sprintf("/api/proxy/videos/%d", videos[i].ID),
-			}).Error
-		}
+	libraries = generateFakeLibraries(2, 25)
+	videos = generateFakeVideos(3, 25)
+	for i := range videos {
+		// create open_content_url for each video
+		_ = db.Create(&models.OpenContentUrl{
+			ContentURL: fmt.Sprintf("/api/proxy/videos/%d", videos[i].ID),
+		}).Error
 	}
 
 	for i := range videos {
@@ -149,12 +123,9 @@ func seedTestData(db *gorm.DB, features []models.FeatureAccess) {
 	}
 	users := generateFakeUsers(facilities)
 	classes := []models.ProgramClass{}
-	var err error
-	if hasFeature(models.ProgramAccess) {
-		classes, err = createFacilityPrograms(db)
-		if err != nil {
-			log.Printf("Failed to create facility programs: %v", err)
-		}
+	classes, err = createFacilityPrograms(db)
+	if err != nil {
+		log.Printf("Failed to create facility programs: %v", err)
 	}
 	for idx := range users {
 		log.Printf("Creating user %s", users[idx].Username)
@@ -179,31 +150,21 @@ func seedTestData(db *gorm.DB, features []models.FeatureAccess) {
 		}
 	}
 	courses := []models.Course{}
-	if hasFeature(models.ProviderAccess) {
-		var courses []models.Course
-		if err := json.Unmarshal([]byte(coursesStr), &courses); err != nil {
-			log.Printf("Failed to unmarshal test data: %v", err)
-		}
-		for idx := range courses {
-			if err := db.Create(&courses[idx]).Error; err != nil {
-				log.Printf("Failed to create course: %v", err)
-			}
+	if err := json.Unmarshal([]byte(coursesStr), &courses); err != nil {
+		log.Printf("Failed to unmarshal test data: %v", err)
+	}
+	for idx := range courses {
+		if err := db.Create(&courses[idx]).Error; err != nil {
+			log.Printf("Failed to create course: %v", err)
 		}
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
-	var dbUsers []models.User
-	if db.Find(&dbUsers).Error != nil {
-		log.Fatalf("Failed to get users from db")
-		return
-	}
 	events := []models.ProgramClassEvent{}
-	if hasFeature(models.ProgramAccess) {
-		if err := db.Find(&events).Error; err != nil {
-			log.Fatalf("Failed to get events from db")
-		}
+	if err := db.Find(&events).Error; err != nil {
+		log.Fatalf("Failed to get events from db")
 	}
-	for _, user := range dbUsers {
+	for _, user := range users {
 		for _, prog := range courses {
 			// all test courses are open_enrollment
 			enrollment := models.UserEnrollment{
@@ -273,9 +234,12 @@ func seedTestData(db *gorm.DB, features []models.FeatureAccess) {
 		}
 
 		numEnrollments := rand.Intn(3) + 1
-		available := slices.DeleteFunc(classes, func(c models.ProgramClass) bool {
-			return c.FacilityID != user.FacilityID
-		})
+		available := []models.ProgramClass{}
+		for i := range classes {
+			if classes[i].FacilityID == user.FacilityID {
+				available = append(available, classes[i])
+			}
+		}
 		rand.Shuffle(len(available), func(i, j int) { available[i], available[j] = available[j], available[i] })
 		for _, cls := range available[:min(numEnrollments, len(available))] {
 			status := models.Enrolled
@@ -338,10 +302,10 @@ func seedTestData(db *gorm.DB, features []models.FeatureAccess) {
 			}
 		}
 	}
-	createUserSessionActivity(db, dbUsers, hasFeature)
+	createUserSessionActivity(db, users)
 }
 
-func createUserSessionActivity(db *gorm.DB, dbUsers []models.User, hasFeature func(models.FeatureAccess) bool) {
+func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 	now := time.Now()
 	threeMonthsInPast := now.AddDate(0, -3, 0)
 	for _, user := range dbUsers {
@@ -375,83 +339,81 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User, hasFeature fu
 		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/arena/index"},
 		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/index"},
 	}
-	if hasFeature(models.OpenContentAccess) {
-		for _, url := range openContentUrls {
-			if err := db.Create(&url).Error; err != nil {
-				log.Printf("Failed to create openconenturl: %v", err)
-			}
+	for _, url := range openContentUrls {
+		if err := db.Create(&url).Error; err != nil {
+			log.Printf("Failed to create openconenturl: %v", err)
 		}
-		if err := db.Find(&openContentUrls).Error; err != nil {
-			log.Printf("Failed to get open content urls: %v", err)
-		}
+	}
+	if err := db.Find(&openContentUrls).Error; err != nil {
+		log.Printf("Failed to get open content urls: %v", err)
+	}
 
-		var libraries []models.Library
-		if err := db.Model(&models.Library{}).Find(&libraries).Error; err != nil {
-			log.Printf("Failed to get libraries: %v", err)
+	var libraries []models.Library
+	if err := db.Model(&models.Library{}).Find(&libraries).Error; err != nil {
+		log.Printf("Failed to get libraries: %v", err)
+	}
+	var videos []models.Video
+	if err := db.Model(&models.Video{}).Find(&videos).Error; err != nil {
+		log.Printf("Failed to get videos: %v", err)
+	}
+	generateOpenContentFavorites(db, dbUsers, libraries, videos)
+	for _, user := range dbUsers {
+		if user.Role != "student" {
+			continue
 		}
-		var videos []models.Video
-		if err := db.Model(&models.Video{}).Find(&videos).Error; err != nil {
-			log.Printf("Failed to get videos: %v", err)
-		}
-		generateOpenContentFavorites(db, dbUsers, libraries, videos)
-		for _, user := range dbUsers {
-			if user.Role != "student" {
-				continue
-			}
-			for _, video := range videos {
-				numSessions := rand.Intn(20)
-				for range numSessions {
-					if rand.Intn(100)%3 == 0 {
-						randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
-						requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
-						requestHour := rand.Intn(23)
-						requestMinute := rand.Intn(60)
-						requestSecond := rand.Intn(60)
-						requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
-						stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
-						contentActivity := models.OpenContentActivity{
-							RequestTS:             requestTS,
-							OpenContentProviderID: video.OpenContentProviderID,
-							FacilityID:            user.FacilityID,
-							UserID:                user.ID,
-							ContentID:             video.ID,
-							StopTS:                stopTS,
-						}
-						if err := db.Create(&contentActivity).Error; err != nil {
-							log.Printf("Failed to create open content activity: %v", err)
-						}
+		for _, video := range videos {
+			numSessions := rand.Intn(20)
+			for range numSessions {
+				if rand.Intn(100)%3 == 0 {
+					randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
+					requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
+					requestHour := rand.Intn(23)
+					requestMinute := rand.Intn(60)
+					requestSecond := rand.Intn(60)
+					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
+					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
+					contentActivity := models.OpenContentActivity{
+						RequestTS:             requestTS,
+						OpenContentProviderID: video.OpenContentProviderID,
+						FacilityID:            user.FacilityID,
+						UserID:                user.ID,
+						ContentID:             video.ID,
+						StopTS:                stopTS,
+					}
+					if err := db.Create(&contentActivity).Error; err != nil {
+						log.Printf("Failed to create open content activity: %v", err)
 					}
 				}
 			}
-			for _, kiwix := range libraries {
-				numSessions := rand.Intn(20)
-				for range numSessions {
-					if rand.Intn(100)%3 == 0 {
-						// Select random facility, provider, and content
-						urlID := getRandomURLForLibrary(openContentUrls)
-						randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
-						requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
-						requestHour := rand.Intn(23)
-						requestMinute := rand.Intn(60)
-						requestSecond := rand.Intn(60)
-						requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
-						stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
-						contentActivity := models.OpenContentActivity{
-							RequestTS:             requestTS,
-							OpenContentProviderID: kiwix.OpenContentProviderID,
-							FacilityID:            user.FacilityID,
-							UserID:                user.ID,
-							ContentID:             kiwix.ID,
-							OpenContentUrlID:      urlID,
-							StopTS:                stopTS,
-						}
-						if err := db.Create(&contentActivity).Error; err != nil {
-							log.Printf("Failed to create open content activity: %v", err)
-						}
+		}
+		for _, kiwix := range libraries {
+			numSessions := rand.Intn(20)
+			for range numSessions {
+				if rand.Intn(100)%3 == 0 {
+					// Select random facility, provider, and content
+					urlID := getRandomURLForLibrary(openContentUrls)
+					randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
+					requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
+					requestHour := rand.Intn(23)
+					requestMinute := rand.Intn(60)
+					requestSecond := rand.Intn(60)
+					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
+					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
+					contentActivity := models.OpenContentActivity{
+						RequestTS:             requestTS,
+						OpenContentProviderID: kiwix.OpenContentProviderID,
+						FacilityID:            user.FacilityID,
+						UserID:                user.ID,
+						ContentID:             kiwix.ID,
+						OpenContentUrlID:      urlID,
+						StopTS:                stopTS,
+					}
+					if err := db.Create(&contentActivity).Error; err != nil {
+						log.Printf("Failed to create open content activity: %v", err)
 					}
 				}
-
 			}
+
 		}
 	}
 }
@@ -689,8 +651,8 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 }
 
 func generateFakeUsers(facilities []models.Facility) []models.User {
-	users := make([]models.User, 0, 60)
-	for range 60 {
+	users := make([]models.User, 0, 30)
+	for range 30 {
 		facility := facilities[rand.Intn(len(facilities))]
 		first := faker.FirstName()
 		last := faker.LastName()

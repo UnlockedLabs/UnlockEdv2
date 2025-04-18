@@ -44,7 +44,8 @@ func NewPaginationInfo(currentPage, perPage int, total int64) PaginationMeta {
 	}
 }
 
-func UpdateStruct(dst, src any) {
+func UpdateStruct(dst, src any) map[string]any {
+	changes := make(map[string]any)
 	srcVal := reflect.ValueOf(src).Elem()
 	dstVal := reflect.ValueOf(dst).Elem()
 
@@ -55,15 +56,18 @@ func UpdateStruct(dst, src any) {
 	if dstVal.Kind() == reflect.Ptr {
 		dstVal = dstVal.Elem()
 	}
-
-	for i := 0; i < srcVal.NumField(); i++ {
+	t := dstVal.Type()
+	for i := range srcVal.NumField() {
 		srcField := srcVal.Field(i)
 		dstField := dstVal.Field(i)
+		fieldName := t.Field(i).Name
 
 		if !reflect.DeepEqual(srcField.Interface(), reflect.Zero(srcField.Type()).Interface()) {
 			dstField.Set(srcField)
+			changes[fieldName] = srcField.Interface()
 		}
 	}
+	return changes
 }
 
 func StringPtr(s string) *string {
@@ -74,6 +78,7 @@ type QueryContext struct {
 	Page       int
 	PerPage    int
 	FacilityID uint
+	AdminID    *uint
 	UserID     uint
 	OrderBy    string
 	Order      string

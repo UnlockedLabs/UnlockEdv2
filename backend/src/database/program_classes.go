@@ -37,16 +37,34 @@ func (db *DB) CreateProgramClass(content *models.ProgramClass) (*models.ProgramC
 	return content, nil
 }
 
-func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.ProgramClass, error) {
+func (db *DB) UpdateProgramClass(ctx *models.QueryContext, content *models.ProgramClass, id int) (*models.ProgramClass, error) {
 	existing := &models.ProgramClass{}
 	if err := db.Preload("Events").First(existing, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
-	models.UpdateStruct(existing, content)
+	changes := models.UpdateStruct(existing, content)
 	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
 		return nil, newUpdateDBError(err, "program classes")
 	}
+	for field, value := range changes {
+		db.CreateAuditHistory("program_classes", "update", id, field, value, ctx)
+	}
 	return existing, nil
+}
+
+func (db *DB) CreateAuditHistory(name, action string, id int, field string, value any, ctx *models.QueryContext) error {
+	if err := db.WithContext(ctx.Ctx).Create(&models.AuditHistory{
+		AdminID:    &ctx.UserID,
+		TableRef:   name,
+		ColumnRef:  field,
+		Value:      value,
+		RefID:      uint(id),
+		Action:     action,
+		FacilityID: &ctx.FacilityID,
+	}).Error; err != nil {
+		return newCreateDBError(err, "audit history")
+	}
+	return nil
 }
 
 func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
@@ -57,9 +75,14 @@ func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
 	return count, nil
 }
 
-func (db *DB) UpdateProgramClasses(classMap map[string]interface{}, ids []int) error {
+func (db *DB) UpdateProgramClasses(ctx *models.QueryContext, classMap map[string]any, ids []int) error {
 	if err := db.Model(&models.ProgramClass{}).Where("id IN ?", ids).Updates(classMap).Error; err != nil {
 		return newUpdateDBError(err, "program classes")
+	}
+	for _, id := range ids {
+		for field, value := range classMap {
+			db.CreateAuditHistory("program_classes", "update", id, field, value, ctx)
+		}
 	}
 	return nil
 }

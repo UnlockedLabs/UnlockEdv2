@@ -48,10 +48,11 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 		}
 		resourceID := r.PathValue("id")
 		var video models.Video
-
+		urlString := r.URL.String()
 		tx := srv.Db.Model(&models.Video{}).
 			Select(`videos.*, 
-            (CASE WHEN fvs.visibility_status IS NULL THEN false ELSE fvs.visibility_status END) AS visibility_status`).
+            (CASE WHEN fvs.visibility_status IS NULL THEN false ELSE fvs.visibility_status END)
+			AS visibility_status`).
 			Joins(`LEFT OUTER JOIN facility_visibility_statuses fvs 
             ON fvs.open_content_provider_id = videos.open_content_provider_id 
             AND fvs.content_id = videos.id 
@@ -65,6 +66,15 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 		if err := tx.Error; err != nil {
 			srv.errorResponse(w, http.StatusNotFound, "Video not found, is not available or visibility is not enabled")
 			return
+		}
+		if !user.isAdmin() {
+			activity := models.OpenContentActivity{
+				OpenContentProviderID: video.OpenContentProviderID,
+				ContentID:             video.ID,
+				FacilityID:            user.FacilityID,
+				UserID:                user.UserID,
+			}
+			srv.createContentActivityAndNotifyWS(urlString, &activity)
 		}
 		ctx := context.WithValue(r.Context(), videoKey, &video)
 		next.ServeHTTP(w, r.WithContext(ctx))

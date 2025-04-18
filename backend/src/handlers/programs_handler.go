@@ -122,10 +122,17 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		log.error("Error getting program:" + err.Error())
 	}
-	models.UpdateStruct(&toUpdate, &program)
+	changes := models.UpdateStruct(&toUpdate, &program)
 	updated, updateErr := srv.Db.UpdateProgram(toUpdate)
 	if updateErr != nil {
 		return newDatabaseServiceError(err)
+	}
+	ctx := srv.getQueryContext(r)
+	for field, value := range changes {
+		err := srv.Db.CreateAuditHistory("programs", "update", int(program.ID), field, value, &ctx)
+		if err != nil {
+			log.errorf("error recording audit history for event: %v", err)
+		}
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
 }

@@ -57,6 +57,14 @@ func (slog *sLog) add(key string, value any) {
 	slog.f[key] = value
 }
 
+func (srv *Server) getAdminQueryContext(r *http.Request, userId uint) models.QueryContext {
+	ctx := srv.getQueryContext(r)
+	adminID := ctx.UserID
+	ctx.UserID = userId
+	ctx.AdminID = &adminID // this is insanity i cannot believe this is even allowed
+	return ctx
+}
+
 func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	var facilityID, userID uint
 	claims := r.Context().Value(ClaimsKey).(*Claims)
