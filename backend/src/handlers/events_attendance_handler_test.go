@@ -29,8 +29,11 @@ func TestHandleGetAttendeesForClass(t *testing.T) {
 			req.SetPathValue("id", fmt.Sprintf("%d", 5)) //static...doesn't use 5
 			handler := getHandlerByRoleWithMiddleware(server.handleGetAttendeesForClass, test.role)
 			rr := executeRequest(t, req, handler, test)
+			queryParams := models.QueryContext{}
+			queryParams.PerPage = 10
+			queryParams.Page = 1
 			if test.expectedStatusCode == http.StatusOK {
-				attendees, err := server.Db.GetAttendees(1, 10, req.URL.Query(), 5) //static doesn't use 5
+				attendees, err := server.Db.GetAttendees(&queryParams, req.URL.Query(), 5) //static doesn't use 5
 				if err != nil {
 					t.Fatalf("unable to get attendees from db, error is %v", err)
 				}

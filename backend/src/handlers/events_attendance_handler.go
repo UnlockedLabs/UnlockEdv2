@@ -24,7 +24,7 @@ func (srv *Server) handleGetAttendeesForClass(w http.ResponseWriter, r *http.Req
 		return newBadRequestServiceError(err, "event ID")
 	}
 	queryParams := srv.getQueryContext(r)
-	attendees, err := srv.Db.GetAttendees(queryParams.Page, queryParams.PerPage, r.URL.Query(), eventID)
+	attendees, err := srv.Db.GetAttendees(&queryParams, r.URL.Query(), eventID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -38,9 +38,12 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		return newJSONReqBodyServiceError(err)
 	}
 	for _, att := range attendances {
-		if _, err := srv.Db.LogUserAttendance(&att); err != nil {
-			return newDatabaseServiceError(err)
+		if att.Date == "" {
+			att.Date = time.Now().Format("2006-01-02")
 		}
+	}
+	if err := srv.Db.LogUserAttendance(&attendances); err != nil {
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Attendance updated")
 }
@@ -65,14 +68,17 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newBadRequestServiceError(err, "class_id")
 	}
+	log.add("class id", classID)
 	eventID, err := strconv.Atoi(r.URL.Query().Get("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event_id")
 	}
+	log.add("event id", eventID)
 	date := r.URL.Query().Get("date")
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
 	}
+	log.add("date", date)
 
 	args := srv.getQueryContext(r)
 	combined, err := srv.Db.GetEnrollmentsWithAttendanceForEvent(&args, classID, eventID, date)

@@ -74,7 +74,7 @@ export default function ClassEvents() {
         const today = new Date().setHours(0, 0, 0, 0);
         return eventDate > today
             ? 'Scheduled'
-            : event.attendance_records.length === enrolled
+            : event.attendance_records?.length === enrolled
               ? 'Marked'
               : 'Not Marked';
     }
