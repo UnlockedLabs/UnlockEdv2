@@ -19,7 +19,9 @@ interface DateProps {
         | Validate<any, any> // eslint-disable-line @typescript-eslint/no-explicit-any
         | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     disabled?: boolean;
+    monthOnly?: boolean;
 }
+
 export function DateInput({
     allowPastDate = false,
     label,
@@ -30,12 +32,14 @@ export function DateInput({
     getValues,
     isFocused = false,
     validate,
-    disabled = false
+    disabled = false,
+    monthOnly = false
 }: DateProps) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const validateRules: Record<string, Validate<any, any>> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (!allowPastDate && !disabled) {
+
+    if (!monthOnly && !allowPastDate && !disabled) {
         validateRules.noPast = (userVal: string) => {
             if (userVal === '') {
                 return;
@@ -51,13 +55,17 @@ export function DateInput({
             const startVal = getValues('start_dt'); // eslint-disable-line
             if (!startVal || !endVal) return true;
 
-            const [sYear, sMonth, sDay] = startVal.split('-').map(Number); // eslint-disable-line
-            const [eYear, eMonth, eDay] = endVal.split('-').map(Number);
-
-            const start = new Date(sYear, sMonth - 1, sDay); // eslint-disable-line
-            const end = new Date(eYear, eMonth - 1, eDay);
-
-            return end >= start || `${label} cannot be before start date`;
+            if (monthOnly) {
+                return (
+                    endVal >= startVal || `${label} cannot be before start date`
+                );
+            } else {
+                const [sYear, sMonth, sDay] = startVal.split('-').map(Number); // eslint-disable-line
+                const [eYear, eMonth, eDay] = endVal.split('-').map(Number);
+                const start = new Date(sYear, sMonth - 1, sDay); // eslint-disable-line
+                const end = new Date(eYear, eMonth - 1, eDay);
+                return end >= start || `${label} cannot be before start date`;
+            }
         };
     }
 
@@ -75,13 +83,16 @@ export function DateInput({
         validate:
             Object.keys(validateRules).length > 0 ? validateRules : undefined
     };
+
+    const inputType = monthOnly ? 'month' : 'date';
+
     return (
         <label className="form-control">
             <div className="label">
                 <span className="label-text">{label}</span>
             </div>
             <input
-                type="date"
+                type={inputType}
                 className={`input input-bordered w-full`}
                 {...register(interfaceRef, options)}
                 autoFocus={isFocused}

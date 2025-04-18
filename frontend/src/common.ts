@@ -707,6 +707,41 @@ export interface ProgramClassEvent {
     room: string;
     recurrence_rule: string;
 }
+export interface ClassEventInstance {
+    event_id: number;
+    class_time: string;
+    date: string;
+    attendance_records: ProgramClassEventAttendance[];
+}
+
+export interface ProgramClassEventAttendance {
+    id: number;
+    created_at: Date;
+    updated_at: Date;
+    event_id: number;
+    user_id: number;
+    date: string;
+    attendance_status: Attendance;
+    note: string;
+}
+
+export interface EnrollmentAttendance {
+    enrollment_id: number;
+    class_id: number;
+    user_id: number;
+    enrollment_status: string;
+    doc_id: string;
+    name_first: string;
+    name_last: string;
+    attendance_status: string;
+    note: string;
+}
+
+export enum Attendance {
+    Present = 'present',
+    Absent_Excused = 'absent_excused',
+    Absent_Unexcused = 'absent_unexcused'
+}
 
 export enum SelectedClassStatus {
     Scheduled = 'Scheduled',

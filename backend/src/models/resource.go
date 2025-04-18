@@ -83,6 +83,7 @@ type QueryContext struct {
 	Total      int64
 	All        bool
 	Ctx        context.Context
+	Timezone   string
 }
 
 func (q QueryContext) IntoMeta() PaginationMeta {
