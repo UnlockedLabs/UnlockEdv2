@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -485,17 +486,77 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	}
 	return history, nil
 }
+func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]models.UserProgramClassInfo, error) {
+	var userEnrollments []models.UserProgramClassInfo
+	base := db.WithContext(args.Ctx).
+		Table("program_class_enrollments pce").
+		Select(`pce.enrollment_status as enrollment_status,
+        p.name as program_name, 
+        p.id as program_id,
+        pc.name as class_name,
+        pc.status as status,
+        pc.start_dt as start_date,
+        pc.end_dt as end_date,
+        pc.id as class_id`).
+		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
+		Joins("INNER JOIN programs p ON p.id = pc.program_id").
+		Where("pce.user_id = ?", userId).
+		Order("pc.start_dt DESC")
 
-type ProgramClassInfo struct {
-	ProgramName          string `json:"program_name"`
-	ClassName            string `json:"class_name"`
-	Status               string `json:"status"`
-	StartDate            string `json:"start_date"`
-	EndDate              string `json:"end_date"`
-	AttendancePercentage string `json:"attendance_percentage"`
+	if err := base.Count(&args.Total).Error; err != nil {
+		return nil, NewDBError(err, "program_class_enrollments")
+	}
+	if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
+		return nil, NewDBError(err, "program_class_enrollments apply paginatino")
+	}
+
+	now := time.Now().UTC()
+	for i := range userEnrollments {
+		held, attended, err := db.computeAttendance(args.Ctx, userId, userEnrollments[i].ClassID, now)
+		if err != nil {
+			return nil, err
+		}
+		var pct string
+		if held == 0 {
+			pct = "0%"
+		} else {
+			pct = fmt.Sprintf("%.0f%%", float64(attended)/float64(held)*100)
+		}
+		userEnrollments[i].AttendancePercentage = pct
+	}
+	return userEnrollments, nil
 }
 
-func (db *DB) GetUserProgramInfo(userId string) error {
+func (db *DB) computeAttendance(ctx context.Context, userId int, classId uint, upTo time.Time) (int, int64, error) {
+	var events []models.ProgramClassEvent
+	if err := db.WithContext(ctx).
+		Where("class_id = ?", classId).
+		Find(&events).Error; err != nil {
+		return 0, 0, err
+	}
 
-	return nil
+	totalHeld := 0
+	eventIDs := make([]uint, 0, len(events))
+	for _, ev := range events {
+		rule, err := ev.GetRRule()
+		if err != nil {
+			return 0, 0, NewDBError(err, "parsing rule for event ")
+		}
+		occs := rule.Between(rule.Options.Dtstart, upTo, true)
+		totalHeld += len(occs)
+		eventIDs = append(eventIDs, ev.ID)
+	}
+
+	var attendedCount int64
+	if len(eventIDs) > 0 {
+		if err := db.WithContext(ctx).
+			Model(&models.ProgramClassEventAttendance{}).
+			Where("user_id = ? AND event_id IN ?", userId, eventIDs).
+			Where("date <= ?", upTo.Format("2006-01-02")).
+			Count(&attendedCount).Error; err != nil {
+			return 0, 0, err
+		}
+	}
+
+	return totalHeld, attendedCount, nil
 }

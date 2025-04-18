@@ -700,6 +700,17 @@ export interface Class {
     events: ProgramClassEvent[];
 }
 
+export interface UserProgramClassInfo {
+    program_name: string;
+    class_name: string;
+    status: ProgClassStatus;
+    start_date: string;
+    end_date: string;
+    attendance_percentage: string;
+    class_id: string;
+    program_id: number;
+}
+
 export interface ProgramClassEvent {
     id: number;
     class_id: number;

@@ -404,8 +404,16 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
-	userId := r.URL.Query().Get("id")
-	_ = srv.Db.GetUserProgramInfo(userId)
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInternalServerServiceError(err, "error converting user_id")
+	}
+	queryCtx := srv.getQueryContext(r)
+	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userId)
+	if err != nil {
+		return newInternalServerServiceError(err, "error retrieving user programs")
+	}
 
-	return nil
+	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }
