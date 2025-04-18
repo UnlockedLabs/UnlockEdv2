@@ -122,6 +122,7 @@ export default function ClassEnrollmentDetails() {
                     ? [changeStatusValue?.user_id]
                     : selectedResidents
         });
+        setChangeStatusValue(undefined);
         setSelectedResidents([]);
         await mutate();
     };
