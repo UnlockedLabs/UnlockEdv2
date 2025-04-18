@@ -141,3 +141,14 @@ func NewUserAccountHistory(userID uint, action UserAccountHistoryAction, adminID
 		CreatedAt:               time.Now(),
 	}
 }
+
+type UserProgramClassInfo struct {
+	ProgramName          string      `json:"program_name"`
+	ClassName            string      `json:"class_name"`
+	Status               ClassStatus `json:"status"`
+	StartDate            string      `json:"start_date"`
+	EndDate              string      `json:"end_date"`
+	AttendancePercentage string      `json:"attendance_percentage"`
+	ClassID              uint        `json:"class_id" gorm:"column:class_id"`
+	ProgramID            uint        `json:"program_id"`
+}

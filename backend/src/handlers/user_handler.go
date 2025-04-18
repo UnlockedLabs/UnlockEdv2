@@ -24,6 +24,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
 		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
+		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, true, axx},
 	}
 }
 
@@ -392,4 +393,18 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		return newCreateRequestServiceError(err)
 	}
 	return writeJsonResponse(w, int(http.StatusNoContent), "successfully transferred resident")
+}
+func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInternalServerServiceError(err, "error converting user_id")
+	}
+	queryCtx := srv.getQueryContext(r)
+	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userId)
+	if err != nil {
+		return newInternalServerServiceError(err, "error retrieving user programs")
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }
