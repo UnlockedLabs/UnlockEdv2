@@ -28,6 +28,7 @@ import { canSwitchFacility, useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
 import { AccountHistoryRowCard } from '@/Components/cards';
 import calculateEngagementMetrics from '@/Components/helperFunctions/calculateEngagementMetrics';
+import UserPrograms from '@/Components/UserPrograms';
 
 function UserProfileInfoRow({
     column,
@@ -263,6 +264,11 @@ const ResidentProfile = () => {
                     </div>
                     {/* Tables */}
                     <div className="grid grid-cols-2 gap-6">
+                        <div className="card card-row-padding col-span-2 w-full">
+                            <UserPrograms
+                                user_id={residentId ? residentId : ''}
+                            />
+                        </div>
                         <div className="card card-row-padding flex flex-col gap-2">
                             <h2>Account Overview</h2>
                             {activityHistoryError ||
@@ -375,9 +381,6 @@ const ResidentProfile = () => {
                                     )}
                                 </div>
                             )}
-                        </div>
-                        <div className="card card-row-padding">
-                            <h2>{user?.name_last}'s Programs</h2>
                         </div>
                     </div>
                 </div>
