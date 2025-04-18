@@ -376,6 +376,9 @@ const ResidentProfile = () => {
                                 </div>
                             )}
                         </div>
+                        <div className="card card-row-padding">
+                            <h2>{user?.name_last}'s Programs</h2>
+                        </div>
                     </div>
                 </div>
             )}

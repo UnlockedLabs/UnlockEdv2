@@ -485,3 +485,17 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	}
 	return history, nil
 }
+
+type ProgramClassInfo struct {
+	ProgramName          string `json:"program_name"`
+	ClassName            string `json:"class_name"`
+	Status               string `json:"status"`
+	StartDate            string `json:"start_date"`
+	EndDate              string `json:"end_date"`
+	AttendancePercentage string `json:"attendance_percentage"`
+}
+
+func (db *DB) GetUserProgramInfo(userId string) error {
+
+	return nil
+}
