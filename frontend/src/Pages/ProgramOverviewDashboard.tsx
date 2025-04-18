@@ -159,6 +159,9 @@ export default function ProgramOverview() {
         );
         if (resp.success) setSelectedClasses([]);
     }
+    function handleCloseArchive() {
+        archiveClassesRef.current?.close();
+    }
 
     return (
         <div className="p-4 px-5">
@@ -454,7 +457,7 @@ export default function ProgramOverview() {
                     </div>
                 }
                 onSubmit={() => void archiveClass()}
-                onClose={() => console.log('close archive class')}
+                onClose={handleCloseArchive}
             ></TextOnlyModal>
         </div>
     );
