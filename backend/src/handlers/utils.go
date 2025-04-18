@@ -91,7 +91,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	tags := r.URL.Query()["tags"]
 	all := r.URL.Query().Get("all") == "true"
-	tz := r.Context().Value(ClaimsKey).(*Claims).TimeZone
+	tz := claims.TimeZone
 	return models.QueryContext{
 		Ctx:        r.Context(),
 		Page:       page,

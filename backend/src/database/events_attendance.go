@@ -23,8 +23,7 @@ func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, 
 		tx = tx.Where("event_id = ?", eventId)
 	}
 	attendance := make([]models.ProgramClassEventAttendance, 0)
-	total := int64(0)
-	err := tx.Count(&total).Limit(queryParams.PerPage).Offset(calcOffset(queryParams.Page, queryParams.PerPage)).Find(&attendance).Error
+	err := tx.Count(&queryParams.Total).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
 	if err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
@@ -82,12 +81,9 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	}
 
 	countQuery := "SELECT COUNT(*) " + baseQuery
-	var total int64
-	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&total).Error; err != nil {
+	if err := db.WithContext(qryCtx.Ctx).Raw(countQuery, args...).Scan(&qryCtx.Total).Error; err != nil {
 		return nil, err
 	}
-	qryCtx.Total = total
-
 	selectClause := `
 		SELECT
 			e.id AS enrollment_id,

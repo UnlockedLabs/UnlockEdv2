@@ -447,24 +447,6 @@ func generateEventInstances(event models.ProgramClassEvent, startDate, endDate t
 	return eventInstances
 }
 
-func (db *DB) GetCalendarForClassEvents(month time.Month, year int, facilityId uint, classId int) (*models.Calendar, error) {
-	var tz string
-	if err := db.Table("facilities f").Select("timezone").Where("id = ?", facilityId).Row().Scan(&tz); err != nil {
-		return nil, newGetRecordsDBError(err, "calendar")
-	}
-
-	events := []models.ProgramClassEvent{}
-	if err := db.Model(&models.ProgramClassEvent{}).
-		Preload("Overrides").
-		Preload("Class.Program").
-		Where("class_id = ?", classId).
-		Find(&events).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_class_events")
-	}
-
-	return db.getCalendarFromEvents(events, month, year, tz)
-}
-
 // GetClassEventInstancesWithAttendanceForRecurrence returns all occurrences for events
 // for a given class based on each event's recurrence rule (from DTSTART until UNTIL)
 // along with their associated attendance records.
@@ -558,16 +540,14 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 
 	qryCtx.Total = int64(len(instances))
 
-	if !qryCtx.All {
-		offset := qryCtx.CalcOffset()
-		end := offset + qryCtx.PerPage
-		if offset >= len(instances) {
-			instances = []models.ClassEventInstance{}
-		} else if end > len(instances) {
-			instances = instances[offset:]
-		} else {
-			instances = instances[offset:end]
-		}
+	offset := qryCtx.CalcOffset()
+	end := offset + qryCtx.PerPage
+	if offset >= len(instances) {
+		instances = []models.ClassEventInstance{}
+	} else if end > len(instances) {
+		instances = instances[offset:]
+	} else {
+		instances = instances[offset:end]
 	}
 
 	return instances, nil

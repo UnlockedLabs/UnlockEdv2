@@ -230,20 +230,3 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 	}
 	return total, content, nil
 }
-
-func (db *DB) GetProgramClassEnrollmentInfo(classID int) (int, error) {
-	var CurrentEnrollment int
-
-	err := db.Table("program_classes as pc").
-		Select("COUNT(pce.id) AS current_enrollment, pc.capacity").
-		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
-		Where("pc.id = ? AND pc.deleted_at IS NULL", classID).
-		Group("pc.capacity").
-		Find(&CurrentEnrollment).Error
-
-	if err != nil {
-		return 0, err
-	}
-
-	return CurrentEnrollment, nil
-}
