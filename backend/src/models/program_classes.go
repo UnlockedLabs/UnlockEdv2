@@ -97,12 +97,12 @@ type ProgramCompletion struct {
 func (ProgramCompletion) TableName() string { return "program_completions" }
 
 type ProgramClassesHistory struct {
-	ID           uint        `json:"id"`
-	ParentRefID  uint        `json:"parent_ref_id"`
-	NameTable    string      `json:"table_name" gorm:"size:255"` // cant use TableName because used below
-	BeforeUpdate interface{} `json:"before_update" gorm:"type:json"`
-	AfterUpdate  interface{} `json:"after_update" gorm:"type:json"`
-	CreatedAt    time.Time   `json:"created_at"`
+	ID           uint      `json:"id"`
+	ParentRefID  uint      `json:"parent_ref_id"`
+	NameTable    string    `json:"table_name" gorm:"size:255"` // cant use TableName because used below
+	BeforeUpdate any       `json:"before_update" gorm:"type:json"`
+	AfterUpdate  any       `json:"after_update" gorm:"type:json"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
