@@ -160,6 +160,9 @@ export default function ProgramOverview() {
         );
         if (resp.success) setSelectedClasses([]);
     }
+    function handleCloseArchive() {
+        archiveClassesRef.current?.close();
+    }
 
     return (
         <div className="p-4 px-5">
@@ -433,8 +436,11 @@ export default function ProgramOverview() {
                         {ableToArchiveClasses.length != 0 && (
                             <>
                                 <p>
-                                    Archive these classes at the following
-                                    facilities?
+                                    Archive{' '}
+                                    {ableToArchiveClasses.length == 1
+                                        ? 'this class'
+                                        : 'these classes'}{' '}
+                                    at the following facilities?
                                 </p>
                                 <ul className="list-disc list-inside py-2">
                                     {ableToArchiveClasses.map(
@@ -450,7 +456,7 @@ export default function ProgramOverview() {
                     </div>
                 }
                 onSubmit={() => void archiveClass()}
-                onClose={() => console.log('close archive class')}
+                onClose={handleCloseArchive}
             ></TextOnlyModal>
         </div>
     );
