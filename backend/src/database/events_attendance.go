@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (db *DB) GetAttendees(page, perPage int, params url.Values, classId int) ([]models.ProgramClassEventAttendance, error) {
+func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, classId int) ([]models.ProgramClassEventAttendance, error) {
 	date := params.Get("date")
 	userId := params.Get("user_id")
 	eventId := params.Get("event_id")
@@ -24,25 +24,35 @@ func (db *DB) GetAttendees(page, perPage int, params url.Values, classId int) ([
 	}
 	attendance := make([]models.ProgramClassEventAttendance, 0)
 	total := int64(0)
-	err := tx.Count(&total).Limit(perPage).Offset(calcOffset(page, perPage)).Find(&attendance).Error
+	err := tx.Count(&total).Limit(queryParams.PerPage).Offset(calcOffset(queryParams.Page, queryParams.PerPage)).Find(&attendance).Error
 	if err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
 	return attendance, nil
 }
 
-func (db *DB) LogUserAttendance(attendance_params *models.ProgramClassEventAttendance) (*models.ProgramClassEventAttendance, error) {
-	if attendance_params.Date == "" {
-		attendance_params.Date = time.Now().Format("2006-01-02")
+func (db *DB) LogUserAttendance(attendanceParams *[]models.ProgramClassEventAttendance) error {
+	tx := db.Begin()
+	if tx.Error != nil {
+		return NewDBError(tx.Error, "unable to start DB transaction")
 	}
-	err := db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},
-		DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note"}),
-	}).Create(&attendance_params).Error
-	if err != nil {
-		return nil, newCreateDBError(err, "class_event_attendance")
+
+	for _, att := range *attendanceParams {
+		if err := tx.
+			Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},
+				DoUpdates: clause.AssignmentColumns([]string{"attendance_status", "note"}),
+			}).
+			Create(&att).Error; err != nil {
+			tx.Rollback()
+			return newCreateDBError(err, "upserting attendance record")
+		}
 	}
-	return attendance_params, nil
+
+	if err := tx.Commit().Error; err != nil {
+		return NewDBError(err, "unable to commit DB transaction")
+	}
+	return nil
 }
 
 func (db *DB) DeleteAttendance(eventId, userId int, date string) error {
@@ -56,11 +66,7 @@ func (db *DB) DeleteAttendance(eventId, userId int, date string) error {
 	return nil
 }
 
-func (db *DB) GetEnrollmentsWithAttendanceForEvent(
-	qryCtx *models.QueryContext,
-	classID, eventID int,
-	date string,
-) ([]models.EnrollmentAttendance, error) {
+func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, classID, eventID int, date string) ([]models.EnrollmentAttendance, error) {
 	baseQuery := `
 		FROM program_class_enrollments AS e
 		JOIN users AS u ON u.id = e.user_id

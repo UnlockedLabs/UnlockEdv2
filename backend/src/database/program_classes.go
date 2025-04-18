@@ -11,11 +11,7 @@ func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	if err := db.Preload("Events").Preload("Enrollments").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
-	enrollment, err := db.GetProgramClassEnrollmentInfo(id)
-	if err != nil {
-		return nil, newGetRecordsDBError(err, "program class info")
-	}
-	content.Enrolled = int64(enrollment)
+	content.Enrolled = int64(len(content.Enrollments))
 	return content, nil
 }
 

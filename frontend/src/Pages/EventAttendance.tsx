@@ -157,12 +157,19 @@ export default function EventAttendance() {
         }
     }
     function handleMarkAllPresent() {
-        const newRows = rows.map((row) => ({
-            ...row,
-            selected: true,
-            attendance_status: Attendance.Present
-        }));
-        setRows(newRows);
+        setModifiedRows((prev) => {
+            const newMods: Record<number, LocalRowData> = { ...prev };
+
+            rows.forEach((row) => {
+                newMods[row.user_id] = {
+                    ...(prev[row.user_id] ?? row),
+                    selected: true,
+                    attendance_status: Attendance.Present
+                };
+            });
+
+            return newMods;
+        });
     }
 
     async function onSubmit() {

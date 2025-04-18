@@ -725,13 +725,6 @@ export interface ProgramClassEventAttendance {
     note: string;
 }
 
-export interface ProgramClassEnrollment {
-    id: number;
-    class_id: number;
-    user_id: number;
-    enrollment_status: string;
-    user: User;
-}
 export interface EnrollmentAttendance {
     enrollment_id: number;
     class_id: number;
@@ -1002,18 +995,3 @@ export type UserAccountHistoryAction =
     | 'facility_transfer'
     | 'set_password'
     | 'reset_password';
-
-export enum Months {
-    January = 'January',
-    February = 'February',
-    March = 'March',
-    April = 'April',
-    May = 'May',
-    June = 'June',
-    July = 'July',
-    August = 'August',
-    September = 'September',
-    October = 'October',
-    November = 'November',
-    December = 'December'
-}

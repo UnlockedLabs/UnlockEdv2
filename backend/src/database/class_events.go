@@ -468,8 +468,8 @@ func (db *DB) GetCalendarForClassEvents(month time.Month, year int, facilityId u
 // GetClassEventInstancesWithAttendanceForRecurrence returns all occurrences for events
 // for a given class based on each event's recurrence rule (from DTSTART until UNTIL)
 // along with their associated attendance records.
-func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext, tz, month, year string) ([]models.ClassEventInstance, error) {
-	loc, err := time.LoadLocation(tz)
+func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext, month, year string) ([]models.ClassEventInstance, error) {
+	loc, err := time.LoadLocation(qryCtx.Timezone)
 	if err != nil {
 		logrus.Error("failed to load timezone")
 		return nil, NewDBError(err, "failed to load timezone")
@@ -510,7 +510,10 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	}
 
 	occurrences := rRule.Between(startTime, untilTime, true)
-
+	if len(occurrences) == 0 {
+		qryCtx.Total = 0
+		return []models.ClassEventInstance{}, nil
+	}
 	duration, err := time.ParseDuration(event.Duration)
 	if err != nil {
 		logrus.Errorf("error parsing duration for event: %v", err)

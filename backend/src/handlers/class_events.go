@@ -115,12 +115,12 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
+	log.add("class id", classID)
 	month := r.URL.Query().Get("month")
 	year := r.URL.Query().Get("year")
-	timezone := r.Context().Value(ClaimsKey).(*Claims).TimeZone
 
 	qryCtx := srv.getQueryContext(r)
-	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, timezone, month, year)
+	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
