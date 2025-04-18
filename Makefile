@@ -2,7 +2,6 @@ DOCKER_COMPOSE=docker-compose.yml
 KOLIBRI_COMPOSE=config/docker-compose.kolibri.yml
 MIGRATE_MAIN=backend/migrations/main.go -dir backend/migrations
 BUILD_RECREATE=--build --force-recreate
-SEED_MAIN=backend/seeder/main.go
 BINARY_NAME=server
 MIDDLEWARE=provider-middleware
 GOARCH=$(shell go env GOARCH)
@@ -32,7 +31,7 @@ help: ascii_art
 	@echo "   migrate-fresh          Drop the tables in the main application and to reset the database to a fresh state"
 	@echo "   migration NAME=x       Create a new migration with the provided name"
 	@echo " 󱗆  install-dep NAME=x     Install a dependency on the front-end while the containers are running"
-	@echo " 󱘤  seed                   Run the seeder script"
+	@echo " 󱘤  seed FEATURES=x        Run the seeder script. FEATURES=programs,open-content,providers"
 	@echo "   build                  Build Go binaries for different platforms"
 	@echo " 󰑙  reset                  Drop all volumes and reset all data in the database"
 	@echo " ➕ merge PR=x             Merge a PR (requires GitHub CLI and permissions | team only)"
@@ -68,7 +67,7 @@ kolibri: ascii_art
 	docker compose -f $(DOCKER_COMPOSE) -f $(KOLIBRI_COMPOSE) up $(BUILD_RECREATE)
 
 seed: ascii_art
-	go run $(SEED_MAIN)
+	go run backend/seeder/main.go "$(FEATURES)"
 
 build: ascii_art
 	@if [ -z "$(ACCOUNT_ID)" ]; then \
