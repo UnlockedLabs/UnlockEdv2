@@ -474,8 +474,8 @@ export enum FundingType {
     FEDERAL_GRANTS = 'Federal_Grants',
     INMATE_WELFARE = 'Inmate_Welfare_Funds',
     NON_PROFIT_ORGANIZATION = 'Nonprofit_Organizations',
-    OTHER = 'Other',
-    STATE_GRANTS = 'State_Grants'
+    STATE_GRANTS = 'State_Grants',
+    OTHER = 'Other'
 }
 
 export enum ProgramType {
