@@ -24,6 +24,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
 		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
+		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, true, axx},
 	}
 }
 
@@ -401,4 +402,10 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
+}
+func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
+	userId := r.URL.Query().Get("id")
+	_ = srv.Db.GetUserProgramInfo(userId)
+
+	return nil
 }
