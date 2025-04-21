@@ -62,7 +62,7 @@ export default function ProgramOverview() {
     } else if (classesError) {
         navigate('/error');
     }
-
+    // console.log(program.facilities.includes())
     const classes = classesResp?.data ?? [];
 
     const meta = classesResp?.meta ?? {
