@@ -28,7 +28,7 @@ import { canSwitchFacility, useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
 import { AccountHistoryRowCard } from '@/Components/cards';
 import calculateEngagementMetrics from '@/Components/helperFunctions/calculateEngagementMetrics';
-import UserPrograms from '@/Components/UserPrograms';
+import ResidentPrograms from '@/Components/ResidentPrograms';
 
 function UserProfileInfoRow({
     column,
@@ -265,7 +265,7 @@ const ResidentProfile = () => {
                     {/* Tables */}
                     <div className="grid grid-cols-2 gap-6">
                         <div className="card card-row-padding col-span-2 w-full">
-                            <UserPrograms
+                            <ResidentPrograms
                                 user_id={residentId ? residentId : ''}
                             />
                         </div>
