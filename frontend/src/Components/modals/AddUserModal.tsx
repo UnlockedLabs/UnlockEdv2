@@ -63,7 +63,6 @@ export const AddUserModal = forwardRef(function (
                         }
                     });
                     throw new Error(error_msgs.userexists);
-                    break;
                 }
                 case 'alphanum': {
                     setFormError({
@@ -74,7 +73,6 @@ export const AddUserModal = forwardRef(function (
                         }
                     });
                     throw new Error(error_msgs.alphanum);
-                    break;
                 }
             }
         } else {
