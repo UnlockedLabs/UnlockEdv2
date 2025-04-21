@@ -160,7 +160,7 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 	} else {
 		numDays, err := strconv.Atoi(daysQ)
 		if err != nil {
-			return newInvalidIdServiceError(err, "days")
+			numDays = -1
 		}
 		days = numDays
 	}

@@ -48,6 +48,10 @@ const OperationalInsights = () => {
         (metrics?.data.total_residents ?? 0) +
         (metrics?.data.total_admins ?? 0);
 
+    useEffect(() => {
+        console.log(timeFilter);
+    }, [timeFilter]);
+
     return (
         <div className="overflow-x-hidden">
             {error && <div>Error loading data</div>}
@@ -64,11 +68,8 @@ const OperationalInsights = () => {
                                     <span className="label-text">Days</span>
                                 </label>
                                 <DropdownControl
-                                    enumType={Object.fromEntries(
-                                        Object.entries(FilterPastTime).filter(
-                                            ([key]) => key !== 'All time'
-                                        )
-                                    )}
+                                    enumType={FilterPastTime}
+                                    value={timeFilter}
                                     setState={setTimeFilter}
                                 />
                             </div>
