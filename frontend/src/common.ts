@@ -704,7 +704,7 @@ export interface ResidentProgramClassInfo {
     program_name: string;
     class_name: string;
     status: ProgClassStatus;
-    enrollment_status: string;
+    enrollment_status: EnrollmentStatus;
     start_date: string;
     end_date: string;
     attendance_percentage: string;

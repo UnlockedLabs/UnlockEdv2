@@ -1,14 +1,15 @@
 import {
     ServerResponseMany,
     ResidentProgramClassInfo,
-    ProgClassStatus
+    ProgClassStatus,
+    EnrollmentStatus
 } from '@/common';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import Pagination from './Pagination';
 
-export default function UserPrograms({ user_id }: { user_id: string }) {
+export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const navigate = useNavigate();
@@ -23,13 +24,29 @@ export default function UserPrograms({ user_id }: { user_id: string }) {
     const meta = programsResp?.meta;
 
     const activePrograms = programs?.filter(
-        (p) => p.status === ProgClassStatus.ACTIVE
+        (p) =>
+            p.status === ProgClassStatus.ACTIVE &&
+            p.enrollment_status === EnrollmentStatus.Enrolled
     );
     const scheduledPrograms = programs?.filter(
-        (p) => p.status === ProgClassStatus.SCHEDULED
+        (p) =>
+            p.status === ProgClassStatus.SCHEDULED &&
+            p.enrollment_status === EnrollmentStatus.Enrolled
     );
-    const pausedPrograms = programs?.filter(
-        (p) => p.status === ProgClassStatus.PAUSED
+
+    const completedPrograms = programs?.filter(
+        (p) =>
+            p.status === ProgClassStatus.COMPLETED &&
+            p.enrollment_status === EnrollmentStatus.Completed
+    );
+
+    const didNotCompletePrograms = programs?.filter(
+        (p) =>
+            (p.status != ProgClassStatus.CANCELLED &&
+                p.enrollment_status === EnrollmentStatus.Dropped) ||
+            p.enrollment_status === EnrollmentStatus['Failed To Complete'] ||
+            p.enrollment_status === EnrollmentStatus.Withdrawn ||
+            p.enrollment_status === EnrollmentStatus.Transfered
     );
 
     const handleSetPerPage = (perPage: number) => {
@@ -186,64 +203,131 @@ export default function UserPrograms({ user_id }: { user_id: string }) {
                                     </>
                                 )}
 
-                            {/** Paused **/}
-                            {pausedPrograms && pausedPrograms.length > 0 && (
-                                <>
-                                    <tr className="text-sm font-semibold bg-gray-100">
-                                        <td
-                                            colSpan={6}
-                                            className="font-bold py-2 bg-base-200"
-                                        >
-                                            Paused Enrollments
-                                        </td>
-                                    </tr>
-                                    {pausedPrograms.map((pc) => (
-                                        <tr
-                                            key={`${pc.class_id}-${pc.start_date}`}
-                                            className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
-                                            onClick={() =>
-                                                handleNavigate(
-                                                    Number(pc.class_id)
-                                                )
-                                            }
-                                        >
-                                            <td className="justify-self-start">
-                                                {pc.program_name}
-                                            </td>
-                                            <td>{pc.class_name}</td>
-                                            <td>{pc.enrollment_status}</td>
-                                            <td>
-                                                {new Date(
-                                                    pc.start_date
-                                                ).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    timeZone: 'UTC'
-                                                })}
-                                            </td>
-                                            <td>
-                                                {pc.end_date
-                                                    ? new Date(
-                                                          pc.end_date
-                                                      ).toLocaleDateString(
-                                                          'en-US',
-                                                          {
-                                                              year: 'numeric',
-                                                              month: 'short',
-                                                              day: 'numeric',
-                                                              timeZone: 'UTC'
-                                                          }
-                                                      )
-                                                    : ''}
-                                            </td>
-                                            <td className="justify-self-end px-7">
-                                                {pc.attendance_percentage}
+                            {/** Completed **/}
+                            {completedPrograms &&
+                                completedPrograms.length > 0 && (
+                                    <>
+                                        <tr className="text-sm font-semibold bg-gray-100">
+                                            <td
+                                                colSpan={6}
+                                                className="font-bold py-2 bg-base-200"
+                                            >
+                                                Completed Enrollments
                                             </td>
                                         </tr>
-                                    ))}
-                                </>
-                            )}
+                                        {completedPrograms.map((pc) => (
+                                            <tr
+                                                key={`${pc.class_id}-${pc.start_date}`}
+                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                                onClick={() =>
+                                                    handleNavigate(
+                                                        Number(pc.class_id)
+                                                    )
+                                                }
+                                            >
+                                                <td className="justify-self-start">
+                                                    {pc.program_name}
+                                                </td>
+                                                <td>{pc.class_name}</td>
+                                                <td>{pc.enrollment_status}</td>
+                                                <td>
+                                                    {new Date(
+                                                        pc.start_date
+                                                    ).toLocaleDateString(
+                                                        'en-US',
+                                                        {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            timeZone: 'UTC'
+                                                        }
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {pc.end_date
+                                                        ? new Date(
+                                                              pc.end_date
+                                                          ).toLocaleDateString(
+                                                              'en-US',
+                                                              {
+                                                                  year: 'numeric',
+                                                                  month: 'short',
+                                                                  day: 'numeric',
+                                                                  timeZone:
+                                                                      'UTC'
+                                                              }
+                                                          )
+                                                        : ''}
+                                                </td>
+                                                <td className="justify-self-end px-7">
+                                                    {pc.attendance_percentage}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </>
+                                )}
+                            {didNotCompletePrograms &&
+                                didNotCompletePrograms.length > 0 && (
+                                    <>
+                                        <tr className="text-sm font-semibold bg-gray-100">
+                                            <td
+                                                colSpan={6}
+                                                className="font-bold py-2 bg-base-200"
+                                            >
+                                                Completed Enrollments
+                                            </td>
+                                        </tr>
+                                        {didNotCompletePrograms.map((pc) => (
+                                            <tr
+                                                key={`${pc.class_id}-${pc.start_date}`}
+                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                                onClick={() =>
+                                                    handleNavigate(
+                                                        Number(pc.class_id)
+                                                    )
+                                                }
+                                            >
+                                                <td className="justify-self-start">
+                                                    {pc.program_name}
+                                                </td>
+                                                <td>{pc.class_name}</td>
+                                                <td>{pc.enrollment_status}</td>
+                                                <td>
+                                                    {new Date(
+                                                        pc.start_date
+                                                    ).toLocaleDateString(
+                                                        'en-US',
+                                                        {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            timeZone: 'UTC'
+                                                        }
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {pc.end_date
+                                                        ? new Date(
+                                                              pc.end_date
+                                                          ).toLocaleDateString(
+                                                              'en-US',
+                                                              {
+                                                                  year: 'numeric',
+                                                                  month: 'short',
+                                                                  day: 'numeric',
+                                                                  timeZone:
+                                                                      'UTC'
+                                                              }
+                                                          )
+                                                        : ''}
+                                                </td>
+                                                <td className="justify-self-end px-7">
+                                                    {pc.attendance_percentage}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </>
+                                )}
                         </tbody>
                     </table>
 
