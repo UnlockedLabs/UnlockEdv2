@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
-import { Facility, LoginMetrics, ServerResponseOne } from '@/common';
+import {
+    Facility,
+    FilterPastTime,
+    LoginMetrics,
+    ServerResponseOne
+} from '@/common';
 import StatsCard from './StatsCard';
 import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
 import { useAuth, canSwitchFacility } from '@/useAuth';
+import DropdownControl from './inputs/DropdownControl';
 
 const OperationalInsights = () => {
     const [facility, setFacility] = useState('all');
-    const [days, setDays] = useState(7);
+    const [timeFilter, setTimeFilter] = useState<FilterPastTime>(
+        FilterPastTime['Past 30 days']
+    );
     const [resetCache, setResetCache] = useState(false);
     const { user } = useAuth();
 
@@ -16,14 +24,14 @@ const OperationalInsights = () => {
         ServerResponseOne<LoginMetrics>,
         Error
     >(
-        `/api/login-metrics?facility=${facility}&days=${days}&reset=${resetCache}`
+        `/api/login-metrics?facility=${facility}&days=${timeFilter}&reset=${resetCache}`
     );
     const { data: facilitiesData } =
         useSWR<ServerResponseOne<Facility[]>>('/api/facilities');
 
     useEffect(() => {
         void mutate();
-    }, [facility, days, resetCache]);
+    }, [facility, timeFilter, resetCache]);
 
     const facilities = facilitiesData?.data;
     useEffect(() => {
@@ -39,6 +47,7 @@ const OperationalInsights = () => {
     const totalUsers =
         (metrics?.data.total_residents ?? 0) +
         (metrics?.data.total_admins ?? 0);
+
     return (
         <div className="overflow-x-hidden">
             {error && <div>Error loading data</div>}
@@ -54,17 +63,14 @@ const OperationalInsights = () => {
                                 >
                                     <span className="label-text">Days</span>
                                 </label>
-                                <select
-                                    id="days"
-                                    className="select select-bordered w-full max-w-xs"
-                                    value={days}
-                                    onChange={(e) =>
-                                        setDays(parseInt(e.target.value))
-                                    }
-                                >
-                                    <option value={7}>Last 7 days</option>
-                                    <option value={30}>Last 30 days</option>
-                                </select>
+                                <DropdownControl
+                                    enumType={Object.fromEntries(
+                                        Object.entries(FilterPastTime).filter(
+                                            ([key]) => key !== 'All time'
+                                        )
+                                    )}
+                                    setState={setTimeFilter}
+                                />
                             </div>
 
                             {canSwitchFacility(user!) && (
@@ -124,7 +130,11 @@ const OperationalInsights = () => {
                                 (metrics.data.active_users / totalUsers) *
                                 100
                             ).toFixed(2)}% of total`}
-                            tooltip={`Number of users who have logged in in the last ${days} days`}
+                            tooltip={`${
+                                timeFilter === FilterPastTime['All time']
+                                    ? 'All time number of users who have logged in'
+                                    : `Number of users who have logged in in the last ${timeFilter} days`
+                            }`}
                         />
                         <StatsCard
                             title="Inactive Users"
@@ -136,7 +146,7 @@ const OperationalInsights = () => {
                                     ? 'User'
                                     : 'Users'
                             }
-                            tooltip={`Number of users who have not logged in in the last ${days} days`}
+                            tooltip={`Number of users who have not logged in in the last ${timeFilter} days`}
                         />
                         <StatsCard
                             title="New Admins Added"
@@ -146,7 +156,7 @@ const OperationalInsights = () => {
                                     ? 'Admin'
                                     : 'Admins'
                             }
-                            tooltip={`Number of new admins added in the last ${days} days`}
+                            tooltip={`Number of new admins added in the last ${timeFilter} days`}
                         />
                         <StatsCard
                             title="New Residents Added"
@@ -156,7 +166,7 @@ const OperationalInsights = () => {
                                     ? 'Resident'
                                     : 'Residents'
                             }
-                            tooltip={`Number of new residents added in the last ${days} days`}
+                            tooltip={`Number of new residents added in the last ${timeFilter} days`}
                         />
                         <StatsCard
                             title="Total Logins"
@@ -166,7 +176,7 @@ const OperationalInsights = () => {
                                     ? 'Login'
                                     : 'Logins'
                             }
-                            tooltip={`Total number of logins in the last ${days} days`}
+                            tooltip={`Total number of logins in the last ${timeFilter} days`}
                         />
                     </div>
 

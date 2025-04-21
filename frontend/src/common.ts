@@ -890,11 +890,9 @@ export enum Timezones {
 }
 
 export enum FilterPastTime {
-    'Past 7 days' = '7',
     'Past 30 days' = '30',
     'Past 90 days' = '90',
-    'Past 6 months' = '182',
-    'Past year' = '365'
+    'All time' = 'all'
 }
 
 export interface OpenContentItem {
