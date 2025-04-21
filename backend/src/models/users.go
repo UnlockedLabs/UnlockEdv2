@@ -142,10 +142,11 @@ func NewUserAccountHistory(userID uint, action UserAccountHistoryAction, adminID
 	}
 }
 
-type UserProgramClassInfo struct {
+type ResidentProgramClassInfo struct {
 	ProgramName          string      `json:"program_name"`
 	ClassName            string      `json:"class_name"`
 	Status               ClassStatus `json:"status"`
+	EnrollmentStatus     string      `json:"enrollment_status"`
 	StartDate            string      `json:"start_date"`
 	EndDate              string      `json:"end_date"`
 	AttendancePercentage string      `json:"attendance_percentage"`

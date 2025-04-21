@@ -1,4 +1,8 @@
-import { ServerResponseMany, UserProgramClassInfo } from '@/common';
+import {
+    ServerResponseMany,
+    ResidentProgramClassInfo,
+    ProgClassStatus
+} from '@/common';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
@@ -12,11 +16,21 @@ export default function UserPrograms({ user_id }: { user_id: string }) {
         data: programsResp,
         error: programsError,
         isLoading
-    } = useSWR<ServerResponseMany<UserProgramClassInfo>, Error>(
+    } = useSWR<ServerResponseMany<ResidentProgramClassInfo>, Error>(
         `/api/users/${user_id}/programs?page=${page}&per_page=${perPage}}`
     );
     const programs = programsResp?.data;
     const meta = programsResp?.meta;
+
+    const activePrograms = programs?.filter(
+        (p) => p.status === ProgClassStatus.ACTIVE
+    );
+    const scheduledPrograms = programs?.filter(
+        (p) => p.status === ProgClassStatus.SCHEDULED
+    );
+    const pausedPrograms = programs?.filter(
+        (p) => p.status === ProgClassStatus.PAUSED
+    );
 
     const handleSetPerPage = (perPage: number) => {
         setPerPage(perPage);
@@ -27,74 +41,209 @@ export default function UserPrograms({ user_id }: { user_id: string }) {
         navigate(`/programs/${program_id}`);
     };
     return (
-        <div className="card card-row-padding">
-            <h2>User Programs </h2>
+        <div className="card-row-padding">
+            <h2>Resident Programs</h2>
             {!programsResp || (isLoading && <div>Loading...</div>)}
             {programsError ? (
                 <p className="body text-error">
                     Error retrieving users programs
                 </p>
             ) : (
-                <div className="card p-4">
-                    <table className="table w-full mb-4">
-                        <thead className="bg-background">
-                            <tr>
-                                <th>Program Name</th>
+                <div className="relative w-full" style={{ overflowX: 'clip' }}>
+                    <table className="table-2 mb-4">
+                        <thead className="">
+                            <tr className=" grid grid-cols-6 px-4">
+                                <th className="justify-self-start">
+                                    Program Name
+                                </th>
                                 <th>Class Name</th>
-                                <th>Status</th>
+                                <th>Enrollment Status</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
-                                <th className="w-[200px]">Attendance %</th>
+                                <th className="justify-self-end">
+                                    Attendance %
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {programs?.map((program_class) => {
-                                return (
-                                    <tr
-                                        key={program_class.class_id}
-                                        className="bg-background"
-                                        onClick={() =>
-                                            handleNavigate(
-                                                program_class.program_id
-                                            )
-                                        }
-                                    >
-                                        <td> {program_class.program_name}</td>
-                                        <td>{program_class.class_name}</td>
-                                        <td>{program_class.status}</td>
-                                        <td>
-                                            {new Date(
-                                                program_class.start_date
-                                            ).toLocaleDateString('en-US', {
-                                                year: 'numeric',
-                                                month: 'short',
-                                                day: 'numeric',
-                                                timeZone: 'UTC'
-                                            })}
-                                        </td>
-                                        <td>
-                                            {program_class.end_date
-                                                ? new Date(
-                                                      program_class.end_date
-                                                  ).toLocaleDateString(
-                                                      'en-US',
-                                                      {
-                                                          year: 'numeric',
-                                                          month: 'short',
-                                                          day: 'numeric',
-                                                          timeZone: 'UTC'
-                                                      }
-                                                  )
-                                                : ''}
-                                        </td>
-                                        <td>
-                                            {
-                                                program_class.attendance_percentage
-                                            }
+                            {/** Active **/}
+                            {activePrograms && activePrograms.length > 0 && (
+                                <>
+                                    <tr className="text-sm font-semibold bg-gray-100">
+                                        <td
+                                            colSpan={6}
+                                            className="py-2 bg-background"
+                                        >
+                                            Active Enrollments
                                         </td>
                                     </tr>
-                                );
-                            })}
+                                    {activePrograms.map((pc) => (
+                                        <tr
+                                            key={`${pc.class_id}-${pc.start_date}`}
+                                            className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                            onClick={() =>
+                                                handleNavigate(
+                                                    Number(pc.class_id)
+                                                )
+                                            }
+                                        >
+                                            <td className="justify-self-start">
+                                                {pc.program_name}
+                                            </td>
+                                            <td>{pc.class_name}</td>
+                                            <td>{pc.enrollment_status}</td>
+                                            <td>
+                                                {new Date(
+                                                    pc.start_date
+                                                ).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    timeZone: 'UTC'
+                                                })}
+                                            </td>
+                                            <td>
+                                                {pc.end_date
+                                                    ? new Date(
+                                                          pc.end_date
+                                                      ).toLocaleDateString(
+                                                          'en-US',
+                                                          {
+                                                              year: 'numeric',
+                                                              month: 'short',
+                                                              day: 'numeric',
+                                                              timeZone: 'UTC'
+                                                          }
+                                                      )
+                                                    : ''}
+                                            </td>
+                                            <td className="justify-self-end px-7">
+                                                {pc.attendance_percentage}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </>
+                            )}
+
+                            {/**Scheduled **/}
+                            {scheduledPrograms &&
+                                scheduledPrograms.length > 0 && (
+                                    <>
+                                        <tr className="text-sm font-semibold bg-gray-100">
+                                            <td colSpan={6} className="py-0.5">
+                                                Scheduled Enrollments
+                                            </td>
+                                        </tr>
+                                        {scheduledPrograms.map((pc) => (
+                                            <tr
+                                                key={`${pc.class_id}-${pc.start_date}`}
+                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                                onClick={() =>
+                                                    handleNavigate(
+                                                        Number(pc.class_id)
+                                                    )
+                                                }
+                                            >
+                                                <td className="justify-self-start">
+                                                    {pc.program_name}
+                                                </td>
+                                                <td>{pc.class_name}</td>
+                                                <td>{pc.enrollment_status}</td>
+                                                <td>
+                                                    {new Date(
+                                                        pc.start_date
+                                                    ).toLocaleDateString(
+                                                        'en-US',
+                                                        {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            timeZone: 'UTC'
+                                                        }
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {pc.end_date
+                                                        ? new Date(
+                                                              pc.end_date
+                                                          ).toLocaleDateString(
+                                                              'en-US',
+                                                              {
+                                                                  year: 'numeric',
+                                                                  month: 'short',
+                                                                  day: 'numeric',
+                                                                  timeZone:
+                                                                      'UTC'
+                                                              }
+                                                          )
+                                                        : ''}
+                                                </td>
+                                                <td className="justify-self-end px-7">
+                                                    {pc.attendance_percentage}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </>
+                                )}
+
+                            {/** Paused **/}
+                            {pausedPrograms && pausedPrograms.length > 0 && (
+                                <>
+                                    <tr className="text-sm font-semibold bg-gray-100">
+                                        <td
+                                            colSpan={6}
+                                            className="font-bold py-2 bg-base-200"
+                                        >
+                                            Paused Enrollments
+                                        </td>
+                                    </tr>
+                                    {pausedPrograms.map((pc) => (
+                                        <tr
+                                            key={`${pc.class_id}-${pc.start_date}`}
+                                            className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                            onClick={() =>
+                                                handleNavigate(
+                                                    Number(pc.class_id)
+                                                )
+                                            }
+                                        >
+                                            <td className="justify-self-start">
+                                                {pc.program_name}
+                                            </td>
+                                            <td>{pc.class_name}</td>
+                                            <td>{pc.enrollment_status}</td>
+                                            <td>
+                                                {new Date(
+                                                    pc.start_date
+                                                ).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    timeZone: 'UTC'
+                                                })}
+                                            </td>
+                                            <td>
+                                                {pc.end_date
+                                                    ? new Date(
+                                                          pc.end_date
+                                                      ).toLocaleDateString(
+                                                          'en-US',
+                                                          {
+                                                              year: 'numeric',
+                                                              month: 'short',
+                                                              day: 'numeric',
+                                                              timeZone: 'UTC'
+                                                          }
+                                                      )
+                                                    : ''}
+                                            </td>
+                                            <td className="justify-self-end px-7">
+                                                {pc.attendance_percentage}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </>
+                            )}
                         </tbody>
                     </table>
 

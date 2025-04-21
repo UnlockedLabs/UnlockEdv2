@@ -486,8 +486,8 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	}
 	return history, nil
 }
-func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]models.UserProgramClassInfo, error) {
-	var userEnrollments []models.UserProgramClassInfo
+func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]models.ResidentProgramClassInfo, error) {
+	var userEnrollments []models.ResidentProgramClassInfo
 	base := db.WithContext(args.Ctx).
 		Table("program_class_enrollments pce").
 		Select(`pce.enrollment_status as enrollment_status,
@@ -507,7 +507,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		return nil, NewDBError(err, "program_class_enrollments")
 	}
 	if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
-		return nil, NewDBError(err, "program_class_enrollments apply paginatino")
+		return nil, NewDBError(err, "program_class_enrollments apply pagination")
 	}
 
 	now := time.Now().UTC()
