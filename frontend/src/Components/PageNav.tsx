@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAuth, canSwitchFacility } from '@/useAuth';
 import { Bars3Icon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import ULIComponent from '@/Components/ULIComponent.tsx';
-import { Facility, RouteTitleHandler, TitleHandler } from '@/common';
+import { Facility, RouteTitleHandler, TitleHandler, UserRole } from '@/common';
 import { useMatches } from 'react-router-dom';
 import API from '@/api/api';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
@@ -57,6 +57,38 @@ export default function PageNav({
         }
     };
 
+    const path = window.location.pathname;
+    const FacilityDropdownToggle = () => {
+        return (
+            <ul className="menu menu-horizontal px-1">
+                <li>
+                    <details className="dropdown dropdown-end" ref={detailsRef}>
+                        <summary>
+                            <ULIComponent icon={BuildingOffice2Icon} />
+                            <span className="font-semibold">
+                                {user?.facility_name}
+                            </span>
+                        </summary>
+                        <ul className="dropdown-content w-max bg-grey-2 z-[1] dark:bg-grey-1 flex flex-col">
+                            {facilities?.map((facility: Facility) => (
+                                <li
+                                    key={facility.id}
+                                    onClick={() => {
+                                        void handleSwitchFacility(facility);
+                                    }}
+                                >
+                                    <label className="body">
+                                        {facility.name}
+                                    </label>
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        );
+    };
+
     return (
         <div className="px-2 py-3 flex justify-between items-center">
             <div
@@ -81,41 +113,16 @@ export default function PageNav({
                         : pageTitle}
                 </h1>
             </div>
-            {user && canSwitchFacility(user) ? (
-                <ul className="menu menu-horizontal px-1">
-                    <li>
-                        <details
-                            className="dropdown dropdown-end"
-                            ref={detailsRef}
-                        >
-                            <summary>
-                                <ULIComponent icon={BuildingOffice2Icon} />
-                                <span className="font-semibold">
-                                    {user.facility_name}
-                                </span>
-                            </summary>
-                            <ul className="dropdown-content w-max bg-grey-2 z-[1] dark:bg-grey-1 flex flex-col">
-                                {facilities?.map((facility: Facility) => (
-                                    <li
-                                        key={facility.id}
-                                        onClick={() => {
-                                            void handleSwitchFacility(facility);
-                                        }}
-                                    >
-                                        <label className="body">
-                                            {facility.name}
-                                        </label>
-                                    </li>
-                                ))}
-                            </ul>
-                        </details>
-                    </li>
-                </ul>
+            {user && canSwitchFacility(user) && path !== '/programs' ? (
+                <FacilityDropdownToggle />
             ) : (
                 <div className="flex flex-row items-center gap-2 px-6 py-4">
                     <ULIComponent icon={BuildingOffice2Icon} />
                     <label className="font-semibold body">
-                        {user?.facility_name}
+                        {user?.role === UserRole.DepartmentAdmin ||
+                        user?.role === UserRole.SystemAdmin
+                            ? 'All Facilities'
+                            : user?.facility_name}
                     </label>
                 </div>
             )}

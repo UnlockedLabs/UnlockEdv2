@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction } from 'react';
 
 interface DropdownControlProps {
     label?: string;
-    setState?: Dispatch<SetStateAction<string>>;
+    setState?: Dispatch<SetStateAction<any>>; // eslint-disable-line
     customCallback?: (value: string) => void;
     enumType: Record<string, string>;
 }

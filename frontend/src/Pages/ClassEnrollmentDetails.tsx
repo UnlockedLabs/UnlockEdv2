@@ -166,7 +166,7 @@ export default function ClassEnrollmentDetails() {
                         />
                         <DropdownControl
                             label="Sort by"
-                            setState={(value) => {
+                            customCallback={(value) => {
                                 setSortQuery(value);
                                 setPage(1);
                             }}
@@ -181,7 +181,7 @@ export default function ClassEnrollmentDetails() {
                         />
                         <DropdownControl
                             label="Filter by Status"
-                            setState={(value) => {
+                            customCallback={(value) => {
                                 setFilterStatus(value);
                                 setPage(1);
                             }}
