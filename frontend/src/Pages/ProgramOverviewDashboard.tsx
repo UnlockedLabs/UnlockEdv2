@@ -15,7 +15,6 @@ import {
     SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
-import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
@@ -433,18 +432,23 @@ export default function ProgramOverview() {
                         {ableToArchiveClasses.length != 0 && (
                             <>
                                 <p>
-                                    Archive these classes at the following
-                                    facilities?
+                                    Are you sure you would like to archive{' '}
+                                    {ableToArchiveClasses.length == 1
+                                        ? 'this class'
+                                        : 'these selected classes'}
+                                    ?
                                 </p>
-                                <ul className="list-disc list-inside py-2">
-                                    {ableToArchiveClasses.map(
-                                        (program_class) => (
-                                            <li key={program_class.id}>
-                                                {program_class.facility_name}
-                                            </li>
-                                        )
-                                    )}
-                                </ul>
+                                {ableToArchiveClasses.length > 1 && (
+                                    <ul className="list-disc list-inside py-2">
+                                        {ableToArchiveClasses.map(
+                                            (program_class) => (
+                                                <li key={program_class.id}>
+                                                    {program_class.name}
+                                                </li>
+                                            )
+                                        )}
+                                    </ul>
+                                )}
                             </>
                         )}
                     </div>
