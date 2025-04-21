@@ -411,7 +411,7 @@ export default function CreateProgramPage() {
             <div className="flex items-center justify-end gap-4 mt-4">
                 <button
                     type="submit"
-                    className="btn btn-secondary"
+                    className="btn"
                     onClick={() =>
                         reset({
                             name: '',
