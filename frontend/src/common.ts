@@ -721,6 +721,17 @@ export interface ResidentProgramClassInfo {
     program_id: number;
 }
 
+export interface ClassStats {
+    Enrollments: number;
+    Completions: number;
+    CompletionRate: number;
+}
+
+export interface ProgramOverviewDashMetrics {
+    Classes: Class[];
+    Stats: ClassStats;
+}
+
 export interface ProgramClassEvent {
     id: number;
     class_id: number;

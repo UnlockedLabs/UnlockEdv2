@@ -14,9 +14,10 @@ import {
     Program,
     Class,
     SelectedClassStatus,
-    ServerResponseMany
+    ServerResponseMany,
+    ProgramOverviewDashMetrics,
+    ClassStats
 } from '@/common';
-import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
@@ -55,20 +56,29 @@ export default function ProgramOverview() {
     };
 
     const {
-        data: classesResp,
-        error: classesError,
-        mutate: mutateClasses
-    } = useSWR<ServerResponseMany<Class>, Error>(
+        data: programOverviewDashMetricsResp,
+        error: programOverviewDashMetricsError,
+        mutate: mutateProgramOverviewDashMetrics
+    } = useSWR<ServerResponseMany<ProgramOverviewDashMetrics>, Error>(
         `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
+
     if (!program) {
         navigate('/404');
-    } else if (classesError) {
+    } else if (programOverviewDashMetricsError) {
         navigate('/error');
     }
-    const classes = classesResp?.data ?? [];
 
-    const meta = classesResp?.meta ?? {
+    const classes = programOverviewDashMetricsResp?.data[0]?.Classes ?? [];
+    const rawMetrics = programOverviewDashMetricsResp?.data[0]?.Stats;
+
+    const metrics: ClassStats = {
+        Enrollments: rawMetrics?.Enrollments ?? 0,
+        Completions: rawMetrics?.Completions ?? 0,
+        CompletionRate: rawMetrics?.CompletionRate ?? 0
+    };
+
+    const meta = programOverviewDashMetricsResp?.meta ?? {
         total: 0,
         per_page: 20,
         page: 1,
@@ -77,7 +87,7 @@ export default function ProgramOverview() {
     };
 
     const checkResponse = useCheckResponse({
-        mutate: mutateClasses,
+        mutate: mutateProgramOverviewDashMetrics,
         refModal: archiveClassesRef
     });
 
@@ -178,13 +188,13 @@ export default function ProgramOverview() {
                 <div className="flex flex-col gap-4 h-[250px]">
                     <StatsCard
                         title="Residents Enrolled"
-                        number="104"
+                        number={metrics.Enrollments.toString()}
                         label="residents"
                         tooltip="Placeholder data"
                     />
                     <StatsCard
                         title="Overall Completion"
-                        number="50"
+                        number={metrics.CompletionRate.toString()}
                         label="%"
                         tooltip="Placeholder data"
                     />
@@ -399,7 +409,9 @@ export default function ProgramOverview() {
                                         <ClassStatus
                                             status={program_class.status}
                                             program_class={program_class}
-                                            mutateClasses={mutateClasses}
+                                            mutateClasses={
+                                                mutateProgramOverviewDashMetrics
+                                            }
                                         />
                                     </td>
                                 </tr>

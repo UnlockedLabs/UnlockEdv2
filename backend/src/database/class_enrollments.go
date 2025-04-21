@@ -230,3 +230,34 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 	}
 	return total, content, nil
 }
+
+type EnrollmentAndCompletionMetrics struct {
+	ActiveEnrollments int     `json:"active_enrollments"`
+	Completions       int     `json:"completions"`
+	CompletionRate    float64 `json:"completion_rate"`
+}
+
+func (db *DB) GetProgramClassEnrollmentAndCompletions(programID int, facilityId int) (EnrollmentAndCompletionMetrics, error) {
+	var metrics EnrollmentAndCompletionMetrics
+
+	err := db.Table("program_class_enrollments pce").
+		Select(`
+        COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) as active_enrollments,
+        COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) as completions,
+        CASE 
+            WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) = 0 
+            THEN 0 
+            ELSE (COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(*)) * 100
+        END as completion_rate
+    `).
+		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
+		Where("pc.program_id = ?", programID).
+		Where("pc.facility_id = ?", facilityId).
+		Scan(&metrics).Error
+
+	if err != nil {
+		return EnrollmentAndCompletionMetrics{}, newNotFoundDBError(err, "class event enrollments")
+	}
+
+	return metrics, nil
+}

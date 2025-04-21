@@ -23,6 +23,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 }
 
 func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
@@ -33,7 +34,38 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
-	return writePaginatedResponse(w, http.StatusOK, classes, args.IntoMeta())
+
+	metrics, err := srv.Db.GetProgramClassEnrollmentAndCompletions(id, int(args.FacilityID))
+
+	if err != nil {
+		log.add("program_id", id)
+		return newDatabaseServiceError(err)
+	}
+
+	type PaginatedResult struct {
+		Classes []models.ProgramClassDetail
+		Stats   struct {
+			Enrollments    int
+			Completions    int
+			CompletionRate float64
+		}
+	}
+
+	result := PaginatedResult{
+		Classes: classes,
+		Stats: struct {
+			Enrollments    int
+			Completions    int
+			CompletionRate float64
+		}{
+			Enrollments:    metrics.ActiveEnrollments,
+			Completions:    metrics.Completions,
+			CompletionRate: metrics.CompletionRate,
+		},
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, []PaginatedResult{result}, args.IntoMeta())
+	// return writePaginatedResponse(w, http.StatusOK, classes,args.IntoMeta())
 }
 
 func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sLog) error {
