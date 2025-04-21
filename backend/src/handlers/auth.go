@@ -249,9 +249,12 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				if !ok {
 					passReset = true
 				}
-				var facilityName string
-				if err := srv.Db.Model(&models.Facility{}).Select("name").Where("id = ?", facilityId).Find(&facilityName).Error; err != nil {
-					return nil, hasCookie, err
+				facilityName := user.Facility.Name
+				if user.FacilityID != uint(facilityId) && slices.Contains([]models.UserRole{models.SystemAdmin, models.DepartmentAdmin}, user.Role) {
+					if err := srv.Db.Model(&models.Facility{}).Select("name").Where("id = ?", facilityId).Find(&facilityName).Error; err != nil {
+						return nil, hasCookie, err
+					}
+					facilityName = strings.TrimSpace(facilityName)
 				}
 				claims := &Claims{
 					Username:      user.Username,
