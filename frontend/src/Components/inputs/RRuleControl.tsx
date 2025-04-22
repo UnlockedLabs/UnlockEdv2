@@ -288,7 +288,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     </select>
                 </div>
                 <div>
-                    <label className="label label-text">every</label>
+                    <label className="label label-text">Every</label>
                     <input
                         type="number"
                         value={interval}
@@ -297,11 +297,13 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                         className="input input-bordered w-full"
                         disabled={disabled}
                     />
-                    {frequency === 'WEEKLY'
-                        ? 'week(s)'
-                        : frequency === 'DAILY'
-                          ? 'day(s)'
-                          : 'month(s)'}
+                    <label className="label label-text">
+                        {frequency === 'WEEKLY'
+                            ? 'week(s)'
+                            : frequency === 'DAILY'
+                              ? 'day(s)'
+                              : 'month(s)'}
+                    </label>
                 </div>
 
                 {frequency === 'WEEKLY' && (
