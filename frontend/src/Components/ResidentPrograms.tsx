@@ -87,10 +87,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             {activePrograms && activePrograms.length > 0 && (
                                 <>
                                     <tr className="text-sm font-semibold bg-gray-100">
-                                        <td
-                                            colSpan={6}
-                                            className="py-2 bg-background"
-                                        >
+                                        <td colSpan={6} className="">
                                             Active Enrollments
                                         </td>
                                     </tr>
@@ -147,7 +144,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                 scheduledPrograms.length > 0 && (
                                     <>
                                         <tr className="text-sm font-semibold bg-gray-100">
-                                            <td colSpan={6} className="py-0.5">
+                                            <td colSpan={6} className="">
                                                 Scheduled Enrollments
                                             </td>
                                         </tr>
@@ -208,10 +205,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                 completedPrograms.length > 0 && (
                                     <>
                                         <tr className="text-sm font-semibold bg-gray-100">
-                                            <td
-                                                colSpan={6}
-                                                className="font-bold py-2 bg-base-200"
-                                            >
+                                            <td colSpan={6} className="">
                                                 Completed Enrollments
                                             </td>
                                         </tr>

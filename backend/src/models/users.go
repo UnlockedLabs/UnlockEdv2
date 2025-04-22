@@ -152,4 +152,6 @@ type ResidentProgramClassInfo struct {
 	AttendancePercentage string      `json:"attendance_percentage"`
 	ClassID              uint        `json:"class_id" gorm:"column:class_id"`
 	ProgramID            uint        `json:"program_id"`
+	PresentAttendance    int         `json:"present_attendance"`
+	AbsentAttendance     int         `json:"absent_attendance"`
 }

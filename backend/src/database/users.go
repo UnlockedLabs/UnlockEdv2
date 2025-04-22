@@ -489,18 +489,38 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]models.ResidentProgramClassInfo, error) {
 	var userEnrollments []models.ResidentProgramClassInfo
 	base := db.WithContext(args.Ctx).
-		Table("program_class_enrollments pce").
-		Select(`pce.enrollment_status as enrollment_status,
-        p.name as program_name, 
-        p.id as program_id,
-        pc.name as class_name,
-        pc.status as status,
-        pc.start_dt as start_date,
-        pc.end_dt as end_date,
-        pc.id as class_id`).
-		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
-		Joins("INNER JOIN programs p ON p.id = pc.program_id").
+		Table("program_class_enrollments AS pce").
+		Select(`
+            pce.enrollment_status   AS enrollment_status,
+            p.name                   AS program_name,
+            p.id                     AS program_id,
+            pc.name                  AS class_name,
+            pc.status                AS status,
+            pc.start_dt              AS start_date,
+            pc.end_dt                AS end_date,
+            pc.id                    AS class_id,
+
+            -- count present attendance status
+            SUM(
+              CASE WHEN pcea.attendance_status = 'present' THEN 1 ELSE 0 END
+            ) AS present_attendance,
+
+            -- count everything else as absent
+            SUM(
+              CASE WHEN pcea.attendance_status <> 'present' THEN 1 ELSE 0 END
+            ) AS absent_attendance
+        `).
+		Joins("INNER JOIN program_classes pc  ON pc.id  = pce.class_id").
+		Joins("INNER JOIN programs         p   ON p.id   = pc.program_id").
+		Joins("INNER JOIN program_class_events e   ON e.class_id = pc.id").
+		Joins("INNER JOIN program_class_event_attendance pcea "+
+			"ON pcea.event_id = e.id AND pcea.user_id = ?", userId).
 		Where("pce.user_id = ?", userId).
+		Group(`
+            pce.enrollment_status,
+            p.name, p.id,
+            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id
+        `).
 		Order("pc.start_dt DESC")
 
 	if err := base.Count(&args.Total).Error; err != nil {
@@ -510,53 +530,9 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		return nil, NewDBError(err, "program_class_enrollments apply pagination")
 	}
 
-	now := time.Now().UTC()
 	for i := range userEnrollments {
-		held, attended, err := db.computeAttendance(args.Ctx, userId, userEnrollments[i].ClassID, now)
-		if err != nil {
-			return nil, err
-		}
-		var pct string
-		if held == 0 {
-			pct = "0%"
-		} else {
-			pct = fmt.Sprintf("%.0f%%", float64(attended)/float64(held)*100)
-		}
+		pct := fmt.Sprintf("%.0f%%", float64(userEnrollments[i].PresentAttendance)/float64(userEnrollments[i].PresentAttendance+userEnrollments[i].AbsentAttendance)*100)
 		userEnrollments[i].AttendancePercentage = pct
 	}
 	return userEnrollments, nil
-}
-
-func (db *DB) computeAttendance(ctx context.Context, userId int, classId uint, upTo time.Time) (int, int64, error) {
-	var events []models.ProgramClassEvent
-	if err := db.WithContext(ctx).
-		Where("class_id = ?", classId).
-		Find(&events).Error; err != nil {
-		return 0, 0, err
-	}
-
-	totalHeld := 0
-	eventIDs := make([]uint, 0, len(events))
-	for _, ev := range events {
-		rule, err := ev.GetRRule()
-		if err != nil {
-			return 0, 0, NewDBError(err, "parsing rule for event ")
-		}
-		occs := rule.Between(rule.Options.Dtstart, upTo, true)
-		totalHeld += len(occs)
-		eventIDs = append(eventIDs, ev.ID)
-	}
-
-	var attendedCount int64
-	if len(eventIDs) > 0 {
-		if err := db.WithContext(ctx).
-			Model(&models.ProgramClassEventAttendance{}).
-			Where("user_id = ? AND event_id IN ?", userId, eventIDs).
-			Where("date <= ?", upTo.Format("2006-01-02")).
-			Count(&attendedCount).Error; err != nil {
-			return 0, 0, err
-		}
-	}
-
-	return totalHeld, attendedCount, nil
 }
