@@ -61,12 +61,12 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             handle: { title: 'Add Resident' }
         },
         {
-            path: 'programs/:id/class/:class_id/events',
+            path: 'programs/:id/classes/:class_id/events',
             element: <ClassEvents />,
             handle: { title: 'Class Events' }
         },
         {
-            path: 'programs/:id/class/:class_id/events/:event_id/attendance/:date',
+            path: 'programs/:id/classes/:class_id/events/:event_id/attendance/:date',
             element: <EventAttendance />,
             handle: { title: 'Event Attendance' }
         }

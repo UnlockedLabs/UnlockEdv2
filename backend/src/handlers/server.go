@@ -495,6 +495,10 @@ func writePaginatedResponse[T any](w http.ResponseWriter, status int, data []T, 
 }
 
 func writeJsonResponse[T any](w http.ResponseWriter, status int, data T) error {
+	if any(data) == nil {
+		w.WriteHeader(status)
+		return nil
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if str, ok := any(data).(string); ok {

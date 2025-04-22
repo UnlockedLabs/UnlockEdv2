@@ -13,7 +13,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx},
-		{"GET /api/program-classes/class/{class_id}/events", srv.handleGetProgramClassEvents, true, axx},
+		{"GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx},
 		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx},
 		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx},
 		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx},

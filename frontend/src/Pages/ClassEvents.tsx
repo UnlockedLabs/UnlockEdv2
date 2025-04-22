@@ -35,7 +35,7 @@ export default function ClassEvents() {
         ServerResponseMany<ClassEventInstance>,
         Error
     >(
-        `/api/program-classes/class/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
+        `/api/program-classes/${class_id}/events?month=${month}&year=${year}&page=${pageQuery}&per_page=${perPage}`
     );
 
     const { data: program_class } = useSWR<ServerResponseOne<Class>, Error>(
