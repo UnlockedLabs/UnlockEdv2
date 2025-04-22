@@ -7,7 +7,6 @@ CREATE UNIQUE INDEX idx_event_user_date ON public.program_class_event_attendance
 
 -- +goose Down
 -- +goose StatementBegin
-DROP EXTENSION IF EXISTS pg_trgm;
 ALTER TABLE public.program_class_event_attendance DROP COLUMN note;
 DROP INDEX idx_event_user_date;
 -- +goose StatementEnd
