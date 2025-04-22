@@ -45,22 +45,25 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 	type PaginatedResult struct {
 		Classes []models.ProgramClassDetail
 		Stats   struct {
-			Enrollments    int
-			Completions    int
-			CompletionRate float64
+			Enrollments      int
+			Completions      int
+			TotalEnrollments int
+			CompletionRate   float64
 		}
 	}
 
 	result := PaginatedResult{
 		Classes: classes,
 		Stats: struct {
-			Enrollments    int
-			Completions    int
-			CompletionRate float64
+			Enrollments      int
+			Completions      int
+			TotalEnrollments int
+			CompletionRate   float64
 		}{
-			Enrollments:    metrics.ActiveEnrollments,
-			Completions:    metrics.Completions,
-			CompletionRate: metrics.CompletionRate,
+			Enrollments:      metrics.ActiveEnrollments,
+			Completions:      metrics.Completions,
+			TotalEnrollments: metrics.TotalEnrollments,
+			CompletionRate:   metrics.CompletionRate,
 		},
 	}
 

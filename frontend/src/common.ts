@@ -724,6 +724,7 @@ export interface ResidentProgramClassInfo {
 export interface ClassStats {
     Enrollments: number;
     Completions: number;
+    TotalEnrollments: number;
     CompletionRate: number;
 }
 
