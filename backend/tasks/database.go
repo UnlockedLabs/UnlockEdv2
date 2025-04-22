@@ -68,6 +68,17 @@ func (jr *JobRunner) intoOpenContentTask(cj *models.CronJob, provId uint, task *
 	return nil
 }
 
+func (jr *JobRunner) intoGeneralTask(cj *models.CronJob, task *models.RunnableTask) error {
+	if task.ID == 0 {
+		if err := jr.db.Preload("Job").Where("job_id = ?", cj.ID).FirstOrCreate(task).Error; err != nil {
+			log.Errorln("failed to create general task from cronjob")
+			return err
+		}
+	}
+	task.Job = cj
+	return nil
+}
+
 func (jr *JobRunner) createIfNotExists(cj models.JobType) (*models.CronJob, error) {
 	job := models.CronJob{Name: string(cj)}
 	if err := jr.db.Model(&models.CronJob{}).Where("name = ?", cj).FirstOrCreate(&job).Error; err != nil {

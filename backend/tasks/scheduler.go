@@ -33,8 +33,11 @@ func newJobRunner() *JobRunner {
 
 func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 	allTasks := make([]models.RunnableTask, 0)
-	if otherTasks, err := jr.generateOpenContentProviderTasks(); err == nil {
-		allTasks = append(allTasks, otherTasks...)
+	if dailyProgramHistoryTasks, err := jr.generateProgramHistoryTasks(); err == nil {
+		allTasks = append(allTasks, dailyProgramHistoryTasks...)
+	}
+	if ocpTasks, err := jr.generateOpenContentProviderTasks(); err == nil {
+		allTasks = append(allTasks, ocpTasks...)
 	} else {
 		log.Println("Failed to generate open content provider tasks")
 	}
@@ -44,6 +47,24 @@ func (jr *JobRunner) generateTasks() ([]models.RunnableTask, error) {
 		log.Println("Failed to generate provider tasks")
 	}
 	return allTasks, nil
+}
+
+func (jr *JobRunner) generateProgramHistoryTasks() ([]models.RunnableTask, error) {
+	tasksToRun := make([]models.RunnableTask, 0)
+	job, err := jr.createIfNotExists(models.DailyProgHistoryJob)
+	if err != nil {
+		log.Errorf("failed to create job: %v", err)
+		return nil, err
+	}
+	newTask := models.RunnableTask{JobID: job.ID, Status: models.StatusPending}
+	err = jr.intoGeneralTask(job, &newTask)
+	if err != nil {
+		log.Errorf("failed to create task: %v", err)
+		return nil, err
+	}
+	tasksToRun = append(tasksToRun, newTask)
+	log.Infof("Generated %d total tasks", len(tasksToRun))
+	return tasksToRun, nil
 }
 
 func (jr *JobRunner) generateOpenContentProviderTasks() ([]models.RunnableTask, error) {

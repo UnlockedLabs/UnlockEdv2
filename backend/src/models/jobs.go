@@ -69,6 +69,7 @@ const (
 	GetActivityJob   JobType = "get_activity"
 
 	ScrapeKiwixJob         JobType   = "scrape_kiwix"
+	DailyProgHistoryJob    JobType   = "daily_prog_history"
 	RetryVideoDownloadsJob JobType   = "retry_video_downloads"
 	RetryManualDownloadJob JobType   = "retry_manual_download"
 	SyncVideoMetadataJob   JobType   = "sync_video_metadata"
