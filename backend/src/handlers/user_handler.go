@@ -400,5 +400,5 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		log.error("Error committing transaction AND updating user facility in kratos: " + err.Error())
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, int(http.StatusNoContent), "successfully transferred resident")
+	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }
