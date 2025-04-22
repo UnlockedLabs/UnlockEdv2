@@ -36,8 +36,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
 
     const completedPrograms = programs?.filter(
         (p) =>
-            p.status === ProgClassStatus.COMPLETED &&
-            p.enrollment_status === EnrollmentStatus.Completed
+            (p.status === ProgClassStatus.COMPLETED &&
+                p.enrollment_status === EnrollmentStatus.Completed) ||
+            (p.enrollment_status === EnrollmentStatus.Completed &&
+                p.status != ProgClassStatus.CANCELLED)
     );
 
     const didNotCompletePrograms = programs?.filter(
@@ -54,7 +56,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
         setPage(1);
     };
 
-    const handleNavigate = (program_id: number) => {
+    const handleNavigate = (program_id: string) => {
         navigate(`/programs/${program_id}`);
     };
     return (
@@ -96,9 +98,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                             key={`${pc.class_id}-${pc.start_date}`}
                                             className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
                                             onClick={() =>
-                                                handleNavigate(
-                                                    Number(pc.class_id)
-                                                )
+                                                handleNavigate(pc.class_id)
                                             }
                                         >
                                             <td className="justify-self-start">
@@ -153,9 +153,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                                 key={`${pc.class_id}-${pc.start_date}`}
                                                 className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
                                                 onClick={() =>
-                                                    handleNavigate(
-                                                        Number(pc.class_id)
-                                                    )
+                                                    handleNavigate(pc.class_id)
                                                 }
                                             >
                                                 <td className="justify-self-start">
@@ -214,9 +212,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                                 key={`${pc.class_id}-${pc.start_date}`}
                                                 className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
                                                 onClick={() =>
-                                                    handleNavigate(
-                                                        Number(pc.class_id)
-                                                    )
+                                                    handleNavigate(pc.class_id)
                                                 }
                                             >
                                                 <td className="justify-self-start">
@@ -276,9 +272,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                                 key={`${pc.class_id}-${pc.start_date}`}
                                                 className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
                                                 onClick={() =>
-                                                    handleNavigate(
-                                                        Number(pc.class_id)
-                                                    )
+                                                    handleNavigate(pc.class_id)
                                                 }
                                             >
                                                 <td className="justify-self-start">

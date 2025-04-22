@@ -501,19 +501,19 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pc.id                    AS class_id,
 
             -- count present attendance status
-            SUM(
+            COALESCE(SUM(
               CASE WHEN pcea.attendance_status = 'present' THEN 1 ELSE 0 END
-            ) AS present_attendance,
+            ), 0) AS present_attendance,
 
             -- count everything else as absent
-            SUM(
+            COALESCE(SUM(
               CASE WHEN pcea.attendance_status <> 'present' THEN 1 ELSE 0 END
-            ) AS absent_attendance
+            ), 0)  AS absent_attendance
         `).
 		Joins("INNER JOIN program_classes pc  ON pc.id  = pce.class_id").
 		Joins("INNER JOIN programs         p   ON p.id   = pc.program_id").
 		Joins("INNER JOIN program_class_events e   ON e.class_id = pc.id").
-		Joins("INNER JOIN program_class_event_attendance pcea "+
+		Joins("LEFT JOIN program_class_event_attendance pcea "+
 			"ON pcea.event_id = e.id AND pcea.user_id = ?", userId).
 		Where("pce.user_id = ?", userId).
 		Group(`
@@ -531,8 +531,17 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	}
 
 	for i := range userEnrollments {
-		pct := fmt.Sprintf("%.0f%%", float64(userEnrollments[i].PresentAttendance)/float64(userEnrollments[i].PresentAttendance+userEnrollments[i].AbsentAttendance)*100)
-		userEnrollments[i].AttendancePercentage = pct
+		present := userEnrollments[i].PresentAttendance
+		absent := userEnrollments[i].AbsentAttendance
+		total := present + absent
+
+		if total == 0 {
+			userEnrollments[i].AttendancePercentage = "0%"
+		} else {
+			pct := float64(present) / float64(total) * 100
+			userEnrollments[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
+		}
 	}
+
 	return userEnrollments, nil
 }
