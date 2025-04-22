@@ -75,7 +75,8 @@ export default function ProgramOverview() {
     const metrics: ClassStats = {
         Enrollments: rawMetrics?.Enrollments ?? 0,
         Completions: rawMetrics?.Completions ?? 0,
-        CompletionRate: rawMetrics?.CompletionRate ?? 0
+        CompletionRate: rawMetrics?.CompletionRate ?? 0,
+        TotalEnrollments: 0
     };
 
     const meta = programOverviewDashMetricsResp?.meta ?? {
@@ -190,7 +191,7 @@ export default function ProgramOverview() {
                         title="Residents Enrolled"
                         number={metrics.Enrollments.toString()}
                         label="residents"
-                        tooltip="Placeholder data"
+                        tooltip="Active Enrollments"
                     />
                     <StatsCard
                         title="Overall Completion"

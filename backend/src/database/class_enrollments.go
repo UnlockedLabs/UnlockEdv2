@@ -234,22 +234,34 @@ func (db *DB) GetProgramClassEnrollmentsAttendance(page, perPage, id int) (int64
 type EnrollmentAndCompletionMetrics struct {
 	ActiveEnrollments int     `json:"active_enrollments"`
 	Completions       int     `json:"completions"`
+	TotalEnrollments  int     `json:"total_enrollments"`
 	CompletionRate    float64 `json:"completion_rate"`
 }
 
 func (db *DB) GetProgramClassEnrollmentAndCompletions(programID int, facilityId int) (EnrollmentAndCompletionMetrics, error) {
 	var metrics EnrollmentAndCompletionMetrics
+	/*
+		completion_rate:
+
+		Checks if there are no enrollments at all, if there are NOT, the completion rate is 0.
+
+		Checks if no one is currently enrolled, and everyone has completed, then returns 100%.
+
+		Otherwise, calculate:
+		(completions / total_enrollments) * 100
+	*/
 
 	err := db.Table("program_class_enrollments pce").
-		Select(`
-        COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) as active_enrollments,
+		Select(` COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) as active_enrollments,
         COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) as completions,
-        CASE 
-            WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) = 0 
-            THEN 0 
-            ELSE (COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(*)) * 100
-        END as completion_rate
-    `).
+        COUNT(*) as total_enrollments, 
+		CASE 
+			WHEN COUNT(*) = 0 THEN 0
+				WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) = 0
+				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(*) 
+			THEN 100
+			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(*) * 100
+		END as completion_rate`).
 		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
 		Where("pc.program_id = ?", programID).
 		Where("pc.facility_id = ?", facilityId).
