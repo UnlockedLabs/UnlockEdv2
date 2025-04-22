@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type FundingType string
 type ProgType string
 type CreditType string
@@ -34,6 +36,7 @@ type Program struct {
 	FundingType FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
 	IsActive    bool        `json:"is_active" gorm:"not null"`
 	IsFavorited bool        `json:"is_favorited" gorm:"-"`
+	ArchivedAt  *time.Time  `json:"archived_at"`
 
 	ProgramTypes       []ProgramType       `json:"program_types" gorm:"foreignKey:ProgramID;references:ID"`
 	ProgramCreditTypes []ProgramCreditType `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID"`
@@ -78,3 +81,50 @@ type FacilitiesPrograms struct {
 }
 
 func (FacilitiesPrograms) TableName() string { return "facilities_programs" }
+
+type DailyProgramsFacilitiesHistory struct {
+	Date                  time.Time `json:"date" gorm:"not null"`
+	TotalPrograms         uint      `json:"total_programs" gorm:"not null"`
+	TotalActivePrograms   uint      `json:"total_active_programs" gorm:"not null"`
+	TotalArchivedPrograms uint      `json:"total_archived_programs" gorm:"not null"`
+	TotalEnrollments      uint      `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions      uint      `json:"total_completions" gorm:"not null"`
+	TotalProgramOfferings uint      `json:"total_program_offerings" gorm:"not null"`
+	TotalFacilities       uint      `json:"total_facilities" gorm:"not null"`
+}
+
+func (DailyProgramsFacilitiesHistory) TableName() string {
+	return "daily_programs_facilities_history"
+}
+
+type DailyProgramFacilitiesHistory struct {
+	Date                   time.Time `json:"date" gorm:"not null"`
+	ProgramID              uint      `json:"program_id" gorm:"not null"`
+	TotalActiveFacilities  uint      `json:"total_active_facilities" gorm:"not null"`
+	TotalEnrollments       uint      `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions       uint      `json:"total_completions" gorm:"not null"`
+	TotalActiveEnrollments uint      `json:"total_active_enrollments" gorm:"not null"`
+	TotalClasses           uint      `json:"total_classes" gorm:"not null"`
+	TotalArchivedClasses   uint      `json:"total_archived_classes" gorm:"not null"`
+	TotalStudentsPresent   uint      `json:"total_students_present" gorm:"not null"`
+}
+
+func (DailyProgramFacilitiesHistory) TableName() string {
+	return "daily_program_facilities_history"
+}
+
+type DailyProgramFacilityHistory struct {
+	Date                   time.Time `json:"date" gorm:"not null"`
+	ProgramID              uint      `json:"program_id" gorm:"not null"`
+	FacilityID             uint      `json:"facility_id" gorm:"not null"`
+	TotalEnrollments       uint      `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions       uint      `json:"total_completions" gorm:"not null"`
+	TotalActiveEnrollments uint      `json:"total_active_enrollments" gorm:"not null"`
+	TotalClasses           uint      `json:"total_classes" gorm:"not null"`
+	TotalArchivedClasses   uint      `json:"total_archived_classes" gorm:"not null"`
+	TotalStudentsPresent   uint      `json:"total_students_present" gorm:"not null"`
+}
+
+func (DailyProgramFacilityHistory) TableName() string {
+	return "daily_program_facility_history"
+}

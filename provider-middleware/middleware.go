@@ -55,7 +55,8 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 	err := sh.db.WithContext(ctx).First(&provider, "id = ?", int(providerId)).Error
 	if err != nil {
 		log.Errorf("error looking up provider platform: %v", err)
-		sh.cleanupJob(ctx, int(providerId), jobId, false)
+		providerIdPtr := int(providerId)
+		sh.cleanupJob(ctx, &providerIdPtr, jobId, false)
 		return nil, fmt.Errorf("failed to find provider: %v", err)
 	}
 	switch provider.Type {
@@ -87,11 +88,17 @@ func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*models.OpenContent
 	return openContentProvider, body, nil
 }
 
-func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId int, jobId string, success bool) {
+func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId *int, jobId string, success bool) {
 	log.Infof("job %s succeeded?: %v \n cleaning up task", jobId, success)
 	var task models.RunnableTask
-	if err := sh.db.WithContext(ctx).Model(models.RunnableTask{}).
-		First(&task, "(provider_platform_id = ? AND job_id = ?) OR (open_content_provider_id = ? AND job_id = ?)", provId, jobId, provId, jobId).
+	tx := sh.db.WithContext(ctx).Model(models.RunnableTask{})
+	if provId != nil {
+		tx = tx.Where("(provider_platform_id = ? AND job_id = ?) OR (open_content_provider_id = ? AND job_id = ?)", *provId, jobId, *provId, jobId)
+	} else {
+		tx = tx.Where("job_id = ?", jobId)
+	}
+	if err := tx.
+		First(&task).
 		Error; err != nil {
 		log.Errorf("failed to fetch task: %v", err)
 		return

@@ -37,6 +37,7 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
 		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
 		{models.PutVideoMetadataJob.PubName(), sh.handlePutVideoMetadata},
+		{models.DailyProgHistoryJob.PubName(), sh.handleInsertDailyProgHistory},
 	}
 	for _, sub := range subscriptions {
 		_, err := sh.nats.QueueSubscribe(sub.topic, "middleware", func(msg *nats.Msg) {
@@ -49,6 +50,23 @@ func (sh *ServiceHandler) initSubscription() error {
 	}
 
 	return nil
+}
+
+func (sh *ServiceHandler) handleInsertDailyProgHistory(ctx context.Context, msg *nats.Msg) {
+	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
+	defer cancel()
+	var body map[string]any
+	if err := json.Unmarshal(msg.Data, &body); err != nil {
+		logger().Errorf("failed to unmarshal message: %v", err)
+		return
+	}
+	jobId, ok := body["job_id"].(string)
+	if !ok {
+		logger().Errorf("failed to parse job_id: %v", body["job_id"])
+		return
+	}
+	success := InsertDailyProgHistory(contxt, sh.db) != nil
+	sh.cleanupJob(contxt, nil, jobId, success)
 }
 
 /**
@@ -68,7 +86,7 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	success := service.ImportCourses(sh.db) != nil
-	sh.cleanupJob(contxt, providerPlatformId, jobId, success)
+	sh.cleanupJob(contxt, &providerPlatformId, jobId, success)
 }
 
 func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.Msg) {
@@ -82,7 +100,8 @@ func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.M
 	jobId := body["job_id"].(string)
 	kiwixService := NewKiwixService(provider, &body)
 	success := kiwixService.ImportLibraries(contxt, sh.db) != nil
-	sh.cleanupJob(contxt, int(provider.ID), jobId, success)
+	providerIdPtr := int(provider.ID)
+	sh.cleanupJob(contxt, &providerIdPtr, jobId, success)
 }
 
 /**
@@ -136,7 +155,7 @@ func (sh *ServiceHandler) handleMilestonesForCourseUser(ctx context.Context, msg
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	lastRun, err := time.Parse(time.RFC3339, lastRunStr)
 	if err != nil {
-		sh.cleanupJob(contxt, providerPlatformId, jobId, false)
+		sh.cleanupJob(contxt, &providerPlatformId, jobId, false)
 		return
 	}
 	for _, course := range courses {
@@ -154,7 +173,7 @@ func (sh *ServiceHandler) handleMilestonesForCourseUser(ctx context.Context, msg
 			}
 		}
 	}
-	sh.cleanupJob(contxt, providerPlatformId, jobId, success)
+	sh.cleanupJob(contxt, &providerPlatformId, jobId, success)
 }
 
 func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nats.Msg) {
@@ -185,7 +204,7 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 			}
 		}
 	}
-	sh.cleanupJob(contxt, providerPlatformId, jobId, success)
+	sh.cleanupJob(contxt, &providerPlatformId, jobId, success)
 }
 
 func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
@@ -242,7 +261,8 @@ func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats
 		logger().Errorf("error retrying failed videos: %v", err)
 		success = false
 	}
-	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), success)
+	providerIdPtr := int(provider.ID)
+	sh.cleanupJob(contxt, &providerIdPtr, body["job_id"].(string), success)
 }
 
 func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats.Msg) {
@@ -261,7 +281,8 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 		logger().Errorf("error syncing video metadata: %v", err)
 		success = false
 	}
-	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), success)
+	providerIdPtr := int(provider.ID)
+	sh.cleanupJob(contxt, &providerIdPtr, body["job_id"].(string), success)
 }
 
 func (sh *ServiceHandler) handlePutVideoMetadata(ctx context.Context, msg *nats.Msg) {
@@ -280,7 +301,8 @@ func (sh *ServiceHandler) handlePutVideoMetadata(ctx context.Context, msg *nats.
 		logger().Errorf("error putting video metadata: %v", err)
 		success = false
 	}
-	sh.cleanupJob(contxt, int(provider.ID), body["job_id"].(string), success)
+	providerIdPtr := int(provider.ID)
+	sh.cleanupJob(contxt, &providerIdPtr, body["job_id"].(string), success)
 }
 
 func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {
