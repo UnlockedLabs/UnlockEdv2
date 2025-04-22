@@ -73,7 +73,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 }
 
 func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error {
-	var programs []models.DailyProgramFacilitiesHistory
+	programs := make([]models.DailyProgramFacilitiesHistory, 10)
 	tx := db.Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
@@ -112,7 +112,7 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 }
 
 func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
-	var histories []models.DailyProgramFacilityHistory
+	histories := make([]models.DailyProgramFacilityHistory, 25)
 	tx := db.Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
