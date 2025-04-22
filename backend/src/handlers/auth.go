@@ -251,25 +251,31 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				if !ok {
 					passReset = true
 				}
-				var nameTz struct {
-					Name     string `json:"name"`
-					Timezone string `json:"timezone"`
-				}
-				if err := srv.Db.Model(&models.Facility{}).Select("name, timezone").Where("id = ?", facilityId).Find(&nameTz).Error; err != nil {
-					return nil, hasCookie, err
+				facilityName := user.Facility.Name
+				tz := user.Facility.Timezone
+				if user.FacilityID != uint(facilityId) && slices.Contains([]models.UserRole{models.DepartmentAdmin, models.SystemAdmin}, user.Role) {
+					var nameTz struct {
+						Name     string `json:"name"`
+						Timezone string `json:"timezone"`
+					}
+					if err := srv.Db.Model(&models.Facility{}).Select("name, timezone").Where("id = ?", facilityId).Find(&nameTz).Error; err != nil {
+						return nil, hasCookie, err
+					}
+					facilityName = nameTz.Name
+					tz = nameTz.Timezone
 				}
 				claims := &Claims{
 					Username:      user.Username,
 					Email:         user.Email,
 					UserID:        user.ID,
 					FacilityID:    uint(facilityId),
-					FacilityName:  nameTz.Name,
+					FacilityName:  facilityName,
 					PasswordReset: passReset,
 					KratosID:      kratosID,
 					Role:          user.Role,
 					FeatureAccess: srv.features,
 					SessionID:     sessionID,
-					TimeZone:      nameTz.Timezone,
+					TimeZone:      tz,
 				}
 				if string(user.Role) != traits["role"].(string) {
 					err := srv.updateUserTraitsInKratos(claims)

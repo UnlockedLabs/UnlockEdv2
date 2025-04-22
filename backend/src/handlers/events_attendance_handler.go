@@ -11,35 +11,29 @@ import (
 func (srv *Server) registerAttendanceRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
-		{"GET /api/program-classes/{id}/attendees", srv.handleGetAttendeesForClass, true, axx},
-		{"GET /api/program-classes/{class_id}/event-attendance", srv.handleGetEventAttendance, true, axx},
-		{"POST /api/events/{id}/attendances", srv.handleAddAttendanceForEvent, true, axx},
-		{"DELETE /api/events/{id}/attendees/{user_id}", srv.handleDeleteAttendee, true, axx},
+		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, true, axx},
+		{"POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, true, axx},
+		{"DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, true, axx},
 	}
-}
-
-func (srv *Server) handleGetAttendeesForClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	eventID, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newBadRequestServiceError(err, "event ID")
-	}
-	queryParams := srv.getQueryContext(r)
-	attendees, err := srv.Db.GetAttendees(&queryParams, r.URL.Query(), eventID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, attendees)
 }
 
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	eventID, err := strconv.Atoi(r.PathValue("event_id"))
+	if err != nil {
+		return newBadRequestServiceError(err, "event ID")
+	}
 	var attendances []models.ProgramClassEventAttendance
-	err := json.NewDecoder(r.Body).Decode(&attendances)
+	defer r.Body.Close()
+	err = json.NewDecoder(r.Body).Decode(&attendances)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	for _, att := range attendances {
-		if att.Date == "" {
-			att.Date = time.Now().Format("2006-01-02")
+	for i := range attendances {
+		if attendances[i].Date == "" {
+			attendances[i].Date = time.Now().Format("2006-01-02")
+		}
+		if attendances[i].EventID == 0 {
+			attendances[i].EventID = uint(eventID)
 		}
 	}
 	if err := srv.Db.LogUserAttendance(&attendances); err != nil {
@@ -49,7 +43,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 }
 
 func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, log sLog) error {
-	eventID, err := strconv.Atoi(r.PathValue("id"))
+	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
 	}
@@ -61,15 +55,16 @@ func (srv *Server) handleDeleteAttendee(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusNoContent, "success")
+	return writeJsonResponse(w, http.StatusNoContent, any(nil))
 }
+
 func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Request, log sLog) error {
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "class_id")
 	}
 	log.add("class id", classID)
-	eventID, err := strconv.Atoi(r.URL.Query().Get("event_id"))
+	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event_id")
 	}

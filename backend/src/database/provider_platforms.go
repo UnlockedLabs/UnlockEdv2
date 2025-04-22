@@ -1,6 +1,7 @@
 package database
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"fmt"
 
@@ -16,21 +17,13 @@ func (db *DB) GetAllProviderPlatforms(args *models.QueryContext) ([]models.Provi
 		Offset(args.CalcOffset()).Limit(args.PerPage).Find(&platforms).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
-	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
+	toReturn := src.IterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
 		if prov.OidcClient != nil {
 			prov.OidcID = prov.OidcClient.ID
 		}
 		return prov
 	}, platforms)
 	return toReturn, nil
-}
-
-func iterMap[T any](fun func(T) T, arr []T) []T {
-	applied := []T{}
-	for _, item := range arr {
-		applied = append(applied, fun(item))
-	}
-	return applied
 }
 
 func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error) {
@@ -40,7 +33,7 @@ func (db *DB) GetAllActiveProviderPlatforms() ([]models.ProviderPlatform, error)
 		return nil, newGetRecordsDBError(err, "provider_platforms")
 	}
 
-	toReturn := iterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
+	toReturn := src.IterMap(func(prov models.ProviderPlatform) models.ProviderPlatform {
 		if prov.OidcClient != nil {
 			prov.OidcID = prov.OidcClient.ID
 		}

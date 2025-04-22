@@ -1,6 +1,7 @@
 package database
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 )
 
@@ -37,7 +38,7 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
-	programs := iterMap(func(prog models.Program) models.Program {
+	programs := src.IterMap(func(prog models.Program) models.Program {
 		if len(prog.Favorites) > 0 {
 			prog.IsFavorited = true
 			return prog

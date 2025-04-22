@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"net/url"
+	"slices"
 	"time"
 
 	"gorm.io/gorm/clause"
@@ -76,8 +77,9 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	args := []any{eventID, date, classID}
 
 	if qryCtx.Search != "" {
+		query := qryCtx.SearchQuery()
 		baseQuery += ` AND (LOWER(u.name_first) LIKE ? OR LOWER(u.name_last) LIKE ? OR LOWER(u.doc_id) LIKE ?)`
-		args = append(args, qryCtx.SearchQuery(), qryCtx.SearchQuery(), qryCtx.SearchQuery())
+		args = append(args, query, query, query)
 	}
 
 	countQuery := "SELECT COUNT(*) " + baseQuery
@@ -101,17 +103,8 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 			a.note AS note`
 	finalQuery := selectClause + baseQuery
 
-	allowedOrderColumns := map[string]string{
-		"name_first": "u.name_first",
-		"name_last":  "u.name_last",
-	}
-
-	if dbColumn, ok := allowedOrderColumns[qryCtx.OrderBy]; ok {
-		orderDir := "ASC"
-		if qryCtx.Order == "DESC" {
-			orderDir = "DESC"
-		}
-		finalQuery += " ORDER BY " + dbColumn + " " + orderDir
+	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
+		finalQuery += " ORDER BY " + qryCtx.OrderClause()
 	} else {
 		finalQuery += " ORDER BY e.id ASC"
 	}

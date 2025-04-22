@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
@@ -6,7 +6,6 @@ import { TextInput } from '@/Components/inputs/TextInput';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { EnrollmentAttendance, Attendance, ServerResponseMany } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { useDebounceValue } from 'usehooks-ts';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -40,12 +39,18 @@ export default function EventAttendance() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState('created_at DESC');
-    const [searchQuery] = useDebounceValue(searchTerm, 300);
+
+    const handleSearch = (search: string) => {
+        startTransition(() => {
+            setSearchTerm(search);
+        });
+        setPageQuery(1);
+    };
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
         Error
     >(
-        `/api/program-classes/${class_id}/event-attendance?event_id=${event_id}&date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchQuery}&order_by=${sortQuery}`
+        `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
     );
 
     const meta = data?.meta;
@@ -153,7 +158,10 @@ export default function EventAttendance() {
                 note: notes[`note_${row.user_id}`] ?? ''
             }));
         if (payload.length > 0) {
-            await API.post(`events/${event_id}/attendances`, payload);
+            await API.post(
+                `program-classes/${class_id}/events/${event_id}/attendance`,
+                payload
+            );
         }
     }
     function handleMarkAllPresent() {
@@ -175,12 +183,8 @@ export default function EventAttendance() {
     async function onSubmit() {
         await submitAttendanceForRows(rows);
         void mutate();
-        navigate(`/programs/${id}/class/${class_id}/events`);
+        navigate(`/programs/${id}/classes/${class_id}/events`);
     }
-    const handleSearch = (newTerm: string) => {
-        setSearchTerm(newTerm);
-        setPageQuery(1);
-    };
 
     const anyRowSelected = rows.some((row) => row.selected);
     return (
@@ -352,7 +356,11 @@ export default function EventAttendance() {
                         </table>
                     </div>
                     <div className="flex justify-end pt-4">
-                        <button type="submit" className="button">
+                        <button
+                            type="submit"
+                            className="button"
+                            disabled={!anyRowSelected}
+                        >
                             Save Attendance
                         </button>
                     </div>
