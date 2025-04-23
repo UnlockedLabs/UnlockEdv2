@@ -696,6 +696,36 @@ export interface ProgramOverview extends Program {
     completion_rate: number;
 }
 
+export interface ProgramsFacilitiesStats {
+    total_programs: number;
+    avg_active_programs_per_facility: number;
+    total_enrollments: number;
+    attendance_rate: number;
+    completion_rate: number;
+}
+
+export interface ProgramsOverviewTable {
+    program_id: number;
+    program_name: string;
+    archived_at: string;
+    num_facilities_available: number;
+    total_enrollments: number;
+    active_enrollments: number;
+    total_classes: number;
+    completion_rate: number;
+    attendance_rate: number;
+    program_types: string;
+    credit_types: string;
+    funding_type: string;
+    status: boolean;
+}
+
+export interface ProgramsOverview {
+    programs_facilities_stats: ProgramsFacilitiesStats;
+    programs_table: ProgramsOverviewTable[];
+>>>>>>> 74755a6 (feat: add prog management real time data, fix backend queries)
+}
+
 export interface Class {
     id: number;
     program_id: number;
