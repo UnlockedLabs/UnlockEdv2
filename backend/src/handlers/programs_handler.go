@@ -37,22 +37,37 @@ func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, l
 	return writePaginatedResponse(w, http.StatusOK, programs, args.IntoMeta())
 }
 
+type ProgramOverviewResponse struct {
+	models.Program
+	ActiveEnrollments int     `json:"active_enrollments"`
+	Completions       int     `json:"completions"`
+	TotalEnrollments  int     `json:"total_enrollments"`
+	CompletionRate    float64 `json:"completion_rate"`
+}
+
 func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
+
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	facility_id := claims.FacilityID
+
 	program, err := srv.Db.GetProgramByID(id)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, program)
-}
 
-type ProgramOverviewResponse struct {
-	models.Program
-	ClassDetails []models.ProgramClassDetail `json:"class_details"`
+	metrics, err := srv.Db.FetchEnrollmentMetrics(id, facility_id)
+	if err != nil {
+		log.add("program_id", id)
+		return newDatabaseServiceError(err)
+	}
+	metrics.Program = *program
+
+	return writeJsonResponse(w, http.StatusOK, metrics)
 }
 
 type ProgramForm struct {

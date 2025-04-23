@@ -3,7 +3,23 @@ package database
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	// "fmt"
 )
+
+type EnrollmentAndCompletionMetrics struct {
+	ActiveEnrollments int     `json:"active_enrollments"`
+	Completions       int     `json:"completions"`
+	TotalEnrollments  int     `json:"total_enrollments"`
+	CompletionRate    float64 `json:"completion_rate"`
+}
+
+type ProgramOverviewResponse struct {
+	models.Program
+	ActiveEnrollments int     `json:"active_enrollments"`
+	Completions       int     `json:"completions"`
+	TotalEnrollments  int     `json:"total_enrollments"`
+	CompletionRate    float64 `json:"completion_rate"`
+}
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
@@ -11,6 +27,32 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
+}
+
+func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (ProgramOverviewResponse, error) {
+	var metrics ProgramOverviewResponse
+
+	const query = `
+		COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) AS active_enrollments,
+		COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) AS completions,
+		COUNT(*) AS total_enrollments,
+		CASE 
+			WHEN COUNT(*) = 0 THEN 0
+			WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) = 0
+				AND COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) = COUNT(*) 
+			THEN 100
+			ELSE COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) * 1.0 / COUNT(*) * 100
+		END AS completion_rate
+	`
+
+	err := db.Table("program_class_enrollments pce").
+		Select(query).
+		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
+		Where("pc.program_id = ?", programID).
+		Where("pc.facility_id = ?", facilityId).
+		Scan(&metrics).Error
+
+	return metrics, err
 }
 
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {

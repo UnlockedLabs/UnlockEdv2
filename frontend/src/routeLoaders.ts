@@ -14,7 +14,8 @@ import {
     RouteTitleHandler,
     Class,
     ServerResponseOne,
-    ClassLoaderData
+    ClassLoaderData,
+    ProgramOverview
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -213,11 +214,18 @@ export const getClassMgmtData: LoaderFunction = async ({
 export const getProgram: LoaderFunction = async ({ params }) => {
     const resp = (await API.get(
         `programs/${params.id}`
-    )) as ServerResponseOne<Program>;
+    )) as ServerResponseOne<ProgramOverview>;
     if (!resp.success) {
         return redirect('/404');
     }
     return json(resp.data);
+    // const resp = (await API.get(
+    //     `programs/${params.id}?facility_id=${params.facility_id}`
+    //   )) as ServerResponseOne<Program>;
+    //   if (!resp.success) {
+    //     return redirect('/404');
+    //   }
+    //   return json(resp.data);
 };
 
 export function resolveTitle<T>(

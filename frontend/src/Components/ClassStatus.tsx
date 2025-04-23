@@ -14,7 +14,6 @@ import {
     Class,
     ClassStatusMap,
     ClassStatusOptions,
-    ProgramOverviewDashMetrics,
     SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
@@ -80,7 +79,7 @@ export default function ClassStatus({
 }: {
     program_class: Class;
     status: SelectedClassStatus;
-    mutateClasses: KeyedMutator<ServerResponseMany<ProgramOverviewDashMetrics>>;
+    mutateClasses: KeyedMutator<ServerResponseMany<Class>>;
 }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(status);
