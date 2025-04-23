@@ -23,15 +23,17 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const programs = programsResp?.data;
     const meta = programsResp?.meta;
 
+    const today = new Date().toISOString().split('T')[0];
     const activePrograms = programs?.filter(
         (p) =>
-            p.status === ProgClassStatus.ACTIVE &&
-            p.enrollment_status === EnrollmentStatus.Enrolled
+            p.enrollment_status === EnrollmentStatus.Enrolled &&
+            p.start_date <= today &&
+            (!p.end_date || p.end_date >= today)
     );
     const scheduledPrograms = programs?.filter(
         (p) =>
-            p.status === ProgClassStatus.SCHEDULED &&
-            p.enrollment_status === EnrollmentStatus.Enrolled
+            p.enrollment_status === EnrollmentStatus.Enrolled &&
+            p.start_date > today
     );
 
     const completedPrograms = programs?.filter(
@@ -44,10 +46,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
 
     const didNotCompletePrograms = programs?.filter(
         (p) =>
-            (p.status != ProgClassStatus.CANCELLED &&
-                p.enrollment_status === EnrollmentStatus.Dropped) ||
+            p.enrollment_status === EnrollmentStatus.Dropped ||
             p.enrollment_status === EnrollmentStatus['Failed To Complete'] ||
             p.enrollment_status === EnrollmentStatus.Withdrawn ||
+            p.enrollment_status === EnrollmentStatus.Cancelled ||
             p.enrollment_status === EnrollmentStatus.Transfered
     );
 
@@ -56,7 +58,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
         setPage(1);
     };
 
-    const handleNavigate = (program_id: string) => {
+    const handleNavigate = (program_id: number) => {
         navigate(`/programs/${program_id}`);
     };
     return (
@@ -84,21 +86,24 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="!gap-0">
                             {/** Active **/}
                             {activePrograms && activePrograms.length > 0 && (
                                 <>
-                                    <tr className="text-sm font-semibold bg-gray-100">
-                                        <td colSpan={6} className="">
+                                    <tr className="text-sm font-semibold bg-teal-1">
+                                        <td
+                                            colSpan={6}
+                                            className="font-bold py-2"
+                                        >
                                             Active Enrollments
                                         </td>
                                     </tr>
                                     {activePrograms.map((pc) => (
                                         <tr
                                             key={`${pc.class_id}-${pc.start_date}`}
-                                            className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                            className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                             onClick={() =>
-                                                handleNavigate(pc.class_id)
+                                                handleNavigate(pc.program_id)
                                             }
                                         >
                                             <td className="justify-self-start">
@@ -143,17 +148,22 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             {scheduledPrograms &&
                                 scheduledPrograms.length > 0 && (
                                     <>
-                                        <tr className="text-sm font-semibold bg-gray-100">
-                                            <td colSpan={6} className="">
+                                        <tr className="text-sm font-semibold bg-teal-1">
+                                            <td
+                                                colSpan={6}
+                                                className="font-bold py-2"
+                                            >
                                                 Scheduled Enrollments
                                             </td>
                                         </tr>
                                         {scheduledPrograms.map((pc) => (
                                             <tr
                                                 key={`${pc.class_id}-${pc.start_date}`}
-                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                                 onClick={() =>
-                                                    handleNavigate(pc.class_id)
+                                                    handleNavigate(
+                                                        pc.program_id
+                                                    )
                                                 }
                                             >
                                                 <td className="justify-self-start">
@@ -202,17 +212,22 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             {completedPrograms &&
                                 completedPrograms.length > 0 && (
                                     <>
-                                        <tr className="text-sm font-semibold bg-gray-100">
-                                            <td colSpan={6} className="">
+                                        <tr className="text-sm font-semibold bg-teal-1">
+                                            <td
+                                                colSpan={6}
+                                                className="font-bold py-2"
+                                            >
                                                 Completed Enrollments
                                             </td>
                                         </tr>
                                         {completedPrograms.map((pc) => (
                                             <tr
                                                 key={`${pc.class_id}-${pc.start_date}`}
-                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                                 onClick={() =>
-                                                    handleNavigate(pc.class_id)
+                                                    handleNavigate(
+                                                        pc.program_id
+                                                    )
                                                 }
                                             >
                                                 <td className="justify-self-start">
@@ -259,20 +274,22 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             {didNotCompletePrograms &&
                                 didNotCompletePrograms.length > 0 && (
                                     <>
-                                        <tr className="text-sm font-semibold bg-gray-100">
+                                        <tr className="text-sm font-semibold bg-teal-1">
                                             <td
                                                 colSpan={6}
-                                                className="font-bold py-2 bg-base-200"
+                                                className="font-bold py-2"
                                             >
-                                                Completed Enrollments
+                                                Did Not Complete
                                             </td>
                                         </tr>
                                         {didNotCompletePrograms.map((pc) => (
                                             <tr
                                                 key={`${pc.class_id}-${pc.start_date}`}
-                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center"
+                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                                 onClick={() =>
-                                                    handleNavigate(pc.class_id)
+                                                    handleNavigate(
+                                                        pc.program_id
+                                                    )
                                                 }
                                             >
                                                 <td className="justify-self-start">
