@@ -9,7 +9,8 @@ CREATE TABLE public.daily_programs_facilities_history (
     total_enrollments INTEGER NOT NULL,
     total_completions INTEGER NOT NULL,
     total_program_offerings INTEGER NOT NULL,
-    total_facilities INTEGER NOT NULL
+    total_facilities INTEGER NOT NULL,
+    total_students_present INTEGER NOT NULL,
 )
 CREATE TABLE public.daily_program_facilities_history (
     date DATE NOT NULL,

@@ -91,6 +91,7 @@ type DailyProgramsFacilitiesHistory struct {
 	TotalCompletions      uint      `json:"total_completions" gorm:"not null"`
 	TotalProgramOfferings uint      `json:"total_program_offerings" gorm:"not null"`
 	TotalFacilities       uint      `json:"total_facilities" gorm:"not null"`
+	TotalStudentsPresent  uint      `json:"total_students_present" gorm:"not null"`
 }
 
 func (DailyProgramsFacilitiesHistory) TableName() string {
@@ -127,4 +128,33 @@ type DailyProgramFacilityHistory struct {
 
 func (DailyProgramFacilityHistory) TableName() string {
 	return "daily_program_facility_history"
+}
+
+type ProgramsFacilitiesStats struct {
+	TotalPrograms                uint `json:"total_programs"`
+	AvgActiveProgramsPerFacility uint `json:"avg_active_programs_per_facility"`
+	TotalEnrollments             uint `json:"total_enrollments"`
+	AttendanceRate               uint `json:"attendance_rate"`
+	CompletionRate               uint `json:"completion_rate"`
+}
+
+type ProgramsOverviewTable struct {
+	ProgramID              uint         `json:"program_id"`
+	ProgramName            string       `json:"program_name"`
+	ArchivedAt             string       `json:"archived_at"`
+	NumFacilitiesAvailable uint         `json:"num_facilities_available"`
+	TotalEnrollments       uint         `json:"total_enrollments"`
+	ActiveEnrollments      uint         `json:"active_enrollments"`
+	TotalClasses           uint         `json:"total_classes"`
+	CompletionRate         uint         `json:"completion_rate"`
+	AttendanceRate         uint         `json:"attendance_rate"`
+	Types                  []ProgType   `json:"categories"`
+	CreditTypes            []CreditType `json:"credit_types"`
+	FundingType            FundingType  `json:"funding_type"`
+	Status                 string       `json:"status"`
+}
+
+type ProgramsOverview struct {
+	ProgramsFacilitiesStats ProgramsFacilitiesStats `json:"programs_facilities_stats"`
+	ProgramsTable           []ProgramsOverviewTable `json:"programs_table"`
 }
