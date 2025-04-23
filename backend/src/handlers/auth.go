@@ -34,6 +34,7 @@ type (
 		FeatureAccess []models.FeatureAccess `json:"feature_access"`
 		SessionID     string                 `json:"session_id"`
 		DocID         string                 `json:"doc_id"`
+		TimeZone      string                 `json:"timezone"`
 	}
 )
 
@@ -59,6 +60,7 @@ func (claims *Claims) getTraits() map[string]any {
 		"facility_name":  claims.FacilityName,
 		"feature_access": claims.FeatureAccess,
 		"doc_id":         claims.DocID,
+		"timezone":       claims.TimeZone,
 	}
 }
 
@@ -250,11 +252,17 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					passReset = true
 				}
 				facilityName := user.Facility.Name
-				if user.FacilityID != uint(facilityId) && slices.Contains([]models.UserRole{models.SystemAdmin, models.DepartmentAdmin}, user.Role) {
-					if err := srv.Db.Model(&models.Facility{}).Select("name").Where("id = ?", facilityId).Find(&facilityName).Error; err != nil {
+				tz := user.Facility.Timezone
+				if user.FacilityID != uint(facilityId) && slices.Contains([]models.UserRole{models.DepartmentAdmin, models.SystemAdmin}, user.Role) {
+					var nameTz struct {
+						Name     string `json:"name"`
+						Timezone string `json:"timezone"`
+					}
+					if err := srv.Db.Model(&models.Facility{}).Select("name, timezone").Where("id = ?", facilityId).Find(&nameTz).Error; err != nil {
 						return nil, hasCookie, err
 					}
-					facilityName = strings.TrimSpace(facilityName)
+					facilityName = nameTz.Name
+					tz = nameTz.Timezone
 				}
 				claims := &Claims{
 					Username:      user.Username,
@@ -267,6 +275,7 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 					Role:          user.Role,
 					FeatureAccess: srv.features,
 					SessionID:     sessionID,
+					TimeZone:      tz,
 				}
 				if string(user.Role) != traits["role"].(string) {
 					err := srv.updateUserTraitsInKratos(claims)

@@ -13,6 +13,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx},
+		{"GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx},
 		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx},
 		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx},
 		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx},
@@ -107,4 +108,22 @@ func (srv *Server) handleGetStudentAttendanceData(w http.ResponseWriter, r *http
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, programData)
+}
+
+func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class_id")
+	}
+	log.add("class id", classID)
+	month := r.URL.Query().Get("month")
+	year := r.URL.Query().Get("year")
+
+	qryCtx := srv.getQueryContext(r)
+	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	return writePaginatedResponse(w, http.StatusOK, instances, qryCtx.IntoMeta())
 }

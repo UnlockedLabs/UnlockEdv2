@@ -49,31 +49,35 @@ export const AddUserModal = forwardRef(function (
         );
         if (!response.success) {
             const msg = response.message.trim();
+            const error_msgs = {
+                userexists: 'Username already exists',
+                alphanum: 'Username must contain only letters and numbers'
+            };
             switch (msg) {
                 case 'userexists': {
                     setFormError({
                         name: 'username',
                         error: {
                             type: 'custom',
-                            message: 'Username already exists'
+                            message: error_msgs.userexists
                         }
                     });
-                    break;
+                    throw new Error(error_msgs.userexists);
                 }
                 case 'alphanum': {
                     setFormError({
                         name: 'username',
                         error: {
                             type: 'custom',
-                            message:
-                                'Username must contain only letters and numbers'
+                            message: error_msgs.alphanum
                         }
                     });
-                    break;
+                    throw new Error(error_msgs.alphanum);
                 }
             }
+        } else {
+            onSuccess((response.data as NewUserResponse).temp_password);
         }
-        onSuccess((response.data as NewUserResponse).temp_password);
     };
 
     return (

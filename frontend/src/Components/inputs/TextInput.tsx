@@ -2,7 +2,7 @@ import { FieldErrors, UseFormRegister, Validate } from 'react-hook-form';
 import { Pattern } from '../modals';
 
 interface TextProps {
-    label: string;
+    label?: string;
     interfaceRef: string;
     required?: boolean;
     length: number | undefined;
@@ -16,6 +16,8 @@ interface TextProps {
         | Validate<any, any> // eslint-disable-line @typescript-eslint/no-explicit-any
         | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     disabled?: boolean;
+    defaultValue?: string;
+    onChange?: React.ChangeEventHandler<HTMLInputElement>;
 }
 export function TextInput({
     label,
@@ -29,7 +31,9 @@ export function TextInput({
     autoComplete = 'on',
     pattern,
     validate,
-    disabled = false
+    disabled = false,
+    defaultValue,
+    onChange
 }: TextProps) {
     const options = {
         required: {
@@ -45,18 +49,28 @@ export function TextInput({
         ...(pattern && { pattern }),
         ...(validate && { validate })
     };
+    const registerProps = register(interfaceRef, options);
+    const { onChange: rhfOnChange, ...restRegisterProps } = registerProps;
     return (
         <label className="form-control">
-            <div className="label">
-                <span className="label-text">{label}</span>
-            </div>
+            {label && (
+                <div className="label">
+                    <span className="label-text">{label}</span>
+                </div>
+            )}
+
             <input
                 type={`${password ? 'password' : 'text'}`}
                 className={`input input-bordered w-full`}
-                {...register(interfaceRef, options)}
+                {...restRegisterProps}
                 autoComplete={autoComplete}
+                defaultValue={defaultValue}
                 autoFocus={isFocused}
                 disabled={disabled}
+                onChange={(e) => {
+                    if (rhfOnChange) void rhfOnChange(e);
+                    if (onChange) void onChange(e);
+                }}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message as string}

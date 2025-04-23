@@ -103,9 +103,9 @@ export default function MapUserForm({
                 <UserCircleIcon className="h-10" />
                 <div className="flex-col">
                     <h3>
-                        {externalUser?.name_first +
-                            ' ' +
-                            externalUser?.name_last}
+                        {externalUser?.name_last +
+                            ', ' +
+                            externalUser?.name_first}
                     </h3>
                     <p className="body-small text-grey-3">
                         {externalUser?.username} • {externalUser?.email}

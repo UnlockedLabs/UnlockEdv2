@@ -1,6 +1,7 @@
 package database
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 )
 
@@ -22,19 +23,22 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_types t ON t.program_id = programs.id").Where("t.id IN (?)", args.Tags)
 	}
+
 	if args.OrderBy != "" {
 		tx = tx.Order(args.OrderClause())
 	}
+
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
 	}
+
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
 	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
-	programs := iterMap(func(prog models.Program) models.Program {
+	programs := src.IterMap(func(prog models.Program) models.Program {
 		if len(prog.Favorites) > 0 {
 			prog.IsFavorited = true
 			return prog
