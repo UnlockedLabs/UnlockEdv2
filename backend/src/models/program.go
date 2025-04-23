@@ -84,14 +84,14 @@ func (FacilitiesPrograms) TableName() string { return "facilities_programs" }
 
 type DailyProgramsFacilitiesHistory struct {
 	Date                  time.Time `json:"date" gorm:"not null"`
-	TotalPrograms         uint      `json:"total_programs" gorm:"not null"`
-	TotalActivePrograms   uint      `json:"total_active_programs" gorm:"not null"`
-	TotalArchivedPrograms uint      `json:"total_archived_programs" gorm:"not null"`
-	TotalEnrollments      uint      `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions      uint      `json:"total_completions" gorm:"not null"`
-	TotalProgramOfferings uint      `json:"total_program_offerings" gorm:"not null"`
-	TotalFacilities       uint      `json:"total_facilities" gorm:"not null"`
-	TotalStudentsPresent  uint      `json:"total_students_present" gorm:"not null"`
+	TotalPrograms         int64     `json:"total_programs" gorm:"not null"`
+	TotalActivePrograms   int64     `json:"total_active_programs" gorm:"not null"`
+	TotalArchivedPrograms int64     `json:"total_archived_programs" gorm:"not null"`
+	TotalEnrollments      int64     `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions      int64     `json:"total_completions" gorm:"not null"`
+	TotalProgramOfferings int64     `json:"total_program_offerings" gorm:"not null"`
+	TotalFacilities       int64     `json:"total_facilities" gorm:"not null"`
+	TotalStudentsPresent  int64     `json:"total_students_present" gorm:"not null"`
 }
 
 func (DailyProgramsFacilitiesHistory) TableName() string {
@@ -101,13 +101,13 @@ func (DailyProgramsFacilitiesHistory) TableName() string {
 type DailyProgramFacilitiesHistory struct {
 	Date                   time.Time `json:"date" gorm:"not null"`
 	ProgramID              uint      `json:"program_id" gorm:"not null"`
-	TotalActiveFacilities  uint      `json:"total_active_facilities" gorm:"not null"`
-	TotalEnrollments       uint      `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions       uint      `json:"total_completions" gorm:"not null"`
-	TotalActiveEnrollments uint      `json:"total_active_enrollments" gorm:"not null"`
-	TotalClasses           uint      `json:"total_classes" gorm:"not null"`
-	TotalArchivedClasses   uint      `json:"total_archived_classes" gorm:"not null"`
-	TotalStudentsPresent   uint      `json:"total_students_present" gorm:"not null"`
+	TotalActiveFacilities  int64     `json:"total_active_facilities" gorm:"not null"`
+	TotalEnrollments       int64     `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions       int64     `json:"total_completions" gorm:"not null"`
+	TotalActiveEnrollments int64     `json:"total_active_enrollments" gorm:"not null"`
+	TotalClasses           int64     `json:"total_classes" gorm:"not null"`
+	TotalArchivedClasses   int64     `json:"total_archived_classes" gorm:"not null"`
+	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
 }
 
 func (DailyProgramFacilitiesHistory) TableName() string {
@@ -118,12 +118,12 @@ type DailyProgramFacilityHistory struct {
 	Date                   time.Time `json:"date" gorm:"not null"`
 	ProgramID              uint      `json:"program_id" gorm:"not null"`
 	FacilityID             uint      `json:"facility_id" gorm:"not null"`
-	TotalEnrollments       uint      `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions       uint      `json:"total_completions" gorm:"not null"`
-	TotalActiveEnrollments uint      `json:"total_active_enrollments" gorm:"not null"`
-	TotalClasses           uint      `json:"total_classes" gorm:"not null"`
-	TotalArchivedClasses   uint      `json:"total_archived_classes" gorm:"not null"`
-	TotalStudentsPresent   uint      `json:"total_students_present" gorm:"not null"`
+	TotalEnrollments       int64     `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions       int64     `json:"total_completions" gorm:"not null"`
+	TotalActiveEnrollments int64     `json:"total_active_enrollments" gorm:"not null"`
+	TotalClasses           int64     `json:"total_classes" gorm:"not null"`
+	TotalArchivedClasses   int64     `json:"total_archived_classes" gorm:"not null"`
+	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
 }
 
 func (DailyProgramFacilityHistory) TableName() string {
@@ -131,27 +131,27 @@ func (DailyProgramFacilityHistory) TableName() string {
 }
 
 type ProgramsFacilitiesStats struct {
-	TotalPrograms                uint `json:"total_programs"`
-	AvgActiveProgramsPerFacility uint `json:"avg_active_programs_per_facility"`
-	TotalEnrollments             uint `json:"total_enrollments"`
-	AttendanceRate               uint `json:"attendance_rate"`
-	CompletionRate               uint `json:"completion_rate"`
+	TotalPrograms                int64   `json:"total_programs"`
+	AvgActiveProgramsPerFacility int64   `json:"avg_active_programs_per_facility"`
+	TotalEnrollments             int64   `json:"total_enrollments"`
+	AttendanceRate               float64 `json:"attendance_rate"`
+	CompletionRate               float64 `json:"completion_rate"`
 }
 
 type ProgramsOverviewTable struct {
-	ProgramID              uint         `json:"program_id"`
-	ProgramName            string       `json:"program_name"`
-	ArchivedAt             string       `json:"archived_at"`
-	NumFacilitiesAvailable uint         `json:"num_facilities_available"`
-	TotalEnrollments       uint         `json:"total_enrollments"`
-	ActiveEnrollments      uint         `json:"active_enrollments"`
-	TotalClasses           uint         `json:"total_classes"`
-	CompletionRate         uint         `json:"completion_rate"`
-	AttendanceRate         uint         `json:"attendance_rate"`
-	Types                  []ProgType   `json:"categories"`
-	CreditTypes            []CreditType `json:"credit_types"`
-	FundingType            FundingType  `json:"funding_type"`
-	Status                 string       `json:"status"`
+	ProgramID              uint    `json:"program_id"`
+	ProgramName            string  `json:"program_name"`
+	ArchivedAt             *string `json:"archived_at"`
+	NumFacilitiesAvailable int64   `json:"num_facilities_available"`
+	TotalEnrollments       int64   `json:"total_enrollments"`
+	ActiveEnrollments      int64   `json:"active_enrollments"`
+	TotalClasses           int64   `json:"total_classes"`
+	CompletionRate         float64 `json:"completion_rate"`
+	AttendanceRate         float64 `json:"attendance_rate"`
+	Types                  string  `json:"program_types"`
+	CreditTypes            string  `json:"credit_types"`
+	FundingType            string  `json:"funding_type"`
+	Status                 bool    `json:"status"`
 }
 
 type ProgramsOverview struct {

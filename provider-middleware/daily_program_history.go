@@ -27,51 +27,72 @@ func InsertDailyProgHistory(ctx context.Context, db *gorm.DB) error {
 
 func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) error {
 	var history models.DailyProgramsFacilitiesHistory
+	var programStats struct {
+		TotalPrograms         int64 `json:"total_programs"`
+		TotalActivePrograms   int64 `json:"total_active_programs"`
+		TotalArchivedPrograms int64 `json:"total_archived_programs"`
+	}
 	if err := db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			COUNT(*) AS total_programs,
 			SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) AS total_active_programs,
 			SUM(CASE WHEN archived_at IS NOT NULL THEN 1 ELSE 0 END) AS total_archived_programs
 		`).
-		Scan(&history).Error; err != nil {
+		Scan(&programStats).Error; err != nil {
 		log.Errorln("error getting total, active, archived programs")
 		return err
 	}
+	history.TotalPrograms = programStats.TotalPrograms
+	history.TotalActivePrograms = programStats.TotalActivePrograms
+	history.TotalArchivedPrograms = programStats.TotalArchivedPrograms
 
+	var enrollmentStats struct {
+		TotalEnrollments int64 `json:"total_enrollments"`
+		TotalCompletions int64 `json:"total_completions"`
+	}
 	if err := db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
 		Select(`
 			COUNT(*) AS total_enrollments,
 			SUM(CASE WHEN enrollment_status = 'Completed' THEN 1 ELSE 0 END) AS total_completions
 		`).
-		Scan(&history).Error; err != nil {
+		Scan(&enrollmentStats).Error; err != nil {
 		log.Errorln("error getting total, completed enrollments")
 		return err
 	}
+	history.TotalEnrollments = enrollmentStats.TotalEnrollments
+	history.TotalCompletions = enrollmentStats.TotalCompletions
 
+	var totalProgramOfferings int64
 	if err := db.WithContext(ctx).Model(&models.FacilitiesPrograms{}).
 		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true").
 		Select("COUNT(*) AS total_program_offerings").
-		Scan(&history).Error; err != nil {
+		Scan(&totalProgramOfferings).Error; err != nil {
 		log.Errorln("error getting total program offerings")
 		return err
 	}
+	history.TotalProgramOfferings = totalProgramOfferings
 
+	var totalFacilities int64
 	if err := db.WithContext(ctx).Model(&models.Facility{}).
 		Select("COUNT(*) AS total_facilities").
-		Scan(&history).Error; err != nil {
+		Scan(&totalFacilities).Error; err != nil {
 		log.Errorln("error getting total facilities")
 		return err
 	}
+	history.TotalFacilities = totalFacilities
 
+	var totalStudentsPresent int64
 	if err := db.WithContext(ctx).Model(&models.ProgramClassEventAttendance{}).
-		Select(`SUM(CASE WHEN attendance_status = 'present' THEN 1 ELSE 0 END) AS total_students_present`).
-		Scan(&history).Error; err != nil {
+		Select(`COALESCE(SUM(CASE WHEN attendance_status = 'present' THEN 1 ELSE 0 END), 0) AS total_students_present`).
+		Scan(&totalStudentsPresent).Error; err != nil {
 		log.Errorln("error getting total students present")
 		return err
 	}
+	history.TotalStudentsPresent = totalStudentsPresent
 
 	history.Date = time.Now()
 
+	log.Infof("History struct before insert: %+v", history)
 	if err := db.Create(&history).Error; err != nil {
 		log.Errorln("error creating daily program history")
 		return err
@@ -90,15 +111,17 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 			SUM(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 ELSE 0 END) AS total_completions,
 			SUM(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 ELSE 0 END) AS total_active_enrollments,
 			SUM(CASE WHEN pc.status != 'Cancelled' THEN 1 ELSE 0 END) AS total_classes,
-			SUM(CASE WHEN pc.status = 'Archived' THEN 1 ELSE 0 END) AS total_archived_classes,
-			SUM(CASE WHEN pce.attendance_status = 'present' THEN 1 ELSE 0 END) AS total_students_present
+			SUM(CASE WHEN programs.archived_at IS NOT NULL THEN 1 ELSE 0 END) AS total_archived_classes,
+			SUM(CASE WHEN pcea.attendance_status = 'present' THEN 1 ELSE 0 END) AS total_students_present
 		`).
 		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
 		Joins("LEFT JOIN facilities_programs fp ON fp.program_id = programs.id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
 		Joins("LEFT JOIN program_types pt ON pt.program_id = programs.id").
 		Joins("LEFT JOIN program_credit_types pct ON pct.program_id = programs.id").
-		Group("programs.id")
+		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
+		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.id = pcev.id").
+		Group("programs.id, pc.status, pce.enrollment_status, pcea.attendance_status")
 	if err := tx.Scan(&programs).Error; err != nil {
 		log.Errorln("error getting daily program facilities history")
 		return err
@@ -129,14 +152,15 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 			SUM(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 ELSE 0 END) AS total_completions,
 			SUM(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 ELSE 0 END) AS total_active_enrollments,
 			SUM(CASE WHEN pc.status != 'Cancelled' THEN 1 ELSE 0 END) AS total_classes,
-			SUM(CASE WHEN pc.status = 'Archived' THEN 1 ELSE 0 END) AS total_archived_classes,
+			SUM(CASE WHEN programs.archived_at IS NOT NULL THEN 1 ELSE 0 END) AS total_archived_classes,
 			SUM(CASE WHEN pcea.attendance_status = 'present' THEN 1 ELSE 0 END) AS total_students_present
 		`).
 		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
 		Joins("LEFT JOIN facilities_programs fp ON fp.program_id = programs.id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
-		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.class_id = pc.id").
-		Group("programs.id, fp.facility_id")
+		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
+		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.id = pcev.id").
+		Group("programs.id, fp.facility_id, pc.status, pce.enrollment_status, pcea.attendance_status")
 	if err := tx.Scan(&histories).Error; err != nil {
 		log.Errorln("error getting daily program facility history")
 		return err

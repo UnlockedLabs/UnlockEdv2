@@ -4,6 +4,8 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type EnrollmentAndCompletionMetrics struct {
@@ -135,43 +137,51 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 		First(&programsFacilitiesStats).Error; err != nil {
 		return programsOverview, newGetRecordsDBError(err, "programs facilities stats")
 	}
+	programsOverview.ProgramsFacilitiesStats.TotalPrograms = programsFacilitiesStats.TotalPrograms
+	programsOverview.ProgramsFacilitiesStats.TotalEnrollments = programsFacilitiesStats.TotalEnrollments
+	log.Printf("total programs: %d, total enrollments: %d", programsFacilitiesStats.TotalPrograms, programsFacilitiesStats.TotalEnrollments)
+
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select(`
-		SUM(total_program_offerings) / SUM(total_facilities) as avg_active_programs_per_facility,
-		SUM(total_students_present) / SUM(total_enrollments) as attendance_rate,
-		SUM(total_completions) / SUM(total_enrollments) as completion_rate
-		`)
+		COALESCE(SUM(total_program_offerings) / NULLIF(SUM(total_facilities), 0), 0) AS avg_active_programs_per_facility,
+		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) AS attendance_rate,
+		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) AS completion_rate
+	`)
 	if timeFilter > 0 {
 		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
 	}
 	if err := tx.Scan(&programsFacilitiesStats).Error; err != nil {
 		return programsOverview, newGetRecordsDBError(err, "programs facilities stats")
 	}
-	programsOverview.ProgramsFacilitiesStats = programsFacilitiesStats
+	programsOverview.ProgramsFacilitiesStats.AvgActiveProgramsPerFacility = programsFacilitiesStats.AvgActiveProgramsPerFacility
+	programsOverview.ProgramsFacilitiesStats.AttendanceRate = programsFacilitiesStats.AttendanceRate
+	programsOverview.ProgramsFacilitiesStats.CompletionRate = programsFacilitiesStats.CompletionRate
 	// get programs table
 	var programsTable []models.ProgramsOverviewTable
 	tx = db.WithContext(args.Ctx).Model(&models.DailyProgramFacilitiesHistory{}).
 		Select(`
-			programs.id,
-			programs.name,
-			SUM(total_active_facilities) as total_active_facilities,
-			SUM(total_enrollments) as total_enrollments,
-			SUM(total_active_enrollments) as total_active_enrollments,
-			SUM(total_classes) as total_classes,
-			SUM(total_completions) / SUM(total_enrollments) as completion_rate,
-			SUM(total_students_present) / SUM(total_enrollments) as attendance_rate,
-			pt.program_type,
-			pct.credit_type,
-			programs.funding_type,
-			programs.is_active as status
+			programs.id AS program_id,
+			programs.name AS program_name,
+			programs.archived_at AS archived_at,
+			SUM(total_active_facilities) AS total_active_facilities,
+			SUM(total_enrollments) AS total_enrollments,
+			SUM(total_active_enrollments) AS total_active_enrollments,
+			SUM(total_classes) AS total_classes,
+			COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate,
+			COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_active_enrollments), 0), 0) * 100 AS attendance_rate,
+			STRING_AGG(DISTINCT pt.program_type::text, ',') AS program_types,
+			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
+			MAX(programs.funding_type) AS funding_type,
+			BOOL_OR(programs.is_active) AS status
 		`).
 		Joins("JOIN programs ON programs.id = daily_program_facilities_history.program_id").
 		Joins("JOIN program_types pt ON pt.program_id = daily_program_facilities_history.program_id").
-		Joins("JOIN program_credit_types pct ON pct.program_id = daily_program_facilities_history.program_id")
+		Joins("JOIN program_credit_types pct ON pct.program_id = daily_program_facilities_history.program_id").
+		Group("programs.id, programs.name")
 	if timeFilter > 0 {
 		tx = tx.Where("daily_program_facilities_history.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
 	}
-	if err := tx.Group("programs.id").Scan(&programsTable).Error; err != nil {
+	if err := tx.Scan(&programsTable).Error; err != nil {
 		return programsOverview, newGetRecordsDBError(err, "programs table")
 	}
 	programsOverview.ProgramsTable = programsTable

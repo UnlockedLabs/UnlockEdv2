@@ -1,14 +1,14 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     Program,
     Option,
     ServerResponseMany,
     FilterPastTime,
-    FundingType,
-    CreditType,
-    ProgramType
+    ServerResponseOne,
+    ProgramsOverview,
+    ProgramsOverviewTable
 } from '@/common';
 import useSWR from 'swr';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -31,91 +31,21 @@ export interface ProgramRow extends Program {
     avg_attendance_rate: number;
 }
 
-const temp_programs: ProgramRow[] = [
-    {
-        id: 1,
-        name: 'Algebra 101',
-        total_facilities: 5,
-        total_enrollments: 100,
-        active_enrollments: 50,
-        total_classes: 10,
-        avg_completion_rate: 80,
-        avg_attendance_rate: 90,
-        program_type: ProgramType.EDUCATIONAL,
-        funding_type: FundingType.FEDERAL_GRANTS,
-        credit_type: CreditType.EDUCATION,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-        description: '',
-        tags: [],
-        is_favorited: false,
-        facilities: []
-    },
-    {
-        id: 2,
-        name: 'English Composition',
-        total_facilities: 3,
-        facilities: [],
-        total_enrollments: 50,
-        active_enrollments: 20,
-        total_classes: 5,
-        avg_completion_rate: 70,
-        avg_attendance_rate: 80,
-        program_type: ProgramType.EDUCATIONAL,
-        funding_type: FundingType.STATE_GRANTS,
-        credit_type: CreditType.EDUCATION,
-        is_active: false,
-        description: '',
-        tags: [],
-        is_favorited: false,
-        created_at: new Date(),
-        updated_at: new Date()
-    },
-    {
-        id: 3,
-        name: 'Computer Programming',
-        total_facilities: 2,
-        facilities: [],
-        total_enrollments: 20,
-        active_enrollments: 10,
-        total_classes: 3,
-        avg_completion_rate: 90,
-        avg_attendance_rate: 95,
-        program_type: ProgramType.EDUCATIONAL,
-        funding_type: FundingType.NON_PROFIT_ORGANIZATION,
-        credit_type: CreditType.EARNED_TIME,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-        description: '',
-        tags: [],
-        is_favorited: false
-    }
-];
-
-export function ProgramRow({ program }: { program: ProgramRow }) {
-    const fundingTypeText = program.funding_type.replace(/_/g, ' ');
+export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     return (
-        <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-1">
-            <td>{program.name}</td>
-            <td>{program.total_facilities}</td>
+        <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2">
+            <td>{program.program_name}</td>
+            <td>{program.num_facilities_available}</td>
             <td>{program.total_enrollments}</td>
             <td>{program.active_enrollments}</td>
             <td>{program.total_classes}</td>
-            <td>{program.avg_completion_rate}</td>
-            <td>{program.avg_attendance_rate}</td>
+            <td>{parseFloat(program.completion_rate.toFixed(2))}%</td>
+            <td>{parseFloat(program.attendance_rate.toFixed(2))}%</td>
+            <td>{program.program_types.replace(/,/g, ', ')}</td>
+            <td>{program.credit_types.replace(/,/g, ', ')}</td>
+            <td>{program.funding_type.replace(/_/g, ' ')}</td>
             <td>
-                <GreyPill>{program.program_type}</GreyPill>
-            </td>
-            <td>
-                <GreyPill>{program.credit_type}</GreyPill>
-            </td>
-            <td>
-                <GreyPill>{fundingTypeText}</GreyPill>
-            </td>
-            <td>
-                {program.is_active ? (
+                {program.status ? (
                     <TealPill children={'Active'} />
                 ) : (
                     <GreyPill children={'Archived'} />
@@ -142,11 +72,27 @@ export default function ProgramManagement() {
     } = useUrlPagination(1, 20);
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
-    const { data, error, mutate } = useSWR<ServerResponseMany<Program>, Error>(
+    const { data, mutate } = useSWR<ServerResponseMany<Program>, Error>(
         `/api/programs?page=${page}&per_page=${perPage}&search=${searchTerm}&${categoryQueryString}&order=asc&order_by=name`
     );
-    const programData = data?.data;
+
     const meta = data?.meta;
+    const { data: programsOverview } = useSWR<
+        ServerResponseOne<ProgramsOverview>,
+        Error
+    >(`/api/programs-overview?time_filter=${dateRange}`);
+    const programData = programsOverview?.data;
+    const {
+        total_programs,
+        avg_active_programs_per_facility,
+        total_enrollments,
+        attendance_rate,
+        completion_rate
+    } = programData?.programs_facilities_stats ?? {};
+
+    useEffect(() => {
+        console.log(programsOverview?.data.programs_table);
+    }, [programsOverview]);
 
     const { categories } = useLoaderData() as {
         categories: Option[];
@@ -168,31 +114,31 @@ export default function ProgramManagement() {
             <div className="grid grid-cols-5 gap-4">
                 <StatsCard
                     title={'Total Programs'}
-                    number={''}
+                    number={total_programs?.toString() ?? ''}
                     label={'programs'}
                     tooltip="Count of unique programs offered across all facilities."
                 />
                 <StatsCard
                     title={'Avg Active Programs per Facility'}
-                    number={''}
+                    number={avg_active_programs_per_facility?.toString() ?? ''}
                     label={'programs'}
                     tooltip="Average number of programs per facility with at least one active class and enrolled students."
                 />
                 <StatsCard
                     title={'Total Enrollments'}
-                    number={''}
+                    number={total_enrollments?.toString() ?? ''}
                     label={'residents'}
                     tooltip="Total number of enrollments. A single resident may be enrolled in more than one program."
                 />
                 <StatsCard
                     title={'Avg Attendance Rate'}
-                    number={''}
+                    number={attendance_rate?.toString() ?? ''}
                     label={'%'}
                     tooltip="Average attendance across all sessions where attendance was recorded."
                 />
                 <StatsCard
                     title={'Avg Completion Rate'}
-                    number={''}
+                    number={completion_rate?.toString() ?? ''}
                     label={'%'}
                     tooltip="Average percentage of participants who completed a program. Only includes classes with defined end dates."
                 />
@@ -238,9 +184,17 @@ export default function ProgramManagement() {
                     </tr>
                 </thead>
                 <tbody>
-                    {temp_programs?.map((program) => (
-                        <ProgramRow program={program} />
-                    ))}
+                    {programData?.programs_table !== undefined ? (
+                        programData?.programs_table.map(
+                            (program: ProgramsOverviewTable) => (
+                                <ProgramRow program={program} />
+                            )
+                        )
+                    ) : (
+                        <p className="body-small text-error">
+                            No programs to show.
+                        </p>
+                    )}
                 </tbody>
             </table>
             {meta && (
