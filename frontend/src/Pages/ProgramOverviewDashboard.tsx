@@ -11,12 +11,10 @@ import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
-    Program,
     Class,
     SelectedClassStatus,
     ServerResponseMany,
-    ProgramOverviewDashMetrics,
-    ClassStats
+    ProgramOverview
 } from '@/common';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
@@ -30,11 +28,11 @@ import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/useAuth';
 
-export default function ProgramOverview() {
+export default function ProgramOverviewDashboard() {
     const { id } = useParams<{ id: string }>();
     const user = useAuth();
     const userFacilityId = user.user?.facility_id;
-    const program = useLoaderData() as Program;
+    const program = useLoaderData() as ProgramOverview;
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
@@ -56,39 +54,29 @@ export default function ProgramOverview() {
     };
 
     const {
-        data: programOverviewDashMetricsResp,
-        error: programOverviewDashMetricsError,
-        mutate: mutateProgramOverviewDashMetrics
-    } = useSWR<ServerResponseMany<ProgramOverviewDashMetrics>, Error>(
+        data: classesResp,
+        error: classesError,
+        mutate: mutateClasses
+    } = useSWR<ServerResponseMany<Class>, Error>(
         `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
     if (!program) {
         navigate('/404');
-    } else if (programOverviewDashMetricsError) {
+    } else if (classesError) {
         navigate('/error');
     }
 
-    const classes = programOverviewDashMetricsResp?.data[0]?.Classes ?? [];
-    const rawMetrics = programOverviewDashMetricsResp?.data[0]?.Stats;
-
-    const metrics: ClassStats = {
-        Enrollments: rawMetrics?.Enrollments ?? 0,
-        Completions: rawMetrics?.Completions ?? 0,
-        CompletionRate: rawMetrics?.CompletionRate ?? 0,
-        TotalEnrollments: 0
-    };
-
-    const meta = programOverviewDashMetricsResp?.meta ?? {
+    const classes = classesResp?.data ?? [];
+    const meta = classesResp?.meta ?? {
         total: 0,
         per_page: 20,
         page: 1,
         current_page: 1,
         last_page: 1
     };
-
     const checkResponse = useCheckResponse({
-        mutate: mutateProgramOverviewDashMetrics,
+        mutate: mutateClasses,
         refModal: archiveClassesRef
     });
 
@@ -183,21 +171,19 @@ export default function ProgramOverview() {
     );
     return (
         <div className="p-4 px-5">
-            <h1 className=" mb-2">{program.name}</h1>
+            <h1 className=" mb-2">{program?.name}</h1>
             <p className="mb-4 body body-small ">{program?.description}</p>
             <div className="flex gap-4 mb-8 ">
                 <div className="flex flex-col gap-4 h-[250px]">
                     <StatsCard
-                        title="Residents Enrolled"
-                        number={metrics.Enrollments.toString()}
+                        title="Active Enrollments"
+                        number={program?.active_enrollments.toString() ?? '0'}
                         label="residents"
-                        tooltip="Active Enrollments"
                     />
                     <StatsCard
                         title="Overall Completion"
-                        number={metrics.CompletionRate.toString()}
+                        number={program?.completion_rate.toString() ?? '0'}
                         label="%"
-                        tooltip="Placeholder data"
                     />
                 </div>
 
@@ -410,9 +396,7 @@ export default function ProgramOverview() {
                                         <ClassStatus
                                             status={program_class.status}
                                             program_class={program_class}
-                                            mutateClasses={
-                                                mutateProgramOverviewDashMetrics
-                                            }
+                                            mutateClasses={mutateClasses}
                                         />
                                     </td>
                                 </tr>

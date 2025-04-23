@@ -687,6 +687,21 @@ export interface Program {
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
+    class_stats: ClassStats;
+}
+
+export interface ProgramOverview extends Program {
+    active_enrollments: number;
+    completions: number;
+    total_enrollments: number;
+    completion_rate: number;
+}
+
+export interface ClassStats {
+    enrollments: number;
+    completions: number;
+    total_enrollments: number;
+    completion_rate: number;
 }
 
 export interface Class {
@@ -719,18 +734,6 @@ export interface ResidentProgramClassInfo {
     attendance_percentage: string;
     class_id: number;
     program_id: number;
-}
-
-export interface ClassStats {
-    Enrollments: number;
-    Completions: number;
-    TotalEnrollments: number;
-    CompletionRate: number;
-}
-
-export interface ProgramOverviewDashMetrics {
-    Classes: Class[];
-    Stats: ClassStats;
 }
 
 export interface ProgramClassEvent {

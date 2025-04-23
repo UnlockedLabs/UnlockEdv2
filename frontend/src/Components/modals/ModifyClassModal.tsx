@@ -8,7 +8,6 @@ import {
     Class,
     ClassStatusMap,
     ClassStatusOptions,
-    ProgramOverviewDashMetrics,
     SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
@@ -50,7 +49,7 @@ const ModifyClassModal = forwardRef(function (
     }: {
         action: ClassStatusOptions | undefined;
         program_class: Class;
-        mutate: KeyedMutator<ServerResponseMany<ProgramOverviewDashMetrics>>;
+        mutate: KeyedMutator<ServerResponseMany<Class>>;
         setSelectedStatus: React.Dispatch<
             React.SetStateAction<SelectedClassStatus>
         >;

@@ -25,7 +25,6 @@ export default function ProgramManagement() {
         setPage: setPage,
         setPerPage
     } = useUrlPagination(1, 20);
-
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
     const { data, error, mutate } = useSWR<ServerResponseMany<Program>, Error>(
