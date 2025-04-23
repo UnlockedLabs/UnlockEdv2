@@ -26,9 +26,12 @@ import { XMarkIcon } from '@heroicons/react/24/solid';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/useAuth';
 
 export default function ProgramOverview() {
     const { id } = useParams<{ id: string }>();
+    const user = useAuth();
+    const userFacilityId = user.user?.facility_id;
     const program = useLoaderData() as Program;
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
@@ -246,6 +249,11 @@ export default function ProgramOverview() {
                             className="button flex items-center"
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)
+                            }
+                            disabled={
+                                !program.facilities.some(
+                                    (facility) => facility.id === userFacilityId
+                                )
                             }
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
