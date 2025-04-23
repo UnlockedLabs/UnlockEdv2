@@ -373,6 +373,7 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
 					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
 					contentActivity := models.OpenContentActivity{
+						OpenContentUrlID:      getRandomURLForLibrary(openContentUrls),
 						RequestTS:             requestTS,
 						OpenContentProviderID: video.OpenContentProviderID,
 						FacilityID:            user.FacilityID,
