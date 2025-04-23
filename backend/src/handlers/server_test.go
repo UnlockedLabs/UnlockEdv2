@@ -42,6 +42,10 @@ func executeRequest(t *testing.T, req *http.Request, handler http.Handler, test 
 	return rr
 }
 
+func getDefaultQueryCtx() models.QueryContext {
+	return models.QueryContext{Page: 1, PerPage: 10}
+}
+
 func (srv *Server) TestAsAdmin(handler HttpFunc) http.Handler {
 	h := srv.applyAdminTestingMiddleware(srv.handleError(handler))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

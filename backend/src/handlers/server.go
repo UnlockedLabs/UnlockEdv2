@@ -79,7 +79,6 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerActionsRoutes,
 		srv.registerLeftMenuRoutes,
 		srv.registerCoursesRoutes,
-		srv.registerMilestonesRoutes,
 		srv.registerOutcomesRoutes,
 		srv.registerActivityRoutes,
 		srv.registerOidcRoutes,

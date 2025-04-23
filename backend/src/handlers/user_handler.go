@@ -377,19 +377,28 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	log.add("admin_id", args.UserID)
 	log.add("transfer_facility_id", transRequest.TransFacilityID)
 	log.add("current_facility_id", transRequest.CurrFacilityID)
-	err := srv.Db.TransferResident(&args, transRequest.UserID, transRequest.CurrFacilityID, transRequest.TransFacilityID)
+	tx, err := srv.Db.TransferResident(&args, transRequest.UserID, transRequest.CurrFacilityID, transRequest.TransFacilityID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	err = srv.updateFacilityInKratosIdentity(transRequest.UserID, transRequest.TransFacilityID)
 	if err != nil {
+		tx.Rollback()
 		return newInternalServerServiceError(err, "error updating facility in kratos")
 	}
 	log.info("successfully transferred resident")
 	transFacilityID := uint(transRequest.TransFacilityID)
 	facilityTransfer := models.NewUserAccountHistory(uint(transRequest.UserID), models.FacilityTransfer, &args.UserID, nil, &transFacilityID)
 	if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), facilityTransfer); err != nil {
+		tx.Rollback()
 		return newCreateRequestServiceError(err)
 	}
-	return writeJsonResponse(w, int(http.StatusNoContent), "successfully transferred resident")
+	if err := tx.Commit().Error; err != nil {
+		// transfer back to original facility if we cannot commit tx
+		err = srv.updateFacilityInKratosIdentity(transRequest.UserID, transRequest.CurrFacilityID)
+		// pray that this never happens 🙏
+		log.error("Error committing transaction AND updating user facility in kratos: " + err.Error())
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }

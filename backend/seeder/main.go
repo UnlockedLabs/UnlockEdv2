@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-faker/faker/v4"
+	"github.com/go-faker/faker/v4/pkg/options"
 	"github.com/joho/godotenv"
 	"github.com/teambition/rrule-go"
 	"gorm.io/driver/postgres"
@@ -49,7 +51,7 @@ func seedTestData(db *gorm.DB) {
 	testServer := handlers.NewServer(false)
 	facilities := []models.Facility{
 		{
-			Name:     "MVCF",
+			Name:     "BCF",
 			Timezone: "America/New_York",
 		},
 		{
@@ -62,7 +64,8 @@ func seedTestData(db *gorm.DB) {
 			log.Printf("Failed to create facility: %v", err)
 		}
 	}
-	platforms := []models.ProviderPlatform{
+	platforms := []models.ProviderPlatform{}
+	platforms = []models.ProviderPlatform{
 		{
 			Name:      "Canvas",
 			BaseUrl:   "https://canvas.staging.unlockedlabs.xyz",
@@ -91,48 +94,36 @@ func seedTestData(db *gorm.DB) {
 			log.Printf("Failed to create platform: %v", err)
 		}
 	}
-	kiwix := models.OpenContentProvider{
-		Url:              "http://kiwix:8080",
-		Title:            models.Kiwix,
-		ThumbnailUrl:     "https://images.fineartamerica.com/images/artworkimages/mediumlarge/3/llamas-wearing-party-hats-in-a-circle-looking-down-john-daniels.jpg",
-		CurrentlyEnabled: true,
-		Description:      "Kiwix open content provider",
+
+	facilities = []models.Facility{}
+	err := db.Find(&facilities).Error
+	if err != nil {
+		log.Printf("Failed to get facilities: %v", err)
 	}
-	log.Printf("Creating Open Content Provider %s", kiwix.Url)
-	if err := db.Create(&kiwix).Error; err != nil {
-		log.Printf("Failed to create open content provider: %v", err)
+	videos := []models.Video{}
+	libraries := []models.Library{}
+	libraries = generateFakeLibraries(2, 25)
+	videos = generateFakeVideos(3, 25)
+	for i := range videos {
+		// create open_content_url for each video
+		_ = db.Create(&models.OpenContentUrl{
+			ContentURL: fmt.Sprintf("/api/proxy/videos/%d", videos[i].ID),
+		}).Error
 	}
-	kiwixLibraries := []models.Library{
-		{
-			OpenContentProviderID: kiwix.ID,
-			ExternalID:            models.StringPtr("urn:uuid:b218a9b9-1aa5-0c0a-fe3c-eeb4b9bc92e9"),
-			Title:                 "C Docs",
-			Language:              models.StringPtr("eng"),
-			Description:           models.StringPtr("C docs by DevDocs"),
-			Url:                   "/content/devdocs_en_c_2025-01",
-			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
-		},
-		{
-			OpenContentProviderID: kiwix.ID,
-			ExternalID:            models.StringPtr("urn:uuid:b231a72f-7d7e-076d-9003-a7e47823e589"),
-			Title:                 "Go Docs",
-			Language:              models.StringPtr("eng"),
-			Description:           models.StringPtr("Go docs by DevDocs"),
-			Url:                   "/content/devdocs_en_go_2025-01",
-			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
-		},
-	}
-	for idx := range kiwixLibraries {
-		log.Printf("Creating library %s", kiwixLibraries[idx].Title)
-		if err := db.Create(&kiwixLibraries[idx]).Error; err != nil {
-			log.Printf("Failed to create library: %v", err)
+
+	for i := range videos {
+		if err := db.Create(&videos[i]).Error; err != nil {
+			log.Printf("Failed to create fake video: %v", err)
 		}
 	}
-	var users []models.User
-	if err := json.Unmarshal([]byte(usersStr), &users); err != nil {
-		log.Printf("Failed to unmarshal test data: %v", err)
+	for i := range libraries {
+		if err := db.Create(&libraries[i]).Error; err != nil {
+			log.Printf("Failed to create fake library: %v", err)
+		}
 	}
-	classes, err := createFacilityPrograms(db)
+	users := generateFakeUsers(facilities)
+	classes := []models.ProgramClass{}
+	classes, err = createFacilityPrograms(db)
 	if err != nil {
 		log.Printf("Failed to create facility programs: %v", err)
 	}
@@ -144,22 +135,21 @@ func seedTestData(db *gorm.DB) {
 		if err := testServer.HandleCreateUserKratos(users[idx].Username, "ChangeMe!"); err != nil {
 			log.Fatalf("unable to create test user in kratos")
 		}
-		var mapping models.ProviderUserMapping
 		for i := range len(platforms) {
 			if platforms[i].Type != models.Brightspace { //omitting brightspace here, we don't want bad users in the seeded data...we want real users
-				mapping = models.ProviderUserMapping{
+				mapping := models.ProviderUserMapping{
 					UserID:             users[idx].ID,
 					ProviderPlatformID: platforms[i].ID,
 					ExternalUsername:   users[idx].Username,
-					ExternalUserID:     strconv.Itoa(idx),
+					ExternalUserID:     strconv.Itoa(idx) + strconv.Itoa(rand.Intn(30000)),
 				}
-			}
-			if err = db.Create(&mapping).Error; err != nil {
-				log.Printf("Failed to create provider user mapping: %v", err)
+				if err = db.Create(&mapping).Error; err != nil {
+					log.Printf("Failed to create provider user mapping: %v", err)
+				}
 			}
 		}
 	}
-	var courses []models.Course
+	courses := []models.Course{}
 	if err := json.Unmarshal([]byte(coursesStr), &courses); err != nil {
 		log.Printf("Failed to unmarshal test data: %v", err)
 	}
@@ -170,16 +160,11 @@ func seedTestData(db *gorm.DB) {
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
-	var dbUsers []models.User
-	if db.Find(&dbUsers).Error != nil {
-		log.Fatalf("Failed to get users from db")
-		return
-	}
 	events := []models.ProgramClassEvent{}
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
 	}
-	for _, user := range dbUsers {
+	for _, user := range users {
 		for _, prog := range courses {
 			// all test courses are open_enrollment
 			enrollment := models.UserEnrollment{
@@ -238,8 +223,7 @@ func seedTestData(db *gorm.DB) {
 				log.Printf("Creating milestone for user %s", user.Username)
 			}
 		}
-		statuses := []models.ProgramEnrollmentStatus{
-			models.Enrolled,
+		statuses := [8]models.ProgramEnrollmentStatus{
 			models.EnrollmentCancelled,
 			models.EnrollmentCompleted,
 			models.EnrollmentPending,
@@ -249,18 +233,43 @@ func seedTestData(db *gorm.DB) {
 			models.EnrollmentIncompleteTransfered,
 		}
 
-		for idx := range classes {
-			if classes[idx].FacilityID == user.FacilityID {
-				enrollment := models.ProgramClassEnrollment{
-					UserID:           user.ID,
-					ClassID:          classes[idx].ID,
-					EnrollmentStatus: statuses[rand.Intn(len(statuses))],
-				}
-				if err := db.Create(&enrollment).Error; err != nil {
-					log.Printf("Failed to create enrollment: %v", err)
-				}
-				log.Printf("Creating program enrollment for user %s", user.Username)
+		numEnrollments := rand.Intn(3) + 1
+		available := []models.ProgramClass{}
+		for i := range classes {
+			if classes[i].FacilityID == user.FacilityID {
+				available = append(available, classes[i])
 			}
+		}
+		rand.Shuffle(len(available), func(i, j int) { available[i], available[j] = available[j], available[i] })
+		for _, cls := range available[:min(numEnrollments, len(available))] {
+			status := models.Enrolled
+			if rand.Intn(100)%2 == 0 {
+				status = statuses[rand.Intn(len(statuses))]
+			}
+			enrollment := models.ProgramClassEnrollment{
+				UserID:           user.ID,
+				ClassID:          cls.ID,
+				EnrollmentStatus: status,
+			}
+			if err := db.Create(&enrollment).Error; err != nil {
+				log.Printf("Failed to create enrollment: %v", err)
+			}
+			if status == models.EnrollmentCompleted {
+				completion := models.ProgramCompletion{
+					UserID:              user.ID,
+					ProgramClassID:      cls.ID,
+					ProgramID:           cls.ProgramID,
+					ProgramName:         faker.Sentence(options.WithRandomStringLength(16)),
+					FacilityName:        facilities[user.FacilityID-1].Name,
+					ProgramOwner:        faker.Name(),
+					ProgramClassName:    cls.Name,
+					ProgramClassStartDt: cls.StartDt,
+				}
+				if err := db.Create(&completion).Error; err != nil {
+					log.Printf("Failed to create completion")
+				}
+			}
+			log.Printf("Creating program enrollment for user %s", user.Username)
 		}
 		startDate := time.Now().AddDate(0, 0, -90)
 		endDate := time.Now()
@@ -270,10 +279,11 @@ func seedTestData(db *gorm.DB) {
 				log.Printf("Failed to parse rrule for event %d: %v", event.ID, err)
 				continue
 			}
-
 			occurrences := rule.Between(startDate, endDate, true)
-
 			for _, occ := range occurrences {
+				if rand.Intn(10)%2 == 0 {
+					continue
+				}
 				attendanceDate := occ.Format("2006-01-02")
 				attendance := models.ProgramClassEventAttendance{
 					EventID: event.ID,
@@ -292,30 +302,30 @@ func seedTestData(db *gorm.DB) {
 			}
 		}
 	}
-	createUserSessionActivity(db, dbUsers)
+	createUserSessionActivity(db, users)
 }
 
 func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 	now := time.Now()
 	threeMonthsInPast := now.AddDate(0, -3, 0)
 	for _, user := range dbUsers {
-		numSessions := rand.Intn(90)
-		for range numSessions {
-			randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
-			sessionDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
-			sessionHours := rand.Intn(24)
-			sessionMinutes := rand.Intn(60)
-			sessionSeconds := rand.Intn(60)
-			sessionStart := time.Date(sessionDate.Year(), sessionDate.Month(), sessionDate.Day(), sessionHours, sessionMinutes, sessionSeconds, 0, time.UTC)
-			sessionEnd := sessionStart.Add(time.Duration(rand.Intn(720)+15) * time.Minute)
-			userSessionTracking := models.UserSessionTracking{
-				UserID:         user.ID,
-				SessionStartTS: sessionStart,
-				SessionEndTS:   sessionEnd,
-				SessionID:      sessionStart.Format("2006-01-02 15:04:05"),
-			}
-			if err := db.Create(&userSessionTracking).Error; err != nil {
-				log.Printf("Failed to create userSessionTracking: %v", err)
+		burstCount := rand.Intn(6) + 3 // 3–8 session bursts
+		for range burstCount {
+			base := threeMonthsInPast.Add(time.Duration(rand.Intn(90*24)) * time.Hour)
+			sessionsInBurst := rand.Intn(4) + 1
+			for j := range sessionsInBurst {
+				start := base.Add(time.Duration(j*2) * time.Hour)
+				duration := time.Duration(rand.Intn(60)+15) * time.Minute
+				end := start.Add(duration)
+				userSessionTracking := models.UserSessionTracking{
+					UserID:         user.ID,
+					SessionStartTS: start,
+					SessionEndTS:   end,
+					SessionID:      fmt.Sprintf("%s-%d", start.Format("20060102"), rand.Intn(10000)),
+				}
+				if err := db.Create(&userSessionTracking).Error; err != nil {
+					log.Printf("Failed to create userSessionTracking: %v", err)
+				}
 			}
 		}
 	}
@@ -329,7 +339,6 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/arena/index"},
 		{ContentURL: "/api/proxy/libraries/2/content/devdocs_en_go_2025-01/index"},
 	}
-
 	for _, url := range openContentUrls {
 		if err := db.Create(&url).Error; err != nil {
 			log.Printf("Failed to create openconenturl: %v", err)
@@ -341,36 +350,68 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 
 	var libraries []models.Library
 	if err := db.Model(&models.Library{}).Find(&libraries).Error; err != nil {
-		log.Printf("Failed to get open content urls: %v", err)
+		log.Printf("Failed to get libraries: %v", err)
 	}
-
+	var videos []models.Video
+	if err := db.Model(&models.Video{}).Find(&videos).Error; err != nil {
+		log.Printf("Failed to get videos: %v", err)
+	}
+	generateOpenContentFavorites(db, dbUsers, libraries, videos)
 	for _, user := range dbUsers {
 		if user.Role != "student" {
 			continue
 		}
-		for _, kiwix := range libraries {
-			numSessions := rand.Intn(90)
+		for _, video := range videos {
+			numSessions := rand.Intn(20)
 			for range numSessions {
-				// Select random facility, provider, and content
-				urlID := getRandomURLForLibrary(openContentUrls, int(kiwix.ID))
-				randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
-				requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
-				requestHour := rand.Intn(23)
-				requestMinute := rand.Intn(60)
-				requestSecond := rand.Intn(60)
-				requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
-				stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
-				contentActivity := models.OpenContentActivity{
-					RequestTS:             requestTS,
-					OpenContentProviderID: kiwix.OpenContentProviderID,
-					FacilityID:            user.FacilityID,
-					UserID:                user.ID,
-					ContentID:             kiwix.ID,
-					OpenContentUrlID:      urlID,
-					StopTS:                stopTS,
+				if rand.Intn(100)%3 == 0 {
+					randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
+					requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
+					requestHour := rand.Intn(23)
+					requestMinute := rand.Intn(60)
+					requestSecond := rand.Intn(60)
+					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
+					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
+					contentActivity := models.OpenContentActivity{
+						OpenContentUrlID:      getRandomURLForLibrary(openContentUrls),
+						RequestTS:             requestTS,
+						OpenContentProviderID: video.OpenContentProviderID,
+						FacilityID:            user.FacilityID,
+						UserID:                user.ID,
+						ContentID:             video.ID,
+						StopTS:                stopTS,
+					}
+					if err := db.Create(&contentActivity).Error; err != nil {
+						log.Printf("Failed to create open content activity: %v", err)
+					}
 				}
-				if err := db.Create(&contentActivity).Error; err != nil {
-					log.Printf("Failed to create open content activity: %v", err)
+			}
+		}
+		for _, kiwix := range libraries {
+			numSessions := rand.Intn(20)
+			for range numSessions {
+				if rand.Intn(100)%3 == 0 {
+					// Select random facility, provider, and content
+					urlID := getRandomURLForLibrary(openContentUrls)
+					randomDayOffset := rand.Intn(int(now.Sub(threeMonthsInPast).Hours() / 24))
+					requestDate := threeMonthsInPast.Add(time.Duration(randomDayOffset*24) * time.Hour)
+					requestHour := rand.Intn(23)
+					requestMinute := rand.Intn(60)
+					requestSecond := rand.Intn(60)
+					requestTS := time.Date(requestDate.Year(), requestDate.Month(), requestDate.Day(), requestHour, requestMinute, requestSecond, 0, time.UTC)
+					stopTS := requestTS.Add(time.Duration(rand.Intn(360)) * time.Minute)
+					contentActivity := models.OpenContentActivity{
+						RequestTS:             requestTS,
+						OpenContentProviderID: kiwix.OpenContentProviderID,
+						FacilityID:            user.FacilityID,
+						UserID:                user.ID,
+						ContentID:             kiwix.ID,
+						OpenContentUrlID:      urlID,
+						StopTS:                stopTS,
+					}
+					if err := db.Create(&contentActivity).Error; err != nil {
+						log.Printf("Failed to create open content activity: %v", err)
+					}
 				}
 			}
 
@@ -378,22 +419,65 @@ func createUserSessionActivity(db *gorm.DB, dbUsers []models.User) {
 	}
 }
 
-func getRandomURLForLibrary(urls []models.OpenContentUrl, libraryID int) uint {
-	var filteredUrls []models.OpenContentUrl
-	libraryStr := fmt.Sprintf("/libraries/%d/", libraryID)
-	for _, url := range urls {
-		if strings.Contains(url.ContentURL, libraryStr) {
-			filteredUrls = append(filteredUrls, url)
-		}
-	}
-	if len(filteredUrls) == 0 {
-		log.Print("unable to find any matching urls, just going to use the first one in the slice")
-		return urls[0].ID
-	}
-	selectedURL := filteredUrls[rand.Intn(len(filteredUrls))]
+func getRandomURLForLibrary(urls []models.OpenContentUrl) uint {
+	selectedURL := urls[rand.Intn(len(urls))]
 	return selectedURL.ID
 }
 
+func generateOpenContentFavorites(db *gorm.DB, users []models.User, libraries []models.Library, videos []models.Video) {
+	var urls []models.OpenContentUrl
+
+	if err := db.Find(&urls).Error; err != nil {
+		log.Printf("Failed to fetch open content URLs: %v", err)
+		return
+	}
+	for _, user := range users {
+		if user.Role != "student" {
+			continue
+		}
+		numFavorites := rand.Intn(8) + 3 // 3-10 favorites
+		for range numFavorites {
+			isLibrary := rand.Intn(2) == 0
+			var fav models.OpenContentFavorite
+
+			if isLibrary && len(libraries) > 0 {
+				lib := libraries[rand.Intn(len(libraries))]
+				var urlID *uint
+				for _, url := range urls {
+					if strings.Contains(url.ContentURL, fmt.Sprintf("/libraries/%d/", lib.ID)) {
+						urlID = &url.ID
+						break
+					}
+				}
+
+				fav = models.OpenContentFavorite{
+					UserID:                user.ID,
+					ContentID:             lib.ID,
+					OpenContentProviderID: lib.OpenContentProviderID,
+					OpenContentUrlID:      urlID,
+					Name:                  lib.Title,
+					CreatedAt:             time.Now().AddDate(0, 0, -rand.Intn(90)),
+				}
+			} else if len(videos) > 0 {
+				vid := videos[rand.Intn(len(videos))]
+				fav = models.OpenContentFavorite{
+					UserID:                user.ID,
+					ContentID:             vid.ID,
+					OpenContentProviderID: vid.OpenContentProviderID,
+					OpenContentUrlID:      nil, // videos never have one
+					Name:                  vid.Title,
+					CreatedAt:             time.Now().AddDate(0, 0, -rand.Intn(90)),
+				}
+			} else {
+				continue
+			}
+
+			if err := db.Create(&fav).Error; err != nil {
+				log.Printf("Failed to create favorite: %v", err)
+			}
+		}
+	}
+}
 func getRandomProgram(programMap map[string]models.ProgType) string {
 	keySlice := make([]string, 0, len(programMap))
 	for key := range programMap {
@@ -402,6 +486,46 @@ func getRandomProgram(programMap map[string]models.ProgType) string {
 	return keySlice[rand.Intn(len(keySlice))]
 }
 
+func generateFakeLibraries(providerID uint, count int) []models.Library {
+	langs := []string{"eng", "spa", "fra", "por", "deu"}
+	libraries := make([]models.Library, 0, count)
+	for range count {
+		lang := langs[rand.Intn(len(langs))]
+		title := faker.Word() + " Docs"
+		lib := models.Library{
+			OpenContentProviderID: providerID,
+			ExternalID:            models.StringPtr(fmt.Sprintf("urn:uuid:%s", faker.UUIDDigit())),
+			Title:                 title,
+			Language:              models.StringPtr(lang),
+			Description:           models.StringPtr(faker.Paragraph()),
+			Url:                   fmt.Sprintf("/content/devdocs_en_%s_%s", strings.ToLower(faker.Word()), "2025-01"),
+			ThumbnailUrl:          models.StringPtr("/kiwix.jpg"),
+		}
+		libraries = append(libraries, lib)
+	}
+	return libraries
+}
+
+func generateFakeVideos(providerID uint, count int) []models.Video {
+	videos := make([]models.Video, 0, count)
+	for range count {
+		title := faker.Sentence()
+		channel := faker.Name()
+		video := models.Video{
+			ExternalID:            fmt.Sprintf("vid-%d-%s", rand.Intn(999999), faker.Word()),
+			Url:                   fmt.Sprintf("https://video.example.com/watch?v=%d", rand.Intn(999999)),
+			Title:                 title,
+			Availability:          models.VideoAvailable,
+			ChannelTitle:          &channel,
+			Duration:              rand.Intn(7200) + 60, // 1–120 mins
+			Description:           faker.Paragraph(),
+			ThumbnailUrl:          fmt.Sprintf("https://img.example.com/thumbs/%d.jpg", rand.Intn(999999)),
+			OpenContentProviderID: providerID,
+		}
+		videos = append(videos, video)
+	}
+	return videos
+}
 func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
@@ -442,30 +566,26 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 		return nil, err
 	}
 	toReturn := make([]models.ProgramClass, 0)
-	for idx := range facilities {
-		programs := make([]models.Program, 0, 6)
-		for range 6 {
-			programs = append(programs, models.Program{
-				Name:        getRandomProgram(programMap),
-				FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
-			})
+	programs := make([]models.Program, 0, 7)
+	for range 7 {
+		programs = append(programs, models.Program{
+			Name:        getRandomProgram(programMap),
+			FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
+		})
+	}
+	for i := range programs {
+		programs[i].Description = programClassDescriptions[programs[i].Name]
+		programs[i].IsActive = true
+		if err := db.Create(&programs[i]).Error; err != nil {
+			log.Printf("Failed to create program: %v", err)
 		}
-
-		capacities := []int64{15, 25, 30, 35, 40, 45}
-		endDates := []time.Time{time.Now().Add(20 * 24 * time.Hour), time.Now().Add(25 * 24 * time.Hour), time.Now().Add(30 * 24 * time.Hour), time.Now().Add(35 * 24 * time.Hour)}
-		instructorNames := []string{"James Anderson", "Maria Gonzalez", "Robert Smith", "Emily Johnson", "Jessica Martinez", "David Wilson", "Sarah Thompson", "Christopher Garcia", "Ashley White", "Daniel Harris"}
-		ownerNames := []string{"Aaliyah Bennett", "Luca Moretti", "Haruto Tanaka", "Anika Patel", "Thiago da Silva", "Nora Svensson", "Omar Al-Fulan", "Zara Kowalski", "Kaiya Nguyen", "Elijah Okafor"}
-
-		for i := range programs {
-			programs[i].Description = programClassDescriptions[programs[i].Name]
-			programs[i].IsActive = true
-			if err := db.Create(&programs[i]).Error; err != nil {
-				log.Printf("Failed to create program: %v", err)
-			}
+		for idx := range facilities {
+			capacities := []int64{15, 25, 30, 35, 40, 45}
+			endDates := []time.Time{time.Now().Add(20 * 24 * time.Hour), time.Now().Add(25 * 24 * time.Hour), time.Now().Add(30 * 24 * time.Hour), time.Now().Add(35 * 24 * time.Hour)}
 			facilityProgram := models.FacilitiesPrograms{
 				ProgramID:    programs[i].ID,
 				FacilityID:   facilities[idx].ID,
-				ProgramOwner: ownerNames[rand.Intn(len(ownerNames))],
+				ProgramOwner: faker.Name(),
 			}
 			if err := db.Create(&facilityProgram).Error; err != nil {
 				log.Printf("Failed to create facility program: %v", err)
@@ -488,7 +608,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 				class := models.ProgramClass{
 					Capacity:       capacities[rand.Intn(len(capacities))],
 					Name:           programs[i].Name,
-					InstructorName: instructorNames[rand.Intn(len(instructorNames))],
+					InstructorName: faker.Name(),
 					Description:    programClassDescriptions[programs[i].Name],
 					Status:         models.Scheduled, //this will change during new class development
 					StartDt:        time.Now().Add(14 * 24 * time.Hour),
@@ -531,90 +651,28 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 	return toReturn, nil
 }
 
-var usersStr string = `
-[
-  {
-    "name_first": "Dr. Opal Murphy DDS",
-    "name_last": "Agnes Bailey",
-    "email": "cedrick.donnelly@example.org",
-	"doc_id": "123456789",
-    "role": "student",
-    "username": "RichardSchoen13",
-    "facility_id": 1
-  },
-  {
-    "name_first": "Cindy Murphy I",
-    "name_last": "Ahmed Parker",
-    "email": "trycia.jenkins@example.com",
-	"doc_id": "123456780",
-    "role": "student",
-    "username": "MeaganDouglas13",
-    "facility_id": 1
-  },
-  {
-    "name_first": "Mr. Garett Willms",
-    "name_last": "Aracely McLaughlin",
-    "email": "katrina98@example.org",
-	"doc_id": "123456790",
-    "role": "student",
-    "username": "ClaraFrami10",
-    "facility_id": 1
-  },
-  {
-    "name_first": "Rebeka Gleichner",
-    "name_last": "Ardith Becker",
-	"doc_id": "123458790",
-    "email": "ygulgowski@example.net",
-    "role": "student",
-    "username": "OpheliaNienow13",
-    "facility_id": 1
-  },
-  {
-    "name_first": "Miss Loyce Borer",
-    "name_last": "Arely King",
-    "email": "gustave59@example.org",
-	"doc_id": "173458790",
-    "role": "student",
-    "username": "OrvalKoelpin12",
-    "facility_id": 1
-  },
-  {
-    "name_first": "Keaton Waters",
-    "name_last": "Ashleigh Kunde Jr.",
-    "email": "smorar@example.com",
-	"doc_id": "273458790",
-    "role": "student",
-    "username": "LavadaLittel12",
-    "facility_id": 1
-  },
-  {
-    "name_first": "Eliseo Reichert",
-    "name_last": "Earline Ruecker",
-    "email": "rbarton@example.net",
-	"doc_id": "603458790",
-    "role": "student",
-    "username": "JulietFriesen13",
-    "facility_id": 2
-  },
-  {
-    "name_first": "Santino Kautzer",
-    "name_last": "Elwyn Kreiger Jr.",
-    "email": "alexandre.bergstrom@example.org",
-	"doc_id": "203458790",
-    "role": "student",
-    "username": "HeidiVonRueden14",
-    "facility_id": 2
-  },
-  {
-    "name_first": "Raina Upton",
-    "name_last": "Euna Halvorson",
-    "email": "grimes.olin@example.org",
-	"doc_id": "603468790",
-    "role": "student",
-    "username": "AshleeGaylord13",
-    "facility_id": 2
-  }
-]`
+func generateFakeUsers(facilities []models.Facility) []models.User {
+	users := make([]models.User, 0, 30)
+	for range 30 {
+		facility := facilities[rand.Intn(len(facilities))]
+		first := faker.FirstName()
+		last := faker.LastName()
+		username := strings.ToLower(fmt.Sprintf("%s.%s%d", first, last, rand.Intn(1000)))
+		email := fmt.Sprintf("%s@unlocked.test", username)
+		user := models.User{
+			Username:   username,
+			NameFirst:  first,
+			NameLast:   last,
+			Email:      email,
+			Role:       "student",
+			FacilityID: facility.ID,
+			DocID:      strconv.Itoa(rand.Intn(100000)),
+		}
+		users = append(users, user)
+	}
+	return users
+}
+
 var coursesStr string = `
 [
 	{

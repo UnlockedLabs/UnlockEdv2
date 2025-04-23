@@ -76,10 +76,10 @@ func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transfer
 	return programNames, nil
 }
 
-func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilityID int, transFacilityID int) error {
+func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilityID int, transFacilityID int) (*gorm.DB, error) {
 	trans := db.Begin()
 	if trans.Error != nil {
-		return NewDBError(trans.Error, "unable to start DB transaction")
+		return nil, NewDBError(trans.Error, "unable to start DB transaction")
 	}
 	updateQuery := `UPDATE program_class_enrollments AS pce SET enrollment_status = ?
 		FROM program_classes pc
@@ -90,18 +90,15 @@ func (db *DB) TransferResident(ctx *models.QueryContext, userID int, currFacilit
 
 	if err := trans.Exec(updateQuery, "Incomplete: Transferred", userID, currFacilityID).Error; err != nil {
 		trans.Rollback()
-		return newUpdateDBError(err, "program_class_enrollments")
+		return nil, newUpdateDBError(err, "program_class_enrollments")
 	}
 	if err := trans.Model(&models.User{}).
 		Where("id = ?", userID).
 		Update("facility_id", transFacilityID).Error; err != nil {
 		trans.Rollback()
-		return newUpdateDBError(err, "users")
+		return nil, newUpdateDBError(err, "users")
 	}
-	if err := trans.Commit().Error; err != nil {
-		return NewDBError(err, "unable to commit DB transaction")
-	}
-	return nil
+	return trans, nil
 }
 
 func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId int) ([]models.User, error) {
