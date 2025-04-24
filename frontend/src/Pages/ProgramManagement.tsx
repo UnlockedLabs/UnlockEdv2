@@ -41,7 +41,9 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
             <td>{program.total_classes}</td>
             <td>{parseFloat(program.completion_rate.toFixed(2))}%</td>
             <td>{parseFloat(program.attendance_rate.toFixed(2))}%</td>
-            <td>{program.program_types.replace(/,/g, ', ')}</td>
+            <td>
+                {program.program_types.replace(/,/g, ', ').replace(/_/g, ' ')}
+            </td>
             <td>{program.credit_types.replace(/,/g, ', ')}</td>
             <td>{program.funding_type.replace(/_/g, ' ')}</td>
             <td>
