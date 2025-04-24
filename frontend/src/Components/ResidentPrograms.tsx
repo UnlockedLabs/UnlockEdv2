@@ -58,8 +58,8 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
         setPage(1);
     };
 
-    const handleNavigate = (program_id: number) => {
-        navigate(`/programs/${program_id}`);
+    const handleNavigate = (class_id: number) => {
+        navigate(`/program-classes/${class_id}`);
     };
     return (
         <div className="card-row-padding">
@@ -67,7 +67,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
             {!programsResp || (isLoading && <div>Loading...</div>)}
             {programsError ? (
                 <p className="body text-error">
-                    Error retrieving users programs
+                    Error retrieving selected Resident
                 </p>
             ) : (
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
@@ -103,7 +103,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                             key={`${pc.class_id}-${pc.start_date}`}
                                             className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                             onClick={() =>
-                                                handleNavigate(pc.program_id)
+                                                handleNavigate(pc.class_id)
                                             }
                                         >
                                             <td className="justify-self-start">
@@ -161,9 +161,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                                 key={`${pc.class_id}-${pc.start_date}`}
                                                 className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                                 onClick={() =>
-                                                    handleNavigate(
-                                                        pc.program_id
-                                                    )
+                                                    handleNavigate(pc.class_id)
                                                 }
                                             >
                                                 <td className="justify-self-start">
@@ -225,9 +223,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                                 key={`${pc.class_id}-${pc.start_date}`}
                                                 className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                                 onClick={() =>
-                                                    handleNavigate(
-                                                        pc.program_id
-                                                    )
+                                                    handleNavigate(pc.class_id)
                                                 }
                                             >
                                                 <td className="justify-self-start">
@@ -287,9 +283,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                                 key={`${pc.class_id}-${pc.start_date}`}
                                                 className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
                                                 onClick={() =>
-                                                    handleNavigate(
-                                                        pc.program_id
-                                                    )
+                                                    handleNavigate(pc.class_id)
                                                 }
                                             >
                                                 <td className="justify-self-start">

@@ -143,15 +143,15 @@ func NewUserAccountHistory(userID uint, action UserAccountHistoryAction, adminID
 }
 
 type ResidentProgramClassInfo struct {
-	ProgramName          string      `json:"program_name"`
-	ClassName            string      `json:"class_name"`
-	Status               ClassStatus `json:"status"`
-	EnrollmentStatus     string      `json:"enrollment_status"`
-	StartDate            string      `json:"start_date"`
-	EndDate              string      `json:"end_date"`
-	AttendancePercentage string      `json:"attendance_percentage"`
-	ClassID              uint        `json:"class_id" gorm:"column:class_id"`
-	ProgramID            uint        `json:"program_id"`
-	PresentAttendance    int         `json:"present_attendance"`
-	AbsentAttendance     int         `json:"absent_attendance"`
+	ProgramName          string                  `json:"program_name"`
+	ClassName            string                  `json:"class_name"`
+	Status               ClassStatus             `json:"status"`
+	EnrollmentStatus     ProgramEnrollmentStatus `json:"enrollment_status"`
+	StartDate            string                  `json:"start_date"`
+	EndDate              string                  `json:"end_date"`
+	AttendancePercentage string                  `json:"attendance_percentage"`
+	ClassID              uint                    `json:"class_id" `
+	ProgramID            uint                    `json:"program_id"`
+	PresentAttendance    int                     `json:"present_attendance"`
+	AbsentAttendance     int                     `json:"absent_attendance"`
 }
