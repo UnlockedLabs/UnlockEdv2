@@ -158,28 +158,41 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 	programsOverview.ProgramsFacilitiesStats.CompletionRate = programsFacilitiesStats.CompletionRate
 	// get programs table
 	var programsTable []models.ProgramsOverviewTable
-	tx = db.WithContext(args.Ctx).Model(&models.DailyProgramFacilitiesHistory{}).
+	tx = db.WithContext(args.Ctx).Table("daily_program_facilities_history AS dpfh").
 		Select(`
 			programs.id AS program_id,
 			programs.name AS program_name,
 			programs.archived_at AS archived_at,
-			SUM(total_active_facilities) AS total_active_facilities,
-			SUM(total_enrollments) AS total_enrollments,
-			SUM(total_active_enrollments) AS total_active_enrollments,
-			SUM(total_classes) AS total_classes,
-			COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate,
-			COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_active_enrollments), 0), 0) * 100 AS attendance_rate,
+			MAX(mr.total_active_facilities) AS total_active_facilities,
+			MAX(mr.total_enrollments) AS total_enrollments,
+			MAX(mr.total_active_enrollments) AS total_active_enrollments,
+			MAX(mr.total_classes) AS total_classes,
+			COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0), 0) * 100 AS completion_rate,
+			COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_active_enrollments), 0), 0) * 100 AS attendance_rate,
 			STRING_AGG(DISTINCT pt.program_type::text, ',') AS program_types,
 			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
 			MAX(programs.funding_type) AS funding_type,
 			BOOL_OR(programs.is_active) AS status
 		`).
-		Joins("JOIN programs ON programs.id = daily_program_facilities_history.program_id").
-		Joins("JOIN program_types pt ON pt.program_id = daily_program_facilities_history.program_id").
-		Joins("JOIN program_credit_types pct ON pct.program_id = daily_program_facilities_history.program_id").
+		Joins(`
+			JOIN (
+				SELECT 
+					program_id,
+					SUM(total_active_facilities) AS total_active_facilities,
+					SUM(total_enrollments) AS total_enrollments,
+					SUM(total_active_enrollments) AS total_active_enrollments,
+					SUM(total_classes) AS total_classes
+				FROM daily_program_facilities_history
+				WHERE date = (SELECT MAX(date) FROM daily_program_facilities_history)
+				GROUP BY program_id
+			) AS mr ON mr.program_id = dpfh.program_id
+		`).
+		Joins("JOIN programs ON programs.id = dpfh.program_id").
+		Joins("JOIN program_types pt ON pt.program_id = dpfh.program_id").
+		Joins("JOIN program_credit_types pct ON pct.program_id = dpfh.program_id").
 		Group("programs.id, programs.name")
 	if timeFilter > 0 {
-		tx = tx.Where("daily_program_facilities_history.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
+		tx = tx.Where("dpfh.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
 	}
 	if err := tx.Scan(&programsTable).Error; err != nil {
 		return programsOverview, newGetRecordsDBError(err, "programs table")

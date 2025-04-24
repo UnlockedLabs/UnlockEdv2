@@ -193,9 +193,7 @@ export default function ProgramManagement() {
                             )
                         )
                     ) : (
-                        <p className="body-small text-error">
-                            No programs to show.
-                        </p>
+                        <p className="body text-error">No programs to show.</p>
                     )}
                 </tbody>
             </table>
