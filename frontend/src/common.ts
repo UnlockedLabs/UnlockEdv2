@@ -708,9 +708,9 @@ export interface ProgramsOverviewTable {
     program_id: number;
     program_name: string;
     archived_at: string;
-    num_facilities_available: number;
+    total_active_facilities: number;
     total_enrollments: number;
-    active_enrollments: number;
+    total_active_enrollments: number;
     total_classes: number;
     completion_rate: number;
     attendance_rate: number;
