@@ -144,8 +144,8 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select(`
 		COALESCE(SUM(total_program_offerings) / NULLIF(SUM(total_facilities), 0), 0) AS avg_active_programs_per_facility,
-		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) AS attendance_rate,
-		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) AS completion_rate
+		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS attendance_rate,
+		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate
 	`)
 	if timeFilter > 0 {
 		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
@@ -184,6 +184,10 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 	if err := tx.Scan(&programsTable).Error; err != nil {
 		return programsOverview, newGetRecordsDBError(err, "programs table")
 	}
+	for _, program := range programsTable {
+		log.Printf("Program ID: %d, Program Types: %s, Credit Types: %s", program.ProgramID, program.Types, program.CreditTypes)
+	}
+
 	programsOverview.ProgramsTable = programsTable
 	return programsOverview, nil
 
