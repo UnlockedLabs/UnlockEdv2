@@ -83,15 +83,16 @@ type FacilitiesPrograms struct {
 func (FacilitiesPrograms) TableName() string { return "facilities_programs" }
 
 type DailyProgramsFacilitiesHistory struct {
-	Date                  time.Time `json:"date" gorm:"not null"`
-	TotalPrograms         int64     `json:"total_programs" gorm:"not null"`
-	TotalActivePrograms   int64     `json:"total_active_programs" gorm:"not null"`
-	TotalArchivedPrograms int64     `json:"total_archived_programs" gorm:"not null"`
-	TotalEnrollments      int64     `json:"total_enrollments" gorm:"not null"`
-	TotalCompletions      int64     `json:"total_completions" gorm:"not null"`
-	TotalProgramOfferings int64     `json:"total_program_offerings" gorm:"not null"`
-	TotalFacilities       int64     `json:"total_facilities" gorm:"not null"`
-	TotalStudentsPresent  int64     `json:"total_students_present" gorm:"not null"`
+	Date                   time.Time `json:"date" gorm:"not null"`
+	TotalPrograms          int64     `json:"total_programs" gorm:"not null"`
+	TotalActivePrograms    int64     `json:"total_active_programs" gorm:"not null"`
+	TotalArchivedPrograms  int64     `json:"total_archived_programs" gorm:"not null"`
+	TotalEnrollments       int64     `json:"total_enrollments" gorm:"not null"`
+	TotalCompletions       int64     `json:"total_completions" gorm:"not null"`
+	TotalProgramOfferings  int64     `json:"total_program_offerings" gorm:"not null"`
+	TotalFacilities        int64     `json:"total_facilities" gorm:"not null"`
+	TotalAttendancesMarked int64     `json:"total_attendances_marked" gorm:"not null"`
+	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
 }
 
 func (DailyProgramsFacilitiesHistory) TableName() string {
@@ -107,6 +108,7 @@ type DailyProgramFacilitiesHistory struct {
 	TotalActiveEnrollments int64     `json:"total_active_enrollments" gorm:"not null"`
 	TotalClasses           int64     `json:"total_classes" gorm:"not null"`
 	TotalArchivedClasses   int64     `json:"total_archived_classes" gorm:"not null"`
+	TotalAttendancesMarked int64     `json:"total_attendances_marked" gorm:"not null"`
 	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
 }
 
@@ -123,6 +125,7 @@ type DailyProgramFacilityHistory struct {
 	TotalActiveEnrollments int64     `json:"total_active_enrollments" gorm:"not null"`
 	TotalClasses           int64     `json:"total_classes" gorm:"not null"`
 	TotalArchivedClasses   int64     `json:"total_archived_classes" gorm:"not null"`
+	TotalAttendancesMarked int64     `json:"total_attendances_marked" gorm:"not null"`
 	TotalStudentsPresent   int64     `json:"total_students_present" gorm:"not null"`
 }
 

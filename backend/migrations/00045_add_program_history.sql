@@ -10,6 +10,7 @@ CREATE TABLE public.daily_programs_facilities_history (
     total_completions INTEGER NOT NULL,
     total_program_offerings INTEGER NOT NULL,
     total_facilities INTEGER NOT NULL,
+    total_attendances_marked INTEGER NOT NULL,
     total_students_present INTEGER NOT NULL
 );
 CREATE TABLE public.daily_program_facilities_history (
@@ -21,6 +22,7 @@ CREATE TABLE public.daily_program_facilities_history (
     total_active_enrollments INTEGER NOT NULL,
     total_classes INTEGER NOT NULL,
     total_archived_classes INTEGER NOT NULL,
+    total_attendances_marked INTEGER NOT NULL,
     total_students_present INTEGER NOT NULL
 );
 CREATE TABLE public.daily_program_facility_history (
@@ -32,6 +34,7 @@ CREATE TABLE public.daily_program_facility_history (
     total_active_enrollments INTEGER NOT NULL,
     total_classes INTEGER NOT NULL,
     total_archived_classes INTEGER NOT NULL,
+    total_attendances_marked INTEGER NOT NULL,
     total_students_present INTEGER NOT NULL
 );
 -- +goose StatementEnd

@@ -144,7 +144,7 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select(`
 		COALESCE(SUM(total_program_offerings) / NULLIF(SUM(total_facilities), 0), 0) AS avg_active_programs_per_facility,
-		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS attendance_rate,
+		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0), 0) * 100 AS attendance_rate,
 		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate
 	`)
 	if timeFilter > 0 {
@@ -168,7 +168,7 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 			MAX(mr.total_active_enrollments) AS total_active_enrollments,
 			MAX(mr.total_classes) AS total_classes,
 			COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0), 0) * 100 AS completion_rate,
-			COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_active_enrollments), 0), 0) * 100 AS attendance_rate,
+			COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0), 0) * 100 AS attendance_rate,
 			STRING_AGG(DISTINCT pt.program_type::text, ',') AS program_types,
 			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
 			MAX(programs.funding_type) AS funding_type,
