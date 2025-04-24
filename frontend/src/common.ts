@@ -708,7 +708,7 @@ export interface ResidentProgramClassInfo {
     start_date: string;
     end_date: string;
     attendance_percentage: string;
-    class_id: string;
+    class_id: number;
     program_id: number;
 }
 

@@ -403,16 +403,29 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	}
 	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }
+
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
 	if err != nil {
-		return newInternalServerServiceError(err, "error converting user_id")
+		return newInvalidIdServiceError(err, "error converting user_id")
 	}
 	queryCtx := srv.getQueryContext(r)
 	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userId)
 	if err != nil {
-		return newInternalServerServiceError(err, "error retrieving user programs")
+		return newDatabaseServiceError(err)
+	}
+	for i := range userPrograms {
+		present := userPrograms[i].PresentAttendance
+		absent := userPrograms[i].AbsentAttendance
+		total := present + absent
+
+		if total == 0 {
+			userPrograms[i].AttendancePercentage = "0%"
+		} else {
+			pct := float64(present) / float64(total) * 100
+			userPrograms[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
+		}
 	}
 
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())

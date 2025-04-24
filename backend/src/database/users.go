@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -486,8 +485,9 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	}
 	return history, nil
 }
+
 func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]models.ResidentProgramClassInfo, error) {
-	var userEnrollments []models.ResidentProgramClassInfo
+	userEnrollments := make([]models.ResidentProgramClassInfo, 0, args.PerPage)
 	base := db.WithContext(args.Ctx).
 		Table("program_class_enrollments AS pce").
 		Select(`
@@ -513,8 +513,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 		Joins("INNER JOIN program_classes pc  ON pc.id  = pce.class_id").
 		Joins("INNER JOIN programs         p   ON p.id   = pc.program_id").
 		Joins("INNER JOIN program_class_events e   ON e.class_id = pc.id").
-		Joins("LEFT JOIN program_class_event_attendance pcea "+
-			"ON pcea.event_id = e.id AND pcea.user_id = ?", userId).
+		Joins(`LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = e.id AND pcea.user_id = ?`, userId).
 		Where("pce.user_id = ?", userId).
 		Group(`
             pce.enrollment_status,
@@ -528,19 +527,6 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	}
 	if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
 		return nil, NewDBError(err, "program_class_enrollments apply pagination")
-	}
-
-	for i := range userEnrollments {
-		present := userEnrollments[i].PresentAttendance
-		absent := userEnrollments[i].AbsentAttendance
-		total := present + absent
-
-		if total == 0 {
-			userEnrollments[i].AttendancePercentage = "0%"
-		} else {
-			pct := float64(present) / float64(total) * 100
-			userEnrollments[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
-		}
 	}
 
 	return userEnrollments, nil
