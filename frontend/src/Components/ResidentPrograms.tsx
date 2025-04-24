@@ -67,7 +67,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
             {!programsResp || (isLoading && <div>Loading...</div>)}
             {programsError ? (
                 <p className="body text-error">
-                    Error retrieving selected Resident
+                    Error retrieving Programs for selected Resident
                 </p>
             ) : (
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
