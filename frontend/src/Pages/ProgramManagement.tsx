@@ -121,7 +121,7 @@ export default function ProgramManagement() {
                     tooltip="Count of unique programs offered across all facilities."
                 />
                 <StatsCard
-                    title={'Avg Active Programs per Facility'}
+                    title={'Active Programs Per Facility'}
                     number={avg_active_programs_per_facility?.toString() ?? ''}
                     label={'programs'}
                     tooltip="Average number of programs per facility with at least one active class and enrolled students."
