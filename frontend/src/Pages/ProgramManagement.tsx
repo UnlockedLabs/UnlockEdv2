@@ -35,9 +35,9 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     return (
         <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2">
             <td>{program.program_name}</td>
-            <td>{program.num_facilities_available}</td>
+            <td>{program.total_active_facilities}</td>
             <td>{program.total_enrollments}</td>
-            <td>{program.active_enrollments}</td>
+            <td>{program.total_active_enrollments}</td>
             <td>{program.total_classes}</td>
             <td>{parseFloat(program.completion_rate.toFixed(2))}%</td>
             <td>{parseFloat(program.attendance_rate.toFixed(2))}%</td>
