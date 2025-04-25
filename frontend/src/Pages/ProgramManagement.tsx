@@ -1,5 +1,5 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     Option,
@@ -24,6 +24,7 @@ import StatsCard from '@/Components/StatsCard';
 import GreyPill from '@/Components/pill-labels/GreyPill';
 import TealPill from '@/Components/pill-labels/TealPill';
 import ULIComponent from '@/Components/ULIComponent';
+import { useDebounceValue } from 'usehooks-ts';
 
 export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     return (
@@ -57,6 +58,7 @@ export default function ProgramManagement() {
         return;
     }
     const [searchTerm, setSearchTerm] = useState('');
+    const searchQuery = useDebounceValue(searchTerm, 500);
     const [dateRange, setDateRange] = useState<FilterPastTime>(
         FilterPastTime['Past 30 days']
     );
@@ -84,11 +86,12 @@ export default function ProgramManagement() {
         completion_rate: '--'
     };
 
-    const { data: programs, mutate } = useSWR<
-        ServerResponseMany<ProgramsOverviewTable>,
-        Error
-    >(
-        `/api/programs-overview-table?time_filter=${dateRange}&page=${page}&per_page=${perPage}&search=${searchTerm}&${categoryQueryString}&order=asc&order_by=name`
+    const {
+        data: programs,
+        isLoading: programsLoading,
+        mutate
+    } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
+        `/api/programs-overview-table?time_filter=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name`
     );
     const meta = programs?.meta;
 
@@ -117,6 +120,8 @@ export default function ProgramManagement() {
         setSearchTerm(newSearch);
         setPage(1);
     }
+
+    useEffect(() => console.log(programs?.data), [programs]);
 
     return (
         <div className="px-5 py-4 flex flex-col gap-4">
@@ -232,20 +237,23 @@ export default function ProgramManagement() {
                         </tr>
                     </thead>
                     <tbody>
-                        {programs?.data !== undefined ? (
-                            programs.data.map(
+                        {programs?.data === undefined ||
+                        programs.data === null ? (
+                            <tr>
+                                <th>
+                                    <p className="body text-center text-error">
+                                        {programsLoading
+                                            ? ''
+                                            : 'No programs to show.'}
+                                    </p>
+                                </th>
+                            </tr>
+                        ) : (
+                            programs?.data?.map(
                                 (program: ProgramsOverviewTable, index) => (
                                     <ProgramRow key={index} program={program} />
                                 )
                             )
-                        ) : (
-                            <tr>
-                                <th>
-                                    <p className="body text-error">
-                                        No programs to show.
-                                    </p>
-                                </th>
-                            </tr>
                         )}
                     </tbody>
                 </table>
