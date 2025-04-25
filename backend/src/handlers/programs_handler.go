@@ -66,7 +66,8 @@ func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *ht
 	if err != nil {
 		timeFilter = -1
 	}
-	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter)
+	includeArchived := r.URL.Query().Get("include_archived") == "true"
+	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter, includeArchived)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

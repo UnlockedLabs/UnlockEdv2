@@ -27,8 +27,14 @@ import ULIComponent from '@/Components/ULIComponent';
 import { useDebounceValue } from 'usehooks-ts';
 
 export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
+    const navigate = useNavigate();
+    let background = '';
+    if (program.archived_at !== null) background = 'bg-grey-1';
     return (
-        <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2">
+        <tr
+            className={`grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background}`}
+            onClick={() => navigate(`${program.program_id}`)}
+        >
             <td>{program.program_name}</td>
             <td>{program.total_active_facilities}</td>
             <td>{program.total_enrollments}</td>
@@ -63,6 +69,7 @@ export default function ProgramManagement() {
         FilterPastTime['Past 30 days']
     );
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
+    const [includeArchived, setIncludeArchived] = useState<boolean>(false);
 
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
@@ -91,7 +98,7 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs-overview-table?time_filter=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name`
+        `/api/programs-overview-table?time_filter=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name&include_archived=${includeArchived}`
     );
     const meta = programs?.meta;
 
@@ -194,6 +201,18 @@ export default function ProgramManagement() {
                         setCategoryQueryString={setCategoryQueryString}
                         options={categories ?? []}
                     />
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            className="checkbox checkbox-sm mr-2"
+                            onChange={(e) => {
+                                setIncludeArchived(e.target.checked);
+                            }}
+                        />
+                        <span className="text-sm">
+                            Include Archived Programs
+                        </span>
+                    </div>
                 </div>
                 <div className="flex items-center space-x-4">
                     <button
