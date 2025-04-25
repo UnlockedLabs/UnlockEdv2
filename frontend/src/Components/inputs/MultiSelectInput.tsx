@@ -141,7 +141,11 @@ export function MultiSelectInput<T>({
 
     return (
         <div>
-            <label className="block font-medium mb-1">{label}</label>
+            <label className="form-control">
+                <div className="label">
+                    <span className="label-text">{label}</span>
+                </div>
+            </label>
             <Controller
                 control={control}
                 name={name}
