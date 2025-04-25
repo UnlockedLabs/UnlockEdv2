@@ -65,7 +65,6 @@ export default function ProgramOverview() {
     } else if (classesError) {
         navigate('/error');
     }
-    // console.log(program.facilities.includes())
     const classes = classesResp?.data ?? [];
 
     const meta = classesResp?.meta ?? {
@@ -164,6 +163,9 @@ export default function ProgramOverview() {
         if (resp.success) setSelectedClasses([]);
     }
 
+    const isAddClassDisabled = !program.facilities.some(
+        (facility) => facility.id === userFacilityId
+    );
     return (
         <div className="p-4 px-5">
             <h1 className=" mb-2">{program.name}</h1>
@@ -246,15 +248,11 @@ export default function ProgramOverview() {
                         </button>
                     ) : (
                         <button
-                            className="button flex items-center"
+                            className={`button flex items-center ${isAddClassDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)
                             }
-                            disabled={
-                                !program.facilities.some(
-                                    (facility) => facility.id === userFacilityId
-                                )
-                            }
+                            disabled={isAddClassDisabled}
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
                             Add Class
