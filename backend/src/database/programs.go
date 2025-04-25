@@ -127,20 +127,26 @@ func (db *DB) DeleteProgram(id int) error {
 	return nil
 }
 
-func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (models.ProgramsOverview, error) {
-	var programsOverview models.ProgramsOverview
-	// get programs facilties calculations
+func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
 	var programsFacilitiesStats models.ProgramsFacilitiesStats
+	var totals struct {
+		TotalPrograms    int64 `json:"total_programs"`
+		TotalEnrollments int64 `json:"total_enrollments"`
+	}
 	if err := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select("total_programs, total_enrollments").
 		Order("date DESC").
-		First(&programsFacilitiesStats).Error; err != nil {
-		return programsOverview, newGetRecordsDBError(err, "programs facilities stats")
+		First(&totals).Error; err != nil {
+		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
 	}
-	programsOverview.ProgramsFacilitiesStats.TotalPrograms = programsFacilitiesStats.TotalPrograms
-	programsOverview.ProgramsFacilitiesStats.TotalEnrollments = programsFacilitiesStats.TotalEnrollments
-	log.Printf("total programs: %d, total enrollments: %d", programsFacilitiesStats.TotalPrograms, programsFacilitiesStats.TotalEnrollments)
+	programsFacilitiesStats.TotalPrograms = totals.TotalPrograms
+	programsFacilitiesStats.TotalEnrollments = totals.TotalEnrollments
 
+	var calculations struct {
+		AvgActiveProgramsPerFacility int64   `json:"avg_active_programs_per_facility"`
+		AttendanceRate               float64 `json:"attendance_rate"`
+		CompletionRate               float64 `json:"completion_rate"`
+	}
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select(`
 		COALESCE(SUM(total_program_offerings) / NULLIF(SUM(total_facilities), 0), 0) AS avg_active_programs_per_facility,
@@ -150,15 +156,19 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 	if timeFilter > 0 {
 		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
 	}
-	if err := tx.Scan(&programsFacilitiesStats).Error; err != nil {
-		return programsOverview, newGetRecordsDBError(err, "programs facilities stats")
+	if err := tx.Scan(&calculations).Error; err != nil {
+		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
 	}
-	programsOverview.ProgramsFacilitiesStats.AvgActiveProgramsPerFacility = programsFacilitiesStats.AvgActiveProgramsPerFacility
-	programsOverview.ProgramsFacilitiesStats.AttendanceRate = programsFacilitiesStats.AttendanceRate
-	programsOverview.ProgramsFacilitiesStats.CompletionRate = programsFacilitiesStats.CompletionRate
-	// get programs table
+	programsFacilitiesStats.AvgActiveProgramsPerFacility = calculations.AvgActiveProgramsPerFacility
+	programsFacilitiesStats.AttendanceRate = calculations.AttendanceRate
+	programsFacilitiesStats.CompletionRate = calculations.CompletionRate
+	return programsFacilitiesStats, nil
+}
+
+func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
-	tx = db.WithContext(args.Ctx).Table("daily_program_facilities_history AS dpfh").
+	log.Printf("Tags: %v", args.Tags)
+	tx := db.WithContext(args.Ctx).Table("daily_program_facilities_history AS dpfh").
 		Select(`
 			programs.id AS program_id,
 			programs.name AS program_name,
@@ -194,14 +204,18 @@ func (db *DB) GetProgramsOverview(args *models.QueryContext, timeFilter int) (mo
 	if timeFilter > 0 {
 		tx = tx.Where("dpfh.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
 	}
-	if err := tx.Scan(&programsTable).Error; err != nil {
-		return programsOverview, newGetRecordsDBError(err, "programs table")
+	if len(args.Tags) > 0 {
+		tx = tx.Where("pt.id IN (?)", args.Tags)
 	}
-	for _, program := range programsTable {
-		log.Printf("Program ID: %d, Program Types: %s, Credit Types: %s", program.ProgramID, program.Types, program.CreditTypes)
+	if args.OrderBy != "" {
+		tx = tx.Order(args.OrderClause())
 	}
-
-	programsOverview.ProgramsTable = programsTable
-	return programsOverview, nil
+	if args.Search != "" {
+		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
+	}
+	if err := tx.Count(&args.Total).Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
+		return programsTable, newGetRecordsDBError(err, "programs table")
+	}
+	return programsTable, nil
 
 }

@@ -156,8 +156,3 @@ type ProgramsOverviewTable struct {
 	FundingType            string  `json:"funding_type"`
 	Status                 bool    `json:"status"`
 }
-
-type ProgramsOverview struct {
-	ProgramsFacilitiesStats ProgramsFacilitiesStats `json:"programs_facilities_stats"`
-	ProgramsTable           []ProgramsOverviewTable `json:"programs_table"`
-}
