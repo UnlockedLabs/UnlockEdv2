@@ -1,5 +1,5 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     Option,
@@ -120,8 +120,6 @@ export default function ProgramManagement() {
         setSearchTerm(newSearch);
         setPage(1);
     }
-
-    useEffect(() => console.log(programs?.data), [programs]);
 
     return (
         <div className="px-5 py-4 flex flex-col gap-4">
