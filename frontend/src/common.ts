@@ -687,18 +687,10 @@ export interface Program {
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
-    class_stats: ClassStats;
 }
 
 export interface ProgramOverview extends Program {
     active_enrollments: number;
-    completions: number;
-    total_enrollments: number;
-    completion_rate: number;
-}
-
-export interface ClassStats {
-    enrollments: number;
     completions: number;
     total_enrollments: number;
     completion_rate: number;

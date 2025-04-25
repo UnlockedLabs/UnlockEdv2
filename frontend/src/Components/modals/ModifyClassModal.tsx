@@ -9,7 +9,8 @@ import {
     ClassStatusMap,
     ClassStatusOptions,
     SelectedClassStatus,
-    ServerResponseMany
+    ServerResponseMany,
+    ServerResponseOne
 } from '@/common';
 
 export const StatusMessagesMap = {
@@ -49,7 +50,9 @@ const ModifyClassModal = forwardRef(function (
     }: {
         action: ClassStatusOptions | undefined;
         program_class: Class;
-        mutate: KeyedMutator<ServerResponseMany<Class>>;
+        mutate:
+            | KeyedMutator<ServerResponseMany<Class>>
+            | KeyedMutator<ServerResponseOne<Class>>;
         setSelectedStatus: React.Dispatch<
             React.SetStateAction<SelectedClassStatus>
         >;
