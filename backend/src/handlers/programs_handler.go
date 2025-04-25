@@ -65,9 +65,16 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
-	metrics.Program = *program
+	
+	resultSet := ProgramOverviewResponse{
+		Program:           *program,
+		ActiveEnrollments: metrics.ActiveEnrollments,
+		Completions:       metrics.Completions,
+		TotalEnrollments:  metrics.TotalEnrollments,
+		CompletionRate:    metrics.CompletionRate,
+	}
 
-	return writeJsonResponse(w, http.StatusOK, metrics)
+	return writeJsonResponse(w, http.StatusOK, resultSet)
 }
 
 type ProgramForm struct {

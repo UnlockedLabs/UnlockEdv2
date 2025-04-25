@@ -3,7 +3,6 @@ package database
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
-	// "fmt"
 )
 
 type EnrollmentAndCompletionMetrics struct {
@@ -13,13 +12,6 @@ type EnrollmentAndCompletionMetrics struct {
 	CompletionRate    float64 `json:"completion_rate"`
 }
 
-type ProgramOverviewResponse struct {
-	models.Program
-	ActiveEnrollments int     `json:"active_enrollments"`
-	Completions       int     `json:"completions"`
-	TotalEnrollments  int     `json:"total_enrollments"`
-	CompletionRate    float64 `json:"completion_rate"`
-}
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
@@ -29,8 +21,8 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (ProgramOverviewResponse, error) {
-	var metrics ProgramOverviewResponse
+func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (EnrollmentAndCompletionMetrics, error) {
+	var metrics EnrollmentAndCompletionMetrics
 
 	const query = `
 		COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) AS active_enrollments,

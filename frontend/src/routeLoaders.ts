@@ -219,13 +219,6 @@ export const getProgram: LoaderFunction = async ({ params }) => {
         return redirect('/404');
     }
     return json(resp.data);
-    // const resp = (await API.get(
-    //     `programs/${params.id}?facility_id=${params.facility_id}`
-    //   )) as ServerResponseOne<Program>;
-    //   if (!resp.success) {
-    //     return redirect('/404');
-    //   }
-    //   return json(resp.data);
 };
 
 export function resolveTitle<T>(

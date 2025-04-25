@@ -15,7 +15,8 @@ import {
     ClassStatusMap,
     ClassStatusOptions,
     SelectedClassStatus,
-    ServerResponseMany
+    ServerResponseMany,
+    ServerResponseOne
 } from '@/common';
 import { KeyedMutator } from 'swr';
 
@@ -79,7 +80,9 @@ export default function ClassStatus({
 }: {
     program_class: Class;
     status: SelectedClassStatus;
-    mutateClasses: KeyedMutator<ServerResponseMany<Class>>;
+    mutateClasses:
+        | KeyedMutator<ServerResponseOne<Class>>
+        | KeyedMutator<ServerResponseMany<Class>>;
 }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(status);
