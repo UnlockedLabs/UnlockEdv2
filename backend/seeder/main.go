@@ -282,8 +282,6 @@ func seedTestData(db *gorm.DB) {
 			models.Absent_Excused,
 			models.Absent_Unexcused,
 		}
-		startDate := time.Now().AddDate(0, 0, -90)
-		endDate := time.Now()
 		for _, event := range events {
 			rule, err := rrule.StrToRRule(event.RecurrenceRule)
 			if err != nil {
