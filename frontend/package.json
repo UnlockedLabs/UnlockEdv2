@@ -14,6 +14,8 @@
     "dependencies": {
         "autoprefixer": "^10.4.19",
         "daisyui": "^4.10.5",
+        "date-fns": "^4.1.0",
+        "date-fns-tz": "^3.2.0",
         "eslint-plugin-prettier": "^5.2.1",
         "moment": "^2.30.1",
         "path": "^0.12.7",

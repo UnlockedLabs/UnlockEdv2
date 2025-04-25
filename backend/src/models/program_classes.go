@@ -1,8 +1,15 @@
 package models
 
 import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"regexp"
+	"strconv"
 	"time"
 )
+
+var dateRegExp = regexp.MustCompile(`"(\d{4}-\d{2}-\d{2})"`)
 
 type ClassStatus string
 
@@ -33,6 +40,8 @@ type ProgramClass struct {
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 	Enrolled       int64       `json:"enrolled" gorm:"-"`
+	CreateUserID   uint        `json:"create_user_id"`
+	UpdateUserID   uint        `json:"update_user_id"`
 
 	Program      *Program                 `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
 	Enrollments  []ProgramClassEnrollment `json:"enrollments" gorm:"foreignKey:ClassID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -97,12 +106,116 @@ type ProgramCompletion struct {
 func (ProgramCompletion) TableName() string { return "program_completions" }
 
 type ProgramClassesHistory struct {
-	ID           uint      `json:"id"`
-	ParentRefID  uint      `json:"parent_ref_id"`
-	NameTable    string    `json:"table_name" gorm:"size:255"` // cant use TableName because used below
-	BeforeUpdate any       `json:"before_update" gorm:"type:json"`
-	AfterUpdate  any       `json:"after_update" gorm:"type:json"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           uint            `json:"id"`
+	ParentRefID  uint            `json:"parent_ref_id"`
+	NameTable    string          `json:"table_name" gorm:"size:255"` // cant use TableName because used below
+	BeforeUpdate json.RawMessage `json:"before_update" gorm:"type:json"`
+	AfterUpdate  json.RawMessage `json:"after_update" gorm:"type:json"`
+	CreatedAt    time.Time       `json:"created_at"`
 }
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
+
+func (pch *ProgramClassesHistory) ConvertAndCompare() ([]ActivityHistoryResponse, uint, error) {
+	var (
+		beforeUpdate, afterUpdate ProgramClass
+		err                       error
+		historyEvents             []ActivityHistoryResponse
+		updatedBy                 uint = 0
+	)
+	beforeJSON := regexFixDates(pch.BeforeUpdate)
+	afterJSON := regexFixDates(pch.AfterUpdate)
+	err = json.Unmarshal(beforeJSON, &beforeUpdate)
+	if err != nil {
+		return nil, 0, err
+	}
+	err = json.Unmarshal(afterJSON, &afterUpdate)
+	if err != nil {
+		return nil, 0, err
+	}
+	valBefore := reflect.ValueOf(beforeUpdate)
+	valAfter := reflect.ValueOf(afterUpdate)
+	kind := reflect.TypeOf(beforeUpdate)
+	if afterUpdate.UpdateUserID != 0 {
+		updatedBy = afterUpdate.UpdateUserID
+	}
+	var compareFields = map[string]bool{
+		"capacity":        true,
+		"name":            true,
+		"instructor_name": true,
+		"description":     true,
+		"archived_at":     true,
+		"status":          true,
+		"credit_hours":    true,
+	}
+	for i, j := 0, kind.NumField(); i < j; i++ {
+		field := kind.Field(i)
+		if field.Type.Kind() == reflect.Struct || field.Anonymous {
+			continue
+		}
+		name := field.Tag.Get("json")
+		if !compareFields[name] {
+			continue
+		}
+		valueA := valBefore.Field(i).Interface()
+		valueB := valAfter.Field(i).Interface()
+		if field.Type.Kind() == reflect.Ptr {
+			valueAPtr := valBefore.Field(i)
+			valueBPtr := valAfter.Field(i)
+
+			if valueAPtr.IsNil() != valueBPtr.IsNil() || (!valueAPtr.IsNil() && valueAPtr.Elem().Interface() != valueBPtr.Elem().Interface()) {
+				historyEvents = append(historyEvents, ActivityHistoryResponse{
+					Action:    ClassHistory,
+					FieldName: name,
+					NewValue:  formatValue(valueB),
+					UserID:    updatedBy,
+					CreatedAt: pch.CreatedAt,
+				})
+			}
+		} else if valueA != valueB {
+			historyEvents = append(historyEvents, ActivityHistoryResponse{
+				Action:    ClassHistory,
+				FieldName: name,
+				NewValue:  formatValue(valueB),
+				UserID:    updatedBy,
+				CreatedAt: pch.CreatedAt,
+			})
+		}
+	}
+	return historyEvents, updatedBy, nil
+}
+
+func formatValue(value any) string {
+	if value == nil {
+		return "null"
+	}
+	switch kind := value.(type) {
+	case *time.Time:
+		if kind == nil {
+			return "null"
+		}
+		return kind.Format("2006-01-02")
+	case time.Time:
+		return kind.Format("2006-01-02")
+	case *int64:
+		if kind == nil {
+			return "null"
+		}
+		return strconv.FormatInt(*kind, 10)
+	case *uint:
+		if kind == nil {
+			return "null"
+		}
+		return strconv.FormatUint(uint64(*kind), 10)
+	case fmt.Stringer:
+		return kind.String()
+	case string:
+		return kind
+	default:
+		return fmt.Sprintf("%v", kind)
+	}
+}
+
+func regexFixDates(data []byte) []byte {
+	return dateRegExp.ReplaceAll(data, []byte(`"${1}T00:00:00Z"`))
+}

@@ -1,6 +1,7 @@
 import { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { RRule, Weekday, Options } from 'rrule';
 import { DateInput } from '@/Components/inputs';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import {
     UseFormRegister,
     FieldErrors,
@@ -8,6 +9,7 @@ import {
 } from 'react-hook-form';
 import { useLoaderData } from 'react-router';
 import { ClassLoaderData } from '@/common';
+import { useAuth } from '@/useAuth';
 export interface RRuleFormHandle {
     createRule: () => { rule: string; duration: string };
     validate: () => boolean;
@@ -45,6 +47,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         },
         ref
     ) {
+        const { user } = useAuth();
+        if (!user) {
+            return null;
+        }
         const clsLoader = useLoaderData() as ClassLoaderData;
         const [timeErrors, setTimeErrors] = useState({
             startTime: '',
@@ -64,32 +70,31 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     : [...prevDays, day]
             );
         };
-
         const FREQ_MAP = {
             DAILY: RRule.DAILY,
             WEEKLY: RRule.WEEKLY,
             MONTHLY: RRule.MONTHLY,
             YEARLY: RRule.YEARLY
         };
-
         const createRule = () => {
             let returnValue;
             if (isFormValidated() && canCreateRule()) {
                 const startDate = getValues(startDateRef); // eslint-disable-line
+                const zonedDateTime: Date = fromZonedTime(
+                    `${startDate}T${startTime}`,
+                    user.timezone
+                );
                 const options: Partial<Options> = {
                     freq: FREQ_MAP[frequency as keyof typeof FREQ_MAP],
                     interval,
-                    dtstart: new Date(`${startDate}T${startTime}`)
+                    dtstart: zonedDateTime
                 };
-
                 if (frequency === 'WEEKLY') {
                     options.byweekday = byWeekDays;
                 }
-
                 if (endOption === 'until') {
                     options.until = new Date(getValues(endDateRef)); // eslint-disable-line
                 }
-
                 const totalStartMin = timeToMinutes(startTime);
                 const totalEndMin = timeToMinutes(endTime);
                 const totalMin = totalEndMin - totalStartMin;
@@ -178,19 +183,27 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             }
             if (!recurrenceRule || !duration) return;
             try {
-                const rule = RRule.fromString(recurrenceRule);
+                const cleanRule = recurrenceRule.replace(
+                    /DTSTART;TZID=Local:/,
+                    'DTSTART:'
+                );
+                const rule = RRule.fromString(cleanRule);
                 const dtStart = rule.options.dtstart;
-                const startTime = dtStart
-                    ? dtStart.toTimeString().slice(0, 5)
+                const dtStartZonedDateTime: Date = toZonedTime(
+                    dtStart,
+                    user.timezone
+                );
+                const startTime = dtStartZonedDateTime
+                    ? dtStartZonedDateTime.toTimeString().slice(0, 5)
                     : '';
-
                 let endTime = '';
                 const matches = /(\d+)h(\d+)m/.exec(duration);
                 if (matches && dtStart) {
                     const hours = parseInt(matches[1]);
                     const minutes = parseInt(matches[2]);
                     const endDt = new Date(
-                        dtStart.getTime() + (hours * 60 + minutes) * 60000
+                        dtStartZonedDateTime.getTime() +
+                            (hours * 60 + minutes) * 60000
                     );
                     endTime = endDt.toTimeString().slice(0, 5);
                 }

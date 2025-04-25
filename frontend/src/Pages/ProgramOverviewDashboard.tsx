@@ -4,7 +4,8 @@ import StatsCard from '@/Components/StatsCard';
 import {
     ArchiveBoxIcon,
     PlusCircleIcon,
-    PencilSquareIcon
+    PuzzlePieceIcon,
+    ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -15,6 +16,7 @@ import {
     SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
+import Error from '@/Pages/Error';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
@@ -325,19 +327,37 @@ export default function ProgramOverview() {
                                                 />
                                             )}
                                             <ULIComponent
-                                                icon={PencilSquareIcon}
+                                                dataTip={'Class Overview'}
+                                                icon={PuzzlePieceIcon}
                                                 iconClassName={
                                                     '!w-5 !h-5 cursor-pointer'
                                                 }
                                                 onClick={() => {
                                                     navigate(
-                                                        `/programs/${id}/classes/${program_class.id}`
+                                                        `/program-classes/${program_class.id}/dashboard`
                                                     );
                                                 }}
                                             />
+                                            {program_class.enrolled > 0 ? (
+                                                <ULIComponent
+                                                    icon={
+                                                        ClipboardDocumentCheckIcon
+                                                    }
+                                                    iconClassName={
+                                                        '!w-5 !h-5 cursor-pointer'
+                                                    }
+                                                    onClick={() => {
+                                                        navigate(
+                                                            `/programs/${program_class.program_id}/classes/${program_class.id}/events`
+                                                        );
+                                                    }}
+                                                />
+                                            ) : (
+                                                ''
+                                            )}
                                         </div>
                                     </td>
-                                    <td> {program_class.name}</td>
+                                    <td>{program_class.name}</td>
                                     <td>{program_class.instructor_name}</td>
                                     <td>
                                         {new Date(

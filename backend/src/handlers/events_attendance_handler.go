@@ -12,6 +12,7 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
 		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, true, axx},
+		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, true, axx},
 		{"POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, true, axx},
 		{"DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, true, axx},
 	}
@@ -81,4 +82,23 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 		return newDatabaseServiceError(err)
 	}
 	return writePaginatedResponse(w, http.StatusOK, combined, args.IntoMeta())
+}
+
+func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	eventID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	classID, err := strconv.Atoi(r.PathValue("event_id"))
+	if err != nil {
+		return newInvalidQueryParamServiceError(err, "event ID")
+	}
+	attendanceRate, err := srv.Db.GetAttendanceRateForEvent(r.Context(), eventID, classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	response := map[string]float64{
+		"attendance_rate": attendanceRate,
+	}
+	return writeJsonResponse(w, http.StatusOK, response)
 }

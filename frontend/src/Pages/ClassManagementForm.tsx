@@ -96,7 +96,11 @@ export default function ClassManagementForm() {
             ToastState.success
         );
         reset();
-        navigate(`/programs/${id}`);
+        if (isNewClass) {
+            navigate(`/programs/${id}`);
+        } else {
+            navigate(`/program-classes/${class_id}/dashboard`);
+        }
     };
     useEffect(() => {
         setCanOpenCalendar(!!nameValue && rruleIsValid);
