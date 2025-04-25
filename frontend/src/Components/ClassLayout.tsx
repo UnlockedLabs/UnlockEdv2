@@ -7,12 +7,8 @@ import {
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
-import {
-    InformationCircleIcon,
-    PencilSquareIcon
-} from '@heroicons/react/24/outline';
+import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useLoaderData, useNavigate, useParams } from 'react-router';
-import ULIComponent from './ULIComponent';
 import ClassStatus from './ClassStatus';
 import useSWR from 'swr';
 import { RRule } from 'rrule';
@@ -21,6 +17,7 @@ import { useEffect, useState } from 'react';
 import Pagination from './Pagination';
 import ClampedText from './ClampedText';
 import { useAuth } from '@/useAuth';
+import StatsCard from './StatsCard';
 
 function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
@@ -72,64 +69,6 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                     Edit Class Details
                 </button>
             </div>
-        </div>
-    );
-}
-
-function ClassStatsCard({
-    /**
-     * Optional attribute sets the width of the modal box. If you need it to be wider just add one of these options below.
-     * @default "left"
-     * Allowed: "right" | "center"
-     */
-    titleAlign = 'left',
-    title,
-    duration,
-    displayValue,
-    tooltip,
-    button
-}: {
-    titleAlign?: string;
-    title: string;
-    duration?: string;
-    displayValue?: string;
-    tooltip?: string;
-    button?: React.ReactNode;
-}) {
-    return (
-        <div className="card bg-base-teal p-4 pb-5 flex flex-col justify-between h-full overflow-visible">
-            <div
-                className={`flex items-center gap-1 justify-${titleAlign === 'center' ? 'center' : titleAlign === 'right' ? 'end' : 'start'}`}
-            >
-                <h3 className="text-teal-4 line-clamp-2">{title}</h3>
-            </div>
-            {duration ? (
-                <h2 className="text-teal-4 italic text-center">{duration}</h2>
-            ) : (
-                ''
-            )}
-            <div className="flex flex-1 items-center justify-center">
-                <p className="text-teal-3 text-xl font-bold text-center">
-                    <span className="text-teal-4 font-bold">
-                        {displayValue}
-                    </span>
-                </p>
-            </div>
-            {tooltip && (
-                <div className="flex items-center gap-1 justify-end">
-                    <ULIComponent
-                        icon={InformationCircleIcon}
-                        dataTip={tooltip}
-                        tooltipClassName="tooltip-left"
-                        iconClassName="text-teal-4 cursor-help h-5 w-5"
-                    />
-                </div>
-            )}
-            {button && (
-                <div className="flex items-center gap-1 justify-center">
-                    {button}
-                </div>
-            )}
         </div>
     );
 }
@@ -242,32 +181,48 @@ export default function ClassLayout() {
                         <div className="card card-row-padding grow">
                             <h1>Quick View</h1>
                             <div className="grid grid-cols-3 gap-6">
-                                <ClassStatsCard
-                                    title="Next Class:"
-                                    displayValue={getNextOccurrenceDateAsStr()}
-                                />
-                                <ClassStatsCard
-                                    titleAlign="center"
-                                    duration="current"
-                                    displayValue={getEnrollmentCount()}
+                                <div className="card bg-base-teal p-4 pb-5 flex flex-col justify-between h-full overflow-visible">
+                                    <div
+                                        className={`flex items-center gap-1 justify-start`}
+                                    >
+                                        <h3 className="text-teal-4 line-clamp-2">
+                                            Next Class:
+                                        </h3>
+                                    </div>
+                                    <div className="flex flex-1 items-center justify-center">
+                                        <p className="text-teal-3 text-lg font-bold text-center">
+                                            <span className="text-teal-4 font-bold">
+                                                {getNextOccurrenceDateAsStr()}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <StatsCard
                                     title="Enrolled"
+                                    number={getEnrollmentCount()}
+                                    label=" "
                                     tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
                                 />
-                                <ClassStatsCard
-                                    titleAlign="center"
-                                    duration="all time"
-                                    displayValue={getAttendanceRate()}
+                                <StatsCard
                                     title="Attendance Rate"
+                                    number={getAttendanceRate()}
+                                    label="%"
                                     tooltip="Percentage of attendance records marked present for this class, calculated across all sessions where attendance is taken."
                                 />
                             </div>
                             <div className="grid grid-cols-3 gap-6 mt-5">
                                 <div className="col-span-3 flex justify-center gap-6">
                                     <div className="w-full max-w-[calc((100%-2*1.5rem)/3)]">
-                                        <ClassStatsCard
-                                            title="Class Status"
-                                            {...(clsInfo && {
-                                                button: (
+                                        <div className="card bg-base-teal p-4 pb-5 flex flex-col justify-between h-full overflow-visible">
+                                            <div
+                                                className={`flex items-center gap-1 justify-start`}
+                                            >
+                                                <h3 className="text-teal-4 line-clamp-2">
+                                                    Class Status
+                                                </h3>
+                                            </div>
+                                            <div className="flex items-center gap-1 justify-center">
+                                                {clsInfo && (
                                                     <ClassStatus
                                                         status={clsInfo.status}
                                                         program_class={clsInfo}
@@ -275,16 +230,15 @@ export default function ClassLayout() {
                                                             mutateClass
                                                         }
                                                     />
-                                                )
-                                            })}
-                                        />
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="w-full max-w-[calc((100%-2*1.5rem)/3)]">
-                                        <ClassStatsCard
+                                        <StatsCard
                                             title="Completion Rate"
-                                            titleAlign="center"
-                                            displayValue={getCompletionRate()}
-                                            duration="all time"
+                                            number={getCompletionRate()}
+                                            label="%"
                                             tooltip="Percentage of enrolled residents who completed this class over all time."
                                         />
                                     </div>
