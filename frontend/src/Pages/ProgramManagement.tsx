@@ -1,5 +1,5 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     Option,
@@ -65,13 +65,20 @@ export default function ProgramManagement() {
         ServerResponseOne<ProgramsFacilitiesStats>,
         Error
     >(`/api/programs-overview-stats?time_filter=${dateRange}`);
+
     const {
         total_programs,
         avg_active_programs_per_facility,
         total_enrollments,
         attendance_rate,
         completion_rate
-    } = programsFacilitiesStats?.data ?? {};
+    } = programsFacilitiesStats?.data ?? {
+        total_programs: '--',
+        avg_active_programs_per_facility: '--',
+        total_enrollments: '--',
+        attendance_rate: '--',
+        completion_rate: '--'
+    };
 
     const { data: programs, mutate } = useSWR<
         ServerResponseMany<ProgramsOverviewTable>,
@@ -90,10 +97,6 @@ export default function ProgramManagement() {
         setPage(1);
     }
 
-    useEffect(() => {
-        console.log(page);
-    }, [page]);
-
     return (
         <div className="px-5 py-4 flex flex-col gap-4">
             <div className="flex flex-row justify-end">
@@ -105,33 +108,38 @@ export default function ProgramManagement() {
             <div className="grid grid-cols-5 gap-4">
                 <StatsCard
                     title={'Total Programs'}
-                    number={total_programs?.toString() ?? ''}
+                    number={total_programs.toString()}
                     label={'programs'}
                     tooltip="Count of unique programs offered across all facilities."
+                    useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Active Programs Per Facility'}
-                    number={avg_active_programs_per_facility?.toString() ?? ''}
+                    number={avg_active_programs_per_facility.toString()}
                     label={'programs'}
                     tooltip="Average number of programs per facility with at least one active class and enrolled students."
+                    useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Total Enrollments'}
-                    number={total_enrollments?.toString() ?? ''}
+                    number={total_enrollments.toString()}
                     label={'residents'}
                     tooltip="Total number of enrollments. A single resident may be enrolled in more than one program."
+                    useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Avg Attendance Rate'}
-                    number={attendance_rate?.toString() ?? ''}
+                    number={attendance_rate.toString()}
                     label={'%'}
                     tooltip="Average attendance across all sessions where attendance was recorded."
+                    useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Avg Completion Rate'}
-                    number={completion_rate?.toString() ?? ''}
+                    number={completion_rate.toString()}
                     label={'%'}
                     tooltip="Average percentage of participants who completed a program. Only includes classes with defined end dates."
+                    useToLocaleString={false}
                 />
             </div>
             <div className="flex flex-row justify-between items-center my-4">
