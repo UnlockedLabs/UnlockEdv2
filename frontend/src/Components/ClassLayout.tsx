@@ -202,12 +202,14 @@ export default function ClassLayout() {
                                     number={getEnrollmentCount()}
                                     label=" "
                                     tooltip="Number of residents currently enrolled in this class. Does not include residents who completed, did not complete, or were transferred."
+                                    tooltipClassName="tooltip-left"
                                 />
                                 <StatsCard
                                     title="Attendance Rate"
                                     number={getAttendanceRate()}
                                     label="%"
                                     tooltip="Percentage of attendance records marked present for this class, calculated across all sessions where attendance is taken."
+                                    tooltipClassName="tooltip-left"
                                 />
                             </div>
                             <div className="grid grid-cols-3 gap-6 mt-5">
@@ -221,7 +223,7 @@ export default function ClassLayout() {
                                                     Class Status
                                                 </h3>
                                             </div>
-                                            <div className="flex items-center gap-1 justify-center">
+                                            <div className="flex items-center gap-1 justify-center cursor-pointer">
                                                 {clsInfo && (
                                                     <ClassStatus
                                                         status={clsInfo.status}
