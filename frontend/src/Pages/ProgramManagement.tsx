@@ -96,6 +96,23 @@ export default function ProgramManagement() {
         categories: Option[];
     };
 
+    function getTableDates() {
+        if (dateRange == FilterPastTime['All time']) return 'all time';
+        const startDate = new Date(
+            new Date().setDate(new Date().getDate() - parseInt(dateRange, 10))
+        ).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        const endDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        return startDate + ' to ' + endDate;
+    }
+
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
         setPage(1);
@@ -187,8 +204,8 @@ export default function ProgramManagement() {
                     </button>
                 </div>
             </div>
-            <div className="table-2 card px-6 pb-6">
-                <table>
+            <div className="card px-6 pb-6 space-y-4">
+                <table className="table-2">
                     <thead>
                         <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center px-2 !text-xs">
                             <th>Name</th>
@@ -232,8 +249,11 @@ export default function ProgramManagement() {
                         )}
                     </tbody>
                 </table>
+                <p className="flex justify-center body italic">
+                    {`Program data in table reflects the selected date range: ${getTableDates()}`}
+                </p>
                 {meta && (
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center">
                         <Pagination
                             meta={meta}
                             setPage={setPage}
