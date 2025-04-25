@@ -165,7 +165,7 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 	return programsFacilitiesStats, nil
 }
 
-func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int) ([]models.ProgramsOverviewTable, error) {
+func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
 	log.Printf("Tags: %v", args.Tags)
 	tx := db.WithContext(args.Ctx).Table("daily_program_facilities_history AS dpfh").
@@ -203,6 +203,9 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		Group("programs.id, programs.name")
 	if timeFilter > 0 {
 		tx = tx.Where("dpfh.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
+	}
+	if !includeArchived {
+		tx = tx.Where("programs.archived_at IS NULL")
 	}
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.id IN (?)", args.Tags)
