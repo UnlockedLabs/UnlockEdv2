@@ -5,6 +5,7 @@ interface StatsCardProps {
     number: string;
     label: string;
     tooltip?: string;
+    tooltipClassName?: string;
     useToLocaleString?: boolean; //true will be the default bc component already existed with the formatNumber function operating on the number that is passed into the function
 }
 export default function StatsCard({
@@ -12,6 +13,7 @@ export default function StatsCard({
     number,
     label,
     tooltip,
+    tooltipClassName,
     useToLocaleString = true
 }: StatsCardProps) {
     const formatNumber = (num: string) => {
@@ -29,6 +31,9 @@ export default function StatsCard({
                         icon={InformationCircleIcon}
                         dataTip={tooltip}
                         iconClassName="text-teal-4 cursor-help h-5 w-5"
+                        {...(tooltipClassName && {
+                            tooltipClassName: tooltipClassName
+                        })}
                     />
                 )}
             </div>
