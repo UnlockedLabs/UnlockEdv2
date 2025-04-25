@@ -723,7 +723,6 @@ export interface ProgramsOverviewTable {
 export interface ProgramsOverview {
     programs_facilities_stats: ProgramsFacilitiesStats;
     programs_table: ProgramsOverviewTable[];
->>>>>>> 74755a6 (feat: add prog management real time data, fix backend queries)
 }
 
 export interface Class {

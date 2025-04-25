@@ -11,7 +11,8 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/programs", srv.handleIndexPrograms, false, axx},
-		{"GET /api/programs-overview", srv.handleIndexProgramsOverview, true, axx},
+		{"GET /api/programs-overview-stats", srv.handleIndexProgramsFacilitiesStats, true, axx},
+		{"GET /api/programs-overview-table", srv.handleIndexProgramsOverviewTable, true, axx},
 		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx},
 		{"POST /api/programs", srv.handleCreateProgram, true, axx},
 		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
@@ -46,17 +47,30 @@ type ProgramOverviewResponse struct {
 	CompletionRate    float64 `json:"completion_rate"`
 }
 
-func (srv *Server) handleIndexProgramsOverview(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
 	timeFilter, err := strconv.Atoi(r.URL.Query().Get("time_filter"))
 	if err != nil {
 		timeFilter = -1
 	}
-	programs, err := srv.Db.GetProgramsOverview(&args, timeFilter)
+	programs, err := srv.Db.GetProgramsFacilitiesStats(&args, timeFilter)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, programs)
+}
+
+func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
+	timeFilter, err := strconv.Atoi(r.URL.Query().Get("time_filter"))
+	if err != nil {
+		timeFilter = -1
+	}
+	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writePaginatedResponse(w, http.StatusOK, programs, args.IntoMeta())
 }
 
 func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log sLog) error {

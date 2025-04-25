@@ -2,13 +2,12 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useEffect, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
-    Program,
     Option,
     ServerResponseMany,
     FilterPastTime,
     ServerResponseOne,
-    ProgramsOverview,
-    ProgramsOverviewTable
+    ProgramsOverviewTable,
+    ProgramsFacilitiesStats
 } from '@/common';
 import useSWR from 'swr';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
@@ -21,15 +20,6 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
 import GreyPill from '@/Components/pill-labels/GreyPill';
 import TealPill from '@/Components/pill-labels/TealPill';
-
-export interface ProgramRow extends Program {
-    total_facilities: number;
-    total_enrollments: number;
-    active_enrollments: number;
-    total_classes: number;
-    avg_completion_rate: number;
-    avg_attendance_rate: number;
-}
 
 export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     return (
@@ -50,7 +40,7 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
                 {program.status ? (
                     <TealPill children={'Active'} />
                 ) : (
-                    <GreyPill children={'Archived'} />
+                    <GreyPill children={'Inactive'} />
                 )}
             </td>
         </tr>
@@ -66,35 +56,30 @@ export default function ProgramManagement() {
     const [dateRange, setDateRange] = useState<FilterPastTime>(
         FilterPastTime['Past 30 days']
     );
-    const {
-        page: page,
-        perPage,
-        setPage: setPage,
-        setPerPage
-    } = useUrlPagination(1, 20);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
+
     const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
-    const { data, mutate } = useSWR<ServerResponseMany<Program>, Error>(
-        `/api/programs?page=${page}&per_page=${perPage}&search=${searchTerm}&${categoryQueryString}&order=asc&order_by=name`
-    );
 
-    const meta = data?.meta;
-    const { data: programsOverview } = useSWR<
-        ServerResponseOne<ProgramsOverview>,
+    const { data: programsFacilitiesStats } = useSWR<
+        ServerResponseOne<ProgramsFacilitiesStats>,
         Error
-    >(`/api/programs-overview?time_filter=${dateRange}`);
-    const programData = programsOverview?.data;
+    >(`/api/programs-overview-stats?time_filter=${dateRange}`);
     const {
         total_programs,
         avg_active_programs_per_facility,
         total_enrollments,
         attendance_rate,
         completion_rate
-    } = programData?.programs_facilities_stats ?? {};
+    } = programsFacilitiesStats?.data ?? {};
 
-    useEffect(() => {
-        console.log(programsOverview?.data.programs_table);
-    }, [programsOverview]);
+    const { data: programs, mutate } = useSWR<
+        ServerResponseMany<ProgramsOverviewTable>,
+        Error
+    >(
+        `/api/programs-overview-table?time_filter=${dateRange}&page=${page}&per_page=${perPage}&search=${searchTerm}&${categoryQueryString}&order=asc&order_by=name`
+    );
+    const meta = programs?.meta;
 
     const { categories } = useLoaderData() as {
         categories: Option[];
@@ -104,6 +89,10 @@ export default function ProgramManagement() {
         setSearchTerm(newSearch);
         setPage(1);
     }
+
+    useEffect(() => {
+        console.log(page);
+    }, [page]);
 
     return (
         <div className="px-5 py-4 flex flex-col gap-4">
@@ -169,43 +158,51 @@ export default function ProgramManagement() {
                     </button>
                 </div>
             </div>
-            <table className="table-2 card px-6 pb-6">
-                <thead>
-                    <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center px-2 !text-xs">
-                        <th>Name</th>
-                        <th># of Facilities Assigned</th>
-                        <th>Total Enrollments</th>
-                        <th>Active Enrollments</th>
-                        <th># of Classes</th>
-                        <th>Avg. Completion Rate</th>
-                        <th>Avg. Attendance Rate</th>
-                        <th>Category</th>
-                        <th>Credit Type</th>
-                        <th>Funding Type</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {programData?.programs_table !== undefined ? (
-                        programData?.programs_table.map(
-                            (program: ProgramsOverviewTable) => (
-                                <ProgramRow program={program} />
+            <div className="table-2 card px-6 pb-6">
+                <table>
+                    <thead>
+                        <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center px-2 !text-xs">
+                            <th>Name</th>
+                            <th># of Facilities Assigned</th>
+                            <th>Total Enrollments</th>
+                            <th>Active Enrollments</th>
+                            <th># of Classes</th>
+                            <th>Avg. Completion Rate</th>
+                            <th>Avg. Attendance Rate</th>
+                            <th>Category</th>
+                            <th>Credit Type</th>
+                            <th>Funding Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {programs?.data !== undefined ? (
+                            programs.data.map(
+                                (program: ProgramsOverviewTable, index) => (
+                                    <ProgramRow key={index} program={program} />
+                                )
                             )
-                        )
-                    ) : (
-                        <p className="body text-error">No programs to show.</p>
-                    )}
-                </tbody>
-            </table>
-            {meta && (
-                <div className="flex justify-center mt-4">
-                    <Pagination
-                        meta={meta}
-                        setPage={setPage}
-                        setPerPage={setPerPage}
-                    />
-                </div>
-            )}
+                        ) : (
+                            <tr>
+                                <th>
+                                    <p className="body text-error">
+                                        No programs to show.
+                                    </p>
+                                </th>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+                {meta && (
+                    <div className="flex justify-center mt-4">
+                        <Pagination
+                            meta={meta}
+                            setPage={setPage}
+                            setPerPage={setPerPage}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
