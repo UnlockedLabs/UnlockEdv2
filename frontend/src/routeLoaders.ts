@@ -182,6 +182,34 @@ export const getProgramTitle: LoaderFunction = async ({
     };
 };
 
+export const getClassMgmtData: LoaderFunction = async ({
+    params
+}): Promise<ClassLoaderData> => {
+    const { class_id } = params;
+    let cls: Class | undefined;
+    let attendanceRate: number | undefined;
+    let className = 'Class Management';
+    const classResp = (await API.get(
+        `program-classes/${class_id}`
+    )) as ServerResponseOne<Class>;
+    if (classResp.success) {
+        cls = classResp.data;
+        className = cls.name;
+        if (cls.events && cls.events.length > 0) {
+            const resp2 = (await API.get(
+                `program-classes/${class_id}/events/${cls.events[0].id}/attendance-rate`
+            )) as ServerResponseOne<{ attendance_rate: number }>;
+            attendanceRate = resp2.success ? resp2.data.attendance_rate : 0;
+        }
+    } else {
+        return { title: className, redirect: '/404' };
+    }
+    return {
+        title: className,
+        attendance_rate: attendanceRate
+    };
+};
+
 export const getProgram: LoaderFunction = async ({ params }) => {
     const resp = (await API.get(
         `programs/${params.id}`

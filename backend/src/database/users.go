@@ -54,6 +54,14 @@ func (db *DB) GetUserByDocIDAndID(ctx context.Context, docID string, userID int)
 	return &user, nil
 }
 
+func (db *DB) GetUsersByIDs(userIDs []uint, args *models.QueryContext) ([]models.User, error) {
+	users := make([]models.User, 0, len(userIDs))
+	if err := db.WithContext(args.Ctx).Find(&users).Where("id IN (?)", userIDs).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "users")
+	}
+	return users, nil
+}
+
 func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transferFacilityId int) ([]string, error) {
 	var programNames []string
 	query := `with transfer_facility_programs as (
@@ -460,8 +468,8 @@ func (db *DB) InsertUserAccountHistoryAction(ctx context.Context, accountHistory
 	return nil
 }
 
-func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]models.UserAccountHistoryResponse, error) {
-	history := make([]models.UserAccountHistoryResponse, 0, args.PerPage)
+func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]models.ActivityHistoryResponse, error) {
+	history := make([]models.ActivityHistoryResponse, 0, args.PerPage)
 	tx := db.WithContext(args.Ctx).
 		Table("user_account_history uah").
 		Select(`uah.action, uah.created_at, uah.user_id, 

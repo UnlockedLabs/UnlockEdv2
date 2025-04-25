@@ -93,3 +93,23 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	}
 	return classDetails, nil
 }
+
+func (db *DB) GetClassHistory(id int, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
+	history := []models.ProgramClassesHistory{}
+	if err := db.WithContext(args.Ctx).Order(args.OrderClause()).Find(&history, "parent_ref_id = ? and table_name = ?", id, "program_classes").Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_classes_history")
+	}
+	return history, nil
+}
+
+func (db *DB) GetClassCreatedAtAndBy(id int, args *models.QueryContext) (models.ActivityHistoryResponse, error) {
+	var classDetails models.ActivityHistoryResponse
+	if err := db.WithContext(args.Ctx).Table("program_classes ps").
+		Select("ps.created_at, u.username as admin_username").
+		Joins("join users u on u.id = ps.create_user_id").
+		Where("ps.id = ?", id).
+		Scan(&classDetails).Error; err != nil {
+		return classDetails, newNotFoundDBError(err, "program_classes")
+	}
+	return classDetails, nil
+}

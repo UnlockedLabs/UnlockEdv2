@@ -184,6 +184,7 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	traits["created_at"] = user.CreatedAt
 	traits["name_first"] = user.NameFirst
 	traits["name_last"] = user.NameLast
+	traits["timezone"] = claims.TimeZone
 	if traits["feature_access"] == nil || len(srv.features) == 0 {
 		traits["feature_access"] = []models.FeatureAccess{}
 	}

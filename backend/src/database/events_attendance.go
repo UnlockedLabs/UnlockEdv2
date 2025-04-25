@@ -2,6 +2,8 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"context"
+	"fmt"
 	"net/url"
 	"slices"
 	"time"
@@ -118,4 +120,76 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	}
 
 	return results, nil
+}
+
+func (db *DB) GetAttendanceRateForEvent(ctx context.Context, eventID int, classID int) (float64, error) {
+	var attendanceRate float64
+	sql := `select coalesce(count(*) filter (where attendance_status = 'present') * 100.0 /
+		nullif(count(*) filter (where attendance_status is not null and attendance_status != ''), 0), 0) as attendance_percentage
+		from program_class_event_attendance pcea
+		inner join program_class_events pce on pce.id = pcea.event_id
+		where pcea.event_id = ?
+			and pce.id = ?`
+	if err := db.WithContext(ctx).Raw(sql, eventID, classID).Scan(&attendanceRate).Error; err != nil {
+		return 0, newNotFoundDBError(err, "program_class_event_attendance")
+	}
+	return attendanceRate, nil
+}
+
+func (db *DB) GetAttendanceFlagsForClass(classID int, args *models.QueryContext) ([]models.AttendanceFlag, error) {
+	flags := make([]models.AttendanceFlag, 0, args.PerPage)
+	attendanceCoreSQL := `from program_class_enrollments e
+		inner join program_classes c on c.id = e.class_id
+		inner join users u on u.id = e.user_id
+		where c.id = ?
+		and e.enrollment_status = 'Enrolled'
+		and c.status = 'Active'
+		and exists (select 1 from program_class_events evt
+				inner join program_class_event_attendance att on att.event_id = evt.id
+				where evt.class_id = c.id
+						and att.attendance_status is not null
+		)`
+	noAttendanceSQL := `and not exists (select 1 from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id
+					and att.user_id = e.user_id
+					and att.attendance_status = 'present'
+		)`
+	multiAbsencesSQL := `and exists (select 1 from program_class_events evt
+			inner join program_class_event_attendance att on att.event_id = evt.id
+			where evt.class_id = c.id
+					and att.user_id = e.user_id
+					and att.attendance_status = 'present'
+		)
+		and (select count(*) from program_class_events evt
+				inner join program_class_event_attendance att on att.event_id = evt.id
+				where evt.class_id = c.id
+						and att.user_id = e.user_id
+						and att.attendance_status = 'absent_unexcused'
+		) >= 3`
+	//count for pagination
+	countQuery := fmt.Sprintf(`select count(*) from (
+			select u.id %s %s
+			union all
+			select u.id %s %s
+		) as attendance_flags`, attendanceCoreSQL, noAttendanceSQL, attendanceCoreSQL, multiAbsencesSQL)
+
+	if err := db.WithContext(args.Ctx).Raw(countQuery, classID, classID).Scan(&args.Total).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program_class_event_attendance")
+	}
+
+	attendanceQuery := fmt.Sprintf(`select name_first, name_last, doc_id, flag_type from (
+			select u.name_first, u.name_last, 
+			u.doc_id, 'no_attendance' as flag_type %s %s
+			union all
+			select u.name_first, u.name_last, 
+			u.doc_id, 'multiple_absences' as flag_type %s %s
+		) AS attendance_flags
+		ORDER BY name_last, name_first
+		LIMIT ? OFFSET ?`, attendanceCoreSQL, noAttendanceSQL, attendanceCoreSQL, multiAbsencesSQL)
+	if err := db.WithContext(args.Ctx).Raw(attendanceQuery, classID, classID, args.PerPage, args.CalcOffset()).Scan(&flags).Error; err != nil {
+		return nil, newNotFoundDBError(err, "program_class_event_attendance")
+	}
+
+	return flags, nil
 }

@@ -93,12 +93,12 @@ func (user *User) IsAdmin() bool {
 }
 
 type UserAccountHistory struct {
-	UserID                  uint                     `json:"user_id" gorm:"primaryKey"`
-	AdminID                 *uint                    `json:"admin_id"`
-	Action                  UserAccountHistoryAction `json:"action" gorm:"size:255;primaryKey"`
-	ProgramClassesHistoryID *uint                    `json:"program_classes_history_id"`
-	FacilityID              *uint                    `json:"facility_id"`
-	CreatedAt               time.Time                `json:"created_at" gorm:"primaryKey"`
+	UserID                  uint                  `json:"user_id" gorm:"primaryKey"`
+	AdminID                 *uint                 `json:"admin_id"`
+	Action                  ActivityHistoryAction `json:"action" gorm:"size:255;primaryKey"`
+	ProgramClassesHistoryID *uint                 `json:"program_classes_history_id"`
+	FacilityID              *uint                 `json:"facility_id"`
+	CreatedAt               time.Time             `json:"created_at" gorm:"primaryKey"`
 
 	User                  *User                  `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	Admin                 *User                  `json:"admin,omitempty" gorm:"foreignKey:AdminID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
@@ -110,28 +110,31 @@ func (UserAccountHistory) TableName() string {
 	return "user_account_history"
 }
 
-type UserAccountHistoryAction string
+type ActivityHistoryAction string
 
 const (
-	AccountCreation  UserAccountHistoryAction = "account_creation"
-	FacilityTransfer UserAccountHistoryAction = "facility_transfer"
-	SetPassword      UserAccountHistoryAction = "set_password"
-	ResetPassword    UserAccountHistoryAction = "reset_password"
+	AccountCreation  ActivityHistoryAction = "account_creation"
+	FacilityTransfer ActivityHistoryAction = "facility_transfer"
+	SetPassword      ActivityHistoryAction = "set_password"
+	ResetPassword    ActivityHistoryAction = "reset_password"
+	ClassHistory     ActivityHistoryAction = "class_history"
 )
 
-type UserAccountHistoryResponse struct {
-	Action                  UserAccountHistoryAction `json:"action"`
-	CreatedAt               time.Time                `json:"created_at"`
-	UserID                  uint                     `json:"user_id"`
-	UserUsername            string                   `json:"user_username"`
-	AdminUsername           *string                  `json:"admin_username"`
-	FacilityName            *string                  `json:"facility_name"`
-	ProgramClassesHistoryID *uint                    `json:"program_classes_history_id"`
+type ActivityHistoryResponse struct {
+	Action                  ActivityHistoryAction `json:"action"`
+	CreatedAt               time.Time             `json:"created_at"`
+	FieldName               string                `json:"field_name"`
+	NewValue                string                `json:"new_value"`
+	UserID                  uint                  `json:"user_id"`
+	UserUsername            string                `json:"user_username"`
+	AdminUsername           *string               `json:"admin_username"`
+	FacilityName            *string               `json:"facility_name"`
+	ProgramClassesHistoryID *uint                 `json:"program_classes_history_id"`
 
 	ProgramClassesHistory *ProgramClassesHistory `json:"program_classes_history,omitempty" gorm:"foreignKey:ProgramClassesHistoryID;constraint:OnDelete:SET NULL"`
 }
 
-func NewUserAccountHistory(userID uint, action UserAccountHistoryAction, adminID *uint, programClassesHistoryID *uint, facilityID *uint) *UserAccountHistory {
+func NewUserAccountHistory(userID uint, action ActivityHistoryAction, adminID *uint, programClassesHistoryID *uint, facilityID *uint) *UserAccountHistory {
 	return &UserAccountHistory{
 		UserID:                  userID,
 		AdminID:                 adminID,

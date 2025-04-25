@@ -1,4 +1,9 @@
-import { getProgram, getProgramData, getProgramTitle } from '@/routeLoaders';
+import {
+    getClassMgmtData,
+    getProgram,
+    getProgramData,
+    getProgramTitle
+} from '@/routeLoaders';
 import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
 import { FeatureAccess, TitleHandler } from '@/common';
@@ -10,6 +15,9 @@ import AddClassEnrollments from '@/Pages/AddClassEnrollments';
 import ClassEnrollmentDetails from '@/Pages/ClassEnrollmentDetails';
 import ClassEvents from '@/Pages/ClassEvents';
 import EventAttendance from '@/Pages/EventAttendance';
+import ProgramClassManagement from '@/Pages/ProgramClassManagement';
+import ClassLayout from '@/Components/ClassLayout';
+import Error from '@/Pages/Error';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -45,6 +53,24 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             handle: {
                 title: (data: TitleHandler) => data.title
             }
+        },
+        {
+            path: 'program-classes',
+            element: <ProgramClassManagement />,
+            handle: {
+                title: 'Class Management'
+            },
+            children: [
+                {
+                    path: ':class_id/dashboard',
+                    loader: getClassMgmtData,
+                    element: <ClassLayout />,
+                    errorElement: <Error />,
+                    handle: {
+                        title: (data: TitleHandler) => data.title
+                    }
+                }
+            ]
         },
         {
             path: 'programs/:id/classes/:class_id/enrollments',

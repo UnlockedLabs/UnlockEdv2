@@ -42,7 +42,11 @@ export default function EventCalendar({
             return;
         }
         const durationMs = parseDurationToMs(durationStr);
-        const rule = RRule.fromString(recurrenceRule);
+        const cleanRule = recurrenceRule.replace(
+            /DTSTART;TZID=Local:/,
+            'DTSTART:'
+        );
+        const rule = RRule.fromString(cleanRule);
         const occurrences = rule.between(
             new Date(),
             moment().add(1, 'year').toDate()

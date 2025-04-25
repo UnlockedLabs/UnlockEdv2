@@ -122,11 +122,6 @@ func seedTestData(db *gorm.DB) {
 		}
 	}
 	users := generateFakeUsers(facilities)
-	classes := []models.ProgramClass{}
-	classes, err = createFacilityPrograms(db)
-	if err != nil {
-		log.Printf("Failed to create facility programs: %v", err)
-	}
 	for idx := range users {
 		log.Printf("Creating user %s", users[idx].Username)
 		if err := db.Create(&users[idx]).Error; err != nil {
@@ -160,6 +155,17 @@ func seedTestData(db *gorm.DB) {
 	}
 	outcomes := []string{"college_credit", "grade", "certificate", "pathway_completion"}
 	milestoneTypes := []models.MilestoneType{models.DiscussionPost, models.AssignmentSubmission, models.QuizSubmission, models.GradeReceived}
+
+	var adminUser models.User
+	if db.Where("role = ?", models.SystemAdmin).Limit(1).Find(&adminUser).Error != nil {
+		log.Fatalf("Failed to get users from db")
+		return
+	}
+	classes := []models.ProgramClass{}
+	classes, err = createFacilityPrograms(db, adminUser.ID)
+	if err != nil {
+		log.Printf("Failed to create facility programs: %v", err)
+	}
 	events := []models.ProgramClassEvent{}
 	if err := db.Find(&events).Error; err != nil {
 		log.Fatalf("Failed to get events from db")
@@ -271,6 +277,11 @@ func seedTestData(db *gorm.DB) {
 			}
 			log.Printf("Creating program enrollment for user %s", user.Username)
 		}
+		attendanceStatus := []models.Attendance{
+			models.Present,
+			models.Absent_Excused,
+			models.Absent_Unexcused,
+		}
 		startDate := time.Now().AddDate(0, 0, -90)
 		endDate := time.Now()
 		for _, event := range events {
@@ -286,9 +297,10 @@ func seedTestData(db *gorm.DB) {
 				}
 				attendanceDate := occ.Format("2006-01-02")
 				attendance := models.ProgramClassEventAttendance{
-					EventID: event.ID,
-					UserID:  user.ID,
-					Date:    attendanceDate,
+					EventID:          event.ID,
+					UserID:           user.ID,
+					Date:             attendanceDate,
+					AttendanceStatus: attendanceStatus[rand.Intn(len(attendanceStatus))],
 				}
 
 				result := db.Where(attendance).FirstOrCreate(&attendance)
@@ -526,7 +538,7 @@ func generateFakeVideos(providerID uint, count int) []models.Video {
 	}
 	return videos
 }
-func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
+func createFacilityPrograms(db *gorm.DB, adminID uint) ([]models.ProgramClass, error) {
 	facilities := []models.Facility{}
 	fundingTypes := [6]models.FundingType{models.EduGrants, models.FederalGrants, models.InmateWelfare, models.NonProfitOrgs, models.Other, models.StateGrants}
 	creditTypes := [4]models.CreditType{models.Completion, models.EarnedTime, models.Education, models.Participation}
@@ -615,6 +627,7 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 					EndDt:          &endDates[rand.Intn(len(endDates))],
 					FacilityID:     facilities[idx].ID,
 					ProgramID:      programs[i].ID,
+					CreateUserID:   adminID,
 				}
 				if err := db.Create(&class).Error; err != nil {
 					log.Printf("Failed to create program class: %v", err)
@@ -629,8 +642,8 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 				}
 				rule, err := rrule.NewRRule(rrule.ROption{
 					Freq:      rrule.WEEKLY,
-					Dtstart:   startDate,
-					Until:     endDate,
+					Dtstart:   class.StartDt,
+					Until:     *class.EndDt,
 					Byweekday: randDays,
 				})
 				if err != nil {

@@ -2,9 +2,7 @@ import useSWR from 'swr';
 import {
     OpenContentResponse,
     ResidentEngagementProfile,
-    ServerResponseMany,
     ServerResponseOne,
-    UserAccountHistoryResponse,
     ValidResident
 } from '@/common';
 import EngagementRateGraph from '@/Components/EngagementRateGraph';
@@ -13,7 +11,6 @@ import StatsCard from '@/Components/StatsCard';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
 import OpenContentCardRow from '@/Components/cards/OpenContentCard';
-import Pagination from '@/Components/Pagination';
 import {
     closeModal,
     showModal,
@@ -26,9 +23,9 @@ import { VerifyResidentModal } from '@/Components/modals/VerifyResidentModal';
 import API from '@/api/api';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import TransferSummaryPanel from '@/Components/TransferSummaryPanel';
-import { AccountHistoryRowCard } from '@/Components/cards';
 import calculateEngagementMetrics from '@/Components/helperFunctions/calculateEngagementMetrics';
 import ResidentPrograms from '@/Components/ResidentPrograms';
+import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 
 function UserProfileInfoRow({
     column,
@@ -94,12 +91,6 @@ const ResidentProfile = () => {
     }
     const [resident, setResident] = useState<ValidResident | null>();
     const metrics = data?.data;
-    const [page, setPage] = useState(1);
-    const { data: activityHistory, error: activityHistoryError } = useSWR<
-        ServerResponseMany<UserAccountHistoryResponse>,
-        Error
-    >(`/api/users/${residentId}/account-history?page=${page}&per_page=5`);
-
     const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(
         'libraries'
     );
@@ -269,40 +260,7 @@ const ResidentProfile = () => {
                                 user_id={residentId ? residentId : ''}
                             />
                         </div>
-                        <div className="card card-row-padding flex flex-col gap-2">
-                            <h2>Account Overview</h2>
-                            {activityHistoryError ||
-                            activityHistory === undefined ? (
-                                <p className="body text-error">
-                                    Unable to retrieve account history
-                                </p>
-                            ) : (
-                                <>
-                                    <div className="flex-grow">
-                                        {activityHistory?.data.map(
-                                            (
-                                                item: UserAccountHistoryResponse,
-                                                index
-                                            ) => (
-                                                <AccountHistoryRowCard
-                                                    key={
-                                                        index +
-                                                        item.created_at.toString()
-                                                    }
-                                                    activity={item}
-                                                />
-                                            )
-                                        )}
-                                    </div>
-                                    <div className="mx-auto">
-                                        <Pagination
-                                            meta={activityHistory?.meta}
-                                            setPage={setPage}
-                                        />
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                        <ActivityHistoryCard residentId={residentId} />
                         <div className="card card-row-padding">
                             <OpenContentCardToggle
                                 activeTab={activeTab}

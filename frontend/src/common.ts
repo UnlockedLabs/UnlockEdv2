@@ -34,6 +34,7 @@ export interface User {
     facility_id: number;
     facility_name?: string;
     feature_access: FeatureAccess[];
+    timezone: string;
     [key: string]: number | string | boolean | undefined | FeatureAccess[];
 }
 
@@ -462,6 +463,13 @@ export enum OpenContentTabs {
     FAVORITES = 'Favorites'
 }
 
+export enum ClassMgmtTabs {
+    CLASS = 'Dashboard',
+    SCHEDULE = 'Schedule',
+    ENROLLMENT = 'Enrollment',
+    ATTENDANCE = 'Attendance'
+}
+
 export enum ProviderPlatformType {
     CANVAS_CLOUD = 'canvas_cloud',
     CANVAS_OSS = 'canvas_oss',
@@ -698,6 +706,7 @@ export interface Class {
     archived_at: string | null;
     enrollments?: ClassEnrollment[];
     events: ProgramClassEvent[];
+    created_at: Date;
 }
 
 export interface ResidentProgramClassInfo {
@@ -784,6 +793,18 @@ export interface ClassEnrollment {
     name_full: string;
     doc_id: string;
     completion_dt?: string;
+}
+
+export interface AttendanceFlag {
+    name_first: string;
+    name_last: string;
+    doc_id: string;
+    flag_type: AttendanceFlagType;
+}
+
+export enum AttendanceFlagType {
+    NoAttendance = 'no_attendance',
+    MultipleAttendance = 'multiple_absences'
 }
 
 export interface ProgramCompletion {
@@ -886,6 +907,7 @@ export interface OpenContentItem {
 export interface ClassLoaderData extends TitleHandler {
     class?: Class;
     redirect?: string;
+    attendance_rate?: number;
 }
 
 export type RouteTitleHandler<T> = TitleHandler | DynamicTitleHandler<T>;
@@ -982,8 +1004,8 @@ export interface ResidentEngagementProfile {
     recent_videos: OpenContentResponse[];
 }
 
-export interface UserAccountHistoryResponse {
-    action: UserAccountHistoryAction;
+export interface ActivityHistoryResponse {
+    action: ActivityHistoryAction;
     created_at: Date;
     user_id: number;
     user_username: string;
@@ -991,6 +1013,8 @@ export interface UserAccountHistoryResponse {
     facility_name?: string;
     program_classes_history_id?: number;
     program_classes_history?: ProgramClassesHistory;
+    field_name: string;
+    new_value: string;
 }
 
 export interface ProgramClassesHistory {
@@ -1002,8 +1026,9 @@ export interface ProgramClassesHistory {
     created_at: Date;
 }
 
-export type UserAccountHistoryAction =
+export type ActivityHistoryAction =
     | 'account_creation'
     | 'facility_transfer'
     | 'set_password'
-    | 'reset_password';
+    | 'reset_password'
+    | 'class_history';

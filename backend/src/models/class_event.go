@@ -123,3 +123,17 @@ type EnrollmentAttendance struct {
 	AttendanceStatus *string `json:"attendance_status"`
 	Note             *string `json:"note"`
 }
+
+type AttendanceFlagType string
+
+const (
+	NoAttendance     AttendanceFlagType = "no_attendance"
+	MultipleAbsences AttendanceFlagType = "multiple_absences"
+)
+
+type AttendanceFlag struct {
+	NameFirst string             `json:"name_first"`
+	NameLast  string             `json:"name_last"`
+	DocID     string             `json:"doc_id"`
+	FlagType  AttendanceFlagType `json:"flag_type"`
+}
