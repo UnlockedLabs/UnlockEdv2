@@ -7,6 +7,7 @@ interface StatsCardProps {
     tooltip?: string;
     tooltipClassName?: string;
     useToLocaleString?: boolean; //true will be the default bc component already existed with the formatNumber function operating on the number that is passed into the function
+    tooltipClass?: string;
 }
 export default function StatsCard({
     title,

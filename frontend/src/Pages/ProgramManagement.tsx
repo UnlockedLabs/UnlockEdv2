@@ -10,7 +10,10 @@ import {
     ProgramsFacilitiesStats
 } from '@/common';
 import useSWR from 'swr';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
+import {
+    InformationCircleIcon,
+    PlusCircleIcon
+} from '@heroicons/react/24/outline';
 import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +23,7 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
 import GreyPill from '@/Components/pill-labels/GreyPill';
 import TealPill from '@/Components/pill-labels/TealPill';
+import ULIComponent from '@/Components/ULIComponent';
 
 export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     return (
@@ -129,17 +133,34 @@ export default function ProgramManagement() {
                 />
                 <StatsCard
                     title={'Avg Attendance Rate'}
-                    number={attendance_rate.toString()}
+                    number={
+                        typeof attendance_rate === 'string'
+                            ? attendance_rate
+                            : (
+                                  Math.round(
+                                      attendance_rate * 100 + Number.EPSILON
+                                  ) / 100
+                              ).toString()
+                    }
                     label={'%'}
                     tooltip="Average attendance across all sessions where attendance was recorded."
                     useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Avg Completion Rate'}
-                    number={completion_rate.toString()}
+                    number={
+                        typeof completion_rate === 'string'
+                            ? completion_rate
+                            : (
+                                  Math.round(
+                                      completion_rate * 100 + Number.EPSILON
+                                  ) / 100
+                              ).toString()
+                    }
                     label={'%'}
                     tooltip="Average percentage of participants who completed a program. Only includes classes with defined end dates."
                     useToLocaleString={false}
+                    tooltipClass="tooltip-left"
                 />
             </div>
             <div className="flex flex-row justify-between items-center my-4">
@@ -180,7 +201,17 @@ export default function ProgramManagement() {
                             <th>Category</th>
                             <th>Credit Type</th>
                             <th>Funding Type</th>
-                            <th>Status</th>
+                            <th className="flex items-center">
+                                Status
+                                <ULIComponent
+                                    icon={InformationCircleIcon}
+                                    dataTip={
+                                        'This status reflects whether the program is currently available for scheduling new classes. Inactive programs may still have active classes running if they were scheduled before deactivation.'
+                                    }
+                                    tooltipClassName="tooltip-left"
+                                    iconClassName="text-teal-4 cursor-help"
+                                />
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
