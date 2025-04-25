@@ -36,12 +36,11 @@ func (sh *ServiceHandler) initSubscription() error {
 		{models.RetryVideoDownloadsJob.PubName(), sh.handleRetryFailedVideos},
 		{models.RetryManualDownloadJob.PubName(), sh.handleManualRetryDownload},
 		{models.SyncVideoMetadataJob.PubName(), sh.handleSyncVideoMetadata},
-		{models.PutVideoMetadataJob.PubName(), sh.handlePutVideoMetadata},
 		{models.DailyProgHistoryJob.PubName(), sh.handleInsertDailyProgHistory},
 	}
 	for _, sub := range subscriptions {
 		_, err := sh.nats.QueueSubscribe(sub.topic, "middleware", func(msg *nats.Msg) {
-			go sub.fn(sh.ctx, msg)
+			sub.fn(sh.ctx, msg)
 		})
 		if err != nil {
 			logger().Fatalf("Error subscribing to NATS topic %s: %v", sub.topic, err)
@@ -276,7 +275,7 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 		return
 	}
 	ytService := NewVideoService(provider, sh.db, &body)
-	err = ytService.syncVideoMetadataFromS3(contxt)
+	err = ytService.syncVideoMetadata(contxt)
 	if err != nil {
 		logger().Errorf("error syncing video metadata: %v", err)
 		success = false
@@ -285,34 +284,14 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 	sh.cleanupJob(contxt, &providerIdPtr, body["job_id"].(string), success)
 }
 
-func (sh *ServiceHandler) handlePutVideoMetadata(ctx context.Context, msg *nats.Msg) {
-	logger().Infof("Putting video metadata")
-	contxt, cancel := context.WithTimeout(ctx, CANCEL_TIMEOUT)
-	defer cancel()
-	success := true
-	provider, body, err := sh.getContentProvider(msg)
-	if err != nil {
-		logger().Errorf("error fetching provider from msg parameters %v", err)
-		return
-	}
-	ytService := NewVideoService(provider, sh.db, &body)
-	err = ytService.putAllCurrentVideoMetadata(contxt)
-	if err != nil {
-		logger().Errorf("error putting video metadata: %v", err)
-		success = false
-	}
-	providerIdPtr := int(provider.ID)
-	sh.cleanupJob(contxt, &providerIdPtr, body["job_id"].(string), success)
-}
-
-func extractArrayMap(params map[string]interface{}, mapType string) []map[string]interface{} {
-	extractTo := []map[string]interface{}{}
-	array, ok := params[mapType].([]interface{})
+func extractArrayMap(params map[string]any, mapType string) []map[string]any {
+	extractTo := []map[string]any{}
+	array, ok := params[mapType].([]any)
 	if !ok {
 		return extractTo
 	}
 	for _, prog := range array {
-		extractTo = append(extractTo, prog.(map[string]interface{}))
+		extractTo = append(extractTo, prog.(map[string]any))
 	}
 	return extractTo
 }
