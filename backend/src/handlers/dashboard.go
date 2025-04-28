@@ -127,6 +127,7 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, log sLog) error {
+	args := srv.getQueryContext(r)
 	facility := r.URL.Query().Get("facility")
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var facilityId *uint
@@ -167,23 +168,23 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 	key := fmt.Sprintf("%s-%d", facility, days)
 	cached, err := srv.buckets[LoginMetrics].Get(key)
 	if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
-		activeUsers, err := srv.Db.GetNumberOfActiveUsersForTimePeriod(true, days, facilityId)
+		activeUsers, err := srv.Db.GetNumberOfActiveUsersForTimePeriod(&args, true, days, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		totalLogins, err := srv.Db.GetTotalLogins(days, facilityId)
+		totalLogins, err := srv.Db.GetTotalLogins(&args, days, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		totalResidents, totalAdmins, err := srv.Db.GetTotalUsers(facilityId)
+		totalResidents, totalAdmins, err := srv.Db.GetTotalUsers(&args, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		newResidentsAdded, newAdminsAdded, err := srv.Db.NewUsersInTimePeriod(days, facilityId)
+		newResidentsAdded, newAdminsAdded, err := srv.Db.NewUsersInTimePeriod(&args, days, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
-		loginTimes, err := srv.Db.GetLoginActivity(days, facilityId)
+		loginTimes, err := srv.Db.GetLoginActivity(&args, days, facilityId)
 		if err != nil {
 			return newDatabaseServiceError(err)
 		}
