@@ -7,7 +7,8 @@ import {
     FilterPastTime,
     ServerResponseOne,
     ProgramsOverviewTable,
-    ProgramsFacilitiesStats
+    ProgramsFacilitiesStats,
+    UserRole
 } from '@/common';
 import useSWR from 'swr';
 import {
@@ -27,6 +28,8 @@ import ULIComponent from '@/Components/ULIComponent';
 import { useDebounceValue } from 'usehooks-ts';
 
 export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
+    const { user } = useAuth();
+    const cols = user?.role === UserRole.FacilityAdmin ? '10' : '11';
     const navigate = useNavigate();
     let background = '';
     if (program.archived_at !== null) background = 'bg-grey-1';
@@ -40,11 +43,13 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
         .map((s) => s.trim());
     return (
         <tr
-            className={`grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
+            className={`grid grid-cols-${cols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
             onClick={() => navigate(`${program.program_id}`)}
         >
             <td>{program.program_name}</td>
-            <td>{program.total_active_facilities}</td>
+            {user?.role != UserRole.FacilityAdmin && (
+                <td>{program.total_active_facilities}</td>
+            )}
             <td>{program.total_enrollments}</td>
             <td>{program.total_active_enrollments}</td>
             <td>{program.total_classes}</td>
@@ -82,6 +87,10 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
 
 export default function ProgramManagement() {
     const { user } = useAuth();
+    const { statsCols, tableCols } =
+        user?.role === UserRole.FacilityAdmin
+            ? { statsCols: '4', tableCols: '10' }
+            : { statsCols: '5', tableCols: '11' };
     if (!isAdministrator(user)) {
         return;
     }
@@ -158,7 +167,7 @@ export default function ProgramManagement() {
                     setState={setDateRange}
                 />
             </div>
-            <div className="grid grid-cols-5 gap-4">
+            <div className={`grid grid-cols-${statsCols} gap-4`}>
                 <StatsCard
                     title={'Total Programs'}
                     number={total_programs.toString()}
@@ -166,13 +175,15 @@ export default function ProgramManagement() {
                     tooltip="Count of unique programs offered across all facilities."
                     useToLocaleString={false}
                 />
-                <StatsCard
-                    title={'Active Programs Per Facility'}
-                    number={avg_active_programs_per_facility.toString()}
-                    label={'programs'}
-                    tooltip="Average number of programs per facility with at least one active class and enrolled students."
-                    useToLocaleString={false}
-                />
+                {user?.role !== UserRole.FacilityAdmin && (
+                    <StatsCard
+                        title={'Active Programs Per Facility'}
+                        number={avg_active_programs_per_facility.toString()}
+                        label={'programs'}
+                        tooltip="Average number of programs per facility with at least one active class and enrolled students."
+                        useToLocaleString={false}
+                    />
+                )}
                 <StatsCard
                     title={'Total Enrollments'}
                     number={total_enrollments.toString()}
@@ -251,9 +262,13 @@ export default function ProgramManagement() {
             <div className="card px-6 pb-6 space-y-4">
                 <table className="table-2">
                     <thead>
-                        <tr className="grid grid-cols-11 justify-items-center gap-2 items-center text-center px-2 !text-xs">
+                        <tr
+                            className={`grid grid-cols-${tableCols} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
+                        >
                             <th>Name</th>
-                            <th># of Facilities Assigned</th>
+                            {user?.role != UserRole.FacilityAdmin && (
+                                <th># of Facilities Assigned</th>
+                            )}
                             <th>Total Enrollments</th>
                             <th>Active Enrollments</th>
                             <th># of Classes</th>
@@ -264,14 +279,16 @@ export default function ProgramManagement() {
                             <th>Funding Type</th>
                             <th className="flex items-center">
                                 Status
-                                <ULIComponent
-                                    icon={InformationCircleIcon}
-                                    dataTip={
-                                        'This status reflects whether the program is currently available for scheduling new classes. Inactive programs may still have active classes running if they were scheduled before deactivation.'
-                                    }
-                                    tooltipClassName="tooltip-left"
-                                    iconClassName="text-teal-4 cursor-help"
-                                />
+                                {user?.role === UserRole.FacilityAdmin && (
+                                    <ULIComponent
+                                        icon={InformationCircleIcon}
+                                        dataTip={
+                                            'This status reflects whether the program is currently available for scheduling new classes. Inactive programs may still have active classes running if they were scheduled before deactivation.'
+                                        }
+                                        tooltipClassName="tooltip-left"
+                                        iconClassName="text-teal-4 cursor-help"
+                                    />
+                                )}
                             </th>
                         </tr>
                     </thead>
