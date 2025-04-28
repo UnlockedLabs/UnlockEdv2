@@ -13,7 +13,7 @@ CREATE TABLE public.daily_programs_facilities_history (
     total_attendances_marked INTEGER NOT NULL,
     total_students_present INTEGER NOT NULL
 );
-CREATE INDEX idx_daily_programs_facilities_history_date ON public.daily_programs_facilities_history (date DESC);
+CREATE INDEX idx_daily_programs_facilities_history_date ON public.daily_programs_facilities_history USING btree (date DESC);
 CREATE TABLE public.daily_program_facilities_history (
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     program_id INTEGER NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE public.daily_program_facilities_history (
     total_attendances_marked INTEGER NOT NULL,
     total_students_present INTEGER NOT NULL
 );
-CREATE INDEX idx_daily_programs_facilities_history_date_program_id ON public.daily_program_facilities_history (date DESC, program_id);
+CREATE INDEX idx_daily_program_facilities_history_date_program_id ON public.daily_program_facilities_history USING btree (date DESC, program_id);
 CREATE TABLE public.daily_program_facility_history (
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     program_id INTEGER NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE public.daily_program_facility_history (
     total_attendances_marked INTEGER NOT NULL,
     total_students_present INTEGER NOT NULL
 );
-CREATE INDEX idx_daily_programs_facilities_history_date ON public.daily_program_facility_history (date DESC, program_id, facility_id);
+CREATE INDEX idx_daily_program_facility_history_history_date_program_id_facility_id ON public.daily_program_facility_history USING btree (date DESC, program_id, facility_id);
 
 -- +goose StatementEnd
 

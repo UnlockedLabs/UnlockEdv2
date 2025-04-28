@@ -32,7 +32,7 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     if (program.archived_at !== null) background = 'bg-grey-1';
     return (
         <tr
-            className={`grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background}`}
+            className={`grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
             onClick={() => navigate(`${program.program_id}`)}
         >
             <td>{program.program_name}</td>
