@@ -4,8 +4,6 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type EnrollmentAndCompletionMetrics struct {
@@ -139,14 +137,6 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		First(&totals).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
 	}
-	programsFacilitiesStats.TotalPrograms = totals.TotalPrograms
-	programsFacilitiesStats.TotalEnrollments = totals.TotalEnrollments
-
-	var calculations struct {
-		AvgActiveProgramsPerFacility int64   `json:"avg_active_programs_per_facility"`
-		AttendanceRate               float64 `json:"attendance_rate"`
-		CompletionRate               float64 `json:"completion_rate"`
-	}
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select(`
 		COALESCE(SUM(total_program_offerings) / NULLIF(SUM(total_facilities), 0), 0) AS avg_active_programs_per_facility,
@@ -156,18 +146,16 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 	if timeFilter > 0 {
 		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
 	}
-	if err := tx.Scan(&calculations).Error; err != nil {
+	if err := tx.Scan(&programsFacilitiesStats).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
 	}
-	programsFacilitiesStats.AvgActiveProgramsPerFacility = calculations.AvgActiveProgramsPerFacility
-	programsFacilitiesStats.AttendanceRate = calculations.AttendanceRate
-	programsFacilitiesStats.CompletionRate = calculations.CompletionRate
+	programsFacilitiesStats.TotalPrograms = totals.TotalPrograms
+	programsFacilitiesStats.TotalEnrollments = totals.TotalEnrollments
 	return programsFacilitiesStats, nil
 }
 
 func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
-	log.Printf("Tags: %v", args.Tags)
 	tx := db.WithContext(args.Ctx).Table("daily_program_facilities_history AS dpfh").
 		Select(`
 			programs.id AS program_id,
@@ -208,7 +196,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 		tx = tx.Where("programs.archived_at IS NULL")
 	}
 	if len(args.Tags) > 0 {
-		tx = tx.Where("pt.id IN (?)", args.Tags)
+		tx = tx.Where("pt.program_id IN (?)", args.Tags)
 	}
 	if args.OrderBy != "" {
 		tx = tx.Order(args.OrderClause())
