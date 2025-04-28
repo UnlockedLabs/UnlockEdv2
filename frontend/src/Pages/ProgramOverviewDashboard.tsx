@@ -25,9 +25,12 @@ import { XMarkIcon } from '@heroicons/react/24/solid';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/useAuth';
 
 export default function ProgramOverview() {
     const { id } = useParams<{ id: string }>();
+    const user = useAuth();
+    const userFacilityId = user.user?.facility_id;
     const program = useLoaderData() as Program;
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
@@ -61,7 +64,6 @@ export default function ProgramOverview() {
     } else if (classesError) {
         navigate('/error');
     }
-
     const classes = classesResp?.data ?? [];
 
     const meta = classesResp?.meta ?? {
@@ -163,6 +165,9 @@ export default function ProgramOverview() {
         archiveClassesRef.current?.close();
     }
 
+    const isAddClassDisabled = !program.facilities.some(
+        (facility) => facility.id === userFacilityId
+    );
     return (
         <div className="p-4 px-5">
             <h1 className=" mb-2">{program.name}</h1>
@@ -245,10 +250,11 @@ export default function ProgramOverview() {
                         </button>
                     ) : (
                         <button
-                            className="button flex items-center"
+                            className={`button flex items-center ${isAddClassDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)
                             }
+                            disabled={isAddClassDisabled}
                         >
                             <PlusCircleIcon className="w-4 h-4 mr-1" />
                             Add Class

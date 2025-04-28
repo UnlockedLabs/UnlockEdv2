@@ -7,7 +7,7 @@ import (
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
-	if err := db.First(content, id).Error; err != nil {
+	if err := db.Preload("Facilities").First(content, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
