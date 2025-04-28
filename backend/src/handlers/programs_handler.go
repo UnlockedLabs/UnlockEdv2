@@ -49,11 +49,18 @@ type ProgramOverviewResponse struct {
 
 func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
+	adminRole := r.Context().Value(ClaimsKey).(*Claims).Role
 	timeFilter, err := strconv.Atoi(r.URL.Query().Get("days"))
 	if err != nil {
 		timeFilter = -1
 	}
-	programs, err := srv.Db.GetProgramsFacilitiesStats(&args, timeFilter)
+	var programs models.ProgramsFacilitiesStats
+	if adminRole == models.FacilityAdmin {
+		programs, err = srv.Db.GetProgramsFacilityStats(&args, timeFilter)
+	} else {
+		programs, err = srv.Db.GetProgramsFacilitiesStats(&args, timeFilter)
+
+	}
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -62,12 +69,13 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 
 func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
+	adminRole := r.Context().Value(ClaimsKey).(*Claims).Role
 	timeFilter, err := strconv.Atoi(r.URL.Query().Get("days"))
 	if err != nil {
 		timeFilter = -1
 	}
 	includeArchived := r.URL.Query().Get("include_archived") == "true"
-	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter, includeArchived)
+	programs, err := srv.Db.GetProgramsOverviewTable(&args, timeFilter, includeArchived, adminRole)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

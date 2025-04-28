@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"fmt"
 	"time"
 )
 
@@ -154,14 +155,42 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 	return programsFacilitiesStats, nil
 }
 
-func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool) ([]models.ProgramsOverviewTable, error) {
-	var programsTable []models.ProgramsOverviewTable
-	tx := db.WithContext(args.Ctx).Table("daily_program_facilities_history AS dpfh").
+func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int) (models.ProgramsFacilitiesStats, error) {
+	var programsFacilityStats models.ProgramsFacilitiesStats
+	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramFacilityHistory{}).
 		Select(`
+		COUNT(*) AS total_programs,
+		COALESCE(SUM(total_enrollments), 0) AS total_enrollments,
+		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0), 0) * 100 AS attendance_rate,
+		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate
+	`).Where("facility_id = ?", args.FacilityID)
+	if timeFilter > 0 {
+		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))
+	}
+	if err := tx.Scan(&programsFacilityStats).Error; err != nil {
+		return programsFacilityStats, newGetRecordsDBError(err, "programs facilities stats")
+	}
+	return programsFacilityStats, nil
+}
+
+func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
+	var programsTable []models.ProgramsOverviewTable
+	var tableName string
+	var totalActiveFacilitiesQuery string
+	var totalActiveFacilitiesSubQuery string
+	if adminRole == models.FacilityAdmin {
+		tableName = "daily_program_facility_history"
+	} else {
+		tableName = "daily_program_facilities_history"
+		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
+		totalActiveFacilitiesSubQuery = "total_active_facilities,"
+	}
+	tx := db.WithContext(args.Ctx).Table(tableName + " as dpfh").
+		Select(fmt.Sprintf(`
 			programs.id AS program_id,
 			programs.name AS program_name,
 			programs.archived_at AS archived_at,
-			mr.total_active_facilities AS total_active_facilities,
+			%s
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
@@ -171,25 +200,28 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
 			programs.funding_type AS funding_type,
 			BOOL_OR(programs.is_active) AS status
-		`).
-		Joins(`
+		`, totalActiveFacilitiesQuery)).
+		Joins(fmt.Sprintf(`
 			JOIN (
 				SELECT 
 					program_id,
-					total_active_facilities AS total_active_facilities,
-					total_enrollments AS total_enrollments,
-					total_active_enrollments AS total_active_enrollments,
-					total_classes AS total_classes
+					%s
+					total_enrollments,
+					total_active_enrollments,
+					total_classes
 				FROM daily_program_facilities_history
 				WHERE date = (SELECT MAX(date) FROM daily_program_facilities_history)
 			) AS mr ON mr.program_id = dpfh.program_id
-		`).
+		`, totalActiveFacilitiesSubQuery)).
 		Joins("JOIN programs ON programs.id = dpfh.program_id").
 		Joins("JOIN program_types pt ON pt.program_id = dpfh.program_id").
 		Joins("JOIN program_credit_types pct ON pct.program_id = dpfh.program_id").
-		Group("programs.id, programs.name, mr.total_active_facilities, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type")
+		Group(totalActiveFacilitiesQuery + "programs.id, programs.name, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type")
 	if timeFilter > 0 {
 		tx = tx.Where("dpfh.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
+	}
+	if adminRole == models.FacilityAdmin {
+		tx = tx.Where("dpfh.facility_id = ?", args.FacilityID)
 	}
 	if !includeArchived {
 		tx = tx.Where("programs.archived_at IS NULL")

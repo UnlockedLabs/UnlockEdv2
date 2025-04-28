@@ -135,7 +135,7 @@ func (DailyProgramFacilityHistory) TableName() string {
 
 type ProgramsFacilitiesStats struct {
 	TotalPrograms                int64   `json:"total_programs"`
-	AvgActiveProgramsPerFacility int64   `json:"avg_active_programs_per_facility"`
+	AvgActiveProgramsPerFacility *int64  `json:"avg_active_programs_per_facility"`
 	TotalEnrollments             int64   `json:"total_enrollments"`
 	AttendanceRate               float64 `json:"attendance_rate"`
 	CompletionRate               float64 `json:"completion_rate"`
