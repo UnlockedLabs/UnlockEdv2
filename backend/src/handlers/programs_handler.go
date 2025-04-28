@@ -11,8 +11,8 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/programs", srv.handleIndexPrograms, false, axx},
-		{"GET /api/programs-overview-stats", srv.handleIndexProgramsFacilitiesStats, true, axx},
-		{"GET /api/programs-overview-table", srv.handleIndexProgramsOverviewTable, true, axx},
+		{"GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx},
+		{"GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx},
 		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx},
 		{"POST /api/programs", srv.handleCreateProgram, true, axx},
 		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
