@@ -223,7 +223,7 @@ export default function ClassLayout() {
                                                     Class Status
                                                 </h3>
                                             </div>
-                                            <div className="flex items-center gap-1 justify-center cursor-pointer">
+                                            <div className="flex items-center gap-1 justify-center">
                                                 {clsInfo && (
                                                     <ClassStatus
                                                         status={clsInfo.status}
