@@ -48,10 +48,6 @@ const OperationalInsights = () => {
         (metrics?.data.total_residents ?? 0) +
         (metrics?.data.total_admins ?? 0);
 
-    useEffect(() => {
-        console.log(timeFilter);
-    }, [timeFilter]);
-
     return (
         <div className="overflow-x-hidden">
             {error && <div>Error loading data</div>}
@@ -123,6 +119,7 @@ const OperationalInsights = () => {
                             number={totalUsers.toString()}
                             label="Users"
                             tooltip="Total number of admins and residents in the facility"
+                            tooltipClassName="tooltip-right"
                         />
                         <StatsCard
                             title="Active Users"
@@ -147,7 +144,11 @@ const OperationalInsights = () => {
                                     ? 'User'
                                     : 'Users'
                             }
-                            tooltip={`Number of users who have not logged in in the last ${timeFilter} days`}
+                            tooltip={`${
+                                timeFilter === FilterPastTime['All time']
+                                    ? 'All time number of users who have not logged in'
+                                    : `Number of users who have not logged in in the last ${timeFilter} days`
+                            }`}
                         />
                         <StatsCard
                             title="New Admins Added"
@@ -157,7 +158,11 @@ const OperationalInsights = () => {
                                     ? 'Admin'
                                     : 'Admins'
                             }
-                            tooltip={`Number of new admins added in the last ${timeFilter} days`}
+                            tooltip={`${
+                                timeFilter === FilterPastTime['All time']
+                                    ? 'All time number of new admins added'
+                                    : `Number of new admins added in the last ${timeFilter} days`
+                            }`}
                         />
                         <StatsCard
                             title="New Residents Added"
@@ -167,7 +172,11 @@ const OperationalInsights = () => {
                                     ? 'Resident'
                                     : 'Residents'
                             }
-                            tooltip={`Number of new residents added in the last ${timeFilter} days`}
+                            tooltip={`${
+                                timeFilter === FilterPastTime['All time']
+                                    ? 'All time number of new residents added'
+                                    : `Number of new residents added in the last ${timeFilter} days`
+                            }`}
                         />
                         <StatsCard
                             title="Total Logins"
@@ -177,7 +186,7 @@ const OperationalInsights = () => {
                                     ? 'Login'
                                     : 'Logins'
                             }
-                            tooltip={`Total number of logins in the last ${timeFilter} days`}
+                            tooltip={`${timeFilter === FilterPastTime['All time'] ? 'All time number of logins' : `Number of logins in the last ${timeFilter} days`}`}
                         />
                     </div>
 
