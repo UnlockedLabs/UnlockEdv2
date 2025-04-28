@@ -29,11 +29,18 @@ export function isArchived(program_class: Class) {
     return true;
 }
 
+function isCompletedOrCancelled(program_class: Class) {
+    const isCmpOrCan =
+        program_class.status === SelectedClassStatus.Completed ||
+        program_class.status === SelectedClassStatus.Cancelled;
+    return isCmpOrCan;
+}
+
 function SelectedClassStatusPill({
-    archived,
+    closed,
     status
 }: {
-    archived: boolean;
+    closed: boolean;
     status: SelectedClassStatus;
 }) {
     let icon, background;
@@ -64,11 +71,11 @@ function SelectedClassStatusPill({
 
     return (
         <div
-            className={`inline-flex items-center gap-1 catalog-pill mx-0 w-full justify-between ${background}`}
+            className={`inline-flex items-center gap-1 catalog-pill mx-0 w-full justify-between ${background} ${closed ? '' : 'cursor-pointer'}`}
         >
             <ULIComponent icon={icon} />
             <span>{status}</span>
-            {archived ? <div></div> : <ULIComponent icon={ChevronDownIcon} />}
+            {closed ? <div></div> : <ULIComponent icon={ChevronDownIcon} />}
         </div>
     );
 }
@@ -90,11 +97,36 @@ export default function ClassStatus({
     const [selectedModifyOption, setSelectedModifyOption] =
         useState<ClassStatusOptions>();
 
+    const classStatusTransitions = new Map<
+        SelectedClassStatus,
+        ClassStatusOptions[]
+    >([
+        [
+            SelectedClassStatus.Scheduled,
+            [ClassStatusOptions.Active, ClassStatusOptions.Cancel]
+        ],
+        [
+            SelectedClassStatus.Active,
+            [
+                ClassStatusOptions.Complete,
+                ClassStatusOptions.Cancel,
+                ClassStatusOptions.Pause
+            ]
+        ],
+        [
+            SelectedClassStatus.Paused,
+            [ClassStatusOptions.Active, ClassStatusOptions.Cancel]
+        ],
+        [SelectedClassStatus.Completed, []],//just in case, setting to empty array
+        [SelectedClassStatus.Cancelled, []]
+    ]);
+
     function openSelectionModal(
         e: React.MouseEvent<HTMLDivElement, MouseEvent>,
         option: ClassStatusOptions
     ) {
-        if (isArchived(program_class)) return;
+        if (isArchived(program_class) || isCompletedOrCancelled(program_class))
+            return;
         setDropdownOpen(false);
         setSelectedModifyOption(option);
         e.stopPropagation();
@@ -109,7 +141,11 @@ export default function ClassStatus({
             <div
                 className="relative"
                 onClick={(e) => {
-                    if (isArchived(program_class)) return;
+                    if (
+                        isArchived(program_class) ||
+                        isCompletedOrCancelled(program_class)
+                    )
+                        return;
                     setDropdownOpen(!dropdownOpen);
                     e.stopPropagation();
                 }}
@@ -121,7 +157,10 @@ export default function ClassStatus({
                 tabIndex={0}
             >
                 <SelectedClassStatusPill
-                    archived={isArchived(program_class)}
+                    closed={
+                        isArchived(program_class) ||
+                        isCompletedOrCancelled(program_class)
+                    }
                     status={selectedStatus}
                 />
                 {dropdownOpen && (
@@ -129,25 +168,27 @@ export default function ClassStatus({
                         className="absolute left-0 bg-inner-background rounded-box shadow-lg p-2 overflow-y-auto z-10 w-full"
                         tabIndex={0}
                     >
-                        {Object.values(ClassStatusOptions).map((option) => {
-                            if (ClassStatusMap[option] === selectedStatus)
-                                return null;
+                        {classStatusTransitions
+                            .get(selectedStatus)
+                            ?.map((option) => {
+                                if (ClassStatusMap[option] === selectedStatus)
+                                    return null;
 
-                            return (
-                                <li key={option} className="w-full">
-                                    <div
-                                        className="flex items-center space-x-2 px-2 py-1 hover:bg-grey-2 rounded cursor-pointer"
-                                        onClick={(e) =>
-                                            openSelectionModal(e, option)
-                                        }
-                                    >
-                                        <span className="text-sm">
-                                            {option}
-                                        </span>
-                                    </div>
-                                </li>
-                            );
-                        })}
+                                return (
+                                    <li key={option} className="w-full">
+                                        <div
+                                            className="flex items-center space-x-2 px-2 py-1 hover:bg-grey-2 rounded cursor-pointer"
+                                            onClick={(e) =>
+                                                openSelectionModal(e, option)
+                                            }
+                                        >
+                                            <span className="text-sm">
+                                                {option}
+                                            </span>
+                                        </div>
+                                    </li>
+                                );
+                            })}
                     </ul>
                 )}
             </div>
