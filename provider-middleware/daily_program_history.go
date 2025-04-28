@@ -64,8 +64,8 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 
 	var totalProgramOfferings int64
 	if err := db.WithContext(ctx).Model(&models.FacilitiesPrograms{}).
-		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true").
 		Select("COUNT(*) AS total_program_offerings").
+		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true").
 		Scan(&totalProgramOfferings).Error; err != nil {
 		log.Errorln("error getting total program offerings")
 		return err
@@ -123,7 +123,7 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status = 'present' THEN pcea.id END) AS total_students_present
 		`).
 		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
-		Joins("LEFT JOIN facilities_programs fp ON fp.program_id = programs.id").
+		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
 		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id").
@@ -164,7 +164,7 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status = 'present' THEN pcea.id END) AS total_students_present
 		`).
 		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
-		Joins("LEFT JOIN facilities_programs fp ON fp.program_id = programs.id").
+		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
 		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id").

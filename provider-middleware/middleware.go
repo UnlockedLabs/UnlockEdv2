@@ -51,11 +51,11 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 		return nil, fmt.Errorf("failed to parse job_id: %v", body["job_id"])
 	}
 	// prior to here, we are unable to cleanup the job
+	providerIdPtr := int(providerId)
 	var provider models.ProviderPlatform
-	err := sh.db.WithContext(ctx).First(&provider, "id = ?", int(providerId)).Error
+	err := sh.db.WithContext(ctx).First(&provider, "id = ?", providerIdPtr).Error
 	if err != nil {
 		log.Errorf("error looking up provider platform: %v", err)
-		providerIdPtr := int(providerId)
 		sh.cleanupJob(ctx, &providerIdPtr, jobId, false)
 		return nil, fmt.Errorf("failed to find provider: %v", err)
 	}
