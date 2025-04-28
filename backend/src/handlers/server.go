@@ -439,8 +439,10 @@ func (svr *Server) handleError(handler HttpFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := sLog{f: log.Fields{"handler": getHandlerName(handler), "method": r.Method, "path": r.URL.Path}}
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
+		audit := false
 		if ok {
 			if claims.isAdmin() && r.Method != http.MethodGet {
+				audit = true
 				ip := r.Header.Get("X-Forwarded-For")
 				if ip == "" {
 					ip = r.RemoteAddr
@@ -454,7 +456,6 @@ func (svr *Server) handleError(handler HttpFunc) http.Handler {
 				log.add("facility_id", claims.FacilityID)
 				log.add("facility_name", claims.FacilityName)
 				log.add("ip_address", ip)
-				log.adminAudit()
 			}
 		}
 		if err := handler(w, r, log); err != nil {
@@ -465,6 +466,9 @@ func (svr *Server) handleError(handler HttpFunc) http.Handler {
 				svr.errorResponse(w, http.StatusInternalServerError, err.Error())
 				log.error("Error occurred is ", err.Error())
 			}
+		}
+		if audit {
+			log.adminAudit()
 		}
 	})
 }
