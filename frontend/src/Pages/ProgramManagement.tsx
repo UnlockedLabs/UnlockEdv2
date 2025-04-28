@@ -31,12 +31,13 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     let background = '';
     if (program.archived_at !== null) background = 'bg-grey-1';
     const programTypes = program.program_types
-        ? program.program_types.split(',').map((s) => s.trim())
-        : [];
+        .replace(/_/g, ' ')
+        .split(',')
+        .map((s) => s.trim());
     const creditTypes = program.credit_types
-        ? program.credit_types.split(',').map((s) => s.trim())
-        : [];
-
+        .replace(/_/g, ' ')
+        .split(',')
+        .map((s) => s.trim());
     return (
         <tr
             className={`grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
