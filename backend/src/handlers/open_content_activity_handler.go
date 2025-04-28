@@ -42,7 +42,7 @@ func (srv *Server) handleGetTopFacilityLibraries(w http.ResponseWriter, r *http.
 	_, perPage := srv.getPaginationInfo(r)
 	days, err := strconv.Atoi(r.URL.Query().Get("days"))
 	if err != nil {
-		days = 7
+		days = -1
 	}
 	topLibraries, err := srv.Db.GetTopFacilityLibraries(int(facilityId), perPage, days)
 	if err != nil {
