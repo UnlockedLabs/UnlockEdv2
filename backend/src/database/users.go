@@ -300,17 +300,18 @@ func (db *DB) LogUserSessionEnded(userID uint, sessionID string) {
 func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, active bool, days int, facilityId *uint) (int64, error) {
 	var count int64
 	var tx *gorm.DB
+	join := "JOIN login_metrics on users.id = login_metrics.user_id"
+	tx = db.WithContext(args.Ctx).Model(&models.User{})
 	if days == -1 {
-		tx = db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
+		tx = tx.Joins(join)
 	} else {
 		daysAgo := time.Now().AddDate(0, 0, -days)
-		join := "JOIN login_metrics on users.id = login_metrics.user_id AND login_metrics.last_login "
 		if active {
-			join += "> ?"
+			join += " AND login_metrics.last_login > ?"
 		} else {
-			join += "< ?"
+			join += " AND login_metrics.last_login < ?"
 		}
-		tx = db.WithContext(args.Ctx).Model(&models.User{}).Joins(join, daysAgo).Where("role = 'student'")
+		tx = tx.Joins(join, daysAgo)
 	}
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
@@ -323,21 +324,21 @@ func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, act
 
 func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facilityId *uint) (int64, int64, error) {
 	var admin_count int64
-	var user_count int64
+	var resident_count int64
 	daysAgo := time.Now().AddDate(0, 0, -days)
-	tx := db.WithContext(args.Ctx).Model(&models.User{})
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role ='student'")
 	if days != -1 {
-		tx = tx.Where("created_at >= ? AND role NOT IN ('system_admin', 'admin')", daysAgo)
+		tx = tx.Where("created_at >= ?", daysAgo)
 	}
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
-	if err := tx.Count(&user_count).Error; err != nil {
+	if err := tx.Count(&resident_count).Error; err != nil {
 		return 0, 0, newGetRecordsDBError(err, "users")
 	}
-	tx = db.WithContext(args.Ctx).Model(&models.User{})
+	tx = db.WithContext(args.Ctx).Model(&models.User{}).Where("role IN ?", models.AdminRoles)
 	if days != -1 {
-		tx = tx.Where("created_at >= ? AND role NOT IN ('student', 'system_admin')", daysAgo)
+		tx = tx.Where("created_at >= ?", daysAgo)
 	}
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
@@ -345,7 +346,7 @@ func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facility
 	if err := tx.Count(&admin_count).Error; err != nil {
 		return 0, 0, newGetRecordsDBError(err, "users")
 	}
-	return user_count, admin_count, nil
+	return resident_count, admin_count, nil
 }
 
 func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
