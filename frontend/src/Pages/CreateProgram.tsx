@@ -8,19 +8,18 @@ import {
     Program,
     ServerResponseOne
 } from '@/common';
-import { SubmitHandler, useForm, Controller } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput, TextAreaInput } from '@/Components/inputs';
 import API from '@/api/api';
-import Select, {
-    StylesConfig,
-    CSSObjectWithLabel,
-    GroupBase
-} from 'react-select';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import { useLoaderData } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import ULIComponent from '@/Components/ULIComponent';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import {
+    GenericOption,
+    MultiSelectInput
+} from '@/Components/inputs/MultiSelectInput';
 
 interface ProgramInputs {
     name: string;
@@ -28,8 +27,8 @@ interface ProgramInputs {
     credit_type: GenericOption<CreditType>[];
     program_type: GenericOption<ProgramType>[];
     is_active: boolean;
-    funding_type: GenericOption<FundingType> | null;
-    facilities: GenericOption<number>[];
+    funding_type: GenericOption<FundingType> | null;  
+    facilities: GenericOption<string>[];
 }
 
 interface TransformedProgramInput {
@@ -42,107 +41,14 @@ interface TransformedProgramInput {
     facilities: number[];
 }
 
-function formatLabel(value: string) {
-    return value.replace(/_/g, ' ');
-}
-
-const customSelectStyles: StylesConfig<
-    GenericOption<unknown>,
-    boolean,
-    GroupBase<GenericOption<unknown>>
-> = {
-    control: (provided, state) => ({
-        ...provided,
-        backgroundColor: 'var(--base-100)',
-        color: 'var(--body-text)',
-        border: '1px solid var(--grey-1)',
-        borderRadius: '0.375rem',
-        minHeight: '42px',
-        boxShadow: state.isFocused ? '0 0 0 2px var(--grey-1)' : 'none',
-        transition: 'all 0.2s ease-in-out',
-        '&:hover': {
-            borderColor: 'var(--grey-3)'
-        }
-    }),
-    input: (provided: CSSObjectWithLabel) => ({
-        ...provided,
-        color: 'var(--body-text)',
-        outline: 'none',
-        backgroundColor: 'var(--base-100)',
-        boxShadow: 'var(--base-100)'
-    }),
-    singleValue: (provided: CSSObjectWithLabel) => ({
-        ...provided,
-        color: 'var(--body-text)'
-    }),
-    multiValue: (provided: CSSObjectWithLabel) => ({
-        ...provided,
-        backgroundColor: 'var(--grey-1)'
-    }),
-    valueContainer: (provided) => ({
-        ...provided,
-        backgroundColor: 'var(--base-100)'
-    }),
-    multiValueLabel: (provided: CSSObjectWithLabel) => ({
-        ...provided,
-        color: 'var(--body-text)'
-    }),
-    multiValueRemove: (provided: CSSObjectWithLabel) => ({
-        ...provided,
-        color: 'var(--body-text)',
-        ':hover': {
-            backgroundColor: 'var(--grey-2)',
-            color: 'black'
-        }
-    }),
-    menu: (provided) => ({
-        ...provided,
-        backgroundColor: 'var(--base-100)',
-        border: '1px solid var(--grey-1)',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
-    }),
-    menuList: (provided) => ({
-        ...provided,
-        backgroundColor: 'var(--inner-background) '
-    }),
-    option: (provided, state) => ({
-        ...provided,
-        backgroundColor: state.isSelected
-            ? 'var(--grey-3)'
-            : state.isFocused
-              ? 'var(--grey-1)'
-              : 'var(--base-100) !important',
-        color: 'var(--body-text)',
-        cursor: 'pointer'
-    }),
-    placeholder: (provided: CSSObjectWithLabel) => ({
-        ...provided,
-        color: 'var(--grey-3)'
-    })
-};
-export interface GenericOption<T> {
-    value: T;
-    label: string;
-}
-
-export function createOptions<T>(
-    items: T[],
-    formatter: (item: T) => string = String
-): GenericOption<T>[] {
-    return items.map((item) => ({
-        value: item,
-        label: formatter(item)
-    }));
-}
 export default function CreateProgramPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { toaster } = useToast();
-    const selectAllOption: GenericOption<number | 'all'> = {
+    const selectAllOption: GenericOption<string> = {
         value: 'all',
         label: 'Select All'
     };
-
     const { facilities } = useLoaderData() as {
         facilities: Facility[];
     };
@@ -154,35 +60,25 @@ export default function CreateProgramPage() {
         reset,
         formState: { errors }
     } = useForm<ProgramInputs>({});
-    const creditTypeOptions = createOptions(
-        Object.values(CreditType),
-        formatLabel
-    );
-    const programTypeOptions = createOptions(
-        Object.values(ProgramType),
-        formatLabel
-    );
-    const fundingTypeOptions = createOptions(
-        Object.values(FundingType),
-        formatLabel
-    );
     const facilityOptions = facilities.map((fac) => ({
-        value: fac.id,
+        value: fac.id.toString(),
         label: fac.name
     }));
 
     const facilityOptionsSelectAll = [selectAllOption, ...facilityOptions];
 
-    const onSubmit: SubmitHandler<ProgramInputs> = async (data) => {
+    const onSubmit: SubmitHandler<ProgramInputs> = async (
+        data: ProgramInputs
+    ) => {
         const transformedData: TransformedProgramInput = {
             ...data,
             is_active: new Boolean(data.is_active).valueOf(),
-            credit_type: data.credit_type.map((opt) => opt.value),
-            program_type: data.program_type.map((opt) => opt.value),
-            funding_type: data.funding_type
-                ? data.funding_type.value
+            credit_type: data.credit_type.map((opt) => opt.value),  
+            program_type: data.program_type.map((opt) => opt.value),  
+            funding_type: data.funding_type  
+                ? data.funding_type.value  
                 : FundingType.OTHER,
-            facilities: data.facilities.map((fac) => fac.value)
+            facilities: data.facilities.map((fac) => Number(fac.value))  
         };
 
         const response = (await API.post<Program, TransformedProgramInput>(
@@ -225,98 +121,35 @@ export default function CreateProgramPage() {
                         errors={errors}
                     />
                 </div>
-
-                <div>
-                    <label className="block font-medium mb-1">
-                        Credit Type
-                    </label>
-                    <Controller
-                        control={control}
-                        name="credit_type"
-                        rules={{ required: 'Credit Type is required' }}
-                        render={({ field }) => (
-                            <Select<GenericOption<CreditType>, true>
-                                {...field}
-                                isMulti
-                                options={creditTypeOptions}
-                                placeholder="Select Credit Types"
-                                styles={
-                                    customSelectStyles as StylesConfig<
-                                        GenericOption<CreditType>,
-                                        true,
-                                        GroupBase<GenericOption<CreditType>>
-                                    >
-                                }
-                            />
-                        )}
-                    />
-                    {errors.credit_type && (
-                        <p className="text-error text-sm">
-                            {errors.credit_type.message}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block font-medium mb-1">
-                        Program Type
-                    </label>
-                    <Controller
-                        control={control}
-                        name="program_type"
-                        rules={{ required: 'Program Type is required' }}
-                        render={({ field }) => (
-                            <Select<GenericOption<ProgramType>, true>
-                                {...field}
-                                isMulti
-                                options={programTypeOptions}
-                                placeholder="Select Program Types"
-                                styles={
-                                    customSelectStyles as StylesConfig<
-                                        GenericOption<ProgramType>,
-                                        true,
-                                        GroupBase<GenericOption<ProgramType>>
-                                    >
-                                }
-                            />
-                        )}
-                    />
-                    {errors.program_type && (
-                        <p className="text-error text-sm">
-                            {errors.program_type.message}
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block font-medium mb-1">
-                        Funding Type
-                    </label>
-                    <Controller
-                        control={control}
-                        name="funding_type"
-                        rules={{ required: 'Funding Type is required' }}
-                        render={({ field }) => (
-                            <Select<GenericOption<FundingType>, true>
-                                {...field}
-                                options={fundingTypeOptions}
-                                placeholder="Select Funding Type"
-                                styles={
-                                    customSelectStyles as StylesConfig<
-                                        GenericOption<FundingType>,
-                                        true,
-                                        GroupBase<GenericOption<FundingType>>
-                                    >
-                                }
-                            />
-                        )}
-                    />
-                    {errors.funding_type && (
-                        <p className="text-error text-sm">
-                            {errors.funding_type.message}
-                        </p>
-                    )}
-                </div>
+                <MultiSelectInput
+                    placeholder="Select Credit Types"
+                    name="credit_type"
+                    label="Credit Type"
+                    control={control}
+                    optionList={Object.values(CreditType)}
+                    isMulti
+                    required
+                    errors={errors}
+                />
+                <MultiSelectInput
+                    placeholder="Select Program Types"
+                    name="program_type"
+                    label="Program Type"
+                    control={control}
+                    optionList={Object.values(ProgramType)}
+                    isMulti
+                    required
+                    errors={errors}
+                />
+                <MultiSelectInput
+                    placeholder="Select Funding Type"
+                    name="funding_type"
+                    label="Funding Type"
+                    control={control}
+                    optionList={Object.values(FundingType)}
+                    required
+                    errors={errors}
+                />
             </div>
 
             <div className="card p-6 rounded-lg shadow-md space-y-6">
@@ -324,46 +157,29 @@ export default function CreateProgramPage() {
 
                 {user && canSwitchFacility(user) && (
                     <div>
-                        <label className="block font-medium mb-1">
-                            Facility selection:
-                        </label>
-                        <Controller
-                            control={control}
+                        <MultiSelectInput
                             name="facilities"
-                            rules={{
-                                required: 'Please select at least one facility'
+                            label="Facility selection:"
+                            placeholder="Select Facilities"
+                            control={control}
+                            required
+                            optionList={facilityOptionsSelectAll}
+                            preformattedOptions
+                            isMulti
+                            onChangeOverride={(selected, options) => {
+                                if (
+                                    Array.isArray(selected) &&
+                                    selected.find((opt) => opt.value === 'all') // eslint-disable-line
+                                ) {
+                                     
+                                    return options.filter(
+                                        (opt) => String(opt.value) !== 'all'  
+                                    );
+                                }
+                                return selected; // eslint-disable-line
                             }}
-                            render={({ field }) => (
-                                <Select
-                                    {...field}
-                                    isMulti
-                                    options={facilityOptionsSelectAll}
-                                    placeholder="Select Facilities"
-                                    styles={customSelectStyles}
-                                    classNames={{
-                                        control: () =>
-                                            'input input-bordered shadow-inner bg-base-100'
-                                    }}
-                                    onChange={(selectedOptions) => {
-                                        if (
-                                            selectedOptions.find(
-                                                (option) =>
-                                                    option.value === 'all'
-                                            )
-                                        ) {
-                                            field.onChange(facilityOptions);
-                                        } else {
-                                            field.onChange(selectedOptions);
-                                        }
-                                    }}
-                                />
-                            )}
+                            errors={errors}
                         />
-                        {errors.facilities && (
-                            <p className="text-error text-sm">
-                                {errors.facilities.message}
-                            </p>
-                        )}
                     </div>
                 )}
                 <div>
