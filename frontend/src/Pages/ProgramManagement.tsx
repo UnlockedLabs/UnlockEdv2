@@ -30,6 +30,13 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     const navigate = useNavigate();
     let background = '';
     if (program.archived_at !== null) background = 'bg-grey-1';
+    const programTypes = program.program_types
+        ? program.program_types.split(',').map((s) => s.trim())
+        : [];
+    const creditTypes = program.credit_types
+        ? program.credit_types.split(',').map((s) => s.trim())
+        : [];
+
     return (
         <tr
             className={`grid grid-cols-11 justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
@@ -43,9 +50,23 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
             <td>{parseFloat(program.completion_rate.toFixed(2))}%</td>
             <td>{parseFloat(program.attendance_rate.toFixed(2))}%</td>
             <td>
-                {program.program_types.replace(/,/g, ', ').replace(/_/g, ' ')}
+                {programTypes.length > 1 ? (
+                    <div className="tooltip" data-tip={programTypes.join(', ')}>
+                        {programTypes[0]}...
+                    </div>
+                ) : (
+                    programTypes[0]
+                )}
             </td>
-            <td>{program.credit_types.replace(/,/g, ', ')}</td>
+            <td>
+                {creditTypes.length > 1 ? (
+                    <div className="tooltip" data-tip={creditTypes.join(', ')}>
+                        {creditTypes[0]} (...)
+                    </div>
+                ) : (
+                    creditTypes[0]
+                )}
+            </td>
             <td>{program.funding_type.replace(/_/g, ' ')}</td>
             <td>
                 {program.status ? (
@@ -77,7 +98,7 @@ export default function ProgramManagement() {
     const { data: programsFacilitiesStats } = useSWR<
         ServerResponseOne<ProgramsFacilitiesStats>,
         Error
-    >(`/api/programs-overview-stats?days=${dateRange}`);
+    >(`/api/programs/stats?days=${dateRange}`);
 
     const {
         total_programs,
@@ -98,7 +119,7 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs-overview-table?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name&include_archived=${includeArchived}`
+        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name&include_archived=${includeArchived}`
     );
     const meta = programs?.meta;
 
