@@ -77,7 +77,7 @@ export default function ProgramManagement() {
     const { data: programsFacilitiesStats } = useSWR<
         ServerResponseOne<ProgramsFacilitiesStats>,
         Error
-    >(`/api/programs-overview-stats?time_filter=${dateRange}`);
+    >(`/api/programs-overview-stats?days=${dateRange}`);
 
     const {
         total_programs,
@@ -98,7 +98,7 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs-overview-table?time_filter=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name&include_archived=${includeArchived}`
+        `/api/programs-overview-table?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name&include_archived=${includeArchived}`
     );
     const meta = programs?.meta;
 

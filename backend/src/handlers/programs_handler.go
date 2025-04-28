@@ -49,7 +49,7 @@ type ProgramOverviewResponse struct {
 
 func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
-	timeFilter, err := strconv.Atoi(r.URL.Query().Get("time_filter"))
+	timeFilter, err := strconv.Atoi(r.URL.Query().Get("days"))
 	if err != nil {
 		timeFilter = -1
 	}
@@ -62,7 +62,7 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 
 func (srv *Server) handleIndexProgramsOverviewTable(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
-	timeFilter, err := strconv.Atoi(r.URL.Query().Get("time_filter"))
+	timeFilter, err := strconv.Atoi(r.URL.Query().Get("days"))
 	if err != nil {
 		timeFilter = -1
 	}
