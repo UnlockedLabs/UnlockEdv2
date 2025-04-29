@@ -178,8 +178,10 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	var tableName string
 	var totalActiveFacilitiesQuery string
 	var totalActiveFacilitiesSubQuery string
+	var facilitySubQueryFilter string
 	if adminRole == models.FacilityAdmin {
 		tableName = "daily_program_facility_history"
+		facilitySubQueryFilter = " AND dpfh.facility_id = ?"
 	} else {
 		tableName = "daily_program_facilities_history"
 		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
@@ -209,10 +211,10 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					total_enrollments,
 					total_active_enrollments,
 					total_classes
-				FROM daily_program_facilities_history
-				WHERE date = (SELECT MAX(date) FROM daily_program_facilities_history)
+				FROM %s
+				WHERE date = (SELECT MAX(date) FROM %s) %s
 			) AS mr ON mr.program_id = dpfh.program_id
-		`, totalActiveFacilitiesSubQuery)).
+		`, totalActiveFacilitiesSubQuery, tableName, tableName, facilitySubQueryFilter)).
 		Joins("JOIN programs ON programs.id = dpfh.program_id").
 		Joins("JOIN program_types pt ON pt.program_id = dpfh.program_id").
 		Joins("JOIN program_credit_types pct ON pct.program_id = dpfh.program_id").
@@ -235,7 +237,10 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
 	}
-	if err := tx.Count(&args.Total).Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "programs table")
+	}
+	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
 		return programsTable, newGetRecordsDBError(err, "programs table")
 	}
 	return programsTable, nil
