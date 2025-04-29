@@ -56,6 +56,7 @@ export interface Input {
         | Record<string, Validate<any, any>>; // eslint-disable-line
     uniqueComponent?: JSX.Element;
     disabled?: boolean;
+    onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export interface InputWithOptions<T> extends Input {

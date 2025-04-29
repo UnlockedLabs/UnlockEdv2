@@ -112,6 +112,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             register={register}
                                             validate={input.validate}
                                             disabled={input.disabled}
+                                            onChange={input.onChange}
                                         />
                                     );
                                 }
