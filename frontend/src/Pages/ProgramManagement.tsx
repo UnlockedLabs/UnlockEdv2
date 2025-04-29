@@ -50,6 +50,19 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
         completion_rate,
         attendance_rate
     } = program;
+
+    function NullValue() {
+        return (
+            <div
+                className="tooltip"
+                data-tip={
+                    'Data currently unavailable. Please check back in 24 hours for updated statistics.'
+                }
+            >
+                --
+            </div>
+        );
+    }
     return (
         <tr
             className={`grid ${cols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
@@ -57,20 +70,20 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
         >
             <td>{program.program_name}</td>
             {user?.role != UserRole.FacilityAdmin && (
-                <td>{total_active_facilities ?? '--'}</td>
+                <td>{total_active_facilities ?? <NullValue />}</td>
             )}
-            <td>{total_enrollments ?? '--'}</td>
-            <td>{total_active_enrollments ?? '--'}</td>
-            <td>{total_classes ?? '--'}</td>
+            <td>{total_enrollments ?? <NullValue />}</td>
+            <td>{total_active_enrollments ?? <NullValue />}</td>
+            <td>{total_classes ?? <NullValue />}</td>
             <td>
                 {completion_rate
                     ? parseFloat(completion_rate.toFixed(2)) + '%'
-                    : completion_rate ?? '--'}
+                    : completion_rate ?? <NullValue />}
             </td>
             <td>
                 {attendance_rate
                     ? parseFloat(attendance_rate.toFixed(2)) + '%'
-                    : attendance_rate ?? '--'}
+                    : attendance_rate ?? <NullValue />}
             </td>
             <td>
                 {programTypes.length > 1 ? (
@@ -106,8 +119,8 @@ export default function ProgramManagement() {
     const { user } = useAuth();
     const { statsCols, tableCols } =
         user?.role === UserRole.FacilityAdmin
-            ? { statsCols: '4', tableCols: 'grid-cols-10' }
-            : { statsCols: '5', tableCols: 'grid-cols-11' };
+            ? { statsCols: 'grid-cols-4', tableCols: 'grid-cols-10' }
+            : { statsCols: 'grid-cols-5', tableCols: 'grid-cols-11' };
     if (!isAdministrator(user)) {
         return;
     }
@@ -177,14 +190,14 @@ export default function ProgramManagement() {
     }
 
     return (
-        <div className="px-5 py-4 flex flex-col gap-4">
+        <div className="px-5 py-4 flex flex-col gap-4 overflow-x-hidden">
             <div className="flex flex-row justify-end">
                 <DropdownControl
                     enumType={FilterPastTime}
                     setState={setDateRange}
                 />
             </div>
-            <div className={`grid grid-cols-${statsCols} gap-4`}>
+            <div className={`grid ${statsCols} gap-4`}>
                 <StatsCard
                     title={'Total Programs'}
                     number={total_programs.toString()}
