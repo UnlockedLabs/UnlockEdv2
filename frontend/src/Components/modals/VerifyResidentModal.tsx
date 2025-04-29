@@ -17,6 +17,7 @@ import {
 import API from '@/api/api';
 import { useLoaderData } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
+import { useAuth } from '@/useAuth';
 export const VerifyResidentModal = forwardRef(function (
     {
         onSuccess,
@@ -34,6 +35,9 @@ export const VerifyResidentModal = forwardRef(function (
         if (!validateFacility()) {
             return;
         }
+        const test = data.doc_id === useAuth().user?.doc_id;
+        console.log(test, '>>>>>>>>');
+
         const response = (await API.get(
             `users/resident-verify?user_id=${target?.user.id}&doc_id=${data.doc_id}&facility_id=${facility}`
         )) as ServerResponseOne<ValidResident>;
@@ -107,7 +111,10 @@ export const VerifyResidentModal = forwardRef(function (
             type: FormInputTypes.Text,
             label: 'Type the ID number of the resident to transfer:',
             interfaceRef: 'doc_id',
-            required: true
+            required: true,
+            onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                console.log('Input Changed', event.target.value);
+            }
         }
     ];
     return (
