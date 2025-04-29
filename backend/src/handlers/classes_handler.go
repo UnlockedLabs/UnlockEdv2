@@ -116,12 +116,28 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 		}
 	}
 	defer r.Body.Close()
-	classMap := make(map[string]interface{})
+	classMap := make(map[string]any)
 	if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	classMap["update_user_id"] = claims.UserID
+	if classMap["status"] == "Cancelled" {
+		for _, classID := range classIDs {
+			enrollments, err := srv.Db.GetAllActiveEnrollmentsForClassByClassID(classID)
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+			var userIDs []int
+			for _, user := range enrollments {
+				userIDs = append(userIDs, int(user.UserID))
+			}
+			err = srv.Db.UpdateProgramClassEnrollments(classID, userIDs, string(models.EnrollmentCancelled))
+			if err != nil {
+				return newDatabaseServiceError(err)
+			}
+		}
+	}
 	err := srv.Db.UpdateProgramClasses(classMap, classIDs)
 	if err != nil {
 		return newDatabaseServiceError(err)
