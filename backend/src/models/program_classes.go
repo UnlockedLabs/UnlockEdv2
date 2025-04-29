@@ -79,7 +79,6 @@ const (
 	Enrolled                             ProgramEnrollmentStatus = "Enrolled"
 	EnrollmentCancelled                  ProgramEnrollmentStatus = "Cancelled"
 	EnrollmentCompleted                  ProgramEnrollmentStatus = "Completed"
-	EnrollmentPending                    ProgramEnrollmentStatus = "Pending"
 	EnrollmentIncompleteWithdrawn        ProgramEnrollmentStatus = "Incomplete: Withdrawn"
 	EnrollmentIncompleteDropped          ProgramEnrollmentStatus = "Incomplete: Dropped"
 	EnrollmentIncompleteFailedToComplete ProgramEnrollmentStatus = "Incomplete: Failed to Complete"

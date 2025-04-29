@@ -232,7 +232,6 @@ func seedTestData(db *gorm.DB) {
 		statuses := [8]models.ProgramEnrollmentStatus{
 			models.EnrollmentCancelled,
 			models.EnrollmentCompleted,
-			models.EnrollmentPending,
 			models.EnrollmentIncompleteWithdrawn,
 			models.EnrollmentIncompleteDropped,
 			models.EnrollmentIncompleteFailedToComplete,
