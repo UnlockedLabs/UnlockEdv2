@@ -506,7 +506,6 @@ export enum CreditType {
 export enum ProgClassStatus {
     SCHEDULED = 'Scheduled',
     ACTIVE = 'Active',
-    PENDING = 'Pending',
     CANCELLED = 'Cancelled',
     COMPLETED = 'Completed',
     PAUSED = 'Paused'
