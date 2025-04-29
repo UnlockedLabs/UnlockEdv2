@@ -19,7 +19,6 @@ const (
 	Cancelled ClassStatus = "Cancelled"
 	Completed ClassStatus = "Completed"
 	Paused    ClassStatus = "Paused"
-	Pending   ClassStatus = "Pending"
 )
 
 /*
