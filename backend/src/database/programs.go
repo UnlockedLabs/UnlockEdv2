@@ -181,13 +181,13 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	var facilitySubQueryFilter string
 	if adminRole == models.FacilityAdmin {
 		tableName = "daily_program_facility_history"
-		facilitySubQueryFilter = " AND dpfh.facility_id = ?"
+		facilitySubQueryFilter = fmt.Sprintf("AND facility_id = %d", args.FacilityID)
 	} else {
 		tableName = "daily_program_facilities_history"
 		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
 		totalActiveFacilitiesSubQuery = "total_active_facilities,"
 	}
-	tx := db.WithContext(args.Ctx).Table(tableName + " as dpfh").
+	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
 		Select(fmt.Sprintf(`
 			programs.id AS program_id,
 			programs.name AS program_name,
@@ -196,15 +196,21 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_enrollments AS total_enrollments,
 			mr.total_active_enrollments AS total_active_enrollments,
 			mr.total_classes AS total_classes,
-			COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0), 0) * 100 AS completion_rate,
-			COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0), 0) * 100 AS attendance_rate,
+			(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 AS completion_rate,
+			(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 AS attendance_rate,
 			STRING_AGG(DISTINCT pt.program_type::text, ',') AS program_types,
 			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
 			programs.funding_type AS funding_type,
 			BOOL_OR(programs.is_active) AS status
-		`, totalActiveFacilitiesQuery)).
-		Joins(fmt.Sprintf(`
-			JOIN (
+		`, totalActiveFacilitiesQuery))
+	if timeFilter > 0 {
+		joinCondition := fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id AND dpfh.date >= ?`, tableName)
+		tx = tx.Joins(joinCondition, time.Now().AddDate(0, 0, -timeFilter))
+	} else {
+		tx = tx.Joins(fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id`, tableName))
+	}
+	tx = tx.Joins(fmt.Sprintf(`
+			LEFT JOIN (
 				SELECT 
 					program_id,
 					%s
@@ -212,18 +218,15 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 					total_active_enrollments,
 					total_classes
 				FROM %s
-				WHERE date = (SELECT MAX(date) FROM %s) %s
-			) AS mr ON mr.program_id = dpfh.program_id
-		`, totalActiveFacilitiesSubQuery, tableName, tableName, facilitySubQueryFilter)).
-		Joins("JOIN programs ON programs.id = dpfh.program_id").
-		Joins("JOIN program_types pt ON pt.program_id = dpfh.program_id").
-		Joins("JOIN program_credit_types pct ON pct.program_id = dpfh.program_id").
+				WHERE date = (SELECT MAX(date) FROM %s)
+				%s
+			) AS mr ON mr.program_id = programs.id
+		`, totalActiveFacilitiesSubQuery, tableName, tableName, facilitySubQueryFilter))
+	tx = tx.Joins("JOIN program_types pt ON pt.program_id = programs.id").
+		Joins("JOIN program_credit_types pct ON pct.program_id = programs.id").
 		Group(totalActiveFacilitiesQuery + "programs.id, programs.name, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type")
-	if timeFilter > 0 {
-		tx = tx.Where("dpfh.date >= ?", time.Now().AddDate(0, 0, -timeFilter))
-	}
 	if adminRole == models.FacilityAdmin {
-		tx = tx.Where("dpfh.facility_id = ?", args.FacilityID)
+		tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", args.FacilityID)
 	}
 	if !includeArchived {
 		tx = tx.Where("programs.archived_at IS NULL")

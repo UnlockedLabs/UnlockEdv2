@@ -29,7 +29,8 @@ import { useDebounceValue } from 'usehooks-ts';
 
 export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     const { user } = useAuth();
-    const cols = user?.role === UserRole.FacilityAdmin ? '10' : '11';
+    const cols =
+        user?.role === UserRole.FacilityAdmin ? 'grid-cols-10' : 'grid-cols-11';
     const navigate = useNavigate();
     let background = '';
     if (program.archived_at !== null) background = 'bg-grey-1';
@@ -41,24 +42,40 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
         .replace(/_/g, ' ')
         .split(',')
         .map((s) => s.trim());
+    const {
+        total_active_facilities,
+        total_enrollments,
+        total_active_enrollments,
+        total_classes,
+        completion_rate,
+        attendance_rate
+    } = program;
     return (
         <tr
-            className={`grid grid-cols-${cols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
+            className={`grid ${cols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
             onClick={() => navigate(`${program.program_id}`)}
         >
             <td>{program.program_name}</td>
             {user?.role != UserRole.FacilityAdmin && (
-                <td>{program.total_active_facilities}</td>
+                <td>{total_active_facilities ?? '--'}</td>
             )}
-            <td>{program.total_enrollments}</td>
-            <td>{program.total_active_enrollments}</td>
-            <td>{program.total_classes}</td>
-            <td>{parseFloat(program.completion_rate.toFixed(2))}%</td>
-            <td>{parseFloat(program.attendance_rate.toFixed(2))}%</td>
+            <td>{total_enrollments ?? '--'}</td>
+            <td>{total_active_enrollments ?? '--'}</td>
+            <td>{total_classes ?? '--'}</td>
+            <td>
+                {completion_rate
+                    ? parseFloat(completion_rate.toFixed(2)) + '%'
+                    : completion_rate ?? '--'}
+            </td>
+            <td>
+                {attendance_rate
+                    ? parseFloat(attendance_rate.toFixed(2)) + '%'
+                    : attendance_rate ?? '--'}
+            </td>
             <td>
                 {programTypes.length > 1 ? (
                     <div className="tooltip" data-tip={programTypes.join(', ')}>
-                        {programTypes[0]}...
+                        {programTypes[0]} (...)
                     </div>
                 ) : (
                     programTypes[0]
@@ -89,8 +106,8 @@ export default function ProgramManagement() {
     const { user } = useAuth();
     const { statsCols, tableCols } =
         user?.role === UserRole.FacilityAdmin
-            ? { statsCols: '4', tableCols: '10' }
-            : { statsCols: '5', tableCols: '11' };
+            ? { statsCols: '4', tableCols: 'grid-cols-10' }
+            : { statsCols: '5', tableCols: 'grid-cols-11' };
     if (!isAdministrator(user)) {
         return;
     }
@@ -263,7 +280,7 @@ export default function ProgramManagement() {
                 <table className="table-2">
                     <thead>
                         <tr
-                            className={`grid grid-cols-${tableCols} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
+                            className={`grid ${tableCols} justify-items-center gap-2 items-center text-center px-2 !text-xs`}
                         >
                             <th>Name</th>
                             {user?.role != UserRole.FacilityAdmin && (

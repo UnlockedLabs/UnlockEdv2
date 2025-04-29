@@ -142,17 +142,17 @@ type ProgramsFacilitiesStats struct {
 }
 
 type ProgramsOverviewTable struct {
-	ProgramID              uint    `json:"program_id"`
-	ProgramName            string  `json:"program_name"`
-	ArchivedAt             *string `json:"archived_at"`
-	TotalActiveFacilities  int64   `json:"total_active_facilities"`
-	TotalEnrollments       int64   `json:"total_enrollments"`
-	TotalActiveEnrollments int64   `json:"total_active_enrollments"`
-	TotalClasses           int64   `json:"total_classes"`
-	CompletionRate         float64 `json:"completion_rate"`
-	AttendanceRate         float64 `json:"attendance_rate"`
-	Types                  string  `json:"program_types" gorm:"column:program_types"`
-	CreditTypes            string  `json:"credit_types"`
-	FundingType            string  `json:"funding_type"`
-	Status                 bool    `json:"status"`
+	ProgramID              uint     `json:"program_id"`
+	ProgramName            string   `json:"program_name"`
+	ArchivedAt             *string  `json:"archived_at"`
+	TotalActiveFacilities  *int64   `json:"total_active_facilities"`
+	TotalEnrollments       *int64   `json:"total_enrollments"`
+	TotalActiveEnrollments *int64   `json:"total_active_enrollments"`
+	TotalClasses           *int64   `json:"total_classes"`
+	CompletionRate         *float64 `json:"completion_rate"`
+	AttendanceRate         *float64 `json:"attendance_rate"`
+	Types                  string   `json:"program_types" gorm:"column:program_types"`
+	CreditTypes            string   `json:"credit_types"`
+	FundingType            string   `json:"funding_type"`
+	Status                 bool     `json:"status"`
 }
