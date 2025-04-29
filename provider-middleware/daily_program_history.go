@@ -122,8 +122,8 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status IS NOT NULL THEN pcea.id END) AS total_attendances_marked,
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status = 'present' THEN pcea.id END) AS total_students_present
 		`).
-		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
 		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
+		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
 		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id").
@@ -154,7 +154,6 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 		Select(`
 			programs.id AS program_id,
 			fp.facility_id AS facility_id,
-			COUNT(DISTINCT CASE WHEN programs.is_active THEN fp.facility_id END) AS total_active_facilities,
 			COUNT(DISTINCT pce.id) AS total_enrollments,
 			COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' THEN pce.id END) AS total_completions,
 			COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.id END) AS total_active_enrollments,
@@ -163,8 +162,8 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status IS NOT NULL THEN pcea.id END) AS total_attendances_marked,
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status = 'present' THEN pcea.id END) AS total_students_present
 		`).
-		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id").
 		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
+		Joins("LEFT JOIN program_classes pc ON pc.program_id = programs.id AND pc.facility_id = fp.facility_id").
 		Joins("LEFT JOIN program_class_enrollments pce ON pce.class_id = pc.id").
 		Joins("LEFT JOIN program_class_events pcev ON pcev.class_id = pc.id").
 		Joins("LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = pcev.id").
