@@ -33,9 +33,9 @@ type Role struct {
 type User struct {
 	DatabaseFields
 	Username   string   `gorm:"size:255;not null;unique" json:"username" validate:"alphanumunicode"`
-	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"alphanumspace"`
+	NameFirst  string   `gorm:"size:255;not null" json:"name_first"  validate:"namecharacters"`
 	Email      string   `gorm:"size:255;not null;unique" json:"email" validate:"-"`
-	NameLast   string   `gorm:"size:255;not null" json:"name_last"  validate:"alphanumspace"`
+	NameLast   string   `gorm:"size:255;not null" json:"name_last"  validate:"namecharacters"`
 	Role       UserRole `gorm:"size:64;default:student" json:"role" validate:"oneof=student system_admin facility_admin department_admin"`
 	KratosID   string   `gorm:"size:255" json:"kratos_id"`
 	FacilityID uint     `json:"facility_id"`
