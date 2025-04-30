@@ -49,6 +49,7 @@ export interface Input {
     interfaceRef: string;
     required: boolean;
     enumType?: Record<string, string>;
+    displayNames?: Record<string, string>;
     length?: number;
     pattern?: Pattern;
     validate?:
