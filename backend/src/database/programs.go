@@ -150,8 +150,8 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 	if err := tx.Scan(&programsFacilitiesStats).Error; err != nil {
 		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
 	}
-	programsFacilitiesStats.TotalPrograms = totals.TotalPrograms
-	programsFacilitiesStats.TotalEnrollments = totals.TotalEnrollments
+	programsFacilitiesStats.TotalPrograms = &totals.TotalPrograms
+	programsFacilitiesStats.TotalEnrollments = &totals.TotalEnrollments
 	return programsFacilitiesStats, nil
 }
 
@@ -160,9 +160,9 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramFacilityHistory{}).
 		Select(`
 		COUNT(*) AS total_programs,
-		COALESCE(SUM(total_enrollments), 0) AS total_enrollments,
-		COALESCE(SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0), 0) * 100 AS attendance_rate,
-		COALESCE(SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0), 0) * 100 AS completion_rate
+		SUM(total_enrollments) AS total_enrollments,
+		SUM(total_students_present) * 1.0 / NULLIF(SUM(total_attendances_marked), 0) * 100 AS attendance_rate,
+		SUM(total_completions) * 1.0 / NULLIF(SUM(total_enrollments), 0) * 100 AS completion_rate
 	`).Where("facility_id = ?", args.FacilityID)
 	if timeFilter > 0 {
 		tx = tx.Where("date >= ?", time.Now().AddDate(0, 0, -timeFilter))

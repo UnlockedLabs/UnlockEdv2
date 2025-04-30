@@ -1,5 +1,5 @@
 import { isAdministrator, useAuth } from '@/useAuth';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
     Option,
@@ -26,22 +26,24 @@ import GreyPill from '@/Components/pill-labels/GreyPill';
 import TealPill from '@/Components/pill-labels/TealPill';
 import ULIComponent from '@/Components/ULIComponent';
 import { useDebounceValue } from 'usehooks-ts';
+import {
+    formatPercent,
+    transformStringToArray
+} from '@/Components/helperFunctions';
 
-export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
+export function ProgramRow({
+    program,
+    tableCols
+}: {
+    program: ProgramsOverviewTable;
+    tableCols: string;
+}) {
     const { user } = useAuth();
-    const cols =
-        user?.role === UserRole.FacilityAdmin ? 'grid-cols-10' : 'grid-cols-11';
     const navigate = useNavigate();
     let background = '';
     if (program.archived_at !== null) background = 'bg-grey-1';
-    const programTypes = program.program_types
-        .replace(/_/g, ' ')
-        .split(',')
-        .map((s) => s.trim());
-    const creditTypes = program.credit_types
-        .replace(/_/g, ' ')
-        .split(',')
-        .map((s) => s.trim());
+    const programTypes = transformStringToArray(program.program_types);
+    const creditTypes = transformStringToArray(program.credit_types);
     const {
         total_active_facilities,
         total_enrollments,
@@ -50,7 +52,15 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
         completion_rate,
         attendance_rate
     } = program;
-
+    function TagsWithFormatting({ types }: { types: string[] | string }) {
+        return typeof types === 'string' ? (
+            <>{types}</>
+        ) : (
+            <div className="tooltip" data-tip={types.join(', ')}>
+                {types[0]} (...)
+            </div>
+        );
+    }
     function NullValue() {
         return (
             <div
@@ -65,7 +75,7 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
     }
     return (
         <tr
-            className={`grid ${cols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
+            className={`grid ${tableCols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
             onClick={() => navigate(`${program.program_id}`)}
         >
             <td>{program.program_name}</td>
@@ -76,34 +86,26 @@ export function ProgramRow({ program }: { program: ProgramsOverviewTable }) {
             <td>{total_active_enrollments ?? <NullValue />}</td>
             <td>{total_classes ?? <NullValue />}</td>
             <td>
-                {completion_rate
-                    ? parseFloat(completion_rate.toFixed(2)) + '%'
-                    : completion_rate ?? <NullValue />}
-            </td>
-            <td>
-                {attendance_rate
-                    ? parseFloat(attendance_rate.toFixed(2)) + '%'
-                    : attendance_rate ?? <NullValue />}
-            </td>
-            <td>
-                {programTypes.length > 1 ? (
-                    <div className="tooltip" data-tip={programTypes.join(', ')}>
-                        {programTypes[0]} (...)
-                    </div>
+                {completion_rate ? (
+                    formatPercent(completion_rate) + '%'
                 ) : (
-                    programTypes[0]
+                    <NullValue />
                 )}
             </td>
             <td>
-                {creditTypes.length > 1 ? (
-                    <div className="tooltip" data-tip={creditTypes.join(', ')}>
-                        {creditTypes[0]} (...)
-                    </div>
+                {attendance_rate ? (
+                    formatPercent(attendance_rate) + '%'
                 ) : (
-                    creditTypes[0]
+                    <NullValue />
                 )}
             </td>
-            <td>{program.funding_type.replace(/_/g, ' ')}</td>
+            <td>
+                <TagsWithFormatting types={programTypes} />
+            </td>
+            <td>
+                <TagsWithFormatting types={creditTypes} />
+            </td>
+            <td>{transformStringToArray(program.funding_type)}</td>
             <td>
                 {program.status ? (
                     <TealPill children={'Active'} />
@@ -167,10 +169,10 @@ export default function ProgramManagement() {
         categories: Option[];
     };
 
-    function getTableDates() {
-        if (dateRange == FilterPastTime['All time']) return 'all time';
+    const tableDateRangeLabel = useMemo(() => {
+        if (dateRange === FilterPastTime['All time']) return 'all time';
         const startDate = new Date(
-            new Date().setDate(new Date().getDate() - parseInt(dateRange, 10))
+            Date.now() - parseInt(dateRange, 10) * 86400000
         ).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -181,13 +183,15 @@ export default function ProgramManagement() {
             month: 'long',
             day: 'numeric'
         });
-        return startDate + ' to ' + endDate;
-    }
+        return `${startDate} to ${endDate}`;
+    }, [dateRange]);
 
     function handleSearch(newSearch: string) {
         setSearchTerm(newSearch);
         setPage(1);
     }
+
+    console.log(programsFacilitiesStats);
 
     return (
         <div className="px-5 py-4 flex flex-col gap-4 overflow-x-hidden">
@@ -200,7 +204,11 @@ export default function ProgramManagement() {
             <div className={`grid ${statsCols} gap-4`}>
                 <StatsCard
                     title={'Total Programs'}
-                    number={total_programs.toString()}
+                    number={
+                        total_programs === null
+                            ? '--'
+                            : total_programs.toString()
+                    }
                     label={'programs'}
                     tooltip="Count of unique programs offered across all facilities."
                     useToLocaleString={false}
@@ -208,7 +216,11 @@ export default function ProgramManagement() {
                 {user?.role !== UserRole.FacilityAdmin && (
                     <StatsCard
                         title={'Active Programs Per Facility'}
-                        number={avg_active_programs_per_facility.toString()}
+                        number={
+                            avg_active_programs_per_facility === null
+                                ? '--'
+                                : avg_active_programs_per_facility.toString()
+                        }
                         label={'programs'}
                         tooltip="Average number of programs per facility with at least one active class and enrolled students."
                         useToLocaleString={false}
@@ -216,37 +228,25 @@ export default function ProgramManagement() {
                 )}
                 <StatsCard
                     title={'Total Enrollments'}
-                    number={total_enrollments.toString()}
+                    number={
+                        total_enrollments === null
+                            ? '--'
+                            : total_enrollments.toString()
+                    }
                     label={'residents'}
                     tooltip="Total number of enrollments. A single resident may be enrolled in more than one program."
                     useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Avg Attendance Rate'}
-                    number={
-                        typeof attendance_rate === 'string'
-                            ? attendance_rate
-                            : (
-                                  Math.round(
-                                      attendance_rate * 100 + Number.EPSILON
-                                  ) / 100
-                              ).toString()
-                    }
+                    number={formatPercent(attendance_rate)}
                     label={'%'}
                     tooltip="Average attendance across all sessions where attendance was recorded."
                     useToLocaleString={false}
                 />
                 <StatsCard
                     title={'Avg Completion Rate'}
-                    number={
-                        typeof completion_rate === 'string'
-                            ? completion_rate
-                            : (
-                                  Math.round(
-                                      completion_rate * 100 + Number.EPSILON
-                                  ) / 100
-                              ).toString()
-                    }
+                    number={formatPercent(completion_rate)}
                     label={'%'}
                     tooltip="Average percentage of participants who completed a program. Only includes classes with defined end dates."
                     useToLocaleString={false}
@@ -323,28 +323,27 @@ export default function ProgramManagement() {
                         </tr>
                     </thead>
                     <tbody>
-                        {programs?.data === undefined ||
-                        programs.data === null ? (
+                        {programsLoading ? null : !programs?.data?.length ? (
                             <tr>
                                 <th>
                                     <p className="body text-center text-error">
-                                        {programsLoading
-                                            ? ''
-                                            : 'No programs to show.'}
+                                        No programs to show.
                                     </p>
                                 </th>
                             </tr>
                         ) : (
-                            programs?.data?.map(
-                                (program: ProgramsOverviewTable, index) => (
-                                    <ProgramRow key={index} program={program} />
-                                )
-                            )
+                            programs.data.map((program, index) => (
+                                <ProgramRow
+                                    key={index}
+                                    program={program}
+                                    tableCols={tableCols}
+                                />
+                            ))
                         )}
                     </tbody>
                 </table>
                 <p className="flex justify-center body italic">
-                    {`Program data in table reflects the selected date range: ${getTableDates()}`}
+                    {`Program data in table reflects the selected date range: ${tableDateRangeLabel}`}
                 </p>
                 {meta && (
                     <div className="flex justify-center">
