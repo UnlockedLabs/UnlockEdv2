@@ -4,8 +4,7 @@ import StatsCard from '@/Components/StatsCard';
 import {
     ArchiveBoxIcon,
     PlusCircleIcon,
-    PuzzlePieceIcon,
-    ClipboardDocumentCheckIcon
+    PuzzlePieceIcon
 } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -134,13 +133,6 @@ export default function ProgramOverviewDashboard() {
         setSortQuery(sortQuery); //Just to get eslint to stop complaining remove when this is is built out
     };
 
-    const handleNavigateEnrollmentDetails = () => {
-        if (selectedClasses.length === 1) {
-            navigate(
-                `/programs/${program?.id}/classes/${selectedClasses[0]}/enrollments`
-            );
-        }
-    };
     function confirmArchiveClasses() {
         showModal(archiveClassesRef);
     }
@@ -228,16 +220,6 @@ export default function ProgramOverviewDashboard() {
                     </div>
                 </div>
                 <div className="flex flex-row gap-x-2">
-                    {selectedClasses.length === 1 && (
-                        <button
-                            hidden={selectedClasses.length !== 1}
-                            className="button flex items-center"
-                            onClick={handleNavigateEnrollmentDetails}
-                        >
-                            <PlusCircleIcon className="w-4 h-4 mr-1" />
-                            View Enrollment Details
-                        </button>
-                    )}
                     {selectedClasses.length > 0 ? (
                         <button
                             className="button flex items-center bg-pale-yellow border border-dark-yellow text-body-text"
@@ -335,23 +317,6 @@ export default function ProgramOverviewDashboard() {
                                                     );
                                                 }}
                                             />
-                                            {program_class.enrolled > 0 ? (
-                                                <ULIComponent
-                                                    icon={
-                                                        ClipboardDocumentCheckIcon
-                                                    }
-                                                    iconClassName={
-                                                        '!w-5 !h-5 cursor-pointer'
-                                                    }
-                                                    onClick={() => {
-                                                        navigate(
-                                                            `/programs/${program_class.program_id}/classes/${program_class.id}/events`
-                                                        );
-                                                    }}
-                                                />
-                                            ) : (
-                                                ''
-                                            )}
                                         </div>
                                     </td>
                                     <td>{program_class.name}</td>

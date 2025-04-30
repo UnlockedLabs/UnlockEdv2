@@ -12,10 +12,10 @@ import (
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 	axx := models.Feature(models.ProgramAccess)
 	return []routeDef{
-		{"GET /api/programs/{id}/classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, true, axx},
-		{"POST /api/programs/{id}/classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx},
+		{"GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, true, axx},
+		{"POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx},
+		{"PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx},
 		{"DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, true, axx},
-		{"PATCH /api/programs/{id}/classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx},
 		{"GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx},
 		{"GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, false, axx},
 	}
@@ -47,10 +47,6 @@ func (srv *Server) handleGetUserProgramCompletions(w http.ResponseWriter, r *htt
 }
 
 func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "Program ID")
-	}
 	classId, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "Class ID")
@@ -59,10 +55,9 @@ func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http
 	if status == "all" {
 		status = ""
 	}
-	log.add("program_id", id)
 	log.add("status", status)
 	args := srv.getQueryContext(r)
-	enrollemnts, err := srv.Db.GetProgramClassEnrollmentsForProgram(&args, id, classId, status)
+	enrollemnts, err := srv.Db.GetProgramClassEnrollmentsForProgram(&args, classId, status)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

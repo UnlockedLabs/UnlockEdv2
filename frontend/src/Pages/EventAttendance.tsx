@@ -23,8 +23,7 @@ interface LocalRowData {
 type FormData = Record<string, string>;
 
 export default function EventAttendance() {
-    const { id, event_id, date, class_id } = useParams<{
-        id: string;
+    const { event_id, date, class_id } = useParams<{
         event_id: string;
         date: string;
         class_id: string;
@@ -183,7 +182,7 @@ export default function EventAttendance() {
     async function onSubmit() {
         await submitAttendanceForRows(rows);
         void mutate();
-        navigate(`/programs/${id}/classes/${class_id}/events`);
+        navigate(`/program-classes/${class_id}/attendance`);
     }
 
     const anyRowSelected = rows.some((row) => row.selected);

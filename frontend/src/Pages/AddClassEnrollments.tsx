@@ -18,7 +18,6 @@ import Pagination from '@/Components/Pagination';
 export default function AddClassEnrollments() {
     const navigate = useNavigate();
     const { class: classInfo, redirect } = useLoaderData() as ClassLoaderData;
-    const { id } = useParams<{ id: string }>();
     const { class_id } = useParams<{ class_id: string }>();
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
@@ -86,11 +85,11 @@ export default function AddClassEnrollments() {
         }
 
         setErrorMessage('');
-        await API.post(`programs/${id}/classes/${class_id}/enrollments`, {
+        await API.post(`program-classes/${class_id}/enrollments`, {
             user_ids: selectedUsers
         });
         setSelectedUsers([]);
-        navigate(`/programs/${id}`);
+        navigate(`/program-classes/${class_id}/enrollments`);
     };
 
     const allAreSelected =
@@ -245,7 +244,11 @@ export default function AddClassEnrollments() {
                         <div className="flex-col" />
                         <div className="flex flex-row p-4 justify-self-end">
                             <CancelButton
-                                onClick={() => navigate(`/programs/${id}`)}
+                                onClick={() =>
+                                    navigate(
+                                        `/program-classes/${class_id}/enrollments`
+                                    )
+                                }
                             />
                             <input
                                 className="btn btn-primary ml-2"

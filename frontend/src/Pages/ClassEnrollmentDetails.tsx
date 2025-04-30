@@ -23,7 +23,7 @@ interface StatusChange {
 }
 
 export default function ClassEnrollmentDetails() {
-    const { id, class_id } = useParams<{ id: string; class_id: string }>();
+    const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
     const { redirect } = useLoaderData() as ClassLoaderData;
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +43,7 @@ export default function ClassEnrollmentDetails() {
         ServerResponseMany<ClassEnrollment>,
         Error
     >(
-        `/api/programs/${id}/classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
+        `/api/program-classes/${class_id}/enrollments?search=${searchTerm}&page=${page}&per_page=${perPage}&order_by=${sortQuery}&status=${filterStatus}`
     );
     if (error || redirect) {
         navigate(
@@ -112,7 +112,7 @@ export default function ClassEnrollmentDetails() {
     };
 
     const handleSubmitEnrollmentChange = async () => {
-        await API.patch(`programs/${id}/classes/${class_id}/enrollments`, {
+        await API.patch(`program-classes/${class_id}/enrollments`, {
             // If one or more users are selected with the check-boxes, then they are going to be
             // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
             // to change an individual status inline.
@@ -211,7 +211,7 @@ export default function ClassEnrollmentDetails() {
                             className="button btn-primary"
                             onClick={() =>
                                 navigate(
-                                    `/programs/${id}/classes/${class_id}/enrollments/add`
+                                    `/program-classes/${class_id}/enrollments/add`
                                 )
                             }
                         >
@@ -245,14 +245,6 @@ export default function ClassEnrollmentDetails() {
                             setPerPage={setPerPage}
                         />
                     )}
-                </div>
-                <div className="flex flex-row justify-end m-2">
-                    <button
-                        className="btn button w-24"
-                        onClick={() => navigate(`/programs/${id}`)}
-                    >
-                        <span className="snap-center">Back</span>
-                    </button>
                 </div>
                 <TextOnlyModal
                     ref={confirmStateChangeModal}

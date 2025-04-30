@@ -1,5 +1,6 @@
 import {
     getClassMgmtData,
+    getClassTitle,
     getProgram,
     getProgramData,
     getProgramTitle
@@ -69,32 +70,40 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
                     handle: {
                         title: (data: TitleHandler) => data.title
                     }
+                },
+                {
+                    path: ':class_id/enrollments',
+                    loader: getClassTitle,
+                    element: <ClassEnrollmentDetails />,
+                    errorElement: <Error />,
+                    handle: {
+                        title: (data: TitleHandler) => data.title
+                    }
+                },
+                {
+                    path: ':class_id/attendance',
+                    loader: getClassTitle,
+                    element: <ClassEvents />,
+                    errorElement: <Error />,
+                    handle: {
+                        title: (data: TitleHandler) => data.title
+                    }
                 }
             ]
         },
         {
-            path: 'programs/:id/classes/:class_id/enrollments',
-            loader: getProgramTitle,
-            element: <ClassEnrollmentDetails />,
-            handle: {
-                title: 'Class Enrollments'
-            }
-        },
-        {
-            path: 'programs/:id/classes/:class_id/enrollments/add',
+            path: 'program-classes/:class_id/enrollments/add',
             loader: getProgramTitle,
             element: <AddClassEnrollments />,
             handle: { title: 'Add Resident' }
         },
         {
-            path: 'programs/:id/classes/:class_id/events',
-            element: <ClassEvents />,
-            handle: { title: 'Class Events' }
-        },
-        {
-            path: 'programs/:id/classes/:class_id/events/:event_id/attendance/:date',
+            path: 'program-classes/:class_id/events/:event_id/attendance/:date',
+            loader: getClassTitle,
             element: <EventAttendance />,
-            handle: { title: 'Event Attendance' }
+            handle: {
+                title: (data: TitleHandler) => `${data.title}: Event Attendance`
+            }
         }
     ],
     AdminRoles,

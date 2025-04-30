@@ -54,7 +54,9 @@ export default function ClassEvents() {
     }
 
     function handleViewEditMarkAttendance(eventId: number, date: string) {
-        navigate(`${eventId}/attendance/${date}`);
+        navigate(
+            `/program-classes/${class_id}/events/${eventId}/attendance/${date}`
+        );
     }
 
     function formatClassTime(dateStr: string, timeRange: string): string {
