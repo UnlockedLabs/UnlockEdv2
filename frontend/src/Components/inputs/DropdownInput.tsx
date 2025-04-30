@@ -36,7 +36,7 @@ export function DropdownInput({
             >
                 {Object.entries(enumType).map(([key, value]) => (
                     <option key={key} value={value}>
-                        {value}
+                        {key}
                     </option>
                 ))}
             </select>
