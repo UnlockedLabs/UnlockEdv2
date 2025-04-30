@@ -195,8 +195,8 @@ export { EditHelpfulLinkModal } from './EditHelpfulLinkModal';
 export const checkOnlyLettersAndSpaces: Validate<string, string | boolean> = (
     input: string
 ) => {
-    if (!/^[A-Za-z\s]+$/.test(input)) {
-        return 'Input should only contain letters and spaces';
+    if (!/^[A-Za-z\s-]+$/.test(input)) {
+        return 'Input should only contain letters, spaces, and hyphens';
     }
     return true;
 };

@@ -307,7 +307,11 @@ func canResetUserPassword(currentUser *Claims, toUpdate *models.User) bool {
 func validateUser(user *models.User) string {
 	if strings.ContainsFunc(user.Username, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsNumber(r) }) {
 		return "alphanum"
-	} else if strings.ContainsFunc(user.NameFirst, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsSpace(r) }) {
+	} else if strings.ContainsFunc(user.NameFirst, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '-' }) {
+		return "alphanum"
+	} else if strings.ContainsFunc(user.NameLast, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsSpace(r) && r != '-'
+	}) {
 		return "alphanum"
 	}
 	return ""
