@@ -59,7 +59,6 @@ func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *
 		programs, err = srv.Db.GetProgramsFacilityStats(&args, timeFilter)
 	} else {
 		programs, err = srv.Db.GetProgramsFacilitiesStats(&args, timeFilter)
-
 	}
 	if err != nil {
 		return newDatabaseServiceError(err)
