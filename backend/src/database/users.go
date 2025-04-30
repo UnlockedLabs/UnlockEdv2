@@ -368,7 +368,7 @@ func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *ui
 func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64, int64, error) {
 	var totalResidents int64
 	var totalAdmins int64
-	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = student")
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
