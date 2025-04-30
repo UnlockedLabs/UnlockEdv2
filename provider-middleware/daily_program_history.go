@@ -87,7 +87,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	}
 	if err := db.WithContext(ctx).Model(&models.ProgramClassEventAttendance{}).
 		Select(`
-		COUNT(CASE WHEN attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END) AS total_attendances_marked,
+		COUNT(CASE WHEN attendance_status IS NOT NULL AND attendance_status != '' THEN 1 END) AS total_attendances_marked,
 		COALESCE(SUM(CASE WHEN attendance_status = 'present' THEN 1 ELSE 0 END), 0) AS total_students_present
 		`).
 		Scan(&attendanceStats).Error; err != nil {
