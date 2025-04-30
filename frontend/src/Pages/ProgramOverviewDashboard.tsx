@@ -15,6 +15,7 @@ import {
     ServerResponseMany,
     ProgramOverview
 } from '@/common';
+import ClampedText from '@/Components/ClampedText';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
 import ProgressBar from '@/Components/ProgressBar';
 import useSWR from 'swr';
@@ -259,8 +260,8 @@ export default function ProgramOverviewDashboard() {
                                     }
                                 />
                             </th>
-                            <th>Class Name</th>
-                            <th>Instructor Name</th>
+                            <th className="w-[400px]">Class Name</th>
+                            <th className="w-[300px]">Instructor Name</th>
                             <th>Start Date</th>
                             <th>End Date</th>
                             <th className="w-[200px]">Enrollments</th>
@@ -319,8 +320,25 @@ export default function ProgramOverviewDashboard() {
                                             />
                                         </div>
                                     </td>
-                                    <td>{program_class.name}</td>
-                                    <td>{program_class.instructor_name}</td>
+                                    <td className="max-w-[400px]">
+                                        <ClampedText
+                                            as="div"
+                                            lines={1}
+                                            className="truncate"
+                                        >
+                                            {program_class.name}
+                                        </ClampedText>
+                                    </td>
+                                    <td className="max-w-[300px]">
+                                        <ClampedText
+                                            as="div"
+                                            lines={1}
+                                            className="truncate"
+                                        >
+                                            {program_class.instructor_name}
+                                        </ClampedText>
+                                    </td>
+
                                     <td>
                                         {new Date(
                                             program_class.start_dt
