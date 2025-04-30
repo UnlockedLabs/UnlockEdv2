@@ -18,6 +18,7 @@ import {
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { isSysAdmin, useAuth } from '@/useAuth';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
@@ -26,6 +27,7 @@ export default function FacilityManagement() {
     const { toaster } = useToast();
     const [targetFacility, setTargetFacility] =
         useState<TargetItem<Facility> | null>(null);
+    const { user } = useAuth();
 
     const {
         page: pageQuery,
@@ -64,6 +66,14 @@ export default function FacilityManagement() {
     }, [targetFacility]);
 
     const deleteFacility = async () => {
+        if (!user || !isSysAdmin(user)) {
+            toaster(
+                'Currently only UnlockEd staff may delete a facility',
+                ToastState.error
+            );
+            closeModal(deleteFacilityModal);
+            return;
+        }
         if (targetFacility?.target.id == 1) {
             toaster('Cannot delete default facility', ToastState.error);
             closeModal(deleteFacilityModal);

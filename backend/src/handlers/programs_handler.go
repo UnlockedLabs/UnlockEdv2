@@ -65,7 +65,7 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
-	
+
 	resultSet := ProgramOverviewResponse{
 		Program:           *program,
 		ActiveEnrollments: metrics.ActiveEnrollments,

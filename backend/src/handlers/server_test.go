@@ -45,6 +45,20 @@ func executeRequest(t *testing.T, req *http.Request, handler http.Handler, test 
 func getDefaultQueryCtx() models.QueryContext {
 	return models.QueryContext{Page: 1, PerPage: 10}
 }
+func (srv *Server) TestAsSysAdmin(handler HttpFunc) http.Handler {
+	h := srv.applyAdminTestingMiddleware(srv.handleError(handler))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testClaims := &Claims{
+			UserID:        1,
+			PasswordReset: false,
+			Role:          models.SystemAdmin,
+			FacilityID:    1,
+		}
+		ctx := context.WithValue(r.Context(), ClaimsKey, testClaims)
+		test_ctx := context.WithValue(ctx, TestingClaimsKey, true)
+		h.ServeHTTP(w, r.WithContext(test_ctx))
+	})
+}
 
 func (srv *Server) TestAsAdmin(handler HttpFunc) http.Handler {
 	h := srv.applyAdminTestingMiddleware(srv.handleError(handler))
@@ -84,6 +98,8 @@ func getHandlerByRoleWithMiddleware(httpFunc HttpFunc, role string) http.Handler
 	var handler http.Handler
 	if role == "admin" {
 		handler = server.TestAsAdmin(httpFunc)
+	} else if role == "sysadmin" {
+		handler = server.TestAsSysAdmin(httpFunc)
 	} else {
 		handler = server.TestAsUserWithAdminMiddleware(httpFunc)
 	}

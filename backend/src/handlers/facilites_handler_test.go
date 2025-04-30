@@ -129,8 +129,9 @@ const ozark string = "Ozark Correctional Center"
 
 func TestHandleUpdateFacility(t *testing.T) {
 	httpTests := []httpTest{
-		{"TestAdminCanUpdateFacility", "admin", map[string]any{"name": ozark}, http.StatusOK, ""},
+		{"TestAdminCanUpdateFacility", "sysadmin", map[string]any{"name": ozark}, http.StatusOK, ""},
 		{"TestUserCannotUpdateFacility", "student", nil, http.StatusUnauthorized, ""},
+		{"TestAdminCanDeleteFacility", "admin", nil, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -179,7 +180,8 @@ func TestHandleUpdateFacility(t *testing.T) {
 func TestHandleDeleteFacility(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestUserCannotDeleteFacility", "student", nil, http.StatusUnauthorized, ""},
-		{"TestAdminCanDeleteFacility", "admin", map[string]any{"message": "facility deleted successfully"}, http.StatusNoContent, ""},
+		{"TestAdminCanDeleteFacility", "sysadmin", map[string]any{"message": "facility deleted successfully"}, http.StatusNoContent, ""},
+		{"TestAdminCanDeleteFacility", "admin", nil, http.StatusUnauthorized, ""},
 	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {

@@ -12,7 +12,6 @@ type EnrollmentAndCompletionMetrics struct {
 	CompletionRate    float64 `json:"completion_rate"`
 }
 
-
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
 	if err := db.Preload("Facilities").First(content, id).Error; err != nil {

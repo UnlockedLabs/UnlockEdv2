@@ -83,6 +83,9 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 }
 
 func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	if !userIsSystemAdmin(r) {
+		return newUnauthorizedServiceError()
+	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
@@ -106,6 +109,9 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 * DELETE: /api/facility/{id}
  */
 func (srv *Server) handleDeleteFacility(w http.ResponseWriter, r *http.Request, log sLog) error {
+	if !userIsSystemAdmin(r) {
+		return newUnauthorizedServiceError()
+	}
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "facility ID")
