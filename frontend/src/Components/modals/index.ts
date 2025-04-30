@@ -57,6 +57,7 @@ export interface Input {
     uniqueComponent?: JSX.Element;
     disabled?: boolean;
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    isValidDoc?: boolean;
 }
 
 export interface InputWithOptions<T> extends Input {

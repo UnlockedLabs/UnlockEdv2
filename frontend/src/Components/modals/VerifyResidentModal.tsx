@@ -17,7 +17,6 @@ import {
 import API from '@/api/api';
 import { useLoaderData } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
-import { useAuth } from '@/useAuth';
 export const VerifyResidentModal = forwardRef(function (
     {
         onSuccess,
@@ -31,16 +30,17 @@ export const VerifyResidentModal = forwardRef(function (
     const [errors, setErrors] = useState('');
     const [facility, setFacility] = useState('');
     const facilities = useLoaderData() as Facility[];
+    const target_user = target?.user.doc_id;
+
     const executeResidentCheck: SubmitHandler<FieldValues> = async (data) => {
         if (!validateFacility()) {
             return;
         }
-        const test = data.doc_id === useAuth().user?.doc_id;
-        console.log(test, '>>>>>>>>');
 
         const response = (await API.get(
             `users/resident-verify?user_id=${target?.user.id}&doc_id=${data.doc_id}&facility_id=${facility}`
         )) as ServerResponseOne<ValidResident>;
+
         if (response.success) {
             response.data.transfer_from = facilities?.find(
                 (fac) => fac.id === target?.user.facility_id
@@ -113,10 +113,12 @@ export const VerifyResidentModal = forwardRef(function (
             interfaceRef: 'doc_id',
             required: true,
             onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                console.log('Input Changed', event.target.value);
+                const match = event.target.value === target_user?.toString();
+                setIsDocIDMatch(match);
             }
         }
     ];
+    const [isDocIDMatch, setIsDocIDMatch] = useState(false);
     return (
         <FormModal
             title={'Transfer Resident'}
@@ -135,6 +137,8 @@ export const VerifyResidentModal = forwardRef(function (
             ref={verifyResidentModal}
             showCancel={true}
             submitText="Continue to confirmation"
+            verifyResidentDOCIDMode
+            isDocIDMatch={isDocIDMatch}
         />
     );
 });

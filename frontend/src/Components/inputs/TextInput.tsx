@@ -18,6 +18,7 @@ interface TextProps {
     disabled?: boolean;
     defaultValue?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;
+    isValidDoc?: boolean;
 }
 export function TextInput({
     label,
