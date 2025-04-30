@@ -35,7 +35,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	if err := db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			COUNT(*) AS total_programs,
-			SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) AS total_active_programs,
+			SUM(CASE WHEN is_active = true AND archived_at IS NULL THEN 1 ELSE 0 END) AS total_active_programs,
 			SUM(CASE WHEN archived_at IS NOT NULL THEN 1 ELSE 0 END) AS total_archived_programs
 		`).
 		Scan(&programStats).Error; err != nil {
@@ -65,7 +65,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	var totalProgramOfferings int64
 	if err := db.WithContext(ctx).Model(&models.FacilitiesPrograms{}).
 		Select("COUNT(*) AS total_program_offerings").
-		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true").
+		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true AND programs.archived_at IS NULL").
 		Scan(&totalProgramOfferings).Error; err != nil {
 		log.Errorln("error getting total program offerings")
 		return err
@@ -87,7 +87,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	}
 	if err := db.WithContext(ctx).Model(&models.ProgramClassEventAttendance{}).
 		Select(`
-		COUNT(CASE WHEN attendance_status IS NOT NULL THEN 1 END) AS total_attendances_marked,
+		COUNT(CASE WHEN attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN 1 END) AS total_attendances_marked,
 		COALESCE(SUM(CASE WHEN attendance_status = 'present' THEN 1 ELSE 0 END), 0) AS total_students_present
 		`).
 		Scan(&attendanceStats).Error; err != nil {
@@ -113,13 +113,13 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 	tx := db.Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
-			COUNT(DISTINCT CASE WHEN programs.is_active THEN fp.facility_id END) AS total_active_facilities,
+			COUNT(DISTINCT CASE WHEN programs.is_active AND programs.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
 			COUNT(DISTINCT pce.id) AS total_enrollments,
 			COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' THEN pce.id END) AS total_completions,
 			COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.id END) AS total_active_enrollments,
 			COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 			COUNT(DISTINCT CASE WHEN programs.archived_at IS NOT NULL THEN programs.id END) AS total_archived_classes,
-			COUNT(DISTINCT CASE WHEN pcea.attendance_status IS NOT NULL THEN pcea.id END) AS total_attendances_marked,
+			COUNT(DISTINCT CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN pcea.id END) AS total_attendances_marked,
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status = 'present' THEN pcea.id END) AS total_students_present
 		`).
 		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
@@ -159,7 +159,7 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 			COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.id END) AS total_active_enrollments,
 			COUNT(DISTINCT CASE WHEN pc.status != 'Cancelled' THEN pc.id END) AS total_classes,
 			COUNT(DISTINCT CASE WHEN programs.archived_at IS NOT NULL THEN programs.id END) AS total_archived_classes,
-			COUNT(DISTINCT CASE WHEN pcea.attendance_status IS NOT NULL THEN pcea.id END) AS total_attendances_marked,
+			COUNT(DISTINCT CASE WHEN pcea.attendance_status IS NOT NULL AND pcea.attendance_status != '' THEN pcea.id END) AS total_attendances_marked,
 			COUNT(DISTINCT CASE WHEN pcea.attendance_status = 'present' THEN pcea.id END) AS total_students_present
 		`).
 		Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").
