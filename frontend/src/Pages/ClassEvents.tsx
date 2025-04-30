@@ -82,7 +82,7 @@ export default function ClassEvents() {
     }
 
     return (
-        <div className="p-4">
+        <div>
             <div className="flex mb-4 justify-start">
                 <DateInput
                     label="Select Month"

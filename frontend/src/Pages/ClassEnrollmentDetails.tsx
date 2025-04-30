@@ -153,122 +153,118 @@ export default function ClassEnrollmentDetails() {
     }
 
     return (
-        <div className="px-5 pb-4">
-            <div className="flex flex-col gap-8 py-8">
-                <div className="flex flex-row justify-between items-center">
-                    <div className="flex flex-row gap-2 items-center">
-                        <SearchBar
-                            searchTerm={searchTerm}
-                            changeCallback={(term) => {
-                                handleSearchTermChange(term);
-                                setPage(1);
-                            }}
-                        />
-                        <DropdownControl
-                            label="Sort by"
-                            customCallback={(value) => {
-                                setSortQuery(value);
-                                setPage(1);
-                            }}
-                            enumType={{
-                                'Resident Name (A-Z)': 'name_full asc',
-                                'Resident Name (Z-A)': 'name_full desc',
-                                'Resident ID (Asc)': 'doc_id asc',
-                                'Resident ID (Desc)': 'doc_id desc',
-                                'Enrollment Date (Asc)': 'start_dt asc',
-                                'Enrollment Date (Desc)': 'start_dt desc'
-                            }}
-                        />
-                        <DropdownControl
-                            label="Filter by Status"
-                            customCallback={(value) => {
-                                setFilterStatus(value);
-                                setPage(1);
-                            }}
-                            enumType={{
-                                All: 'all',
-                                Enrolled: 'enrolled',
-                                Completed: 'completed',
-                                Withdrawn: 'incomplete: withdrawn',
-                                Dropped: 'incomplete: dropped',
-                                'Failed To Complete':
-                                    'incomplete: failed to complete',
-                                Transferred: 'incomplete: transferred',
-                                Canceled: 'incomplete: cancelled'
-                            }}
-                        />
-                    </div>
-                    <div className="flex gap-2">
-                        {selectedResidents.length > 0 && (
-                            <button
-                                className="button btn-secondary"
-                                onClick={handleOpenModalGraduate}
-                            >
-                                Graduate Selected
-                            </button>
-                        )}
-                        <button
-                            className="button btn-primary"
-                            onClick={() =>
-                                navigate(
-                                    `/program-classes/${class_id}/enrollments/add`
-                                )
-                            }
-                        >
-                            Add Resident
-                        </button>
-                    </div>
+        <div className="flex flex-col gap-8">
+            <div className="flex flex-row justify-between items-center">
+                <div className="flex flex-row gap-2 items-center">
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        changeCallback={(term) => {
+                            handleSearchTermChange(term);
+                            setPage(1);
+                        }}
+                    />
+                    <DropdownControl
+                        label="Sort by"
+                        customCallback={(value) => {
+                            setSortQuery(value);
+                            setPage(1);
+                        }}
+                        enumType={{
+                            'Resident Name (A-Z)': 'name_full asc',
+                            'Resident Name (Z-A)': 'name_full desc',
+                            'Resident ID (Asc)': 'doc_id asc',
+                            'Resident ID (Desc)': 'doc_id desc',
+                            'Enrollment Date (Asc)': 'start_dt asc',
+                            'Enrollment Date (Desc)': 'start_dt desc'
+                        }}
+                    />
+                    <DropdownControl
+                        label="Filter by Status"
+                        customCallback={(value) => {
+                            setFilterStatus(value);
+                            setPage(1);
+                        }}
+                        enumType={{
+                            All: 'all',
+                            Enrolled: 'enrolled',
+                            Completed: 'completed',
+                            Withdrawn: 'incomplete: withdrawn',
+                            Dropped: 'incomplete: dropped',
+                            'Failed To Complete':
+                                'incomplete: failed to complete',
+                            Transferred: 'incomplete: transferred',
+                            Canceled: 'incomplete: cancelled'
+                        }}
+                    />
                 </div>
-                {!isLoading && !error && (
-                    <ClassEnrollmentDetailsTable
-                        enrollments={enrollments}
-                        statusOptions={EnrollmentStatusOptions}
-                        selectedResidents={selectedResidents}
-                        toggleSelection={toggleSelection}
-                        handleSelectAll={handleSelectAll}
-                        areAllSelected={areAllSelected}
-                        canToggle={canToggle}
-                        isEditable={isEditable}
-                        handleChange={handleChange}
-                        handleShowCompletionDetails={
-                            handleShowCompletionDetails
+                <div className="flex gap-2">
+                    {selectedResidents.length > 0 && (
+                        <button
+                            className="button btn-secondary"
+                            onClick={handleOpenModalGraduate}
+                        >
+                            Graduate Selected
+                        </button>
+                    )}
+                    <button
+                        className="button btn-primary"
+                        onClick={() =>
+                            navigate(
+                                `/program-classes/${class_id}/enrollments/add`
+                            )
                         }
-                        showOthers={showOthers}
-                        setShowOthers={setShowOthers}
+                    >
+                        Add Resident
+                    </button>
+                </div>
+            </div>
+            {!isLoading && !error && (
+                <ClassEnrollmentDetailsTable
+                    enrollments={enrollments}
+                    statusOptions={EnrollmentStatusOptions}
+                    selectedResidents={selectedResidents}
+                    toggleSelection={toggleSelection}
+                    handleSelectAll={handleSelectAll}
+                    areAllSelected={areAllSelected}
+                    canToggle={canToggle}
+                    isEditable={isEditable}
+                    handleChange={handleChange}
+                    handleShowCompletionDetails={handleShowCompletionDetails}
+                    showOthers={showOthers}
+                    setShowOthers={setShowOthers}
+                />
+            )}
+            <div className="flex justify-center m-2">
+                {meta && (
+                    <Pagination
+                        meta={meta}
+                        setPage={setPage}
+                        setPerPage={setPerPage}
                     />
                 )}
-                <div className="flex justify-center m-2">
-                    {meta && (
-                        <Pagination
-                            meta={meta}
-                            setPage={setPage}
-                            setPerPage={setPerPage}
-                        />
-                    )}
-                </div>
-                <TextOnlyModal
-                    ref={confirmStateChangeModal}
-                    type={TextModalType.Confirm}
-                    title={'Confirm Enrollment Action'}
-                    text={`Are you sure you want to permanently change the status to ${
-                        changeStatusValue?.status ?? 'Completed'
-                    } for ${changeStatusValue?.name_full ?? 'the selected users'}? This action cannot be undone.`}
-                    onSubmit={() => {
-                        void handleSubmitEnrollmentChange();
-                    }}
-                    onClose={() => {
-                        if (confirmStateChangeModal.current) {
-                            confirmStateChangeModal.current.close();
-                        }
-                        setChangeStatusValue(undefined);
-                    }}
-                />
-                <CompletionDetailsModal
-                    enrollment={completionDetails}
-                    modalRef={completionDetailsModal}
-                    onClose={() => setCompletionDetails(null)}
-                />
             </div>
+            <TextOnlyModal
+                ref={confirmStateChangeModal}
+                type={TextModalType.Confirm}
+                title={'Confirm Enrollment Action'}
+                text={`Are you sure you want to permanently change the status to ${
+                    changeStatusValue?.status ?? 'Completed'
+                } for ${changeStatusValue?.name_full ?? 'the selected users'}? This action cannot be undone.`}
+                onSubmit={() => {
+                    void handleSubmitEnrollmentChange();
+                }}
+                onClose={() => {
+                    if (confirmStateChangeModal.current) {
+                        confirmStateChangeModal.current.close();
+                    }
+                    setChangeStatusValue(undefined);
+                }}
+            />
+            <CompletionDetailsModal
+                enrollment={completionDetails}
+                modalRef={completionDetailsModal}
+                onClose={() => setCompletionDetails(null)}
+            />
         </div>
     );
 }
