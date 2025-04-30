@@ -183,7 +183,7 @@ type EnrollmentDetails struct {
 	CompletionDt string `json:"completion_dt"`
 }
 
-func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, progId, classId int, status string) ([]EnrollmentDetails, error) {
+func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, classId int, status string) ([]EnrollmentDetails, error) {
 	content := make([]EnrollmentDetails, 0, args.PerPage)
 	search := args.SearchQuery()
 	tx := db.WithContext(args.Ctx).Table("program_class_enrollments pse").Select("pse.*, u.name_last || ', ' || u.name_first as name_full, u.doc_id, c.name as class_name, c.start_dt, pc.created_at as completion_dt").

@@ -23,7 +23,6 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 }
 
 func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")

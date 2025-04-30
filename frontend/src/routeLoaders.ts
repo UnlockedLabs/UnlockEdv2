@@ -183,6 +183,27 @@ export const getProgramTitle: LoaderFunction = async ({
     };
 };
 
+export const getClassTitle: LoaderFunction = async ({
+    params
+}): Promise<ClassLoaderData> => {
+    const { class_id } = params;
+    let cls: Class | undefined;
+    let className = 'Class Management';
+    const classResp = (await API.get(
+        `program-classes/${class_id}`
+    )) as ServerResponseOne<Class>;
+    if (classResp.success) {
+        cls = classResp.data;
+        className = cls.name;
+    } else {
+        return { title: className, redirect: '/404' };
+    }
+    return {
+        title: className,
+        class: cls
+    };
+};
+
 export const getClassMgmtData: LoaderFunction = async ({
     params
 }): Promise<ClassLoaderData> => {
