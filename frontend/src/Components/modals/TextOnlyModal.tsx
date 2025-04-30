@@ -41,7 +41,11 @@ export const TextOnlyModal = forwardRef(function TextModal(
                     <span className={`text-3xl font-semibold text-neutral`}>
                         {title}
                     </span>
-                    {typeof text === 'string' ? <p>{text}</p> : text}
+                    {typeof text === 'string' ? (
+                        <p className="whitespace-pre-line">{text}</p>
+                    ) : (
+                        text
+                    )}
                     {type === TextModalType.Information ? (
                         <>{children}</>
                     ) : (

@@ -386,7 +386,8 @@ export default function AdminManagement() {
                 ref={showUserPassword}
                 type={TextModalType.Information}
                 title={'New Password'}
-                text={`Copy your password now. If you lose it, you'll need to generate a new one.`}
+                text={` Copy the password below and share it with the admin. 
+                        If it's lost, you’ll need to reset it again.`}
                 onSubmit={() => {}} //eslint-disable-line
                 onClose={() => handleCancelModal(showUserPassword)}
             >
