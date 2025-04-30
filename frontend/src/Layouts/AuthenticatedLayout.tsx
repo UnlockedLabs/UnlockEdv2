@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '@/Components/Navbar';
 import { useMatches, UIMatch, Outlet, useLoaderData } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
@@ -55,6 +55,11 @@ export default function AuthenticatedLayout() {
         setIsNavPinned(false);
         setIsNavOpen(true);
     };
+    useEffect(() => {
+        if (!isNavPinned) {
+            setIsNavOpen(false);
+        }
+    }, [location.pathname]);
 
     const togglePin = () => {
         const newPinnedState = !isNavPinned;
