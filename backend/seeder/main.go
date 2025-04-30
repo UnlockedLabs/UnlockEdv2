@@ -229,7 +229,7 @@ func seedTestData(db *gorm.DB) {
 				log.Printf("Creating milestone for user %s", user.Username)
 			}
 		}
-		statuses := [8]models.ProgramEnrollmentStatus{
+		statuses := [6]models.ProgramEnrollmentStatus{
 			models.EnrollmentCancelled,
 			models.EnrollmentCompleted,
 			models.EnrollmentIncompleteWithdrawn,
