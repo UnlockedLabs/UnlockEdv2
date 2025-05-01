@@ -9,7 +9,7 @@ import (
 )
 
 func (srv *Server) registerAttendanceRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.Feature(models.ProgramAccess)
 	return []routeDef{
 		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, true, axx},
 		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, true, axx},
