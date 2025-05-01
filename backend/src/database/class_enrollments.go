@@ -42,15 +42,14 @@ func (db *DB) GetEnrollmentsForClass(page, perPage, classId int) (int64, []model
 	return total, content, nil
 }
 
-func (db *DB) GetAllActiveEnrollmentsForClassByClassID(classID int) ([]models.ProgramClassEnrollment, error) {
-	var content []models.ProgramClassEnrollment
-	err := db.
-		Where("class_id = ? AND enrollment_status = ?", classID, models.Enrolled).
-		Find(&content).Error
-	if err != nil {
-		return nil, newNotFoundDBError(err, "class enrollments")
+func (db *DB) GetAllActiveEnrollmentsForClassIDs(classIDs []int) ([]models.ProgramClassEnrollment, error) {
+	var enrollments []models.ProgramClassEnrollment
+	if err := db.
+		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
+		Find(&enrollments).Error; err != nil {
+		return nil, newNotFoundDBError(err, "active class enrollments")
 	}
-	return content, nil
+	return enrollments, nil
 }
 
 func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityID uint) (int64, []models.ProgramClassEnrollment, error) {
@@ -181,6 +180,17 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status s
 		Where("class_id = ? AND user_id IN (?)", classId, userIds).
 		Update("enrollment_status", status).Error; err != nil {
 		return newUpdateDBError(err, "class enrollment status")
+	}
+	return nil
+}
+
+func (db *DB) UpdateProgramClassEnrollmentsPerEnrollment(classIDs []int, status string) error {
+	if err := db.
+		Model(&models.ProgramClassEnrollment{}).
+		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
+		Update("enrollment_status", status).
+		Error; err != nil {
+		return newUpdateDBError(err, "class enrollment statuses")
 	}
 	return nil
 }
