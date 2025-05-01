@@ -283,7 +283,7 @@ export default function Navbar({
                                     </li>
                                 </>
                             )}
-                            {/*
+                            {/* TODO: remove this comment: */}
                             {hasFeature(user, FeatureAccess.ProgramAccess) && (
                                 <li>
                                     <Link to="/programs">
@@ -291,7 +291,7 @@ export default function Navbar({
                                         Programs
                                     </Link>
                                 </li>
-                            )} */}
+                            )}
                             <li>
                                 <button onClick={onToggleHelpCenter}>
                                     <ULIComponent
