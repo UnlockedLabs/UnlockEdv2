@@ -1,23 +1,71 @@
 import { AUTHCALLBACK } from '@/useAuth';
+import { ErrorType } from '@/common';
+import { useNavigate } from 'react-router-dom';
 
-export default function Error() {
+interface ErrorPageProps {
+    type?: ErrorType;
+    back?: boolean;
+    message?: string;
+    navigateTo?: string;
+}
+
+const errorMap: Record<
+    ErrorType,
+    { message: string; buttonText: string; onClick: () => void }
+> = {
+    unauthorized: {
+        message:
+            'You are not authorized to view this page, please contact your administrator if you believe you have reached this page in error.',
+        buttonText: 'Home Page',
+        onClick: () => (window.location.href = AUTHCALLBACK)
+    },
+    'not-found': {
+        message: 'The page you requested was not found.',
+        buttonText: 'Home Page',
+        onClick: () => (window.location.href = AUTHCALLBACK)
+    },
+    'server-error': {
+        message: 'An unexpected error occurred. Please try again later.',
+        buttonText: 'Home Page',
+        onClick: () => (window.location.href = AUTHCALLBACK)
+    },
+    'auth-required': {
+        message: 'You need to log in to access this page.',
+        buttonText: 'Login',
+        onClick: () => (window.location.href = AUTHCALLBACK)
+    }
+};
+export default function Error({
+    type = 'server-error',
+    back = false,
+    message: customMessage,
+    navigateTo
+}: ErrorPageProps) {
+    const { message: defaultMessage, buttonText, onClick } = errorMap[type];
+    const navigate = useNavigate();
+    const label = back ? 'Go Back' : buttonText;
+    const displayMessage = customMessage ?? defaultMessage;
+    const clickHandler = navigateTo
+        ? () => navigate(navigateTo)
+        : back
+          ? () => navigate(-1)
+          : onClick;
+
     return (
-        <>
-            <div title="Error" />
-            <div className="text-center">
-                <div className="mb-4 font-medium text-sm text-green-600">
-                    Either there has been an unexpected error, or the page you
-                    requested was not found.
+        <div className="flex items-center justify-center min-h-screen">
+            <div className="card w-96 shadow-md ">
+                <div className="card-body text-center">
+                    <div className="mb-4 font-medium text-sm text-error">
+                        {displayMessage}
+                    </div>
+                    <button
+                        className="btn btn-primary btn-outline"
+                        onClick={clickHandler}
+                    >
+                        {label}
+                    </button>
                 </div>
-                <button
-                    className="btn btn-primary btn-outline"
-                    onClick={() => {
-                        window.location.href = AUTHCALLBACK;
-                    }}
-                >
-                    Home Page
-                </button>
             </div>
-        </>
+        </div>
     );
 }
