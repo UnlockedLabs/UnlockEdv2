@@ -25,18 +25,9 @@ func NewDB(db *gorm.DB) *DB {
 	return &DB{db}
 }
 
-func ValidateNameCharacters(fl validator.FieldLevel) bool {
-	for _, char := range fl.Field().String() {
-		if !unicode.IsLetter(char) && !unicode.IsSpace(char) && char != '-' {
-			return false
-		}
-	}
-	return true
-}
-
 func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 	for _, char := range fl.Field().String() {
-		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) {
+		if !unicode.IsDigit(char) && !unicode.IsLetter(char) && !unicode.IsSpace(char) && char != '-' {
 			return false
 		}
 	}
@@ -46,10 +37,6 @@ func ValidateAlphaNumSpace(fl validator.FieldLevel) bool {
 var Validate = sync.OnceValue(func() *validator.Validate {
 	Ins := validator.New(validator.WithRequiredStructEnabled())
 	err := Ins.RegisterValidation("alphanumspace", ValidateAlphaNumSpace, false)
-	if err != nil {
-		logrus.Fatalf("Failed to register custom validation: %v", err)
-	}
-	err = Ins.RegisterValidation("namecharacters", ValidateNameCharacters, false)
 	if err != nil {
 		logrus.Fatalf("Failed to register custom validation: %v", err)
 	}
