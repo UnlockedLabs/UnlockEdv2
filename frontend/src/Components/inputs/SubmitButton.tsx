@@ -1,12 +1,10 @@
 export function SubmitButton({
     errorMessage,
     label = 'Submit',
-    verifyResidentDOCIDMode,
     isEnabled
 }: {
     errorMessage?: string;
     label?: string;
-    verifyResidentDOCIDMode?: boolean;
     isEnabled?: boolean;
 }) {
     return (
@@ -15,7 +13,7 @@ export function SubmitButton({
                 className="btn btn-primary"
                 type="submit"
                 value={label}
-                disabled={verifyResidentDOCIDMode ? !isEnabled : false}
+                disabled={!isEnabled}
             />
             {errorMessage ? (
                 <div className="text-error text-center pt-2">
