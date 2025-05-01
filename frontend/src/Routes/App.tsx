@@ -16,7 +16,6 @@ import StudentLayer0 from '@/Pages/StudentLayer0';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
-import UnauthorizedNotFound from '@/Pages/Unauthorized';
 import { getFacilities, getProviderPlatforms } from '@/routeLoaders';
 import ResidentProfile from '@/Pages/ResidentProfile';
 
@@ -59,11 +58,11 @@ export const globalRoutes = {
         },
         {
             path: '*',
-            element: <UnauthorizedNotFound which="notFound" />
+            element: <Error type="not-found" />
         },
         {
             path: '/404',
-            element: <UnauthorizedNotFound which="notFound" />
+            element: <Error type="not-found" />
         },
         {
             path: '/reset-password',

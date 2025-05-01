@@ -1,5 +1,6 @@
 import { canSwitchFacility, isAdministrator, useAuth } from '@/useAuth';
 import StatsCard from '@/Components/StatsCard';
+import Error from '@/Pages/Error';
 import {
     AdminLayer2Join,
     Facility,
@@ -8,7 +9,6 @@ import {
     ServerResponseOne
 } from '@/common';
 import useSWR from 'swr';
-import UnauthorizedNotFound from './Unauthorized';
 import { useEffect, useState } from 'react';
 
 export default function AdminLayer2() {
@@ -43,7 +43,7 @@ export default function AdminLayer2() {
 
     if (error || isLoading || !user) return <div></div>;
     if (!isAdministrator(user)) {
-        return <UnauthorizedNotFound which="unauthorized" />;
+        return <Error type="unauthorized" />;
     }
 
     return (
