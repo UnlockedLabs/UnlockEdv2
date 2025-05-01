@@ -30,8 +30,7 @@ interface FormModalProps<T extends FieldValues> {
     submitText?: string;
     /** Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs */
     extValidationIsValid?: () => void;
-    verifyResidentDOCIDMode?: boolean;
-    isDocIDMatch?: boolean;
+    enableSubmit?: boolean;
 }
 
 export interface FormError {
@@ -49,8 +48,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         submitText,
         extValidationIsValid = () => {}, //eslint-disable-line
         error,
-        verifyResidentDOCIDMode,
-        isDocIDMatch
+        enableSubmit = true,
     }: FormModalProps<T>,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -204,18 +202,14 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                 <div>
                                     <SubmitButton
                                         label={submitText}
-                                        isEnabled={isDocIDMatch}
-                                        verifyResidentDOCIDMode
+                                        isEnabled={enableSubmit}
                                     />
                                 </div>
                             </div>
                         ) : (
                             <SubmitButton
                                 label={submitText}
-                                isEnabled={isDocIDMatch}
-                                verifyResidentDOCIDMode={
-                                    verifyResidentDOCIDMode
-                                }
+                                isEnabled={enableSubmit}
                             />
                         )}
                     </form>

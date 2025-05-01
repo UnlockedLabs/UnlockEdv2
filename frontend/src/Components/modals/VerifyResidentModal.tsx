@@ -96,6 +96,8 @@ export const VerifyResidentModal = forwardRef(function (
             </>
         );
     };
+    // isDocIDMatch is used to track whether the entered document ID matches the target user's ID then provide bolean value to enable/disable submitButton on the FormModal
+    const [isDocIDMatch, setIsDocIDMatch] = useState(false);
 
     const residentInputs: Input[] = [
         {
@@ -118,7 +120,6 @@ export const VerifyResidentModal = forwardRef(function (
             }
         }
     ];
-    const [isDocIDMatch, setIsDocIDMatch] = useState(false);
     return (
         <FormModal
             title={'Transfer Resident'}
@@ -137,8 +138,7 @@ export const VerifyResidentModal = forwardRef(function (
             ref={verifyResidentModal}
             showCancel={true}
             submitText="Continue to confirmation"
-            verifyResidentDOCIDMode
-            isDocIDMatch={isDocIDMatch}
+            enableSubmit={isDocIDMatch}
         />
     );
 });

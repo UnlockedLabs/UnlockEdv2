@@ -9,7 +9,7 @@ import {
 } from '@/common';
 import { KeyedMutator } from 'swr';
 import { Validate } from 'react-hook-form';
-import React from 'react';
+import React, { JSX } from 'react';
 import { AdminRoles } from '@/useAuth';
 
 export enum TextModalType {
@@ -57,7 +57,6 @@ export interface Input {
     uniqueComponent?: JSX.Element;
     disabled?: boolean;
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    isValidDoc?: boolean;
 }
 
 export interface InputWithOptions<T> extends Input {
