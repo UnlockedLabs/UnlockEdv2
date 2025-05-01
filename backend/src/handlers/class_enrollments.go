@@ -57,11 +57,11 @@ func (srv *Server) handleGetEnrollmentsForProgram(w http.ResponseWriter, r *http
 	}
 	log.add("status", status)
 	args := srv.getQueryContext(r)
-	enrollemnts, err := srv.Db.GetProgramClassEnrollmentsForProgram(&args, classId, status)
+	enrollments, err := srv.Db.GetProgramClassEnrollmentsForProgram(&args, classId, status)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writePaginatedResponse(w, http.StatusOK, enrollemnts, args.IntoMeta())
+	return writePaginatedResponse(w, http.StatusOK, enrollments, args.IntoMeta())
 }
 
 func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Request, log sLog) error {
