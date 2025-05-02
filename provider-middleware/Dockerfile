@@ -5,7 +5,7 @@ ARG GOLANG_VERSION=1.23.2
 FROM mwader/static-ffmpeg:$FFMPEG_VERSION AS ffmpeg
 
 FROM golang:$GOLANG_VERSION AS yt-dlp
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/download/2025.02.19/yt-dlp -o /yt-dlp && chmod a+x /yt-dlp
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/download/2025.04.30/yt-dlp -o /yt-dlp && chmod a+x /yt-dlp
 
 FROM golang:$GOLANG_VERSION-alpine as builder
 WORKDIR /app
