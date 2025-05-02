@@ -234,35 +234,31 @@ func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 }
 
 func (db *DB) IncrementUserLogin(user *models.User) (int64, error) {
+	var total int64
 	if err := db.Exec(
-		`INSERT INTO login_metrics (user_id, total, last_login) 
+		`INSERT INTO login_metrics (user_id, total, last_login)
 		 VALUES (?, 1, CURRENT_TIMESTAMP) 
 		 ON CONFLICT (user_id) DO UPDATE 
-		 SET total = login_metrics.total + 1, last_login = CURRENT_TIMESTAMP`,
-		user.ID).Error; err != nil {
+		 SET total = login_metrics.total + 1, last_login = CURRENT_TIMESTAMP
+		 RETURNING total`,
+		user.ID).Scan(&total).Error; err != nil {
 		log.Errorf("Error incrementing login count: %v", err)
 		return 0, newUpdateDBError(err, "login_metrics")
 	}
 	now := time.Now()
 	rounded := now.Truncate(time.Hour)
-
-	if err := db.Exec(
-		`INSERT INTO login_activity (time_interval, facility_id, total_logins)
-		 VALUES (?, ?, ?)
-		 ON CONFLICT (time_interval, facility_id)
-		 DO UPDATE SET total_logins = login_activity.total_logins + 1`,
-		rounded, user.FacilityID, 1).Error; err != nil {
-		log.Errorf("Error incrementing login activity: %v", err)
-		return 0, newUpdateDBError(err, "login_activity")
+	if !user.IsAdmin() {
+		if err := db.Exec(
+			`INSERT INTO login_activity (time_interval, facility_id, total_logins)
+			 VALUES (?, ?, ?)
+			 ON CONFLICT (time_interval, facility_id)
+			 DO UPDATE SET total_logins = login_activity.total_logins + 1`,
+			rounded, user.FacilityID, 1).Error; err != nil {
+			log.Errorf("Error incrementing login activity: %v", err)
+			return 0, newUpdateDBError(err, "login_activity")
+		}
 	}
-
-	var count int64
-	err := db.Model(&models.LoginMetrics{}).Select("total").Where("user_id = ?", user.ID).Scan(&count).Error
-	if err != nil {
-		log.Errorf("Error counting login metrics: %v", err)
-		return 0, newGetRecordsDBError(err, "login_metrics")
-	}
-	return count, nil
+	return total, nil
 }
 
 func (db *DB) LogUserSessionStarted(userID uint, sessionID string) {
@@ -292,13 +288,18 @@ func (db *DB) LogUserSessionEnded(userID uint, sessionID string) {
 	}
 }
 
-func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, active bool, days int, facilityId *uint) (int64, error) {
+func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, active bool, days int, facilityId *uint) (int64, int, error) {
 	var count int64
 	var tx *gorm.DB
 	join := "JOIN login_metrics on users.id = login_metrics.user_id"
 	tx = db.WithContext(args.Ctx).Model(&models.User{})
 	if days == -1 {
 		tx = tx.Joins(join)
+		sysAdmin, err := db.GetSystemAdmin()
+		if err != nil {
+			return 0, days, err
+		}
+		days = int(time.Since(sysAdmin.CreatedAt).Hours() / 24)
 	} else {
 		daysAgo := time.Now().AddDate(0, 0, -days)
 		if active {
@@ -311,17 +312,20 @@ func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, act
 	if facilityId != nil {
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
+	tx = tx.Where("role = 'student'")
 	if err := tx.Count(&count).Error; err != nil {
-		return 0, newGetRecordsDBError(err, "users")
+		return 0, days, newGetRecordsDBError(err, "users")
 	}
-	return count, nil
+	if days == 0 {
+		days = 1
+	}
+	return count, days, nil
 }
 
-func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facilityId *uint) (int64, int64, error) {
-	var admin_count int64
+func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
 	var resident_count int64
 	daysAgo := time.Now().AddDate(0, 0, -days)
-	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role ='student'")
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
 	if days != -1 {
 		tx = tx.Where("created_at >= ?", daysAgo)
 	}
@@ -329,19 +333,9 @@ func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facility
 		tx = tx.Where("facility_id = ?", *facilityId)
 	}
 	if err := tx.Count(&resident_count).Error; err != nil {
-		return 0, 0, newGetRecordsDBError(err, "users")
+		return 0, newGetRecordsDBError(err, "users")
 	}
-	tx = db.WithContext(args.Ctx).Model(&models.User{}).Where("role IN ?", models.AdminRoles)
-	if days != -1 {
-		tx = tx.Where("created_at >= ?", daysAgo)
-	}
-	if facilityId != nil {
-		tx = tx.Where("facility_id = ?", *facilityId)
-	}
-	if err := tx.Count(&admin_count).Error; err != nil {
-		return 0, 0, newGetRecordsDBError(err, "users")
-	}
-	return resident_count, admin_count, nil
+	return resident_count, nil
 }
 
 func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
@@ -360,24 +354,16 @@ func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *ui
 	return total, nil
 }
 
-func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64, int64, error) {
+func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64, error) {
 	var totalResidents int64
-	var totalAdmins int64
-	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
+	adminTx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
 	if facilityId != nil {
-		tx = tx.Where("facility_id = ?", *facilityId)
+		adminTx = adminTx.Where("facility_id = ?", *facilityId)
 	}
-	if err := tx.Count(&totalResidents).Error; err != nil {
-		return 0, 0, newGetRecordsDBError(err, "users")
+	if err := adminTx.Count(&totalResidents).Error; err != nil {
+		return 0, newGetRecordsDBError(err, "users")
 	}
-	tx = db.WithContext(args.Ctx).Model(&models.User{}).Where("role IN ?", models.AdminRoles)
-	if facilityId != nil {
-		tx = tx.Where("facility_id = ?", *facilityId)
-	}
-	if err := tx.Count(&totalAdmins).Error; err != nil {
-		return 0, 0, newGetRecordsDBError(err, "users")
-	}
-	return totalResidents, totalAdmins, nil
+	return totalResidents, nil
 }
 
 func (db *DB) GetLoginActivity(args *models.QueryContext, days int, facilityID *uint) ([]models.LoginActivity, error) {
