@@ -42,16 +42,6 @@ func (db *DB) GetEnrollmentsForClass(page, perPage, classId int) (int64, []model
 	return total, content, nil
 }
 
-func (db *DB) GetAllActiveEnrollmentsForClassIDs(classIDs []int) ([]models.ProgramClassEnrollment, error) {
-	var enrollments []models.ProgramClassEnrollment
-	if err := db.
-		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
-		Find(&enrollments).Error; err != nil {
-		return nil, newNotFoundDBError(err, "active class enrollments")
-	}
-	return enrollments, nil
-}
-
 func (db *DB) GetProgramClassEnrollmentsForFacility(page, perPage int, facilityID uint) (int64, []models.ProgramClassEnrollment, error) {
 	content := []models.ProgramClassEnrollment{}
 	var total int64 //count
