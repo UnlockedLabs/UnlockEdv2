@@ -240,7 +240,7 @@ func (db *DB) IncrementUserLogin(username string) (int64, error) {
 		return 0, newGetRecordsDBError(err, "users")
 	}
 	var total int64
-	if err := db.Exec(
+	if err := db.Raw(
 		`INSERT INTO login_metrics (user_id, total, last_login)
 		 VALUES (?, 1, CURRENT_TIMESTAMP) 
 		 ON CONFLICT (user_id) DO UPDATE 
@@ -250,15 +250,15 @@ func (db *DB) IncrementUserLogin(username string) (int64, error) {
 		log.Errorf("Error incrementing login count: %v", err)
 		return 0, newUpdateDBError(err, "login_metrics")
 	}
-	now := time.Now()
-	rounded := now.Truncate(time.Hour)
 	if !user.IsAdmin() {
+		now := time.Now()
+		rounded := now.Truncate(time.Hour)
 		if err := db.Exec(
 			`INSERT INTO login_activity (time_interval, facility_id, total_logins)
-			 VALUES (?, ?, ?)
+			 VALUES (?, ?, 1)
 			 ON CONFLICT (time_interval, facility_id)
 			 DO UPDATE SET total_logins = login_activity.total_logins + 1`,
-			rounded, user.FacilityID, 1).Error; err != nil {
+			rounded, user.FacilityID).Error; err != nil {
 			log.Errorf("Error incrementing login activity: %v", err)
 			return 0, newUpdateDBError(err, "login_activity")
 		}

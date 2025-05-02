@@ -356,7 +356,6 @@ export interface LoginMetrics {
         percent_active: number;
         percent_inactive: number;
         total_residents: number;
-        total_admins: number;
         facility: string;
         new_residents_added: number;
         new_admins_added: number;
