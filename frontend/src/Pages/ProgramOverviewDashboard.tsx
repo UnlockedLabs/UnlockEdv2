@@ -27,6 +27,7 @@ import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/useAuth';
+import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 
 export default function ProgramOverviewDashboard() {
     const { id } = useParams<{ id: string }>();
@@ -162,12 +163,64 @@ export default function ProgramOverviewDashboard() {
     const isAddClassDisabled = !program.facilities.some(
         (facility) => facility.id === userFacilityId
     );
+
+    function commaSeparatedList<T extends string>(
+        enumArray: T[] | null | undefined
+    ): string {
+        if (!Array.isArray(enumArray) || enumArray.length === 0) return '';
+        return enumArray
+            .map((ele) => String(ele).replace(/_/g, ' '))
+            .join(', ');
+    }
     return (
         <div className="p-4 px-5">
-            <h1 className=" mb-2">{program?.name}</h1>
-            <p className="mb-4 body body-small ">{program?.description}</p>
-            <div className="flex gap-4 mb-8 ">
-                <div className="flex flex-col gap-4 h-[250px]">
+            <div className="card card-row-padding flex flex-col gap-4">
+                <div className="grid grid-cols-4 gap-4 items-stretch">
+                    <div className="col-span-2">
+                        <h2 className="mb-2">{program?.name}</h2>
+                        <p className="mb-4 body body-small">
+                            {program?.description}
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h3 className="body mb-1">Program Status</h3>
+                                <p className="mb-4 body body-small">
+                                    {program?.is_active
+                                        ? 'Available'
+                                        : 'Inactive'}
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="body mb-1">Credit Type</h3>
+                                <p className="mb-4 body body-small">
+                                    {' '}
+                                    {commaSeparatedList(
+                                        program?.credit_types.map(
+                                            (ct) => ct.credit_type
+                                        )
+                                    )}
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="body mb-1">Program Type</h3>
+                                <p className="mb-4 body body-small">
+                                    {commaSeparatedList(
+                                        program?.program_types.map(
+                                            (pt) => pt.program_type
+                                        )
+                                    )}
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="body mb-1">Funding Type</h3>
+                                <p className="mb-4 body body-small">
+                                    {commaSeparatedList([
+                                        program?.funding_type
+                                    ])}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                     <StatsCard
                         title="Active Enrollments"
                         number={program?.active_enrollments.toString() ?? '0'}
@@ -179,16 +232,9 @@ export default function ProgramOverviewDashboard() {
                         label="%"
                     />
                 </div>
-
-                <div className="flex-1 card p-2 h-[250px]">
-                    <h3 className="text-lg font-bold text-teal-4 text-center mb-2">
-                        PROGRAM OUTCOMES
-                    </h3>
-                    <ProgramOutcomes />
-                </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4 mt-4">
                 <div className="flex flex-row gap-x-2">
                     <SearchBar
                         searchTerm={searchTerm}
@@ -389,6 +435,20 @@ export default function ProgramOverviewDashboard() {
                         />
                     </div>
                 )}
+            </div>
+            <div className="grid grid-cols-3 gap-6 items-stretch mt-4">
+                <div className="col-span-1">
+                    <ActivityHistoryCard programId={id} />
+                </div>
+
+                <div className="col-span-2">
+                    <div className="flex-1 card p-2 h-[250px]">
+                        <h3 className="text-lg font-bold text-teal-4 text-center mb-2">
+                            PROGRAM OUTCOMES
+                        </h3>
+                        <ProgramOutcomes />
+                    </div>
+                </div>
             </div>
 
             <TextOnlyModal

@@ -191,8 +191,6 @@ export default function ProgramManagement() {
         setPage(1);
     }
 
-    console.log(programsFacilitiesStats);
-
     return (
         <div className="px-5 py-4 flex flex-col gap-4 overflow-x-hidden">
             <div className="flex flex-row justify-end">

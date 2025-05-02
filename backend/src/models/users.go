@@ -117,7 +117,7 @@ const (
 	FacilityTransfer ActivityHistoryAction = "facility_transfer"
 	SetPassword      ActivityHistoryAction = "set_password"
 	ResetPassword    ActivityHistoryAction = "reset_password"
-	ClassHistory     ActivityHistoryAction = "class_history"
+	PrgClassHistory  ActivityHistoryAction = "prgcls_history"
 )
 
 type ActivityHistoryResponse struct {

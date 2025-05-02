@@ -3,6 +3,8 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
@@ -15,6 +17,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
 		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
 		{"GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx},
+		{"GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx},
 		{"GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx},
 		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
 		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx},
@@ -137,42 +140,63 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	args := srv.getQueryContext(r)
-	classHistory, err := srv.Db.GetClassHistory(id, &args)
+	paginationMeta, pagedHistoryEvents, err := srv.getPagedHistoryEvents(id, "program_classes", &args, log)
 	if err != nil {
-		return newDatabaseServiceError(err)
+		return err
 	}
-	classHistoryEvents := make([]models.ActivityHistoryResponse, 0)
+	return writePaginatedResponse(w, http.StatusOK, pagedHistoryEvents, paginationMeta)
+}
+
+func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	args := srv.getQueryContext(r)
+	paginationMeta, pagedHistoryEvents, err := srv.getPagedHistoryEvents(id, "programs", &args, log)
+	if err != nil {
+		return err
+	}
+	return writePaginatedResponse(w, http.StatusOK, pagedHistoryEvents, paginationMeta)
+}
+
+func (srv *Server) getPagedHistoryEvents(id int, tableName string, args *models.QueryContext, log sLog) (models.PaginationMeta, []models.ActivityHistoryResponse, error) {
 	var (
 		userIDs            []uint
 		paginationMeta     models.PaginationMeta
 		pagedHistoryEvents []models.ActivityHistoryResponse
 	)
-	for _, history := range classHistory {
+	programClassesHistory, err := srv.Db.GetProgramClassesHistory(id, tableName, args)
+	if err != nil {
+		return paginationMeta, nil, newDatabaseServiceError(err)
+	}
+	programHistoryEvents := make([]models.ActivityHistoryResponse, 0)
+	for _, history := range programClassesHistory {
 		historyEvents, userID, err := history.ConvertAndCompare()
 		if err != nil {
 			log.errorf("error occurred while converting activity history events, error is %v", err)
 			continue
 		}
-		classHistoryEvents = append(classHistoryEvents, historyEvents...)
+		programHistoryEvents = append(programHistoryEvents, historyEvents...)
 		if userIDs == nil || !slices.Contains(userIDs, userID) {
 			userIDs = append(userIDs, userID)
 		}
 	}
 	if len(userIDs) > 0 {
-		users, err := srv.Db.GetUsersByIDs(userIDs, &args)
+		users, err := srv.Db.GetUsersByIDs(userIDs, args)
 		if err != nil {
-			return newDatabaseServiceError(err)
+			return paginationMeta, nil, newDatabaseServiceError(err)
 		}
-		for i := range classHistoryEvents {
+		for i := range programHistoryEvents {
 			index := slices.IndexFunc(users, func(u models.User) bool {
-				return u.ID == classHistoryEvents[i].UserID
+				return u.ID == programHistoryEvents[i].UserID
 			})
 			if index != -1 {
-				classHistoryEvents[i].AdminUsername = &users[index].Username
+				programHistoryEvents[i].AdminUsername = &users[index].Username
 			}
 		}
 	}
-	totalHistoryEvents := len(classHistoryEvents)
+	totalHistoryEvents := len(programHistoryEvents)
 	if totalHistoryEvents > 0 {
 		paginationMeta = models.NewPaginationInfo(args.Page, args.PerPage, int64(totalHistoryEvents))
 		start := args.CalcOffset()
@@ -180,24 +204,38 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 		if end > totalHistoryEvents {
 			end = totalHistoryEvents
 		}
-		pagedHistoryEvents = classHistoryEvents[start:end]
+		pagedHistoryEvents = programHistoryEvents[start:end]
 	} else {
 		paginationMeta = models.NewPaginationInfo(args.Page, args.PerPage, 1)
 	}
 	if totalHistoryEvents == 0 || (int64(args.Page) == int64(paginationMeta.LastPage) && len(pagedHistoryEvents) < args.PerPage) {
-		class, err := srv.Db.GetClassCreatedAtAndBy(id, &args)
-		if err != nil {
-			return newDatabaseServiceError(err)
+		var (
+			createdByDetails models.ActivityHistoryResponse
+		)
+		switch tableName {
+		case "programs":
+			createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, args)
+			if err != nil {
+				return paginationMeta, nil, newDatabaseServiceError(err)
+			}
+			createdByDetails.FieldName = "program"
+		case "program_classes":
+			createdByDetails, err = srv.Db.GetClassCreatedAtAndBy(id, args)
+			if err != nil {
+				return paginationMeta, nil, newDatabaseServiceError(err)
+			}
+			createdByDetails.FieldName = "class"
+		default:
+			return paginationMeta, nil, newBadRequestServiceError(errors.New("table name not recognized"), fmt.Sprintf("table name %s not recognized", tableName))
 		}
-		class.Action = models.ClassHistory
-		class.FieldName = "class"
-		pagedHistoryEvents = append(pagedHistoryEvents, class)
+		createdByDetails.Action = models.PrgClassHistory
+		pagedHistoryEvents = append(pagedHistoryEvents, createdByDetails)
 		//count this record only if there are history events
 		if totalHistoryEvents > 0 {
 			paginationMeta.Total++
 		}
 	}
-	return writePaginatedResponse(w, http.StatusOK, pagedHistoryEvents, paginationMeta)
+	return paginationMeta, pagedHistoryEvents, nil
 }
 
 func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *http.Request, log sLog) error {

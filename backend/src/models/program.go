@@ -31,15 +31,17 @@ const (
 
 type Program struct {
 	DatabaseFields
-	Name        string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
-	Description string      `json:"description" gorm:"not null" validate:"required,max=255"`
-	FundingType FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
-	IsActive    bool        `json:"is_active" gorm:"not null"`
-	IsFavorited bool        `json:"is_favorited" gorm:"-"`
-	ArchivedAt  *time.Time  `json:"archived_at"`
+	Name         string      `json:"name" gorm:"not null;unique" validate:"required,max=255"`
+	Description  string      `json:"description" gorm:"not null" validate:"required,max=255"`
+	FundingType  FundingType `json:"funding_type" gorm:"type:funding_type" validate:"required"`
+	IsActive     bool        `json:"is_active" gorm:"not null"`
+	IsFavorited  bool        `json:"is_favorited" gorm:"-"`
+	ArchivedAt   *time.Time  `json:"archived_at"`
+	CreateUserID uint        `json:"create_user_id"`
+	UpdateUserID uint        `json:"update_user_id"`
 
-	ProgramTypes       []ProgramType       `json:"program_types" gorm:"foreignKey:ProgramID;references:ID"`
-	ProgramCreditTypes []ProgramCreditType `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID"`
+	ProgramTypes       []ProgramType       `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	ProgramCreditTypes []ProgramCreditType `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Facilities         []Facility          `json:"facilities" gorm:"many2many:facilities_programs;"`
 	Favorites          []ProgramFavorite   `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 	Classes            []ProgramClass      `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
@@ -48,19 +50,19 @@ type Program struct {
 func (Program) TableName() string { return "programs" }
 
 type ProgramType struct {
-	ProgramType ProgType `json:"program_type" gorm:"type:program_type" validate:"required"`
-	ProgramID   uint     `json:"program_id" gorm:"not null" validate:"required"`
+	ProgramType ProgType `json:"program_type" gorm:"primaryKey;type:program_type" validate:"required"`
+	ProgramID   uint     `json:"program_id" gorm:"primaryKey;not null" validate:"required"`
 
-	Program *Program `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
+	Program *Program `json:"program" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }
 
 func (ProgramType) TableName() string { return "program_types" }
 
 type ProgramCreditType struct {
-	CreditType CreditType `json:"credit_type" gorm:"type:credit_type" validate:"required"`
-	ProgramID  uint       `json:"program_id" gorm:"not null" validate:"required"`
+	CreditType CreditType `json:"credit_type" gorm:"primaryKey;type:credit_type" validate:"required"`
+	ProgramID  uint       `json:"program_id" gorm:"primaryKey;not null" validate:"required"`
 
-	Program *Program `json:"program" gorm:"foreignKey:ProgramID;references:ID"`
+	Program *Program `json:"program" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }
 
 func (ProgramCreditType) TableName() string { return "program_credit_types" }

@@ -87,9 +87,9 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	return classDetails, nil
 }
 
-func (db *DB) GetClassHistory(id int, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
+func (db *DB) GetProgramClassesHistory(id int, tableName string, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
 	history := []models.ProgramClassesHistory{}
-	if err := db.WithContext(args.Ctx).Order(args.OrderClause()).Find(&history, "parent_ref_id = ? and table_name = ?", id, "program_classes").Error; err != nil {
+	if err := db.WithContext(args.Ctx).Order(args.OrderClause()).Find(&history, "parent_ref_id = ? and table_name = ?", id, tableName).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_classes_history")
 	}
 	return history, nil

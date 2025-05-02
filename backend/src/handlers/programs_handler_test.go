@@ -122,10 +122,6 @@ func TestHandleUpdateProgram(t *testing.T) {
 		{"TestAdminCanUpdateProgram", "admin", map[string]any{"message": "Program deleted successfully"}, http.StatusOK, ""},
 		{"TestUserCannotUpdateProgram", "student", nil, http.StatusUnauthorized, ""},
 	}
-	typeInfo := models.ProgramTypeInfo{
-		ProgramTypes:       []models.ProgType{models.LifeSkills},
-		ProgramCreditTypes: []models.CreditType{models.EarnedTime},
-	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			form := getNewProgramForm()
@@ -139,8 +135,10 @@ func TestHandleUpdateProgram(t *testing.T) {
 			program.Description = programToUpdate.Description
 			program.FundingType = programToUpdate.FundingType
 			program.IsActive = programToUpdate.IsActive
+			program.ProgramCreditTypes = programToUpdate.CreditTypes
+			program.ProgramTypes = programToUpdate.ProgramTypes
 			if test.expectedStatusCode == http.StatusOK {
-				err := server.Db.CreateProgram(&program, &typeInfo)
+				err := server.Db.CreateProgram(&program)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
 				}
@@ -187,10 +185,6 @@ func TestHandleDeleteProgram(t *testing.T) {
 		{"TestUserCannotDeleteProgram", "student", nil, http.StatusUnauthorized, ""},
 		{"TestAdminCanDeleteProgram", "admin", map[string]any{"message": "Program deleted successfully"}, http.StatusNoContent, ""},
 	}
-	typeInfo := models.ProgramTypeInfo{
-		ProgramTypes:       []models.ProgType{models.LifeSkills},
-		ProgramCreditTypes: []models.CreditType{models.EarnedTime},
-	}
 	for _, test := range httpTests {
 		t.Run(test.testName, func(t *testing.T) {
 			var id uint
@@ -205,7 +199,9 @@ func TestHandleDeleteProgram(t *testing.T) {
 				program.Description = programToDelete.Description
 				program.FundingType = programToDelete.FundingType
 				program.IsActive = programToDelete.IsActive
-				err := server.Db.CreateProgram(&program, &typeInfo)
+				program.ProgramCreditTypes = programToDelete.CreditTypes
+				program.ProgramTypes = programToDelete.ProgramTypes
+				err := server.Db.CreateProgram(&program)
 				if err != nil {
 					t.Fatalf("unable to create program, error is %v", err)
 				}
@@ -291,8 +287,16 @@ func getNewProgramForm() map[string]any {
 		Description: "Testing program",
 		FundingType: models.FederalGrants,
 		IsActive:    true,
-		CreditType:  []models.CreditType{models.EarnedTime},
-		ProgramType: []models.ProgType{models.ReEntry},
+		CreditTypes: []models.ProgramCreditType{
+			{
+				CreditType: models.EarnedTime,
+			},
+		},
+		ProgramTypes: []models.ProgramType{
+			{
+				ProgramType: models.ReEntry,
+			},
+		},
 	}
 	return form
 }

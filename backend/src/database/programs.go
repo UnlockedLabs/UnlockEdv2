@@ -16,7 +16,7 @@ type EnrollmentAndCompletionMetrics struct {
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
-	if err := db.Preload("Facilities").First(content, id).Error; err != nil {
+	if err := db.Preload("Facilities").Preload("ProgramTypes").Preload("ProgramCreditTypes").First(content, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "programs")
 	}
 	return content, nil
@@ -83,30 +83,13 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	return programs, nil
 }
 
-func (db *DB) CreateProgram(content *models.Program, types *models.ProgramTypeInfo) error {
+func (db *DB) CreateProgram(content *models.Program) error {
 	err := Validate().Struct(content)
 	if err != nil {
 		return NewDBError(err, "create programs validation error")
 	}
-
 	if err := db.Create(content).Error; err != nil {
 		return newCreateDBError(err, "programs")
-	}
-	for _, credit := range types.ProgramCreditTypes {
-		var creditType models.ProgramCreditType
-		creditType.CreditType = credit
-		creditType.ProgramID = content.ID
-		if err := db.Create(creditType).Error; err != nil {
-			return newCreateDBError(err, "credit type")
-		}
-	}
-	for _, programType := range types.ProgramTypes {
-		var programTypes models.ProgramType
-		programTypes.ProgramType = programType
-		programTypes.ProgramID = content.ID
-		if err := db.Create(programTypes).Error; err != nil {
-			return newCreateDBError(err, "credit type")
-		}
 	}
 	return nil
 }
@@ -247,4 +230,16 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	}
 	return programsTable, nil
 
+}
+
+func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (models.ActivityHistoryResponse, error) {
+	var programDetails models.ActivityHistoryResponse
+	if err := db.WithContext(args.Ctx).Table("programs p").
+		Select("p.created_at, u.username as admin_username").
+		Joins("join users u on u.id = p.create_user_id").
+		Where("p.id = ?", id).
+		Scan(&programDetails).Error; err != nil {
+		return programDetails, newNotFoundDBError(err, "programs")
+	}
+	return programDetails, nil
 }
