@@ -19,6 +19,7 @@ import EventAttendance from '@/Pages/EventAttendance';
 import ProgramClassManagement from '@/Pages/ProgramClassManagement';
 import ClassLayout from '@/Components/ClassLayout';
 import Error from '@/Pages/Error';
+import { Navigate } from 'react-router-dom';
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -62,6 +63,10 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
                 title: 'Class Management'
             },
             children: [
+                {
+                    path: ':class_id',
+                    element: <Navigate to="./dashboard" replace /> //added this for redirecting user to dashboard
+                },
                 {
                     path: ':class_id/dashboard',
                     loader: getClassMgmtData,
