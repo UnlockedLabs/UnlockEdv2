@@ -106,7 +106,7 @@ func (ProgramCompletion) TableName() string { return "program_completions" }
 type ProgramClassesHistory struct {
 	ID           uint            `json:"id"`
 	ParentRefID  uint            `json:"parent_ref_id"`
-	NameTable    string          `json:"table_name" gorm:"size:255"` // cant use TableName because used below
+	NameTable    string          `json:"table_name" gorm:"column:table_name;size:255"` // cant use TableName because used below
 	BeforeUpdate json.RawMessage `json:"before_update" gorm:"type:json"`
 	AfterUpdate  json.RawMessage `json:"after_update" gorm:"type:json"`
 	CreatedAt    time.Time       `json:"created_at"`
@@ -116,36 +116,63 @@ func (ProgramClassesHistory) TableName() string { return "program_classes_histor
 
 func (pch *ProgramClassesHistory) ConvertAndCompare() ([]ActivityHistoryResponse, uint, error) {
 	var (
-		beforeUpdate, afterUpdate ProgramClass
-		err                       error
-		historyEvents             []ActivityHistoryResponse
-		updatedBy                 uint = 0
+		historyEvents       []ActivityHistoryResponse
+		updatedBy           uint = 0
+		beforeIfc, afterIfc any
+		compareFields       map[string]bool
 	)
+
 	beforeJSON := regexFixDates(pch.BeforeUpdate)
 	afterJSON := regexFixDates(pch.AfterUpdate)
-	err = json.Unmarshal(beforeJSON, &beforeUpdate)
-	if err != nil {
-		return nil, 0, err
+
+	switch pch.NameTable {
+	case "program_classes":
+		beforeClass := ProgramClass{}
+		afterClass := ProgramClass{}
+		if err := json.Unmarshal(beforeJSON, &beforeClass); err != nil {
+			return nil, 0, err
+		}
+		if err := json.Unmarshal(afterJSON, &afterClass); err != nil {
+			return nil, 0, err
+		}
+		beforeIfc = beforeClass
+		afterIfc = afterClass
+		updatedBy = afterClass.UpdateUserID
+		compareFields = map[string]bool{
+			"capacity":        true,
+			"name":            true,
+			"instructor_name": true,
+			"description":     true,
+			"archived_at":     true,
+			"status":          true,
+			"credit_hours":    true,
+		}
+	case "programs":
+		beforeProgram := Program{}
+		afterProgram := Program{}
+		if err := json.Unmarshal(beforeJSON, &beforeProgram); err != nil {
+			return nil, 0, err
+		}
+		if err := json.Unmarshal(afterJSON, &afterProgram); err != nil {
+			return nil, 0, err
+		}
+		beforeIfc = beforeProgram
+		afterIfc = afterProgram
+		updatedBy = afterProgram.UpdateUserID
+		compareFields = map[string]bool{
+			"name":         true,
+			"description":  true,
+			"funding_type": true,
+			"is_active":    true,
+			"archived_at":  true,
+		}
+	default:
+		return nil, 0, fmt.Errorf("unsupported table name: %s", pch.NameTable)
 	}
-	err = json.Unmarshal(afterJSON, &afterUpdate)
-	if err != nil {
-		return nil, 0, err
-	}
-	valBefore := reflect.ValueOf(beforeUpdate)
-	valAfter := reflect.ValueOf(afterUpdate)
-	kind := reflect.TypeOf(beforeUpdate)
-	if afterUpdate.UpdateUserID != 0 {
-		updatedBy = afterUpdate.UpdateUserID
-	}
-	var compareFields = map[string]bool{
-		"capacity":        true,
-		"name":            true,
-		"instructor_name": true,
-		"description":     true,
-		"archived_at":     true,
-		"status":          true,
-		"credit_hours":    true,
-	}
+
+	valBefore := reflect.ValueOf(beforeIfc)
+	valAfter := reflect.ValueOf(afterIfc)
+	kind := reflect.TypeOf(beforeIfc)
 	for i, j := 0, kind.NumField(); i < j; i++ {
 		field := kind.Field(i)
 		if field.Type.Kind() == reflect.Struct || field.Anonymous {
@@ -163,7 +190,7 @@ func (pch *ProgramClassesHistory) ConvertAndCompare() ([]ActivityHistoryResponse
 
 			if valueAPtr.IsNil() != valueBPtr.IsNil() || (!valueAPtr.IsNil() && valueAPtr.Elem().Interface() != valueBPtr.Elem().Interface()) {
 				historyEvents = append(historyEvents, ActivityHistoryResponse{
-					Action:    ClassHistory,
+					Action:    PrgClassHistory,
 					FieldName: name,
 					NewValue:  formatValue(valueB),
 					UserID:    updatedBy,
@@ -172,7 +199,7 @@ func (pch *ProgramClassesHistory) ConvertAndCompare() ([]ActivityHistoryResponse
 			}
 		} else if valueA != valueB {
 			historyEvents = append(historyEvents, ActivityHistoryResponse{
-				Action:    ClassHistory,
+				Action:    PrgClassHistory,
 				FieldName: name,
 				NewValue:  formatValue(valueB),
 				UserID:    updatedBy,

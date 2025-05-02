@@ -33,7 +33,6 @@ export default function CatalogCourseCard({
         .filter((type) => Object.values(OutcomePillType).includes(type));
     const outcomePills = outcomeTypes.map((outcomeString: string) => {
         const outcome = outcomeString as OutcomePillType;
-        console.log(outcome);
         const pillLabel =
             outcome == OutcomePillType.Certificate
                 ? 'Certificate Granting'

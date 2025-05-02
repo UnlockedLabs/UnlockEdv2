@@ -114,13 +114,13 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 
 type ProgramForm struct {
 	// ... program
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	FundingType models.FundingType  `json:"funding_type"`
-	CreditType  []models.CreditType `json:"credit_type"`
-	IsActive    bool                `json:"is_active"`
-	ProgramType []models.ProgType   `json:"program_type"`
-	Facilities  []int               `json:"facilities"`
+	Name         string                     `json:"name"`
+	Description  string                     `json:"description"`
+	FundingType  models.FundingType         `json:"funding_type"`
+	CreditTypes  []models.ProgramCreditType `json:"credit_types"`
+	IsActive     bool                       `json:"is_active"`
+	ProgramTypes []models.ProgramType       `json:"program_types"`
+	Facilities   []int                      `json:"facilities"`
 }
 
 func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -136,15 +136,16 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	}
 
 	newProg := models.Program{
-		Name:        program.Name,
-		Description: program.Description,
-		FundingType: program.FundingType,
-		IsActive:    program.IsActive,
+		Name:               program.Name,
+		Description:        program.Description,
+		FundingType:        program.FundingType,
+		IsActive:           program.IsActive,
+		CreateUserID:       claims.UserID,
+		ProgramTypes:       program.ProgramTypes,
+		ProgramCreditTypes: program.CreditTypes,
 	}
-	var programTypes models.ProgramTypeInfo
-	programTypes.ProgramTypes = program.ProgramType
-	programTypes.ProgramCreditTypes = program.CreditType
-	err = srv.Db.CreateProgram(&newProg, &programTypes)
+
+	err = srv.Db.CreateProgram(&newProg)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

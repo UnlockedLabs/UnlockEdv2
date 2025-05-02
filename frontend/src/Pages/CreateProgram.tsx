@@ -6,7 +6,9 @@ import {
     ToastState,
     FundingType,
     Program,
-    ServerResponseOne
+    ServerResponseOne,
+    ProgramCreditType,
+    PgmType
 } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput, TextAreaInput } from '@/Components/inputs';
@@ -27,15 +29,15 @@ interface ProgramInputs {
     credit_type: GenericOption<CreditType>[];
     program_type: GenericOption<ProgramType>[];
     is_active: boolean;
-    funding_type: GenericOption<FundingType> | null;  
+    funding_type: GenericOption<FundingType> | null;
     facilities: GenericOption<string>[];
 }
 
 interface TransformedProgramInput {
     name: string;
     description: string;
-    credit_type: CreditType[];
-    program_type: ProgramType[];
+    credit_types: ProgramCreditType[];
+    program_types: PgmType[];
     is_active: boolean;
     funding_type: FundingType;
     facilities: number[];
@@ -73,12 +75,16 @@ export default function CreateProgramPage() {
         const transformedData: TransformedProgramInput = {
             ...data,
             is_active: new Boolean(data.is_active).valueOf(),
-            credit_type: data.credit_type.map((opt) => opt.value),  
-            program_type: data.program_type.map((opt) => opt.value),  
-            funding_type: data.funding_type  
-                ? data.funding_type.value  
+            credit_types: data.credit_type.map((opt) => ({
+                credit_type: opt.value
+            })),
+            program_types: data.program_type.map((opt) => ({
+                program_type: opt.value
+            })),
+            funding_type: data.funding_type
+                ? data.funding_type.value
                 : FundingType.OTHER,
-            facilities: data.facilities.map((fac) => Number(fac.value))  
+            facilities: data.facilities.map((fac) => Number(fac.value))
         };
 
         const response = (await API.post<Program, TransformedProgramInput>(
@@ -171,9 +177,8 @@ export default function CreateProgramPage() {
                                     Array.isArray(selected) &&
                                     selected.find((opt) => opt.value === 'all') // eslint-disable-line
                                 ) {
-                                     
                                     return options.filter(
-                                        (opt) => String(opt.value) !== 'all'  
+                                        (opt) => String(opt.value) !== 'all'
                                     );
                                 }
                                 return selected; // eslint-disable-line

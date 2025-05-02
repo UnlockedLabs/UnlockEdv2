@@ -673,15 +673,24 @@ export interface Library {
     is_favorited: boolean;
 }
 
+export interface ProgramCreditType {
+    credit_type: CreditType;
+    program_id?: number;
+}
+export interface PgmType {
+    program_type: ProgramType;
+    program_id?: number;
+}
+
 export interface Program {
     id: number;
     created_at: Date;
     updated_at: Date;
     name: string;
     description: string;
-    credit_type: CreditType;
+    credit_types: ProgramCreditType[];
     funding_type: FundingType;
-    program_type: ProgramType;
+    program_types: PgmType[];
     is_active: boolean;
     tags: ProgramTag[];
     is_favorited: boolean;
@@ -1063,6 +1072,6 @@ export type ActivityHistoryAction =
     | 'facility_transfer'
     | 'set_password'
     | 'reset_password'
-    | 'class_history';
+    | 'prgcls_history';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';

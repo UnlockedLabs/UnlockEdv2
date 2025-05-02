@@ -578,8 +578,9 @@ func createFacilityPrograms(db *gorm.DB, adminID uint) ([]models.ProgramClass, e
 	programs := make([]models.Program, 0, 7)
 	for range 7 {
 		programs = append(programs, models.Program{
-			Name:        getRandomProgram(programMap),
-			FundingType: fundingTypes[rand.Intn(len(fundingTypes))],
+			Name:         getRandomProgram(programMap),
+			FundingType:  fundingTypes[rand.Intn(len(fundingTypes))],
+			CreateUserID: adminID,
 		})
 	}
 	for i := range programs {

@@ -5,9 +5,11 @@ import Pagination from './Pagination';
 import { ActivityHistoryRowCard } from './cards';
 
 export default function ActivityHistoryCard({
+    programId,
     classInfo,
     residentId
 }: {
+    programId?: string;
     residentId?: string;
     classInfo?: Class;
 }) {
@@ -16,7 +18,9 @@ export default function ActivityHistoryCard({
         ? `/api/users/${residentId}/account-history?page=${page}&per_page=5`
         : classInfo
           ? `/api/program-classes/${classInfo?.id}/history?page=${page}&per_page=10` //set to 10 due to larger card
-          : null;
+          : programId
+            ? `/api/programs/${programId}/history?page=${page}&per_page=5`
+            : null;
     const {
         data: activityHistory,
         error: activityHistoryError,
@@ -32,7 +36,13 @@ export default function ActivityHistoryCard({
 
     return (
         <div className="card card-row-padding flex flex-col h-full gap-2">
-            {classInfo ? <h1>Class History</h1> : <h2>Account Overview</h2>}
+            {classInfo ? (
+                <h1>Class History</h1>
+            ) : programId ? (
+                <h2>Program History</h2>
+            ) : (
+                <h2>Account Overview</h2>
+            )}
             {isLoading && <div>Loading...</div>}
             {activityHistoryError && (
                 <p className="body text-error">
