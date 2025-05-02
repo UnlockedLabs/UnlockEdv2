@@ -117,7 +117,7 @@ func (ProgramClassesHistory) TableName() string { return "program_classes_histor
 func (pch *ProgramClassesHistory) ConvertAndCompare() ([]ActivityHistoryResponse, uint, error) {
 	var (
 		historyEvents       []ActivityHistoryResponse
-		updatedBy           uint = 0
+		updatedBy           uint
 		beforeIfc, afterIfc any
 		compareFields       map[string]bool
 	)
