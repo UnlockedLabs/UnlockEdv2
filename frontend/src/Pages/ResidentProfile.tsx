@@ -141,7 +141,7 @@ const ResidentProfile = () => {
             {data && metrics && (
                 <div className="space-y-6">
                     <div className="flex flex-row gap-6">
-                        <div className="card card-row-padding flex flex-col justify-center">
+                        <div className="card card-row-padding flex flex-col justify-center flex-[0_0_340px]">
                             <div className="justify-items-center">
                                 <UserCircleIcon className="w-24" />
                             </div>
