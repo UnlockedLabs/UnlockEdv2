@@ -157,4 +157,5 @@ type ResidentProgramClassInfo struct {
 	ProgramID            uint                    `json:"program_id"`
 	PresentAttendance    int                     `json:"present_attendance"`
 	AbsentAttendance     int                     `json:"absent_attendance"`
+	CreditType           string                  `json:"credit_type"`
 }

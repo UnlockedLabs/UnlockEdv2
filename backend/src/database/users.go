@@ -525,6 +525,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pc.start_dt              AS start_date,
             pc.end_dt                AS end_date,
             pc.id                    AS class_id,
+			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_type,
 
             -- count present attendance status
             COALESCE(SUM(
@@ -537,7 +538,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             ), 0)  AS absent_attendance
         `).
 		Joins("INNER JOIN program_classes pc  ON pc.id  = pce.class_id").
-		Joins("INNER JOIN programs         p   ON p.id   = pc.program_id").
+		Joins("INNER JOIN programs p  ON p.id = pc.program_id").
+		Joins("INNER JOIN program_credit_types pct ON pct.program_id = p.id").
 		Joins("INNER JOIN program_class_events e   ON e.class_id = pc.id").
 		Joins(`LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = e.id AND pcea.user_id = ?`, userId).
 		Where("pce.user_id = ?", userId).
