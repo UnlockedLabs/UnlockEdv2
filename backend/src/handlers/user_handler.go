@@ -24,7 +24,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
 		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
-		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, true, axx},
+		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, false, axx},
 	}
 }
 
@@ -407,7 +407,8 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	}
 	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }
-
+// TODO: Test use of this Handler for Resident Programs Overview
+// NOTE: The access level of this handler was changed from true to false to allow for user routing
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
@@ -415,6 +416,7 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}
 	queryCtx := srv.getQueryContext(r)
+	// queryCtx.PerPage = -1
 	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userId)
 	if err != nil {
 		return newDatabaseServiceError(err)
