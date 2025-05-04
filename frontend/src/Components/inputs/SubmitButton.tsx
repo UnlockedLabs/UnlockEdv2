@@ -1,7 +1,7 @@
 export function SubmitButton({
     errorMessage,
     label = 'Submit',
-    isEnabled
+    isEnabled = true
 }: {
     errorMessage?: string;
     label?: string;

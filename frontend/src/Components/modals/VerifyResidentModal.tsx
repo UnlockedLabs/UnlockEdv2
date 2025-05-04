@@ -30,7 +30,7 @@ export const VerifyResidentModal = forwardRef(function (
     const [errors, setErrors] = useState('');
     const [facility, setFacility] = useState('');
     const facilities = useLoaderData() as Facility[];
-    const target_user = target?.user.doc_id;
+    const targetDocId = target?.user.doc_id;
 
     const executeResidentCheck: SubmitHandler<FieldValues> = async (data) => {
         if (!validateFacility()) {
@@ -115,7 +115,7 @@ export const VerifyResidentModal = forwardRef(function (
             interfaceRef: 'doc_id',
             required: true,
             onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                const match = event.target.value === target_user?.toString();
+                const match = event.target.value === targetDocId?.toString();
                 setIsDocIDMatch(match);
             }
         }
