@@ -304,7 +304,7 @@ func (vs *VideoService) retrySingleVideo(ctx context.Context, videoId int) error
 
 func (yt *VideoService) addVideos(ctx context.Context) error {
 	params := *yt.Body
-	urls := params["video_urls"].([]interface{})
+	urls := params["video_urls"].([]any)
 	logger().Infof("Adding videos: %v", urls)
 
 	for idx := range urls {
