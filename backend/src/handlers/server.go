@@ -56,7 +56,7 @@ func (srv *Server) register(routes func() []routeDef) {
 }
 
 /**
-* Register all API routes here
+* Register all API routes right here
 **/
 func (srv *Server) RegisterRoutes() {
 	/* register special routes */
