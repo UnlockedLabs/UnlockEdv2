@@ -142,7 +142,7 @@ function EditEventForm({ event, onClose }: ClassEventProps) {
                     Cancel Event
                 </button>
                 <button
-                    className="btn btn-primary"
+                    className="button"
                     onClick={() => handleSaveChanges(false)}
                 >
                     Save Changes
@@ -166,13 +166,13 @@ function EditEventForm({ event, onClose }: ClassEventProps) {
                         </p>
                         <div className="space-y-2">
                             <button
-                                className="btn btn-primary w-full"
+                                className="button w-full"
                                 onClick={() => void handleSubmit('all')}
                             >
                                 Apply to All Instances
                             </button>
                             <button
-                                className="btn btn-primary w-full"
+                                className="button w-full"
                                 onClick={() => void handleSubmit('forward')}
                             >
                                 Apply going forward

@@ -4,8 +4,7 @@ import {
     ArrowPathRoundedSquareIcon,
     LockClosedIcon,
     TrashIcon,
-    PencilSquareIcon,
-    PlusCircleIcon
+    PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import {
     ServerResponseMany,
@@ -34,6 +33,7 @@ import {
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth, isSysAdmin, isDeptAdmin, isFacilityAdmin } from '@/useAuth';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { AddButton } from '@/Components/inputs';
 
 const canEdit = (currentUser: User, targetUser: User): boolean => {
     return (
@@ -163,13 +163,10 @@ export default function AdminManagement() {
                     </div>
 
                     <div className="tooltip tooltip-left" data-tip="Add Admin">
-                        <button
-                            className="button"
+                        <AddButton
+                            label="Add Admin"
                             onClick={() => showModal(addUserModal)}
-                        >
-                            <PlusCircleIcon className="w-4 my-auto" />
-                            Add Admin
-                        </button>
+                        />
                     </div>
                 </div>
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>

@@ -21,10 +21,7 @@ export default function Tour({ close }: { close: () => void }) {
                 Feeling lost? If you need a walk through of UnlockEd, start our
                 tour below.
             </p>
-            <button
-                className="btn w-1/2 btn-primary text-white mx-auto"
-                onClick={startTour}
-            >
+            <button className="button mx-auto" onClick={startTour}>
                 Start Tour
             </button>
         </>

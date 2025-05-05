@@ -210,7 +210,7 @@ export default function ClassManagementForm() {
                                         }
                                     }}
                                     disabled={!canOpenCalendar}
-                                    className="btn btn-primary"
+                                    className="button"
                                     value="View Calendar"
                                 />
                             </div>
@@ -243,7 +243,7 @@ export default function ClassManagementForm() {
                                 />
                             </label>
                         </div>
-                        <div className="w-32">
+                        <div className="w-32 pt-4">
                             <SubmitButton errorMessage={errorMessage} />
                         </div>
                     </div>

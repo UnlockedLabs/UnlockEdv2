@@ -16,6 +16,7 @@ import API from '@/api/api';
 import { TextModalType, TextOnlyModal } from '@/Components/modals';
 import CompletionDetailsModal from '@/Components/modals/CompletionDetailsModal';
 import ClassEnrollmentDetailsTable from '@/Components/ClassEnrollmentDetailsTable';
+import { AddButton } from '@/Components/inputs';
 
 interface StatusChange {
     name_full: string;
@@ -200,22 +201,20 @@ export default function ClassEnrollmentDetails() {
                 <div className="flex gap-2">
                     {selectedResidents.length > 0 && (
                         <button
-                            className="button btn-secondary"
+                            className="button"
                             onClick={handleOpenModalGraduate}
                         >
                             Graduate Selected
                         </button>
                     )}
-                    <button
-                        className="button btn-primary"
+                    <AddButton
+                        label="Add Resident"
                         onClick={() =>
                             navigate(
                                 `/program-classes/${class_id}/enrollments/add`
                             )
                         }
-                    >
-                        Add Resident
-                    </button>
+                    />
                 </div>
             </div>
             {!isLoading && !error && (

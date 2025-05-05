@@ -67,7 +67,7 @@ export default function OpenContent() {
             <div className="flex flex-row justify-end">
                 {user && isAdministrator(user) && (
                     <button
-                        className="button border border-primary bg-transparent text-body-text"
+                        className="button-outline"
                         onClick={() => handleReturnToAdminView()}
                     >
                         Return to Admin View

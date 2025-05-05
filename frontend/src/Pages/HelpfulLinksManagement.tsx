@@ -12,7 +12,6 @@ import ToggleView from '@/Components/ToggleView';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
 import SearchBar from '@/Components/inputs/SearchBar';
 import Pagination from '@/Components/Pagination';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import React, { useRef, useState } from 'react';
 import { useToast } from '@/Context/ToastCtx';
 import { useDebounceValue } from 'usehooks-ts';
@@ -31,6 +30,7 @@ import {
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useSessionViewType } from '@/Hooks/sessionView';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { AddButton } from '@/Components/inputs';
 
 export default function HelpfulLinksManagement() {
     const { user } = useAuth();
@@ -122,15 +122,12 @@ export default function HelpfulLinksManagement() {
                         activeView={activeView}
                         setActiveView={setActiveView}
                     />
-                    <div
-                        className="button cursor-pointer items-center"
+                    <AddButton
+                        label="Add Link"
                         onClick={() => {
                             showModal(addLinkModal);
                         }}
-                    >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        Add Link
-                    </div>
+                    />
                 </div>
             </div>
             <div

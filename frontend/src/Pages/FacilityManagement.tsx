@@ -1,5 +1,4 @@
 import { Facility, ServerResponseMany, ToastState } from '@/common.ts';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import FacilityCard from '@/Components/FacilityCard.tsx';
@@ -19,6 +18,7 @@ import {
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { isSysAdmin, useAuth } from '@/useAuth';
+import { AddButton } from '@/Components/inputs';
 
 export default function FacilityManagement() {
     const addFacilityModal = useRef<HTMLDialogElement>(null);
@@ -103,15 +103,12 @@ export default function FacilityManagement() {
                         {/* TO DO: this is where SEARCH and SORT will go */}
                         <div className="flex flex-row gap-x-2"></div>
                     </div>
-                    <button
-                        className="button"
+                    <AddButton
+                        label="Add Facility"
                         onClick={() => {
                             showModal(addFacilityModal);
                         }}
-                    >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        Add Facility
-                    </button>
+                    />
                 </div>
                 <table className="table-2">
                     <thead>

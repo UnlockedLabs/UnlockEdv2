@@ -6,7 +6,7 @@ export function ConfirmButton({
     onClick: () => void;
 }) {
     return (
-        <button className="btn btn-primary" onClick={onClick}>
+        <button className="button" onClick={onClick}>
             {action.charAt(0).toUpperCase() + action.slice(1)}
         </button>
     );

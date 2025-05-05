@@ -58,7 +58,7 @@ export default function Error({
                         {displayMessage}
                     </div>
                     <button
-                        className="btn btn-primary btn-outline"
+                        className="button-outline mx-auto"
                         onClick={clickHandler}
                     >
                         {label}

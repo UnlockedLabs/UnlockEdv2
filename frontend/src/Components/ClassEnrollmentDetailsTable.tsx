@@ -171,7 +171,7 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
             {otherStatusStudents.length > 0 && (
                 <button
                     type="button"
-                    className="btn btn-outline mb-2"
+                    className="button-outline mb-2"
                     onClick={() => setShowOthers(!showOthers)}
                 >
                     {showOthers ? 'Hide Other' : 'Show Other'}

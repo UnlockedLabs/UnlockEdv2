@@ -8,9 +8,9 @@ export function SubmitButton({
     isEnabled?: boolean;
 }) {
     return (
-        <label className="form-control pt-4">
+        <label className="form-control">
             <input
-                className="btn btn-primary"
+                className="button"
                 type="submit"
                 value={label}
                 disabled={!isEnabled}
