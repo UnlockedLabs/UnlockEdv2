@@ -10,7 +10,7 @@ import {
     ProgramsFacilitiesStats,
     UserRole
 } from '@/common';
-import useSWR from 'swr';
+import useSWR, { KeyedMutator } from 'swr';
 import {
     InformationCircleIcon,
     PlusCircleIcon
@@ -22,21 +22,22 @@ import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
-import GreyPill from '@/Components/pill-labels/GreyPill';
-import TealPill from '@/Components/pill-labels/TealPill';
 import ULIComponent from '@/Components/ULIComponent';
 import { useDebounceValue } from 'usehooks-ts';
 import {
     formatPercent,
     transformStringToArray
 } from '@/Components/helperFunctions';
+import ProgramStatus from '@/Components/ProgramStatus';
 
 export function ProgramRow({
     program,
-    tableCols
+    tableCols,
+    mutate
 }: {
     program: ProgramsOverviewTable;
     tableCols: string;
+    mutate: KeyedMutator<ServerResponseMany<ProgramsOverviewTable>>;
 }) {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -76,7 +77,10 @@ export function ProgramRow({
     return (
         <tr
             className={`grid ${tableCols} justify-items-center gap-2 items-center text-center card !mr-0 px-2 py-2 ${background} cursor-pointer`}
-            onClick={() => navigate(`${program.program_id}`)}
+            onClick={(e) => {
+                e.stopPropagation();
+                navigate(`${program.program_id}`);
+            }}
         >
             <td>{program.program_name}</td>
             {user?.role != UserRole.FacilityAdmin && (
@@ -107,11 +111,7 @@ export function ProgramRow({
             </td>
             <td>{transformStringToArray(program.funding_type)}</td>
             <td>
-                {program.status ? (
-                    <TealPill children={'Active'} />
-                ) : (
-                    <GreyPill children={'Inactive'} />
-                )}
+                <ProgramStatus program={program} mutate={mutate} />
             </td>
         </tr>
     );
@@ -335,6 +335,7 @@ export default function ProgramManagement() {
                                     key={index}
                                     program={program}
                                     tableCols={tableCols}
+                                    mutate={mutate}
                                 />
                             ))
                         )}

@@ -46,7 +46,8 @@ const ModifyClassModal = forwardRef(function (
         action,
         program_class,
         mutate,
-        setSelectedStatus
+        setSelectedStatus,
+        onClose
     }: {
         action: ClassStatusOptions | undefined;
         program_class: Class;
@@ -56,6 +57,7 @@ const ModifyClassModal = forwardRef(function (
         setSelectedStatus: React.Dispatch<
             React.SetStateAction<SelectedClassStatus>
         >;
+        onClose?: () => void;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -84,6 +86,7 @@ const ModifyClassModal = forwardRef(function (
     }
     function close() {
         closeModal(ref);
+        onClose?.();
     }
     return (
         <div onClick={(e) => e.stopPropagation()}>
