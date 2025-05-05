@@ -25,13 +25,11 @@ jobs:
 
       - id: check-changes
         run: |
-          git pull origin main --rebase
-          MERGE_BASE=$(git merge-base HEAD origin/main)
-          echo "Merge base: $MERGE_BASE"
+          git fetch origin main
           paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
           changes=""
           for path in "${paths[@]}"; do
-            count=$(git diff --name-only "$MERGE_BASE"..HEAD | grep "^${path}" | wc -l)
+            count=$(git diff --name-only HEAD..origin/HEAD | grep "^${path}" | wc -l)
             changes+="${path}:${count},"
           done
           changes="${changes%,}"
