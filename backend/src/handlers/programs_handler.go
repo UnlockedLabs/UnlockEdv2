@@ -33,7 +33,7 @@ func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, l
 	args := srv.getQueryContext(r)
 	programs, err := srv.Db.GetPrograms(&args)
 	if err != nil {
-		log.add("search", args.Search)
+		log.add("search_query", args.Search)
 		return newDatabaseServiceError(err)
 	}
 	return writePaginatedResponse(w, http.StatusOK, programs, args.IntoMeta())
