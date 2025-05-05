@@ -9,7 +9,6 @@ import {
 } from '@/common';
 import { KeyedMutator } from 'swr';
 import { Validate } from 'react-hook-form';
-import React, { JSX } from 'react';
 import { AdminRoles } from '@/useAuth';
 
 export enum TextModalType {
