@@ -82,7 +82,6 @@ const adminRoutes = DeclareAuthenticatedRoutes(
         {
             path: 'operational-insights',
             element: <OperationalInsightsPage />,
-            loader: getFacilities,
             errorElement: <Error />,
             handle: {
                 title: 'Operational Insights'
