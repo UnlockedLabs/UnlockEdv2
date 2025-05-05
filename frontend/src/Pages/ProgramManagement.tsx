@@ -11,10 +11,7 @@ import {
     UserRole
 } from '@/common';
 import useSWR from 'swr';
-import {
-    InformationCircleIcon,
-    PlusCircleIcon
-} from '@heroicons/react/24/outline';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +27,7 @@ import {
     formatPercent,
     transformStringToArray
 } from '@/Components/helperFunctions';
+import { AddButton } from '@/Components/inputs';
 
 export function ProgramRow({
     program,
@@ -276,15 +274,12 @@ export default function ProgramManagement() {
                     </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                    <button
-                        className="button flex items-center space-x-2"
+                    <AddButton
+                        label="Add Program"
                         onClick={() => {
                             navigate('detail');
                         }}
-                    >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        <span>Add Program</span>
-                    </button>
+                    />
                 </div>
             </div>
             <div className="card px-6 pb-6 space-y-4">

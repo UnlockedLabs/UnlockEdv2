@@ -1,11 +1,7 @@
 import { useLoaderData, useParams } from 'react-router-dom';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import {
-    ArchiveBoxIcon,
-    PlusCircleIcon,
-    PuzzlePieceIcon
-} from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, PuzzlePieceIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -28,6 +24,7 @@ import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
+import { AddButton } from '@/Components/inputs';
 
 export default function ProgramOverviewDashboard() {
     const { id } = useParams<{ id: string }>();
@@ -248,6 +245,7 @@ export default function ProgramOverviewDashboard() {
                         }}
                     />
                     <DropdownControl
+                        label="order by"
                         setState={setSortQuery}
                         enumType={{
                             'Enrollment Count (Most)': 'enrolled desc',
@@ -272,7 +270,7 @@ export default function ProgramOverviewDashboard() {
                 <div className="flex flex-row gap-x-2">
                     {selectedClasses.length > 0 ? (
                         <button
-                            className="button flex items-center bg-pale-yellow border border-dark-yellow text-body-text"
+                            className="button-outline-pale-yellow"
                             onClick={confirmArchiveClasses}
                         >
                             <ArchiveBoxIcon className="w-4 h-4 mr-1" />
@@ -280,16 +278,13 @@ export default function ProgramOverviewDashboard() {
                             {selectedClasses.length > 1 ? 'es' : ''}
                         </button>
                     ) : (
-                        <button
-                            className={`button flex items-center ${isAddClassDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        <AddButton
+                            disabled={isAddClassDisabled}
+                            label="Add Class"
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)
                             }
-                            disabled={isAddClassDisabled}
-                        >
-                            <PlusCircleIcon className="w-4 h-4 mr-1" />
-                            Add Class
-                        </button>
+                        />
                     )}
                 </div>
             </div>

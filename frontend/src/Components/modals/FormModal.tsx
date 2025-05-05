@@ -48,7 +48,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         submitText,
         extValidationIsValid = () => {}, //eslint-disable-line
         error,
-        enableSubmit = true,
+        enableSubmit = true
     }: FormModalProps<T>,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -199,7 +199,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                         }}
                                     />
                                 </label>
-                                <div>
+                                <div className="pt-4">
                                     <SubmitButton
                                         label={submitText}
                                         isEnabled={enableSubmit}
@@ -207,10 +207,12 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                 </div>
                             </div>
                         ) : (
-                            <SubmitButton
-                                label={submitText}
-                                isEnabled={enableSubmit}
-                            />
+                            <div className="pt-4">
+                                <SubmitButton
+                                    label={submitText}
+                                    isEnabled={enableSubmit}
+                                />
+                            </div>
                         )}
                     </form>
                 </div>

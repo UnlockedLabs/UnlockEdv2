@@ -154,15 +154,15 @@ export default function VideoCard({
                                 view={view}
                             />
                         ) : handleRetryVideo ? (
-                            <div>
+                            <div className="flex gap-2">
                                 <button
-                                    className="btn btn-sm btn-outline"
+                                    className="button-outline-sm"
                                     onClick={handleOpenInfo}
                                 >
                                     View Status
                                 </button>
                                 <button
-                                    className="btn btn-sm btn-outline"
+                                    className="button-outline-sm"
                                     onClick={() => void handleRetryVideo(video)}
                                 >
                                     Retry Download
@@ -228,13 +228,13 @@ export default function VideoCard({
                             ) : handleRetryVideo ? (
                                 <div className="flex flex-row gap-2">
                                     <button
-                                        className="btn btn-sm btn-outline"
+                                        className="button-outline-sm"
                                         onClick={handleOpenInfo}
                                     >
                                         View Status
                                     </button>
                                     <button
-                                        className="btn btn-sm btn-outline"
+                                        className="button-outline-sm"
                                         onClick={() =>
                                             void handleRetryVideo(video)
                                         }

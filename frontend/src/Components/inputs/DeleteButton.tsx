@@ -1,6 +1,6 @@
 export function DeleteButton({ onClick }: { onClick: () => void }) {
     return (
-        <button className="btn btn-error" onClick={onClick}>
+        <button className="button-red" onClick={onClick}>
             Delete
         </button>
     );

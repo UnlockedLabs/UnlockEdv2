@@ -8,7 +8,6 @@ import {
     ProviderResponse,
     ServerResponseMany
 } from '@/common';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import { useRef, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import API from '@/api/api';
@@ -23,6 +22,7 @@ import {
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
+import { AddButton } from '@/Components/inputs';
 
 export default function ProviderPlatformManagement() {
     const { user } = useAuth();
@@ -150,15 +150,12 @@ export default function ProviderPlatformManagement() {
                     <div>
                         {/* TO DO: this is where SEARCH and SORT will go */}
                     </div>
-                    <button
-                        className="button"
+                    <AddButton
+                        label="Add Learning Platform"
                         onClick={() => {
                             showModal(addProviderModal);
                         }}
-                    >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        Add Learning Platform
-                    </button>
+                    />
                 </div>
                 <table className="table-2">
                     <thead>

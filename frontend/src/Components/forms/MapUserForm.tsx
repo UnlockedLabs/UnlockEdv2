@@ -185,11 +185,11 @@ export default function MapUserForm({
                 </div>
             )}
             <div className="flex flex-row justify-between mt-4">
-                <button className="btn" onClick={() => onCancel()}>
+                <button className="button-grey" onClick={() => onCancel()}>
                     Cancel
                 </button>
                 <button
-                    className="btn btn-primary"
+                    className="button"
                     disabled={!selectedUser}
                     onClick={() => {
                         void handleSubmit(selectedUser!);
