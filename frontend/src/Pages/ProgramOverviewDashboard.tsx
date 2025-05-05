@@ -174,10 +174,10 @@ export default function ProgramOverviewDashboard() {
     }
     return (
         <div className="p-4 px-5">
-            <div className="card card-row-padding flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
                 <div className="grid grid-cols-4 gap-4 items-stretch">
-                    <div className="col-span-2">
-                        <h2 className="mb-2">{program?.name}</h2>
+                    <div className="card card-row-padding col-span-3">
+                        <h1 className="mb-2">{program?.name}</h1>
                         <p className="mb-4 body body-small">
                             {program?.description}
                         </p>
@@ -221,16 +221,20 @@ export default function ProgramOverviewDashboard() {
                             </div>
                         </div>
                     </div>
-                    <StatsCard
-                        title="Active Enrollments"
-                        number={program?.active_enrollments.toString() ?? '0'}
-                        label="residents"
-                    />
-                    <StatsCard
-                        title="Overall Completion"
-                        number={program?.completion_rate.toString() ?? '0'}
-                        label="%"
-                    />
+                    <div className="flex flex-col gap-2">
+                        <StatsCard
+                            title="Active Enrollments"
+                            number={
+                                program?.active_enrollments.toString() ?? '0'
+                            }
+                            label="residents"
+                        />
+                        <StatsCard
+                            title="Overall Completion"
+                            number={program?.completion_rate.toString() ?? '0'}
+                            label="%"
+                        />
+                    </div>
                 </div>
             </div>
 
