@@ -25,13 +25,13 @@ jobs:
 
       - id: check-changes
         run: |
-          git pull origin main --rebase
           BASE="${{ github.event.before }}"
           echo "$BASE"
+          git fetch origin "$BASE"
           paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
           changes=""
           for path in "${paths[@]}"; do
-            count=$(git diff --name-only "$BASE"..HEAD | grep "^${path}" | wc -l)
+            count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
             changes+="${path}:${count},"
           done
           changes="${changes%,}"
