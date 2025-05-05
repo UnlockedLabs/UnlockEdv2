@@ -41,7 +41,7 @@ func main() {
 		DSN: dsn,
 	}), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to PostgreSQL database: %v", err)
+		log.Fatalf("Failed to connect to the PostgreSQL database: %v", err)
 	}
 	seedTestData(db)
 }
