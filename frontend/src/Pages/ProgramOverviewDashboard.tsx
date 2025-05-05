@@ -247,10 +247,10 @@ export default function ProgramOverviewDashboard() {
 
             {/* classes table */}
             <div className="card p-4">
-                <table className="table w-full mb-4">
+                <table className="table w-full table-fixed  mb-4">
                     <thead className="bg-background">
                         <tr>
-                            <th>
+                            <th className="w-[150px]">
                                 <input
                                     type="checkbox"
                                     className="checkbox checkbox-sm"
@@ -260,10 +260,10 @@ export default function ProgramOverviewDashboard() {
                                     }
                                 />
                             </th>
-                            <th className="w-[400px]">Class Name</th>
-                            <th className="w-[300px]">Instructor Name</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
+                            <th className="w-full">Class Name</th>
+                            <th className="w-full">Instructor Name</th>
+                            <th className="w-full">Start Date</th>
+                            <th className="w-full">End Date</th>
                             <th className="w-[200px]">Enrollments</th>
                             <th className="w-[150px]">Status</th>
                         </tr>
@@ -320,21 +320,13 @@ export default function ProgramOverviewDashboard() {
                                             />
                                         </div>
                                     </td>
-                                    <td className="max-w-[400px]">
-                                        <ClampedText
-                                            as="div"
-                                            lines={1}
-                                            className="truncate"
-                                        >
+                                    <td>
+                                        <ClampedText as="div" lines={1}>
                                             {program_class.name}
                                         </ClampedText>
                                     </td>
-                                    <td className="max-w-[300px]">
-                                        <ClampedText
-                                            as="div"
-                                            lines={1}
-                                            className="truncate"
-                                        >
+                                    <td>
+                                        <ClampedText as="div" lines={1}>
                                             {program_class.instructor_name}
                                         </ClampedText>
                                     </td>
