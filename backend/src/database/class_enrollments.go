@@ -175,12 +175,22 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status s
 }
 
 func (db *DB) UpdateProgramClassEnrollmentsPerEnrollment(classIDs []int, status string) error {
-	if err := db.
+	tx := db.Begin()
+	if tx.Error != nil {
+		return newUpdateDBError(tx.Error, "begin transaction")
+	}
+
+	if err := tx.
 		Model(&models.ProgramClassEnrollment{}).
 		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
 		Update("enrollment_status", status).
 		Error; err != nil {
+		tx.Rollback()
 		return newUpdateDBError(err, "class enrollment statuses")
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return newUpdateDBError(err, "commit transaction")
 	}
 	return nil
 }
