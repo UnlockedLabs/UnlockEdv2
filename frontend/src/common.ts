@@ -1114,3 +1114,15 @@ export type ActivityHistoryAction =
     | 'progclass_history';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
+
+export enum ProgramEffectiveStatus {
+    Available = 'Available',
+    Inactive = 'Inactive',
+    Archived = 'Archived'
+}
+
+export type ProgramAction =
+    | 'set_available'
+    | 'set_inactive'
+    | 'archive'
+    | 'reactivate';

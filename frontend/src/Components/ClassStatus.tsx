@@ -117,7 +117,7 @@ export default function ClassStatus({
             SelectedClassStatus.Paused,
             [ClassStatusOptions.Active, ClassStatusOptions.Cancel]
         ],
-        [SelectedClassStatus.Completed, []],//just in case, setting to empty array
+        [SelectedClassStatus.Completed, []], //just in case, setting to empty array
         [SelectedClassStatus.Cancelled, []]
     ]);
 
@@ -198,6 +198,7 @@ export default function ClassStatus({
                 program_class={program_class}
                 mutate={mutateClasses}
                 setSelectedStatus={setSelectedStatus}
+                onClose={() => setSelectedModifyOption(undefined)}
             />
         </>
     );

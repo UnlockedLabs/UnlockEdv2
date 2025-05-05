@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {
@@ -166,10 +167,9 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	}
 	return writeJsonResponse(w, http.StatusCreated, newProg)
 }
-
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var program models.Program
-	err := json.NewDecoder(r.Body).Decode(&program)
+	var updates map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&updates)
 	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -182,11 +182,29 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	toUpdate, err := srv.Db.GetProgramByID(id)
 	if err != nil {
 		log.error("Error getting program:" + err.Error())
+		return newDatabaseServiceError(err)
 	}
-	models.UpdateStruct(&toUpdate, &program)
+	for key, value := range updates {
+		switch key {
+		case "status", "is_active":
+			if status, ok := value.(bool); ok {
+				toUpdate.IsActive = status
+			}
+		case "archived_at":
+			if value == nil {
+				toUpdate.ArchivedAt = nil
+			} else if archivedAt, ok := value.(string); ok {
+				t, err := time.Parse(time.RFC3339, archivedAt)
+				if err != nil {
+					return NewServiceError(err, http.StatusInternalServerError, "archived_at")
+				}
+				toUpdate.ArchivedAt = &t
+			}
+		}
+	}
 	updated, updateErr := srv.Db.UpdateProgram(toUpdate)
 	if updateErr != nil {
-		return newDatabaseServiceError(err)
+		return newDatabaseServiceError(updateErr)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
 }
