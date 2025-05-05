@@ -32,15 +32,15 @@ COMMANDS_ARRAY=(
 )
 else
   if [[ ! -f "$INPUT" ]]; then
-    echo "Error: file not found at path: $INPUT"
-    exit 1
+	echo "Error: file not found at path: $INPUT"
+	exit 1
   fi
 
   ZIM_FILE_NAME=$(basename "$INPUT")
 
   if [[ ! "$ZIM_FILE_NAME" =~ \.zim$ ]]; then
-    echo "Error: file must end in .zim"
-    exit 1
+	echo "Error: file must end in .zim"
+	exit 1
   fi
 
   echo "Uploading $ZIM_FILE_NAME to s3://$S3_BUCKET/ ..."
@@ -49,7 +49,7 @@ else
   COMMANDS_ARRAY=(
 	"set -e"
 	"aws s3 cp \"s3://$S3_BUCKET/$ZIM_FILE_NAME\" \"/zims/$ZIM_FILE_NAME\" --region \"$AWS_REGION\""
-	"/home/admin/.local/bin/kiwix-manage /zims/library.xml add \"/zims/$ZIM_FILE_NAME"\"
+	"/home/admin/.local/bin/kiwix-manage /zims/library.xml add \"/zims/$ZIM_FILE_NAME\""
 	"/bin/systemctl restart kiwix.service"
    )
 fi
