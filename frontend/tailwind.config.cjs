@@ -33,6 +33,10 @@ export default {
 					'--grey-2': '#CCCCCC',
 					'--grey-3': '#999999',
 					'--grey-4': '#737373',
+					'--red-1': '#FAECEE',
+					'--red-2': '#F0AEB5',
+					'--red-3': '#d95566',
+					'--red-4': '#B0404F',
 					'--body-text': '#222222',
 					'--header-text': '#121212',
 					'--fallback-b1': '#F9FBFB'
@@ -63,6 +67,10 @@ export default {
 					'--grey-2': '#999999',
 					'--grey-3': '#CCCCCC',
 					'--grey-4': '#ECECEC',
+					'--red-1': '#FAECEE',
+					'--red-2': '#F0AEB5',
+					'--red-3': '#d95566',
+					'--red-4': '#B0404F',
 					'--body-text': '#EEEEEE',
 					'--header-text': '#CCCCCC',
 					'--fallback-b1': '#0F2926'
@@ -92,6 +100,10 @@ export default {
 				'grey-2': 'var(--grey-2)',
 				'grey-3': 'var(--grey-3)',
 				'grey-4': 'var(--grey-4)',
+				'red-1': 'var(--red-1)',
+				'red-2': 'var(--red-2)',
+				'red-3': 'var(--red-3)',
+				'red-4': 'var(--red-4)',
 				'body-text': 'var(--body-text)',
 				'header-text': 'var(--header-text)'
 			}

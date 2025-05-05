@@ -57,11 +57,42 @@
     .table-2 td {
         @apply body-small my-auto;
     }
+    .button-sm {
+        @apply bg-teal-3 body-small text-white py-1 px-2 flex flex-row gap-3 rounded-lg items-center grow-0 cursor-pointer;
+    }
     .button {
-        @apply bg-teal-3 body text-white py-3 px-3 flex flex-row gap-3 rounded-lg items-center;
+        @apply bg-teal-3 body text-white py-3 px-3 flex flex-row gap-3 rounded-lg items-center cursor-pointer hover:bg-teal-4 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+    }
+    .button-red {
+        @apply bg-red-3 body text-body-text py-3 px-3 flex flex-row gap-3 rounded-lg items-center cursor-pointer hover:bg-red-4 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+    }
+    .button-grey {
+        @apply bg-grey-2 body text-body-text py-3 px-3 flex flex-row gap-3 rounded-lg items-center cursor-pointer hover:bg-grey-3 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+    }
+    .button-grey-sm {
+        @apply bg-grey-2 body-small text-body-text py-1 px-2 flex flex-row gap-3 rounded-lg items-center grow-0 cursor-pointer hover:bg-grey-3 disabled:bg-grey-1 disabled:text-grey-2 disabled:cursor-auto;
+    }
+    .button-grey-sm-active {
+        @apply bg-grey-3 body-small text-body-text py-1 px-2 flex flex-row gap-3 rounded-lg items-center grow-0 cursor-pointer hover:bg-grey-4 disabled:bg-grey-1 disabled:text-grey-2 disabled:cursor-auto;
     }
     .button-outline {
-        @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 flex flex-row gap-3 rounded-lg items-center;
+        @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 flex flex-row gap-3 rounded-lg items-center cursor-pointer hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+    }
+    .button-outline-pale-yellow {
+        @apply border border-dark-yellow bg-pale-yellow body text-body-text py-3 px-3 flex flex-row gap-3 rounded-lg items-center cursor-pointer hover:bg-[#FFECB0] disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+    }
+    .button-outline-sm {
+        @apply border border-teal-3 bg-transparent body text-body-text py-1 px-2 flex flex-row gap-3 rounded-lg items-center grow-0 cursor-pointer hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+    }
+    .button-circle {
+        @apply bg-transparent body flex items-center justify-center rounded-full cursor-pointer hover:bg-grey-2 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+        height: 2rem;
+        width: 2rem;
+    }
+    .button-circle-grey {
+        @apply bg-grey-2 body flex items-center justify-center rounded-full cursor-pointer hover:bg-grey-3 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+        height: 2rem;
+        width: 2rem;
     }
 }
 

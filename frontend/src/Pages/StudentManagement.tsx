@@ -10,8 +10,7 @@ import useSWR from 'swr';
 import {
     ArrowPathRoundedSquareIcon,
     TrashIcon,
-    PencilSquareIcon,
-    PlusCircleIcon
+    PencilSquareIcon
 } from '@heroicons/react/24/outline';
 import {
     ResetPasswordResponse,
@@ -40,6 +39,7 @@ import {
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { AddButton } from '@/Components/inputs';
 
 export default function StudentManagement() {
     const addUserModal = useRef<HTMLDialogElement>(null);
@@ -173,13 +173,10 @@ export default function StudentManagement() {
                         className="tooltip tooltip-left"
                         data-tip="Add Resident"
                     >
-                        <button
-                            className="button "
+                        <AddButton
+                            label="Add Resident"
                             onClick={() => showModal(addUserModal)}
-                        >
-                            <PlusCircleIcon className="w-4 my-auto" />
-                            Add Resident
-                        </button>
+                        />
                     </div>
                 </div>
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>

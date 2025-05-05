@@ -259,7 +259,7 @@ export default function ProviderUserManagement() {
                                                     onClick={() =>
                                                         handleMapUser(user)
                                                     }
-                                                    className="btn btn-xs btn-primary"
+                                                    className="button-sm"
                                                 >
                                                     Map User
                                                 </button>

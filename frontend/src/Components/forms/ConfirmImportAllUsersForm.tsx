@@ -14,11 +14,11 @@ export default function ConfirmImportAllUsersForm({
                 Are you sure you would like to import all users?
             </p>
             <form method="dialog" className="flex flex-row justify-between">
-                <button className="btn" onClick={() => onCancel()}>
+                <button className="button-grey" onClick={() => onCancel()}>
                     Cancel
                 </button>
                 <button
-                    className="btn bg-teal-3"
+                    className="button"
                     onClick={() => {
                         onSuccess();
                     }}
