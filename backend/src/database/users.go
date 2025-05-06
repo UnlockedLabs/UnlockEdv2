@@ -522,10 +522,10 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             p.id                     AS program_id,
             pc.name                  AS class_name,
             pc.status                AS status,
-            pc.start_dt              AS start_date,
-            pc.end_dt                AS end_date,
+			COALESCE(pc.start_dt::text, 'N/A') AS start_date,
+			COALESCE(pc.end_dt::text, 'N/A') AS end_date,
             pc.id                    AS class_id,
-			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_type,
+			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
 
             -- count present attendance status
             COALESCE(SUM(
@@ -547,16 +547,23 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pce.enrollment_status,
             p.name, p.id,
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id
-        `).
-		Order("pc.start_dt DESC")
+        `)
 
-	if err := base.Count(&args.Total).Error; err != nil {
-		return nil, NewDBError(err, "program_class_enrollments")
-	}
-	if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
-		return nil, NewDBError(err, "program_class_enrollments apply pagination")
-	}
+	if args.IsAdmin {
+		base.Order("pc.start_dt DESC")
+		if err := base.Count(&args.Total).Error; err != nil {
+			return nil, NewDBError(err, "program_class_enrollments")
+		}
+		if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
+			return nil, NewDBError(err, "program_class_enrollments apply pagination")
+		}
+	} else {
+		base.Order("pc.name")
+		if err := base.Find(&userEnrollments).Error; err != nil {
+			return nil, NewDBError(err, "program_class_enrollments")
+		}
 
+	}
 	return userEnrollments, nil
 }
 
@@ -571,7 +578,7 @@ func (db *DB) GetUserProgramClassHistory(args *models.QueryContext, userId int) 
 	var residentProgramClassHistory []models.ResidentProgramClassHistory
 	err := db.WithContext(args.Ctx).
 		Table("program_class_enrollments pce").
-		Select(`pc.name AS class_name,
+		Select(`p.name as program_name, pc.name AS class_name,
 		COALESCE(
 		(
 			SELECT STRING_AGG(pt.credit_type::text, ',')
@@ -586,7 +593,7 @@ func (db *DB) GetUserProgramClassHistory(args *models.QueryContext, userId int) 
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
 		Where("pce.user_id = ?", userId).
 		Order("pce.updated_at DESC").
-		Group("pc.name, pc.program_id, pce.enrollment_status, pce.updated_at").
+		Group("p.name, pc.name, pc.program_id, pce.enrollment_status, pce.updated_at").
 		Find(&residentProgramClassHistory).Error
 
 	if err != nil {
@@ -596,12 +603,14 @@ func (db *DB) GetUserProgramClassHistory(args *models.QueryContext, userId int) 
 	return residentProgramClassHistory, nil
 }
 
-func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]models.ResidentProgramClassSchedule, error) {
-	var residentWeeklySchedule []models.ResidentProgramClassSchedule
+func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]models.ResidentProgramClassWeeklySchedule, error) {
+	var residentWeeklySchedule []models.ResidentProgramClassWeeklySchedule
 
 	err := db.WithContext(args.Ctx).
 		Table("program_class_enrollments pce").
 		Select(`pc.name AS class_name,
+				pc.start_dt AS start_date,
+				COALESCE(pc.end_dt::text, 'N/A') AS end_date,
 	COALESCE(
 	(
 		SELECT STRING_AGG(pt.credit_type::text, ',')
@@ -617,8 +626,8 @@ func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]mo
 		Where("pce.user_id = ? ", userId).
 		Where("pc.start_dt BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'").
 		Order("pce.updated_at DESC").
-		Group("pc.program_id, pc.name, pce.enrollment_status, pce.updated_at").Debug().
-		Find(&residentWeeklySchedule).Error
+		Group("pc.program_id, pc.name, pc.start_dt, pc.end_dt, pce.enrollment_status, pce.updated_at").
+		Find(&residentWeeklySchedule).Debug().Error
 
 	if err != nil {
 		return nil, NewDBError(err, "program_class_enrollments")

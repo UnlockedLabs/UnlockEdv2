@@ -757,11 +757,14 @@ export interface Class {
     events: ProgramClassEvent[];
     created_at: Date;
 }
-
-export interface ResidentProgramClassInfo {
-    program_name: string;
+export interface BaseResidentProgramClass {
     class_name: string;
     status: ProgClassStatus;
+    credit_types: string;
+}
+
+export interface ResidentProgramClassInfo extends BaseResidentProgramClass {
+    program_name: string;
     enrollment_status: EnrollmentStatus;
     start_date: string;
     end_date: string;
@@ -770,26 +773,17 @@ export interface ResidentProgramClassInfo {
     program_id: number;
     present_attendance: number;
     absent_attendance: number;
-    credit_types: string;
-    // added field for date status changed to account for data needed for program history/activity
 }
 
-export interface ResidentProgramClassHistory {
-    class_id: number;
-    class_name: string;
-    status: ProgClassStatus;
+export interface ResidentProgramClassHistory extends BaseResidentProgramClass {
+    program_name: string;
     date_status_changed: string;
-    credit_types: string;
 }
 
-export interface ResidentProgramClassWeeklySchedule {
-    class_id: number;
-    class_name: string;
-    status: ProgClassStatus;
+export interface ResidentProgramClassWeeklySchedule
+    extends BaseResidentProgramClass {
     start_date: string;
     end_date: string;
-    class_time: string;
-    credit_types: string;
 }
 
 export interface ProgramClassEvent {
