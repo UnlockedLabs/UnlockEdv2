@@ -14,6 +14,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		{"GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx},
 		{"GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx},
 		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx},
+		{"GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx},
 		{"POST /api/programs", srv.handleCreateProgram, true, axx},
 		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
 		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
@@ -219,4 +220,17 @@ func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request,
 		return nil
 	}
 	return writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
+}
+
+func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	args := srv.getQueryContext(r)
+	paginationMeta, pagedHistoryEvents, err := srv.getPagedHistoryEvents(id, "programs", &args, log)
+	if err != nil {
+		return err
+	}
+	return writePaginatedResponse(w, http.StatusOK, pagedHistoryEvents, paginationMeta)
 }
