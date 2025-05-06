@@ -161,16 +161,17 @@ type ResidentProgramClassInfo struct {
 }
 
 type ResidentProgramClassHistory struct {
+	ProgramName       string      `json:"program_name"`
 	ClassName         string      `json:"class_name"`
 	Status            ClassStatus `json:"status"`
 	DateStatusChanged string      `json:"date_status_changed"`
 	CreditTypes       string      `json:"credit_types"`
 }
 
-type ResidentProgramClassSchedule struct {
-	
-	ClassName            string `json:"class_name"`
-	CreditTypes          string `json:"credit_types"`
-	Status               string `json:"status"`
-	DateStatusChanged    string `json:"start_date"`
+type ResidentProgramClassWeeklySchedule struct {
+	ClassName   string `json:"class_name"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	CreditTypes string `json:"credit_types"`
+	Status      string `json:"status"`
 }
