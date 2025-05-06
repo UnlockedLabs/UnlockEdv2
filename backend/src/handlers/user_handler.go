@@ -17,6 +17,8 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/users", srv.handleIndexUsers, true, axx},
 		{"GET /api/users/{id}", srv.handleShowUser, false, axx},
+		{"GET /api/users/{id}/program-history", srv.handleGetUserProgramHistory, false, axx},
+		{"GET /api/users/{id}/weekly-schedule", srv.handleGetUserWeeklySchedule, false, axx},
 		{"POST /api/users", srv.handleCreateUser, true, axx},
 		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
 		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
@@ -407,8 +409,9 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	}
 	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }
+
 // TODO: Test use of this Handler for Resident Programs Overview
-// NOTE: The access level of this handler was changed from true to false to allow for user routing
+// NOTE: The access level of this handler was changed from true to false to allow for user routing. This is a temporary fix and should be addressed
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
@@ -433,6 +436,53 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 			userPrograms[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
 		}
 	}
-
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
+}
+
+func (srv *Server) handleGetUserProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	queryCtx := srv.getQueryContext(r)
+
+	// THIS is duplicate code. Just getting something working and then try to make it fit into the same handler as requested
+	userPrograms, err := srv.Db.GetUserProgramInfo(&queryCtx, userId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	for i := range userPrograms {
+		present := userPrograms[i].PresentAttendance
+		absent := userPrograms[i].AbsentAttendance
+		total := present + absent
+
+		if total == 0 {
+			userPrograms[i].AttendancePercentage = "0%"
+		} else {
+			pct := float64(present) / float64(total) * 100
+			userPrograms[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
+		}
+	}
+	// END of duplicate code
+
+	programHistory, err := srv.Db.GetUserProgramClassHistory(&queryCtx, userId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, programHistory)
+}
+
+func (srv *Server) handleGetUserWeeklySchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
+	id := r.PathValue("id")
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		return newInvalidIdServiceError(err, "error converting user_id")
+	}
+	queryCtx := srv.getQueryContext(r)
+	weeklySchedule, err := srv.Db.GetUserWeeklySchedule(&queryCtx, userId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusOK, weeklySchedule)
 }
