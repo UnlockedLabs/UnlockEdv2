@@ -99,7 +99,6 @@ export default function ProgramClassEnrollment() {
                             changeCallback={handleSearch}
                         />
                         <DropdownControl
-                            label="Order by"
                             setState={setSortQuery}
                             enumType={FilterProgramClassEnrollments}
                         />

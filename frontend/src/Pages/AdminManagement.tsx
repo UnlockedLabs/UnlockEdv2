@@ -152,7 +152,6 @@ export default function AdminManagement() {
                             }}
                         />
                         <DropdownControl
-                            label="order by"
                             setState={setSortQuery}
                             enumType={{
                                 'Name (A-Z)': 'name_last asc',

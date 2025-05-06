@@ -57,7 +57,6 @@ export default function FavoritesPage() {
                         changeCallback={handleChange}
                     />
                     <DropdownControl
-                        label="Order by"
                         setState={setSortQuery}
                         enumType={FilterLibrariesVidsandHelpfulLinksResident}
                     />

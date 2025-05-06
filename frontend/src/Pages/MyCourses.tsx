@@ -66,7 +66,6 @@ export default function MyCourses() {
                         changeCallback={handleChange}
                     />
                     <DropdownControl
-                        label="Sort by"
                         setState={setSort}
                         enumType={{
                             'Name (A-Z)': 'order=asc&order_by=course_name',

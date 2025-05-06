@@ -8,6 +8,7 @@ import {
     ClassEnrollment,
     ClassLoaderData,
     EnrollmentStatus,
+    FilterResidentNames,
     ProgramCompletion,
     ServerResponseMany
 } from '@/common';
@@ -27,7 +28,9 @@ export default function ClassEnrollmentDetails() {
     const navigate = useNavigate();
     const { redirect } = useLoaderData() as ClassLoaderData;
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState<string>('name_full asc');
+    const [sortQuery, setSortQuery] = useState<string>(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
@@ -164,14 +167,12 @@ export default function ClassEnrollmentDetails() {
                         }}
                     />
                     <DropdownControl
-                        label="Sort by"
                         customCallback={(value) => {
                             setSortQuery(value);
                             setPage(1);
                         }}
                         enumType={{
-                            'Resident Name (A-Z)': 'name_full asc',
-                            'Resident Name (Z-A)': 'name_full desc',
+                            ...FilterResidentNames,
                             'Resident ID (Asc)': 'doc_id asc',
                             'Resident ID (Desc)': 'doc_id desc',
                             'Enrollment Date (Asc)': 'start_dt asc',
@@ -179,7 +180,6 @@ export default function ClassEnrollmentDetails() {
                         }}
                     />
                     <DropdownControl
-                        label="Filter by Status"
                         customCallback={(value) => {
                             setFilterStatus(value);
                             setPage(1);

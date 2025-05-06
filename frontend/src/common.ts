@@ -38,6 +38,11 @@ export interface User {
     [key: string]: number | string | boolean | undefined | FeatureAccess[];
 }
 
+export enum FilterResidentNames {
+    'Resident Name (A-Z)' = 'name_last asc',
+    'Resident Name (Z-A)' = 'name_last desc'
+}
+
 export interface ValidResident {
     user: User;
     program_names: string[];
