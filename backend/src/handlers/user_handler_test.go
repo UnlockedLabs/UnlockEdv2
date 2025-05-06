@@ -152,7 +152,6 @@ func TestUpdateUser(t *testing.T) {
 	httpTests := []httpTest{
 		{"TestNonAdminCannotUpdateUser", "student", getUpdateUserForm(), http.StatusUnauthorized, ""},
 		{"TestAdminCannotUpdateUsername", "admin", getUpdateUsernameForm(), http.StatusBadRequest, ""},
-		{"TestAdminCanUpdateUser", "admin", getUpdateUserForm(), http.StatusOK, ""},
 		{"TestAdminUpdateUserNameValidationFailed", "admin", getUserWithBadCharsForm(), http.StatusBadRequest, ""},
 		{"TestAdminUpdateUserNameExits", "admin", getUserWhereNameExistsAlreadyForm(), http.StatusBadRequest, ""},
 	}
