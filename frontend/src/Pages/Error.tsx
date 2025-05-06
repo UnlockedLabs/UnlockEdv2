@@ -15,12 +15,12 @@ const errorMap: Record<
 > = {
     unauthorized: {
         message:
-            'You are not authorized to view this page, please contact your administrator if you believe you have reached this page in error.',
+            'You do not have permission to access this page. Contact your administrator if you believe you have reached this page in error.',
         buttonText: 'Home Page',
         onClick: () => (window.location.href = AUTHCALLBACK)
     },
     'not-found': {
-        message: 'The page you requested was not found.',
+        message: 'The page you requested does not exist.',
         buttonText: 'Home Page',
         onClick: () => (window.location.href = AUTHCALLBACK)
     },
