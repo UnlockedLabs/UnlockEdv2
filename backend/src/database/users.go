@@ -190,7 +190,7 @@ func (db *DB) DeleteUser(id int) error {
 
 func (db *DB) GetUserByUsername(username string) (*models.User, error) {
 	var user models.User
-	if err := db.Model(models.User{}).Find(&user, "username = ?", username).Error; err != nil {
+	if err := db.Model(models.User{}).First(&user, "username = ?", username).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -233,12 +233,7 @@ func (db *DB) ToggleProgramFavorite(user_id uint, id uint) (bool, error) {
 	return favRemoved, nil
 }
 
-func (db *DB) IncrementUserLogin(username string) (int64, error) {
-	user, err := db.GetUserByUsername(username)
-	if err != nil {
-		log.Errorf("Error getting user by username: %v", err)
-		return 0, newGetRecordsDBError(err, "users")
-	}
+func (db *DB) IncrementUserLogin(user *models.User) (int64, error) {
 	if err := db.Exec(
 		`INSERT INTO login_metrics (user_id, total, last_login) 
 		 VALUES (?, 1, CURRENT_TIMESTAMP) 
@@ -262,7 +257,7 @@ func (db *DB) IncrementUserLogin(username string) (int64, error) {
 	}
 
 	var count int64
-	err = db.Model(&models.LoginMetrics{}).Select("total").Where("user_id = ?", user.ID).Scan(&count).Error
+	err := db.Model(&models.LoginMetrics{}).Select("total").Where("user_id = ?", user.ID).Scan(&count).Error
 	if err != nil {
 		log.Errorf("Error counting login metrics: %v", err)
 		return 0, newGetRecordsDBError(err, "login_metrics")
