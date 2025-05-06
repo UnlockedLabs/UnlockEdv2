@@ -770,7 +770,26 @@ export interface ResidentProgramClassInfo {
     program_id: number;
     present_attendance: number;
     absent_attendance: number;
-    credit_type: string;
+    credit_types: string;
+    // added field for date status changed to account for data needed for program history/activity
+}
+
+export interface ResidentProgramClassHistory {
+    class_id: number;
+    class_name: string;
+    status: ProgClassStatus;
+    date_status_changed: string;
+    credit_types: string;
+}
+
+export interface ResidentProgramClassWeeklySchedule {
+    class_id: number;
+    class_name: string;
+    status: ProgClassStatus;
+    start_date: string;
+    end_date: string;
+    class_time: string;
+    credit_types: string;
 }
 
 export interface ProgramClassEvent {

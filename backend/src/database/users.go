@@ -566,3 +566,63 @@ func adjustUserOrderBy(arg string) string {
 	}
 	return arg
 }
+
+func (db *DB) GetUserProgramClassHistory(args *models.QueryContext, userId int) ([]models.ResidentProgramClassHistory, error) {
+	var residentProgramClassHistory []models.ResidentProgramClassHistory
+	err := db.WithContext(args.Ctx).
+		Table("program_class_enrollments pce").
+		Select(`pc.name AS class_name,
+		COALESCE(
+		(
+			SELECT STRING_AGG(pt.credit_type::text, ',')
+			FROM program_credit_types pt
+			WHERE pt.program_id = pc.program_id
+		), 
+		''
+		) AS credit_types,
+		pce.enrollment_status AS status,
+		pce.updated_at AS date_status_changed`).
+		Joins("INNER JOIN program_classes pc ON pce.class_id = pc.id").
+		Joins("INNER JOIN programs p ON p.id = pc.program_id").
+		Where("pce.user_id = ?", userId).
+		Order("pce.updated_at DESC").
+		Group("pc.name, pc.program_id, pce.enrollment_status, pce.updated_at").
+		Find(&residentProgramClassHistory).Error
+
+	if err != nil {
+		return nil, NewDBError(err, "program_class_enrollments")
+	}
+
+	return residentProgramClassHistory, nil
+}
+
+func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]models.ResidentProgramClassSchedule, error) {
+	var residentWeeklySchedule []models.ResidentProgramClassSchedule
+
+	err := db.WithContext(args.Ctx).
+		Table("program_class_enrollments pce").
+		Select(`pc.name AS class_name,
+	COALESCE(
+	(
+		SELECT STRING_AGG(pt.credit_type::text, ',')
+		FROM program_credit_types pt
+		WHERE pt.program_id = pc.program_id
+	), 
+	''
+	) AS credit_types,
+	pce.enrollment_status AS status,
+	pce.updated_at AS date_status_changed`).
+		Joins("INNER JOIN program_classes pc ON pce.class_id = pc.id").
+		Joins("INNER JOIN programs p ON p.id = pc.program_id").
+		Where("pce.user_id = ? ", userId).
+		Where("pc.start_dt BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'").
+		Order("pce.updated_at DESC").
+		Group("pc.program_id, pc.name, pce.enrollment_status, pce.updated_at").Debug().
+		Find(&residentWeeklySchedule).Error
+
+	if err != nil {
+		return nil, NewDBError(err, "program_class_enrollments")
+	}
+
+	return residentWeeklySchedule, nil
+}

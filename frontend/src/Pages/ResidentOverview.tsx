@@ -1,4 +1,8 @@
-import { ResidentProgramClassInfo, ServerResponseMany } from '@/common';
+import {
+    ResidentProgramClassHistory,
+    ResidentProgramClassInfo,
+    ServerResponseMany
+} from '@/common';
 import GreyPill from '@/Components/pill-labels/GreyPill';
 import { useAuth } from '@/useAuth';
 import useSWR from 'swr';
@@ -7,10 +11,9 @@ export default function ResidentOverview() {
     // TODO: for testing purposes
     const { user } = useAuth();
     const user_id = user?.id;
-    console.log(user_id, '>>>>>>>>>>>');
     const page = 1;
     const perPage = 10;
-    //
+    // TODO: Programs is currently paginated and this should be removed
     const {
         data: programsResp
         // error: programsError,
@@ -19,6 +22,29 @@ export default function ResidentOverview() {
         `/api/users/${user_id}/programs?page=${page}&per_page=${perPage}`
     );
     const enrollment_metrics = programsResp?.data;
+
+    const {
+        data: weekly_scheduleResp
+        // error: weekly_scheduleError,
+        // isLoading
+    } = useSWR<ServerResponseMany<ResidentProgramClassInfo>, Error>(
+        `/api/users/${user_id}/weekly-schedule`
+    );
+    if (!weekly_scheduleResp) {
+        return <div>Loading...</div>;
+    }
+    const weekly_schedule_metrics = weekly_scheduleResp?.data;
+    console.log('weekly_schedule_metrics:>>   ', weekly_schedule_metrics);
+
+    const {
+        data: historyResp
+        // error: historyError,
+        // isLoading
+    } = useSWR<ServerResponseMany<ResidentProgramClassHistory>, Error>(
+        `/api/users/${user_id}/program-history`
+    );
+    const history_metrics = historyResp?.data;
+    console.log('history_metrics:>>   ', history_metrics);
 
     return (
         <div className="px-5">
@@ -36,8 +62,8 @@ export default function ResidentOverview() {
                                     {program.class_name}
                                 </div>
                                 <div className="flex">
-                                    <span className="mr-1">Credit Type:</span>
-                                    {program.credit_type}
+                                    <span className="mr-1">Credit Types:</span>
+                                    {program.credit_types}
                                 </div>
                             </div>
                         </div>
