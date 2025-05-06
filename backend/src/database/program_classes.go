@@ -64,13 +64,6 @@ func (db *DB) GetTotalEnrollmentsByClassID(id int) (int64, error) {
 	return count, nil
 }
 
-func (db *DB) UpdateProgramClasses(classMap map[string]any, ids []int) error {
-	if err := db.Model(&models.ProgramClass{}).Where("id IN ?", ids).Updates(classMap).Error; err != nil {
-		return newUpdateDBError(err, "program classes")
-	}
-	return nil
-}
-
 func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]models.ProgramClassDetail, error) {
 	var classDetails []models.ProgramClassDetail
 	query := db.WithContext(args.Ctx).Table("program_classes ps").
