@@ -41,7 +41,11 @@ export default function Error({
     message: customMessage,
     navigateTo
 }: ErrorPageProps) {
-    const { message: defaultMessage, buttonText, onClick } = errorMap[type];
+    const {
+        message: defaultMessage,
+        buttonText,
+        onClick
+    } = errorMap[(type ?? 'server-error')];
     const navigate = useNavigate();
     const label = back ? 'Go Back' : buttonText;
     const displayMessage = customMessage ?? defaultMessage;
