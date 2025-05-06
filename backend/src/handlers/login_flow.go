@@ -52,6 +52,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		log.error("Parsing form failed, using urlform")
 	}
+	user, err := s.Db.GetUserByUsername(form.Username)
+	if err != nil {
+		return newUnauthorizedServiceError()
+	}
 	log.add("form", form)
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
@@ -78,7 +82,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
-	totalLogins, err := s.Db.IncrementUserLogin(form.Username)
+	totalLogins, err := s.Db.IncrementUserLogin(user)
 	if err != nil {
 		log.error("Error incrementing user login count", err)
 		return newDatabaseServiceError(err)
