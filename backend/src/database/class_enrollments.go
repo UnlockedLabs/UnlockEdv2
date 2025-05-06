@@ -174,21 +174,33 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status s
 	return nil
 }
 
-func (db *DB) UpdateProgramClassEnrollmentsPerEnrollment(classIDs []int, status string) error {
+func (db *DB) UpdateProgramClassEnrollmentsForCancelledProgram(classIDs []int, classMap map[string]any) error {
 	tx := db.Begin()
 	if tx.Error != nil {
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
+	if status, ok := classMap["status"]; ok &&
+		status == string(models.Cancelled) {
 
-	if err := tx.
-		Model(&models.ProgramClassEnrollment{}).
-		Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
-		Update("enrollment_status", status).
-		Error; err != nil {
-		tx.Rollback()
-		return newUpdateDBError(err, "class enrollment statuses")
+		if err := tx.
+			Model(&models.ProgramClassEnrollment{}).
+			Where("class_id IN ? AND enrollment_status = ?", classIDs, models.Enrolled).
+			Update("enrollment_status", models.EnrollmentCancelled).
+			Error; err != nil {
+
+			tx.Rollback()
+			return newUpdateDBError(err, "class enrollment statuses")
+		}
 	}
+	if err := tx.
+		Model(&models.ProgramClass{}).
+		Where("id IN ?", classIDs).
+		Updates(classMap).
+		Error; err != nil {
 
+		tx.Rollback()
+		return newUpdateDBError(err, "program classes")
+	}
 	if err := tx.Commit().Error; err != nil {
 		return newUpdateDBError(err, "commit transaction")
 	}

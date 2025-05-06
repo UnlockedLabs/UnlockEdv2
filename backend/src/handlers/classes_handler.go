@@ -124,14 +124,11 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	classMap["update_user_id"] = claims.UserID
 
 	if classMap["status"] == string(models.Cancelled) {
-		if err := srv.Db.UpdateProgramClassEnrollmentsPerEnrollment(classIDs, string(models.EnrollmentCancelled)); err != nil {
+		if err := srv.Db.UpdateProgramClassEnrollmentsForCancelledProgram(classIDs, classMap); err != nil {
 			return newDatabaseServiceError(err)
 		}
 	}
-	err := srv.Db.UpdateProgramClasses(classMap, classIDs)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
+
 	return writeJsonResponse(w, http.StatusOK, "Successfully updated program class")
 }
 
