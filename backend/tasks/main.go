@@ -15,7 +15,7 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Error("error loading .env file, using default env variables")
+		log.Error("error loading .env file, using the default env variables")
 	}
 	dev := os.Getenv("APP_ENV") == "dev"
 	initLogging()
