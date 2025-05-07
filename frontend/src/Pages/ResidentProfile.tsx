@@ -192,7 +192,7 @@ const ResidentProfile = () => {
                                 </button>
                                 {user && canSwitchFacility(user) && (
                                     <button
-                                        className="button-grey text-teal-4"
+                                        className="button-grey text-teal-5"
                                         onClick={() =>
                                             showModal(verifyResidentModal)
                                         }
