@@ -27,7 +27,7 @@ interface ProgramInputs {
     credit_type: GenericOption<CreditType>[];
     program_type: GenericOption<ProgramType>[];
     is_active: boolean;
-    funding_type: GenericOption<FundingType> | null;  
+    funding_type: GenericOption<FundingType> | null;
     facilities: GenericOption<string>[];
 }
 
@@ -73,12 +73,12 @@ export default function CreateProgramPage() {
         const transformedData: TransformedProgramInput = {
             ...data,
             is_active: new Boolean(data.is_active).valueOf(),
-            credit_type: data.credit_type.map((opt) => opt.value),  
-            program_type: data.program_type.map((opt) => opt.value),  
-            funding_type: data.funding_type  
-                ? data.funding_type.value  
+            credit_type: data.credit_type.map((opt) => opt.value),
+            program_type: data.program_type.map((opt) => opt.value),
+            funding_type: data.funding_type
+                ? data.funding_type.value
                 : FundingType.OTHER,
-            facilities: data.facilities.map((fac) => Number(fac.value))  
+            facilities: data.facilities.map((fac) => Number(fac.value))
         };
 
         const response = (await API.post<Program, TransformedProgramInput>(
@@ -171,9 +171,8 @@ export default function CreateProgramPage() {
                                     Array.isArray(selected) &&
                                     selected.find((opt) => opt.value === 'all') // eslint-disable-line
                                 ) {
-                                     
                                     return options.filter(
-                                        (opt) => String(opt.value) !== 'all'  
+                                        (opt) => String(opt.value) !== 'all'
                                     );
                                 }
                                 return selected; // eslint-disable-line
@@ -227,7 +226,7 @@ export default function CreateProgramPage() {
             <div className="flex items-center justify-end gap-4 mt-4">
                 <button
                     type="submit"
-                    className="btn"
+                    className="button-grey"
                     onClick={() =>
                         reset({
                             name: '',
@@ -244,7 +243,7 @@ export default function CreateProgramPage() {
                 </button>
                 <button
                     type="submit"
-                    className="btn btn-secondary"
+                    className="button"
                     onClick={() => {
                         void handleSubmit(onSubmit)();
                     }}

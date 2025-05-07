@@ -9,8 +9,9 @@ export default function Error() {
                     Either there has been an unexpected error, or the page you
                     requested was not found.
                 </div>
+
                 <button
-                    className="btn btn-primary btn-outline"
+                    className="button-outline mx-auto"
                     onClick={() => {
                         window.location.href = AUTHCALLBACK;
                     }}

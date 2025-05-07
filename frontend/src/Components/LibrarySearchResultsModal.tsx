@@ -302,7 +302,7 @@ const LibrarySearchResultsModal = forwardRef<
                         <div className="relative mt-2 p-2 bg-grey-1 rounded">
                             <button
                                 onClick={() => setSuggestions([])}
-                                className="btn btn-ghost btn-circle absolute top-1 right-1"
+                                className="button-circle absolute top-1 right-1"
                             >
                                 x
                             </button>
@@ -314,7 +314,7 @@ const LibrarySearchResultsModal = forwardRef<
                                     <li key={index}>
                                         <button
                                             type="button"
-                                            className="btn btn-sm"
+                                            className="button-grey-sm"
                                             onClick={() => {
                                                 setSearchTerm(sug);
                                                 setSuggestions([]);
