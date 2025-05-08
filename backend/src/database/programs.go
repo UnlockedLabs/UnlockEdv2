@@ -103,6 +103,21 @@ func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
 	return content, nil
 }
 
+func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id int) (bool, error) {
+	var count int64
+	err := db.Model(&models.ProgramClass{}).Where("program_id = ? and status IN ?", id, []models.ClassStatus{models.Active, models.Scheduled}).Count(&count).Error
+	if err != nil {
+		return false, newGetRecordsDBError(err, "program_classes")
+	}
+	if count > 0 && programUpdate["archived_at"] != nil {
+		return false, nil
+	}
+	if err := db.Model(&models.Program{}).Where("id = ?", id).Updates(programUpdate).Error; err != nil {
+		return false, newUpdateDBError(err, "program status")
+	}
+	return true, nil
+}
+
 func (db *DB) DeleteProgram(id int) error {
 	if err := db.Delete(&models.Program{}, id).Error; err != nil {
 		return newDeleteDBError(err, "programs")

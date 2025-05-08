@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
-	"time"
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {
@@ -23,6 +22,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		{"POST /api/programs", srv.handleCreateProgram, true, axx},
 		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
 		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
+		{"PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, true, axx},
 		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx},
 	}
 }
@@ -167,9 +167,10 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	}
 	return writeJsonResponse(w, http.StatusCreated, newProg)
 }
+
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var updates map[string]interface{}
-	err := json.NewDecoder(r.Body).Decode(&updates)
+	var program models.Program
+	err := json.NewDecoder(r.Body).Decode(&program)
 	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -182,31 +183,35 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	toUpdate, err := srv.Db.GetProgramByID(id)
 	if err != nil {
 		log.error("Error getting program:" + err.Error())
-		return newDatabaseServiceError(err)
 	}
-	for key, value := range updates {
-		switch key {
-		case "status", "is_active":
-			if status, ok := value.(bool); ok {
-				toUpdate.IsActive = status
-			}
-		case "archived_at":
-			if value == nil {
-				toUpdate.ArchivedAt = nil
-			} else if archivedAt, ok := value.(string); ok {
-				t, err := time.Parse(time.RFC3339, archivedAt)
-				if err != nil {
-					return NewServiceError(err, http.StatusInternalServerError, "archived_at")
-				}
-				toUpdate.ArchivedAt = &t
-			}
-		}
-	}
+	models.UpdateStruct(&toUpdate, &program)
 	updated, updateErr := srv.Db.UpdateProgram(toUpdate)
 	if updateErr != nil {
-		return newDatabaseServiceError(updateErr)
+		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
+}
+
+func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Request, log sLog) error {
+	programUpdate := make(map[string]any)
+	if err := json.NewDecoder(r.Body).Decode(&programUpdate); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	log.add("program_id", id)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	programUpdate["update_user_id"] = claims.UserID
+	updated, err := srv.Db.UpdateProgramStatus(programUpdate, id)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if !updated {
+		return writeJsonResponse(w, http.StatusConflict, "Unable to archive program with active or scheduled classes")
+	}
+	return writeJsonResponse(w, http.StatusOK, "Program Status Updated")
 }
 
 func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
