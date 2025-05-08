@@ -23,7 +23,7 @@ function ProgramStatusPill({
     let background: string, text: string;
     switch (status) {
         case ProgramEffectiveStatus.Available:
-            background = 'bg-teal-4 text-white';
+            background = 'bg-[#B0DFDA] text-[#002E2A]';
             text = 'Available';
             break;
         case ProgramEffectiveStatus.Inactive:
@@ -31,7 +31,7 @@ function ProgramStatusPill({
             text = 'Inactive';
             break;
         case ProgramEffectiveStatus.Archived:
-            background = 'bg-grey-3 text-body-text';
+            background = 'bg-grey-2 text-body-text';
             text = 'Archived';
             break;
     }
@@ -73,7 +73,6 @@ export default function ProgramStatus({
         null
     );
 
-    // use the shared hook for toasts, modal‑closing, and SWR mutate on success
     const checkResponse = useCheckResponse({
         mutate,
         refModal: modifyProgramRef
@@ -101,21 +100,21 @@ export default function ProgramStatus({
         let resp = { success: false, message: '' };
 
         if (selectedAction === 'set_available') {
-            resp = await API.patch(`programs/${program.program_id}`, {
-                status: true
+            resp = await API.patch(`programs/${program.program_id}/status`, {
+                is_active: true
             });
         } else if (selectedAction === 'set_inactive') {
-            resp = await API.patch(`programs/${program.program_id}`, {
-                status: false
+            resp = await API.patch(`programs/${program.program_id}/status`, {
+                is_active: false
             });
         } else if (selectedAction === 'archive') {
-            resp = await API.patch(`programs/${program.program_id}`, {
+            resp = await API.patch(`programs/${program.program_id}/status`, {
                 archived_at: new Date().toISOString()
             });
         } else if (selectedAction === 'reactivate') {
-            resp = await API.patch(`programs/${program.program_id}`, {
+            resp = await API.patch(`programs/${program.program_id}/status`, {
                 archived_at: null,
-                status: newStatus
+                is_active: newStatus
             });
         }
 
@@ -173,7 +172,6 @@ export default function ProgramStatus({
                     </ul>
                 )}
             </div>
-
             <ModifyProgramModal
                 ref={modifyProgramRef}
                 action={selectedAction}
