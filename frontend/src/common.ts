@@ -1065,8 +1065,4 @@ export type ActivityHistoryAction =
     | 'reset_password'
     | 'class_history';
 
-export type ErrorType =
-    | 'unauthorized'
-    | 'not-found'
-    | 'server-error'
-    | 'auth-required';
+export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
