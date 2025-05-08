@@ -7,8 +7,8 @@ import {
 } from '@/routeLoaders';
 import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
-import { FeatureAccess, TitleHandler } from '@/common';
-import { AdminRoles, AllRoles } from '@/useAuth';
+import { FeatureAccess, TitleHandler, UserRole } from '@/common';
+import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
@@ -26,7 +26,6 @@ export const ProgramRoutes = DeclareAuthenticatedRoutes(
     [
         {
             path: 'programs-residents',
-            id: 'programs-facilities-residents',
             // loader: ,
             element: <ResidentOverview />,
             handle: {
@@ -35,7 +34,7 @@ export const ProgramRoutes = DeclareAuthenticatedRoutes(
             }
         }
     ],
-    AllRoles,
+    [UserRole.Student],
     [FeatureAccess.ProgramAccess]
 );
 
