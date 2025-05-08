@@ -1,6 +1,5 @@
-import { canSwitchFacility, isAdministrator, useAuth } from '@/useAuth';
+import { canSwitchFacility, useAuth } from '@/useAuth';
 import StatsCard from '@/Components/StatsCard';
-import Error from '@/Pages/Error';
 import {
     AdminLayer2Join,
     Facility,
@@ -42,9 +41,6 @@ export default function AdminLayer2() {
         new Date(layer2_metrics?.last_cache).toLocaleString('en-US', {});
 
     if (error || isLoading || !user) return <div></div>;
-    if (!isAdministrator(user)) {
-        return <Error type="unauthorized" />;
-    }
 
     return (
         <div className="w-full flex flex-col gap-2 pb-4 px-5">

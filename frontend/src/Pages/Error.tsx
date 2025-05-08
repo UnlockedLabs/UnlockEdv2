@@ -28,11 +28,6 @@ const errorMap: Record<
         message: 'An unexpected error occurred. Please try again later.',
         buttonText: 'Home Page',
         onClick: () => (window.location.href = AUTHCALLBACK)
-    },
-    'auth-required': {
-        message: 'You need to log in to access this page.',
-        buttonText: 'Login',
-        onClick: () => (window.location.href = AUTHCALLBACK)
     }
 };
 export default function Error({
@@ -45,7 +40,7 @@ export default function Error({
         message: defaultMessage,
         buttonText,
         onClick
-    } = errorMap[(type ?? 'server-error')];
+    } = errorMap[type ?? 'server-error'];
     const navigate = useNavigate();
     const label = back ? 'Go Back' : buttonText;
     const displayMessage = customMessage ?? defaultMessage;
