@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 )
 
@@ -449,13 +448,7 @@ func (srv *Server) handleGetUserProgramHistory(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	for i := range programHistory {
-		t, err := time.Parse("2006-01-02T15:04:05Z07:00", programHistory[i].DateStatusChanged)
-		if err != nil {
-			return newInternalServerServiceError(err, "error parsing date_status_changed")
-		}
-		programHistory[i].DateStatusChanged = t.Format("January 2, 2006")
-	}
+	
 	return writeJsonResponse(w, http.StatusOK, programHistory)
 }
 

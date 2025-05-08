@@ -522,8 +522,8 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             p.id                     AS program_id,
             pc.name                  AS class_name,
             pc.status                AS status,
-			COALESCE(pc.start_dt::text, 'N/A') AS start_date,
-			COALESCE(pc.end_dt::text, 'N/A') AS end_date,
+			pc.start_dt::text AS start_date,
+			pc.end_dt::text AS end_date,
             pc.id                    AS class_id,
 			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
 

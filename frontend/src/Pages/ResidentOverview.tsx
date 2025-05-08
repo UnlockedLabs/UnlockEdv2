@@ -127,7 +127,7 @@ export default function ResidentOverview() {
                             <div className="flex">
                                 {program.status}
                                 {' on '}
-                                {program.date_status_changed}
+                                {formatDate(program.date_status_changed)}
                             </div>
                         </div>
                     </>
