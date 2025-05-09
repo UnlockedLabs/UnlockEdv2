@@ -264,20 +264,13 @@ func (db *DB) GetStudentProgramAttendanceData(userId uint) ([]ProgramData, error
 	return programDataList, nil
 }
 
-func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, month time.Month, year int, tz string) (*models.Calendar, error) {
-	loc, err := time.LoadLocation(tz)
-	if err != nil {
-		logrus.Errorf("Error loading time zone: %s", err)
-		return nil, err
-	}
-
-	firstOfMonth := time.Date(year, month, 1, 0, 0, 0, 0, loc)
-	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *models.DateRange) (*models.Calendar, error) {
 	daysMap := make(map[string]*models.Day)
-	currentDate := firstOfMonth
-	for !currentDate.After(lastOfMonth) {
+	currentDate := rng.Start
+	for !currentDate.After(rng.End) {
 		dateStr := currentDate.Format("2006-01-02")
 		daysMap[dateStr] = &models.Day{
+			DayIdx: currentDate.Day(),
 			Date:   currentDate,
 			Events: []models.EventInstance{},
 		}
@@ -298,7 +291,7 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, month tim
 		}
 		rruleSet.RRule(r)
 
-		eventInstances := generateEventInstances(event, firstOfMonth, lastOfMonth.Add(time.Duration(24*time.Hour-1)))
+		eventInstances := generateEventInstances(event, rng.Start, rng.End.Add(time.Duration(24*time.Hour-1)))
 
 		for _, instance := range eventInstances {
 			dateStr := instance.StartTime.Format("2006-01-02")
@@ -325,16 +318,12 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, month tim
 	sort.Slice(days, func(i, j int) bool {
 		return days[i].Date.Before(days[j].Date)
 	})
-	return models.NewCalendar(year, month.String(), days), nil
+	return models.NewCalendar(days), nil
 }
 
-func (db *DB) GetCalendar(month time.Month, year int, facilityId uint, userId *uint) (*models.Calendar, error) {
+func (db *DB) GetCalendar(dtRng *models.DateRange, facilityId uint, userId *uint) (*models.Calendar, error) {
 	content := []models.ProgramClassEvent{}
 
-	var tz string
-	if err := db.Table("facilities f").Select("timezone").Where("id = ?", facilityId).Row().Scan(&tz); err != nil {
-		return nil, newGetRecordsDBError(err, "calendar")
-	}
 	if userId != nil {
 		if err := db.Model(&models.ProgramClassEvent{}).
 			Preload("Overrides").Preload("Class.Program").
@@ -351,7 +340,7 @@ func (db *DB) GetCalendar(month time.Month, year int, facilityId uint, userId *u
 			return nil, newGetRecordsDBError(err, "calendar")
 		}
 	}
-	return db.getCalendarFromEvents(content, month, year, tz)
+	return db.getCalendarFromEvents(content, dtRng)
 }
 
 func applyOverrides(event models.ProgramClassEvent, start, end time.Time) []models.EventInstance {
