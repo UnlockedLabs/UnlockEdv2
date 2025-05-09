@@ -9,8 +9,8 @@ func FilterMap[T any](ss []T, test func(T) bool) (ret []T) {
 	return
 }
 
-func IterMap[T any](fun func(T) T, arr []T) []T {
-	applied := []T{}
+func IterMap[T any, E any](fun func(T) E, arr []T) []E {
+	applied := []E{}
 	for _, item := range arr {
 		applied = append(applied, fun(item))
 	}
