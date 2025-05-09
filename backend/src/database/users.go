@@ -35,7 +35,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(args.OrderClause()).
+	if err := tx.Order(args.OrderClause("")).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).
@@ -124,7 +124,7 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(args.OrderClause()).
+	if err := tx.Order(args.OrderClause("users")).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).

@@ -288,7 +288,7 @@ func (db *DB) GetUserFavorites(args *models.QueryContext) ([]models.OpenContentI
         WHERE f.user_id = ? %s
     ) AS all_favorites
     ORDER BY %s
-	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, args.OrderClause())
+	LIMIT ? OFFSET ?`, libSearchCond, videoSearchCond, hlSearchCond, args.OrderClause("f"))
 
 	var favorites []models.OpenContentItem
 	if err := db.WithContext(args.Ctx).Raw(favoritesQuery, queryArgs...).Scan(&favorites).Error; err != nil {
