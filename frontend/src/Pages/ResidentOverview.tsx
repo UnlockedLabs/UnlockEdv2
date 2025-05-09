@@ -16,7 +16,7 @@ export default function ResidentOverview() {
         // error: programsError,
         // isLoading
     } = useSWR<ServerResponseMany<ResidentProgramClassInfo>, Error>(
-        `/api/users/${user_id}/programs`
+        `/api/users/${user_id}/programs?order=ASC&order_by=program_name`
     );
     const enrollment_metrics = programsResp?.data;
 
@@ -87,12 +87,12 @@ export default function ResidentOverview() {
             {/* TODO: Weekly Schedule */}
             {weekly_schedule_metrics && weekly_schedule_metrics.length > 0 ? (
                 <div>
-                    {weekly_schedule_metrics.map((schedule, index) => (
+                    {/* {weekly_schedule_metrics.map((schedule, index) => (
                         <div key={index} className="flex">
                             <span className="mr-1">Class Name:</span>
                             {schedule.class_name}
                         </div>
-                    ))}
+                    ))} */}
                 </div>
             ) : (
                 <p className="body">No classes scheduled for this week.</p>

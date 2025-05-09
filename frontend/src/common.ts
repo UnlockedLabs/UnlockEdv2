@@ -780,8 +780,7 @@ export interface ResidentProgramClassHistory extends BaseResidentProgramClass {
     date_status_changed: string;
 }
 
-export interface ResidentProgramClassWeeklySchedule
-    extends BaseResidentProgramClass {
+export interface ResidentProgramClassWeeklySchedule {
     start_date: string;
     end_date: string;
 }

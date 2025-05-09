@@ -549,8 +549,10 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id
         `)
 
+	if args.OrderBy != "" {
+		base = base.Order(args.OrderClause())
+	}
 	if args.IsAdmin {
-		base.Order("pc.start_dt DESC")
 		if err := base.Count(&args.Total).Error; err != nil {
 			return nil, NewDBError(err, "program_class_enrollments")
 		}
@@ -558,7 +560,6 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 			return nil, NewDBError(err, "program_class_enrollments apply pagination")
 		}
 	} else {
-		base.Order("pc.name")
 		if err := base.Find(&userEnrollments).Error; err != nil {
 			return nil, NewDBError(err, "program_class_enrollments")
 		}

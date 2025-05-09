@@ -26,7 +26,6 @@ export const ProgramRoutes = DeclareAuthenticatedRoutes(
     [
         {
             path: 'programs-residents',
-            // loader: ,
             element: <ResidentOverview />,
             handle: {
                 title: 'Current Enrollments',
