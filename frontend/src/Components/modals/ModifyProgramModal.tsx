@@ -10,7 +10,7 @@ export const ProgramActionMessages = {
     },
     set_inactive: {
         title: 'Set to Inactive',
-        text: 'Marking this program inactive will prevent new classes from being created. Existing active and scheduled classes will continue. Scheduled classes will require manual review if you wish to cancel them. Are you sure?'
+        text: ' You won’t be able to create new classes for this program. \n Existing and scheduled classes will continue unless you cancel them manually.'
     },
     archive: {
         title: 'Archive Program',

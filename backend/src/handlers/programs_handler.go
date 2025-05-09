@@ -202,8 +202,9 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	log.add("program_id", id)
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	programUpdate["update_user_id"] = claims.UserID
+	// These will need to be uncommented once the update_user_id is added to the database
+	//claims := r.Context().Value(ClaimsKey).(*Claims)
+	//programUpdate["update_user_id"] = claims.UserID
 	updated, err := srv.Db.UpdateProgramStatus(programUpdate, id)
 	if err != nil {
 		return newDatabaseServiceError(err)
