@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
@@ -151,16 +152,14 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 		return newDatabaseServiceError(err)
 	}
 	log.add("program_id", newProg.ID)
-	for _, facilityId := range program.Facilities {
-		facilityProgram := models.FacilitiesPrograms{
-			FacilityID: uint(facilityId),
+	facilityPrograms := src.IterMap(func(id int) models.FacilitiesPrograms {
+		return models.FacilitiesPrograms{
+			FacilityID: uint(id),
 			ProgramID:  newProg.ID,
 		}
-		log.add("facility_id", facilityId)
-		if err := srv.Db.Model(&models.FacilitiesPrograms{}).Create(&facilityProgram).Error; err != nil {
-			log.info("Error creating facility program: " + err.Error())
-			continue
-		}
+	}, program.Facilities)
+	if err := srv.Db.Model(&models.FacilitiesPrograms{}).Create(&facilityPrograms).Error; err != nil {
+		log.info("Error creating facility program: " + err.Error())
 	}
 	return writeJsonResponse(w, http.StatusCreated, newProg)
 }
