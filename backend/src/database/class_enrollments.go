@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"fmt"
+	"strings"
 )
 
 func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
@@ -231,8 +232,12 @@ func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, cl
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
+	orderBy := args.OrderClause()
+	if strings.Contains(orderBy, "name_last") {
+		orderBy = fmt.Sprintf("%s, name_first", orderBy)
+	}
 	if err := tx.Limit(args.PerPage).
-		Offset(args.CalcOffset()).Order(args.OrderClause()).
+		Offset(args.CalcOffset()).Order(orderBy).
 		Find(&content).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
