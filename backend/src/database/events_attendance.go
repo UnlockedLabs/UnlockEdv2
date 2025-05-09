@@ -108,7 +108,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 	finalQuery := selectClause + baseQuery
 
 	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
-		finalQuery += " ORDER BY " + qryCtx.OrderClause()
+		finalQuery += " ORDER BY " + qryCtx.OrderClause("e")
 	} else {
 		finalQuery += " ORDER BY e.id ASC"
 	}

@@ -58,10 +58,7 @@ func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
 	if len(args.Tags) > 0 {
 		tx = tx.Joins("JOIN program_types t ON t.program_id = programs.id").Where("t.id IN (?)", args.Tags)
 	}
-
-	if args.OrderBy != "" {
-		tx = tx.Order(args.OrderClause())
-	}
+	tx = tx.Order(args.OrderClause("programs"))
 
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
@@ -233,9 +230,7 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 	if len(args.Tags) > 0 {
 		tx = tx.Where("pt.program_id IN (?)", args.Tags)
 	}
-	if args.OrderBy != "" {
-		tx = tx.Order(args.OrderClause())
-	}
+	tx = tx.Order(args.OrderClause("programs"))
 	if args.Search != "" {
 		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
 	}

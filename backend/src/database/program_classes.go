@@ -81,7 +81,7 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	if err := query.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
-	if err := query.Limit(args.PerPage).Offset(args.CalcOffset()).Order(args.OrderClause()).Find(&classDetails).Error; err != nil {
+	if err := query.Limit(args.PerPage).Offset(args.CalcOffset()).Order(args.OrderClause("ps")).Find(&classDetails).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
 	return classDetails, nil
@@ -89,7 +89,7 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 
 func (db *DB) GetClassHistory(id int, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
 	history := []models.ProgramClassesHistory{}
-	if err := db.WithContext(args.Ctx).Order(args.OrderClause()).Find(&history, "parent_ref_id = ? and table_name = ?", id, "program_classes").Error; err != nil {
+	if err := db.WithContext(args.Ctx).Order(args.OrderClause("")).Find(&history, "parent_ref_id = ? and table_name = ?", id, "program_classes").Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_classes_history")
 	}
 	return history, nil
