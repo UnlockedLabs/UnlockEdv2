@@ -160,21 +160,3 @@ type ResidentProgramClassInfo struct {
 	CreditTypes          string                  `json:"credit_types"`
 	UpdatedAt            string                  `json:"updated_at"`
 }
-
-type ResidentProgramClassWeeklySchedule struct {
-	ClassName string `json:"class_name"`
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-}
-
-type Class struct {
-	Name      string     `json:"class_name"`
-	StartDate time.Time  `json:"start_date"`
-	EndDate   *time.Time `json:"end_date"`
-}
-
-type WeeklySchedule struct {
-	Day      string
-	TimeSlot string
-	Classes  []Class
-}

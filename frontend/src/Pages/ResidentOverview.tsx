@@ -1,8 +1,4 @@
-import {
-    ResidentProgramClassWeeklySchedule,
-    ResidentProgramOverview,
-    ServerResponseMany
-} from '@/common';
+import { ResidentProgramOverview, ServerResponseMany } from '@/common';
 import GreyPill from '@/Components/pill-labels/GreyPill';
 import { useAuth } from '@/useAuth';
 import useSWR from 'swr';
@@ -10,30 +6,18 @@ import useSWR from 'swr';
 export default function ResidentOverview() {
     const { user } = useAuth();
     const user_id = user?.id;
-    const {
-        data: enrollmentResp
-        // error: programsError,
-        // isLoading
-    } = useSWR<ServerResponseMany<ResidentProgramOverview>, Error>(
+    const { data: enrollmentResp } = useSWR<
+        ServerResponseMany<ResidentProgramOverview>,
+        Error
+    >(
         `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name`
     );
     const enrollment_metrics = enrollmentResp?.data;
 
-    const {
-        data: weekly_scheduleResp
-        // error: weekly_scheduleError,
-        // isLoading
-    } = useSWR<ServerResponseMany<ResidentProgramClassWeeklySchedule>, Error>(
-        `/api/users/${user_id}/weekly-schedule`
-    );
-    const weekly_schedule_metrics = weekly_scheduleResp?.data;
-    console.log('weekly_schedule_metrics:>>   ', weekly_schedule_metrics);
-
-    const {
-        data: activityResp
-        // error: historyError,
-        // isLoading
-    } = useSWR<ServerResponseMany<ResidentProgramOverview>, Error>(
+    const { data: activityResp } = useSWR<
+        ServerResponseMany<ResidentProgramOverview>,
+        Error
+    >(
         `/api/users/${user_id}/programs?view=activity&order=DESC&order_by=updated_at`
     );
     const activity_metrics = activityResp?.data;
@@ -93,18 +77,18 @@ export default function ResidentOverview() {
                 </p>
             )}
             {/* TODO: Weekly Schedule */}
-            {weekly_schedule_metrics && weekly_schedule_metrics.length > 0 ? (
-                <div>
-                    {/* {weekly_schedule_metrics.map((schedule, index) => (
+            {/* {weekly_schedule_metrics && weekly_schedule_metrics.length > 0 ? ( */}
+            <div>
+                {/* {weekly_schedule_metrics.map((schedule, index) => (
                         <div key={index} className="flex">
                             <span className="mr-1">Class Name:</span>
                             {schedule.class_name}
                         </div>
                     ))} */}
-                </div>
-            ) : (
+            </div>
+            {/* ) : (
                 <p className="body">No classes scheduled for this week.</p>
-            )}
+            )} */}
             <div className="card card-row-padding mb-4">
                 <div className="mb-2 flex justify-between">
                     <h1>Weekly Schedule</h1>

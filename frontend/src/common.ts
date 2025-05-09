@@ -775,16 +775,6 @@ export interface ResidentProgramOverview {
     attendance_percentage?: number;
 }
 
-export interface ResidentProgramClassWeeklySchedule {
-    className: string;
-    startDate: string;
-    endDate: string | null;
-    creditTypes: string;
-    status: string;
-    dateStatusChanged: string;
-    dayOfWeek: number; // 0 = Sunday, 6 = Saturday
-}
-
 export interface ProgramClassEvent {
     id: number;
     class_id: number;
