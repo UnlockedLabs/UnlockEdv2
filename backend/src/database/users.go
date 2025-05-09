@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/models"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -35,7 +36,11 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(args.OrderClause()).
+	orderBy := args.OrderClause()
+	if strings.Contains(orderBy, "name_last") {
+		orderBy = fmt.Sprintf("%s, name_first", orderBy)
+	}
+	if err := tx.Order(orderBy).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).
@@ -124,7 +129,11 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(args.OrderClause()).
+	orderBy := args.OrderClause()
+	if strings.Contains(orderBy, "name_last") {
+		orderBy = fmt.Sprintf("%s, name_first", orderBy)
+	}
+	if err := tx.Order(orderBy).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).

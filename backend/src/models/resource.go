@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 type PaginatedResource[T any] struct {
@@ -99,8 +98,6 @@ func (q QueryContext) OrderClause() string {
 	val := fmt.Sprintf("%s %s", q.OrderBy, q.Order)
 	if val == " " {
 		return "created_at desc"
-	} else if strings.Contains(val, "name_last") {
-		val = fmt.Sprintf("%s, name_first", val)
 	}
 	return val
 }
