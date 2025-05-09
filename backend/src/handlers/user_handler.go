@@ -411,6 +411,7 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 }
 
 // TODO: The access level of this handler was changed from true to false to allow for user routing. This is a temporary fix for the development of this feature and should be addressed
+
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
@@ -448,7 +449,7 @@ func (srv *Server) handleGetUserProgramHistory(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	
+
 	return writeJsonResponse(w, http.StatusOK, programHistory)
 }
 

@@ -169,9 +169,9 @@ type ResidentProgramClassHistory struct {
 }
 
 type ResidentProgramClassWeeklySchedule struct {
-	ClassName   string `json:"class_name"`
-	StartDate   string `json:"start_date"`
-	EndDate     string `json:"end_date"`
+	ClassName string `json:"class_name"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 	// CreditTypes string `json:"credit_types"`
 	// Status      string `json:"status"`
 }
