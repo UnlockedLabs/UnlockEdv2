@@ -84,12 +84,6 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 			order = orderBySplit[1]
 		}
 	}
-	if orderBy == "" {
-		orderBy = "created_at"
-	}
-	if order != "asc" && order != "desc" {
-		order = "desc"
-	}
 	search := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("search")))
 	tags := r.URL.Query()["tags"]
 	all := r.URL.Query().Get("all") == "true"
