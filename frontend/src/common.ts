@@ -781,8 +781,13 @@ export interface ResidentProgramClassHistory extends BaseResidentProgramClass {
 }
 
 export interface ResidentProgramClassWeeklySchedule {
-    start_date: string;
-    end_date: string;
+    className: string;
+    startDate: string;
+    endDate: string | null;
+    creditTypes: string;
+    status: string;
+    dateStatusChanged: string;
+    dayOfWeek: number; // 0 = Sunday, 6 = Saturday
 }
 
 export interface ProgramClassEvent {

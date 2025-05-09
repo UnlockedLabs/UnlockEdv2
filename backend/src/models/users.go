@@ -175,3 +175,15 @@ type ResidentProgramClassWeeklySchedule struct {
 	// CreditTypes string `json:"credit_types"`
 	// Status      string `json:"status"`
 }
+
+type Class struct {
+	Name      string     `json:"class_name"`
+	StartDate time.Time  `json:"start_date"`
+	EndDate   *time.Time `json:"end_date"`
+}
+
+type WeeklySchedule struct {
+	Day      string
+	TimeSlot string
+	Classes  []Class
+}

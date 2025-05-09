@@ -604,35 +604,98 @@ func (db *DB) GetUserProgramClassHistory(args *models.QueryContext, userId int) 
 	return residentProgramClassHistory, nil
 }
 
-func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]models.ResidentProgramClassWeeklySchedule, error) {
-	var residentWeeklySchedule []models.ResidentProgramClassWeeklySchedule
+// schedules[
+// 	ws{
+// 		day:Value
+// 		timeSlot:Value
+// 	}
+// ]
+
+func findExistingSchedule(schedules []models.WeeklySchedule, day string, timeSlot string) *models.WeeklySchedule {
+	for i, schedule := range schedules {
+		if schedule.Day == day && schedule.TimeSlot == timeSlot {
+			return &schedules[i]
+		}
+	}
+	return nil
+}
+
+type FlatSchedule struct {
+	ClassName         string     `gorm:"column:class_name"`
+	StartDate         time.Time  `gorm:"column:start_date"`
+	EndDate           *time.Time `gorm:"column:end_date"`
+	DateStatusChanged time.Time  `gorm:"column:date_status_changed"`
+	DayOfWeek         int        `gorm:"column:day_of_week"`
+}
+
+func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]models.WeeklySchedule, error) {
+	var flatSchedules []FlatSchedule
 
 	err := db.WithContext(args.Ctx).
 		Table("program_class_enrollments pce").
 		Select(`pc.name AS class_name,
-				pc.start_dt AS start_date,
-				COALESCE(pc.end_dt::text, 'N/A') AS end_date,
-	COALESCE(
-	(
-		SELECT STRING_AGG(pt.credit_type::text, ',')
-		FROM program_credit_types pt
-		WHERE pt.program_id = pc.program_id
-	), 
-	''
-	) AS credit_types,
-	pce.enrollment_status AS status,
-	pce.updated_at AS date_status_changed`).
+			 pc.start_dt AS start_date,
+			 pc.end_dt AS end_date,
+			 pce.updated_at AS date_status_changed,
+			 EXTRACT(DOW FROM pc.start_dt) AS day_of_week`).
 		Joins("INNER JOIN program_classes pc ON pce.class_id = pc.id").
 		Joins("INNER JOIN programs p ON p.id = pc.program_id").
 		Where("pce.user_id = ? ", userId).
-		Where("pc.start_dt BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'").
+		Where(`
+		pc.start_dt::date BETWEEN date_trunc('week', CURRENT_DATE)::date
+		AND (date_trunc('week', CURRENT_DATE)::date + INTERVAL '6 days')`).
 		Order("pce.updated_at DESC").
-		Group("pc.program_id, pc.name, pc.start_dt, pc.end_dt, pce.enrollment_status, pce.updated_at").
-		Find(&residentWeeklySchedule).Debug().Error
+		Group("pc.program_id, pc.name, pc.start_dt, pc.end_dt, pce.updated_at, EXTRACT(DOW FROM pc.start_dt)").Debug().
+		Find(&flatSchedules).Error
 
 	if err != nil {
 		return nil, NewDBError(err, "program_class_enrollments")
 	}
 
-	return residentWeeklySchedule, nil
+	// Group data by day and time slots
+	var groupedSchedule []models.WeeklySchedule
+	for _, fs := range flatSchedules {
+		day := getDayOfWeek(fs.DayOfWeek)     // "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+		timeSlot := getTimeSlot(fs.StartDate) // "Morning", "Afternoon", "Evening"
+
+		class := models.Class{
+			Name:      fs.ClassName,
+			StartDate: fs.StartDate,
+			EndDate:   fs.EndDate,
+		}
+
+		existing := findExistingSchedule(groupedSchedule, day, timeSlot)
+		if existing != nil {
+			existing.Classes = append(existing.Classes, class)
+		} else {
+			groupedSchedule = append(groupedSchedule, models.WeeklySchedule{
+				Day:      day,
+				TimeSlot: timeSlot,
+				Classes:  []models.Class{class},
+			})
+		}
+	}
+
+	return groupedSchedule, nil
+}
+
+func getDayOfWeek(dayOfWeek int) string {
+	days := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+	return days[dayOfWeek-1]
+}
+
+// getTimeSlot takes a time.Time object and returns a string indicating the time slot
+// associated with the given date and time. The time slots are as follows:
+// - Morning: 12am - 12pm
+// - Afternoon: 12pm - 5pm
+// - Evening: 5pm - 12am
+func getTimeSlot(startDate time.Time) string {
+	hour := startDate.Hour()
+	if hour < 12 {
+		return "Morning"
+	} else if hour < 17 {
+		return "Afternoon"
+	} else {
+		return "Evening"
+	}
 }
