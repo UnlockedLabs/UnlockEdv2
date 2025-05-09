@@ -17,7 +17,6 @@ func (srv *Server) registerUserRoutes() []routeDef {
 	return []routeDef{
 		{"GET /api/users", srv.handleIndexUsers, true, axx},
 		{"GET /api/users/{id}", srv.handleShowUser, false, axx},
-		{"GET /api/users/{id}/weekly-schedule", srv.handleGetUserWeeklySchedule, false, axx},
 		{"POST /api/users", srv.handleCreateUser, true, axx},
 		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
 		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
@@ -435,18 +434,4 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 		}
 	}
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
-}
-
-func (srv *Server) handleGetUserWeeklySchedule(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id := r.PathValue("id")
-	userId, err := strconv.Atoi(id)
-	if err != nil {
-		return newInvalidIdServiceError(err, "error converting user_id")
-	}
-	queryCtx := srv.getQueryContext(r)
-	weeklySchedule, err := srv.Db.GetUserWeeklySchedule(&queryCtx, userId)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	return writeJsonResponse(w, http.StatusOK, weeklySchedule)
 }
