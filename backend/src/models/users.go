@@ -158,22 +158,13 @@ type ResidentProgramClassInfo struct {
 	PresentAttendance    int                     `json:"present_attendance"`
 	AbsentAttendance     int                     `json:"absent_attendance"`
 	CreditTypes          string                  `json:"credit_types"`
-}
-
-type ResidentProgramClassHistory struct {
-	ProgramName       string      `json:"program_name"`
-	ClassName         string      `json:"class_name"`
-	Status            ClassStatus `json:"status"`
-	DateStatusChanged string      `json:"date_status_changed"`
-	CreditTypes       string      `json:"credit_types"`
+	UpdatedAt            string                  `json:"updated_at"`
 }
 
 type ResidentProgramClassWeeklySchedule struct {
 	ClassName string `json:"class_name"`
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
-	// CreditTypes string `json:"credit_types"`
-	// Status      string `json:"status"`
 }
 
 type Class struct {

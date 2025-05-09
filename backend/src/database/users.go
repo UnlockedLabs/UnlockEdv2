@@ -522,9 +522,10 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             p.id                     AS program_id,
             pc.name                  AS class_name,
             pc.status                AS status,
-			pc.start_dt::text AS start_date,
-			pc.end_dt::text AS end_date,
+			pc.start_dt AS start_date,
+			pc.end_dt AS end_date,
             pc.id                    AS class_id,
+			pce.updated_at,
 			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
 
             -- count present attendance status
@@ -537,21 +538,23 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
               CASE WHEN pcea.attendance_status <> 'present' THEN 1 ELSE 0 END
             ), 0)  AS absent_attendance
         `).
-		Joins("INNER JOIN program_classes pc  ON pc.id  = pce.class_id").
-		Joins("INNER JOIN programs p  ON p.id = pc.program_id").
+		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
+		Joins("INNER JOIN programs p ON p.id = pc.program_id").
 		Joins("INNER JOIN program_credit_types pct ON pct.program_id = p.id").
-		Joins("INNER JOIN program_class_events e   ON e.class_id = pc.id").
-		Joins(`LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = e.id AND pcea.user_id = ?`, userId).
+		Joins("INNER JOIN program_class_events e ON e.class_id = pc.id").
+		Joins(
+			`LEFT JOIN program_class_event_attendance pcea 
+            ON pcea.event_id = e.id 
+           AND pcea.user_id = ?`,
+			userId,
+		).
 		Where("pce.user_id = ?", userId).
 		Group(`
             pce.enrollment_status,
             p.name, p.id,
-            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id
-        `)
+            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at
+        `).Order(args.OrderClause())
 
-	if args.OrderBy != "" {
-		base = base.Order(args.OrderClause())
-	}
 	if args.IsAdmin {
 		if err := base.Count(&args.Total).Error; err != nil {
 			return nil, NewDBError(err, "program_class_enrollments")
@@ -573,35 +576,6 @@ func adjustUserOrderBy(arg string) string {
 		return arg + ", name_first"
 	}
 	return arg
-}
-
-func (db *DB) GetUserProgramClassHistory(args *models.QueryContext, userId int) ([]models.ResidentProgramClassHistory, error) {
-	var residentProgramClassHistory []models.ResidentProgramClassHistory
-	err := db.WithContext(args.Ctx).
-		Table("program_class_enrollments pce").
-		Select(`p.name as program_name, pc.name AS class_name,
-		COALESCE(
-		(
-			SELECT STRING_AGG(pt.credit_type::text, ',')
-			FROM program_credit_types pt
-			WHERE pt.program_id = pc.program_id
-		), 
-		''
-		) AS credit_types,
-		pce.enrollment_status AS status,
-		pce.updated_at AS date_status_changed`).
-		Joins("INNER JOIN program_classes pc ON pce.class_id = pc.id").
-		Joins("INNER JOIN programs p ON p.id = pc.program_id").
-		Where("pce.user_id = ?", userId).
-		Order("pce.updated_at DESC").
-		Group("p.name, pc.name, pc.program_id, pce.enrollment_status, pce.updated_at").
-		Find(&residentProgramClassHistory).Error
-
-	if err != nil {
-		return nil, NewDBError(err, "program_class_enrollments")
-	}
-
-	return residentProgramClassHistory, nil
 }
 
 // schedules[
@@ -645,7 +619,7 @@ func (db *DB) GetUserWeeklySchedule(args *models.QueryContext, userId int) ([]mo
 		pc.start_dt::date BETWEEN date_trunc('week', CURRENT_DATE)::date
 		AND (date_trunc('week', CURRENT_DATE)::date + INTERVAL '6 days')`).
 		Order("pce.updated_at DESC").
-		Group("pc.program_id, pc.name, pc.start_dt, pc.end_dt, pce.updated_at, EXTRACT(DOW FROM pc.start_dt)").Debug().
+		Group("pc.program_id, pc.name, pc.start_dt, pc.end_dt, pce.updated_at, EXTRACT(DOW FROM pc.start_dt)").
 		Find(&flatSchedules).Error
 
 	if err != nil {
