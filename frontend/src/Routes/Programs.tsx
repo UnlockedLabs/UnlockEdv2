@@ -28,7 +28,7 @@ export const ProgramRoutes = DeclareAuthenticatedRoutes(
             path: 'programs-residents',
             element: <ResidentOverview />,
             handle: {
-                title: 'Current Enrollments',
+                title: 'My Programs',
                 path: ['programs-residents']
             }
         }

@@ -1,7 +1,6 @@
 import {
-    ResidentProgramClassHistory,
-    ResidentProgramClassInfo,
     ResidentProgramClassWeeklySchedule,
+    ResidentProgramOverview,
     ServerResponseMany
 } from '@/common';
 import GreyPill from '@/Components/pill-labels/GreyPill';
@@ -12,13 +11,13 @@ export default function ResidentOverview() {
     const { user } = useAuth();
     const user_id = user?.id;
     const {
-        data: programsResp
+        data: enrollmentResp
         // error: programsError,
         // isLoading
-    } = useSWR<ServerResponseMany<ResidentProgramClassInfo>, Error>(
-        `/api/users/${user_id}/programs?order=ASC&order_by=program_name`
+    } = useSWR<ServerResponseMany<ResidentProgramOverview>, Error>(
+        `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name`
     );
-    const enrollment_metrics = programsResp?.data;
+    const enrollment_metrics = enrollmentResp?.data;
 
     const {
         data: weekly_scheduleResp
@@ -31,15 +30,16 @@ export default function ResidentOverview() {
     console.log('weekly_schedule_metrics:>>   ', weekly_schedule_metrics);
 
     const {
-        data: historyResp
+        data: activityResp
         // error: historyError,
         // isLoading
-    } = useSWR<ServerResponseMany<ResidentProgramClassHistory>, Error>(
-        `/api/users/${user_id}/program-history`
+    } = useSWR<ServerResponseMany<ResidentProgramOverview>, Error>(
+        `/api/users/${user_id}/programs?view=activity&order=DESC&order_by=updated_at`
     );
-    const history_metrics = historyResp?.data;
-    console.log('history_metrics:>>   ', history_metrics);
+    const activity_metrics = activityResp?.data;
+    console.log('activity_metrics:>>   ', activity_metrics);
     function formatDate(dateString: string): string {
+        if (!dateString) return '';
         const date = new Date(dateString);
         const options: Intl.DateTimeFormatOptions = {
             year: 'numeric',
@@ -52,7 +52,7 @@ export default function ResidentOverview() {
         <div className="px-5">
             {enrollment_metrics && enrollment_metrics?.length > 0 ? (
                 <div>
-                    {programsResp.data.map((program) => (
+                    {enrollmentResp.data.map((program) => (
                         <div className="card card-row-padding mb-4">
                             <div className="mb-2 flex justify-between">
                                 <h2>{program.program_name}</h2>
@@ -68,12 +68,20 @@ export default function ResidentOverview() {
                                     {program.credit_types}
                                 </div>
                                 {program.status.toString() === 'Scheduled' && (
-                                    <div className="flex">
-                                        <span className="mr-1">
-                                            Start Date:
-                                        </span>
-                                        {formatDate(program.start_date)}
-                                    </div>
+                                    <>
+                                        <div className="flex">
+                                            <span className="mr-1">
+                                                Start Date:
+                                            </span>
+                                            {formatDate(program.start_date)}
+                                        </div>
+                                        <div className="flex">
+                                            <span className="mr-1">
+                                                Date Updated:
+                                            </span>
+                                            {formatDate(program.updated_at)}
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -111,8 +119,8 @@ export default function ResidentOverview() {
                 </h1>
                 ⓘ
             </div>
-            {history_metrics && history_metrics?.length > 0 ? (
-                history_metrics.map((program) => (
+            {activity_metrics && activity_metrics?.length > 0 ? (
+                activity_metrics.map((program) => (
                     <>
                         <div className="flex">
                             <span className="mr-1">Program:</span>
@@ -123,11 +131,11 @@ export default function ResidentOverview() {
                                 <h2>{program.class_name}</h2>
                                 <GreyPill>{program.status}</GreyPill>
                             </div>
-                            <div className="flex">{program.credit_types}</div>
+                            <div className="flex">{program.status}</div>
                             <div className="flex">
                                 {program.status}
                                 {' on '}
-                                {formatDate(program.date_status_changed)}
+                                {formatDate(program.updated_at)}
                             </div>
                         </div>
                     </>
