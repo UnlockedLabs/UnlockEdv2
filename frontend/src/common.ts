@@ -707,6 +707,7 @@ export interface Program {
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
+    archived_at: string;
 }
 
 export interface ProgramOverview extends Program {
