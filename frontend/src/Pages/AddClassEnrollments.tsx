@@ -1,7 +1,7 @@
 import {
     ClassLoaderData,
     EnrollmentStatus,
-    FilterProgramClassEnrollments,
+    FilterResidentNames,
     ServerResponseMany,
     User
 } from '@/common';
@@ -26,7 +26,7 @@ export default function AddClassEnrollments() {
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [searchQuery] = useDebounceValue(searchTerm, 500);
     const [sortQuery, setSortQuery] = useState<string>(
-        FilterProgramClassEnrollments['Last Name (A to Z)']
+        FilterResidentNames['Resident Name (A-Z)']
     );
     const encodedSearchQuery = encodeURIComponent(searchQuery);
 
@@ -130,9 +130,8 @@ export default function AddClassEnrollments() {
                         changeCallback={handleSearch}
                     />
                     <DropdownControl
-                        label="Order by"
                         setState={setSortQuery}
-                        enumType={FilterProgramClassEnrollments}
+                        enumType={FilterResidentNames}
                     />
                 </div>
                 <form

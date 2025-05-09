@@ -4,7 +4,12 @@ import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
-import { EnrollmentAttendance, Attendance, ServerResponseMany } from '@/common';
+import {
+    EnrollmentAttendance,
+    Attendance,
+    ServerResponseMany,
+    FilterResidentNames
+} from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
@@ -37,7 +42,9 @@ export default function EventAttendance() {
     } = useUrlPagination(1, 20);
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const [sortQuery, setSortQuery] = useState(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
 
     const handleSearch = (search: string) => {
         startTransition(() => {
@@ -195,14 +202,8 @@ export default function EventAttendance() {
                         changeCallback={handleSearch}
                     />
                     <DropdownControl
-                        label="order by"
                         setState={setSortQuery}
-                        enumType={{
-                            'Last Name (A-Z)': 'name_last asc',
-                            'Last Name (Z-A)': 'name_last desc',
-                            'First Name (A-Z)': 'name_first asc',
-                            'First Name (Z-A)': 'name_first desc'
-                        }}
+                        enumType={FilterResidentNames}
                     />
                 </div>
                 <button

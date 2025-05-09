@@ -1,7 +1,6 @@
 import { Dispatch, SetStateAction } from 'react';
 
 interface DropdownControlProps {
-    label?: string;
     value?: any; // eslint-disable-line
     setState?: Dispatch<SetStateAction<any>>; // eslint-disable-line
     customCallback?: (value: string) => void;
@@ -10,7 +9,6 @@ interface DropdownControlProps {
 
 /* a dropdown that executes a callback function on change */
 export default function DropdownControl({
-    label,
     value,
     setState: callback,
     customCallback,
@@ -19,7 +17,7 @@ export default function DropdownControl({
     return (
         <label className="form-control">
             <select
-                value={label ?? value} // eslint-disable-line
+                value={value} // eslint-disable-line
                 className="select select-bordered"
                 onChange={(e) => {
                     if (callback) {

@@ -139,7 +139,6 @@ export default function VideoManagement() {
                         />
                     </div>
                     <DropdownControl
-                        label="Order by"
                         setState={setSortQuery}
                         enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
                     />

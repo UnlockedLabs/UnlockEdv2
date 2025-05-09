@@ -138,9 +138,6 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                                     customCallback={(val) =>
                                         handleChange(val, enrollment)
                                     }
-                                    label={translateEnrollmentStatus(
-                                        enrollment.enrollment_status
-                                    )}
                                 />
                             ) : (
                                 <div className="h-12 w-48 border-2 grey-3 rounded-md flex items-center justify-center">

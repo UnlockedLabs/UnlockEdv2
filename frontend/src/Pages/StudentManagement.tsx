@@ -14,6 +14,7 @@ import {
     PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import {
+    FilterResidentNames,
     ResetPasswordResponse,
     ServerResponseMany,
     ServerResponseOne,
@@ -52,7 +53,9 @@ export default function StudentManagement() {
     const { toaster } = useToast();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState('created_at DESC');
+    const [sortQuery, setSortQuery] = useState(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
     const {
         page: pageQuery,
         perPage,
@@ -158,11 +161,9 @@ export default function StudentManagement() {
                             }}
                         />
                         <DropdownControl
-                            label="order by"
                             setState={setSortQuery}
                             enumType={{
-                                'Name (A-Z)': 'name_last asc',
-                                'Name (Z-A)': 'name_last desc',
+                                ...FilterResidentNames,
                                 'Account Created (Newest) ': 'created_at desc',
                                 'Account Created  (Oldest)': 'created_at asc'
                             }}

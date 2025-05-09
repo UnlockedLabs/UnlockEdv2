@@ -248,7 +248,6 @@ export default function ProgramOverviewDashboard() {
                         }}
                     />
                     <DropdownControl
-                        label="order by"
                         setState={setSortQuery}
                         enumType={{
                             'Enrollment Count (Most)': 'enrolled desc',
