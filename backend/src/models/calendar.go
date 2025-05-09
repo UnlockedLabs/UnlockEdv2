@@ -9,23 +9,13 @@ const (
 )
 
 type Calendar struct {
-	Month Month `json:"month"`
-	Year  int   `json:"year"`
+	Days []Day `json:"days"`
 }
 
-func NewCalendar(year int, month string, events []Day) *Calendar {
+func NewCalendar(events []Day) *Calendar {
 	return &Calendar{
-		Month: Month{
-			Name: month,
-			Days: events,
-		},
-		Year: year,
+		Days: events,
 	}
-}
-
-type Month struct {
-	Name string `json:"name"`
-	Days []Day  `json:"days"`
 }
 
 type EventInstance struct {
@@ -39,6 +29,7 @@ type EventInstance struct {
 }
 
 type Day struct {
+	DayIdx int             `json:"day_index"`
 	Date   time.Time       `json:"date"`
 	Events []EventInstance `json:"events"`
 }
