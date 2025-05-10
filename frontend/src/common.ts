@@ -775,6 +775,37 @@ export interface ResidentProgramOverview {
     attendance_percentage?: number;
 }
 
+export interface CalendarEvent {
+    event_id: number;
+    class_id: number;
+    program_name: string;
+    start_time: string;
+    duration: number;
+    location: string;
+    is_cancelled: boolean;
+}
+export interface StudentCalendar {
+    day_index: number;
+    date: string;
+    events: CalendarEvent[];
+}
+
+export interface StudentCalendarResponse {
+    data: {
+        days: StudentCalendar[];
+    };
+}
+export interface DayData {
+    date: string;
+    events: CalendarEvent[];
+}
+export function mapStudentCalendarResponseToDayData(
+    resp: StudentCalendarResponse | undefined
+): DayData[] {
+    // if resp is undefined or resp.data.days isn’t there, return empty array
+    const days = resp?.data?.days ?? [];
+    return days.map(({ date, events }) => ({ date, events }));
+}
 export interface ProgramClassEvent {
     id: number;
     class_id: number;
