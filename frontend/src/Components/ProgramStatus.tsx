@@ -8,7 +8,8 @@ import {
     ProgramsOverviewTable,
     ServerResponseMany,
     ProgramEffectiveStatus,
-    ProgramAction
+    ProgramAction,
+    ServerResponseOne
 } from '@/common';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import ULIComponent from '@/Components/ULIComponent';
@@ -96,34 +97,36 @@ export default function ProgramStatus({
         }
     }, [selectedAction]);
 
-    async function handleConfirm(newStatus?: boolean) {
-        let resp = { success: false, message: '' };
+    interface UpdateStatusResponse {
+        updated: boolean;
+        facilities: string[];
+        message: string;
+    }
 
+    async function handleConfirm(newStatus?: boolean) {
+        const body: Record<string, unknown> = {};
         if (selectedAction === 'set_available') {
-            resp = await API.patch(`programs/${program.program_id}/status`, {
-                is_active: true
-            });
+            body.is_active = true;
         } else if (selectedAction === 'set_inactive') {
-            resp = await API.patch(`programs/${program.program_id}/status`, {
-                is_active: false
-            });
+            body.is_active = false;
         } else if (selectedAction === 'archive') {
-            resp = await API.patch(`programs/${program.program_id}/status`, {
-                archived_at: new Date().toISOString()
-            });
+            body.archived_at = new Date().toISOString();
         } else if (selectedAction === 'reactivate') {
-            resp = await API.patch(`programs/${program.program_id}/status`, {
-                archived_at: null,
-                is_active: newStatus
-            });
+            body.archived_at = null;
+            body.is_active = newStatus;
         }
 
+        const resp = (await API.patch<UpdateStatusResponse, typeof body>(
+            `programs/${program.program_id}/status`,
+            body
+        )) as ServerResponseOne<UpdateStatusResponse>;
+
+        const list = resp.data.facilities?.join(', ');
+
         checkResponse(
-            resp.success,
-            selectedAction === 'archive'
-                ? 'This program has active or scheduled classes. A program cannot be archived until all classes are completed or canceled.'
-                : resp.message || 'Unable to update program status',
-            'Program updated successfully'
+            resp.data.updated,
+            `Cannot archive: active or scheduled classes still exist at: ${list}`,
+            resp.data.message
         );
     }
 
