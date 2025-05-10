@@ -160,10 +160,6 @@ export default function ProgramOverviewDashboard() {
         archiveClassesRef.current?.close();
     }
 
-    const isAddClassDisabled = !program.facilities.some(
-        (facility) => facility.id === userFacilityId
-    );
-
     function commaSeparatedList<T extends string>(
         enumArray: T[] | null | undefined
     ): string {
@@ -172,6 +168,14 @@ export default function ProgramOverviewDashboard() {
             .map((ele) => String(ele).replace(/_/g, ' '))
             .join(', ');
     }
+
+    const isAddClassDisabled =
+        !program.facilities.some(
+            (facility) => facility.id === userFacilityId
+        ) ||
+        !program.is_active ||
+        program.archived_at != '';
+
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
@@ -288,7 +292,7 @@ export default function ProgramOverviewDashboard() {
                             }
                             disabled={isAddClassDisabled}
                         >
-                            <PlusCircleIcon className="w-4 h-4 mr-1" />
+                            <PlusCircleIcon className={`w-4 h-4 mr-1`} />
                             Add Class
                         </button>
                     )}

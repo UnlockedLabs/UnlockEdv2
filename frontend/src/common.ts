@@ -695,6 +695,7 @@ export interface Program {
     tags: ProgramTag[];
     is_favorited: boolean;
     facilities: Facility[];
+    archived_at: string;
 }
 
 export interface ProgramOverview extends Program {
@@ -1075,3 +1076,15 @@ export type ActivityHistoryAction =
     | 'prgcls_history';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
+
+export enum ProgramEffectiveStatus {
+    Available = 'Available',
+    Inactive = 'Inactive',
+    Archived = 'Archived'
+}
+
+export type ProgramAction =
+    | 'set_available'
+    | 'set_inactive'
+    | 'archive'
+    | 'reactivate';
