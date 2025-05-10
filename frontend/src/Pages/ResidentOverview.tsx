@@ -13,7 +13,12 @@ export default function ResidentOverview() {
         `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name`
     );
     const enrollment_metrics = enrollmentResp?.data;
-
+    const { data: scheduleResp } = useSWR<
+        ServerResponseMany<ResidentProgramOverview>,
+        Error
+    >(`/api/student-calendar`);
+    const weekly_schedule_metrics = scheduleResp?.data;
+    console.log('schedule_metrics:>>   ', weekly_schedule_metrics);
     const { data: activityResp } = useSWR<
         ServerResponseMany<ResidentProgramOverview>,
         Error
