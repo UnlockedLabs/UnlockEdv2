@@ -103,19 +103,27 @@ func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id int) (bool, error) {
-	var count int64
-	err := db.Model(&models.ProgramClass{}).Where("program_id = ? and status IN ?", id, []models.ClassStatus{models.Active, models.Scheduled}).Count(&count).Error
+func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id uint) (facilities []string, updated bool, err error) {
+	err = db.Model(&models.ProgramClass{}).
+		Joins("JOIN facilities ON facilities.id = program_classes.facility_id").
+		Where("program_classes.program_id = ? AND program_classes.status IN ?", id,
+			[]models.ClassStatus{models.Active, models.Scheduled}).
+		Distinct().
+		Pluck("facilities.name", &facilities).Error
 	if err != nil {
-		return false, newGetRecordsDBError(err, "program_classes")
+		return nil, false, newGetRecordsDBError(err, "program_classes / facilities")
 	}
-	if count > 0 && programUpdate["archived_at"] != nil {
-		return false, nil
+	if len(facilities) > 0 && programUpdate["archived_at"] != nil {
+		return facilities, false, nil
 	}
-	if err := db.Model(&models.Program{}).Where("id = ?", id).Updates(programUpdate).Error; err != nil {
-		return false, newUpdateDBError(err, "program status")
+
+	if err = db.Model(&models.Program{}).
+		Where("id = ?", id).
+		Updates(programUpdate).Error; err != nil {
+		return nil, false, newUpdateDBError(err, "program status")
 	}
-	return true, nil
+
+	return facilities, true, nil
 }
 
 func (db *DB) DeleteProgram(id int) error {

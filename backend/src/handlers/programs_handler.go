@@ -205,14 +205,26 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 	// These will need to be uncommented once the update_user_id is added to the database
 	//claims := r.Context().Value(ClaimsKey).(*Claims)
 	//programUpdate["update_user_id"] = claims.UserID
-	updated, err := srv.Db.UpdateProgramStatus(programUpdate, id)
+	facilities, updated, err := srv.Db.UpdateProgramStatus(programUpdate, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if !updated {
-		return writeJsonResponse(w, http.StatusConflict, "Unable to archive program with active or scheduled classes")
+	payload := struct {
+		Updated    bool     `json:"updated"`
+		Facilities []string `json:"facilities"`
+		Message    string   `json:"message"`
+	}{
+		Updated:    updated,
+		Facilities: facilities,
 	}
-	return writeJsonResponse(w, http.StatusOK, "Program Status Updated")
+
+	if updated {
+		payload.Message = "Program status updated successfully"
+	} else {
+		payload.Message = "Unable to archive program with active or scheduled classes"
+	}
+
+	return writeJsonResponse(w, http.StatusOK, payload)
 }
 
 func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
