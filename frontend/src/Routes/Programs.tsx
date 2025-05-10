@@ -27,6 +27,7 @@ export const ProgramRoutes = DeclareAuthenticatedRoutes(
         {
             path: 'programs-residents',
             element: <ResidentOverview />,
+            loader: getProgramData,
             handle: {
                 title: 'My Programs',
                 path: ['programs-residents']
