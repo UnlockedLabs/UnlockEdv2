@@ -3,10 +3,8 @@ package handlers
 import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
@@ -22,46 +20,25 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 }
 
 func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request, log sLog) error {
-	month, year, err := getMonthAndYear(r)
+	dtRng, err := getDateRange(r)
 	if err != nil {
-		return newBadRequestServiceError(err, "year query parameter")
+		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
 	facilityId := r.Context().Value(ClaimsKey).(*Claims).FacilityID
-	calendar, err := srv.Db.GetCalendar(month, year, facilityId, nil)
+	calendar, err := srv.Db.GetCalendar(dtRng, facilityId, nil)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, calendar)
 }
 
-func getMonthAndYear(r *http.Request) (time.Month, int, error) {
-	month := r.URL.Query().Get("month")
-	year := r.URL.Query().Get("year")
-	curr := time.Now()
-	if month == "" {
-		month = curr.Format("01")
-	}
-	if year == "" {
-		year = curr.Format("2006")
-	}
-	intYr, err := strconv.Atoi(year)
-	if err != nil {
-		return time.Now().Month(), 0, errors.New("year query parameter must be an integer")
-	}
-	monthInt, err := strconv.Atoi(month)
-	if err != nil {
-		return time.Now().Month(), 0, errors.New("month query parameter must be an integer")
-	}
-	return time.Month(monthInt), intYr, nil
-}
-
 func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Request, log sLog) error {
-	month, year, err := getMonthAndYear(r)
+	dtRng, err := getDateRange(r)
 	if err != nil {
-		return newBadRequestServiceError(err, "year query parameter")
+		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	calendar, err := srv.Db.GetCalendar(month, year, claims.FacilityID, &claims.UserID)
+	calendar, err := srv.Db.GetCalendar(dtRng, claims.FacilityID, &claims.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

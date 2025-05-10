@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -106,4 +108,31 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 		All:        all,
 		Timezone:   tz,
 	}
+}
+
+func getDateRange(r *http.Request) (*models.DateRange, error) {
+	tz, err := time.LoadLocation(r.Context().Value(ClaimsKey).(*Claims).TimeZone)
+	if err != nil {
+		tz = time.UTC
+	}
+	start, err := time.Parse("02-01-2006", r.URL.Query().Get("start_dt"))
+	if err != nil {
+		// if start is not provided, use two weeks ago
+		start = time.Now().Add(-14 * 24 * time.Hour)
+	}
+	start = start.In(tz)
+	end, err := time.Parse("02-01-2006", r.URL.Query().Get("end_dt"))
+	if err != nil {
+		// if end is not provided, use two weeks from now
+		end = time.Now().Add(14 * 24 * time.Hour)
+	}
+	end = end.In(tz)
+	if start.After(end) {
+		return nil, errors.New("start date cannot be after end date")
+	}
+	return &models.DateRange{
+		Start: start,
+		End:   end,
+		Tzone: tz,
+	}, nil
 }
