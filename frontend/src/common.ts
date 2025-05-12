@@ -764,6 +764,7 @@ export interface Class {
     enrollments?: ClassEnrollment[];
     events: ProgramClassEvent[];
     created_at: Date;
+    program: Program;
 }
 export interface ResidentProgramOverview {
     program_name: string;
