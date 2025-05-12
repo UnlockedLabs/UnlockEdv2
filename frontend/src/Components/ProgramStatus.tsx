@@ -121,13 +121,14 @@ export default function ProgramStatus({
             body
         )) as ServerResponseOne<UpdateStatusResponse>;
 
-        const list = resp.data.facilities?.join(', ');
-
-        checkResponse(
-            resp.data.updated,
-            `Cannot archive: active or scheduled classes still exist at: ${list}`,
-            resp.data.message
-        );
+        if (resp.success) {
+            const list = resp.data.facilities?.join(', ');
+            checkResponse(
+                resp.data.updated,
+                `Cannot archive: active or scheduled classes still exist at: ${list}`,
+                resp.data.message
+            );
+        }
     }
 
     return (

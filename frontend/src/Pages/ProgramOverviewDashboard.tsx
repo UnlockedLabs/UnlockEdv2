@@ -171,7 +171,7 @@ export default function ProgramOverviewDashboard() {
             (facility) => facility.id === userFacilityId
         ) ||
         !program.is_active ||
-        program.archived_at != '';
+        program.archived_at != null;
 
     return (
         <div className="p-4 px-5">

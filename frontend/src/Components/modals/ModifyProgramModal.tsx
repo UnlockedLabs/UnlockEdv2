@@ -55,7 +55,10 @@ const ModifyProgramModal = forwardRef(function (
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="font-bold text-lg">{title}</h3>
+                    <span className={`text-3xl font-semibold text-neutral`}>
+                        {' '}
+                        {title}
+                    </span>
                     <p className="py-4">{text}</p>
                     <div className="form-control">
                         <label className="label cursor-pointer">

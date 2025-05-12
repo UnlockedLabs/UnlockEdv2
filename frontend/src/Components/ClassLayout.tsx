@@ -21,9 +21,8 @@ import StatsCard from './StatsCard';
 
 function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
-    const programDisabled =
-        classInfo?.program.archived_at === null ||
-        classInfo?.program.is_active === false;
+
+    const programDisabled = classInfo?.program.archived_at !== null;
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
