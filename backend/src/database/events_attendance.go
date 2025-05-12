@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
-	"strings"
 	"time"
 
 	"gorm.io/gorm/clause"
@@ -108,11 +107,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 			a.note AS note`
 	finalQuery := selectClause + baseQuery
 	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
-		orderBy := qryCtx.OrderClause()
-		if strings.Contains(orderBy, "name_last") {
-			orderBy = fmt.Sprintf("%s, u.name_first", orderBy)
-		}
-		finalQuery += " ORDER BY " + orderBy
+		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause())
 	} else {
 		finalQuery += " ORDER BY e.id ASC"
 	}
