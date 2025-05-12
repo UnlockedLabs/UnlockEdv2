@@ -1,7 +1,10 @@
 export function CancelButton({ onClick }: { onClick: () => void }) {
     return (
-        <button type="button" className="button-grey" onClick={onClick}>
-            Cancel
-        </button>
+        <input
+            type="button"
+            className="button-grey"
+            onClick={onClick}
+            value="Cancel"
+        />
     );
 }
