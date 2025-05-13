@@ -4,6 +4,7 @@ import {
     Class,
     ClassLoaderData,
     EnrollmentStatus,
+    SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -66,7 +67,8 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                             `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`
                         );
                     }}
-                    disabled={programDisabled}
+                    disabled={programDisabled || ( classInfo?.status === SelectedClassStatus.Cancelled ||
+                        classInfo?.status === SelectedClassStatus.Completed)}
                 >
                     <PencilSquareIcon className="w-4 my-auto" />
                     Edit Class Details
