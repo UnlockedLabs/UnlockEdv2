@@ -1,6 +1,6 @@
 import {
     ServerResponseMany,
-    ResidentProgramClassInfo,
+    ResidentProgramOverview,
     ProgClassStatus,
     EnrollmentStatus
 } from '@/common';
@@ -17,8 +17,8 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
         data: programsResp,
         error: programsError,
         isLoading
-    } = useSWR<ServerResponseMany<ResidentProgramClassInfo>, Error>(
-        `/api/users/${user_id}/programs?page=${page}&per_page=${perPage}`
+    } = useSWR<ServerResponseMany<ResidentProgramOverview>, Error>(
+        `/api/users/${user_id}/programs?page=${page}&per_page=${perPage}&order=DESC&order_by=start_dt&all=true`
     );
     const programs = programsResp?.data;
     const meta = programsResp?.meta;

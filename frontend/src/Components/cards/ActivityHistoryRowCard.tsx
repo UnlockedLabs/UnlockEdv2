@@ -59,7 +59,7 @@ function ActivityHistoryRowCard({
         case 'reset_password':
             introText = `Password reset initiated by ${activity.admin_username}`;
             break;
-        case 'prgcls_history':
+        case 'progclass_history':
             introText = getProgramClassesHistoryEventText();
             break;
     }

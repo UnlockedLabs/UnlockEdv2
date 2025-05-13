@@ -10,7 +10,12 @@ import (
 func (db *DB) GetAllFacilities(page, itemsPerPage int) (int64, []models.Facility, error) {
 	var total int64
 	var facilities []models.Facility
-	if err := db.Model(&models.Facility{}).Count(&total).Limit(itemsPerPage).Offset(calcOffset(page, itemsPerPage)).Find(&facilities).Error; err != nil {
+
+	tx := db.Model(&models.Facility{})
+	if err := tx.Count(&total).Error; err != nil {
+		return total, nil, newGetRecordsDBError(err, "facilities")
+	}
+	if err := tx.Limit(itemsPerPage).Offset(calcOffset(page, itemsPerPage)).Find(&facilities).Error; err != nil {
 		return total, nil, newGetRecordsDBError(err, "facilities")
 	}
 	return total, facilities, nil

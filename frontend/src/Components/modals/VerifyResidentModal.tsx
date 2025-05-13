@@ -12,24 +12,27 @@ import {
     ResidentEngagementProfile,
     ServerResponseOne,
     ToastState,
+    User,
     ValidResident
 } from '@/common';
 import API from '@/api/api';
-import { useLoaderData } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
+
 export const VerifyResidentModal = forwardRef(function (
     {
         onSuccess,
-        target
+        target,
+        adminUser
     }: CRUDModalProps<ResidentEngagementProfile> & {
         onSuccess: (resident: ValidResident) => void;
+        adminUser: User;
     },
     verifyResidentModal: React.ForwardedRef<HTMLDialogElement>
 ) {
     const { toaster } = useToast();
     const [errors, setErrors] = useState('');
     const [facility, setFacility] = useState('');
-    const facilities = useLoaderData() as Facility[];
+    const facilities: Facility[] = adminUser?.facilities ?? [];
     const targetDocId = target?.user.doc_id;
 
     const executeResidentCheck: SubmitHandler<FieldValues> = async (data) => {

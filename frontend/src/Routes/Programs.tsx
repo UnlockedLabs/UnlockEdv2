@@ -7,7 +7,7 @@ import {
 } from '@/routeLoaders';
 import { DeclareAuthenticatedRoutes } from './Routes';
 import Programs from '@/Pages/ProgramManagement';
-import { FeatureAccess, TitleHandler } from '@/common';
+import { FeatureAccess, TitleHandler, UserRole } from '@/common';
 import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
 import CreateProgramPage from '@/Pages/CreateProgram';
@@ -20,6 +20,23 @@ import ProgramClassManagement from '@/Pages/ProgramClassManagement';
 import ClassLayout from '@/Components/ClassLayout';
 import Error from '@/Pages/Error';
 import { Navigate } from 'react-router-dom';
+import ResidentOverview from '@/Pages/ResidentOverview';
+
+export const ProgramRoutes = DeclareAuthenticatedRoutes(
+    [
+        {
+            path: 'resident-programs',
+            element: <ResidentOverview />,
+            loader: getProgramData,
+            handle: {
+                title: 'My Programs',
+                path: ['resident-programs']
+            }
+        }
+    ],
+    [UserRole.Student],
+    [FeatureAccess.ProgramAccess]
+);
 
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [

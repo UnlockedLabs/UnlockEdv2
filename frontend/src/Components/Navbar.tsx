@@ -283,15 +283,14 @@ export default function Navbar({
                                     </li>
                                 </>
                             )}
-                            {/*
                             {hasFeature(user, FeatureAccess.ProgramAccess) && (
                                 <li>
-                                    <Link to="/programs">
+                                    <Link to="/resident-programs">
                                         <ULIComponent icon={DocumentTextIcon} />
                                         Programs
                                     </Link>
                                 </li>
-                            )} */}
+                            )}
                             <li>
                                 <button onClick={onToggleHelpCenter}>
                                     <ULIComponent

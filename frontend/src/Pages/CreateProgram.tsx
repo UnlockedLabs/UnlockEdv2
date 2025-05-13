@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import {
     CreditType,
-    Facility,
     ProgramType,
     ToastState,
     FundingType,
@@ -14,7 +13,6 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import { TextInput, TextAreaInput, SubmitButton } from '@/Components/inputs';
 import API from '@/api/api';
 import { canSwitchFacility, useAuth } from '@/useAuth';
-import { useLoaderData } from 'react-router-dom';
 import { useToast } from '@/Context/ToastCtx';
 import ULIComponent from '@/Components/ULIComponent';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -51,9 +49,7 @@ export default function CreateProgramPage() {
         value: 'all',
         label: 'Select All'
     };
-    const { facilities } = useLoaderData() as {
-        facilities: Facility[];
-    };
+    const facilities = user?.facilities ?? [];
 
     const {
         register,

@@ -117,16 +117,16 @@ const (
 	FacilityTransfer ActivityHistoryAction = "facility_transfer"
 	SetPassword      ActivityHistoryAction = "set_password"
 	ResetPassword    ActivityHistoryAction = "reset_password"
-	PrgClassHistory  ActivityHistoryAction = "prgcls_history"
+	ProgClassHistory ActivityHistoryAction = "progclass_history"
 )
 
 type ActivityHistoryResponse struct {
 	Action                  ActivityHistoryAction `json:"action"`
-	CreatedAt               time.Time             `json:"created_at"`
-	FieldName               string                `json:"field_name"`
-	NewValue                string                `json:"new_value"`
-	UserID                  uint                  `json:"user_id"`
-	UserUsername            string                `json:"user_username"`
+	CreatedAt               *time.Time            `json:"created_at"`
+	FieldName               *string               `json:"field_name"`
+	NewValue                *string               `json:"new_value"`
+	UserID                  *uint                 `json:"user_id"`
+	UserUsername            *string               `json:"user_username"`
 	AdminUsername           *string               `json:"admin_username"`
 	FacilityName            *string               `json:"facility_name"`
 	ProgramClassesHistoryID *uint                 `json:"program_classes_history_id"`
@@ -157,4 +157,6 @@ type ResidentProgramClassInfo struct {
 	ProgramID            uint                    `json:"program_id"`
 	PresentAttendance    int                     `json:"present_attendance"`
 	AbsentAttendance     int                     `json:"absent_attendance"`
+	CreditTypes          string                  `json:"credit_types"`
+	UpdatedAt            string                  `json:"updated_at"`
 }

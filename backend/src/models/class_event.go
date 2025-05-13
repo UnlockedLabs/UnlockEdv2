@@ -31,6 +31,17 @@ type ProgramClassEvent struct {
 	Overrides []ProgramClassEventOverride   `json:"overrides" gorm:"foreignKey:EventID;references:ID"`
 }
 
+type DateRange struct {
+	Start time.Time
+	End   time.Time
+	Tzone *time.Location
+}
+
+func (dt *DateRange) LoadLocation(location *time.Location) {
+	dt.Start = dt.Start.In(location)
+	dt.End = dt.End.In(location)
+}
+
 func (secEvent *ProgramClassEvent) BeforeCreate(tx *gorm.DB) (err error) {
 	duration, parseErr := time.ParseDuration(secEvent.Duration)
 	if parseErr != nil {

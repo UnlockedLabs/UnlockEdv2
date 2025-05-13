@@ -5,6 +5,8 @@ import (
 	"UnlockEdv2/src/models"
 	"fmt"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type EnrollmentAndCompletionMetrics struct {
@@ -118,7 +120,9 @@ func (db *DB) GetProgramsFacilitiesStats(args *models.QueryContext, timeFilter i
 		Select("total_programs, total_enrollments").
 		Order("date DESC").
 		First(&totals).Error; err != nil {
-		return programsFacilitiesStats, newGetRecordsDBError(err, "programs facilities stats")
+		// these are default initialized to zero, so we can safely ignore this error as the table may not
+		// have records in it yet.
+		logrus.Warn("daily program failicies history queried before records are inserted")
 	}
 	tx := db.WithContext(args.Ctx).Model(&models.DailyProgramsFacilitiesHistory{}).
 		Select(`

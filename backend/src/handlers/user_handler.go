@@ -24,7 +24,7 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
 		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
 		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
-		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, true, axx},
+		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, false, axx},
 	}
 }
 
@@ -411,6 +411,10 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
+	if !srv.canViewUserData(r, userId) {
+		log.warn("Unauthorized access to user data")
+		return newUnauthorizedServiceError()
+	}
 	if err != nil {
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}
@@ -431,6 +435,5 @@ func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request,
 			userPrograms[i].AttendancePercentage = fmt.Sprintf("%.0f%%", pct)
 		}
 	}
-
 	return writePaginatedResponse(w, http.StatusOK, userPrograms, queryCtx.IntoMeta())
 }

@@ -16,7 +16,7 @@ import StudentLayer0 from '@/Pages/StudentLayer0';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
-import { getFacilities, getProviderPlatforms } from '@/routeLoaders';
+import { getProviderPlatforms } from '@/routeLoaders';
 import ResidentProfile from '@/Pages/ResidentProfile';
 
 const deptAdminRoutes = DeclareAuthenticatedRoutes(
@@ -98,7 +98,6 @@ const adminRoutes = DeclareAuthenticatedRoutes(
         },
         {
             path: 'residents/:user_id',
-            loader: getFacilities,
             element: <ResidentProfile />,
             handle: {
                 title: 'Resident Profile',

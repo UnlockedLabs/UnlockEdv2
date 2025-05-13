@@ -94,6 +94,7 @@ const ResidentProfile = () => {
     const [activeTab, setActiveTab] = useState<'libraries' | 'videos'>(
         'libraries'
     );
+    if (!user) return null;
 
     const { avgNumber, weekNumber, avgLabel, weekLabel } =
         calculateEngagementMetrics(metrics);
@@ -345,6 +346,7 @@ const ResidentProfile = () => {
             )}
             <VerifyResidentModal
                 target={metrics}
+                adminUser={user}
                 onSuccess={openConfirmTransfer}
                 ref={verifyResidentModal}
                 mutate={mutateResident}

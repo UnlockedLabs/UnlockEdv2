@@ -35,7 +35,14 @@ export interface User {
     facility_name?: string;
     feature_access: FeatureAccess[];
     timezone: string;
-    [key: string]: number | string | boolean | undefined | FeatureAccess[];
+    facilities?: Facility[];
+    [key: string]:
+        | number
+        | string
+        | boolean
+        | undefined
+        | FeatureAccess[]
+        | Facility[];
 }
 
 export enum FilterResidentNames {
@@ -757,19 +764,46 @@ export interface Class {
     events: ProgramClassEvent[];
     created_at: Date;
 }
-
-export interface ResidentProgramClassInfo {
+export interface ResidentProgramOverview {
     program_name: string;
     class_name: string;
     status: ProgClassStatus;
-    enrollment_status: EnrollmentStatus;
-    start_date: string;
-    end_date: string;
-    attendance_percentage: string;
-    class_id: number;
+    credit_types: string;
     program_id: number;
+    class_id: number;
+    updated_at: string;
+
+    // enrollment info-only
+    enrollment_status?: EnrollmentStatus;
+    start_date: string;
+    end_date?: string;
+    present_attendance?: number;
+    absent_attendance?: number;
+    attendance_percentage?: number;
 }
 
+export interface CalendarEvent {
+    event_id: number;
+    class_id: number;
+    program_name: string;
+    start_time: string;
+    duration: number;
+    location: string;
+    is_cancelled: boolean;
+}
+export interface StudentCalendar {
+    day_index: number;
+    date: string;
+    events: CalendarEvent[];
+}
+
+export interface StudentCalendarResponse {
+    days: StudentCalendar[];
+}
+export interface DayData {
+    date: string;
+    events: CalendarEvent[];
+}
 export interface ProgramClassEvent {
     id: number;
     class_id: number;
@@ -1077,6 +1111,6 @@ export type ActivityHistoryAction =
     | 'facility_transfer'
     | 'set_password'
     | 'reset_password'
-    | 'prgcls_history';
+    | 'progclass_history';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';

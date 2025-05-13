@@ -151,7 +151,7 @@ func fuzzySearchUsers(tx *gorm.DB, ctx *models.QueryContext) *gorm.DB {
 
 func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	user := models.User{}
-	if err := db.First(&user, "id = ?", id).Error; err != nil {
+	if err := db.First(&user, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "users")
 	}
 	return &user, nil
@@ -522,9 +522,11 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             p.id                     AS program_id,
             pc.name                  AS class_name,
             pc.status                AS status,
-            pc.start_dt              AS start_date,
-            pc.end_dt                AS end_date,
+			pc.start_dt AS start_date,
+			pc.end_dt AS end_date,
             pc.id                    AS class_id,
+			pce.updated_at,
+			ARRAY_TO_STRING(ARRAY_AGG(DISTINCT pct.credit_type), ', ') AS credit_types,
 
             -- count present attendance status
             COALESCE(SUM(
@@ -536,25 +538,36 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
               CASE WHEN pcea.attendance_status <> 'present' THEN 1 ELSE 0 END
             ), 0)  AS absent_attendance
         `).
-		Joins("INNER JOIN program_classes pc  ON pc.id  = pce.class_id").
-		Joins("INNER JOIN programs         p   ON p.id   = pc.program_id").
-		Joins("INNER JOIN program_class_events e   ON e.class_id = pc.id").
-		Joins(`LEFT JOIN program_class_event_attendance pcea ON pcea.event_id = e.id AND pcea.user_id = ?`, userId).
+		Joins("INNER JOIN program_classes pc ON pc.id = pce.class_id").
+		Joins("INNER JOIN programs p ON p.id = pc.program_id").
+		Joins("INNER JOIN program_credit_types pct ON pct.program_id = p.id").
+		Joins("INNER JOIN program_class_events e ON e.class_id = pc.id").
+		Joins(
+			`LEFT JOIN program_class_event_attendance pcea 
+            ON pcea.event_id = e.id 
+           AND pcea.user_id = ?`,
+			userId,
+		).
 		Where("pce.user_id = ?", userId).
 		Group(`
             pce.enrollment_status,
             p.name, p.id,
-            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id
-        `).
-		Order("pc.start_dt DESC")
+            pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at
+        `).Order(args.OrderClause())
 
-	if err := base.Count(&args.Total).Error; err != nil {
-		return nil, NewDBError(err, "program_class_enrollments")
-	}
-	if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
-		return nil, NewDBError(err, "program_class_enrollments apply pagination")
-	}
+	if !args.All {
+		if err := base.Count(&args.Total).Error; err != nil {
+			return nil, NewDBError(err, "program_class_enrollments")
+		}
+		if err := base.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&userEnrollments).Error; err != nil {
+			return nil, NewDBError(err, "program_class_enrollments apply pagination")
+		}
+	} else {
+		if err := base.Find(&userEnrollments).Error; err != nil {
+			return nil, NewDBError(err, "program_class_enrollments")
+		}
 
+	}
 	return userEnrollments, nil
 }
 
