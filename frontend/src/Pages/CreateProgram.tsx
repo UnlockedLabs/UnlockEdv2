@@ -11,7 +11,7 @@ import {
     PgmType
 } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { TextInput, TextAreaInput } from '@/Components/inputs';
+import { TextInput, TextAreaInput, SubmitButton } from '@/Components/inputs';
 import API from '@/api/api';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import { useLoaderData } from 'react-router-dom';
@@ -103,160 +103,163 @@ export default function CreateProgramPage() {
     return (
         <div className="container mx-auto p-4 py-8 space-y-6 remove-input-txt-border">
             {/* program info */}
-            <div className="card p-6 rounded-lg shadow-md space-y-6 ">
-                <h2 className="text-xl font-semibold">Program Information</h2>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleSubmit(onSubmit)(e);
+                }}
+            >
+                <div className="card p-6 rounded-lg shadow-md space-y-6 ">
+                    <h2 className="text-xl font-semibold">
+                        Program Information
+                    </h2>
 
-                <div>
-                    <TextInput
-                        label="Name"
-                        register={register}
-                        interfaceRef="name"
-                        required
-                        length={255}
-                        errors={errors}
-                    />
-                </div>
-
-                <div>
-                    <TextAreaInput
-                        label="Description"
-                        register={register}
-                        interfaceRef="description"
-                        required
-                        length={255}
-                        errors={errors}
-                    />
-                </div>
-                <MultiSelectInput
-                    placeholder="Select Credit Types"
-                    name="credit_type"
-                    label="Credit Type"
-                    control={control}
-                    optionList={Object.values(CreditType)}
-                    isMulti
-                    required
-                    errors={errors}
-                />
-                <MultiSelectInput
-                    placeholder="Select Program Types"
-                    name="program_type"
-                    label="Program Type"
-                    control={control}
-                    optionList={Object.values(ProgramType)}
-                    isMulti
-                    required
-                    errors={errors}
-                />
-                <MultiSelectInput
-                    placeholder="Select Funding Type"
-                    name="funding_type"
-                    label="Funding Type"
-                    control={control}
-                    optionList={Object.values(FundingType)}
-                    required
-                    errors={errors}
-                />
-            </div>
-
-            <div className="card p-6 rounded-lg shadow-md space-y-6">
-                <h2 className="text-xl font-semibold">Availability</h2>
-
-                {user && canSwitchFacility(user) && (
                     <div>
-                        <MultiSelectInput
-                            name="facilities"
-                            label="Facility selection:"
-                            placeholder="Select Facilities"
-                            control={control}
+                        <TextInput
+                            label="Name"
+                            register={register}
+                            interfaceRef="name"
                             required
-                            optionList={facilityOptionsSelectAll}
-                            preformattedOptions
-                            isMulti
-                            onChangeOverride={(selected, options) => {
-                                if (
-                                    Array.isArray(selected) &&
-                                    selected.find((opt) => opt.value === 'all') // eslint-disable-line
-                                ) {
-                                    return options.filter(
-                                        (opt) => String(opt.value) !== 'all'
-                                    );
-                                }
-                                return selected; // eslint-disable-line
-                            }}
+                            length={255}
                             errors={errors}
                         />
                     </div>
-                )}
-                <div>
-                    <label className="flex items-start gap-1 font-medium mb-2 relative">
-                        <span>Program Status</span>
-                        <ULIComponent
-                            icon={InformationCircleIcon}
-                            dataTip={
-                                'Active programs appear in the admin view of selected facilities and can be scheduled. Inactive programs remain hidden until activated.'
-                            }
-                            iconClassName="tooltip absolute  mt-[2px] ml-[2px]"
+
+                    <div>
+                        <TextAreaInput
+                            label="Description"
+                            register={register}
+                            interfaceRef="description"
+                            required
+                            length={255}
+                            errors={errors}
                         />
-                    </label>
-                    <div className="flex space-x-6">
-                        <label className="flex items-center cursor-pointer">
-                            <input
-                                type="radio"
-                                value="true"
-                                {...register('is_active', {
-                                    required: 'Program Status is required'
-                                })}
-                                className="radio radio-primary my-auto mr-2"
-                            />
-                            <span>Available</span>
-                        </label>
-                        <label className="flex items-center cursor-pointer">
-                            <input
-                                type="radio"
-                                value=""
-                                {...register('is_active', {
-                                    required: 'Program Status is required'
-                                })}
-                                className="radio radio-primary my-auto mr-2"
-                            />
-                            <span>Inactive</span>
-                        </label>
                     </div>
-                    {errors.is_active && (
-                        <p className="text-error text-sm">
-                            {errors.is_active.message}
-                        </p>
-                    )}
+                    <MultiSelectInput
+                        placeholder="Select Credit Types"
+                        name="credit_type"
+                        label="Credit Type"
+                        control={control}
+                        optionList={Object.values(CreditType)}
+                        isMulti
+                        required
+                        errors={errors}
+                    />
+                    <MultiSelectInput
+                        placeholder="Select Program Types"
+                        name="program_type"
+                        label="Program Type"
+                        control={control}
+                        optionList={Object.values(ProgramType)}
+                        isMulti
+                        required
+                        errors={errors}
+                    />
+                    <MultiSelectInput
+                        placeholder="Select Funding Type"
+                        name="funding_type"
+                        label="Funding Type"
+                        control={control}
+                        optionList={Object.values(FundingType)}
+                        required
+                        errors={errors}
+                    />
                 </div>
-            </div>
-            <div className="flex items-center justify-end gap-4 mt-4">
-                <button
-                    type="submit"
-                    className="btn"
-                    onClick={() =>
-                        reset({
-                            name: '',
-                            description: '',
-                            credit_type: [],
-                            program_type: [],
-                            is_active: undefined,
-                            funding_type: null,
-                            facilities: []
-                        })
-                    }
-                >
-                    Cancel
-                </button>
-                <button
-                    type="submit"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                        void handleSubmit(onSubmit)();
-                    }}
-                >
-                    Create Program
-                </button>
-            </div>
+
+                <div className="card p-6 rounded-lg shadow-md space-y-6">
+                    <h2 className="text-xl font-semibold">Availability</h2>
+
+                    {user && canSwitchFacility(user) && (
+                        <div>
+                            <MultiSelectInput
+                                name="facilities"
+                                label="Facility selection:"
+                                placeholder="Select Facilities"
+                                control={control}
+                                required
+                                optionList={facilityOptionsSelectAll}
+                                preformattedOptions
+                                isMulti
+                                onChangeOverride={(selected, options) => {
+                                    if (
+                                        Array.isArray(selected) &&
+                                        selected.find(
+                                            (opt) => opt.value === 'all' // eslint-disable-line
+                                        )
+                                    ) {
+                                        return options.filter(
+                                            (opt) => String(opt.value) !== 'all'
+                                        );
+                                    }
+                                    return selected; // eslint-disable-line
+                                }}
+                                errors={errors}
+                            />
+                        </div>
+                    )}
+                    <div>
+                        <label className="flex items-start gap-1 font-medium mb-2 relative">
+                            <span>Program Status</span>
+                            <ULIComponent
+                                icon={InformationCircleIcon}
+                                dataTip={
+                                    'Active programs appear in the admin view of selected facilities and can be scheduled. Inactive programs remain hidden until activated.'
+                                }
+                                iconClassName="tooltip absolute  mt-[2px] ml-[2px]"
+                            />
+                        </label>
+                        <div className="flex space-x-6">
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="radio"
+                                    value="true"
+                                    {...register('is_active', {
+                                        required: 'Program Status is required'
+                                    })}
+                                    className="radio radio-primary my-auto mr-2"
+                                />
+                                <span>Available</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="radio"
+                                    value=""
+                                    {...register('is_active', {
+                                        required: 'Program Status is required'
+                                    })}
+                                    className="radio radio-primary my-auto mr-2"
+                                />
+                                <span>Inactive</span>
+                            </label>
+                        </div>
+                        {errors.is_active && (
+                            <p className="text-error text-sm">
+                                {errors.is_active.message}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                <div className="flex items-center justify-end gap-4 mt-4">
+                    <button
+                        type="submit"
+                        className="button-grey"
+                        onClick={() =>
+                            reset({
+                                name: '',
+                                description: '',
+                                credit_type: [],
+                                program_type: [],
+                                is_active: undefined,
+                                funding_type: null,
+                                facilities: []
+                            })
+                        }
+                    >
+                        Cancel
+                    </button>
+                    <SubmitButton label="Create Program" />
+                </div>
+            </form>
         </div>
     );
 }

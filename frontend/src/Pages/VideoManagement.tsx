@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
-import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import {
     ToastState,
     Video,
@@ -25,7 +24,7 @@ import {
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
-import { LibrarySearchBar } from '@/Components/inputs';
+import { AddButton, LibrarySearchBar } from '@/Components/inputs';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import ToggleView from '@/Components/ToggleView';
 import { useSessionViewType } from '@/Hooks/sessionView';
@@ -149,13 +148,10 @@ export default function VideoManagement() {
                         activeView={activeView}
                         setActiveView={setActiveView}
                     />
-                    <button
-                        className="button items-center"
+                    <AddButton
+                        label="Add Videos"
                         onClick={() => showModal(addVideoModal)}
-                    >
-                        <PlusCircleIcon className="w-4 my-auto" />
-                        Add Videos
-                    </button>
+                    />
                 </div>
             </div>
             <div

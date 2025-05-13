@@ -49,7 +49,7 @@ const PaginatedUserTable = ({ users, onExit }: ImportedUserProps) => {
             </div>
             <div className="flex justify-between mt-4">
                 <button
-                    className="btn btn-sm btn-circle"
+                    className="button-circle-grey"
                     disabled={currentPage === 1}
                     onClick={() => handlePageChange(currentPage - 1)}
                 >
@@ -59,7 +59,7 @@ const PaginatedUserTable = ({ users, onExit }: ImportedUserProps) => {
                     Page {currentPage} of {totalPages}
                 </span>
                 <button
-                    className="btn btn-sm btn-circle"
+                    className="button-circle-grey"
                     disabled={currentPage === totalPages}
                     onClick={() => handlePageChange(currentPage + 1)}
                 >

@@ -12,7 +12,7 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import useSWR from 'swr';
 import { useDebounceValue } from 'usehooks-ts';
 import SearchBar from '@/Components/inputs/SearchBar';
-import { CancelButton } from '@/Components/inputs';
+import { CancelButton, SubmitButton } from '@/Components/inputs';
 import Pagination from '@/Components/Pagination';
 
 export default function AddClassEnrollments() {
@@ -241,7 +241,7 @@ export default function AddClassEnrollments() {
                     <div className="grid grid-cols-4">
                         <div className="flex-col" />
                         <div className="flex-col" />
-                        <div className="flex flex-row p-4 justify-self-end">
+                        <div className="flex flex-row p-4 justify-self-end gap-2">
                             <CancelButton
                                 onClick={() =>
                                     navigate(
@@ -249,11 +249,7 @@ export default function AddClassEnrollments() {
                                     )
                                 }
                             />
-                            <input
-                                className="btn btn-primary ml-2"
-                                type="submit"
-                                value="Submit"
-                            />
+                            <SubmitButton />
                         </div>
                     </div>
                 </form>
