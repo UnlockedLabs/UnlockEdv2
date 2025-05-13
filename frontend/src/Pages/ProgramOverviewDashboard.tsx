@@ -166,12 +166,10 @@ export default function ProgramOverviewDashboard() {
             .join(', ');
     }
 
-    const isAddClassDisabled =
-        !program.facilities.some(
-            (facility) => facility.id === userFacilityId
-        ) ||
-        !program.is_active ||
-        program.archived_at != null;
+    const canAddClass =
+        program.facilities.some((f) => f.id === userFacilityId) &&
+        program.is_active &&
+        program.archived_at == null;
 
     return (
         <div className="p-4 px-5">
@@ -282,7 +280,7 @@ export default function ProgramOverviewDashboard() {
                         </button>
                     ) : (
                         <AddButton
-                            disabled={isAddClassDisabled}
+                            disabled={canAddClass}
                             label="Add Class"
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)
