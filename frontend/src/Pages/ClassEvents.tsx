@@ -5,6 +5,7 @@ import {
     Attendance,
     Class,
     ClassEventInstance,
+    SelectedClassStatus,
     ProgramClassEventAttendance,
     ServerResponseMany,
     ServerResponseOne
@@ -49,6 +50,7 @@ export default function ClassEvents() {
 
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;
+    const thisSelectedClassStatus = this_program?.status;
     const meta = data?.meta;
     const events = data?.data ?? [];
 
@@ -155,6 +157,12 @@ export default function ClassEvents() {
                                             </button>
                                         ) : (
                                             <button
+                                                disabled={
+                                                    thisSelectedClassStatus ===
+                                                        SelectedClassStatus.Cancelled ||
+                                                    thisSelectedClassStatus ===
+                                                        SelectedClassStatus.Completed
+                                                }
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,

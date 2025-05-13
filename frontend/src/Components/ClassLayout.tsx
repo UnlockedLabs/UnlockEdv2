@@ -24,6 +24,7 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
 
     const programDisabled = classInfo?.program.archived_at !== null;
+    const thisSelectedClasStatus = classInfo?.status;
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
@@ -67,8 +68,9 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                             `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`
                         );
                     }}
-                    disabled={programDisabled || ( classInfo?.status === SelectedClassStatus.Cancelled ||
-                        classInfo?.status === SelectedClassStatus.Completed)}
+                    disabled={programDisabled || (  thisSelectedClasStatus ===
+                            SelectedClassStatus.Cancelled ||
+                        thisSelectedClasStatus === SelectedClassStatus.Completed)}
                 >
                     <PencilSquareIcon className="w-4 my-auto" />
                     Edit Class Details
