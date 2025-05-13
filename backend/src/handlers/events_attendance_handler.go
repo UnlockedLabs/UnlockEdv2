@@ -29,9 +29,20 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	const isoLayout = "2006-01-02"
+	today := time.Now().In(time.Local).Truncate(24 * time.Hour)
 	for i := range attendances {
 		if attendances[i].Date == "" {
 			attendances[i].Date = time.Now().Format("2006-01-02")
+		}
+
+		parsed, err := time.ParseInLocation(isoLayout, attendances[i].Date, time.Local)
+		if err != nil {
+			return newBadRequestServiceError(err, "unable to parse time")
+		}
+
+		if parsed.After(today) {
+			return writeJsonResponse(w, http.StatusUnprocessableEntity, "attempted attendance date in future")
 		}
 		if attendances[i].EventID == 0 {
 			attendances[i].EventID = uint(eventID)
