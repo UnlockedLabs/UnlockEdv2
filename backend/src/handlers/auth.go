@@ -172,12 +172,18 @@ func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log s
 	if err != nil { //special case here, kept original flow as Unauthorized is referenced in api.ts file)
 		return NewServiceError(err, http.StatusUnauthorized, "Unauthorized")
 	}
-	if !claims.canSwitchFacility() && claims.FacilityID != user.FacilityID {
-		// user isn't an admin, and has alternate facility_id in the JWT claims
+	traits := claims.getTraits()
+	if claims.canSwitchFacility() {
+		// if the user can see all the facilities, preload them in the claims so we
+		// aren't fetching them repeatedly in every other route loader.
+		if _, facilities, err := srv.Db.GetAllFacilities(1, 100); err == nil {
+			traits["facilities"] = facilities
+		}
+	} else if !claims.canSwitchFacility() && claims.FacilityID != user.FacilityID {
+		// user isn't an admin, and has alternate facility_id in the claims
 		log.error("user viewing context for different facility. this should never happen")
 		return newUnauthorizedServiceError()
 	}
-	traits := claims.getTraits()
 	traits["id"] = user.ID
 	traits["session_id"] = claims.SessionID
 	traits["kratos_id"] = claims.KratosID

@@ -353,7 +353,7 @@ export default function ProgramOverviewDashboard() {
                                                 dataTip={'Class Overview'}
                                                 icon={PuzzlePieceIcon}
                                                 iconClassName={
-                                                    '!w-5 !h-5 cursor-pointer'
+                                                    '!w-6 !h-6 cursor-pointer hover:text-primary hover:scale-110 transition-all'
                                                 }
                                                 onClick={() => {
                                                     navigate(

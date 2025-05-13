@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react';
 import Navbar from '@/Components/Navbar';
-import { useMatches, UIMatch, Outlet, useLoaderData } from 'react-router-dom';
+import { useMatches, UIMatch, Outlet } from 'react-router-dom';
 import PageNav from '@/Components/PageNav';
-import {
-    Facility,
-    RouteLabel,
-    RouteTitleHandler,
-    TitleHandler
-} from '@/common';
+import { RouteLabel, RouteTitleHandler, TitleHandler } from '@/common';
 import { PageTitleProvider } from '@/Context/AuthLayoutPageTitleContext';
 import WebsocketSession from '@/session_ws';
 import { useAuth } from '@/useAuth';
@@ -26,7 +21,6 @@ export default function AuthenticatedLayout() {
         window.websocket = new WebsocketSession(user);
     }
     const matches = useMatches() as CustomRouteMatch[];
-    const facilities = useLoaderData() as Facility[] | null;
 
     const currentRoute = matches[matches.length - 1];
     const routeData = currentRoute?.data as TitleHandler;
@@ -79,7 +73,7 @@ export default function AuthenticatedLayout() {
                     <div className="drawer-content flex flex-col border-l border-grey-1">
                         <main className="w-full min-h-screen bg-background flex flex-col">
                             <PageNav
-                                facilities={facilities ?? []}
+                                facilities={user?.facilities ?? []}
                                 showOpenMenu={!isNavPinned}
                                 onShowNav={showNav}
                             />

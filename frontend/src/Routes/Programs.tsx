@@ -25,12 +25,12 @@ import ResidentOverview from '@/Pages/ResidentOverview';
 export const ProgramRoutes = DeclareAuthenticatedRoutes(
     [
         {
-            path: 'programs-residents',
+            path: 'resident-programs',
             element: <ResidentOverview />,
             loader: getProgramData,
             handle: {
                 title: 'My Programs',
-                path: ['programs-residents']
+                path: ['resident-programs']
             }
         }
     ],

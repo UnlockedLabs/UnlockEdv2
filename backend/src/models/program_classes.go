@@ -189,21 +189,23 @@ func (pch *ProgramClassesHistory) ConvertAndCompare() ([]ActivityHistoryResponse
 			valueBPtr := valAfter.Field(i)
 
 			if valueAPtr.IsNil() != valueBPtr.IsNil() || (!valueAPtr.IsNil() && valueAPtr.Elem().Interface() != valueBPtr.Elem().Interface()) {
+				val := formatValue(valueB)
 				historyEvents = append(historyEvents, ActivityHistoryResponse{
-					Action:    PrgClassHistory,
-					FieldName: name,
-					NewValue:  formatValue(valueB),
-					UserID:    updatedBy,
-					CreatedAt: pch.CreatedAt,
+					Action:    ProgClassHistory,
+					FieldName: &name,
+					NewValue:  &val,
+					UserID:    &updatedBy,
+					CreatedAt: &pch.CreatedAt,
 				})
 			}
 		} else if valueA != valueB {
+			val := formatValue(valueB)
 			historyEvents = append(historyEvents, ActivityHistoryResponse{
-				Action:    PrgClassHistory,
-				FieldName: name,
-				NewValue:  formatValue(valueB),
-				UserID:    updatedBy,
-				CreatedAt: pch.CreatedAt,
+				Action:    ProgClassHistory,
+				FieldName: &name,
+				NewValue:  &val,
+				UserID:    &updatedBy,
+				CreatedAt: &pch.CreatedAt,
 			})
 		}
 	}

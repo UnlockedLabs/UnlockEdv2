@@ -285,7 +285,7 @@ export default function Navbar({
                             )}
                             {hasFeature(user, FeatureAccess.ProgramAccess) && (
                                 <li>
-                                    <Link to="/programs-residents">
+                                    <Link to="/resident-programs">
                                         <ULIComponent icon={DocumentTextIcon} />
                                         Programs
                                     </Link>

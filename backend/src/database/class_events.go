@@ -324,12 +324,25 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 func (db *DB) GetCalendar(dtRng *models.DateRange, userId *uint) (*models.Calendar, error) {
 	content := []models.ProgramClassEvent{}
 	tx := db.Model(&models.ProgramClassEvent{}).
-		Preload("Overrides").Preload("Class.Program").
-		Joins("JOIN program_class_enrollments se ON se.class_id = program_class_events.class_id")
+		Joins("JOIN program_classes c ON c.id = program_class_events.class_id").
+		Joins("JOIN programs p ON p.id = c.program_id").
+		Joins("JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
+		Where("p.archived_at IS NULL AND p.is_active = true").
+		Where("c.status IN ('Scheduled', 'Active')")
 
 	if userId != nil {
-		tx = tx.Where("se.user_id = ?", userId)
+		tx = tx.Where("e.user_id = ?", userId)
 	}
+
+	tx = tx.
+		Preload("Overrides").
+		Preload("Class", "status IN ('Scheduled','Active')").
+		Preload("Class.Program", "programs.archived_at IS NULL AND is_active = true")
+
+	if userId != nil {
+		tx = tx.Preload("Class.Enrollments", "user_id = ? AND enrollment_status = 'Enrolled'", *userId)
+	}
+
 	if err := tx.Find(&content).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "calendar")
 	}

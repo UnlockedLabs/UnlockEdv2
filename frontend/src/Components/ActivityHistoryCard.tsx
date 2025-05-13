@@ -59,7 +59,7 @@ export default function ActivityHistoryCard({
                             {activityHistory?.data.map(
                                 (item: ActivityHistoryResponse, index) => (
                                     <ActivityHistoryRowCard
-                                        key={index + item.created_at.toString()}
+                                        key={index}
                                         activity={item}
                                     />
                                 )

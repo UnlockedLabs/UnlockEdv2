@@ -19,7 +19,7 @@ export default function ResidentOverview() {
         ServerResponseMany<ResidentProgramOverview>,
         Error
     >(
-        `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name&all=false`
+        `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=p.name&all=true`
     );
     const programData = programsResp?.data;
 

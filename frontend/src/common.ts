@@ -35,7 +35,14 @@ export interface User {
     facility_name?: string;
     feature_access: FeatureAccess[];
     timezone: string;
-    [key: string]: number | string | boolean | undefined | FeatureAccess[];
+    facilities?: Facility[];
+    [key: string]:
+        | number
+        | string
+        | boolean
+        | undefined
+        | FeatureAccess[]
+        | Facility[];
 }
 
 export enum FilterResidentNames {
@@ -1104,6 +1111,6 @@ export type ActivityHistoryAction =
     | 'facility_transfer'
     | 'set_password'
     | 'reset_password'
-    | 'prgcls_history';
+    | 'progclass_history';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
