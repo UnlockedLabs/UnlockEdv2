@@ -139,8 +139,11 @@ func (jr *JobRunner) generateProviderTasks() ([]models.RunnableTask, error) {
 
 func (jr *JobRunner) runTask(task *models.RunnableTask) {
 	// publish the task to the nats server, update the satus of the task to 'running'
+	if task.Parameters == nil {
+		task.Parameters = make(map[string]any)
+	}
 	task.Parameters["last_run"] = task.LastRun
-	task.Parameters["job"] = task.JobID
+	task.Parameters["job_id"] = task.JobID
 	jobType := task.Parameters["job_type"].(models.JobType)
 	params, err := json.Marshal(task.Parameters)
 	if err != nil {

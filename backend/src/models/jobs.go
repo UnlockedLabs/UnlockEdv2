@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -101,20 +100,20 @@ func (jt JobType) IsLibraryJob() bool {
 }
 
 func (jt JobType) PubName() string {
-	return fmt.Sprintf("tasks.%s", string(jt))
+	return "tasks." + string(jt)
 }
 
-func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]interface{}, error) {
+func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]any, error) {
 	var skip bool
 	switch jt {
 	case RetryVideoDownloadsJob, SyncVideoMetadataJob, PutVideoMetadataJob, ScrapeKiwixJob:
-		return map[string]interface{}{
+		return map[string]any{
 			"job_id":                   jobId,
 			"job_type":                 jt,
 			"open_content_provider_id": provId,
 		}, nil
 	}
-	users := []map[string]interface{}{}
+	users := []map[string]any{}
 	if err := db.Model(ProviderUserMapping{}).Select("user_id, external_user_id").
 		Joins("JOIN users u on provider_user_mappings.user_id = u.id").
 		Find(&users, "provider_platform_id = ? AND u.role = 'student'", provId).
@@ -122,7 +121,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]
 		log.Errorf("failed to fetch users: %v", err)
 		skip = true
 	}
-	courses := []map[string]interface{}{}
+	courses := []map[string]any{}
 	if err := db.Model(Course{}).Select("id as course_id, external_id as external_course_id").
 		Find(&courses, "provider_platform_id = ?", provId).
 		Error; err != nil {
@@ -134,7 +133,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]
 		if skip {
 			return nil, errors.New("no users or courses found for provider platform")
 		}
-		return map[string]interface{}{
+		return map[string]any{
 			"user_mappings":        users,
 			"courses":              courses,
 			"provider_platform_id": provId,
@@ -142,7 +141,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]
 			"job_id":               jobId,
 		}, nil
 	case GetCoursesJob:
-		return map[string]interface{}{
+		return map[string]any{
 			"provider_platform_id": provId,
 			"job_type":             jt,
 			"job_id":               jobId,
@@ -151,7 +150,7 @@ func (jt JobType) GetParams(db *gorm.DB, provId uint, jobId string) (map[string]
 		if skip {
 			return nil, errors.New("no users or courses found for provider platform")
 		}
-		return map[string]interface{}{
+		return map[string]any{
 			"provider_platform_id": provId,
 			"courses":              courses,
 			"user_mappings":        users,
