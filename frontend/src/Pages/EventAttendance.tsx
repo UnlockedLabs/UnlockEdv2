@@ -14,6 +14,34 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
+import Error from '@/Pages/Error';
+
+export function isFutureYyyyMmDd(dateStr: string): boolean | string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+    if (!m) {
+        return 'Date must be in YYYY‑MM‑DD format';
+    }
+    const [, yStr, moStr, dStr] = m;
+    const y = Number(yStr);
+    const mo = Number(moStr);
+    const d = Number(dStr);
+
+    const dt = new Date(y, mo - 1, d);
+    if (
+        dt.getFullYear() !== y ||
+        dt.getMonth() !== mo - 1 ||
+        dt.getDate() !== d
+    ) {
+        return 'Invalid calendar date';
+    }
+
+    dt.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return dt > today;
+}
 
 interface LocalRowData {
     selected: boolean;
@@ -33,6 +61,20 @@ export default function EventAttendance() {
         date: string;
         class_id: string;
     }>();
+    if (typeof date === 'string') {
+        const future = isFutureYyyyMmDd(date);
+        if (typeof future === 'string') {
+            return <Error back message={future} type="unauthorized" />;
+        } else if (future) {
+            return (
+                <Error
+                    back
+                    type="unauthorized"
+                    message={`Attendance is unable to be recorded for ${date}`}
+                />
+            );
+        }
+    }
     const navigate = useNavigate();
     const {
         page: pageQuery,

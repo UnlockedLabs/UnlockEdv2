@@ -30,6 +30,7 @@ const errorMap: Record<
         onClick: () => (window.location.href = AUTHCALLBACK)
     }
 };
+
 export default function Error({
     type = 'server-error',
     back = false,
