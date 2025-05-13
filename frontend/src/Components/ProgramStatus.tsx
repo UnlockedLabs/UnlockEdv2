@@ -180,7 +180,7 @@ export default function ProgramStatus({
                 ref={modifyProgramRef}
                 action={selectedAction}
                 program={program}
-                onConfirm={() => void handleConfirm()}
+                onConfirm={(newStatus) => void handleConfirm(newStatus)}
                 onClose={() => setSelectedAction(null)}
             />
         </>

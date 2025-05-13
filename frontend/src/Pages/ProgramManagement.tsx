@@ -108,7 +108,7 @@ export function ProgramRow({
                 <TagsWithFormatting types={creditTypes} />
             </td>
             <td>{transformStringToArray(program.funding_type)}</td>
-            <td>
+            <td className="text-left">
                 <ProgramStatus program={program} mutate={mutate} />
             </td>
         </tr>
