@@ -187,12 +187,12 @@ const ResidentProfile = () => {
                                 }
                             />
                             <div className="flex flex-row gap-2 mt-4 justify-center">
-                                <button className="button-grey text-error">
+                                <button className="button-grey bg-grey-1 text-red-4">
                                     Delete Resident
                                 </button>
                                 {user && canSwitchFacility(user) && (
                                     <button
-                                        className="button-grey text-teal-5"
+                                        className="button-grey bg-grey-1 text-teal-5"
                                         onClick={() =>
                                             showModal(verifyResidentModal)
                                         }
