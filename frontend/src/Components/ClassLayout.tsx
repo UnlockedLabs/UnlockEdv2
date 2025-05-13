@@ -4,6 +4,7 @@ import {
     Class,
     ClassLoaderData,
     EnrollmentStatus,
+    SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -59,6 +60,10 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
             <div className="flex flex-row gap-2 mt-6 justify-center">
                 <button
                     className="button"
+                    disabled={
+                        classInfo?.status === SelectedClassStatus.Cancelled ||
+                        classInfo?.status === SelectedClassStatus.Completed
+                    }
                     onClick={() => {
                         navigate(
                             `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`

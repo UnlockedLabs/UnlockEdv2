@@ -10,6 +10,7 @@ import {
     EnrollmentStatus,
     FilterResidentNames,
     ProgramCompletion,
+    SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
 import API from '@/api/api';
@@ -27,6 +28,7 @@ export default function ClassEnrollmentDetails() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
     const { redirect } = useLoaderData() as ClassLoaderData;
+    const { class: clsInfo } = useLoaderData() as ClassLoaderData;
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
         FilterResidentNames['Resident Name (A-Z)']
@@ -208,6 +210,10 @@ export default function ClassEnrollmentDetails() {
                     )}
                     <button
                         className="button btn-primary"
+                        disabled={
+                            clsInfo?.status === SelectedClassStatus.Cancelled ||
+                            clsInfo?.status === SelectedClassStatus.Completed
+                        }
                         onClick={() =>
                             navigate(
                                 `/program-classes/${class_id}/enrollments/add`
