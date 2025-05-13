@@ -30,6 +30,7 @@ export default function ClassEnrollmentDetails() {
     const navigate = useNavigate();
     const { redirect } = useLoaderData() as ClassLoaderData;
     const { class: clsInfo } = useLoaderData() as ClassLoaderData;
+    const thisSelectedClasStatus = clsInfo?.status;
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
         FilterResidentNames['Resident Name (A-Z)']
@@ -211,9 +212,11 @@ export default function ClassEnrollmentDetails() {
                     )}
                     <AddButton
                         label="Add Resident"
-                       disabled={
-                            clsInfo?.status === SelectedClassStatus.Cancelled ||
-                            clsInfo?.status === SelectedClassStatus.Completed
+                        disabled={
+                            thisSelectedClasStatus ===
+                                SelectedClassStatus.Cancelled ||
+                            thisSelectedClasStatus ===
+                                SelectedClassStatus.Completed
                         }
                         onClick={() =>
                             navigate(

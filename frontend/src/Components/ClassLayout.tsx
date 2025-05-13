@@ -22,6 +22,7 @@ import StatsCard from './StatsCard';
 
 function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
+    const thisSelectedClasStatus = classInfo?.status;
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
@@ -61,8 +62,9 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                 <button
                     className="button"
                     disabled={
-                        classInfo?.status === SelectedClassStatus.Cancelled ||
-                        classInfo?.status === SelectedClassStatus.Completed
+                        thisSelectedClasStatus ===
+                            SelectedClassStatus.Cancelled ||
+                        thisSelectedClasStatus === SelectedClassStatus.Completed
                     }
                     onClick={() => {
                         navigate(
