@@ -78,7 +78,6 @@ export default function ClassEvents() {
 
     function getStatus(event: ClassEventInstance): string {
         const eventDate = toLocalMidnight(event.date).getTime();
-        //const eventDate = new Date(event.date).setHours(0, 0, 0, 0);
         const today = new Date().setHours(0, 0, 0, 0);
         return eventDate > today
             ? 'Scheduled'
