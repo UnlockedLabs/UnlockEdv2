@@ -70,7 +70,7 @@ export default function EventAttendance() {
                 <Error
                     back
                     type="unauthorized"
-                    message={`Attendance is unable to be recorded for ${date}`}
+                    message={`Attendance is unable to be recorded for dates in the future`}
                 />
             );
         }
