@@ -791,9 +791,7 @@ export interface StudentCalendar {
 }
 
 export interface StudentCalendarResponse {
-    data: {
-        days: StudentCalendar[];
-    };
+    days: StudentCalendar[];
 }
 export interface DayData {
     date: string;

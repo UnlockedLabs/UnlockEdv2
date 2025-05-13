@@ -24,8 +24,7 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
-	facilityId := r.Context().Value(ClaimsKey).(*Claims).FacilityID
-	calendar, err := srv.Db.GetCalendar(dtRng, facilityId, nil)
+	calendar, err := srv.Db.GetCalendar(dtRng, nil)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -38,7 +37,7 @@ func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Reque
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	calendar, err := srv.Db.GetCalendar(dtRng, claims.FacilityID, &claims.UserID)
+	calendar, err := srv.Db.GetCalendar(dtRng, &claims.UserID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

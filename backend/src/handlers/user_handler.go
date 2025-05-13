@@ -408,11 +408,13 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 	return writeJsonResponse(w, http.StatusOK, "successfully transferred resident")
 }
 
-// TODO: The access level of this handler was changed from true to false to allow for user routing. This is a temporary fix for the development of this feature and should be addressed
-
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
+	if !srv.canViewUserData(r, userId) {
+		log.warn("Unauthorized access to user data")
+		return newUnauthorizedServiceError()
+	}
 	if err != nil {
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}

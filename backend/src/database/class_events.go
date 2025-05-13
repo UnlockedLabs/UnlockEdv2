@@ -321,7 +321,7 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 	return models.NewCalendar(days), nil
 }
 
-func (db *DB) GetCalendar(dtRng *models.DateRange, facilityId uint, userId *uint) (*models.Calendar, error) {
+func (db *DB) GetCalendar(dtRng *models.DateRange, userId *uint) (*models.Calendar, error) {
 	content := []models.ProgramClassEvent{}
 	tx := db.Model(&models.ProgramClassEvent{}).
 		Preload("Overrides").Preload("Class.Program").

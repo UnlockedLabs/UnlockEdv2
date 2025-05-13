@@ -1,37 +1,68 @@
 import {
+    EnrollmentStatus,
+    ProgClassStatus,
     ResidentProgramOverview,
     ServerResponseMany,
+    ServerResponseOne,
     StudentCalendarResponse
 } from '@/common';
 import GreyPill from '@/Components/pill-labels/GreyPill';
 import WeeklyScheduleTable from '@/Components/WeeklyScheduleTable';
 import { useAuth } from '@/useAuth';
 import useSWR from 'swr';
+type ProgramInfoMap = Record<string, ResidentProgramOverview[]>;
 
 export default function ResidentOverview() {
     const { user } = useAuth();
     const user_id = user?.id;
-    const { data: enrollmentResp } = useSWR<
+    const { data: programsResp } = useSWR<
         ServerResponseMany<ResidentProgramOverview>,
         Error
     >(
         `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name&all=false`
     );
-    const enrollment_metrics = enrollmentResp?.data;
-    const { data: scheduleResp } = useSWR<StudentCalendarResponse, Error>(
-        `/api/student-calendar`
-    );
+    const programData = programsResp?.data;
 
-    const weekly_schedule_metrics = scheduleResp?.data;
-    console.log('schedule_metrics:>>   ', weekly_schedule_metrics);
-    const { data: activityResp } = useSWR<
-        ServerResponseMany<ResidentProgramOverview>,
-        Error
-    >(
-        `/api/users/${user_id}/programs?view=activity&order=DESC&order_by=updated_at&all=false`
+    const programDataMap: ProgramInfoMap = {};
+    if (programData) {
+        programDataMap.enrollment_metrics = programData.filter(
+            (item) =>
+                item.status === ProgClassStatus.ACTIVE ||
+                item.status === ProgClassStatus.SCHEDULED
+        );
+        programDataMap.activity_metrics = programData.filter(
+            (item) =>
+                item.enrollment_status === EnrollmentStatus.Completed ||
+                item.enrollment_status ===
+                    EnrollmentStatus['Failed To Complete']
+        );
+    }
+    const enrollment_metrics = programDataMap.enrollment_metrics?.sort(
+        (a, b) => {
+            if (a.program_name < b.program_name) {
+                return -1;
+            }
+            if (a.program_name > b.program_name) {
+                return 1;
+            }
+            return 0;
+        }
     );
-    const activity_metrics = activityResp?.data;
-    console.log('activity_metrics:>>   ', activity_metrics);
+    const activity_metrics = programDataMap.activity_data?.sort((a, b) => {
+        if (a.updated_at < b.updated_at) {
+            return 1;
+        }
+        if (a.updated_at > b.updated_at) {
+            return -1;
+        }
+        return 0;
+    });
+    const { data: scheduleResp } = useSWR<
+        ServerResponseOne<StudentCalendarResponse>,
+        Error
+    >(`/api/student-calendar`);
+    const weekly_schedule_metrics = scheduleResp?.data;
+
     function formatDate(dateString: string): string {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -46,7 +77,7 @@ export default function ResidentOverview() {
         <div className="px-5">
             {enrollment_metrics && enrollment_metrics?.length > 0 ? (
                 <div>
-                    {enrollmentResp.data.map((program) => (
+                    {enrollment_metrics.map((program) => (
                         <div className="card card-row-padding mb-4">
                             <div className="mb-2 flex justify-between">
                                 <h2>{program.program_name}</h2>
