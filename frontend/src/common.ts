@@ -799,13 +799,6 @@ export interface DayData {
     date: string;
     events: CalendarEvent[];
 }
-export function mapStudentCalendarResponseToDayData(
-    resp: StudentCalendarResponse | undefined
-): DayData[] {
-    // if resp is undefined or resp.data.days isn’t there, return empty array
-    const days = resp?.data?.days ?? [];
-    return days.map(({ date, events }) => ({ date, events }));
-}
 export interface ProgramClassEvent {
     id: number;
     class_id: number;

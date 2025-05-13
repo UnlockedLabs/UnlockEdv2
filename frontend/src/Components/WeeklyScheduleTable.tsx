@@ -1,19 +1,5 @@
+import { StudentCalendar } from '@/common';
 import React from 'react';
-
-interface Event {
-    event_id: number;
-    class_id: number;
-    program_name: string;
-    start_time: string; // ISO string
-    duration: number; // nanoseconds
-    location: string;
-    is_cancelled: boolean;
-}
-
-interface DayData {
-    date: string; // ISO string
-    events: Event[];
-}
 
 const timeGroups = [
     { label: 'Morning (6am - 12pm)', start: 6, end: 12 },
@@ -34,12 +20,12 @@ const dayNames: Record<number, string> = {
 };
 
 interface Props {
-    days: DayData[];
+    days: StudentCalendar[];
 }
 
 export default function WeeklyScheduleTable({ days }: Props) {
     // Build a map from day index (0=Sunday) to DayData
-    const dayMap: Record<number, DayData> = {};
+    const dayMap: Record<number, StudentCalendar> = {};
     days.forEach((d) => {
         const dt = new Date(d.date);
         const weekday = dt.getDay();

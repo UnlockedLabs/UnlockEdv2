@@ -555,7 +555,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at
         `).Order(args.OrderClause())
 
-	if args.IsAdmin {
+	if args.All {
 		if err := base.Count(&args.Total).Error; err != nil {
 			return nil, NewDBError(err, "program_class_enrollments")
 		}

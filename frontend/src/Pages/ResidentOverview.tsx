@@ -1,5 +1,4 @@
 import {
-    mapStudentCalendarResponseToDayData,
     ResidentProgramOverview,
     ServerResponseMany,
     StudentCalendarResponse
@@ -16,20 +15,20 @@ export default function ResidentOverview() {
         ServerResponseMany<ResidentProgramOverview>,
         Error
     >(
-        `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name`
+        `/api/users/${user_id}/programs?view=overview&order=ASC&order_by=program_name&all=false`
     );
     const enrollment_metrics = enrollmentResp?.data;
     const { data: scheduleResp } = useSWR<StudentCalendarResponse, Error>(
         `/api/student-calendar`
     );
-    const weekly_schedule_metrics =
-        mapStudentCalendarResponseToDayData(scheduleResp);
+
+    const weekly_schedule_metrics = scheduleResp?.data;
     console.log('schedule_metrics:>>   ', weekly_schedule_metrics);
     const { data: activityResp } = useSWR<
         ServerResponseMany<ResidentProgramOverview>,
         Error
     >(
-        `/api/users/${user_id}/programs?view=activity&order=DESC&order_by=updated_at`
+        `/api/users/${user_id}/programs?view=activity&order=DESC&order_by=updated_at&all=false`
     );
     const activity_metrics = activityResp?.data;
     console.log('activity_metrics:>>   ', activity_metrics);
@@ -92,8 +91,10 @@ export default function ResidentOverview() {
                     <h1>Weekly Schedule</h1>
                 </div>
                 {weekly_schedule_metrics &&
-                weekly_schedule_metrics?.length > 0 ? (
-                    <WeeklyScheduleTable days={weekly_schedule_metrics ?? []} />
+                weekly_schedule_metrics?.days.length > 0 ? (
+                    <WeeklyScheduleTable
+                        days={weekly_schedule_metrics.days ?? []}
+                    />
                 ) : (
                     <p className="body">No classes scheduled for this week.</p>
                 )}

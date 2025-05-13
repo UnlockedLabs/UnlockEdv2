@@ -18,7 +18,7 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
         error: programsError,
         isLoading
     } = useSWR<ServerResponseMany<ResidentProgramOverview>, Error>(
-        `/api/users/${user_id}/programs?page=${page}&per_page=${perPage}&order=DESC&order_by=start_dt`
+        `/api/users/${user_id}/programs?page=${page}&per_page=${perPage}&order=DESC&order_by=start_dt&all=true`
     );
     const programs = programsResp?.data;
     const meta = programsResp?.meta;
