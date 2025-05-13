@@ -60,32 +60,32 @@
     .button-core {
         @apply flex flex-row gap-3 rounded-lg items-center cursor-pointer;
     }
-    .button-sm {
-        @apply bg-teal-3 body-small text-white button-core py-1 px-2 grow-0;
-    }
     .button {
         @apply bg-teal-3 body text-white py-3 px-3 button-core hover:bg-teal-4 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
     }
-    .button-red {
-        @apply bg-red-3 body text-white py-3 px-3 button-core hover:bg-red-4 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
-    }
-    .button-grey {
-        @apply bg-grey-2 body text-body-text py-3 px-3 button-core hover:bg-grey-3 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
-    }
-    .button-grey-sm {
-        @apply bg-grey-2 body-small text-body-text py-1 px-2 button-core grow-0 hover:bg-grey-3 disabled:bg-grey-1 disabled:text-grey-2 disabled:cursor-auto;
-    }
-    .button-grey-sm-active {
-        @apply bg-grey-2 body-small text-body-text py-1 px-2 button-core grow-0 hover:bg-grey-3 disabled:bg-grey-1 disabled:text-grey-2 disabled:cursor-auto;
+    .button-sm {
+        @apply button body-small py-1 px-2 grow-0 hover:bg-teal-4 disabled:bg-grey-1 disabled:text-grey-2;
     }
     .button-outline {
         @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 button-core hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
     }
+    .button-red {
+        @apply button bg-red-3 hover:bg-red-4;
+    }
+    .button-grey {
+        @apply button bg-grey-2 text-body-text hover:bg-grey-3;
+    }
+    .button-grey-sm {
+        @apply button-sm bg-grey-2 text-body-text hover:bg-grey-3 disabled:hover:bg-grey-1;
+    }
+    .button-grey-sm-active {
+        @apply button-sm bg-grey-3 text-body-text hover:bg-grey-3;
+    }
     .button-outline-pale-yellow {
-        @apply border border-dark-yellow bg-pale-yellow body text-body-text py-3 px-3 button-core hover:bg-[#FFECB0] disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+        @apply button-outline border-dark-yellow bg-pale-yellow hover:bg-[#FFECB0] disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
     }
     .button-outline-sm {
-        @apply border border-teal-3 bg-transparent body text-body-text py-1 px-2 button-core grow-0 hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+        @apply button-outline py-1 px-2 grow-0;
     }
     .button-circle {
         @apply bg-transparent body flex items-center justify-center rounded-full cursor-pointer hover:bg-grey-2 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
