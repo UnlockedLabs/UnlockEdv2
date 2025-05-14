@@ -15,7 +15,7 @@ import { DateInput } from '@/Components/inputs/DateInput';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [y, m, d] = dateOnly.split('-').map(Number);
-    return new Date(y, m - 1, d); // safe in every browser
+    return new Date(y, m - 1, d);
 }
 
 export default function ClassEvents() {
