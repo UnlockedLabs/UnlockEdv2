@@ -17,27 +17,11 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 		{"DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, true, axx},
 	}
 }
-func (srv *Server) classStatusCheck(w http.ResponseWriter, class *models.ProgramClass) error {
-	if class.Status == "Completed" || class.Status == "Cancelled" {
-		return writeJsonResponse(w, http.StatusBadRequest, "Cannot enroll users when class has been completed or cancelled")
-	}
-	return nil
-}
 
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("class_id"))
-	if err != nil {
-		return newInvalidIdServiceError(err, "class ID")
-	}
-	class, err := srv.Db.GetClassByID(classID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-
-	if err := srv.classStatusCheck(w, class); err != nil {
+	if err := srv.validateClassStatus(w, r); err != nil {
 		return err
 	}
-
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
