@@ -96,6 +96,9 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	if err := srv.classStatusCheck(w, &class); err != nil {
+		return err
+	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
 		return newDatabaseServiceError(err)

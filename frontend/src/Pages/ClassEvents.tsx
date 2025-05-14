@@ -145,6 +145,12 @@ export default function ClassEvents() {
                                         {event.attendance_records?.length >
                                         0 ? (
                                             <button
+                                                disabled={
+                                                    thisSelectedClassStatus ===
+                                                        SelectedClassStatus.Cancelled ||
+                                                    thisSelectedClassStatus ===
+                                                        SelectedClassStatus.Completed
+                                                }
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,

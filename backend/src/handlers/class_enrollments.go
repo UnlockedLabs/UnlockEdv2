@@ -70,6 +70,13 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
+	class, err := srv.Db.GetClassByID(classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if err := srv.classStatusCheck(w, class); err != nil {
+		return err
+	}
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
 	}{}
