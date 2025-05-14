@@ -44,9 +44,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		if parsed.After(today) {
 			return writeJsonResponse(w, http.StatusUnprocessableEntity, "attempted attendance date in future")
 		}
-		if attendances[i].EventID == 0 {
-			attendances[i].EventID = uint(eventID)
-		}
+		attendances[i].EventID = uint(eventID)
 	}
 	if err := srv.Db.LogUserAttendance(&attendances); err != nil {
 		return newDatabaseServiceError(err)
