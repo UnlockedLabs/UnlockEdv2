@@ -93,9 +93,13 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
+	}
+	if claims.FacilityID != class.FacilityID && !userIsDeptOrSysAdmin(r) {
+		return newUnauthorizedServiceError()
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
@@ -104,7 +108,6 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if enrolled > class.Capacity {
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = claims.UserID
 	updated, err := srv.Db.UpdateProgramClass(&class, id)
 	if err != nil {
