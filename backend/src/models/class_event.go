@@ -159,3 +159,8 @@ type AttendanceFlag struct {
 	DocID     string             `json:"doc_id"`
 	FlagType  AttendanceFlagType `json:"flag_type"`
 }
+
+type EventDates struct {
+	EventID uint   `json:"event_id"`
+	Date    string `json:"date"`
+}

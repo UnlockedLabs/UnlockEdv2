@@ -547,3 +547,35 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 
 	return instances, nil
 }
+
+func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, month, year string) ([]models.EventDates, error) {
+	var event models.ProgramClassEvent
+	if err := db.
+		Preload("Overrides").
+		First(&event, "class_id = ?", classID).Error; err != nil {
+		return nil, err
+	}
+
+	loc, _ := time.LoadLocation(timezone)
+	rule, err := event.GetRRule()
+	if err != nil {
+		return nil, err
+	}
+
+	y, _ := strconv.Atoi(year)
+	m, _ := strconv.Atoi(month)
+	start := time.Date(y, time.Month(m), 1, 0, 0, 0, 0, loc)
+	until := start.AddDate(0, 1, 0)
+
+	occs := rule.Between(start, until, true)
+
+	out := make([]models.EventDates, len(occs))
+	for i, occ := range occs {
+		d := occ.In(loc).Format("2006-01-02")
+		out[i] = models.EventDates{
+			EventID: event.ID,
+			Date:    d,
+		}
+	}
+	return out, nil
+}

@@ -1114,3 +1114,8 @@ export type ActivityHistoryAction =
     | 'progclass_history';
 
 export type ErrorType = 'unauthorized' | 'not-found' | 'server-error';
+
+export interface EventDate {
+    event_id: number;
+    date: string;
+}
