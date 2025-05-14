@@ -197,6 +197,7 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 	if err := json.NewDecoder(r.Body).Decode(&programUpdate); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	defer r.Body.Close()
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
