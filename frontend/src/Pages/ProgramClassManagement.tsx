@@ -2,11 +2,14 @@ import { ClassMgmtTabs, Tab } from '@/common';
 import { useEffect, useState } from 'react';
 import TabView from '@/Components/TabView';
 import { useNavigate, Outlet, useLocation, useParams } from 'react-router-dom';
+import { useAuth, isSysAdmin, isDeptAdmin } from '@/useAuth';
 
 export default function ProgramClassManagement() {
     const { class_id } = useParams<{ class_id?: string }>();
     const navigate = useNavigate();
     const route = useLocation();
+    const { user } = useAuth();
+    //const userFacilityId = user?.facility_id;
     const tab = route.pathname.split('/')[3] ?? 'dashboard';
     const tabOptions: Tab[] = [
         { name: ClassMgmtTabs.CLASS, value: 'dashboard' },
@@ -29,6 +32,9 @@ export default function ProgramClassManagement() {
     useEffect(() => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
+    if (user && (!isSysAdmin(user) || !isDeptAdmin(user))) {
+    }
+
     return (
         <div className="px-5 pb-4">
             <TabView
