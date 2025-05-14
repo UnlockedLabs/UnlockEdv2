@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
@@ -8,7 +8,9 @@ import {
     EnrollmentAttendance,
     Attendance,
     ServerResponseMany,
-    FilterResidentNames
+    FilterResidentNames,
+    Class,
+    SelectedClassStatus
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
@@ -58,7 +60,8 @@ export default function EventAttendance() {
     >(
         `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
     );
-
+    const clsInfo = useLoaderData() as Class;
+    const thisSelectedClassStatus = clsInfo.status;
     const meta = data?.meta;
     const [rows, setRows] = useState<LocalRowData[]>([]);
 
@@ -185,8 +188,16 @@ export default function EventAttendance() {
             return newMods;
         });
     }
-
     async function onSubmit() {
+        const canEditAttendance =
+            thisSelectedClassStatus !== SelectedClassStatus.Completed &&
+            thisSelectedClassStatus !== SelectedClassStatus.Cancelled;
+        if (!canEditAttendance) {
+            console.error(
+                'Cannot update attendance for completed or canceled classes'
+            );
+            return;
+        }
         await submitAttendanceForRows(rows);
         void mutate();
         navigate(`/program-classes/${class_id}/attendance`);
@@ -208,7 +219,13 @@ export default function EventAttendance() {
                 </div>
                 <button
                     onClick={() => void handleMarkAllPresent()}
-                    disabled={anyRowSelected}
+                    disabled={
+                        anyRowSelected ||
+                        (thisSelectedClassStatus !==
+                            SelectedClassStatus.Cancelled &&
+                            thisSelectedClassStatus !==
+                                SelectedClassStatus.Completed)
+                    }
                     className={`button ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
                 >
                     Mark All Present
@@ -359,6 +376,7 @@ export default function EventAttendance() {
                         <button
                             type="submit"
                             className="button"
+                            // disabled={!anyRowSelected || canEditAttendance}
                             disabled={!anyRowSelected}
                         >
                             Save Attendance

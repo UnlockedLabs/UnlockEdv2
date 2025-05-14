@@ -204,6 +204,12 @@ export default function ClassEnrollmentDetails() {
                 <div className="flex gap-2">
                     {selectedResidents.length > 0 && (
                         <button
+                            disabled={
+                                thisSelectedClasStatus ===
+                                    SelectedClassStatus.Cancelled ||
+                                thisSelectedClasStatus ===
+                                    SelectedClassStatus.Completed
+                            }
                             className="button"
                             onClick={handleOpenModalGraduate}
                         >

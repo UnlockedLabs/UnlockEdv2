@@ -8,7 +8,13 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
+import {
+    ProgClassStatus,
+    Class,
+    ToastState,
+    ClassLoaderData,
+    SelectedClassStatus
+} from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -20,6 +26,7 @@ import {
 } from '@/Components/inputs/RRuleControl';
 
 export default function ClassManagementForm() {
+    const classInfo = useLoaderData() as Class;
     const clsLoader = useLoaderData() as ClassLoaderData;
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
@@ -73,9 +80,25 @@ export default function ClassManagementForm() {
             ]
         };
 
-        const response = isNewClass
-            ? await API.post(`programs/${id}/classes`, formattedJson)
-            : await API.patch(`program-classes/${class_id}`, formattedJson);
+        const canEditClass =
+            classInfo?.status == SelectedClassStatus.Completed ||
+            classInfo?.status == SelectedClassStatus.Cancelled;
+        let response;
+
+        if (isNewClass) {
+            response = await API.post(`programs/${id}/classes`, formattedJson);
+        } else if (canEditClass) {
+            response = await API.patch(
+                `program-classes/${class_id}`,
+                formattedJson
+            );
+        } else {
+            setErrorMessage(
+                'Cannot update classes that are complete or canceled'
+            );
+            return;
+        }
+
         if (!response.success) {
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')
