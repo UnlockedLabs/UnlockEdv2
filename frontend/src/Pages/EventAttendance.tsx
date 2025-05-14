@@ -16,7 +16,7 @@ import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Error from '@/Pages/Error';
 
-export function isFutureYyyyMmDd(dateStr: string): boolean | string {
+export function isFutureIsoDate(dateStr: string): boolean | string {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
     if (!m) {
         return 'Date must be in YYYY‑MM‑DD format';
@@ -62,7 +62,7 @@ export default function EventAttendance() {
         class_id: string;
     }>();
     if (typeof date === 'string') {
-        const future = isFutureYyyyMmDd(date);
+        const future = isFutureIsoDate(date);
         if (typeof future === 'string') {
             return <Error back message={future} type="unauthorized" />;
         } else if (future) {
