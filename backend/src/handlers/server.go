@@ -608,3 +608,22 @@ func (srv *Server) errorResponse(w http.ResponseWriter, status int, message stri
 		http.Error(w, message, status)
 	}
 }
+
+func (srv *Server) classStatusCheck(w http.ResponseWriter, class *models.ProgramClass) error {
+	if class.Status == models.Completed || class.Status == models.Cancelled {
+		return writeJsonResponse(w, http.StatusBadRequest, "Cannot perform update action on class that has been completed or cancelled")
+	}
+	return nil
+}
+
+func (srv *Server) validateClassStatus(w http.ResponseWriter, r *http.Request) error {
+	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return srv.classStatusCheck(w, class)
+}

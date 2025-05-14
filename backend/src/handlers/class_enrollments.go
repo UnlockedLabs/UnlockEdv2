@@ -70,11 +70,7 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
-	class, err := srv.Db.GetClassByID(classID)
-	if err != nil {
-		return newDatabaseServiceError(err)
-	}
-	if err := srv.classStatusCheck(w, class); err != nil {
+	if err := srv.validateClassStatus(w, r); err != nil {
 		return err
 	}
 	enrollment := struct {
@@ -116,6 +112,9 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	classId, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
+	}
+	if err := srv.validateClassStatus(w, r); err != nil {
+		return err
 	}
 	defer r.Body.Close()
 	enrollment := struct {
