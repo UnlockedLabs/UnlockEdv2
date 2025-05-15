@@ -93,8 +93,9 @@ export default function ClassManagementForm() {
                 formattedJson
             );
         } else {
-            setErrorMessage(
-                'Cannot update classes that are complete or canceled'
+            toaster(
+                'Cannot update classes that are complete or canceled',
+                ToastState.error
             );
             return;
         }
