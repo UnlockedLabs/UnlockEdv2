@@ -50,6 +50,59 @@ export default function EventAttendance() {
     } = useSWR<{ message: string; data: EventDate[] }, Error>(
         `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true`
     );
+
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortQuery, setSortQuery] = useState(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
+    const { data, error, isLoading, mutate } = useSWR<
+        ServerResponseMany<EnrollmentAttendance>,
+        Error
+    >(
+        `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
+    );
+
+    const meta = data?.meta;
+    const [rows, setRows] = useState<LocalRowData[]>([]);
+
+    const [modifiedRows, setModifiedRows] = useState<
+        Record<number, LocalRowData>
+    >({});
+
+    useEffect(() => {
+        if (data?.data) {
+            const mergedRows = data.data.map((item) => {
+                return modifiedRows[item.user_id]
+                    ? { ...item, ...modifiedRows[item.user_id] }
+                    : {
+                          selected: false,
+                          user_id: item.user_id,
+                          doc_id: item.doc_id ?? '',
+                          name_last: item.name_last,
+                          name_first: item.name_first,
+                          attendance_status:
+                              item.attendance_status as Attendance,
+                          note: item.note ?? ''
+                      };
+            });
+            setRows(mergedRows);
+        }
+    }, [data, modifiedRows]);
+
+    const {
+        register,
+        handleSubmit,
+        getValues,
+        formState: { errors }
+    } = useForm<FormData>();
+
     const dateList = Array.isArray(dates?.data) ? dates.data : [];
     const scheduled = dateList.some(
         (d) => d.event_id === Number(event_id) && d.date === date
@@ -95,17 +148,6 @@ export default function EventAttendance() {
             </div>
         );
     }
-    const {
-        page: pageQuery,
-        perPage,
-        setPage: setPageQuery,
-        setPerPage
-    } = useUrlPagination(1, 20);
-
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState(
-        FilterResidentNames['Resident Name (A-Z)']
-    );
 
     const handleSearch = (search: string) => {
         startTransition(() => {
@@ -113,39 +155,6 @@ export default function EventAttendance() {
         });
         setPageQuery(1);
     };
-    const { data, error, isLoading, mutate } = useSWR<
-        ServerResponseMany<EnrollmentAttendance>,
-        Error
-    >(
-        `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
-    );
-
-    const meta = data?.meta;
-    const [rows, setRows] = useState<LocalRowData[]>([]);
-
-    const [modifiedRows, setModifiedRows] = useState<
-        Record<number, LocalRowData>
-    >({});
-
-    useEffect(() => {
-        if (data?.data) {
-            const mergedRows = data.data.map((item) => {
-                return modifiedRows[item.user_id]
-                    ? { ...item, ...modifiedRows[item.user_id] }
-                    : {
-                          selected: false,
-                          user_id: item.user_id,
-                          doc_id: item.doc_id ?? '',
-                          name_last: item.name_last,
-                          name_first: item.name_first,
-                          attendance_status:
-                              item.attendance_status as Attendance,
-                          note: item.note ?? ''
-                      };
-            });
-            setRows(mergedRows);
-        }
-    }, [data, modifiedRows]);
 
     function handleNoteChange(user_id: number, newNote: string) {
         const currentRow = rows.find((r) => r.user_id === user_id);
@@ -159,12 +168,6 @@ export default function EventAttendance() {
             }
         }));
     }
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        formState: { errors }
-    } = useForm<FormData>();
 
     function handleToggleSelect(user_id: number) {
         const currentRow =
