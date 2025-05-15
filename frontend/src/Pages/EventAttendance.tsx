@@ -10,13 +10,14 @@ import {
     ServerResponseMany,
     FilterResidentNames,
     Class,
-    SelectedClassStatus
+    SelectedClassStatus,
+    ToastState
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-
+import { useToast } from '@/Context/ToastCtx';
 interface LocalRowData {
     selected: boolean;
     user_id: number;
@@ -60,15 +61,19 @@ export default function EventAttendance() {
     >(
         `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
     );
-    const clsInfo = useLoaderData() as Class;
-    const thisSelectedClassStatus = clsInfo.status;
+    const rawClsInfo = useLoaderData() as { class?: Class };
+    const clsInfo = rawClsInfo?.class;
+    const canEditAttendance =
+        clsInfo?.status !== SelectedClassStatus.Completed &&
+        clsInfo?.status !== SelectedClassStatus.Cancelled;
+
     const meta = data?.meta;
     const [rows, setRows] = useState<LocalRowData[]>([]);
 
     const [modifiedRows, setModifiedRows] = useState<
         Record<number, LocalRowData>
     >({});
-
+    const { toaster } = useToast();
     useEffect(() => {
         if (data?.data) {
             const mergedRows = data.data.map((item) => {
@@ -189,12 +194,10 @@ export default function EventAttendance() {
         });
     }
     async function onSubmit() {
-        const canEditAttendance =
-            thisSelectedClassStatus !== SelectedClassStatus.Completed &&
-            thisSelectedClassStatus !== SelectedClassStatus.Cancelled;
         if (!canEditAttendance) {
-            console.error(
-                'Cannot update attendance for completed or canceled classes'
+            toaster(
+                'Cannot update attendance for completed or canceled classes',
+                ToastState.error
             );
             return;
         }
@@ -219,13 +222,7 @@ export default function EventAttendance() {
                 </div>
                 <button
                     onClick={() => void handleMarkAllPresent()}
-                    disabled={
-                        anyRowSelected ||
-                        (thisSelectedClassStatus !==
-                            SelectedClassStatus.Cancelled &&
-                            thisSelectedClassStatus !==
-                                SelectedClassStatus.Completed)
-                    }
+                    disabled={anyRowSelected || !canEditAttendance}
                     className={`button ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
                 >
                     Mark All Present
@@ -376,8 +373,7 @@ export default function EventAttendance() {
                         <button
                             type="submit"
                             className="button"
-                            // disabled={!anyRowSelected || canEditAttendance}
-                            disabled={!anyRowSelected}
+                            disabled={!anyRowSelected || !canEditAttendance}
                         >
                             Save Attendance
                         </button>
