@@ -51,10 +51,9 @@ export default function ClassEvents() {
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;
 
-    const canMarkAttendance =
-        this_program?.status !== SelectedClassStatus.Completed &&
-        this_program?.status !== SelectedClassStatus.Cancelled;
-    console.log(canMarkAttendance);
+    const blockEdits =
+        this_program?.status === SelectedClassStatus.Completed ||
+        this_program?.status == SelectedClassStatus.Cancelled;
     const meta = data?.meta;
     const events = data?.data ?? [];
 
@@ -161,14 +160,15 @@ export default function ClassEvents() {
                                             </button>
                                         ) : (
                                             <button
-                                                disabled={canMarkAttendance}
+                                                disabled={blockEdits}
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,
                                                         event.date
                                                     )
                                                 }
-                                                className="button"
+                                                className="button tooltip tooltip-left"
+                                                data-tip={`This class is ${this_program?.status.toLowerCase()} and cannot be modified.`}
                                             >
                                                 Mark Attendance
                                             </button>

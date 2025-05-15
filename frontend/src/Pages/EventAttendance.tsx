@@ -286,8 +286,8 @@ export default function EventAttendance() {
                 <button
                     onClick={() => void handleMarkAllPresent()}
                     disabled={anyRowSelected || !canEditAttendance}
-                    className={`button  tooltip tooltip-left ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
-                    data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
+                    className={`button  tooltip tooltip-left ${anyRowSelected ? `bg-grey-4 cursor-not-allowed` : ``}`}
+                    data-tip={`This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`}
                 >
                     Mark All Present
                 </button>

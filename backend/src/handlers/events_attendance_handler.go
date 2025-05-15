@@ -19,8 +19,16 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 }
 
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if err := srv.validateClassStatus(w, r); err != nil {
-		return err
+	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if err := class.CanUpdateClass(); err != nil {
+		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
 	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {

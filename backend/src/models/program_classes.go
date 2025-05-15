@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -245,4 +246,10 @@ func formatValue(value any) string {
 
 func regexFixDates(data []byte) []byte {
 	return dateRegExp.ReplaceAll(data, []byte(`"${1}T00:00:00Z"`))
+}
+func (pc *ProgramClass) CanUpdateClass() error {
+	if pc.Status == Completed || pc.Status == Cancelled {
+		return errors.New("cannot perform update action on class that has been completed or cancelled")
+	}
+	return nil
 }

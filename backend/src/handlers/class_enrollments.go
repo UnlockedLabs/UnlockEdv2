@@ -70,8 +70,12 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
-	if err := srv.validateClassStatus(w, r); err != nil {
-		return err
+	class, err := srv.Db.GetClassByID(classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if err := class.CanUpdateClass(); err != nil {
+		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
 	}
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
@@ -111,6 +115,13 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	classId, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if err := class.CanUpdateClass(); err != nil {
+		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
 	}
 	enrollment := struct {
 		EnrollmentStatus string `json:"enrollment_status"`

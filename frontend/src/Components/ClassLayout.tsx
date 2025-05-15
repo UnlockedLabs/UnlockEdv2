@@ -24,9 +24,9 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
 
     const programDisabled = classInfo?.program.archived_at !== null;
-    const canEditClassDetails =
-        classInfo?.status !== SelectedClassStatus.Completed &&
-        classInfo?.status !== SelectedClassStatus.Cancelled;
+    const blockEdits =
+        classInfo?.status === SelectedClassStatus.Completed ||
+        classInfo?.status === SelectedClassStatus.Cancelled;
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
@@ -64,7 +64,7 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
             <p className="body">Room: {classInfo?.events[0].room}</p>
             <div
                 className="flex flex-row gap-2 mt-6 justify-center tooltip "
-                data-tip={`This class is ${classInfo?.status} and cannot be modified.`}
+                data-tip={`This class is ${classInfo?.status.toLowerCase()} and cannot be modified.`}
             >
                 <button
                     className="button"
@@ -73,7 +73,7 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                             `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`
                         );
                     }}
-                    disabled={programDisabled ||  canEditClassDetails}
+                    disabled={programDisabled ||  blockEdits}
                 >
                     <PencilSquareIcon className="w-4 my-auto" />
                     Edit Class Details

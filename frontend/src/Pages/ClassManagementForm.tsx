@@ -94,7 +94,7 @@ export default function ClassManagementForm() {
             );
         } else {
             toaster(
-                'Cannot update classes that are complete or canceled',
+                'Cannot update classes that are complete or cancelled',
                 ToastState.error
             );
             return;
