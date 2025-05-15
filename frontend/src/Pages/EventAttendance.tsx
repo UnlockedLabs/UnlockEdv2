@@ -286,7 +286,8 @@ export default function EventAttendance() {
                 <button
                     onClick={() => void handleMarkAllPresent()}
                     disabled={anyRowSelected || !canEditAttendance}
-                    className={`button ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
+                    className={`button  tooltip tooltip-left ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
+                    data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
                 >
                     Mark All Present
                 </button>
@@ -432,11 +433,12 @@ export default function EventAttendance() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end pt-4 ">
                         <button
                             type="submit"
-                            className="button"
+                            className="button tooltip tooltip-left"
                             disabled={!anyRowSelected || !canEditAttendance}
+                            data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
                         >
                             Save Attendance
                         </button>

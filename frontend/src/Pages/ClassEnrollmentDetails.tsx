@@ -203,7 +203,10 @@ export default function ClassEnrollmentDetails() {
                         }}
                     />
                 </div>
-                <div className="flex gap-2">
+                <div
+                    className="flex gap-2 tooltip tooltip-left"
+                    data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
+                >
                     {selectedResidents.length > 0 && (
                         <button
                             disabled={!canAddResident}

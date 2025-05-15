@@ -62,7 +62,10 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                     : 'No end date scheduled'}
             </p>
             <p className="body">Room: {classInfo?.events[0].room}</p>
-            <div className="flex flex-row gap-2 mt-6 justify-center">
+            <div
+                className="flex flex-row gap-2 mt-6 justify-center tooltip "
+                data-tip={`This class is ${classInfo?.status} and cannot be modified.`}
+            >
                 <button
                     className="button"
                     onClick={() => {
