@@ -19,7 +19,11 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 }
 
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if err := srv.validateClassStatus(w, r); err != nil {
+	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	if err := srv.validateClassStatus(classId, w); err != nil {
 		return err
 	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))

@@ -70,7 +70,7 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
-	if err := srv.validateClassStatus(w, r); err != nil {
+	if err := srv.validateClassStatus(classID, w); err != nil {
 		return err
 	}
 	enrollment := struct {
@@ -113,7 +113,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}
-	if err := srv.validateClassStatus(w, r); err != nil {
+	if err := srv.validateClassStatus(classId, w); err != nil {
 		return err
 	}
 	defer r.Body.Close()
