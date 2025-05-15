@@ -30,7 +30,9 @@ export default function ClassEnrollmentDetails() {
     const navigate = useNavigate();
     const { redirect } = useLoaderData() as ClassLoaderData;
     const { class: clsInfo } = useLoaderData() as ClassLoaderData;
-    const thisSelectedClasStatus = clsInfo?.status;
+    const canAddResident =
+        clsInfo?.status !== SelectedClassStatus.Completed &&
+        clsInfo?.status !== SelectedClassStatus.Cancelled;
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
         FilterResidentNames['Resident Name (A-Z)']
@@ -204,12 +206,7 @@ export default function ClassEnrollmentDetails() {
                 <div className="flex gap-2">
                     {selectedResidents.length > 0 && (
                         <button
-                            disabled={
-                                thisSelectedClasStatus ===
-                                    SelectedClassStatus.Cancelled ||
-                                thisSelectedClasStatus ===
-                                    SelectedClassStatus.Completed
-                            }
+                            disabled={!canAddResident}
                             className="button"
                             onClick={handleOpenModalGraduate}
                         >
@@ -218,12 +215,7 @@ export default function ClassEnrollmentDetails() {
                     )}
                     <AddButton
                         label="Add Resident"
-                        disabled={
-                            thisSelectedClasStatus ===
-                                SelectedClassStatus.Cancelled ||
-                            thisSelectedClasStatus ===
-                                SelectedClassStatus.Completed
-                        }
+                        disabled={!canAddResident}
                         onClick={() =>
                             navigate(
                                 `/program-classes/${class_id}/enrollments/add`

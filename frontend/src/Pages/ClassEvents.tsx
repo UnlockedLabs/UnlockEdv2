@@ -50,7 +50,11 @@ export default function ClassEvents() {
 
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;
-    const thisSelectedClassStatus = this_program?.status;
+
+    const canMarkAttendance =
+        this_program?.status !== SelectedClassStatus.Completed &&
+        this_program?.status !== SelectedClassStatus.Cancelled;
+    console.log(canMarkAttendance);
     const meta = data?.meta;
     const events = data?.data ?? [];
 
@@ -145,12 +149,6 @@ export default function ClassEvents() {
                                         {event.attendance_records?.length >
                                         0 ? (
                                             <button
-                                                disabled={
-                                                    thisSelectedClassStatus ===
-                                                        SelectedClassStatus.Cancelled ||
-                                                    thisSelectedClassStatus ===
-                                                        SelectedClassStatus.Completed
-                                                }
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,
@@ -163,12 +161,7 @@ export default function ClassEvents() {
                                             </button>
                                         ) : (
                                             <button
-                                                disabled={
-                                                    thisSelectedClassStatus ===
-                                                        SelectedClassStatus.Cancelled ||
-                                                    thisSelectedClassStatus ===
-                                                        SelectedClassStatus.Completed
-                                                }
+                                                disabled={canMarkAttendance}
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,
