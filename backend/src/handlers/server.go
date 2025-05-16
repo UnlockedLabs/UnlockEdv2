@@ -43,7 +43,13 @@ type routeDef struct {
 	handler     HttpFunc
 	admin       bool
 	features    []models.FeatureAccess
+	//ownership   *ownershipConfig
 }
+
+// type ownershipConfig struct {
+// 	resourceType any
+// 	idParams     []string
+// }
 
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {

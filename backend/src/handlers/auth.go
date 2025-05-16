@@ -151,6 +151,21 @@ func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
+func (srv *Server) UserCanEditResource(r *http.Request, resourceType any, resourceID uint) (bool, error) {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if claims.canSwitchFacility() {
+		return true, nil
+	}
+	resourceFacilityID, err := srv.Db.GetResourceFacilityID(resourceType, resourceID)
+	if err != nil {
+		return false, err
+	}
+	if resourceFacilityID != claims.FacilityID {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
