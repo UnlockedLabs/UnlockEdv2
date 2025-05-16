@@ -158,6 +158,20 @@ func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+func (srv *Server) UserCanEditResource(r *http.Request, resourceType any, resourceID any) (bool, error) {
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	if claims.canSwitchFacility() {
+		return true, nil
+	}
+	resourceFacilityID, err := srv.Db.GetResourceFacilityID(resourceType, resourceID)
+	if err != nil {
+		return false, err
+	}
+	if resourceFacilityID != claims.FacilityID {
+		return false, nil
+	}
+	return true, nil
+}
 
 // Auth endpoint that is called from the client before each <AuthenticatedLayout /> is rendered
 func (srv *Server) handleCheckAuth(w http.ResponseWriter, r *http.Request, log sLog) error {
