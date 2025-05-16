@@ -44,9 +44,9 @@ func (c *Claims) canSwitchFacility() bool {
 
 func (srv *Server) registerAuthRoutes() []routeDef {
 	return []routeDef{
-		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature()},
+		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature(), nil},
 		/* only use auth middleware, user activity bloats the database + results */
-		{"GET /api/auth", srv.handleCheckAuth, false, models.Feature()},
+		{"GET /api/auth", srv.handleCheckAuth, false, models.Feature(), nil},
 	}
 }
 
@@ -149,21 +149,6 @@ func (srv *Server) canViewUserData(r *http.Request, id int) bool {
 		return false
 	}
 	return slices.Contains(models.AdminRoles, claims.Role)
-}
-
-func (srv *Server) UserCanEditResource(r *http.Request, resourceType any, resourceID uint) (bool, error) {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	if claims.canSwitchFacility() {
-		return true, nil
-	}
-	resourceFacilityID, err := srv.Db.GetResourceFacilityID(resourceType, resourceID)
-	if err != nil {
-		return false, err
-	}
-	if resourceFacilityID != claims.FacilityID {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {

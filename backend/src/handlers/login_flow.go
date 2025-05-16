@@ -17,9 +17,9 @@ func (srv *Server) registerLoginFlowRoutes() []routeDef {
 	srv.Mux.Handle("POST /api/login", srv.handleError(srv.handleLogin))
 	axx := models.Feature()
 	return []routeDef{
-		{"POST /api/logout", srv.handleLogout, false, axx},
-		{"POST /api/consent/accept", srv.handleOidcConsent, false, axx},
-		{"POST /api/auth/refresh", srv.handleRefreshAuth, false, axx},
+		{"POST /api/logout", srv.handleLogout, false, axx, nil},
+		{"POST /api/consent/accept", srv.handleOidcConsent, false, axx, nil},
+		{"POST /api/auth/refresh", srv.handleRefreshAuth, false, axx, nil},
 	}
 }
 

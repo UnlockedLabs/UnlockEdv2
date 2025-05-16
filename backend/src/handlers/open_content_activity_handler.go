@@ -9,9 +9,9 @@ import (
 func (srv *Server) registerOpenContentActivityRoutes() []routeDef {
 	axx := models.Feature(models.OpenContentAccess)
 	return []routeDef{
-		{"GET /api/open-content/activity", srv.handleGetTopFacilityOpenContent, false, axx},
-		{"GET /api/open-content/activity/{id}", srv.handleGetTopUserOpenContent, false, axx},
-		{"GET /api/libraries/activity", srv.handleGetTopFacilityLibraries, false, axx},
+		{"GET /api/open-content/activity", srv.handleGetTopFacilityOpenContent, false, axx, nil},
+		{"GET /api/open-content/activity/{id}", srv.handleGetTopUserOpenContent, false, axx, nil},
+		{"GET /api/libraries/activity", srv.handleGetTopFacilityLibraries, false, axx, nil},
 	}
 }
 

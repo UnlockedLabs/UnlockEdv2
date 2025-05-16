@@ -15,16 +15,16 @@ import (
 func (srv *Server) registerUserRoutes() []routeDef {
 	axx := models.Feature()
 	return []routeDef{
-		{"GET /api/users", srv.handleIndexUsers, true, axx},
-		{"GET /api/users/{id}", srv.handleShowUser, false, axx},
-		{"POST /api/users", srv.handleCreateUser, true, axx},
-		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
-		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
-		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx},
-		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
-		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
-		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
-		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, false, axx},
+		{"GET /api/users", srv.handleIndexUsers, true, axx, nil},
+		{"GET /api/users/{id}", srv.handleShowUser, false, axx, nil},
+		{"POST /api/users", srv.handleCreateUser, true, axx, nil},
+		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx, nil},
+		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx, nil},
+		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx, nil},
+		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx, nil},
+		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx, nil},
+		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx, nil},
+		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, false, axx, nil},
 	}
 }
 
