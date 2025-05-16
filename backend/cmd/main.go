@@ -2,7 +2,10 @@ package main
 
 import (
 	server "UnlockEdv2/src/handlers"
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
@@ -15,8 +18,20 @@ func main() {
 	env := os.Getenv("APP_ENV")
 	testing := (env == "testing")
 	initLogging()
-	newServer := server.NewServer(testing)
-	newServer.ListenAndServe()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	srv := server.NewServer(testing, ctx)
+	go func() {
+		sig := <-shutdown
+		log.Infof("Received signal: %v. Initiating shutdown...", sig)
+		cancel()
+	}()
+
+	srv.ListenAndServe(ctx)
 }
 
 func initLogging() {

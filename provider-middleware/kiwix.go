@@ -32,13 +32,13 @@ type KiwixService struct {
 	BaseUrl               string
 	Client                *http.Client
 	JobID                 string
-	params                *map[string]interface{}
+	params                map[string]any
 }
 
-func NewKiwixService(openContentProvider *models.OpenContentProvider, params *map[string]interface{}) *KiwixService {
+func NewKiwixService(openContentProvider *models.OpenContentProvider, params map[string]any) *KiwixService {
 	url := fmt.Sprintf("%s%s%d", openContentProvider.Url, KiwixCatalogUrl, maxLibraries())
 	client := http.Client{}
-	jobID := (*params)["job_id"].(string)
+	jobID := params["job_id"].(string)
 	return &KiwixService{
 		OpenContentProviderId: openContentProvider.ID,
 		BaseUrl:               openContentProvider.Url,

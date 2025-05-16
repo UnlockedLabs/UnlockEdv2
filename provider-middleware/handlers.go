@@ -81,7 +81,7 @@ func (sh *ServiceHandler) handleCourses(ctx context.Context, msg *nats.Msg) {
 		logger().WithFields(logrus.Fields{"error": err.Error()}).Error("Failed to initialize service")
 		return
 	}
-	params := *service.GetJobParams()
+	params := service.GetJobParams()
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	success := service.ImportCourses(sh.db) != nil
@@ -97,7 +97,7 @@ func (sh *ServiceHandler) handleScrapeLibraries(ctx context.Context, msg *nats.M
 		return
 	}
 	jobId := body["job_id"].(string)
-	kiwixService := NewKiwixService(provider, &body)
+	kiwixService := NewKiwixService(provider, body)
 	success := kiwixService.ImportLibraries(contxt, sh.db) != nil
 	providerIdPtr := int(provider.ID)
 	sh.cleanupJob(contxt, &providerIdPtr, jobId, success)
@@ -145,25 +145,31 @@ func (sh *ServiceHandler) handleMilestonesForCourseUser(ctx context.Context, msg
 		return
 	}
 	logger().Println("initiating GetMilestonesForCourseUser milestones")
-	params := *service.GetJobParams()
-	courses := extractArrayMap(params, "courses")
-	success := true
-	users := extractArrayMap(params, "user_mappings")
+	params := service.GetJobParams()
 	jobId := params["job_id"].(string)
-	lastRunStr := params["last_run"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
+	usersMap, err := sh.lookupUserMapping(params)
+	if err != nil {
+		sh.cleanupJob(contxt, &providerPlatformId, jobId, false)
+	}
+	coursesMap, err := sh.lookupCoursesMapping(providerPlatformId)
+	if err != nil {
+		sh.cleanupJob(contxt, &providerPlatformId, jobId, false)
+	}
+	success := true
+	lastRunStr := params["last_run"].(string)
 	lastRun, err := time.Parse(time.RFC3339, lastRunStr)
 	if err != nil {
 		sh.cleanupJob(contxt, &providerPlatformId, jobId, false)
 		return
 	}
-	for _, course := range courses {
+	for _, course := range coursesMap {
 		select {
 		case <-contxt.Done():
 			logger().Println("context cancelled for getMilestones")
 			return
 		default:
-			err = service.ImportMilestones(course, users, sh.db, lastRun)
+			err = service.ImportMilestones(course, usersMap, sh.db, lastRun)
 			time.Sleep(TIMEOUT_WAIT * time.Second) // to avoid rate limiting with the provider
 			if err != nil {
 				success = false
@@ -184,11 +190,10 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 		return
 	}
 	success := true
-	params := *service.GetJobParams()
-	logger().Println("params for activity job: ", params)
-	courses := extractArrayMap(params, "courses")
+	params := service.GetJobParams()
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
+	courses, err := sh.lookupCoursesMapping(providerPlatformId)
 	for _, course := range courses {
 		select {
 		case <-contxt.Done():
@@ -214,7 +219,7 @@ func (sh *ServiceHandler) handleAddVideos(ctx context.Context, msg *nats.Msg) {
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, &body)
+	ytService := NewVideoService(provider, sh.db, body)
 	err = ytService.addVideos(contxt)
 	if err != nil {
 		logger().Errorf("error adding videos: %v", err)
@@ -232,7 +237,7 @@ func (sh *ServiceHandler) handleManualRetryDownload(ctx context.Context, msg *na
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, &body)
+	ytService := NewVideoService(provider, sh.db, body)
 	videoId, ok := body["video_id"].(float64)
 	if ok {
 		err = ytService.retrySingleVideo(contxt, int(videoId))
@@ -254,7 +259,7 @@ func (sh *ServiceHandler) handleRetryFailedVideos(ctx context.Context, msg *nats
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, &body)
+	ytService := NewVideoService(provider, sh.db, body)
 	err = ytService.retryFailedVideos(contxt)
 	if err != nil {
 		logger().Errorf("error retrying failed videos: %v", err)
@@ -274,7 +279,7 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 		logger().Errorf("error fetching provider from msg parameters %v", err)
 		return
 	}
-	ytService := NewVideoService(provider, sh.db, &body)
+	ytService := NewVideoService(provider, sh.db, body)
 	err = ytService.syncVideoMetadata(contxt)
 	if err != nil {
 		logger().Errorf("error syncing video metadata: %v", err)
@@ -282,16 +287,4 @@ func (sh *ServiceHandler) handleSyncVideoMetadata(ctx context.Context, msg *nats
 	}
 	providerIdPtr := int(provider.ID)
 	sh.cleanupJob(contxt, &providerIdPtr, body["job_id"].(string), success)
-}
-
-func extractArrayMap(params map[string]any, mapType string) []map[string]any {
-	extractTo := []map[string]any{}
-	array, ok := params[mapType].([]any)
-	if !ok {
-		return extractTo
-	}
-	for _, prog := range array {
-		extractTo = append(extractTo, prog.(map[string]any))
-	}
-	return extractTo
 }

@@ -4,6 +4,5 @@ use (
 	./backend
 	./backend/migrations
 	./backend/seeder
-	./backend/tasks
 	./provider-middleware
 )
