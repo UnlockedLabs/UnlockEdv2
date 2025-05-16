@@ -122,13 +122,6 @@ func userIsAdmin(r *http.Request) bool {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	return claims.isAdmin()
 }
-func userIsDeptOrSysAdmin(r *http.Request) bool {
-	return userIsSystemAdmin(r) || userIsDeptAdmin(r)
-}
-
-func userIsDeptAdmin(r *http.Request) bool {
-	return r.Context().Value(ClaimsKey).(*Claims).Role == models.DepartmentAdmin
-}
 
 func userIsSystemAdmin(r *http.Request) bool {
 	return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin

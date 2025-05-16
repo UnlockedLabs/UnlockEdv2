@@ -234,7 +234,10 @@ func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpF
 					return newUnauthorizedServiceError()
 				}
 
-				kv.Put(key, []byte(strconv.FormatUint(uint64(facID), 10)))
+				_, err = kv.Put(key, []byte(strconv.FormatUint(uint64(facID), 10)))
+				if err != nil {
+					log.error("error caching facility_id of session")
+				}
 			}
 
 			return next(w, r, log)
