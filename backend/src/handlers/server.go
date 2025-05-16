@@ -85,6 +85,7 @@ func newValidatedFeatureRoute(method string, handler HttpFunc, admin bool, featu
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {
 		h := route.handler
+
 		if route.admin {
 			srv.Mux.Handle(route.routeMethod,
 				srv.applyAdminMiddleware(h, route.resolver, route.features...),
