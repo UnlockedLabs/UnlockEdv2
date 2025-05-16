@@ -97,6 +97,13 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	canUpdate, err := srv.UserCanEditResource(r, models.ProgramClass{}, id)
+	if err != nil {
+		return newInternalServerServiceError(err, "facility check to edit resource")
+	}
+	if !canUpdate {
+		return newUnauthorizedServiceError()
+	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -119,6 +126,13 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	for _, id := range ids {
 		if classID, err := strconv.Atoi(id); err == nil {
 			classIDs = append(classIDs, classID)
+		}
+		canUpdate, err := srv.UserCanEditResource(r, models.ProgramClass{}, classIDs)
+		if err != nil {
+			return newInternalServerServiceError(err, "facility check to edit resource")
+		}
+		if !canUpdate {
+			return newUnauthorizedServiceError()
 		}
 	}
 	defer r.Body.Close()
