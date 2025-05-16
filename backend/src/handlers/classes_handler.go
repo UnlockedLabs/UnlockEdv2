@@ -94,12 +94,13 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
+	canUpdate, err := srv.UserCanEditResource(r, models.ProgramClass{}, uint(id))
+	if !canUpdate {
+		return newUnauthorizedServiceError()
+	}
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
-	}
-	if claims.FacilityID != class.FacilityID && !userIsDeptOrSysAdmin(r) {
-		return newUnauthorizedServiceError()
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {
