@@ -20,13 +20,13 @@ type CanvasService struct {
 	BaseURL            string
 	Token              string
 	AccountID          string
-	BaseHeaders        *map[string]string
+	BaseHeaders        map[string]string
 	ClientID           string
 	RedirectURI        string
-	JobParams          *map[string]interface{}
+	JobParams          map[string]any
 }
 
-func newCanvasService(provider *models.ProviderPlatform, params *map[string]interface{}) *CanvasService {
+func newCanvasService(provider *models.ProviderPlatform, params map[string]any) *CanvasService {
 	headers := make(map[string]string)
 	headers["Authorization"] = "Bearer " + provider.AccessKey
 	headers["Accept"] = "application/json"
@@ -36,7 +36,7 @@ func newCanvasService(provider *models.ProviderPlatform, params *map[string]inte
 		BaseURL:            provider.BaseUrl,
 		Token:              provider.AccessKey,
 		AccountID:          provider.AccountID,
-		BaseHeaders:        &headers,
+		BaseHeaders:        headers,
 		JobParams:          params,
 	}
 }
@@ -46,7 +46,7 @@ func (srv *CanvasService) SendRequest(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	for key, value := range *srv.BaseHeaders {
+	for key, value := range srv.BaseHeaders {
 		req.Header.Add(key, value)
 	}
 	resp, err := srv.Client.Do(req)
@@ -56,7 +56,7 @@ func (srv *CanvasService) SendRequest(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (cs *CanvasService) GetJobParams() *map[string]interface{} {
+func (cs *CanvasService) GetJobParams() map[string]any {
 	return cs.JobParams
 }
 
@@ -256,7 +256,7 @@ func (srv *CanvasService) getCountAssignmentsForCourse(courseId int) (int, error
 		return 0, err
 	}
 	log.Debug("Getting count of assignments for course: ", courseId)
-	for key, value := range *srv.BaseHeaders {
+	for key, value := range srv.BaseHeaders {
 		req.Header.Add(key, value)
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -350,7 +350,7 @@ func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryStr
 			logger().Error("Failed to close response body")
 		}
 	}()
-	var submission []map[string]interface{}
+	var submission []map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&submission)
 	if err != nil {
 		return nil, err
@@ -370,13 +370,13 @@ func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryStr
 *
 * Quizzes are included in assignments so we don't need to get them separately
 * */
-func (srv *CanvasService) ImportMilestones(courseIdPair map[string]interface{}, mapping []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
-	courseId := int(courseIdPair["course_id"].(float64))
+func (srv *CanvasService) ImportMilestones(courseIdPair map[string]any, mapping []map[string]any, db *gorm.DB, lastRun time.Time) error {
+	courseId := int(courseIdPair["course_id"].(int64))
 	externalCourseId := courseIdPair["external_course_id"].(string)
 	values := url.Values{}
 	reversed := make(map[string]int)
 	for _, userMap := range mapping {
-		reversed[userMap["external_user_id"].(string)] = int(userMap["user_id"].(float64))
+		reversed[userMap["external_user_id"].(string)] = int(userMap["user_id"].(int64))
 		values.Add("user_ids[]", userMap["external_user_id"].(string))
 	}
 	fields := log.Fields{"task": "ImportMilestones", "course_id": courseId, "external_id": externalCourseId}
@@ -421,7 +421,7 @@ func (srv *CanvasService) ImportMilestones(courseIdPair map[string]interface{}, 
 	return nil
 }
 
-func checkTimespanOfSubmission(lastRun time.Time, submission map[string]interface{}) bool {
+func checkTimespanOfSubmission(lastRun time.Time, submission map[string]any) bool {
 	if submission["submitted_at"] == nil {
 		// assignment not submitted, so we don't care about it
 		return false
@@ -450,7 +450,7 @@ func checkTimespanOfSubmission(lastRun time.Time, submission map[string]interfac
 	return false
 }
 
-func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string]interface{}, error) {
+func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string]any, error) {
 	url := srv.BaseURL + "/api/v1/courses/" + courseId + "/enrollments?state[]=active&state[]=invited&type[]=StudentEnrollment"
 	resp, err := srv.SendRequest(url)
 	if err != nil {
@@ -470,7 +470,7 @@ func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string
 	return enrollments, nil
 }
 
-func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]interface{}, db *gorm.DB) error {
+func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db *gorm.DB) error {
 	courseId := int(coursePair["course_id"].(float64))
 	externalId := coursePair["external_course_id"].(string)
 	enrollments, err := srv.getEnrollmentsForCourse(externalId)

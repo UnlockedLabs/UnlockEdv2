@@ -28,11 +28,11 @@ type VideoService struct {
 	BaseUrl               string
 	OpenContentProviderID uint
 	Client                *http.Client
-	Body                  *map[string]any
+	Body                  map[string]any
 	db                    *gorm.DB
 }
 
-func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body *map[string]any) *VideoService {
+func NewVideoService(prov *models.OpenContentProvider, db *gorm.DB, body map[string]any) *VideoService {
 	return &VideoService{
 		BaseUrl:               prov.Url,
 		Client:                &http.Client{},
@@ -311,7 +311,7 @@ func (vs *VideoService) retrySingleVideo(ctx context.Context, videoId int) error
 }
 
 func (yt *VideoService) addVideos(ctx context.Context) error {
-	params := *yt.Body
+	params := yt.Body
 	urls := params["video_urls"].([]any)
 	logger().Infof("Adding videos: %v", urls)
 

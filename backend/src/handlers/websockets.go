@@ -66,6 +66,24 @@ type ClientManager struct {
 	mutex   sync.RWMutex
 }
 
+func (c *ClientManager) Close(db *database.DB) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	for _, client := range c.clients {
+		key := client.getClientKey()
+		c.handleCleanup(db, key)
+		client.cancel()
+		if client.Conn != nil {
+			err := client.Conn.Close(websocket.StatusNormalClosure, "server shutdown")
+			if err != nil {
+				log.Warnf("Failed to close WebSocket for user %d: %v", key, err)
+			}
+			client.Conn = nil
+		}
+		delete(c.clients, key)
+	}
+}
+
 func newClientManager() *ClientManager {
 	return &ClientManager{
 		clients: make(map[uint]*WsClient),

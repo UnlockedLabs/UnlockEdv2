@@ -20,22 +20,22 @@ func (srv *Server) registerOryRoutes() []routeDef {
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {
 	if !srv.isTesting(r) { //if not testing then reach out
-		if err := srv.deleteAllKratosIdentities(); err != nil {
+		if err := srv.deleteAllKratosIdentities(r.Context()); err != nil {
 			return newInternalServerServiceError(err, "error communicating with Ory Kratos")
 		}
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "identities deleted successfully")
 }
 
-func (srv *Server) deleteAllKratosIdentities() error {
-	identities, err := srv.handleFindKratosIdentities()
+func (srv *Server) deleteAllKratosIdentities(ctx context.Context) error {
+	identities, err := srv.handleFindKratosIdentities(ctx)
 	if err != nil {
 		log.Errorln("unable to fetch all identities from Ory Kratos")
 		return err
 	}
 	for _, user := range identities {
 		id := user.GetId()
-		resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(context.Background(), id).Execute()
+		resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(ctx, id).Execute()
 		if err != nil {
 			log.WithFields(log.Fields{"identity": id}).Errorln("unable to delete identity from Ory Kratos")
 			continue
@@ -50,8 +50,8 @@ func (srv *Server) deleteAllKratosIdentities() error {
 	return nil
 }
 
-func (srv *Server) deleteIdentityInKratos(kratosId *string) error {
-	resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(context.Background(), *kratosId).Execute()
+func (srv *Server) deleteIdentityInKratos(ctx context.Context, kratosId *string) error {
+	resp, err := srv.OryClient.IdentityAPI.DeleteIdentity(ctx, *kratosId).Execute()
 	if err != nil {
 		log.WithField("identity", kratosId).Errorln("unable to delete identity from Ory Kratos")
 		return err
@@ -63,8 +63,8 @@ func (srv *Server) deleteIdentityInKratos(kratosId *string) error {
 	return nil
 }
 
-func (srv *Server) handleFindKratosIdentities() ([]client.Identity, error) {
-	identities, resp, err := srv.OryClient.IdentityAPI.ListIdentities(context.Background()).Execute()
+func (srv *Server) handleFindKratosIdentities(ctx context.Context) ([]client.Identity, error) {
+	identities, resp, err := srv.OryClient.IdentityAPI.ListIdentities(ctx).Execute()
 	if err != nil {
 		log.Error("Error getting identities from kratos integration")
 		return nil, err

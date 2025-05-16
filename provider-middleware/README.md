@@ -4,7 +4,7 @@ This middleware is intended to run as a service in the same cluster, connected t
 which in some cases (like `kolibri`) will also contain the database of one or more provider platforms.
 It will handle the resource intensive business of fetching, parsing, de-duping data from platform integrations, and either
 return the data to the backend or write it to the database. The middleware is subscribed to a NATS message queue, listening for
-msg's published from the `cron-tasks` service, which will trigger the middleware to fetch data from the provider platforms.
+msg's published from the back-end, which will trigger the middleware to fetch data from the provider platforms.
 
 ### **HTTP API**
 
