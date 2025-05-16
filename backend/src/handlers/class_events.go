@@ -10,12 +10,12 @@ import (
 func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
-		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx},
-		{"GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx},
-		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx},
-		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx},
-		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx},
-		{"POST /api/program-classes/{id}/events", srv.handleCreateEvent, true, axx},
+		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx, nil},
+		{"GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx, nil},
+		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx, nil},
+		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx, nil},
+		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx, nil},
+		{"POST /api/program-classes/{id}/events", srv.handleCreateEvent, true, axx, nil},
 	}
 }
 

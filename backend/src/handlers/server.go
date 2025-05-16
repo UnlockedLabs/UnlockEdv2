@@ -43,20 +43,43 @@ type routeDef struct {
 	handler     HttpFunc
 	admin       bool
 	features    []models.FeatureAccess
-	//ownership   *ownershipConfig
+	ownership   *ownershipConfig
 }
 
-// type ownershipConfig struct {
-// 	resourceType any
-// 	idParams     []string
-// }
+type SourceType int
+
+const (
+	SourcePath SourceType = iota
+	SourceQuery
+	SourceBody
+)
+
+type idLocator struct {
+	Key    string
+	Source SourceType
+}
+
+type ownershipConfig struct {
+	resourceType any
+	idParams     []idLocator
+}
 
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {
+		h := route.handler
+
+		if route.ownership != nil {
+			h = srv.ownershipMiddleware(route.ownership)(h)
+		}
+
 		if route.admin {
-			srv.Mux.Handle(route.routeMethod, srv.applyAdminMiddleware(route.handler, route.features...))
+			srv.Mux.Handle(route.routeMethod,
+				srv.applyAdminMiddleware(h, route.features...),
+			)
 		} else {
-			srv.Mux.Handle(route.routeMethod, srv.applyMiddleware(route.handler, route.features...))
+			srv.Mux.Handle(route.routeMethod,
+				srv.applyMiddleware(h, route.features...),
+			)
 		}
 	}
 }

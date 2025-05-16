@@ -10,14 +10,14 @@ import (
 func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
-		{"GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx},
-		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
-		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
-		{"GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx},
-		{"GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx},
-		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
-		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx},
-		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx},
+		{"GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx, nil},
+		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx, nil},
+		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx, nil},
+		{"GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx, nil},
+		{"GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx, nil},
+		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx, nil},
+		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx, &ownershipConfig{&models.ProgramClass{}, []idLocator{{Key: "id", Source: SourceQuery}}}},
+		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx, &ownershipConfig{&models.ProgramClass{}, []idLocator{{Key: "id", Source: SourcePath}}}},
 	}
 }
 
@@ -87,10 +87,6 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	canUpdate, err := srv.UserCanEditResource(r, models.ProgramClass{}, uint(id))
-	if !canUpdate {
-		return newUnauthorizedServiceError()
-	}
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)

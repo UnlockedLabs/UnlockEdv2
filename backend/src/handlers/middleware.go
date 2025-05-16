@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -161,44 +163,7 @@ func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel .
 	})
 }
 
-// func (srv *Server) ownershipMiddleware(resourceType any, idParams ...string) func(HttpFunc) HttpFunc {
-// 	return func(next HttpFunc) HttpFunc {
-// 		return func(w http.ResponseWriter, r *http.Request, log sLog) error {
-// 			var raws []string
-// 			for _, param := range idParams {
-// 				if p := r.PathValue(param); p != "" {
-// 					raws = append(raws, p)
-// 				} else {
-// 					raws = append(raws, r.URL.Query()[param]...)
-// 				}
-// 			}
-// 			if len(raws) == 0 {
-// 				return newInvalidIdServiceError(fmt.Errorf("no %q provided", idParams), strings.Join(idParams, ","))
-// 			}
-// 			for _, raw := range raws {
-// 				id64, err := strconv.ParseUint(raw, 10, 0)
-// 				if err != nil {
-// 					return newInvalidIdServiceError(err, "id parsing")
-// 				}
-// 				ok, err := srv.UserCanEditResource(r, resourceType, uint(id64))
-// 				if err != nil {
-// 					return newDatabaseServiceError(err)
-// 				}
-// 				if !ok {
-// 					return newUnauthorizedServiceError()
-// 				}
-// 			}
-// 			return next(w, r, log)
-// 		}
-// 	}
-// }
-
-// ownershipMiddleware will:
-// 1) skip entirely for system/dept admins
-// 2) collect every idParam from path or query
-// 3) for each parsed ID, SELECT facility_id from the DB and compare to the user’s FacilityID
-// 4) on any mismatch or error, short‑circuit with the appropriate ServiceError
-func (srv *Server) ownershipMiddleware(resourceType any, idParams ...string) func(HttpFunc) HttpFunc {
+func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpFunc {
 	return func(next HttpFunc) HttpFunc {
 		return func(w http.ResponseWriter, r *http.Request, log sLog) error {
 			claims := r.Context().Value(ClaimsKey).(*Claims)
@@ -206,31 +171,52 @@ func (srv *Server) ownershipMiddleware(resourceType any, idParams ...string) fun
 				return next(w, r, log)
 			}
 
-			var raws []string
-			for _, key := range idParams {
-				if p := r.PathValue(key); p != "" {
-					raws = append(raws, p)
-				} else if vals := r.URL.Query()[key]; len(vals) > 0 {
-					raws = append(raws, vals...)
+			var rawIDs []string
+			var bodyData map[string]any
+			bodyRead := false
+
+			for _, loc := range oc.idParams {
+				switch loc.Source {
+				case SourcePath:
+					if v := r.PathValue(loc.Key); v != "" {
+						rawIDs = append(rawIDs, v)
+					}
+
+				case SourceQuery:
+					rawIDs = append(rawIDs, r.URL.Query()[loc.Key]...)
+
+				case SourceBody:
+					if !bodyRead {
+						buf, err := io.ReadAll(r.Body)
+						if err != nil {
+							return newJSONReqBodyServiceError(err)
+						}
+						r.Body = io.NopCloser(bytes.NewBuffer(buf))
+						if err := json.Unmarshal(buf, &bodyData); err != nil {
+							return newJSONReqBodyServiceError(err)
+						}
+						bodyRead = true
+					}
+					if v, ok := bodyData[loc.Key]; ok {
+						rawIDs = append(rawIDs, fmt.Sprint(v))
+					}
 				}
-			}
-			if len(raws) == 0 {
-				return newInvalidIdServiceError(
-					fmt.Errorf("no %q provided", idParams),
-					strings.Join(idParams, ","),
-				)
 			}
 
-			for _, raw := range raws {
-				id, err := strconv.ParseUint(raw, 10, 64)
+			if len(rawIDs) == 0 {
+				return next(w, r, log)
+			}
+
+			for _, raw := range rawIDs {
+				idNum, err := strconv.ParseUint(raw, 10, 64)
 				if err != nil {
-					return newInvalidIdServiceError(err, "id parsing")
+					return newInvalidIdServiceError(err, fmt.Sprintf("parsing %q", raw))
 				}
-				facilityID, err := srv.Db.GetResourceFacilityID(resourceType, uint(id))
+				facID, err := srv.Db.GetResourceFacilityID(oc.resourceType, uint(idNum))
 				if err != nil {
 					return newDatabaseServiceError(err)
 				}
-				if facilityID != claims.FacilityID {
+				if facID != claims.FacilityID {
 					return newUnauthorizedServiceError()
 				}
 			}

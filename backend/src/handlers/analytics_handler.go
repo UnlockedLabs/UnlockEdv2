@@ -10,7 +10,7 @@ import (
 func (srv *Server) registerAnalyticRoutes() []routeDef {
 	axx := models.Feature()
 	return []routeDef{
-		{"POST /api/analytics/faq-click", srv.handleUserFAQClick, false, axx},
+		{"POST /api/analytics/faq-click", srv.handleUserFAQClick, false, axx, nil},
 	}
 }
 

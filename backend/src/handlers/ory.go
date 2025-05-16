@@ -15,7 +15,7 @@ import (
 )
 
 func (srv *Server) registerOryRoutes() []routeDef {
-	return []routeDef{{"DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities, true, models.Feature()}}
+	return []routeDef{{"DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities, true, models.Feature(), nil}}
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {

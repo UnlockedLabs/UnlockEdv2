@@ -12,8 +12,8 @@ import (
 func (srv *Server) registerActivityRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
-		{"GET /api/users/{id}/daily-activity", srv.handleGetDailyActivityByUserID, false, axx},
-		{"GET /api/courses/{id}/activity", srv.handleGetCourseActivity, true, axx},
+		{"GET /api/users/{id}/daily-activity", srv.handleGetDailyActivityByUserID, false, axx, nil},
+		{"GET /api/courses/{id}/activity", srv.handleGetCourseActivity, true, axx, nil},
 	}
 }
 
