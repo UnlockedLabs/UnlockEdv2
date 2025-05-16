@@ -172,7 +172,7 @@ func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpF
 			}
 
 			var rawIDs []string
-			var bodyData map[string]any
+			var bodyJSON map[string]any
 			bodyRead := false
 
 			for _, loc := range oc.idParams {
@@ -181,10 +181,8 @@ func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpF
 					if v := r.PathValue(loc.Key); v != "" {
 						rawIDs = append(rawIDs, v)
 					}
-
 				case SourceQuery:
 					rawIDs = append(rawIDs, r.URL.Query()[loc.Key]...)
-
 				case SourceBody:
 					if !bodyRead {
 						buf, err := io.ReadAll(r.Body)
@@ -192,12 +190,13 @@ func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpF
 							return newJSONReqBodyServiceError(err)
 						}
 						r.Body = io.NopCloser(bytes.NewBuffer(buf))
-						if err := json.Unmarshal(buf, &bodyData); err != nil {
+
+						if err := json.Unmarshal(buf, &bodyJSON); err != nil {
 							return newJSONReqBodyServiceError(err)
 						}
 						bodyRead = true
 					}
-					if v, ok := bodyData[loc.Key]; ok {
+					if v, ok := bodyJSON[loc.Key]; ok {
 						rawIDs = append(rawIDs, fmt.Sprint(v))
 					}
 				}
@@ -207,11 +206,26 @@ func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpF
 				return next(w, r, log)
 			}
 
+			kv := srv.buckets[PermissionCacheBucket]
+			sess := claims.SessionID
+
 			for _, raw := range rawIDs {
 				idNum, err := strconv.ParseUint(raw, 10, 64)
 				if err != nil {
 					return newInvalidIdServiceError(err, fmt.Sprintf("parsing %q", raw))
 				}
+
+				key := fmt.Sprintf("%s:%T:%d", sess, oc.resourceType, idNum)
+
+				if entry, err := kv.Get(key); err == nil {
+					if cached, err := strconv.ParseUint(string(entry.Value()), 10, 64); err == nil {
+						if uint(cached) == claims.FacilityID {
+							continue
+						}
+						return newUnauthorizedServiceError()
+					}
+				}
+
 				facID, err := srv.Db.GetResourceFacilityID(oc.resourceType, uint(idNum))
 				if err != nil {
 					return newDatabaseServiceError(err)
@@ -219,6 +233,8 @@ func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpF
 				if facID != claims.FacilityID {
 					return newUnauthorizedServiceError()
 				}
+
+				kv.Put(key, []byte(strconv.FormatUint(uint64(facID), 10)))
 			}
 
 			return next(w, r, log)
