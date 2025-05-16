@@ -3,6 +3,7 @@ package handlers
 import (
 	database "UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"UnlockEdv2/src/tasks"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -20,10 +21,12 @@ import (
 	ory "github.com/ory/kratos-client-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
+	port      string
 	Db        *database.DB
 	Mux       *http.ServeMux
 	OryClient *ory.APIClient
@@ -36,6 +39,7 @@ type Server struct {
 	presigner *s3.PresignClient
 	s3Bucket  string
 	wsClient  *ClientManager
+	scheduler *tasks.Scheduler
 }
 
 type routeDef struct {
@@ -66,7 +70,7 @@ func (srv *Server) RegisterRoutes() {
 	srv.Mux.Handle("/api/metrics", promhttp.Handler())
 	srv.Mux.HandleFunc("/api/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("OK")); err != nil {
-			log.Errorln("Error writing healthcheck response: ", err)
+			logrus.Errorln("Error writing healthcheck response: ", err)
 			return
 		}
 	})
@@ -112,32 +116,49 @@ func init() {
 	prometheus.MustRegister(errorCount)
 }
 
-func (srv *Server) ListenAndServe() {
+func (srv *Server) ListenAndServe(ctx context.Context) {
+	handler := corsMiddleware(srv.Mux)
+	logrus.Println("Starting server on port: ", srv.port)
+	// Listen for context cancellation to trigger graceful shutdown
+	go func() {
+		select {
+		case <-ctx.Done():
+			log.Println("Context cancelled, shutting down server...")
+			if srv != nil {
+				srv.Shutdown()
+			}
+		}
+	}()
+	if err := http.ListenAndServe(":"+srv.port, handler); err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+func (srv *Server) Shutdown() {
+	srv.wsClient.Close(srv.Db)
+	srv.scheduler.Stop()
+	srv.nats.Close()
+}
+
+func NewServer(isTesting bool, ctx context.Context) *Server {
+	if isTesting {
+		return newTestingServer()
+	}
+	return newServer(ctx)
+}
+
+func newServer(ctx context.Context) *Server {
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "8080"
 	}
-	log.Println("Starting server on port: ", port)
-	if err := http.ListenAndServe(":"+port, corsMiddleware(srv.Mux)); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func NewServer(isTesting bool) *Server {
-	if isTesting {
-		return newTestingServer()
-	}
-	return newServer()
-}
-
-func newServer() *Server {
-	ctx := context.Background()
 	conn, err := setupNats()
 	if err != nil {
-		log.Errorf("Failed to connect to NATS: %v", err)
+		logrus.Errorf("Failed to connect to NATS: %v", err)
 	}
 	dev := os.Getenv("APP_ENV") == "dev"
 	server := Server{
+		port:      port,
 		Db:        database.InitDB(false),
 		Mux:       http.NewServeMux(),
 		OryClient: ory.NewAPIClient(oryConfig()),
@@ -147,19 +168,20 @@ func newServer() *Server {
 	}
 	features, err := server.Db.GetFeatureAccess()
 	if err != nil {
-		log.Fatal("Failed to fetch feature flags")
+		logrus.Fatal("Failed to fetch feature flags")
 	}
 	server.features = features
 	err = server.setupNatsKvBuckets()
 	if err != nil {
-		log.Fatalf("Failed to setup JetStream KV store: %v", err)
+		logrus.Fatalf("Failed to setup JetStream KV store: %v", err)
 	}
 	server.initAwsConfig(ctx)
 	server.RegisterRoutes()
-	if err := server.setupDefaultAdminInKratos(); err != nil {
-		log.Fatal("Error setting up default admin in Kratos")
+	if err := server.setupDefaultAdminInKratos(ctx); err != nil {
+		logrus.Fatal("Error setting up default admin in Kratos")
 	}
 	server.wsClient = newClientManager()
+	server.scheduler = tasks.InitScheduling(dev, server.nats, server.Db.DB)
 	return &server
 }
 
@@ -168,7 +190,7 @@ func (srv *Server) initAwsConfig(ctx context.Context) {
 	if bucket != "" {
 		cfg, err := config.LoadDefaultConfig(ctx)
 		if err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 		}
 		srv.s3 = s3.NewFromConfig(cfg)
 		srv.presigner = s3.NewPresignClient(srv.s3)
@@ -195,7 +217,7 @@ func setupNats() (*nats.Conn, error) {
 	options.Password = os.Getenv("NATS_PASSWORD")
 	conn, err := options.Connect()
 	if err != nil {
-		log.Fatalf("Failed to connect to NATS: %v", err)
+		logrus.Fatalf("Failed to connect to NATS: %v", err)
 	}
 	return conn, nil
 }
@@ -225,7 +247,7 @@ const (
 func (srv *Server) setupNatsKvBuckets() error {
 	js, err := srv.nats.JetStream()
 	if err != nil {
-		log.Fatalf("Error initializing JetStream: %v", err)
+		logrus.Fatalf("Error initializing JetStream: %v", err)
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
@@ -247,7 +269,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 			}
 			kv, err = js.CreateKeyValue(cfg)
 			if err != nil {
-				log.Errorf("Error creating JetStream KV store: %v", err)
+				logrus.Errorf("Error creating JetStream KV store: %v", err)
 				return err
 			}
 		}
@@ -266,25 +288,25 @@ func (srv *Server) hasFeatureAccess(axx ...models.FeatureAccess) bool {
 	return true
 }
 
-func (srv *Server) checkForAdminInKratos() (string, error) {
-	identities, err := srv.handleFindKratosIdentities()
+func (srv *Server) checkForAdminInKratos(ctx context.Context) (string, error) {
+	identities, err := srv.handleFindKratosIdentities(ctx)
 	if err != nil {
-		log.Error("unable to get identities in kratos")
+		logrus.Error("unable to get identities in kratos")
 		return "", err
 	}
 
-	log.Debug("checking for admin in kratos")
+	logrus.Debug("checking for admin in kratos")
 	for _, user := range identities {
 		if username, ok := user.GetTraitsOk(); ok {
-			log.Debug("got traits from ory identity")
+			logrus.Debug("got traits from ory identity")
 			if username != nil {
 				deref := *username
 				if traits, ok := deref.(map[string]any); !ok {
-					log.Debug("cannot deref traits from ory identity")
+					logrus.Debug("cannot deref traits from ory identity")
 					return "", nil
 				} else {
 					if traits["username"].(string) == "SuperAdmin" {
-						log.Debug("checking for admin in kratos, found admin with ID:", user.GetId())
+						logrus.Debug("checking for admin in kratos, found admin with ID:", user.GetId())
 						return user.GetId(), nil
 					}
 				}
@@ -295,9 +317,9 @@ func (srv *Server) checkForAdminInKratos() (string, error) {
 }
 
 func (srv *Server) generateKolibriOidcClient() error {
-	fields := log.Fields{"func": "generateKolibriOidcClient"}
+	fields := logrus.Fields{"func": "generateKolibriOidcClient"}
 	if os.Getenv("KOLIBRI_URL") == "" {
-		log.Println("no KOLIBRI_URL set, not registering new OIDC client")
+		logrus.Println("no KOLIBRI_URL set, not registering new OIDC client")
 		// there is no kolibri deployment registered
 		return nil
 	}
@@ -314,21 +336,21 @@ func (srv *Server) generateKolibriOidcClient() error {
 		err = srv.Db.CreateProviderPlatform(provider)
 		if err != nil {
 			fields["error"] = err.Error()
-			log.WithFields(fields).Errorln("error creating kolibri provider")
+			logrus.WithFields(fields).Errorln("error creating kolibri provider")
 			return err
 		}
 	}
 	client, _, err := models.OidcClientFromProvider(provider, false, srv.Client)
 	if err != nil {
 		fields["error"] = err.Error()
-		log.WithFields(fields).Errorln("error creating kolibri auth client")
+		logrus.WithFields(fields).Errorln("error creating kolibri auth client")
 		return err
 	}
 	return srv.Db.Create(client).Error
 }
 
-func (srv *Server) syncKratosAdminDB() error {
-	id, err := srv.checkForAdminInKratos()
+func (srv *Server) syncKratosAdminDB(ctx context.Context) error {
+	id, err := srv.checkForAdminInKratos(ctx)
 	if err != nil {
 		return err
 	}
@@ -336,7 +358,7 @@ func (srv *Server) syncKratosAdminDB() error {
 		// this means the default admin was just created, so we use default password
 		err := srv.generateKolibriOidcClient()
 		if err != nil {
-			log.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
+			logrus.Warn("KOLIBRI_URL was set but failed to generate OIDC client for kolibri")
 		}
 		if err := srv.HandleCreateUserKratos("SuperAdmin", "ChangeMe!"); err != nil {
 			return err
@@ -344,9 +366,9 @@ func (srv *Server) syncKratosAdminDB() error {
 		return nil
 	} else {
 		// the admin acct exists in kratos already
-		user, err := srv.Db.GetSystemAdmin()
+		user, err := srv.Db.GetSystemAdmin(ctx)
 		if err != nil {
-			log.Fatal("this should never happen, we just created the user")
+			logrus.Fatal("this should never happen, we just created the user")
 		}
 		if user.KratosID != id {
 			if err := srv.Db.Exec("UPDATE users SET kratos_id = ? WHERE id = 1", id).Error; err != nil {
@@ -357,11 +379,11 @@ func (srv *Server) syncKratosAdminDB() error {
 	return nil
 }
 
-func (srv *Server) setupDefaultAdminInKratos() error {
-	user, err := srv.Db.GetSystemAdmin()
+func (srv *Server) setupDefaultAdminInKratos(ctx context.Context) error {
+	user, err := srv.Db.GetSystemAdmin(ctx)
 	if err != nil {
 		srv.Db.SeedDefaultData(false)
-		return srv.setupDefaultAdminInKratos()
+		return srv.setupDefaultAdminInKratos(ctx)
 		// rerun after seeding the default user
 	}
 	if user.KratosID != "" {
@@ -370,11 +392,11 @@ func (srv *Server) setupDefaultAdminInKratos() error {
 			// if not, it's a freshly migrated database
 			// so we create the OIDC client if KOLIBRI_URL is set
 			// then create the default admin in kratos
-			log.Println("kratos id not found")
+			logrus.Println("kratos id not found")
 			return srv.HandleCreateUserKratos(user.Username, "ChangeMe!")
 		}
 	}
-	return srv.syncKratosAdminDB()
+	return srv.syncKratosAdminDB(ctx)
 }
 
 func (srv *Server) getFacilityID(r *http.Request) uint {
@@ -437,7 +459,7 @@ type HttpFunc func(w http.ResponseWriter, r *http.Request, log sLog) error
 // Wraps a handler function that returns an error so that it can handle the error by writing it to the response and logging it.
 func (svr *Server) handleError(handler HttpFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := sLog{f: log.Fields{"handler": getHandlerName(handler), "method": r.Method, "path": r.URL.Path}}
+		log := sLog{f: logrus.Fields{"handler": getHandlerName(handler), "method": r.Method, "path": r.URL.Path}}
 		claims, ok := r.Context().Value(ClaimsKey).(*Claims)
 		audit := false
 		if ok {
@@ -529,7 +551,7 @@ func (srv *Server) errorResponse(w http.ResponseWriter, status int, message stri
 	resource := models.Resource[any]{Message: message}
 	err := json.NewEncoder(w).Encode(resource)
 	if err != nil {
-		log.Error("error writing error response: ", err)
+		logrus.Error("error writing error response: ", err)
 		http.Error(w, message, status)
 	}
 }

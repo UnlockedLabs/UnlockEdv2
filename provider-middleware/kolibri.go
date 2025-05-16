@@ -24,7 +24,7 @@ type KolibriService struct {
 	Client             *http.Client
 	AccountID          string
 	db                 *gorm.DB
-	JobParams          *map[string]interface{}
+	JobParams          map[string]any
 }
 
 /**
@@ -32,7 +32,7 @@ type KolibriService struct {
 * Pulls the login info from ENV variables. In production, these should be set
 * in /etc/environment
 **/
-func NewKolibriService(provider *models.ProviderPlatform, params *map[string]interface{}) *KolibriService {
+func NewKolibriService(provider *models.ProviderPlatform, params map[string]any) *KolibriService {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	password := os.Getenv("KOLIBRI_DB_PASSWORD")
@@ -52,7 +52,7 @@ func NewKolibriService(provider *models.ProviderPlatform, params *map[string]int
 	}
 }
 
-func (ks *KolibriService) GetJobParams() *map[string]interface{} {
+func (ks *KolibriService) GetJobParams() map[string]any {
 	return ks.JobParams
 }
 

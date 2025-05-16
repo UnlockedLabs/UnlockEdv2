@@ -119,30 +119,6 @@ services:
     restart: unless-stopped
     depends_on: [server]
 
-  # Scheduler + task runner for provider-middleware
-  cron-tasks:
-    build:
-      context: .
-      dockerfile: ./backend/tasks/dev.Dockerfile
-    environment:
-      - APP_ENV=dev
-      - LOG_LEVEL=debug
-      - NATS_URL=nats:4222
-      - NATS_USER=unlocked
-      - NATS_PASSWORD=dev
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=unlocked
-      - DB_PASSWORD=dev
-      - DB_NAME=unlocked
-      - MIDDLEWARE_CRON_SCHEDULE=0 22 * * *
-    networks:
-      - intranet
-    volumes:
-      - logs:/logs
-      - ./:/app
-    depends_on: [provider-service]
-
   nats:
     image: nats:latest
     networks:

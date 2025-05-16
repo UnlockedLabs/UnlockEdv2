@@ -22,11 +22,11 @@ type ProviderServiceInterface interface {
 
 	ImportCourses(db *gorm.DB) error
 
-	ImportMilestones(coursePair map[string]interface{}, mappings []map[string]interface{}, db *gorm.DB, lastRun time.Time) error
+	ImportMilestones(coursePair map[string]any, mappings []map[string]any, db *gorm.DB, lastRun time.Time) error
 
-	ImportActivityForCourse(coursePair map[string]interface{}, db *gorm.DB) error
+	ImportActivityForCourse(coursePair map[string]any, db *gorm.DB) error
 
-	GetJobParams() *map[string]interface{}
+	GetJobParams() map[string]interface{}
 }
 
 /**

@@ -199,7 +199,7 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 	}
 	log.add("deleted_username", user.Username)
 	if !srv.isTesting(r) {
-		if err := srv.deleteIdentityInKratos(&user.KratosID); err != nil {
+		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
 			log.add("deleted_kratos_id", user.KratosID)
 			return newInternalServerServiceError(err, "error deleting user in kratos")
 		}
