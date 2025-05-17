@@ -10,10 +10,10 @@ import (
 func (srv *Server) registerProviderMappingRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProviderAccess}
 	return []routeDef{
-		{"GET /api/users/{id}/logins", srv.handleGetMappingsForUser, true, axx},
-		{"POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, true, axx},
-		{"POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, true, axx},
-		{"DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, true, axx},
+		{"GET /api/users/{id}/logins", srv.handleGetMappingsForUser, true, axx, nil},
+		{"POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, true, axx, nil},
+		{"POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, true, axx, nil},
+		{"DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, true, axx, nil},
 	}
 }
 

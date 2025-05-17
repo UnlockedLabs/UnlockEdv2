@@ -10,12 +10,12 @@ import (
 func (srv *Server) registerFacilitiesRoutes() []routeDef {
 	axx := models.Feature()
 	return []routeDef{
-		{"GET /api/facilities", srv.handleIndexFacilities, true, axx},
-		{"GET /api/facilities/{id}", srv.handleShowFacility, true, axx},
-		{"POST /api/facilities", srv.handleCreateFacility, true, axx},
-		{"DELETE /api/facilities/{id}", srv.handleDeleteFacility, true, axx},
-		{"PATCH /api/facilities/{id}", srv.handleUpdateFacility, true, axx},
-		{"PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility, true, axx},
+		{"GET /api/facilities", srv.handleIndexFacilities, true, axx, nil},
+		{"GET /api/facilities/{id}", srv.handleShowFacility, true, axx, nil},
+		{"POST /api/facilities", srv.handleCreateFacility, true, axx, nil},
+		{"DELETE /api/facilities/{id}", srv.handleDeleteFacility, true, axx, nil},
+		{"PATCH /api/facilities/{id}", srv.handleUpdateFacility, true, axx, nil},
+		{"PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility, true, axx, nil},
 	}
 }
 

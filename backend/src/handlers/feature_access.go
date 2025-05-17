@@ -8,8 +8,8 @@ import (
 
 func (srv *Server) registerFeatureFlagRoutes() []routeDef {
 	return []routeDef{
-		{"PUT /api/auth/features/{feature}", srv.handleToggleFeatureFlag, true, models.Feature()},
-		{"POST /api/auth/demo-seed", srv.handleRunDemoSeed, true, models.Feature()},
+		{"PUT /api/auth/features/{feature}", srv.handleToggleFeatureFlag, true, models.Feature(), nil},
+		{"POST /api/auth/demo-seed", srv.handleRunDemoSeed, true, models.Feature(), nil},
 	}
 }
 

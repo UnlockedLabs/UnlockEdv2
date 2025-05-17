@@ -11,9 +11,9 @@ import (
 func (srv *Server) registerOidcRoutes() []routeDef {
 	axx := models.Feature(models.ProviderAccess)
 	return []routeDef{
-		{"GET /api/oidc/clients", srv.handleGetAllClients, true, axx},
-		{"POST /api/oidc/clients", srv.handleRegisterClient, true, axx},
-		{"GET /api/oidc/clients/{id}", srv.handleGetOidcClient, true, axx},
+		{"GET /api/oidc/clients", srv.handleGetAllClients, true, axx, nil},
+		{"POST /api/oidc/clients", srv.handleRegisterClient, true, axx, nil},
+		{"GET /api/oidc/clients/{id}", srv.handleGetOidcClient, true, axx, nil},
 	}
 }
 

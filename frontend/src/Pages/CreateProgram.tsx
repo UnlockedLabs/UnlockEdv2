@@ -64,7 +64,7 @@ export default function CreateProgramPage() {
     }));
 
     const facilityOptionsSelectAll = [selectAllOption, ...facilityOptions];
-
+    const canSwitch = user && canSwitchFacility(user);
     const onSubmit: SubmitHandler<ProgramInputs> = async (
         data: ProgramInputs
     ) => {
@@ -80,7 +80,9 @@ export default function CreateProgramPage() {
             funding_type: data.funding_type
                 ? data.funding_type.value
                 : FundingType.OTHER,
-            facilities: data.facilities.map((fac) => Number(fac.value))
+            facilities: canSwitch
+                ? data.facilities.map((fac) => Number(fac.value))
+                : [user!.facility_id]
         };
 
         const response = (await API.post<Program, TransformedProgramInput>(

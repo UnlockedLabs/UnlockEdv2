@@ -44,9 +44,9 @@ func (c *Claims) canSwitchFacility() bool {
 
 func (srv *Server) registerAuthRoutes() []routeDef {
 	return []routeDef{
-		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature()},
+		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature(), nil},
 		/* only use auth middleware, user activity bloats the database + results */
-		{"GET /api/auth", srv.handleCheckAuth, false, models.Feature()},
+		{"GET /api/auth", srv.handleCheckAuth, false, models.Feature(), nil},
 	}
 }
 

@@ -14,15 +14,15 @@ import (
 func (srv *Server) registerProgramsRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
-		{"GET /api/programs", srv.handleIndexPrograms, false, axx},
-		{"GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx},
-		{"GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx},
-		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx},
-		{"GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx},
-		{"POST /api/programs", srv.handleCreateProgram, true, axx},
-		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
-		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
-		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx},
+		{"GET /api/programs", srv.handleIndexPrograms, false, axx, nil},
+		{"GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx, nil},
+		{"GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx, nil},
+		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx, nil},
+		{"GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx, nil},
+		{"POST /api/programs", srv.handleCreateProgram, true, axx, nil},
+		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx, nil},
+		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx, nil},
+		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx, nil},
 	}
 }
 
