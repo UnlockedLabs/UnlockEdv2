@@ -167,10 +167,10 @@ export default function ProgramOverviewDashboard() {
     }
 
     const canAddClass =
-        program.is_active &&
-        program.archived_at == null &&
         (canSwitchFacility(user.user!) ||
-            program.facilities.some((f) => f.id === userFacilityId));
+            program.facilities.some((f) => f.id === userFacilityId)) &&
+        program.is_active &&
+        program.archived_at == null;
 
     return (
         <div className="p-4 px-5">
