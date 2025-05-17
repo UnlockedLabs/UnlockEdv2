@@ -1,7 +1,11 @@
 import { useLoaderData, useParams } from 'react-router-dom';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import { ArchiveBoxIcon, PuzzlePieceIcon } from '@heroicons/react/24/outline';
+import {
+    ArchiveBoxIcon,
+    PencilSquareIcon,
+    PuzzlePieceIcon
+} from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -35,10 +39,17 @@ export function isCompletedCancelledOrArchived(program_class: Class): boolean {
 }
 
 export default function ProgramOverviewDashboard() {
-    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const { program_id } = useParams<{ program_id: string }>();
     const user = useAuth();
     const userFacilityId = user.user?.facility_id;
-    const program = useLoaderData() as ProgramOverview;
+    const { program, redirect } = useLoaderData() as {
+        program: ProgramOverview;
+        redirect: string;
+    };
+    if (redirect) {
+        navigate(redirect);
+    }
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
     const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
@@ -52,7 +63,6 @@ export default function ProgramOverviewDashboard() {
     const [ableToArchiveClasses, setAbleToArchiveClasses] = useState<Class[]>(
         []
     );
-    const navigate = useNavigate();
     const handleSetSearchTerm = (newTerm: string) => {
         startTransition(() => {
             setSearchTerm(newTerm);
@@ -64,7 +74,7 @@ export default function ProgramOverviewDashboard() {
         error: classesError,
         mutate: mutateClasses
     } = useSWR<ServerResponseMany<Class>, Error>(
-        `/api/programs/${id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
+        `/api/programs/${program_id}/classes?page=${page}&per_page=${perPage}&order_by=${sortQuery}`
     );
 
     if (!program) {
@@ -185,7 +195,25 @@ export default function ProgramOverviewDashboard() {
             <div className="flex flex-col gap-4">
                 <div className="grid grid-cols-4 gap-4 items-stretch">
                     <div className="card card-row-padding col-span-3">
-                        <h1 className="mb-2">{program?.name}</h1>
+                        <h1 className="mb-2">
+                            {program?.name}
+                            <span
+                                onClick={(e) => {
+                                    e?.stopPropagation();
+                                    navigate(`/programs/detail/${program?.id}`);
+                                }}
+                            >
+                                <ULIComponent
+                                    dataTip={'Edit Program'}
+                                    iconClassName="ml-2 mr-1"
+                                    tooltipClassName="tooltip-left cursor-pointer"
+                                    icon={PencilSquareIcon}
+                                />
+                                <span className="body text-teal-3 cursor-pointer">
+                                    Edit Program
+                                </span>
+                            </span>
+                        </h1>
                         <p className="mb-4 body body-small">
                             {program?.description}
                         </p>
@@ -292,7 +320,7 @@ export default function ProgramOverviewDashboard() {
                             disabled={!canAddClass}
                             label="Add Class"
                             onClick={() =>
-                                navigate(`/programs/${id}/classes/new`)
+                                navigate(`/programs/${program_id}/classes/new`)
                             }
                         />
                     )}
@@ -446,7 +474,7 @@ export default function ProgramOverviewDashboard() {
             </div>
             <div className="grid grid-cols-3 gap-6 items-stretch mt-4">
                 <div className="col-span-1">
-                    <ActivityHistoryCard programId={id} />
+                    <ActivityHistoryCard programId={program_id} />
                 </div>
 
                 <div className="col-span-2">

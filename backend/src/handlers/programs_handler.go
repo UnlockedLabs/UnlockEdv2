@@ -4,10 +4,7 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
 )
 
@@ -47,10 +44,11 @@ func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, l
 
 type ProgramOverviewResponse struct {
 	models.Program
-	ActiveEnrollments int     `json:"active_enrollments"`
-	Completions       int     `json:"completions"`
-	TotalEnrollments  int     `json:"total_enrollments"`
-	CompletionRate    float64 `json:"completion_rate"`
+	ActiveEnrollments      int     `json:"active_enrollments"`
+	Completions            int     `json:"completions"`
+	TotalEnrollments       int     `json:"total_enrollments"`
+	CompletionRate         float64 `json:"completion_rate"`
+	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids"`
 }
 
 func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *http.Request, log sLog) error {
@@ -107,19 +105,26 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
+
+	activeClassFacilityIDs, err := srv.Db.GetActiveClassFacilityIDs(r.Context(), id)
+	if err != nil {
+		log.add("program_id", id)
+		return newDatabaseServiceError(err)
+	}
+
 	resultSet := ProgramOverviewResponse{
-		Program:           *program,
-		ActiveEnrollments: metrics.ActiveEnrollments,
-		Completions:       metrics.Completions,
-		TotalEnrollments:  metrics.TotalEnrollments,
-		CompletionRate:    metrics.CompletionRate,
+		Program:                *program,
+		ActiveEnrollments:      metrics.ActiveEnrollments,
+		Completions:            metrics.Completions,
+		TotalEnrollments:       metrics.TotalEnrollments,
+		CompletionRate:         metrics.CompletionRate,
+		ActiveClassFacilityIDs: activeClassFacilityIDs,
 	}
 
 	return writeJsonResponse(w, http.StatusOK, resultSet)
 }
 
 type ProgramForm struct {
-	// ... program
 	Name         string                     `json:"name"`
 	Description  string                     `json:"description"`
 	FundingType  models.FundingType         `json:"funding_type"`
@@ -168,8 +173,10 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var program models.Program
-	err := json.NewDecoder(r.Body).Decode(&program)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var programForm ProgramForm
+	err := json.NewDecoder(r.Body).Decode(&programForm)
+	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
@@ -177,13 +184,21 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	log.add("program_id", id)
-	toUpdate, err := srv.Db.GetProgramByID(id)
-	if err != nil {
-		log.error("Error getting program:" + err.Error())
+	programID := uint(id)
+	theProg := models.Program{
+		DatabaseFields: models.DatabaseFields{
+			ID: programID,
+		},
+		Name:               programForm.Name,
+		Description:        programForm.Description,
+		FundingType:        programForm.FundingType,
+		IsActive:           programForm.IsActive,
+		UpdateUserID:       claims.UserID,
+		ProgramTypes:       programForm.ProgramTypes,
+		ProgramCreditTypes: programForm.CreditTypes,
 	}
-	models.UpdateStruct(&toUpdate, &program)
-	updated, updateErr := srv.Db.UpdateProgram(toUpdate)
+
+	updated, updateErr := srv.Db.UpdateProgram(r.Context(), &theProg, programForm.Facilities)
 	if updateErr != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -201,9 +216,9 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 	}
 	log.add("program_id", id)
 	// These will need to be uncommented once the update_user_id is added to the database
-	//claims := r.Context().Value(ClaimsKey).(*Claims)
-	//programUpdate["update_user_id"] = claims.UserID
-	facilities, updated, err := srv.Db.UpdateProgramStatus(programUpdate, uint(id))
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	programUpdate["update_user_id"] = claims.UserID
+	facilities, updated, err := srv.Db.UpdateProgramStatus(r.Context(), programUpdate, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -264,101 +279,27 @@ func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Reques
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	args := srv.getQueryContext(r)
-	paginationMeta, pagedHistoryEvents, err := srv.getPagedHistoryEvents(id, "programs", &args, log)
+	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "programs", id)
 	if err != nil {
 		return err
 	}
-	if isSingleEmptyRecord(pagedHistoryEvents) {
-		pagedHistoryEvents = []models.ActivityHistoryResponse{}
-		paginationMeta.Total = 0
-	}
-	return writePaginatedResponse(w, http.StatusOK, pagedHistoryEvents, paginationMeta)
-}
 
-func (srv *Server) getPagedHistoryEvents(id int, tableName string, args *models.QueryContext, log sLog) (models.PaginationMeta, []models.ActivityHistoryResponse, error) {
-	var (
-		userIDs            []uint
-		paginationMeta     models.PaginationMeta
-		pagedHistoryEvents []models.ActivityHistoryResponse
-	)
-	programClassesHistory, err := srv.Db.GetProgramClassesHistory(id, tableName, args)
-	if err != nil {
-		return paginationMeta, nil, newDatabaseServiceError(err)
-	}
-	programHistoryEvents := make([]models.ActivityHistoryResponse, 0)
-	for _, history := range programClassesHistory {
-		historyEvents, userID, err := history.ConvertAndCompare()
-		if err != nil {
-			log.errorf("error occurred while converting activity history events, error is %v", err)
-			continue
-		}
-		programHistoryEvents = append(programHistoryEvents, historyEvents...)
-		if userIDs == nil || !slices.Contains(userIDs, userID) {
-			userIDs = append(userIDs, userID)
-		}
-	}
-	if len(userIDs) > 0 {
-		users, err := srv.Db.GetUsersByIDs(userIDs, args)
-		if err != nil {
-			return paginationMeta, nil, newDatabaseServiceError(err)
-		}
-		for i := range programHistoryEvents {
-			index := slices.IndexFunc(users, func(u models.User) bool {
-				return u.ID == *programHistoryEvents[i].UserID
-			})
-			if index != -1 {
-				programHistoryEvents[i].AdminUsername = &users[index].Username
-			}
-		}
-	}
-	totalHistoryEvents := len(programHistoryEvents)
-	if totalHistoryEvents > 0 {
-		paginationMeta = models.NewPaginationInfo(args.Page, args.PerPage, int64(totalHistoryEvents))
-		start := args.CalcOffset()
-		end := start + args.PerPage
-		end = min(totalHistoryEvents, end)
-		pagedHistoryEvents = programHistoryEvents[start:end]
-	} else {
-		paginationMeta = models.NewPaginationInfo(args.Page, args.PerPage, 1)
-	}
-	if totalHistoryEvents == 0 || (int64(args.Page) == int64(paginationMeta.LastPage) && len(pagedHistoryEvents) < args.PerPage) {
+	pageMeta := args.IntoMeta()
+	if args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && len(historyEvents) < args.PerPage) { //add get program created by here
 		var (
 			createdByDetails models.ActivityHistoryResponse
 		)
-		switch tableName {
-		case "programs":
-			createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, args)
-			if err != nil {
-				return paginationMeta, nil, newDatabaseServiceError(err)
-			}
-			prog := "program"
-			createdByDetails.FieldName = &prog
-		case "program_classes":
-			createdByDetails, err = srv.Db.GetClassCreatedAtAndBy(id, args)
-			if err != nil {
-				return paginationMeta, nil, newDatabaseServiceError(err)
-			}
-			class := "class"
-			createdByDetails.FieldName = &class
-		default:
-			return paginationMeta, nil, newBadRequestServiceError(errors.New("table name not recognized"), fmt.Sprintf("table name %s not recognized", tableName))
+		createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, &args)
+		if err != nil {
+			return newDatabaseServiceError(err)
 		}
+		createdByDetails.FieldName = models.StringPtr("program")
 		createdByDetails.Action = models.ProgClassHistory
-		pagedHistoryEvents = append(pagedHistoryEvents, createdByDetails)
+		historyEvents = append(historyEvents, createdByDetails)
 		//count this record only if there are history events
-		if totalHistoryEvents > 0 {
-			paginationMeta.Total++
+		if args.Total > 0 {
+			pageMeta.Total++
 		}
 	}
-	return paginationMeta, pagedHistoryEvents, nil
-}
-
-// The complexity of fetching the history can leave us returning an empty record when there is really no
-// available history, and the default initialized struct confuses the client, so we check to be sure
-// we are actually sending meaningful data so we can send an empty array instead of a bunch of 'null' values
-func isSingleEmptyRecord(pagedHistoryEvents []models.ActivityHistoryResponse) bool {
-	if len(pagedHistoryEvents) == 1 {
-		return pagedHistoryEvents[0].AdminUsername == nil && pagedHistoryEvents[0].UserUsername == nil && pagedHistoryEvents[0].NewValue == nil
-	}
-	return false
+	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
 }

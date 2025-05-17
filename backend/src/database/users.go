@@ -498,6 +498,29 @@ func (db *DB) GetUserAccountHistory(args *models.QueryContext, userID uint) ([]m
 	return history, nil
 }
 
+func (db *DB) GetChangeLogEntries(args *models.QueryContext, tableName string, refID int) ([]models.ActivityHistoryResponse, error) {
+	history := make([]models.ActivityHistoryResponse, 0, args.PerPage)
+	//added criteria field_name != 'facility_id to skip these records from being a part of the result set, this may be temporary?
+	tx := db.WithContext(args.Ctx).
+		Table("change_log_entries cle").
+		Select(`cle.created_at, cle.user_id, 
+				users.username AS admin_username, 
+				'progclass_history' AS action,
+				cle.*`).
+		Joins("inner join users on cle.user_id = users.id").
+		Where("cle.table_name = ? and cle.parent_ref_id = ? and field_name != 'facility_id'", tableName, refID)
+	if err := tx.Count(&args.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "change_log_entries")
+	}
+	if err := tx.Order("cle.created_at desc").
+		Offset(args.CalcOffset()).
+		Limit(args.PerPage).
+		Scan(&history).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "change_log_entries")
+	}
+	return history, nil
+}
+
 func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]models.ResidentProgramClassInfo, error) {
 	userEnrollments := make([]models.ResidentProgramClassInfo, 0, args.PerPage)
 	base := db.WithContext(args.Ctx).

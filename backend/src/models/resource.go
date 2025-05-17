@@ -60,6 +60,11 @@ func UpdateStruct(dst, src any) {
 		srcField := srcVal.Field(i)
 		dstField := dstVal.Field(i)
 
+		if srcField.Kind() == reflect.Bool { //always set booleans
+			dstField.Set(srcField)
+			continue
+		}
+
 		if !reflect.DeepEqual(srcField.Interface(), reflect.Zero(srcField.Type()).Interface()) {
 			dstField.Set(srcField)
 		}
