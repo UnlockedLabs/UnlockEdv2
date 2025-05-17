@@ -35,7 +35,7 @@ func (db *DB) GetCurrentUsers(args *models.QueryContext, role string) ([]models.
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(adjustUserOrderBy(args.OrderClause())).
+	if err := tx.Order(adjustUserOrderBy(args.OrderClause(""))).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).
@@ -124,7 +124,7 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(adjustUserOrderBy(args.OrderClause())).
+	if err := tx.Order(adjustUserOrderBy(args.OrderClause("users"))).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).
@@ -553,7 +553,7 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
             pce.enrollment_status,
             p.name, p.id,
             pc.name, pc.status, pc.start_dt, pc.end_dt, pc.id, pce.updated_at
-        `).Order(args.OrderClause())
+        `).Order(args.OrderClause("p"))
 
 	if !args.All {
 		if err := base.Count(&args.Total).Error; err != nil {

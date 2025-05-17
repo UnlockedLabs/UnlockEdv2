@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 )
 
@@ -94,10 +93,25 @@ func (q QueryContext) CalcOffset() int {
 	return (q.Page - 1) * q.PerPage
 }
 
-func (q QueryContext) OrderClause() string {
-	val := fmt.Sprintf("%s %s", q.OrderBy, q.Order)
+// fallbackPrefix is the table name or alias used in the relevant query,
+// which will be used with 'created_at' if there is no 'order_by' + 'order'
+// present in the query string. Can be an empty string if there is only 1 table
+// referenced in the query. Since created_at is usually present on every table,
+// we have to prevent an ambiguous column error when using a join.
+//
+// Example: "select users.*, f.id from users join favorites f on f.user_id = users.id....."
+// we would use:
+//
+//	tx.Order(args.OrderClause("f")).Find(&whatever)
+//
+// because we want it to fall-back to favorites.created_at
+func (q QueryContext) OrderClause(fallbackPrefix string) string {
+	val := q.OrderBy + " " + q.Order
 	if val == " " {
-		return "created_at desc"
+		if fallbackPrefix != "" {
+			fallbackPrefix += "."
+		}
+		return fallbackPrefix + "created_at desc"
 	}
 	return val
 }

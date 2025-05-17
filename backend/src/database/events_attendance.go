@@ -25,8 +25,11 @@ func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, 
 	if eventId != "" {
 		tx = tx.Where("event_id = ?", eventId)
 	}
-	attendance := make([]models.ProgramClassEventAttendance, 0)
-	err := tx.Count(&queryParams.Total).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
+	attendance := make([]models.ProgramClassEventAttendance, 0, queryParams.PerPage)
+	if err := tx.Count(&queryParams.Total).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "class_event_attendance")
+	}
+	err := tx.Order(queryParams.OrderClause("")).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
 	if err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
@@ -107,7 +110,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 			a.note AS note`
 	finalQuery := selectClause + baseQuery
 	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
-		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause())
+		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause("e"))
 	} else {
 		finalQuery += " ORDER BY e.id ASC"
 	}
