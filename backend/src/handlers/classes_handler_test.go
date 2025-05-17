@@ -202,11 +202,11 @@ func TestHandleUpdateClass(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to marshal form, error is %v", err)
 			}
-			req, err := http.NewRequest(http.MethodPatch, "/api/program-classes/{id}", bytes.NewBuffer(jsonForm))
+			req, err := http.NewRequest(http.MethodPatch, "/api/program-classes/{class_id}", bytes.NewBuffer(jsonForm))
 			if err != nil {
 				t.Fatalf("unable to create new request, error is %v", err)
 			}
-			req.SetPathValue("id", fmt.Sprintf("%d", id))
+			req.SetPathValue("class_id", fmt.Sprintf("%d", id))
 			handler := getHandlerByRoleWithMiddleware(server.handleUpdateClass, test.role)
 			rr := executeRequest(t, req, handler, test)
 			if test.expectedStatusCode == http.StatusOK {

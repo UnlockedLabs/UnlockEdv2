@@ -528,3 +528,15 @@ func (srv *Server) errorResponse(w http.ResponseWriter, status int, message stri
 		http.Error(w, message, status)
 	}
 }
+
+
+func (srv *Server) validateClassStatus(classId int, w http.ResponseWriter) error {
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if class.Status == models.Completed || class.Status == models.Cancelled {
+		return writeJsonResponse(w, http.StatusBadRequest, "Cannot perform update action on class that has been completed or cancelled")
+	}
+	return nil
+}

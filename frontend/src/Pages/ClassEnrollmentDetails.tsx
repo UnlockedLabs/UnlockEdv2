@@ -10,6 +10,7 @@ import {
     EnrollmentStatus,
     FilterResidentNames,
     ProgramCompletion,
+    SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
 import API from '@/api/api';
@@ -28,6 +29,10 @@ export default function ClassEnrollmentDetails() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
     const { redirect } = useLoaderData() as ClassLoaderData;
+    const { class: clsInfo } = useLoaderData() as ClassLoaderData;
+    const canAddResident =
+        clsInfo?.status !== SelectedClassStatus.Completed &&
+        clsInfo?.status !== SelectedClassStatus.Cancelled;
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
         FilterResidentNames['Resident Name (A-Z)']
@@ -198,9 +203,13 @@ export default function ClassEnrollmentDetails() {
                         }}
                     />
                 </div>
-                <div className="flex gap-2">
+                <div
+                    className="flex gap-2 tooltip tooltip-left"
+                    data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
+                >
                     {selectedResidents.length > 0 && (
                         <button
+                            disabled={!canAddResident}
                             className="button"
                             onClick={handleOpenModalGraduate}
                         >
@@ -209,6 +218,7 @@ export default function ClassEnrollmentDetails() {
                     )}
                     <AddButton
                         label="Add Resident"
+                        disabled={!canAddResident}
                         onClick={() =>
                             navigate(
                                 `/program-classes/${class_id}/enrollments/add`

@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
@@ -8,13 +8,16 @@ import {
     EnrollmentAttendance,
     Attendance,
     ServerResponseMany,
-    FilterResidentNames
+    FilterResidentNames,
+    Class,
+    SelectedClassStatus,
+    ToastState
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
-
+import { useToast } from '@/Context/ToastCtx';
 interface LocalRowData {
     selected: boolean;
     user_id: number;
@@ -58,6 +61,11 @@ export default function EventAttendance() {
     >(
         `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
     );
+    const rawClsInfo = useLoaderData() as { class?: Class };
+    const clsInfo = rawClsInfo?.class;
+    const canEditAttendance =
+        clsInfo?.status !== SelectedClassStatus.Completed &&
+        clsInfo?.status !== SelectedClassStatus.Cancelled;
 
     const meta = data?.meta;
     const [rows, setRows] = useState<LocalRowData[]>([]);
@@ -65,7 +73,7 @@ export default function EventAttendance() {
     const [modifiedRows, setModifiedRows] = useState<
         Record<number, LocalRowData>
     >({});
-
+    const { toaster } = useToast();
     useEffect(() => {
         if (data?.data) {
             const mergedRows = data.data.map((item) => {
@@ -185,8 +193,14 @@ export default function EventAttendance() {
             return newMods;
         });
     }
-
     async function onSubmit() {
+        if (!canEditAttendance) {
+            toaster(
+                'Cannot update attendance for completed or canceled classes',
+                ToastState.error
+            );
+            return;
+        }
         await submitAttendanceForRows(rows);
         void mutate();
         navigate(`/program-classes/${class_id}/attendance`);
@@ -208,8 +222,9 @@ export default function EventAttendance() {
                 </div>
                 <button
                     onClick={() => void handleMarkAllPresent()}
-                    disabled={anyRowSelected}
-                    className={`button ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
+                    disabled={anyRowSelected || !canEditAttendance}
+                    className={`button  tooltip tooltip-left ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
+                    data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
                 >
                     Mark All Present
                 </button>
@@ -355,11 +370,12 @@ export default function EventAttendance() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end pt-4 ">
                         <button
                             type="submit"
-                            className="button"
-                            disabled={!anyRowSelected}
+                            className="button tooltip tooltip-left"
+                            disabled={!anyRowSelected || !canEditAttendance}
+                            data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
                         >
                             Save Attendance
                         </button>
