@@ -173,7 +173,6 @@ func TestHandleUpdateProgram(t *testing.T) {
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>did this work:", updatedProgram.Name == data.Data.Name)
 				if diff := cmp.Diff(updatedProgram, &data.Data, cmpopts.IgnoreFields(models.ProgramCreditType{}, "ProgramID"), cmpopts.IgnoreFields(models.ProgramType{}, "ProgramID"), cmpopts.IgnoreFields(models.Program{}, "CreatedAt")); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
 				}
