@@ -157,9 +157,9 @@ func (db *DB) GetUserByID(id uint) (*models.User, error) {
 	return &user, nil
 }
 
-func (db *DB) GetSystemAdmin() (*models.User, error) {
+func (db *DB) GetSystemAdmin(ctx context.Context) (*models.User, error) {
 	user := models.User{}
-	if err := db.First(&user, "role = 'system_admin'").Error; err != nil {
+	if err := db.WithContext(ctx).First(&user, "role = 'system_admin'").Error; err != nil {
 		return nil, newNotFoundDBError(err, "system admin")
 	}
 	return &user, nil

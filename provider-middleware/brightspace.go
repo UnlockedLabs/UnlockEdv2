@@ -33,13 +33,13 @@ type BrightspaceService struct {
 	RefreshToken       string
 	Scope              string
 	AccessToken        string
-	BaseHeaders        *map[string]string
-	JobParams          *map[string]interface{}
+	BaseHeaders        map[string]string
+	JobParams          map[string]any
 	IsDownloaded       bool //flag to let process know that bulk data has been downloaded
 	CsvFileMap         map[string]string
 }
 
-func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, params *map[string]interface{}) (*BrightspaceService, error) {
+func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, params map[string]any) (*BrightspaceService, error) {
 	keysSplit := strings.Split(provider.AccessKey, ";")
 	if len(keysSplit) < 2 {
 		return nil, errors.New("unable to find refresh token, unable to intialize BrightspaceService")
@@ -95,7 +95,7 @@ func newBrightspaceService(provider *models.ProviderPlatform, db *gorm.DB, param
 	headers := make(map[string]string)
 	headers["Authorization"] = "Bearer " + brightspaceService.AccessToken
 	headers["Accept"] = "application/json"
-	brightspaceService.BaseHeaders = &headers
+	brightspaceService.BaseHeaders = headers
 	brightspaceService.CsvFileMap = make(map[string]string)
 	return &brightspaceService, nil
 }
@@ -122,7 +122,7 @@ func (srv *BrightspaceService) SendRequest(url string) (*http.Response, error) {
 		log.Errorf("error creating new GET request to url %v and error is: %v", url, err)
 		return nil, err
 	}
-	for key, value := range *srv.BaseHeaders {
+	for key, value := range srv.BaseHeaders {
 		req.Header.Add(key, value)
 	}
 	resp, err := srv.Client.Do(req)
@@ -559,6 +559,6 @@ func (srv *BrightspaceService) getUsersActivity(db *gorm.DB, externalCourseId, c
 	return bsContentDtoMap
 }
 
-func (srv *BrightspaceService) GetJobParams() *map[string]interface{} {
+func (srv *BrightspaceService) GetJobParams() map[string]interface{} {
 	return srv.JobParams
 }

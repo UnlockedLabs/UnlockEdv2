@@ -61,24 +61,24 @@ func (sh *ServiceHandler) initProviderPlatformService(ctx context.Context, msg *
 	}
 	switch provider.Type {
 	case models.Kolibri:
-		return NewKolibriService(&provider, &body), nil
+		return NewKolibriService(&provider, body), nil
 	case models.CanvasCloud, models.CanvasOSS:
-		return newCanvasService(&provider, &body), nil
+		return newCanvasService(&provider, body), nil
 	case models.Brightspace:
-		return newBrightspaceService(&provider, sh.db, &body)
+		return newBrightspaceService(&provider, sh.db, body)
 	}
 	return nil, fmt.Errorf("unsupported provider type: %s", provider.Type)
 }
 
-func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*models.OpenContentProvider, map[string]interface{}, error) {
-	var body map[string]interface{}
+func (sh *ServiceHandler) getContentProvider(msg *nats.Msg) (*models.OpenContentProvider, map[string]any, error) {
+	var body map[string]any
 	if err := json.Unmarshal(msg.Data, &body); err != nil {
 		log.Errorf("failed to unmarshal message: %v", err)
 		return nil, nil, fmt.Errorf("failed to unmarshal message: %v", err)
 	}
 	providerId, ok := body["open_content_provider_id"].(float64)
 	if !ok {
-		return nil, body, fmt.Errorf("failed to parse open_content_provider_id: %v", body["open_content_provider_id"].(float64))
+		return nil, body, fmt.Errorf("failed to parse open_content_provider_id: %v", body)
 	}
 	openContentProvider, err := sh.LookupOpenContentProvider(int(providerId))
 	if err != nil {

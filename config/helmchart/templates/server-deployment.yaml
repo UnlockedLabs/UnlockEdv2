@@ -81,6 +81,9 @@ spec:
         - name: thumbnails
           persistentVolumeClaim:
             claimName: thumbnails 
+        - name: localtime   # necessary for scheduler to work properly
+          hostPath:
+            path: /usr/share/zoneinfo/America/New_York
         - name: logs
           persistentVolumeClaim:
             claimName: logs

@@ -20,7 +20,7 @@ type httpTest struct {
 }
 
 func setupServer() {
-	server = NewServer(true)
+	server = NewServer(true, context.Background())
 }
 
 func TestMain(m *testing.M) {
