@@ -22,6 +22,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		{"POST /api/programs", srv.handleCreateProgram, true, axx},
 		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
 		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
+		{"PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, true, axx},
 		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx},
 	}
 }
@@ -189,6 +190,42 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, updated)
+}
+
+func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Request, log sLog) error {
+	programUpdate := make(map[string]any)
+	if err := json.NewDecoder(r.Body).Decode(&programUpdate); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	defer r.Body.Close()
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "program ID")
+	}
+	log.add("program_id", id)
+	// These will need to be uncommented once the update_user_id is added to the database
+	//claims := r.Context().Value(ClaimsKey).(*Claims)
+	//programUpdate["update_user_id"] = claims.UserID
+	facilities, updated, err := srv.Db.UpdateProgramStatus(programUpdate, uint(id))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	payload := struct {
+		Updated    bool     `json:"updated"`
+		Facilities []string `json:"facilities"`
+		Message    string   `json:"message"`
+	}{
+		Updated:    updated,
+		Facilities: facilities,
+	}
+
+	if updated {
+		payload.Message = "Program status updated successfully"
+	} else {
+		payload.Message = "Unable to archive program with active or scheduled classes"
+	}
+
+	return writeJsonResponse(w, http.StatusOK, payload)
 }
 
 func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, log sLog) error {

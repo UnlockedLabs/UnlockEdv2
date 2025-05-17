@@ -62,6 +62,13 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
+	program, err := srv.Db.GetProgramByID(id)
+	if err != nil {
+		return writeJsonResponse(w, http.StatusInternalServerError, "Error retrieving program")
+	}
+	if !program.IsActive && !srv.isTesting(r) || program.ArchivedAt != nil && !srv.isTesting(r) {
+		return writeJsonResponse(w, http.StatusConflict, "Program is inactive or archived unable to create class")
+	}
 	var class models.ProgramClass
 	err = json.NewDecoder(r.Body).Decode(&class)
 	defer r.Body.Close()

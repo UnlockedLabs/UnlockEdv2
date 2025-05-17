@@ -157,10 +157,6 @@ export default function ProgramOverviewDashboard() {
         archiveClassesRef.current?.close();
     }
 
-    const isAddClassDisabled = !program.facilities.some(
-        (facility) => facility.id === userFacilityId
-    );
-
     function commaSeparatedList<T extends string>(
         enumArray: T[] | null | undefined
     ): string {
@@ -169,6 +165,12 @@ export default function ProgramOverviewDashboard() {
             .map((ele) => String(ele).replace(/_/g, ' '))
             .join(', ');
     }
+
+    const canAddClass =
+        program.facilities.some((f) => f.id === userFacilityId) &&
+        program.is_active &&
+        program.archived_at == null;
+
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
@@ -278,7 +280,7 @@ export default function ProgramOverviewDashboard() {
                         </button>
                     ) : (
                         <AddButton
-                            disabled={isAddClassDisabled}
+                            disabled={canAddClass}
                             label="Add Class"
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)

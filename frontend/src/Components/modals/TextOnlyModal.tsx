@@ -42,7 +42,7 @@ export const TextOnlyModal = forwardRef(function TextModal(
                         {title}
                     </span>
                     {typeof text === 'string' ? (
-                        <p className="whitespace-pre-line">{text}</p>
+                        <p className="whitespace-pre-line body">{text}</p>
                     ) : (
                         text
                     )}

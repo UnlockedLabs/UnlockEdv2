@@ -80,9 +80,11 @@ export default function ClassManagementForm() {
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')
                     ? 'Cannot update class until unenrolling residents'
-                    : class_id
-                      ? 'Failed to update class'
-                      : 'Failed to create class';
+                    : response.message.includes('inactive')
+                      ? 'Cannot create class for an inactive program'
+                      : class_id
+                        ? 'Failed to update class'
+                        : 'Failed to create class';
             toaster(toasterMsg, ToastState.error);
             console.error(
                 `error occurred while trying to create/update class, error message: ${response.message}`
