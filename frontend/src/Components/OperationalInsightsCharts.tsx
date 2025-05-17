@@ -11,8 +11,11 @@ import { ResponsiveContainer } from 'recharts';
 import EngagementRateGraph from './EngagementRateGraph';
 import { useAuth, canSwitchFacility } from '@/useAuth';
 import DropdownControl from './inputs/DropdownControl';
+interface Props {
+    facilities: Facility[];
+}
 
-const OperationalInsights = () => {
+const OperationalInsights = ({ facilities }: Props) => {
     const [facility, setFacility] = useState('all');
     const [timeFilter, setTimeFilter] = useState<FilterPastTime>(
         FilterPastTime['Past 30 days']
@@ -26,14 +29,11 @@ const OperationalInsights = () => {
     >(
         `/api/login-metrics?facility=${facility}&days=${timeFilter}&reset=${resetCache}`
     );
-    const { data: facilitiesData } =
-        useSWR<ServerResponseOne<Facility[]>>('/api/facilities');
 
     useEffect(() => {
         void mutate();
     }, [facility, timeFilter, resetCache]);
 
-    const facilities = facilitiesData?.data;
     useEffect(() => {
         if (user && !canSwitchFacility(user)) {
             setFacility('');
@@ -44,9 +44,7 @@ const OperationalInsights = () => {
     const formattedDate =
         metrics && new Date(metrics.last_cache).toLocaleString('en-US', {});
 
-    const totalUsers =
-        (metrics?.data.total_residents ?? 0) +
-        (metrics?.data.total_admins ?? 0);
+    const totalUsers = metrics?.data.total_residents ?? 0;
 
     return (
         <div className="overflow-x-hidden">
@@ -103,6 +101,8 @@ const OperationalInsights = () => {
                         <div>
                             <p className="label label-text text-grey-3">
                                 Last updated: {formattedDate}
+                                <br />
+                                Includes residents only
                             </p>
                             <button
                                 className="button justify-self-end"
@@ -118,7 +118,7 @@ const OperationalInsights = () => {
                             title="Total Users"
                             number={totalUsers.toString()}
                             label="Users"
-                            tooltip="Total number of admins and residents in the facility"
+                            tooltip="Total number of residents in the facility"
                             tooltipClassName="tooltip-right"
                         />
                         <StatsCard
@@ -151,26 +151,12 @@ const OperationalInsights = () => {
                             }`}
                         />
                         <StatsCard
-                            title="New Admins Added"
-                            number={metrics.data.new_admins_added.toString()}
-                            label={
-                                metrics.data.new_admins_added === 1
-                                    ? 'Admin'
-                                    : 'Admins'
-                            }
-                            tooltip={`${
-                                timeFilter === FilterPastTime['All time']
-                                    ? 'All time number of new admins added'
-                                    : `Number of new admins added in the last ${timeFilter} days`
-                            }`}
-                        />
-                        <StatsCard
-                            title="New Residents Added"
+                            title="New Users Added"
                             number={metrics.data.new_residents_added.toString()}
                             label={
                                 metrics.data.new_residents_added === 1
-                                    ? 'Resident'
-                                    : 'Residents'
+                                    ? 'User'
+                                    : 'Users'
                             }
                             tooltip={`${
                                 timeFilter === FilterPastTime['All time']
