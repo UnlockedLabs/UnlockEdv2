@@ -113,6 +113,8 @@ func MigrateTesting(db *gorm.DB) {
 		&models.OidcClient{},
 		&models.ProgramFavorite{},
 		&models.Facility{},
+		&models.FacilitiesPrograms{},
+		&models.ChangeLogEntry{},
 		&models.OpenContentProvider{},
 		&models.OpenContentUrl{},
 		&models.OpenContentActivity{},
@@ -133,6 +135,11 @@ func MigrateTesting(db *gorm.DB) {
 		logrus.Printf("Migrating %T table...", table)
 		if err := db.AutoMigrate(table); err != nil {
 			logrus.Fatal("Failed to migrate table: ", err)
+		}
+	}
+	if !db.Migrator().HasColumn(&models.FacilitiesPrograms{}, "deleted_at") {
+		if err := db.Migrator().AddColumn(&models.FacilitiesPrograms{}, "DeletedAt"); err != nil {
+			logrus.Fatal("Failed to add deleted_at column: ", err)
 		}
 	}
 }
