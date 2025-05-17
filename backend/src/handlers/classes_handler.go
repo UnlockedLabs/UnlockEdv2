@@ -244,13 +244,3 @@ func (srv *Server) getPagedHistoryEvents(id int, tableName string, args *models.
 	}
 	return paginationMeta, pagedHistoryEvents, nil
 }
-
-// The complexity of fetching the history can leave us returning an empty record when there is really no
-// available history, and the default initialized struct confuses the client, so we check to be sure
-// we are actually sending meaningful data so we can send an empty array instead of a bunch of 'null' values
-func isSingleEmptyRecord(pagedHistoryEvents []models.ActivityHistoryResponse) bool {
-	if len(pagedHistoryEvents) == 1 {
-		return pagedHistoryEvents[0].AdminUsername == nil && pagedHistoryEvents[0].UserUsername == nil && pagedHistoryEvents[0].NewValue == nil
-	}
-	return false
-}
