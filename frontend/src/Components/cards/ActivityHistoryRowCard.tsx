@@ -5,6 +5,9 @@ function ActivityHistoryRowCard({
 }: {
     activity: ActivityHistoryResponse;
 }) {
+    function formatValue(value: string): string {
+        return value.replace(/_/g, ' ');
+    }
     const getProgramClassesHistoryEventText = () => {
         let text;
         switch (activity.field_name) {
@@ -36,10 +39,16 @@ function ActivityHistoryRowCard({
                 text = `Credit hours set to ${activity.new_value} by ${activity.admin_username}`;
                 break;
             case 'funding_type':
-                text = `Funding type set to ${activity.new_value.replace(/_/g, ' ')} by ${activity.admin_username}`;
+                text = `Funding type set to ${formatValue(activity.new_value)} by ${activity.admin_username}`;
                 break;
             case 'is_active':
-                text = `Available set to ${activity.new_value} by ${activity.admin_username}`;
+                text = `Program set to ${activity.new_value == 'true' ? 'available' : 'inactive'} by ${activity.admin_username}`;
+                break;
+            case 'credit_type':
+                text = `Credit type ${!activity.new_value ? formatValue(activity.old_value) + ' removed ' : 'set to ' + formatValue(activity.new_value)} by ${activity.admin_username}`;
+                break;
+            case 'program_type':
+                text = `Program type ${!activity.new_value ? formatValue(activity.old_value) + ' removed ' : 'set to ' + formatValue(activity.new_value)} by ${activity.admin_username}`;
                 break;
         }
         return text;
