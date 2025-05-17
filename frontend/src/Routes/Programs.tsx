@@ -1,7 +1,6 @@
 import {
     getClassMgmtData,
     getClassTitle,
-    getProgram,
     getProgramData,
     getProgramTitle
 } from '@/routeLoaders';
@@ -10,7 +9,7 @@ import Programs from '@/Pages/ProgramManagement';
 import { FeatureAccess, TitleHandler, UserRole } from '@/common';
 import { AdminRoles } from '@/useAuth';
 import ProgramOverviewDashboard from '@/Pages/ProgramOverviewDashboard';
-import CreateProgramPage from '@/Pages/CreateProgram';
+import ProgramManagementForm from '@/Pages/ProgramManagementForm';
 import ClassManagementForm from '@/Pages/ClassManagementForm';
 import AddClassEnrollments from '@/Pages/AddClassEnrollments';
 import ClassEnrollmentDetails from '@/Pages/ClassEnrollmentDetails';
@@ -51,17 +50,17 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             }
         },
         {
-            path: 'programs/detail',
+            path: 'programs/detail/:program_id?',
             loader: getProgramData,
-            element: <CreateProgramPage />,
+            element: <ProgramManagementForm />,
             handle: {
                 title: 'Program Details',
                 path: ['programs', 'detail']
             }
         },
         {
-            path: 'programs/:id',
-            loader: getProgram,
+            path: 'programs/:program_id',
+            loader: getProgramData,
             element: <ProgramOverviewDashboard />,
             handle: { title: 'Program Overview Dashboard' }
         },
