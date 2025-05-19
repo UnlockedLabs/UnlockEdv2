@@ -28,7 +28,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		return newDatabaseServiceError(err)
 	}
 	if err := class.CanUpdateClass(); err != nil {
-		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
+		return newBadRequestServiceError(err, "class attendance update")
 	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {

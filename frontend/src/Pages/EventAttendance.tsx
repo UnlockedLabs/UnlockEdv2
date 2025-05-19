@@ -126,9 +126,9 @@ export default function EventAttendance() {
     );
     const rawClsInfo = useLoaderData() as { class?: Class };
     const clsInfo = rawClsInfo?.class;
-    const canEditAttendance =
-        clsInfo?.status !== SelectedClassStatus.Completed &&
-        clsInfo?.status !== SelectedClassStatus.Cancelled;
+    const blockEdits =
+        clsInfo?.status === SelectedClassStatus.Completed ||
+        clsInfo?.status === SelectedClassStatus.Cancelled;
 
     const meta = data?.meta;
     const [rows, setRows] = useState<LocalRowData[]>([]);
@@ -257,9 +257,9 @@ export default function EventAttendance() {
         });
     }
     async function onSubmit() {
-        if (!canEditAttendance) {
+        if (blockEdits) {
             toaster(
-                'Cannot update attendance for completed or canceled classes',
+                'Cannot update attendance for completed or cancelled classes',
                 ToastState.error
             );
             return;
@@ -285,7 +285,7 @@ export default function EventAttendance() {
                 </div>
                 <button
                     onClick={() => void handleMarkAllPresent()}
-                    disabled={anyRowSelected || !canEditAttendance}
+                    disabled={anyRowSelected || blockEdits}
                     className={`button  tooltip tooltip-left ${anyRowSelected ? `bg-grey-4 cursor-not-allowed` : ``}`}
                     data-tip={`This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`}
                 >
@@ -437,8 +437,8 @@ export default function EventAttendance() {
                         <button
                             type="submit"
                             className="button tooltip tooltip-left"
-                            disabled={!anyRowSelected || !canEditAttendance}
-                            data-tip={`This class is ${clsInfo?.status} and cannot be modified.`}
+                            disabled={!anyRowSelected || blockEdits}
+                            data-tip={`This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`}
                         >
                             Save Attendance
                         </button>

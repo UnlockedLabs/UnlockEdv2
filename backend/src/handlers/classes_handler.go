@@ -97,7 +97,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 		return newJSONReqBodyServiceError(err)
 	}
 	if class.CanUpdateClass() != nil {
-		return writeJsonResponse(w, http.StatusBadRequest, "Cannot perform update action on class that has been completed or cancelled")
+		newBadRequestServiceError(err, "class update")
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {

@@ -75,7 +75,7 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		return newDatabaseServiceError(err)
 	}
 	if err := class.CanUpdateClass(); err != nil {
-		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
+		newBadRequestServiceError(err, "class enrollment")
 	}
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
@@ -121,7 +121,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 		return newDatabaseServiceError(err)
 	}
 	if err := class.CanUpdateClass(); err != nil {
-		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
+		newBadRequestServiceError(err, "class enrollment update")
 	}
 	enrollment := struct {
 		EnrollmentStatus string `json:"enrollment_status"`
