@@ -129,7 +129,7 @@ func (db *DB) GetProgramClassOutcome(id int, args *models.QueryContext) ([]Progr
     `).
 		Joins(`LEFT JOIN program_class_enrollments pce ON TO_CHAR(DATE_TRUNC('month', pce.created_at), 'YYYY-MM') = months.month AND pce.id = ?`, id).
 		Group("months.month").
-		Order("months.month")
+		Order(args.OrderBy)
 
 	if err := query.Find(&outcome).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
