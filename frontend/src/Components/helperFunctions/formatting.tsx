@@ -11,3 +11,8 @@ export function transformStringToArray(input: string): string | string[] {
     }
     return transformed.split(',').map((s) => s.trim());
 }
+
+export function parseLocalDay(isoDate: string): Date {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}

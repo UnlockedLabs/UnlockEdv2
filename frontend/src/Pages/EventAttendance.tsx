@@ -16,12 +16,9 @@ import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Error from '@/Pages/Error';
+import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
-function parseLocalDay(isoDate: string): Date {
-    const [year, month, day] = isoDate.split('-').map(Number);
-    return new Date(year, month - 1, day);
-}
 
 interface LocalRowData {
     selected: boolean;
