@@ -124,8 +124,9 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrollment := struct {
-		EnrollmentStatus string `json:"enrollment_status"`
-		UserIDs          []int  `json:"user_ids"`
+		EnrollmentStatus string  `json:"enrollment_status"`
+		UserIDs          []int   `json:"user_ids"`
+		ChangeReason     *string `json:"change_reason,omitempty"`
 	}{}
 	if err := json.NewDecoder(r.Body).Decode(&enrollment); err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -137,7 +138,7 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	case "Completed":
 		err = srv.Db.GraduateEnrollments(r.Context(), adminEmail, enrollment.UserIDs, classId)
 	default:
-		err = srv.Db.UpdateProgramClassEnrollments(classId, enrollment.UserIDs, enrollment.EnrollmentStatus)
+		err = srv.Db.UpdateProgramClassEnrollments(classId, enrollment.UserIDs, enrollment.EnrollmentStatus, enrollment.ChangeReason)
 	}
 	if err != nil {
 		return newDatabaseServiceError(err)

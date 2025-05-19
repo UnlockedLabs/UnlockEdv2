@@ -60,6 +60,7 @@ type ProgramClassEnrollment struct {
 	ClassID          uint                    `json:"class_id" gorm:"not null"`
 	UserID           uint                    `json:"user_id" gorm:"not null"`
 	EnrollmentStatus ProgramEnrollmentStatus `json:"enrollment_status" gorm:"size:255" validate:"max=255"`
+	ChangeReason     string                  `json:"change_reason" gorm:"size:255" validate:"max=255"`
 
 	User  *User         `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	Class *ProgramClass `json:"class" gorm:"foreignKey:ClassID;references:ID"`

@@ -165,10 +165,16 @@ func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userId
 	return tx.Commit().Error
 }
 
-func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status string) error {
+func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status string, changeReason *string) error {
+	updates := map[string]any{
+		"enrollment_status": status,
+	}
+	if changeReason != nil {
+		updates["change_reason"] = *changeReason
+	}
 	if err := db.Model(&models.ProgramClassEnrollment{}).
 		Where("class_id = ? AND user_id IN (?)", classId, userIds).
-		Update("enrollment_status", status).Error; err != nil {
+		Updates(updates).Error; err != nil {
 		return newUpdateDBError(err, "class enrollment status")
 	}
 	return nil
