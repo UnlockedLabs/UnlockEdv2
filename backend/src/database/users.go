@@ -340,7 +340,7 @@ func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facility
 
 func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
 	var total int64
-	tx := db.WithContext(args.Ctx).Model(&models.LoginActivity{}).Select("SUM(total_logins)")
+	tx := db.WithContext(args.Ctx).Model(&models.LoginActivity{}).Select("SUM(COALESCE(total_logins, 0))")
 	if days != -1 {
 		daysAgo := time.Now().AddDate(0, 0, -days)
 		tx = tx.Where("time_interval >= ?", daysAgo)
@@ -356,11 +356,11 @@ func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *ui
 
 func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64, error) {
 	var totalResidents int64
-	adminTx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
+	tx := db.WithContext(args.Ctx).Model(&models.User{}).Where("role = 'student'")
 	if facilityId != nil {
-		adminTx = adminTx.Where("facility_id = ?", *facilityId)
+		tx = tx.Where("facility_id = ?", *facilityId)
 	}
-	if err := adminTx.Count(&totalResidents).Error; err != nil {
+	if err := tx.Count(&totalResidents).Error; err != nil {
 		return 0, newGetRecordsDBError(err, "users")
 	}
 	return totalResidents, nil
