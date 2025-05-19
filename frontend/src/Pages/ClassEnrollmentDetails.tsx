@@ -14,11 +14,17 @@ import {
     ServerResponseMany
 } from '@/common';
 import API from '@/api/api';
-import { TextModalType, TextOnlyModal } from '@/Components/modals';
+import {
+    FormInputTypes,
+    FormModal,
+    TextModalType,
+    TextOnlyModal
+} from '@/Components/modals';
 import CompletionDetailsModal from '@/Components/modals/CompletionDetailsModal';
 import ClassEnrollmentDetailsTable from '@/Components/ClassEnrollmentDetailsTable';
 import { AddButton } from '@/Components/inputs';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { FieldValues } from 'react-hook-form';
 
 interface StatusChange {
     name_full: string;
@@ -45,7 +51,14 @@ export default function ClassEnrollmentDetails() {
     const [changeStatusValue, setChangeStatusValue] = useState<StatusChange>();
     const confirmStateChangeModal = useRef<HTMLDialogElement>(null);
     const completionDetailsModal = useRef<HTMLDialogElement>(null);
+    const reasonModalRef = useRef<HTMLDialogElement>(null);
     const [showOthers, setShowOthers] = useState(false);
+    const requiresReason = (status?: string) =>
+        [
+            'incomplete: withdrawn',
+            'incomplete: dropped',
+            'incomplete: failed to complete'
+        ].includes(status?.toLowerCase() ?? '');
 
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<ClassEnrollment>,
@@ -73,9 +86,7 @@ export default function ClassEnrollmentDetails() {
             user_id: enrollment.user_id,
             name_full: enrollment.name_full
         });
-        if (confirmStateChangeModal.current) {
-            confirmStateChangeModal.current.showModal();
-        }
+        openConfirm();
     };
 
     const toggleSelection = (userId: number) => {
@@ -119,7 +130,7 @@ export default function ClassEnrollmentDetails() {
         }
     };
 
-    const handleSubmitEnrollmentChange = async () => {
+    const handleSubmitEnrollmentChange = async (reasonText?: string) => {
         await API.patch(`program-classes/${class_id}/enrollments`, {
             // If one or more users are selected with the check-boxes, then they are going to be
             // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
@@ -128,8 +139,12 @@ export default function ClassEnrollmentDetails() {
             user_ids:
                 selectedResidents.length === 0
                     ? [changeStatusValue?.user_id]
-                    : selectedResidents
+                    : selectedResidents,
+            ...(requiresReason(changeStatusValue!.status) && {
+                change_reason: reasonText?.trim()
+            })
         });
+
         setSelectedResidents([]);
         await mutate();
     };
@@ -159,6 +174,13 @@ export default function ClassEnrollmentDetails() {
         Dropped = 'Incomplete: Dropped',
         'Failed To Complete' = 'Incomplete: Failed to Complete'
     }
+    const openConfirm = () => {
+        if (requiresReason(changeStatusValue?.status)) {
+            reasonModalRef.current?.showModal();
+        } else {
+            confirmStateChangeModal.current?.showModal();
+        }
+    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -255,23 +277,46 @@ export default function ClassEnrollmentDetails() {
                     />
                 )}
             </div>
-            <TextOnlyModal
-                ref={confirmStateChangeModal}
-                type={TextModalType.Confirm}
-                title={'Confirm Enrollment Action'}
-                text={`Are you sure you want to permanently change the status to ${
-                    changeStatusValue?.status ?? 'Completed'
-                } for ${changeStatusValue?.name_full ?? 'the selected users'}? This action cannot be undone.`}
-                onSubmit={() => {
-                    void handleSubmitEnrollmentChange();
-                }}
-                onClose={() => {
-                    if (confirmStateChangeModal.current) {
-                        confirmStateChangeModal.current.close();
-                    }
-                    setChangeStatusValue(undefined);
-                }}
-            />
+
+            {requiresReason(changeStatusValue?.status) ? (
+                <FormModal
+                    ref={reasonModalRef}
+                    title="Confirm Enrollment Action"
+                    showCancel
+                    submitText="Confirm"
+                    defaultValues={{ reason: '' }}
+                    inputs={[
+                        {
+                            type: FormInputTypes.TextArea,
+                            label: `Please add the reason for changing ${changeStatusValue?.name_full}'s status to ${changeStatusValue?.status}`,
+                            interfaceRef: 'reason',
+                            required: true,
+                            length: 255,
+                            validate: (val: string) =>
+                                val.trim().length > 0 || 'Reason is required'
+                        }
+                    ]}
+                    onSubmit={async (formData: FieldValues) => {
+                        const reason = (
+                            formData as { reason: string }
+                        ).reason.trim();
+                        await handleSubmitEnrollmentChange(reason);
+                        reasonModalRef.current?.close();
+                    }}
+                />
+            ) : (
+                <TextOnlyModal
+                    ref={confirmStateChangeModal}
+                    type={TextModalType.Confirm}
+                    title="Confirm Enrollment Action"
+                    text={`Are you sure you want to permanently change the status to "${changeStatusValue?.status}" for ${changeStatusValue?.name_full ?? 'the selected users'}? This cannot be undone.`}
+                    onSubmit={() => void handleSubmitEnrollmentChange()}
+                    onClose={() => {
+                        confirmStateChangeModal.current?.close();
+                        setChangeStatusValue(undefined);
+                    }}
+                />
+            )}
             <CompletionDetailsModal
                 enrollment={completionDetails}
                 modalRef={completionDetailsModal}
