@@ -131,7 +131,7 @@ func (db *DB) GetProgramClassOutcome(id int, args *models.QueryContext) ([]Progr
 		Group("months.month").
 		Order("months.month")
 
-	if err := query.Debug().Find(&outcome).Error; err != nil {
+	if err := query.Find(&outcome).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
 	return outcome, nil

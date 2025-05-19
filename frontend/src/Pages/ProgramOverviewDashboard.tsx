@@ -98,8 +98,7 @@ export default function ProgramOverviewDashboard() {
         Error
     >(`/api/programs/${id}/classes/outcomes?order_by=month`, {});
     const outcomes = outcomeData?.data ?? [];
-    console.log(outcomes);
-    console.log(outcomeData?.data);
+
     const checkResponse = useCheckResponse({
         mutate: mutateClasses,
         refModal: archiveClassesRef
@@ -492,7 +491,7 @@ export default function ProgramOverviewDashboard() {
                         <h3 className="text-lg font-bold text-teal-4 text-center mb-2">
                             PROGRAM OUTCOMES
                         </h3>
-                        <ProgramOutcomes data={outcomeData?.data ?? []} />
+                        <ProgramOutcomes data={outcomes} />
                     </div>
                 </div>
             </div>

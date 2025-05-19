@@ -591,14 +591,6 @@ func (db *DB) GetUserProgramInfo(args *models.QueryContext, userId int) ([]model
 	}
 	return userEnrollments, nil
 }
-type ProgramOutcomesChart struct {
-	
-}
-
-
-func (db *DB) GetProgramOutcomesChartData(){
-
-}
 
 func adjustUserOrderBy(arg string) string {
 	if strings.Contains(arg, "name_last") {
