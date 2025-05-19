@@ -49,15 +49,15 @@ func (srv *Server) handleEventOverride(w http.ResponseWriter, r *http.Request, l
 	if err != nil {
 		return newInvalidIdServiceError(err, "event_id")
 	}
-	override := &models.OverrideForm{}
+	override := &models.ProgramClassEventOverride{}
 	if err := json.NewDecoder(r.Body).Decode(override); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	_, err = srv.Db.NewEventOverride(eventId, override)
-	if err != nil {
+	override.EventID = uint(eventId)
+	ctx := srv.getQueryContext(r)
+	if err := srv.Db.CreateOverrideEvent(&ctx, override); err != nil {
 		return newDatabaseServiceError(err)
 	}
-	// should this return the new calendar to populate?
 	return writeJsonResponse(w, http.StatusOK, "Override created successfully")
 }
 
@@ -96,6 +96,7 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	year := r.URL.Query().Get("year")
 
 	qryCtx := srv.getQueryContext(r)
+
 	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year)
 	if err != nil {
 		return newDatabaseServiceError(err)

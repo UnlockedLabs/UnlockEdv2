@@ -3,12 +3,13 @@ package database
 import (
 	"UnlockEdv2/src/models"
 
+	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
 
 func (db *DB) GetClassByID(id int) (*models.ProgramClass, error) {
 	content := &models.ProgramClass{}
-	if err := db.Preload("Events").Preload("Enrollments").Preload("Program").First(content, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Events").Preload("Events.Overrides").Preload("Enrollments").Preload("Program").First(content, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
 	var enrollments int
@@ -44,14 +45,37 @@ func (db *DB) CreateProgramClass(content *models.ProgramClass) (*models.ProgramC
 	return content, nil
 }
 
-func (db *DB) UpdateProgramClass(content *models.ProgramClass, id int) (*models.ProgramClass, error) {
+func (db *DB) UpdateProgramClass(ctx context.Context, content *models.ProgramClass, id int) (*models.ProgramClass, error) {
+	var allChanges []models.ChangeLogEntry
 	existing := &models.ProgramClass{}
-	if err := db.Preload("Events").First(existing, "id = ?", id).Error; err != nil {
+	if err := db.WithContext(ctx).Preload("Events").First(existing, "id = ?", id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program classes")
 	}
+
+	trans := db.WithContext(ctx).Begin()
+	if trans.Error != nil {
+		return nil, NewDBError(trans.Error, "unable to start the database transaction")
+	}
+
+	ignoredFieldNames := []string{"create_user_id", "update_user_id", "enrollments", "facility", "facilities", "events", "facility_program", "program_id", "start_dt", "end_dt", "program", "enrolled"}
+	classLogEntries := models.GenerateChangeLogEntries(existing, content, "program_classes", existing.ID, content.UpdateUserID, ignoredFieldNames)
+	allChanges = append(allChanges, classLogEntries...)
+
 	models.UpdateStruct(existing, content)
-	if err := db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
+	if err := trans.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&existing).Error; err != nil {
+		trans.Rollback()
 		return nil, newUpdateDBError(err, "program classes")
+	}
+
+	if len(allChanges) > 0 {
+		if err := trans.Create(&allChanges).Error; err != nil {
+			trans.Rollback()
+			return nil, newCreateDBError(err, "change_log_entries")
+		}
+	}
+
+	if err := trans.Commit().Error; err != nil {
+		return nil, NewDBError(err, "unable to commit the database transaction")
 	}
 	return existing, nil
 }

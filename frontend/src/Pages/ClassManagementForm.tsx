@@ -8,7 +8,13 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
+import {
+    ProgClassStatus,
+    Class,
+    ToastState,
+    ClassLoaderData,
+    ServerResponseOne
+} from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -18,6 +24,7 @@ import {
     RRuleControl,
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
+import useSWR from 'swr';
 
 export default function ClassManagementForm() {
     const clsLoader = useLoaderData() as ClassLoaderData;
@@ -55,13 +62,14 @@ export default function ClassManagementForm() {
         if (rruleString?.rule === '') {
             return;
         }
+        const creditHours = Number(data.credit_hours);
         const formattedJson = {
             ...data,
             ...(class_id && { id: Number(class_id) }),
             start_dt: new Date(data.start_dt),
             end_dt: data.end_dt ? new Date(data.end_dt) : null,
             capacity: Number(data.capacity),
-            credit_hours: Number(data.credit_hours),
+            credit_hours: creditHours > 0 ? creditHours : null,
             events: [
                 {
                     ...(class_id && { id: Number(data?.events[0].id) }),
@@ -108,13 +116,6 @@ export default function ClassManagementForm() {
         setCanOpenCalendar(!!nameValue && rruleIsValid);
     }, [nameValue, rruleIsValid]);
 
-    useEffect(() => {
-        if (isNewClass) return;
-        if (clsLoader.class) {
-            setEditFormValues(clsLoader.class);
-        }
-    }, [id, class_id, reset]);
-
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
         reset({
@@ -128,6 +129,17 @@ export default function ClassManagementForm() {
     }
 
     const isNewClass = class_id === 'new' || !class_id;
+    //FIXME temporarily putting this here for event cancellation (cancellation will be on a different screen), will take this out later
+    const { data: classData, mutate: mutateClass } = useSWR<
+        ServerResponseOne<Class>,
+        Error
+    >(isNewClass ? null : `/api/program-classes/${class_id}`);
+
+    useEffect(() => {
+        if (!isNewClass && classData?.data) {
+            setEditFormValues(classData.data);
+        }
+    }, [classData]);
 
     return (
         <div className="p-4 px-5">
@@ -256,6 +268,8 @@ export default function ClassManagementForm() {
                     <div className="card w-[90vw] max-w-[1024px] max-h-[90vh] overflow-auto p-6 relative">
                         <CloseX close={() => setShowCalendar(false)} />
                         <EventCalendar
+                            mutate={mutateClass}
+                            classEvent={classData?.data.events[0]}
                             recurrenceRule={calendarRule}
                             durationStr={calendarDuration}
                             title={calendarEventTitle}

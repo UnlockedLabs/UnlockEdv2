@@ -50,6 +50,9 @@ function ActivityHistoryRowCard({
             case 'program_type':
                 text = `Program type ${!activity.new_value ? formatValue(activity.old_value) + ' removed ' : 'set to ' + formatValue(activity.new_value)} by ${activity.admin_username}`;
                 break;
+            case 'event_cancelled':
+                text = `Event on ${activity.new_value} cancelled by ${activity.admin_username}`;
+                break;
         }
         return text;
     };

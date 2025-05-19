@@ -194,6 +194,7 @@ func NewChangeLogEntry(tableName, fieldName string, oldValue, newValue *string, 
 
 func GenerateChangeLogEntries(oldRecord, updRecord interface{}, tableName string, parentID uint, userID uint, ignoreFieldNames []string) []ChangeLogEntry {
 	var entries []ChangeLogEntry
+
 	oldVal := reflect.ValueOf(oldRecord).Elem()
 	newVal := reflect.ValueOf(updRecord).Elem()
 	kind := oldVal.Type()
@@ -204,8 +205,23 @@ func GenerateChangeLogEntries(oldRecord, updRecord interface{}, tableName string
 		if !oldVal.Field(i).CanInterface() || slices.Contains(ignoreFieldNames, name) || name == "-" || name == "" {
 			continue
 		}
-		oldValue := fmt.Sprintf("%v", oldVal.Field(i).Interface())
-		newValue := fmt.Sprintf("%v", newVal.Field(i).Interface())
+
+		oldField := oldVal.Field(i)
+		newField := newVal.Field(i)
+
+		var oldValue, newValue string
+		if oldField.Kind() == reflect.Ptr && !oldField.IsNil() {
+			oldValue = fmt.Sprintf("%v", oldField.Elem().Interface())
+		} else if oldField.Kind() != reflect.Ptr {
+			oldValue = fmt.Sprintf("%v", oldField.Interface())
+		}
+
+		if newField.Kind() == reflect.Ptr && !newField.IsNil() {
+			newValue = fmt.Sprintf("%v", newField.Elem().Interface())
+		} else if newField.Kind() != reflect.Ptr {
+			newValue = fmt.Sprintf("%v", newField.Interface())
+		}
+
 		if oldValue != newValue {
 			entries = append(entries, *NewChangeLogEntry(tableName, name, StringPtr(oldValue), StringPtr(newValue), parentID, userID))
 		}
