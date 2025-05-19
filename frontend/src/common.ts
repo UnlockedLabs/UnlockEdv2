@@ -718,6 +718,12 @@ export interface ProgramOverview extends Program {
     active_class_facility_ids: number[];
 }
 
+export interface ProgramClassOutcome {
+    month: string;
+    completions: number;
+    dropouts: number;
+}
+
 export interface ProgramsFacilitiesStats {
     total_programs: number;
     avg_active_programs_per_facility: number;

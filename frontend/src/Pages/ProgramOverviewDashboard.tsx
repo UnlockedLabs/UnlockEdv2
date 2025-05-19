@@ -13,7 +13,8 @@ import {
     Class,
     SelectedClassStatus,
     ServerResponseMany,
-    ProgramOverview
+    ProgramOverview,
+    ProgramClassOutcome
 } from '@/common';
 import ClampedText from '@/Components/ClampedText';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
@@ -91,6 +92,12 @@ export default function ProgramOverviewDashboard() {
         current_page: 1,
         last_page: 1
     };
+
+    const { data: outcomeData } = useSWR<
+        ServerResponseMany<ProgramClassOutcome>,
+        Error
+    >(`/api/programs/${id}/classes/outcomes?order_by=month`, {});
+    console.log(outcomeData);
     const checkResponse = useCheckResponse({
         mutate: mutateClasses,
         refModal: archiveClassesRef

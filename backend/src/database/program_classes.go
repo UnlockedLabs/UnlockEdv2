@@ -111,6 +111,32 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	return classDetails, nil
 }
 
+type ProgramClassOutcome struct {
+	Month       string `json:"month"`
+	Dropouts    int    `json:"dropouts"`
+	Completions int    `json:"completions"`
+}
+
+func (db *DB) GetProgramClassOutcome(id int, args *models.QueryContext) ([]ProgramClassOutcome, error) {
+	var outcome []ProgramClassOutcome
+
+	query := db.WithContext(args.Ctx).
+		Table("(SELECT TO_CHAR(DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month FROM generate_series(0, 5) AS gs(i)) AS months").
+		Select(`
+        months.month,
+        COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END), 0) AS completions,
+        COALESCE(COUNT(CASE WHEN pce.enrollment_status IN ('Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transferred', 'Incomplete: Withdrawn') THEN 1 END), 0) AS dropouts
+    `).
+		Joins(`LEFT JOIN program_class_enrollments pce ON TO_CHAR(DATE_TRUNC('month', pce.created_at), 'YYYY-MM') = months.month AND pce.id = ?`, id).
+		Group("months.month").
+		Order("months.month")
+
+	if err := query.Debug().Find(&outcome).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	return outcome, nil
+}
+
 func (db *DB) GetProgramClassesHistory(id int, tableName string, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
 	history := []models.ProgramClassesHistory{}
 	if err := db.WithContext(args.Ctx).Order(args.OrderClause("created_at desc")).
