@@ -10,7 +10,7 @@ import {
 import { useContext } from 'react';
 import { ThemeContext } from '@/Context/ThemeContext';
 import { ProgramClassOutcome } from '@/common';
-// import { ProgramClassOutcome } from '@/common';
+
 interface ProgramOutcomesProps {
     data: ProgramClassOutcome[];
 }
