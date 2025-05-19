@@ -75,7 +75,7 @@ build: ascii_art
 		echo "Error: ACCOUNT_ID is not set, you must set AWS_ACCOUNT_ID env var, or pass ACCOUNT_ID=value in order to tag builds"; \
 		exit 1; \
 	fi
-	docker buildx build . -f backend/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/unlockedv2:latest && docker buildx build . -f backend/tasks/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/cron_tasks:latest && docker buildx build frontend -f frontend/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/frontend:latest && docker buildx build . -f provider-middleware/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/provider_middleware:latest
+	docker buildx build . -f backend/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/unlockedv2:latest  && docker buildx build frontend -f frontend/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/frontend:latest && docker buildx build . -f provider-middleware/Dockerfile --tag=$(ACCOUNT_ID)$(REPO)/provider_middleware:latest
 
 migration: ascii_art
 	@if [ -z "$(NAME)" ]; then \
