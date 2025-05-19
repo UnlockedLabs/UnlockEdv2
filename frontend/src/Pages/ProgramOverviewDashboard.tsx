@@ -22,7 +22,7 @@ import { XMarkIcon } from '@heroicons/react/24/solid';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/useAuth';
+import { canSwitchFacility, useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
 
@@ -167,9 +167,10 @@ export default function ProgramOverviewDashboard() {
     }
 
     const canAddClass =
-        program.facilities.some((f) => f.id === userFacilityId) &&
         program.is_active &&
-        program.archived_at == null;
+        program.archived_at == null &&
+        (canSwitchFacility(user.user!) ||
+            program.facilities.some((f) => f.id === userFacilityId));
 
     return (
         <div className="p-4 px-5">
@@ -280,7 +281,7 @@ export default function ProgramOverviewDashboard() {
                         </button>
                     ) : (
                         <AddButton
-                            disabled={canAddClass}
+                            disabled={!canAddClass}
                             label="Add Class"
                             onClick={() =>
                                 navigate(`/programs/${id}/classes/new`)
