@@ -29,7 +29,7 @@ func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, 
 	if err := tx.Count(&queryParams.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
-	err := tx.Order(queryParams.OrderClause("")).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
+	err := tx.Order(queryParams.OrderClause("program_class_event_attendance")).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
 	if err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
