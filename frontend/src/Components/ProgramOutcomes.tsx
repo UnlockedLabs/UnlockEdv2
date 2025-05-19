@@ -26,6 +26,7 @@ export default function ProgramOutcomes() {
         { month: 'Jul', dropouts: 28, completions: 40 },
         { month: 'Aug', dropouts: 14, completions: 15 }
     ];
+
     return (
         <ResponsiveContainer width="100%" height="100%">
             <BarChart
