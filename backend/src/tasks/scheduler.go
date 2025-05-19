@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"slices"
-	"time"
 
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -139,10 +138,6 @@ func (s *Scheduler) generateProviderTasks() ([]models.RunnableTask, error) {
 	log.Infof("Generated %d total tasks for %d providers", len(tasksToRun), len(providers))
 	return tasksToRun, nil
 }
-
-const (
-	WaitTime time.Duration = 5 * time.Minute
-)
 
 func (s *Scheduler) intoTask(cj *models.CronJob, provId *uint, task *models.RunnableTask) error {
 	if task.ID == 0 {

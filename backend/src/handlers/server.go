@@ -136,7 +136,9 @@ func (srv *Server) ListenAndServe(ctx context.Context) {
 
 func (srv *Server) Shutdown() {
 	srv.wsClient.Close(srv.Db)
-	srv.scheduler.Stop()
+	if err := srv.scheduler.Stop(); err != nil {
+		logrus.Errorf("Error stopping scheduler: %v", err)
+	}
 	srv.nats.Close()
 }
 
@@ -265,7 +267,6 @@ func (srv *Server) setupNatsKvBuckets() error {
 				cfg.TTL = time.Minute * 10
 			default:
 				cfg.TTL = time.Hour * 24
-
 			}
 			kv, err = js.CreateKeyValue(cfg)
 			if err != nil {
