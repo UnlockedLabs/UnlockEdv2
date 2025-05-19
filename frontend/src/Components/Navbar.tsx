@@ -18,7 +18,8 @@ import {
     CogIcon,
     LightBulbIcon,
     RocketLaunchIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    CalendarDaysIcon
 } from '@heroicons/react/24/solid';
 import {
     handleLogout,
@@ -165,12 +166,24 @@ export default function Navbar({
                                 </>
                             )}
                             {hasFeature(user, FeatureAccess.ProgramAccess) && (
-                                <li>
-                                    <Link to="/programs">
-                                        <ULIComponent icon={DocumentTextIcon} />
-                                        Programs
-                                    </Link>
-                                </li>
+                                <>
+                                    <li>
+                                        <Link to="/programs">
+                                            <ULIComponent
+                                                icon={DocumentTextIcon}
+                                            />
+                                            Programs
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/schedule">
+                                            <ULIComponent
+                                                icon={CalendarDaysIcon}
+                                            />
+                                            Schedule
+                                        </Link>
+                                    </li>
+                                </>
                             )}
                             <li>
                                 <Link to="/residents">
