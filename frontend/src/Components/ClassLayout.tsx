@@ -4,7 +4,6 @@ import {
     Class,
     ClassLoaderData,
     EnrollmentStatus,
-    SelectedClassStatus,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -19,14 +18,15 @@ import Pagination from './Pagination';
 import ClampedText from './ClampedText';
 import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
+import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 
 function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
 
     const programDisabled = classInfo?.program.archived_at !== null;
-    const blockEdits =
-        classInfo?.status === SelectedClassStatus.Completed ||
-        classInfo?.status === SelectedClassStatus.Cancelled;
+    const blockEdits = isCompletedCancelledOrArchived(
+        classInfo ?? ({} as Class)
+    );
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
@@ -63,8 +63,12 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
             </p>
             <p className="body">Room: {classInfo?.events[0].room}</p>
             <div
-                className="flex flex-row gap-2 mt-6 justify-center tooltip "
-                data-tip={`This class is ${classInfo?.status.toLowerCase()} and cannot be modified.`}
+                className={`flex flex-row gap-2 mt-6 justify-center ${blockEdits ? 'tooltip' : ''} `}
+                data-tip={
+                    blockEdits
+                        ? `This class is ${classInfo?.status.toLowerCase()} and cannot be modified.`
+                        : ''
+                }
             >
                 <button
                     className="button"
@@ -73,7 +77,7 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                             `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`
                         );
                     }}
-                    disabled={programDisabled ||  blockEdits}
+                    disabled={programDisabled || blockEdits}
                 >
                     <PencilSquareIcon className="w-4 my-auto" />
                     Edit Class Details

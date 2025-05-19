@@ -5,7 +5,6 @@ import {
     Attendance,
     Class,
     ClassEventInstance,
-    SelectedClassStatus,
     ProgramClassEventAttendance,
     ServerResponseMany,
     ServerResponseOne
@@ -13,6 +12,7 @@ import {
 import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [y, m, d] = dateOnly.split('-').map(Number);
@@ -51,9 +51,9 @@ export default function ClassEvents() {
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;
 
-    const blockEdits =
-        this_program?.status === SelectedClassStatus.Completed ||
-        this_program?.status == SelectedClassStatus.Cancelled;
+    const blockEdits = isCompletedCancelledOrArchived(
+        this_program ?? ({} as Class)
+    );
     const meta = data?.meta;
     const events = data?.data ?? [];
 
@@ -167,8 +167,8 @@ export default function ClassEvents() {
                                                         event.date
                                                     )
                                                 }
-                                                className="button tooltip tooltip-left"
-                                                data-tip={`This class is ${this_program?.status.toLowerCase()} and cannot be modified.`}
+                                                className={`button ${blockEdits ? 'tooltip tooltip-left' : ''}`}
+                                                data-tip={`${blockEdits ? `This class is ${this_program?.status.toLowerCase()} and cannot be modified.` : ''}`}
                                             >
                                                 Mark Attendance
                                             </button>

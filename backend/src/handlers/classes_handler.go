@@ -96,8 +96,8 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	if class.CanUpdateClass() != nil {
-		return newBadRequestServiceError(err, "class update")
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {

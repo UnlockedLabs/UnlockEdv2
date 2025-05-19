@@ -5,12 +5,12 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import {
+    Class,
     ClassEnrollment,
     ClassLoaderData,
     EnrollmentStatus,
     FilterResidentNames,
     ProgramCompletion,
-    SelectedClassStatus,
     ServerResponseMany
 } from '@/common';
 import API from '@/api/api';
@@ -18,6 +18,7 @@ import { TextModalType, TextOnlyModal } from '@/Components/modals';
 import CompletionDetailsModal from '@/Components/modals/CompletionDetailsModal';
 import ClassEnrollmentDetailsTable from '@/Components/ClassEnrollmentDetailsTable';
 import { AddButton } from '@/Components/inputs';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 interface StatusChange {
     name_full: string;
@@ -28,11 +29,8 @@ interface StatusChange {
 export default function ClassEnrollmentDetails() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
-    const { redirect } = useLoaderData() as ClassLoaderData;
-    const { class: clsInfo } = useLoaderData() as ClassLoaderData;
-    const blockEdits =
-        clsInfo?.status === SelectedClassStatus.Completed ||
-        clsInfo?.status === SelectedClassStatus.Cancelled;
+    const { redirect, class: clsInfo } = useLoaderData() as ClassLoaderData;
+    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
@@ -205,8 +203,12 @@ export default function ClassEnrollmentDetails() {
                     />
                 </div>
                 <div
-                    className="flex gap-2 tooltip tooltip-left"
-                    data-tip={`This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`}
+                    className={`flex gap-2 ${blockEdits ? 'tooltip tooltip-left' : ''}`}
+                    data-tip={
+                        blockEdits
+                            ? `This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`
+                            : undefined
+                    }
                 >
                     {selectedResidents.length > 0 && (
                         <button

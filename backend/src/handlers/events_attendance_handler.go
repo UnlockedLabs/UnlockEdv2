@@ -27,8 +27,8 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if err := class.CanUpdateClass(); err != nil {
-		return newBadRequestServiceError(err, "class attendance update")
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {

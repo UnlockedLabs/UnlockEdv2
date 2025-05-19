@@ -74,8 +74,8 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if err := class.CanUpdateClass(); err != nil {
-		return newBadRequestServiceError(err, "class enrollment")
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
@@ -120,8 +120,8 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if err := class.CanUpdateClass(); err != nil {
-		return newBadRequestServiceError(err, "class enrollment update")
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrollment := struct {
 		EnrollmentStatus string `json:"enrollment_status"`

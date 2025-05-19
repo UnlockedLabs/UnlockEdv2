@@ -16,7 +16,6 @@ import {
     FilterResidentNames,
     EventDate,
     Class,
-    SelectedClassStatus,
     ToastState
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
@@ -27,6 +26,7 @@ import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
 const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 import { useToast } from '@/Context/ToastCtx';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 interface LocalRowData {
     selected: boolean;
@@ -126,9 +126,7 @@ export default function EventAttendance() {
     );
     const rawClsInfo = useLoaderData() as { class?: Class };
     const clsInfo = rawClsInfo?.class;
-    const blockEdits =
-        clsInfo?.status === SelectedClassStatus.Completed ||
-        clsInfo?.status === SelectedClassStatus.Cancelled;
+    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
 
     const meta = data?.meta;
     const [rows, setRows] = useState<LocalRowData[]>([]);
@@ -286,7 +284,7 @@ export default function EventAttendance() {
                 <button
                     onClick={() => void handleMarkAllPresent()}
                     disabled={anyRowSelected || blockEdits}
-                    className={`button  tooltip tooltip-left ${anyRowSelected ? `bg-grey-4 cursor-not-allowed` : ``}`}
+                    className={`button ${blockEdits ? 'tooltip tooltip-left' : ''}  ${anyRowSelected ? `bg-grey-4 cursor-not-allowed` : ``}`}
                     data-tip={`This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`}
                 >
                     Mark All Present
