@@ -8,14 +8,13 @@ import (
 )
 
 func (srv *Server) registerFacilitiesRoutes() []routeDef {
-	axx := models.Feature()
 	return []routeDef{
-		{"GET /api/facilities", srv.handleIndexFacilities, true, axx, nil},
-		{"GET /api/facilities/{id}", srv.handleShowFacility, true, axx, nil},
-		{"POST /api/facilities", srv.handleCreateFacility, true, axx, nil},
-		{"DELETE /api/facilities/{id}", srv.handleDeleteFacility, true, axx, nil},
-		{"PATCH /api/facilities/{id}", srv.handleUpdateFacility, true, axx, nil},
-		{"PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility, true, axx, nil},
+		newAdminRoute("GET /api/facilities", srv.handleIndexFacilities),
+		newAdminRoute("GET /api/facilities/{id}", srv.handleShowFacility),
+		newAdminRoute("POST /api/facilities", srv.handleCreateFacility),
+		newAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
+		newAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
+		newAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 	}
 }
 

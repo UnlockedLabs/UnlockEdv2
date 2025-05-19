@@ -12,18 +12,18 @@ import (
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {
-	axx := []models.FeatureAccess{models.ProgramAccess}
+	axx := models.ProgramAccess
 	return []routeDef{
-		{"GET /api/programs", srv.handleIndexPrograms, false, axx},
-		{"GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx},
-		{"GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx},
-		{"GET /api/programs/{id}", srv.handleShowProgram, false, axx},
-		{"GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx},
-		{"POST /api/programs", srv.handleCreateProgram, true, axx},
-		{"DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx},
-		{"PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx},
-		{"PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, true, axx},
-		{"PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx},
+		newFeatureRoute("GET /api/programs", srv.handleIndexPrograms, false, axx),
+		newFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx),
+		newFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx),
+		newFeatureRoute("GET /api/programs/{id}", srv.handleShowProgram, false, axx),
+		newFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx),
+		newFeatureRoute("POST /api/programs", srv.handleCreateProgram, true, axx),
+		newFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx),
+		newFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, true, axx),
+		newFeatureRoute("PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx),
+		newFeatureRoute("PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx),
 	}
 }
 

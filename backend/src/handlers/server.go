@@ -43,42 +43,55 @@ type routeDef struct {
 	handler     HttpFunc
 	admin       bool
 	features    []models.FeatureAccess
-	ownership   *ownershipConfig
+	resolver    FacilityResolver
 }
 
-type SourceType int
-
-const (
-	SourcePath SourceType = iota
-	SourceQuery
-	SourceBody
-)
-
-type idLocator struct {
-	Key    string
-	Source SourceType
+func newRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    []models.FeatureAccess{},
+	}
 }
 
-type ownershipConfig struct {
-	resourceType any
-	idParams     []idLocator
+func newAdminRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{},
+	}
+}
+func newFeatureRoute(method string, handler HttpFunc, adminOnly bool, features ...models.FeatureAccess) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       adminOnly,
+		features:    features,
+	}
+}
+
+func newValidatedFeatureRoute(method string, handler HttpFunc, admin bool, features models.FeatureAccess, validate FacilityResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       admin,
+		features:    []models.FeatureAccess{features},
+		resolver:    validate,
+	}
 }
 
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {
 		h := route.handler
-
-		if route.ownership != nil {
-			h = srv.ownershipMiddleware(route.ownership)(h)
-		}
-
 		if route.admin {
 			srv.Mux.Handle(route.routeMethod,
-				srv.applyAdminMiddleware(h, route.features...),
+				srv.applyAdminMiddleware(h, route.resolver, route.features...),
 			)
 		} else {
 			srv.Mux.Handle(route.routeMethod,
-				srv.applyMiddleware(h, route.features...),
+				srv.applyMiddleware(h, route.resolver, route.features...),
 			)
 		}
 	}

@@ -2,17 +2,14 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -24,23 +21,23 @@ const (
 // regular expression used below for filtering open_content_urls
 var resourceRegExpression = regexp.MustCompile(`\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|ttf|map|webp|otf|vtt|webm|json|woff2|pdf)(\?|%3F|$)`)
 
-func (srv *Server) applyMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
+func (srv *Server) applyMiddleware(h HttpFunc, resolver FacilityResolver, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
 		srv.checkFeatureAccessMiddleware(
-			srv.handleError(h), accessLevel...))
+			srv.handleError(h), accessLevel...), resolver)
 }
 
-func (srv *Server) applyAdminMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
+func (srv *Server) applyAdminMiddleware(h HttpFunc, resolver FacilityResolver, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
 		srv.adminMiddleware(
 			srv.checkFeatureAccessMiddleware(
-				srv.handleError(h), accessLevel...)))
+				srv.handleError(h), accessLevel...)), resolver)
 }
 
-func (srv *Server) applyStandardMiddleware(next http.Handler) http.Handler {
+func (srv *Server) applyStandardMiddleware(next http.Handler, resolver FacilityResolver) http.Handler {
 	return srv.prometheusMiddleware(
 		srv.authMiddleware(
-			next))
+			next, resolver))
 }
 
 func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
@@ -72,7 +69,7 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), videoKey, &video)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}))
+	}), nil)
 }
 
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
@@ -132,7 +129,7 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), libraryKey, proxyParams)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}))
+	}), nil)
 }
 
 func corsMiddleware(next http.Handler) http.HandlerFunc {
@@ -163,84 +160,18 @@ func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel .
 	})
 }
 
-func (srv *Server) ownershipMiddleware(oc *ownershipConfig) func(HttpFunc) HttpFunc {
-	return func(next HttpFunc) HttpFunc {
-		return func(w http.ResponseWriter, r *http.Request, log sLog) error {
-			claims := r.Context().Value(ClaimsKey).(*Claims)
-			if claims.canSwitchFacility() {
-				return next(w, r, log)
-			}
+type FacilityResolver func(*gorm.DB, *http.Request) bool
 
-			var rawIDs []string
-			var bodyJSON map[string]any
-			bodyRead := false
-
-			for _, loc := range oc.idParams {
-				switch loc.Source {
-				case SourcePath:
-					if v := r.PathValue(loc.Key); v != "" {
-						rawIDs = append(rawIDs, v)
-					}
-				case SourceQuery:
-					rawIDs = append(rawIDs, r.URL.Query()[loc.Key]...)
-				case SourceBody:
-					if !bodyRead {
-						buf, err := io.ReadAll(r.Body)
-						if err != nil {
-							return newJSONReqBodyServiceError(err)
-						}
-						r.Body = io.NopCloser(bytes.NewBuffer(buf))
-
-						if err := json.Unmarshal(buf, &bodyJSON); err != nil {
-							return newJSONReqBodyServiceError(err)
-						}
-						bodyRead = true
-					}
-					if v, ok := bodyJSON[loc.Key]; ok {
-						rawIDs = append(rawIDs, fmt.Sprint(v))
-					}
-				}
-			}
-
-			if len(rawIDs) == 0 {
-				return next(w, r, log)
-			}
-
-			kv := srv.buckets[PermissionCacheBucket]
-			sess := claims.SessionID
-
-			for _, raw := range rawIDs {
-				idNum, err := strconv.ParseUint(raw, 10, 64)
-				if err != nil {
-					return newInvalidIdServiceError(err, fmt.Sprintf("parsing %q", raw))
-				}
-
-				key := fmt.Sprintf("%s:%T:%d", sess, oc.resourceType, idNum)
-
-				if entry, err := kv.Get(key); err == nil {
-					if cached, err := strconv.ParseUint(string(entry.Value()), 10, 64); err == nil {
-						if uint(cached) == claims.FacilityID {
-							continue
-						}
-						return newUnauthorizedServiceError()
-					}
-				}
-
-				facID, err := srv.Db.GetResourceFacilityID(oc.resourceType, uint(idNum))
-				if err != nil {
-					return newDatabaseServiceError(err)
-				}
-				if facID != claims.FacilityID {
-					return newUnauthorizedServiceError()
-				}
-
-				_, err = kv.Put(key, []byte(strconv.FormatUint(uint64(facID), 10)))
-				if err != nil {
-					log.error("error caching facility_id of session")
-				}
-			}
-
-			return next(w, r, log)
-		}
+// resolver where there is a direct relationship between the resource and the facility_id
+// arguments are "table_name", "path_parameter_name"
+func ResolveDirect(table string, param string) FacilityResolver {
+	return func(tx *gorm.DB, r *http.Request) bool {
+		id := r.PathValue(param)
+		var facID uint
+		err := tx.Table(table).
+			Select("facility_id").
+			Where("id = ?", id).
+			Limit(1).Scan(&facID).Error
+		return err == nil && r.Context().Value(ClaimsKey).(*Claims).FacilityID == facID
 	}
 }

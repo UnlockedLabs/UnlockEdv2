@@ -8,14 +8,15 @@ import (
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
-	axx := []models.FeatureAccess{models.ProgramAccess}
+	axx := models.ProgramAccess
+	resolver := ResolveDirect("program_classes", "class_id")
 	return []routeDef{
-		{"GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx, nil},
-		{"GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx, nil},
-		{"GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx, nil},
-		{"GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx, nil},
-		{"PUT /api/events/{event_id}", srv.handleEventOverride, true, axx, nil},
-		{"POST /api/program-classes/{id}/events", srv.handleCreateEvent, true, axx, nil},
+		newFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx),
+		newFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx),
+		newFeatureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx),
+		newFeatureRoute("GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx),
+		newValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverride, true, axx, resolver),
+		newValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, true, axx, resolver),
 	}
 }
 
@@ -62,7 +63,7 @@ func (srv *Server) handleEventOverride(w http.ResponseWriter, r *http.Request, l
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
-	classID, err := strconv.Atoi(r.PathValue("id"))
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}

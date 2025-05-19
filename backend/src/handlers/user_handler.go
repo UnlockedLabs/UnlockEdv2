@@ -13,18 +13,17 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() []routeDef {
-	axx := models.Feature()
 	return []routeDef{
-		{"GET /api/users", srv.handleIndexUsers, true, axx, nil},
-		{"GET /api/users/{id}", srv.handleShowUser, false, axx, nil},
-		{"POST /api/users", srv.handleCreateUser, true, axx, nil},
-		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx, nil},
-		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx, nil},
-		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx, nil},
-		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx, nil},
-		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx, nil},
-		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx, nil},
-		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, false, axx, nil},
+		newAdminRoute("GET /api/users", srv.handleIndexUsers),
+		newRoute("GET /api/users/{id}", srv.handleShowUser),
+		newAdminRoute("POST /api/users", srv.handleCreateUser),
+		newAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser),
+		newAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser),
+		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
+		newAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
+		newAdminRoute("POST /api/users/student-password", srv.handleResetStudentPassword),
+		newAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory),
+		newRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms),
 	}
 }
 

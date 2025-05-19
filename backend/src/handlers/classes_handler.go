@@ -5,19 +5,26 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"gorm.io/gorm"
 )
 
 func (srv *Server) registerClassesRoutes() []routeDef {
-	axx := []models.FeatureAccess{models.ProgramAccess}
+	axx := models.ProgramAccess
+	resolver := ResolveDirect("program_classes", "class_id")
 	return []routeDef{
-		{"GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx, nil},
-		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx, nil},
-		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx, nil},
-		{"GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx, nil},
-		{"GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx, nil},
-		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx, nil},
-		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx, &ownershipConfig{&models.ProgramClass{}, []idLocator{{Key: "id", Source: SourceQuery}}}},
-		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx, &ownershipConfig{&models.ProgramClass{}, []idLocator{{Key: "id", Source: SourcePath}}}},
+		newFeatureRoute("GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx),
+		newValidatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx, resolver),
+		newFeatureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx),
+		newFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx),
+		newFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx),
+		newFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, true, axx),
+		newValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, true, axx, func(tx *gorm.DB, r *http.Request) bool {
+			return tx.Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
+				Where("facility_id <> ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+				First(&models.ProgramClass{}).Error != nil
+		}),
+		newValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, true, axx, resolver),
 	}
 }
 

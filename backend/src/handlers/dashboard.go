@@ -14,13 +14,13 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/login-metrics", srv.handleLoginMetrics, true, models.Feature(), nil},
-		{"GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2, true, models.Feature(), nil},
-		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx, nil},
-		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx, nil},
-		{"GET /api/users/{id}/profile", srv.handleResidentProfile, false, models.Feature(), nil},
+		newAdminRoute("GET /api/login-metrics", srv.handleLoginMetrics),
+		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
+		newFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx),
+		newFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, false, axx),
+		newRoute("GET /api/users/{id}/profile", srv.handleResidentProfile),
 	}
 }
 

@@ -13,11 +13,11 @@ import (
 
 func (srv *Server) registerProviderUserRoutes() []routeDef {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	axx := []models.FeatureAccess{models.ProviderAccess}
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, true, axx, nil},
-		{"POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, true, axx, nil},
-		{"POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, true, axx, nil},
+		newFeatureRoute("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, true, axx),
+		newFeatureRoute("POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, true, axx),
+		newFeatureRoute("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, true, axx),
 	}
 }
 

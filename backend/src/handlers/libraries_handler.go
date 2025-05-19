@@ -16,14 +16,14 @@ import (
 )
 
 func (srv *Server) registerLibraryRoutes() []routeDef {
-	axx := models.Feature(models.OpenContentAccess)
+	axx := models.OpenContentAccess
 	return []routeDef{
-		{"GET /api/libraries", srv.handleIndexLibraries, false, axx, nil},
-		{"GET /api/open-content/search", srv.handleSearchOpenContent, false, axx, nil},
-		{"GET /api/open-content/suggestions", srv.handleGetQuerySuggestions, false, axx, nil},
-		{"GET /api/libraries/{id}", srv.handleGetLibrary, false, axx, nil},
-		{"PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, true, axx, nil},
-		{"PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, false, axx, nil},
+		newFeatureRoute("GET /api/libraries", srv.handleIndexLibraries, false, axx),
+		newFeatureRoute("GET /api/open-content/search", srv.handleSearchOpenContent, false, axx),
+		newFeatureRoute("GET /api/open-content/suggestions", srv.handleGetQuerySuggestions, false, axx),
+		newFeatureRoute("GET /api/libraries/{id}", srv.handleGetLibrary, false, axx),
+		newFeatureRoute("PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, true, axx),
+		newFeatureRoute("PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, false, axx),
 	}
 }
 

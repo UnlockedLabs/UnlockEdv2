@@ -10,14 +10,15 @@ import (
 )
 
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
-	axx := models.Feature(models.ProgramAccess)
+	axx := models.ProgramAccess
+	resolve := ResolveDirect("program_classes", "class_id")
 	return []routeDef{
-		{"GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, true, axx, nil},
-		{"POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx, nil},
-		{"PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx, nil},
-		{"DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, true, axx, nil},
-		{"GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx, nil},
-		{"GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, false, axx, nil},
+		newFeatureRoute("GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, true, axx),
+		newValidatedFeatureRoute("POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx, resolve),
+		newValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx, resolve),
+		newValidatedFeatureRoute("DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, true, axx, resolve),
+		newFeatureRoute("GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx),
+		newFeatureRoute("GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, false, axx),
 	}
 }
 
