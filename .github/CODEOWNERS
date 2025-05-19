@@ -1,4 +1,4 @@
 backend/**/* @UnlockedLabs/reviewers 
 provider-middleware/**/* @UnlockedLabs/reviewers 
 config/**/* @UnlockedLabs/reviewers
-frontend/**/* @calisio @UnlockedLabs/reviewers
+frontend/**/* @UnlockedLabs/reviewers
