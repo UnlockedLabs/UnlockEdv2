@@ -436,7 +436,7 @@ export default function EventAttendance() {
                             type="submit"
                             className="button tooltip tooltip-left"
                             disabled={!anyRowSelected || blockEdits}
-                            data-tip={`This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`}
+                            data-tip={`${blockEdits ? 'This class is completed and cannot be modified.' : ''}`}
                         >
                             Save Attendance
                         </button>

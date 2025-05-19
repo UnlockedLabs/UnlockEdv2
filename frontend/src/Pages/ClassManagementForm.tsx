@@ -8,13 +8,7 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import {
-    ProgClassStatus,
-    Class,
-    ToastState,
-    ClassLoaderData,
-    SelectedClassStatus
-} from '@/common';
+import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -24,6 +18,7 @@ import {
     RRuleControl,
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 export default function ClassManagementForm() {
     const classInfo = useLoaderData() as Class;
@@ -80,11 +75,10 @@ export default function ClassManagementForm() {
             ]
         };
 
-        const canEditClass =
-            classInfo?.status == SelectedClassStatus.Completed ||
-            classInfo?.status == SelectedClassStatus.Cancelled;
+        const canEditClass = isCompletedCancelledOrArchived(
+            classInfo ?? ({} as Class)
+        );
         let response;
-
         if (isNewClass) {
             response = await API.post(`programs/${id}/classes`, formattedJson);
         } else if (canEditClass) {
