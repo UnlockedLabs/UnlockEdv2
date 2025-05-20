@@ -65,7 +65,7 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 }
 
 func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("program_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}

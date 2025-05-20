@@ -98,7 +98,7 @@ func (s *Server) authMiddleware(next http.Handler, resolver FacilityResolver) ht
 		}
 		if resolver != nil {
 			if !claims.canSwitchFacility() {
-				if !resolver(s.Db.DB, r) {
+				if !resolver(s.Db.DB, r.WithContext(ctx)) {
 					http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
 					return
 				}
