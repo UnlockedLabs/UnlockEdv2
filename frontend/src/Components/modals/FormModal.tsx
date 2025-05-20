@@ -130,6 +130,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             register={register}
                                             enumType={input.enumType}
                                             disabled={input.disabled}
+                                            onChange={input.onChangeSelection}
                                         />
                                     );
                                 }

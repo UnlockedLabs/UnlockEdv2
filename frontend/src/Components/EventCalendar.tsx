@@ -1,21 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { RRule } from 'rrule';
+import {
+    Class,
+    ProgramClassEvent,
+    ProgramClassEventOverride,
+    ServerResponseOne
+} from '@/common';
+import { CancelClassEventModal } from './modals/CancelClassEventModal';
+import { showModal } from './modals';
+import { KeyedMutator } from 'swr';
 
 const localizer = momentLocalizer(moment);
 
-interface CalendarEvent {
+export interface CalendarClassEvent {
+    classEvent?: ProgramClassEvent;
     title: string;
     start: Date;
     end: Date;
+    isCancelled?: boolean;
+    reason?: string;
+    location?: string;
 }
 
 interface EventCalendarProps {
     recurrenceRule: string;
     durationStr: string;
     title?: string;
+    classEvent?: ProgramClassEvent;
+    mutate: KeyedMutator<ServerResponseOne<Class>>;
 }
 
 function parseDurationToMs(duration: string): number {
@@ -33,10 +48,15 @@ function parseDurationToMs(duration: string): number {
 export default function EventCalendar({
     recurrenceRule,
     durationStr,
-    title = 'Event'
+    title = 'Event',
+    classEvent,
+    mutate
 }: EventCalendarProps) {
-    const [events, setEvents] = useState<CalendarEvent[]>([]);
-
+    const [events, setEvents] = useState<CalendarClassEvent[]>([]);
+    const [selectedEvent, setSelectedEvent] = useState<
+        CalendarClassEvent | undefined
+    >();
+    const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     useEffect(() => {
         if (!recurrenceRule || !durationStr) {
             return;
@@ -47,26 +67,69 @@ export default function EventCalendar({
             'DTSTART:'
         );
         const rule = RRule.fromString(cleanRule);
-        const occurrences = rule.between(
+        const eventDates = rule.between(
             new Date(),
             moment().add(1, 'year').toDate()
         );
-        const generated = occurrences.map((occurrence) => ({
-            title,
-            start: occurrence,
-            end: new Date(occurrence.getTime() + durationMs)
-        }));
+
+        const eventOverrides = classEvent?.overrides ?? []; //overrides
+        const generated = eventDates.map((eventDate) => {
+            const override = getEventOverrideForEventDate(
+                eventDate,
+                eventOverrides
+            );
+            return {
+                title: override ? 'CANCELLED' : title,
+                start: eventDate,
+                end: new Date(eventDate.getTime() + durationMs),
+                isCancelled: override?.is_cancelled,
+                reason: override?.reason,
+                location: override?.location
+            };
+        });
         setEvents(generated);
-    }, [recurrenceRule, durationStr, title]);
+    }, [recurrenceRule, durationStr, title, classEvent?.overrides]);
+
+    function getEventOverrideForEventDate(
+        eventDate: Date,
+        eventOverrides: ProgramClassEventOverride[]
+    ): ProgramClassEventOverride | undefined {
+        return eventOverrides.find((override) => {
+            if (!override.is_cancelled) return false;
+            const rule = RRule.fromString(override.override_rrule);
+            const overrideDate = rule.all()[0];
+            return overrideDate.toISOString() === eventDate.toISOString();
+        });
+    }
+
+    function handleSelectEvent(event: CalendarClassEvent): void {
+        if (classEvent) {
+            event.classEvent = classEvent;
+        } else {
+            //if the event doesn't exist yet don't allow it to be cancelled.
+            return;
+        }
+        if (event.isCancelled) {
+            return;
+        }
+        setSelectedEvent(event);
+        showModal(cancelClassEventModal);
+    }
 
     return (
         <div className="p-4">
             <Calendar
+                onSelectEvent={handleSelectEvent}
                 localizer={localizer}
                 events={events}
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: 600 }}
+            />
+            <CancelClassEventModal
+                mutate={mutate}
+                calendarEvent={selectedEvent}
+                ref={cancelClassEventModal}
             />
         </div>
     );

@@ -74,11 +74,13 @@ export default function ClassEvents() {
     function getStatus(event: ClassEventInstance): string {
         const eventDate = new Date(event.date).setHours(0, 0, 0, 0);
         const today = new Date().setHours(0, 0, 0, 0);
-        return eventDate > today
-            ? 'Scheduled'
-            : event.attendance_records?.length === enrolled
-              ? 'Marked'
-              : 'Not Marked';
+        return event.is_cancelled
+            ? 'Cancelled'
+            : eventDate > today
+              ? 'Scheduled'
+              : event.attendance_records?.length === enrolled
+                ? 'Marked'
+                : 'Not Marked';
     }
 
     return (
@@ -154,6 +156,7 @@ export default function ClassEvents() {
                                                     )
                                                 }
                                                 className="button"
+                                                disabled={event.is_cancelled}
                                             >
                                                 Mark Attendance
                                             </button>

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestHandleIndexPrograms(t *testing.T) {
@@ -172,7 +173,7 @@ func TestHandleUpdateProgram(t *testing.T) {
 				if err := json.Unmarshal([]byte(received), &data); err != nil {
 					t.Errorf("failed to unmarshal resource, error is %v", err)
 				}
-				if diff := cmp.Diff(updatedProgram, &data.Data); diff != "" {
+				if diff := cmp.Diff(updatedProgram, &data.Data, cmpopts.IgnoreFields(models.ProgramCreditType{}, "ProgramID"), cmpopts.IgnoreFields(models.ProgramType{}, "ProgramID"), cmpopts.IgnoreFields(models.Program{}, "CreatedAt")); diff != "" {
 					t.Errorf("handler returned unexpected results: %v", diff)
 				}
 			}
@@ -305,10 +306,18 @@ func getUpdatedProgramForm() map[string]any {
 	form := make(map[string]any)
 	form["name"] = "Introduction to Management"
 	form["description"] = "A course in human resource management, covering fundamental concepts such as how to deal with unruly employees, recruitment, and inteview strategies."
-	form["credit_type"] = "Earned-Time Credit"
+	form["credit_types"] = []models.ProgramCreditType{
+		{
+			CreditType: models.EarnedTime,
+		},
+	}
 	form["is_active"] = true
 	form["funding_type"] = models.EduGrants
-	form["program_type"] = models.LifeSkills
+	form["program_types"] = []models.ProgramType{
+		{
+			ProgramType: models.ReEntry,
+		},
+	}
 
 	return form
 }

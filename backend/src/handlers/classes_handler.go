@@ -106,7 +106,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	}
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = claims.UserID
-	updated, err := srv.Db.UpdateProgramClass(&class, id)
+	updated, err := srv.Db.UpdateProgramClass(r.Context(), &class, id)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -130,7 +130,7 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	classMap["update_user_id"] = claims.UserID
 
-	if err := srv.Db.UpdateProgramClasses(classIDs, classMap); err != nil {
+	if err := srv.Db.UpdateProgramClasses(r.Context(), classIDs, classMap); err != nil {
 		return newDatabaseServiceError(err)
 	}
 
@@ -143,11 +143,16 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	args := srv.getQueryContext(r)
-	paginationMeta, pagedHistoryEvents, err := srv.getPagedHistoryEvents(id, "program_classes", &args, log)
+	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "program_classes", id)
 	if err != nil {
 		return err
 	}
-	return writePaginatedResponse(w, http.StatusOK, pagedHistoryEvents, paginationMeta)
+	pageMeta, createdByDetails, err := srv.getCreatedByForHistory(id, "program_classes", args.IntoMeta(), &args, len(historyEvents))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	historyEvents = append(historyEvents, createdByDetails)
+	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
 }
 
 func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -714,6 +714,7 @@ export interface ProgramOverview extends Program {
     completions: number;
     total_enrollments: number;
     completion_rate: number;
+    active_class_facility_ids: number[];
 }
 
 export interface ProgramsFacilitiesStats {
@@ -811,8 +812,21 @@ export interface ProgramClassEvent {
     duration: string;
     room: string;
     recurrence_rule: string;
+    overrides: ProgramClassEventOverride[];
 }
+
+export interface ProgramClassEventOverride {
+    id: number;
+    event_id: number;
+    override_rrule: string;
+    duration: string;
+    location: string;
+    is_cancelled: boolean;
+    reason: string;
+}
+
 export interface ClassEventInstance {
+    is_cancelled: boolean;
     event_id: number;
     class_time: string;
     date: string;
@@ -864,6 +878,15 @@ export enum EnrollmentStatus {
     Dropped = 'Incomplete: Dropped',
     'Failed To Complete' = 'Incomplete: Failed to Complete',
     Transfered = 'Incomplete: Transfered'
+}
+
+export enum CancelEventReason {
+    'Instructor unavailable' = 'Instructor unavailable',
+    'Instructor illness' = 'Instructor illness',
+    'Facility issue or lockdown' = 'Facility issue or lockdown',
+    'Holiday or scheduled break' = 'Holiday or scheduled break',
+    'Technology issue' = 'Technology issue',
+    'Other (add note)' = 'Other (add note)'
 }
 
 export interface ClassEnrollment {
@@ -1096,6 +1119,7 @@ export interface ActivityHistoryResponse {
     program_classes_history?: ProgramClassesHistory;
     field_name: string;
     new_value: string;
+    old_value: string;
 }
 
 export interface ProgramClassesHistory {
