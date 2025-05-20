@@ -127,7 +127,7 @@ func (db *DB) GetProgramClassOutcome(id int, args *models.QueryContext) ([]Progr
         COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END), 0) AS completions,
         COALESCE(COUNT(CASE WHEN pce.enrollment_status IN ('Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transferred', 'Incomplete: Withdrawn') THEN 1 END), 0) AS dropouts
     `).
-		Joins(`LEFT JOIN program_class_enrollments pce ON TO_CHAR(DATE_TRUNC('month', pce.created_at), 'YYYY-MM') = months.month AND pce.id = ?`, id).
+		Joins(`LEFT JOIN program_class_enrollments pce ON TO_CHAR(DATE_TRUNC('month', pce.updated_at), 'YYYY-MM') = months.month AND pce.class_id = ?`, id).
 		Group("months.month").
 		Order(args.OrderBy)
 
