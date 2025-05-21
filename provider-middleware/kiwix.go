@@ -61,7 +61,11 @@ func (ks *KiwixService) ImportLibraries(ctx context.Context, db *gorm.DB) error 
 		logger().Errorf("error fetching data from url: %v", err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger().Errorf("error reading data: %v", err)

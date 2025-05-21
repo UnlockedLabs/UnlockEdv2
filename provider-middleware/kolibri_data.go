@@ -162,7 +162,11 @@ func UploadImage(thumbnail, root, id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer response.Body.Close()
+	defer func() {
+		if response.Body.Close() != nil {
+			logger().Error("Failed to close response body")
+		}
+	}()
 	if response.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("server returned non-OK status: %s", response.Status)
 	}
