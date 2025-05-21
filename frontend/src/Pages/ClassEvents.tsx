@@ -121,7 +121,12 @@ export default function ClassEvents() {
                                     <td className="justify-self-start px-4">
                                         {new Date(
                                             event.date
-                                        ).toLocaleDateString()}
+                                        ).toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'numeric',
+                                            day: 'numeric',
+                                            timeZone: 'UTC'
+                                        })}
                                     </td>
                                     <td className="px-4">
                                         {formatClassTime(
