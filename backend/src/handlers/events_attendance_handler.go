@@ -24,7 +24,6 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		return newBadRequestServiceError(err, "event ID")
 	}
 	var attendances []models.ProgramClassEventAttendance
-	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&attendances)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)

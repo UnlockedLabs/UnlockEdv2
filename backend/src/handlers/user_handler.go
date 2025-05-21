@@ -113,7 +113,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newJSONReqBodyServiceError(err)
 	}
 
-	defer r.Body.Close()
+	defer checkErrClose(r.Body.Close(), log)
 	if reqForm.User.FacilityID == 0 {
 		reqForm.User.FacilityID = srv.getFacilityID(r)
 	}
@@ -224,7 +224,7 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newBadRequestServiceError(err, "invalid form data submited")
 	}
-	defer r.Body.Close()
+	defer checkErrClose(r.Body.Close(), log)
 	toUpdate, err := srv.Db.GetUserByID(uint(id))
 	log.add("userId", id)
 	if err != nil {
@@ -258,7 +258,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
+	defer checkErrClose(r.Body.Close(), log)
 	response := make(map[string]string)
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
 	log.add("student.user_id", temp.UserID)
@@ -374,7 +374,7 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		TransFacilityID int `json:"trans_facility_id"`
 		CurrFacilityID  int `json:"curr_facility_id"`
 	}
-	defer r.Body.Close()
+	defer checkErrClose(r.Body.Close(), log)
 	if err := json.NewDecoder(r.Body).Decode(&transRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}

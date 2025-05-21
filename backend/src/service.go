@@ -81,7 +81,11 @@ func (serv *ProviderService) GetUsers() ([]models.ImportUser, error) {
 		log.WithFields(fields).Errorln("error getting users Client.Do(req)")
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.WithFields(fields).Errorln("error closing response body")
+		}
+	}()
 	if resp.StatusCode != 200 {
 		fields["status_code"] = resp.Status
 		log.Errorln("request failed: with code", resp.Status)

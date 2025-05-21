@@ -133,7 +133,6 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var program ProgramForm
 	err := json.NewDecoder(r.Body).Decode(&program)
-	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
@@ -171,7 +170,6 @@ func (srv *Server) handleCreateProgram(w http.ResponseWriter, r *http.Request, l
 func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var program models.Program
 	err := json.NewDecoder(r.Body).Decode(&program)
-	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
@@ -197,7 +195,6 @@ func (srv *Server) handleUpdateProgramStatus(w http.ResponseWriter, r *http.Requ
 	if err := json.NewDecoder(r.Body).Decode(&programUpdate); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")

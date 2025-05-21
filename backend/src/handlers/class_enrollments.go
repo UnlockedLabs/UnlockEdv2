@@ -73,7 +73,6 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
 	}{}
-	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&enrollment)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -110,7 +109,6 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
 	}
-	defer r.Body.Close()
 	enrollment := struct {
 		EnrollmentStatus string `json:"enrollment_status"`
 		UserIDs          []int  `json:"user_ids"`

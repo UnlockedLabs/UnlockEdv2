@@ -48,7 +48,6 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, log sLog) 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var form LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&form)
-	defer r.Body.Close()
 	if err != nil {
 		log.error("Parsing form failed, using urlform")
 	}
@@ -121,7 +120,11 @@ func getKratosRedirect(resp *http.Response) (map[string]any, error) {
 	respBody := map[string]any{}
 	decoded := map[string]any{}
 	var err error
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Error("Error closing response body")
+		}
+	}()
 	if err = json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
 		return nil, err
 	}
@@ -169,7 +172,6 @@ func (s *Server) handleOidcConsent(w http.ResponseWriter, r *http.Request, log s
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	// get the user from the database
 	user, err := s.Db.GetUserByID(s.getUserID(r))
 	log.add("user_id", s.getUserID(r))
@@ -233,8 +235,12 @@ func (srv *Server) sendAndDecodeOryRequest(client, req *http.Request) (map[strin
 		log.Errorln("Error sending request to ory", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
-	var responseBody map[string]interface{}
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Error("Error closing response body")
+		}
+	}()
+	var responseBody map[string]any
 	return responseBody, json.NewDecoder(resp.Body).Decode(&responseBody)
 }
 
@@ -248,7 +254,6 @@ func (srv *Server) handleRefreshAuth(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	session, ok := form["session"].(map[string]interface{})
 	if !ok {
 		return newBadRequestServiceError(errors.New("no session found in form"), "Bad Request")

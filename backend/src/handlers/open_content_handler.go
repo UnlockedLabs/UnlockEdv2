@@ -58,7 +58,6 @@ func (srv *Server) handleBookmarkOpenContent(w http.ResponseWriter, r *http.Requ
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	contentID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "Content ID")

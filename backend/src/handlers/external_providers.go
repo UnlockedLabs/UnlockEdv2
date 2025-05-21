@@ -101,7 +101,11 @@ func (srv *Server) registerCanvasUserLogin(provider *models.ProviderPlatform, us
 		log.Errorf("Error sending request to canvas registerCanvasUserLogin")
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Errorf("Error closing response body registerCanvasUserLogin")
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("Error creating login in canvas registerCanvasUserLogin with code: %s", resp.Status)
 		return errors.New("error creating login in canvas")
@@ -157,7 +161,11 @@ func (srv *Server) createUserInCanvas(user *models.User, providerId uint) (int, 
 		log.Errorf("Error sending request to canvas createUserInCanvas")
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Error("Error closing response body createUserInCanvas")
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		log.Error("Error creating user in canvas createUserInCanvas: ", resp.Body, resp.Status)
 		return 0, errors.New("error creating user in canvas")
@@ -212,8 +220,12 @@ func (srv *Server) CreateUserInKolibri(user *models.User, prov *models.ProviderP
 		log.Error("error sending request to kolibri for user creation")
 		return err
 	}
-	defer resp.Body.Close()
-	var data map[string]interface{}
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Error("error closing response body for kolibri user creation")
+		}
+	}()
+	var data map[string]any
 	log.Printf("response from kolibri user creation: %s", resp.Status)
 	if err = json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Error("error decoding response from kolibri for user creation")
@@ -253,7 +265,11 @@ func (srv *Server) checkKolibriAccountSetup(prov *models.ProviderPlatform) error
 		log.Error("error sending request to kolibri for facility check")
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Error("error closing response body for kolibri facility check")
+		}
+	}()
 	if resp.StatusCode == http.StatusNotFound {
 		log.Info("kolibri facility not found, creating")
 		return errors.New(("kolibri facility or instance not found"))

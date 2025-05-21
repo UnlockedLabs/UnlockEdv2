@@ -33,7 +33,6 @@ func (srv *Server) handleGetMappingsForUser(w http.ResponseWriter, r *http.Reque
 func (srv *Server) handleCreateProviderUserMapping(w http.ResponseWriter, r *http.Request, log sLog) error {
 	var mapping models.ProviderUserMapping
 	err := json.NewDecoder(r.Body).Decode(&mapping)
-	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}

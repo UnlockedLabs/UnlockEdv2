@@ -82,7 +82,11 @@ func (srv *Server) handleGetQuerySuggestions(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return newInternalServerServiceError(err, "error executing request to google_suggest")
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.error("error closing response body")
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return newBadRequestServiceError(errors.New("api call to google suggest failed"), "response contained unexpected status code from google suggest")
 	}
@@ -158,7 +162,11 @@ func (srv *Server) handleSearchOpenContent(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			return newInternalServerServiceError(err, "error executing kiwix search request")
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if resp.Body.Close() != nil {
+				log.error("error closing response body")
+			}
+		}()
 		if resp.StatusCode != http.StatusOK {
 			log.add("status_code", resp.StatusCode)
 			body, err := io.ReadAll(resp.Body)
