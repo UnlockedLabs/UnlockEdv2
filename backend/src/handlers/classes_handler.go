@@ -1,12 +1,11 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
 	"strconv"
-
-	"gorm.io/gorm"
 )
 
 func (srv *Server) registerClassesRoutes() []routeDef {
@@ -19,7 +18,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		newFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx),
 		newFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx),
 		newFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, true, axx),
-		newValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, true, axx, func(tx *gorm.DB, r *http.Request) bool {
+		newValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, true, axx, func(tx *database.DB, r *http.Request) bool {
 			return tx.Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
 				Where("facility_id <> ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
 				First(&models.ProgramClass{}).Error != nil

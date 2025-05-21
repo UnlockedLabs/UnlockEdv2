@@ -9,12 +9,12 @@ import (
 )
 
 func (srv *Server) registerOpenContentRoutes() []routeDef {
-	axx := models.Feature(models.OpenContentAccess)
+	axx := models.OpenContentAccess
 	return []routeDef{
-		{"GET /api/open-content", srv.handleIndexOpenContent, false, axx, nil},
-		{"GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx, nil},
-		{"PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, false, axx, nil},
-		{"GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx, nil},
+		newFeatureRoute("GET /api/open-content", srv.handleIndexOpenContent, false, axx),
+		newFeatureRoute("GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx),
+		newFeatureRoute("PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, false, axx),
+		newFeatureRoute("GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx),
 	}
 }
 

@@ -1,21 +1,19 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
 	"net/http"
 )
 
 func (srv *Server) registerAnalyticRoutes() []routeDef {
-	axx := models.Feature()
 	return []routeDef{
-		{"POST /api/analytics/faq-click", srv.handleUserFAQClick, false, axx, nil},
+		newRoute("POST /api/analytics/faq-click", srv.handleUserFAQClick),
 	}
 }
 
 func (srv *Server) handleUserFAQClick(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var body map[string]interface{}
+	var body map[string]any
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)

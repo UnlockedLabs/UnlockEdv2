@@ -78,7 +78,7 @@ func claimsFromUser(user *models.User) *Claims {
 	}
 }
 
-func (s *Server) authMiddleware(next http.Handler, resolver FacilityResolver) http.Handler {
+func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "authMiddleware"}
 		claims, hasCookie, err := s.validateOrySession(r)
@@ -98,7 +98,7 @@ func (s *Server) authMiddleware(next http.Handler, resolver FacilityResolver) ht
 		}
 		if resolver != nil {
 			if !claims.canSwitchFacility() {
-				if !resolver(s.Db.DB, r.WithContext(ctx)) {
+				if !resolver(s.Db, r.WithContext(ctx)) {
 					http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
 					return
 				}

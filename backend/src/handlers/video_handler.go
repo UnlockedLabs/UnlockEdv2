@@ -12,14 +12,14 @@ import (
 )
 
 func (srv *Server) registerVideoRoutes() []routeDef {
-	axx := []models.FeatureAccess{models.OpenContentAccess}
+	axx := models.OpenContentAccess
 	return []routeDef{
-		{"GET /api/videos", srv.handleGetVideos, false, axx, nil},
-		{"GET /api/videos/{id}", srv.handleGetVideoById, false, axx, nil},
-		{"POST /api/videos", srv.handlePostVideos, true, axx, nil},
-		{"PUT /api/videos/{id}/{action}", srv.handleVideoAction, true, axx, nil},
-		{"PUT /api/videos/{id}/favorite", srv.handleFavoriteVideo, false, axx, nil},
-		{"DELETE /api/videos/{id}", srv.handleDeleteVideo, true, axx, nil},
+		newFeatureRoute("GET /api/videos", srv.handleGetVideos, false, axx),
+		newFeatureRoute("GET /api/videos/{id}", srv.handleGetVideoById, false, axx),
+		newFeatureRoute("POST /api/videos", srv.handlePostVideos, true, axx),
+		newFeatureRoute("PUT /api/videos/{id}/{action}", srv.handleVideoAction, true, axx),
+		newFeatureRoute("PUT /api/videos/{id}/favorite", srv.handleFavoriteVideo, false, axx),
+		newFeatureRoute("DELETE /api/videos/{id}", srv.handleDeleteVideo, true, axx),
 	}
 }
 

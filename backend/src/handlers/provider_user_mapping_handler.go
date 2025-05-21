@@ -8,12 +8,12 @@ import (
 )
 
 func (srv *Server) registerProviderMappingRoutes() []routeDef {
-	axx := []models.FeatureAccess{models.ProviderAccess}
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/users/{id}/logins", srv.handleGetMappingsForUser, true, axx, nil},
-		{"POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, true, axx, nil},
-		{"POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, true, axx, nil},
-		{"DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, true, axx, nil},
+		newFeatureRoute("GET /api/users/{id}/logins", srv.handleGetMappingsForUser, true, axx),
+		newFeatureRoute("POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, true, axx),
+		newFeatureRoute("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, true, axx),
+		newFeatureRoute("DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, true, axx),
 	}
 }
 

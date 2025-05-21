@@ -43,7 +43,7 @@ type routeDef struct {
 	handler     HttpFunc
 	admin       bool
 	features    []models.FeatureAccess
-	resolver    FacilityResolver
+	resolver    RouteResolver
 }
 
 func newRoute(method string, handler HttpFunc) routeDef {
@@ -63,6 +63,27 @@ func newAdminRoute(method string, handler HttpFunc) routeDef {
 		features:    []models.FeatureAccess{},
 	}
 }
+
+func newValidatedRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    []models.FeatureAccess{},
+		resolver:    validate,
+	}
+}
+
+func newValidatedAdminRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{},
+		resolver:    validate,
+	}
+}
+
 func newFeatureRoute(method string, handler HttpFunc, adminOnly bool, features ...models.FeatureAccess) routeDef {
 	return routeDef{
 		routeMethod: method,
@@ -72,7 +93,7 @@ func newFeatureRoute(method string, handler HttpFunc, adminOnly bool, features .
 	}
 }
 
-func newValidatedFeatureRoute(method string, handler HttpFunc, admin bool, features models.FeatureAccess, validate FacilityResolver) routeDef {
+func newValidatedFeatureRoute(method string, handler HttpFunc, admin bool, features models.FeatureAccess, validate RouteResolver) routeDef {
 	return routeDef{
 		routeMethod: method,
 		handler:     handler,

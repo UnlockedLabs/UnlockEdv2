@@ -15,10 +15,10 @@ import (
 
 func (srv *Server) registerActionsRoutes() []routeDef {
 	// returns the users for mapping on the client
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, true, axx, nil},
-		{"POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, true, axx, nil},
+		newFeatureRoute("GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, true, axx),
+		newFeatureRoute("POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, true, axx),
 	}
 }
 

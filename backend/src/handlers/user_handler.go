@@ -15,15 +15,17 @@ import (
 func (srv *Server) registerUserRoutes() []routeDef {
 	return []routeDef{
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
-		newRoute("GET /api/users/{id}", srv.handleShowUser),
+		newValidatedRoute("GET /api/users/{id}", srv.handleShowUser, UserRoleResolver("id")),
+		// users are automatically created in the same facility as the claims facility_id,
+		// so there is no need to further validate on creation.
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
-		newAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser),
-		newAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser),
+		newValidatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, UserRoleResolver("id")),
+		newValidatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, UserRoleResolver("id")),
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
 		newAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
 		newAdminRoute("POST /api/users/student-password", srv.handleResetStudentPassword),
-		newAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory),
-		newRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms),
+		newValidatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, UserRoleResolver("id")),
+		newValidatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, UserRoleResolver("id")),
 	}
 }
 

@@ -9,12 +9,12 @@ import (
 )
 
 func (srv *Server) registerAttendanceRoutes() []routeDef {
-	axx := models.Feature(models.ProgramAccess)
+	axx := models.ProgramAccess
 	return []routeDef{
-		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, true, axx, nil},
-		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, true, axx, nil},
-		{"POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, true, axx, nil},
-		{"DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, true, axx, nil},
+		newFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, true, axx),
+		newFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, true, axx),
+		newValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, true, axx, ResolveDirect("program_classes", "class_id")),
+		newValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, true, axx, ResolveDirect("program_classes", "class_id")),
 	}
 }
 

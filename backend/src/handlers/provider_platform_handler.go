@@ -15,15 +15,15 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/provider-platforms", srv.handleIndexProviders, true, axx, nil},
-		{"GET /api/provider-platforms/{id}", srv.handleShowProvider, true, axx, nil},
-		{"POST /api/provider-platforms", srv.handleCreateProvider, true, axx, nil},
-		{"GET /api/provider-platforms/callback", srv.handleOAuthProviderCallback, true, axx, nil},
-		{"GET /api/provider-platforms/{id}/refresh", srv.handleOAuthRefreshToken, true, axx, nil},
-		{"PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, true, axx, nil},
-		{"DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, true, axx, nil},
+		newFeatureRoute("GET /api/provider-platforms", srv.handleIndexProviders, true, axx),
+		newFeatureRoute("GET /api/provider-platforms/{id}", srv.handleShowProvider, true, axx),
+		newFeatureRoute("POST /api/provider-platforms", srv.handleCreateProvider, true, axx),
+		newFeatureRoute("GET /api/provider-platforms/callback", srv.handleOAuthProviderCallback, true, axx),
+		newFeatureRoute("GET /api/provider-platforms/{id}/refresh", srv.handleOAuthRefreshToken, true, axx),
+		newFeatureRoute("PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, true, axx),
+		newFeatureRoute("DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, true, axx),
 	}
 }
 
