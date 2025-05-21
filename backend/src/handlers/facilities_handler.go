@@ -72,8 +72,6 @@ func (srv *Server) handleCreateFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
-
 	err = srv.Db.CreateFacility(&facility)
 	if err != nil {
 		log.add("facility_name", facility.Name)
@@ -96,7 +94,6 @@ func (srv *Server) handleUpdateFacility(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	err = srv.Db.UpdateFacility(&facility, uint(id))
 	if err != nil {
 		log.add("facilityName", facility.Name)

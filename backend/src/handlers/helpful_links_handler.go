@@ -36,7 +36,6 @@ func (srv *Server) changeSortOrder(w http.ResponseWriter, r *http.Request, log s
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	facilityID := srv.getFacilityID(r)
 	HelpfulSortOrder[facilityID] = req.SortOrder
 	return writeJsonResponse(w, http.StatusOK, "Sort order changed successfully")
@@ -66,7 +65,6 @@ func (srv *Server) handleAddHelpfulLink(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	facilityID := srv.getFacilityID(r)
 	link.FacilityID = facilityID
 	link.ThumbnailUrl = srv.getFavicon(link.Url)
@@ -87,7 +85,6 @@ func (srv *Server) handleEditLink(w http.ResponseWriter, r *http.Request, log sL
 	if err != nil {
 		return newInvalidIdServiceError(err, "Invalid id")
 	}
-	defer r.Body.Close()
 	link.ThumbnailUrl = srv.getFavicon(link.Url)
 	if err = srv.Db.EditLink(uint(id), link); err != nil {
 		return newDatabaseServiceError(err)

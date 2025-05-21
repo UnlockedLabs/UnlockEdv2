@@ -82,7 +82,11 @@ func OidcClientFromProvider(prov *ProviderPlatform, autoRegister bool, client *h
 	if err != nil {
 		return nil, externalId, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			log.Error("Error closing response body")
+		}
+	}()
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return nil, externalId, fmt.Errorf("error creating client in hydra oidc server: received %s", resp.Status)
 	}
@@ -145,7 +149,11 @@ func autoRegisterCanvas(prov *ProviderPlatform, oidcClient *OidcClient) (string,
 		log.Println("Error sending request: ", err)
 		return "", err
 	}
-	defer response.Body.Close()
+	defer func() {
+		if response.Body.Close() != nil {
+			log.Println("Error closing response body")
+		}
+	}()
 	if response.StatusCode != http.StatusCreated && response.StatusCode != http.StatusOK {
 		log.Println("Error creating authentication provider: ", response.Status)
 	}

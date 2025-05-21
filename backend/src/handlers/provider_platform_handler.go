@@ -78,7 +78,6 @@ func (srv *Server) handleCreateProvider(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	if platform.Type == models.Brightspace {
 		oauthURL, err := srv.getOAuthUrl(&platform)
 		if err != nil {
@@ -146,7 +145,7 @@ func (srv *Server) handleOAuthProviderCallback(w http.ResponseWriter, r *http.Re
 		http.Redirect(w, r, errorRedirectUrl, http.StatusTemporaryRedirect)
 		return nil
 	}
-	defer resp.Body.Close()
+	defer checkErrClose(resp.Body.Close(), log)
 	provider.AccessKey = config.ClientSecret + ";" + token.RefreshToken
 	var action string
 	if provider.ID > 0 {
@@ -198,7 +197,6 @@ func (srv *Server) handleUpdateProvider(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	if platform.BaseUrl != "" || platform.AccessKey != "" || platform.AccountID != "" || (platform.State != "" && platform.State == models.Enabled) {
 		existingPlatform, err := srv.Db.GetProviderPlatformByID(id)
 		if err != nil {

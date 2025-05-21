@@ -71,7 +71,6 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	}
 	var class models.ProgramClass
 	err = json.NewDecoder(r.Body).Decode(&class)
-	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
@@ -121,7 +120,6 @@ func (srv *Server) handleUpdateClasses(w http.ResponseWriter, r *http.Request, l
 			classIDs = append(classIDs, classID)
 		}
 	}
-	defer r.Body.Close()
 	classMap := make(map[string]any)
 	if err := json.NewDecoder(r.Body).Decode(&classMap); err != nil {
 		return newJSONReqBodyServiceError(err)

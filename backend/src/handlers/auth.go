@@ -222,7 +222,11 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 			log.WithFields(fields).Errorln("error decoding body from ory response")
 			return nil, hasCookie, err
 		}
-		defer response.Body.Close()
+		defer func() {
+			if response.Body.Close() != nil {
+				log.WithFields(fields).Errorln("error closing body from ory response")
+			}
+		}()
 		active, ok := oryResp["active"].(bool)
 		if !ok {
 			log.WithFields(fields).Errorln("error decoding active session from ory response")
@@ -312,7 +316,6 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 	if err := json.NewDecoder(r.Body).Decode(&form); err != nil {
 		log.error("Parsing form failed, using JSON" + err.Error())
 	}
-	defer r.Body.Close()
 	if form.Password != form.Confirm {
 		return newBadRequestServiceError(errors.New("passwords do not match"), "passwords do not match")
 	}

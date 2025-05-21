@@ -30,7 +30,6 @@ func (srv *Server) handleMapProviderUser(w http.ResponseWriter, r *http.Request,
 		return newInvalidIdServiceError(err, "provider platform ID")
 	}
 	log.add("provider_platform_id", providerId)
-	defer r.Body.Close()
 	var userBody models.ImportUser
 	err = json.NewDecoder(r.Body).Decode(&userBody)
 	if err != nil {
@@ -102,7 +101,6 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		Users []models.ImportUser `json:"users"`
 	}
 	var users ImportUserBody
-	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&users)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)

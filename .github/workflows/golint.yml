@@ -20,7 +20,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - id: set-modules
-        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+        run: |
+          modules=$(go list -m -json | jq -sc '[.[] | select(.Dir != null and (.Dir | test("backend/migrations") | not) and (.Dir | test("backend/seeder") | not)) | .Dir]')
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
 
   golangci-lint:
     needs: detect-modules

@@ -132,7 +132,6 @@ func (srv *Server) handlePostVideos(w http.ResponseWriter, r *http.Request, log 
 	if err := json.NewDecoder(r.Body).Decode(&video); err != nil {
 		return newBadRequestServiceError(err, "error reading video")
 	}
-	defer r.Body.Close()
 	provider, err := srv.Db.GetVideoProvider()
 	if err != nil {
 		return newInternalServerServiceError(err, "error fetching video provider")

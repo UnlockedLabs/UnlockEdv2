@@ -467,6 +467,11 @@ func (svr *Server) handleError(handler HttpFunc) http.Handler {
 				log.error("Error occurred is ", err.Error())
 			}
 		}
+		defer func() {
+			if r.Body.Close() != nil {
+				log.error("Error closing request body")
+			}
+		}()
 		if audit {
 			log.adminAudit()
 		}

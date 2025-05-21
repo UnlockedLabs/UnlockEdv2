@@ -14,13 +14,18 @@ func (srv *Server) registerAnalyticRoutes() []routeDef {
 	}
 }
 
+func checkErrClose(err error, log sLog) {
+	if err != nil {
+		log.error("Error closing request body")
+	}
+}
+
 func (srv *Server) handleUserFAQClick(w http.ResponseWriter, r *http.Request, log sLog) error {
-	var body map[string]interface{}
+	var body map[string]any
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer r.Body.Close()
 	question, ok := body["question"].(string)
 	if !ok || question == "" {
 		return newBadRequestServiceError(errors.New("no question found in body"), "Bad Request")
