@@ -14,7 +14,8 @@ import {
     Class,
     ServerResponseOne,
     ClassLoaderData,
-    ProgramOverview
+    ProgramOverview,
+    FacilityProgramClassEvent
 } from './common';
 import API from './api/api';
 import { fetchUser } from './useAuth';
@@ -236,4 +237,12 @@ export function resolveTitle<T>(
     return typeof handle.title === 'function'
         ? handle.title(data)
         : handle.title;
+}
+
+export const getFacilitySchedule: LoaderFunction = async () => {
+    const resp = await API.get<FacilityProgramClassEvent[]>(`admin-calendar`);
+    if (!resp.success) {
+        return console.log(resp.message)
+    }
+    return json(resp.data);
 }

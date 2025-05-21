@@ -321,6 +321,56 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 	return models.NewCalendar(days), nil
 }
 
+func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
+	events := []models.FacilityProgramClassEvent{}
+	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
+		Select(`pcev.*,
+		c.instructor_name,
+		c.name as class_name,
+		CASE WHEN c.status = 'Cancelled' THEN TRUE ELSE FALSE END as is_cancelled,
+		ARRAY_AGG(DISTINCT CONCAT(u.id, ':', u.name_first, ' ', u.name_last)) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
+		Joins("JOIN program_classes c ON c.id = pcev.class_id").
+		Joins("JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
+		Joins("JOIN users u ON e.user_id = u.id").
+		Where("c.facility_id = ?", args.FacilityID).
+		Group("pcev.id, c.instructor_name, c.name, c.status")
+	if err := tx.Scan(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	var facilityEvents []models.FacilityProgramClassEvent
+	for _, event := range events {
+		rRule, err := event.GetRRule()
+		if err != nil {
+			return nil, err
+		}
+		if dtRng.Start.IsZero() {
+			dtRng.Start = time.Now()
+		}
+		if dtRng.End.IsZero() {
+			dtRng.End = time.Now().AddDate(0, 1, 0)
+		}
+		occurrences := rRule.Between(dtRng.Start, dtRng.End, true)
+		duration, err := time.ParseDuration(event.Duration)
+		if err != nil {
+			return nil, err
+		}
+		for _, occurrence := range occurrences {
+			facilityEvent := models.FacilityProgramClassEvent{
+				ProgramClassEvent: event.ProgramClassEvent,
+				InstructorName:    event.InstructorName,
+				ClassName:         event.ClassName,
+				IsCancelled:       event.IsCancelled,
+				EnrolledUsers:     event.EnrolledUsers,
+				StartTime:         occurrence,
+				EndTime:           occurrence.Add(duration),
+				Frequency:         rRule.OrigOptions.Freq.String(),
+			}
+			facilityEvents = append(facilityEvents, facilityEvent)
+		}
+	}
+	return facilityEvents, nil
+}
+
 func (db *DB) GetCalendar(dtRng *models.DateRange, userId *uint) (*models.Calendar, error) {
 	content := []models.ProgramClassEvent{}
 	tx := db.Model(&models.ProgramClassEvent{}).

@@ -1,34 +1,28 @@
+import { FacilityProgramClassEvent } from '@/common';
 import EventCalendar from '@/Components/EventCalendar';
 import { CancelButton } from '@/Components/inputs';
 import { useState } from 'react';
-
-interface CalendarEvent {
-    title: string;
-    start: Date;
-    end: Date;
-    instructor: string;
-    room: string;
-    frequency: string;
-    // enrolledResidents
-}
-
-const calEvent: CalendarEvent = {
-    title: 'example event',
-    start: new Date(2025, 4, 16, 10),
-    end: new Date(2025, 4, 16, 11),
-    instructor: 'Carolina Alisio',
-    room: 'Room 1123',
-    frequency: 'WEEKLY'
-};
+import { useLoaderData } from 'react-router-dom';
 
 export default function Schedule() {
-    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-        calEvent
-    );
+    const events = useLoaderData() as FacilityProgramClassEvent[];
+    const [selectedEvent, setSelectedEvent] =
+        useState<FacilityProgramClassEvent | null>(null);
+
+    const formattedEvents = events.map((event) => ({
+        ...event,
+        start: new Date(event.start),
+        end: new Date(event.end)
+    }));
+
     return (
         <div className="flex flex-col-2 gap-2 px-2">
             <div className="w-3/4 card">
-                <EventCalendar recurrenceRule={''} durationStr={''} />
+                <EventCalendar
+                    events={formattedEvents}
+                    view="week"
+                    handleDateClick={(event) => setSelectedEvent(event)}
+                />
             </div>
             <div className="w-1/4 card p-4">
                 {selectedEvent ? (
@@ -38,7 +32,7 @@ export default function Schedule() {
                             <h3>Class Name</h3>
                             <p>{selectedEvent.title}</p>
                             <h3>Instructor</h3>
-                            <p>{selectedEvent.instructor}</p>
+                            <p>{selectedEvent.instructor_name}</p>
                             <h3>Room</h3>
                             <p>{selectedEvent.room}</p>
                             <h3>Time</h3>

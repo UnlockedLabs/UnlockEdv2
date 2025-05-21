@@ -262,11 +262,11 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
     @apply flex flex-row;
 }
 
-.rbc-btn-group > button {
+.rbc-btn-group>button {
     @apply button-sm;
 }
 
-.rbc-btn-group > button.rbc-active {
+.rbc-btn-group>button.rbc-active {
     @apply text-black;
 }
 
@@ -279,7 +279,7 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
 }
 
 .rbc-time-content,
-.rbc-time-content > * + * > * {
+.rbc-time-content>*+*>* {
     @apply border-t border-grey-1 border-opacity-50;
 }
 
