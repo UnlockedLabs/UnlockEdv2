@@ -163,13 +163,17 @@ type RouteResolver func(*database.DB, *http.Request) bool
 // arguments are "table_name", "path_parameter_name"
 func FacilityAdminResolver(table string, param string) RouteResolver {
 	return func(tx *database.DB, r *http.Request) bool {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			return true
+		}
 		id := r.PathValue(param)
 		var facID uint
 		err := tx.Table(table).
 			Select("facility_id").
 			Where("id = ?", id).
 			Limit(1).Scan(&facID).Error
-		return err == nil && r.Context().Value(ClaimsKey).(*Claims).FacilityID == facID
+		return err == nil && claims.FacilityID == facID
 	}
 }
 
