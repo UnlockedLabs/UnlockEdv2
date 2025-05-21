@@ -254,7 +254,7 @@ export function resolveTitle<T>(
 export const getFacilitySchedule: LoaderFunction = async () => {
     const resp = await API.get<FacilityProgramClassEvent[]>(`admin-calendar`);
     if (!resp.success) {
-        return console.log(resp.message)
+        return console.error(resp.message);
     }
     return json(resp.data);
-}
+};

@@ -15,6 +15,16 @@ export default function Schedule() {
         end: new Date(event.end)
     }));
 
+    function clearSelectedEvent() {
+        const selectedElement = document.querySelector<HTMLElement>(
+            '.rbc-event.rbc-selected'
+        );
+        if (selectedElement) {
+            selectedElement.classList.remove('rbc-selected');
+        }
+        setSelectedEvent(null);
+    }
+
     return (
         <div className="flex flex-col-2 gap-2 px-2">
             <div className="w-3/4 card">
@@ -56,7 +66,7 @@ export default function Schedule() {
                                 Edit Series
                             </button>
                             <CancelButton
-                                onClick={() => setSelectedEvent(null)}
+                                onClick={() => clearSelectedEvent()}
                             />
                         </div>
                     </div>
