@@ -61,12 +61,10 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 			continue
 		}
 		tempPw := newUser.CreateTempPassword()
-		if !srv.isTesting(r) {
-			if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
-				log.add("error", err.Error())
-				log.errorf("Error creating user in kratos: %v", err)
-				// FIXME: Error handling if we fail/handle atomicity
-			}
+		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
+			log.add("error", err.Error())
+			log.errorf("Error creating user in kratos: %v", err)
+			// FIXME: Error handling if we fail/handle atomicity
 		}
 		mapping := models.ProviderUserMapping{
 			UserID:             newUser.ID,

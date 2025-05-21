@@ -46,83 +46,6 @@ type routeDef struct {
 	resolver    RouteResolver
 }
 
-func newRoute(method string, handler HttpFunc) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       false,
-		features:    []models.FeatureAccess{},
-	}
-}
-
-func newAdminRoute(method string, handler HttpFunc) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       true,
-		features:    []models.FeatureAccess{},
-	}
-}
-
-func validatedRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       false,
-		features:    []models.FeatureAccess{},
-		resolver:    validate,
-	}
-}
-
-func validatedAdminRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       true,
-		features:    []models.FeatureAccess{},
-		resolver:    validate,
-	}
-}
-
-func featureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       false,
-		features:    features,
-	}
-}
-
-func adminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       true,
-		features:    features,
-		resolver:    nil,
-	}
-}
-
-func validatedFeatureRoute(method string, handler HttpFunc, feature models.FeatureAccess, resolver RouteResolver) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       false,
-		features:    []models.FeatureAccess{feature},
-		resolver:    resolver,
-	}
-}
-
-func adminValidatedFeatureRoute(method string, handler HttpFunc, features models.FeatureAccess, validate RouteResolver) routeDef {
-	return routeDef{
-		routeMethod: method,
-		handler:     handler,
-		admin:       true,
-		features:    []models.FeatureAccess{features},
-		resolver:    validate,
-	}
-}
-
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {
 		h := route.handler
@@ -200,8 +123,12 @@ func (srv *Server) ListenAndServe() {
 	if port == "" {
 		port = "8080"
 	}
+	appUrl := os.Getenv("APP_URL")
+	if srv.dev {
+		appUrl = "*"
+	}
 	log.Println("Starting server on port: ", port)
-	if err := http.ListenAndServe(":"+port, corsMiddleware(srv.Mux)); err != nil {
+	if err := http.ListenAndServe(":"+port, corsMiddleware(srv.Mux, appUrl)); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -469,14 +396,6 @@ func (srv *Server) getFacilityID(r *http.Request) uint {
 
 func (srv *Server) getUserID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).UserID
-}
-
-type TestClaims string
-
-const TestingClaimsKey TestClaims = "test_claims"
-
-func (srv *Server) isTesting(r *http.Request) bool {
-	return r.Context().Value(TestingClaimsKey) != nil
 }
 
 func (srv *Server) createContentActivityAndNotifyWS(urlString string, activity *models.OpenContentActivity) {

@@ -18,10 +18,8 @@ func (srv *Server) registerOryRoutes() []routeDef {
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if !srv.isTesting(r) { //if not testing then reach out
-		if err := srv.deleteAllKratosIdentities(); err != nil {
-			return newInternalServerServiceError(err, "error communicating with Ory Kratos")
-		}
+	if err := srv.deleteAllKratosIdentities(); err != nil {
+		return newInternalServerServiceError(err, "error communicating with Ory Kratos")
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "identities deleted successfully")
 }

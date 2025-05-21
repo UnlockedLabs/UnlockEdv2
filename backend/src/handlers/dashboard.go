@@ -94,37 +94,29 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 		ref := uint(facilityIdInt)
 		facilityId = &ref
 	}
-	if !srv.isTesting(r) {
-		key := fmt.Sprintf("admin-layer2-%d", facilityId)
-		cached, err := srv.buckets[AdminLayer2].Get(key)
-		if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
-			newCacheData, err := srv.getLayer2Data(r, log)
-			if err != nil {
-				return newInternalServerServiceError(err, "Error getting admin layer 2 data")
-			}
-			cacheBytes, err := json.Marshal(newCacheData)
-			if err != nil {
-				return newMarshallingBodyServiceError(err)
-			}
-			_, err = srv.buckets[AdminLayer2].Put(key, cacheBytes)
-			if err != nil {
-				return newInternalServerServiceError(err, "Error caching admin layer 2 data")
-			}
-			return writeJsonResponse(w, http.StatusOK, newCacheData)
-		}
-		var cachedData models.CachedDashboard[models.AdminLayer2Join]
-		err = json.Unmarshal(cached.Value(), &cachedData)
-		if err != nil {
-			return newInternalServerServiceError(err, "Error unmarshalling cached data")
-		}
-		return writeJsonResponse(w, http.StatusOK, cachedData)
-	} else {
+	key := fmt.Sprintf("admin-layer2-%d", facilityId)
+	cached, err := srv.buckets[AdminLayer2].Get(key)
+	if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
 		newCacheData, err := srv.getLayer2Data(r, log)
 		if err != nil {
-			return newInternalServerServiceError(err, "Error retrieving admin layer 2 data")
+			return newInternalServerServiceError(err, "Error getting admin layer 2 data")
+		}
+		cacheBytes, err := json.Marshal(newCacheData)
+		if err != nil {
+			return newMarshallingBodyServiceError(err)
+		}
+		_, err = srv.buckets[AdminLayer2].Put(key, cacheBytes)
+		if err != nil {
+			return newInternalServerServiceError(err, "Error caching admin layer 2 data")
 		}
 		return writeJsonResponse(w, http.StatusOK, newCacheData)
 	}
+	var cachedData models.CachedDashboard[models.AdminLayer2Join]
+	err = json.Unmarshal(cached.Value(), &cachedData)
+	if err != nil {
+		return newInternalServerServiceError(err, "Error unmarshalling cached data")
+	}
+	return writeJsonResponse(w, http.StatusOK, cachedData)
 }
 
 type DashboardMetrics struct {

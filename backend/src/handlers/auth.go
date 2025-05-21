@@ -97,7 +97,7 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 			return
 		}
 		// resolver is for permissions of students or facility level administrators
-		if resolver != nil && !claims.canSwitchFacility() {
+		if resolver != nil {
 			if !resolver(s.Db, r.WithContext(ctx)) {
 				http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
 				return
@@ -328,12 +328,10 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 			return newDatabaseServiceError(err)
 		}
 	}
-	if !srv.isTesting(r) {
-		claims := claimsFromUser(user)
-		if err := srv.handleUpdatePasswordKratos(claims, form.Password, false); err != nil {
-			tx.Rollback()
-			return newInternalServerServiceError(err, "error updating password in kratos")
-		}
+	claims = claimsFromUser(user)
+	if err := srv.handleUpdatePasswordKratos(claims, form.Password, false); err != nil {
+		tx.Rollback()
+		return newInternalServerServiceError(err, "error updating password in kratos")
 	}
 	if err := tx.Commit().Error; err != nil {
 		return newInternalServerServiceError(err, "Transaction commit failed")

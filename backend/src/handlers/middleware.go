@@ -17,7 +17,6 @@ import (
 const (
 	libraryKey contextKey = "library"
 	videoKey   contextKey = "video"
-	// rate limit is 50 requests from a unique user in a minute
 )
 
 // regular expression used below for filtering open_content_urls
@@ -134,13 +133,9 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 	}), nil)
 }
 
-func corsMiddleware(next http.Handler) http.HandlerFunc {
+func corsMiddleware(next http.Handler, url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Origin", url)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
@@ -148,7 +143,7 @@ func corsMiddleware(next http.Handler) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(r.Context()))
+		next.ServeHTTP(w, r)
 	}
 }
 
@@ -181,6 +176,10 @@ func FacilityAdminResolver(table string, param string) RouteResolver {
 func UserRoleResolver(routeId string) RouteResolver {
 	return func(tx *database.DB, r *http.Request) bool {
 		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			// system or dept admin can see all data
+			return true
+		}
 		id, err := strconv.Atoi(r.PathValue(routeId))
 		if err != nil {
 			return false
@@ -190,12 +189,11 @@ func UserRoleResolver(routeId string) RouteResolver {
 			return true
 		}
 		if !slices.Contains(models.AdminRoles, claims.Role) {
-			// not the user, not an admin
+			// if not the specific user and not an admin:
 			return false
 		}
 		user, err := tx.GetUserByID(uint(id))
-		// we know they are not a system or dept admin
-		// because that check would skip the resolver.
-		return err != nil && user.FacilityID == claims.FacilityID
+		// facility admin, needs to be from the facility of the referenced user
+		return err == nil && user.FacilityID == claims.FacilityID
 	}
 }

@@ -21,7 +21,7 @@ spec:
             - name: APP_ENV
               value: production
             - name: APP_URL
-              value:       # main app url
+              value: # main app url, must be full domain with protocol: e.g. https://staging.unlockedlabs.xyz
             - name: APP_DSN
               valueFrom:
                 secretKeyRef:
