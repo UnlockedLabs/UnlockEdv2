@@ -5,22 +5,37 @@ on: [push, pull_request]
 permissions:
   contents: read
 
+env:
+  GO_VERSION: stable
+  GOLANGCI_LINT_VERSION: v2.1
+
 jobs:
-  golangci:
-    name: lint
+  detect-modules:
     runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
-          cache: true
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+          go-version: ${{ env.GO_VERSION }}
+      - id: set-modules
+        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+
+  golangci-lint:
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          version: v1.60.1
-          args: -v ./backend/cmd ./backend/migrations ./backend/src/handlers ./backend/src/database ./backend/src/models ./provider-middleware
-          install-mode: "binary"
-      - name: check go mod
-        run: |
-          cd backend && go mod tidy
+          go-version: ${{ env.GO_VERSION }}
+      - name: golangci-lint ${{ matrix.modules }}
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: ${{ matrix.modules }}
+          args: --timeout='3m'
