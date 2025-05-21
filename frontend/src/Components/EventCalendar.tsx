@@ -16,6 +16,14 @@ export default function EventCalendar({
     view = 'month',
     handleDateClick
 }: EventCalendarProps) {
+    const eventPropGetter = (event: FacilityProgramClassEvent) => {
+        if (event.is_cancelled) {
+            return {
+                className: 'rbc-event-cancelled'
+            };
+        }
+        return {};
+    };
     return (
         <div className="p-4">
             <Calendar
@@ -26,6 +34,7 @@ export default function EventCalendar({
                 style={{ height: 600 }}
                 defaultView={view}
                 onSelectEvent={handleDateClick}
+                eventPropGetter={eventPropGetter}
             />
         </div>
     );

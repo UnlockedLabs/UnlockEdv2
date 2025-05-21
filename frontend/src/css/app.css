@@ -262,11 +262,11 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
     @apply flex flex-row;
 }
 
-.rbc-btn-group>button {
+.rbc-btn-group > button {
     @apply button-sm;
 }
 
-.rbc-btn-group>button.rbc-active {
+.rbc-btn-group > button.rbc-active {
     @apply text-black;
 }
 
@@ -275,15 +275,28 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
 }
 
 .rbc-event {
-    @apply bg-teal-3 text-white rounded-md px-2 py-1 text-sm font-medium;
+    @apply bg-teal-3 border border-teal-4 text-white rounded-md body-small flex;
 }
 
-.rbc-time-content,
-.rbc-time-content>*+*>* {
-    @apply border-t border-grey-1 border-opacity-50;
+.rbc-event.rbc-selected {
+    @apply bg-teal-4 border border-teal-5;
 }
 
-.rbc-day-slot .rbc-time-slot {
+.rbc-event.rbc-event-cancelled{
+    @apply bg-transparent border-2 border-teal-3 text-header-text line-through;
+}
+
+.rbc-current-time-indicator{
+    @apply bg-primary-yellow
+}
+
+html[data-theme='dark'] .rbc-event.rbc-selected {
+    @apply text-black bg-teal-5;
+}
+
+.rbc-day-slot .rbc-time-slot, 
+.rbc-row-bg,
+.rbc-day-bg {
     @apply border-0;
 }
 
@@ -293,11 +306,6 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
 
 .rbc-time-view {
     @apply text-sm;
-}
-
-.rbc-row-bg,
-.rbc-day-bg {
-    @apply border-0;
 }
 
 .rbc-header {

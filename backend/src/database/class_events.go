@@ -330,8 +330,8 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		CASE WHEN c.status = 'Cancelled' THEN TRUE ELSE FALSE END as is_cancelled,
 		ARRAY_AGG(DISTINCT CONCAT(u.id, ':', u.name_first, ' ', u.name_last)) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
 		Joins("JOIN program_classes c ON c.id = pcev.class_id").
-		Joins("JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
-		Joins("JOIN users u ON e.user_id = u.id").
+		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
+		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID).
 		Group("pcev.id, c.instructor_name, c.name, c.status")
 	if err := tx.Scan(&events).Error; err != nil {
