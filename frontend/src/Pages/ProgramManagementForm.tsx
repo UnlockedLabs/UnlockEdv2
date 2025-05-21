@@ -59,6 +59,7 @@ interface TransformedProgramInput {
 export default function ProgramManagementForm() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const facilities: Facility[] = user?.facilities ?? [];
     const { program_id } = useParams<{ program_id?: string }>();
     const { toaster } = useToast();
     const activeClassesExistModal = useRef<HTMLDialogElement>(null);
@@ -66,8 +67,7 @@ export default function ProgramManagementForm() {
         value: 'all',
         label: 'Select All'
     };
-    const { facilities, program, redirect } = useLoaderData() as {
-        facilities: Facility[];
+    const { program, redirect } = useLoaderData() as {
         program: ProgramOverview;
         redirect: string;
     };
@@ -83,7 +83,7 @@ export default function ProgramManagementForm() {
         reset,
         formState: { errors }
     } = useForm<ProgramInputs>({});
-    const facilityOptions = facilities.map((fac) => ({
+    const facilityOptions = facilities?.map((fac) => ({
         value: fac.id.toString(),
         label: fac.name
     }));

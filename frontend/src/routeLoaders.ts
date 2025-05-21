@@ -1,6 +1,5 @@
 import { json, LoaderFunction, redirect } from 'react-router-dom';
 import {
-    Facility,
     OpenContentItem,
     ServerResponse,
     HelpfulLinkAndSort,
@@ -124,12 +123,8 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
 
 export const getProgramData: LoaderFunction = async ({ params }) => {
     const { program_id } = params;
-    const [tagsResp, facilitiesResp] = await Promise.all([
-        API.get(`tags`),
-        API.get<Facility[]>(`facilities`)
-    ]);
+    const [tagsResp] = await Promise.all([API.get(`tags`)]);
     const categories = tagsResp.data as Option[];
-    const facilities = facilitiesResp.data as Facility[];
     let program: ProgramOverview | undefined;
     let redirect: string | undefined;
     if (program_id) {
@@ -142,7 +137,6 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
     }
     return json({
         categories: categories,
-        facilities: facilities,
         program: program,
         redirect: redirect
     });
