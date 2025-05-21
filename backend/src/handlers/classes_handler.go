@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"net/http"
@@ -8,16 +9,22 @@ import (
 )
 
 func (srv *Server) registerClassesRoutes() []routeDef {
-	axx := []models.FeatureAccess{models.ProgramAccess}
+	axx := models.ProgramAccess
+	resolver := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
-		{"GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx},
-		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
-		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
-		{"GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx},
-		{"GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx},
-		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
-		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx},
-		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx},
+		featureRoute("GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, axx),
+		featureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, axx),
+		/* admin */
+		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx),
+		adminFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx),
+		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
+			return tx.Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
+				Where("facility_id <> ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+				First(&models.ProgramClass{}).Error != nil
+		}),
+		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
 	}
 }
 
@@ -58,7 +65,7 @@ func (srv *Server) handleIndexClassesForFacility(w http.ResponseWriter, r *http.
 }
 
 func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("program_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
@@ -66,7 +73,7 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return writeJsonResponse(w, http.StatusInternalServerError, "Error retrieving program")
 	}
-	if !program.IsActive && !srv.isTesting(r) || program.ArchivedAt != nil && !srv.isTesting(r) {
+	if !program.IsActive || program.ArchivedAt != nil {
 		return writeJsonResponse(w, http.StatusConflict, "Program is inactive or archived unable to create class")
 	}
 	var class models.ProgramClass
@@ -93,6 +100,7 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
@@ -104,7 +112,6 @@ func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log
 	if enrolled > class.Capacity {
 		return writeJsonResponse(w, http.StatusBadRequest, "Cannot update class until unenrolling residents")
 	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.UpdateUserID = claims.UserID
 	updated, err := srv.Db.UpdateProgramClass(&class, id)
 	if err != nil {

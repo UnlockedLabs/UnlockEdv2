@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"net/http"
 )
 
 func (srv *Server) registerTagRoutes() []routeDef {
-	axx := models.Feature()
 	return []routeDef{
-		{"GET /api/tags", srv.handleGetTags, false, axx},
+		newRoute("GET /api/tags", srv.handleGetTags),
 	}
 }
 

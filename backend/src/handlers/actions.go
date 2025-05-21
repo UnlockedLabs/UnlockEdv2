@@ -15,10 +15,10 @@ import (
 
 func (srv *Server) registerActionsRoutes() []routeDef {
 	// returns the users for mapping on the client
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, true, axx},
-		{"POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, true, axx},
+		adminFeatureRoute("GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, axx),
+		adminFeatureRoute("POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, axx),
 	}
 }
 
@@ -61,12 +61,10 @@ func (srv *Server) handleImportUsers(w http.ResponseWriter, r *http.Request, log
 			continue
 		}
 		tempPw := newUser.CreateTempPassword()
-		if !srv.isTesting(r) {
-			if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
-				log.add("error", err.Error())
-				log.errorf("Error creating user in kratos: %v", err)
-				// FIXME: Error handling if we fail/handle atomicity
-			}
+		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
+			log.add("error", err.Error())
+			log.errorf("Error creating user in kratos: %v", err)
+			// FIXME: Error handling if we fail/handle atomicity
 		}
 		mapping := models.ProviderUserMapping{
 			UserID:             newUser.ID,

@@ -13,16 +13,15 @@ import (
 )
 
 func (srv *Server) registerLeftMenuRoutes() []routeDef {
-	axx := models.Feature()
 	return []routeDef{
-		{"GET /api/helpful-links", srv.handleGetHelpfulLinks, false, axx},
-		{"PUT /api/helpful-links", srv.handleAddHelpfulLink, true, axx},
-		{"PATCH /api/helpful-links/{id}/edit", srv.handleEditLink, true, axx},
-		{"PUT /api/helpful-links/toggle/{id}", srv.handleToggleVisibilityStatus, true, axx},
-		{"DELETE /api/helpful-links/{id}", srv.handleDeleteLink, true, axx},
-		{"PUT /api/helpful-links/activity/{id}", srv.handleAddUserActivity, false, axx},
-		{"PUT /api/helpful-links/sort", srv.changeSortOrder, true, axx},
-		{"PUT /api/helpful-links/favorite/{id}", srv.handleFavoriteLink, false, axx},
+		newRoute("GET /api/helpful-links", srv.handleGetHelpfulLinks),
+		newAdminRoute("PUT /api/helpful-links", srv.handleAddHelpfulLink),
+		newAdminRoute("PATCH /api/helpful-links/{id}/edit", srv.handleEditLink),
+		newAdminRoute("PUT /api/helpful-links/toggle/{id}", srv.handleToggleVisibilityStatus),
+		newAdminRoute("DELETE /api/helpful-links/{id}", srv.handleDeleteLink),
+		newRoute("PUT /api/helpful-links/activity/{id}", srv.handleAddUserActivity),
+		newAdminRoute("PUT /api/helpful-links/sort", srv.changeSortOrder),
+		newRoute("PUT /api/helpful-links/favorite/{id}", srv.handleFavoriteLink),
 	}
 }
 

@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"context"
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -14,29 +17,28 @@ import (
 const (
 	libraryKey contextKey = "library"
 	videoKey   contextKey = "video"
-	// rate limit is 50 requests from a unique user in a minute
 )
 
 // regular expression used below for filtering open_content_urls
 var resourceRegExpression = regexp.MustCompile(`\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|ttf|map|webp|otf|vtt|webm|json|woff2|pdf)(\?|%3F|$)`)
 
-func (srv *Server) applyMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
+func (srv *Server) applyMiddleware(h HttpFunc, resolver RouteResolver, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
 		srv.checkFeatureAccessMiddleware(
-			srv.handleError(h), accessLevel...))
+			srv.handleError(h), accessLevel...), resolver)
 }
 
-func (srv *Server) applyAdminMiddleware(h HttpFunc, accessLevel ...models.FeatureAccess) http.Handler {
+func (srv *Server) applyAdminMiddleware(h HttpFunc, resolver RouteResolver, accessLevel ...models.FeatureAccess) http.Handler {
 	return srv.applyStandardMiddleware(
 		srv.adminMiddleware(
 			srv.checkFeatureAccessMiddleware(
-				srv.handleError(h), accessLevel...)))
+				srv.handleError(h), accessLevel...)), resolver)
 }
 
-func (srv *Server) applyStandardMiddleware(next http.Handler) http.Handler {
+func (srv *Server) applyStandardMiddleware(next http.Handler, resolver RouteResolver) http.Handler {
 	return srv.prometheusMiddleware(
 		srv.authMiddleware(
-			next))
+			next, resolver))
 }
 
 func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
@@ -68,7 +70,7 @@ func (srv *Server) videoProxyMiddleware(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), videoKey, &video)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}))
+	}), nil)
 }
 
 func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
@@ -128,16 +130,12 @@ func (srv *Server) libraryProxyMiddleware(next http.Handler) http.Handler {
 		}
 		ctx := context.WithValue(r.Context(), libraryKey, proxyParams)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	}))
+	}), nil)
 }
 
-func corsMiddleware(next http.Handler) http.HandlerFunc {
+func corsMiddleware(next http.Handler, url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Origin", url)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PATCH, PUT, DELETE")
@@ -145,7 +143,7 @@ func corsMiddleware(next http.Handler) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(r.Context()))
+		next.ServeHTTP(w, r)
 	}
 }
 
@@ -157,4 +155,49 @@ func (srv *Server) checkFeatureAccessMiddleware(next http.Handler, accessLevel .
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+type RouteResolver func(*database.DB, *http.Request) bool
+
+// resolver where there is a direct relationship between the resource and the facility_id
+// arguments are "table_name", "path_parameter_name"
+func FacilityAdminResolver(table string, param string) RouteResolver {
+	return func(tx *database.DB, r *http.Request) bool {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			return true
+		}
+		id := r.PathValue(param)
+		var facID uint
+		err := tx.Table(table).
+			Select("facility_id").
+			Where("id = ?", id).
+			Limit(1).Scan(&facID).Error
+		return err == nil && claims.FacilityID == facID
+	}
+}
+
+func UserRoleResolver(routeId string) RouteResolver {
+	return func(tx *database.DB, r *http.Request) bool {
+		claims := r.Context().Value(ClaimsKey).(*Claims)
+		if claims.canSwitchFacility() {
+			// system or dept admin can see all data
+			return true
+		}
+		id, err := strconv.Atoi(r.PathValue(routeId))
+		if err != nil {
+			return false
+		}
+		if claims.UserID == uint(id) {
+			// it's the user referenced in the path
+			return true
+		}
+		if !slices.Contains(models.AdminRoles, claims.Role) {
+			// if not the specific user and not an admin:
+			return false
+		}
+		user, err := tx.GetUserByID(uint(id))
+		// facility admin, needs to be from the facility of the referenced user
+		return err == nil && user.FacilityID == claims.FacilityID
+	}
 }

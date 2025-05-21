@@ -43,14 +43,21 @@ type routeDef struct {
 	handler     HttpFunc
 	admin       bool
 	features    []models.FeatureAccess
+	resolver    RouteResolver
 }
 
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {
+		h := route.handler
+
 		if route.admin {
-			srv.Mux.Handle(route.routeMethod, srv.applyAdminMiddleware(route.handler, route.features...))
+			srv.Mux.Handle(route.routeMethod,
+				srv.applyAdminMiddleware(h, route.resolver, route.features...),
+			)
 		} else {
-			srv.Mux.Handle(route.routeMethod, srv.applyMiddleware(route.handler, route.features...))
+			srv.Mux.Handle(route.routeMethod,
+				srv.applyMiddleware(h, route.resolver, route.features...),
+			)
 		}
 	}
 }
@@ -97,7 +104,6 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerFeatureFlagRoutes,
 		srv.registerOpenContentActivityRoutes,
 		srv.registerTagRoutes,
-		srv.registerAnalyticRoutes,
 	} {
 		srv.register(route)
 	}
@@ -117,8 +123,12 @@ func (srv *Server) ListenAndServe() {
 	if port == "" {
 		port = "8080"
 	}
+	appUrl := os.Getenv("APP_URL")
+	if srv.dev {
+		appUrl = "*"
+	}
 	log.Println("Starting server on port: ", port)
-	if err := http.ListenAndServe(":"+port, corsMiddleware(srv.Mux)); err != nil {
+	if err := http.ListenAndServe(":"+port, corsMiddleware(srv.Mux, appUrl)); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -215,11 +225,12 @@ func oryConfig() *ory.Configuration {
 }
 
 const (
-	CachedUsers  string = "cache_users"
-	LibraryPaths string = "library_paths"
-	OAuthState   string = "oauth_state"
-	LoginMetrics string = "login_metrics"
-	AdminLayer2  string = "admin_layer_2"
+	CachedUsers           string = "cache_users"
+	LibraryPaths          string = "library_paths"
+	OAuthState            string = "oauth_state"
+	LoginMetrics          string = "login_metrics"
+	AdminLayer2           string = "admin_layer_2"
+	PermissionCacheBucket string = "permission_cache"
 )
 
 func (srv *Server) setupNatsKvBuckets() error {
@@ -229,7 +240,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2} {
+	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2, PermissionCacheBucket} {
 		kv, err := js.KeyValue(bucket)
 		if err != nil {
 			cfg := &nats.KeyValueConfig{
@@ -241,6 +252,8 @@ func (srv *Server) setupNatsKvBuckets() error {
 				cfg.TTL = time.Hour * 1
 			case OAuthState:
 				cfg.TTL = time.Minute * 10
+			case PermissionCacheBucket:
+				cfg.TTL = time.Hour * 1
 			default:
 				cfg.TTL = time.Hour * 24
 
@@ -383,14 +396,6 @@ func (srv *Server) getFacilityID(r *http.Request) uint {
 
 func (srv *Server) getUserID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).UserID
-}
-
-type TestClaims string
-
-const TestingClaimsKey TestClaims = "test_claims"
-
-func (srv *Server) isTesting(r *http.Request) bool {
-	return r.Context().Value(TestingClaimsKey) != nil
 }
 
 func (srv *Server) createContentActivityAndNotifyWS(urlString string, activity *models.OpenContentActivity) {

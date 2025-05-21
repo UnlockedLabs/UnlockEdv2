@@ -15,11 +15,10 @@ import (
 func (srv *Server) registerLoginFlowRoutes() []routeDef {
 	/* this route is special because it requires no middleware */
 	srv.Mux.Handle("POST /api/login", srv.handleError(srv.handleLogin))
-	axx := models.Feature()
 	return []routeDef{
-		{"POST /api/logout", srv.handleLogout, false, axx},
-		{"POST /api/consent/accept", srv.handleOidcConsent, false, axx},
-		{"POST /api/auth/refresh", srv.handleRefreshAuth, false, axx},
+		newRoute("POST /api/logout", srv.handleLogout),
+		newRoute("POST /api/consent/accept", srv.handleOidcConsent),
+		newRoute("POST /api/auth/refresh", srv.handleRefreshAuth),
 	}
 }
 

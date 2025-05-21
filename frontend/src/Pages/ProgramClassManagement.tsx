@@ -29,6 +29,7 @@ export default function ProgramClassManagement() {
     useEffect(() => {
         setActiveTab(getTabFromPath(location.pathname));
     }, [location.pathname]);
+
     return (
         <div className="px-5 pb-4">
             <TabView

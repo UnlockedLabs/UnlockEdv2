@@ -14,13 +14,14 @@ import (
 )
 
 func (srv *Server) registerDashboardRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
+	resolver := UserRoleResolver("id")
 	return []routeDef{
-		{"GET /api/login-metrics", srv.handleLoginMetrics, true, models.Feature()},
-		{"GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2, true, models.Feature()},
-		{"GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx},
-		{"GET /api/users/{id}/courses", srv.handleUserCourses, false, axx},
-		{"GET /api/users/{id}/profile", srv.handleResidentProfile, false, models.Feature()},
+		newAdminRoute("GET /api/login-metrics", srv.handleLoginMetrics),
+		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
+		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
+		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
+		validatedRoute("GET /api/users/{id}/profile", srv.handleResidentProfile, resolver),
 	}
 }
 
@@ -93,37 +94,29 @@ func (srv *Server) handleAdminLayer2(w http.ResponseWriter, r *http.Request, log
 		ref := uint(facilityIdInt)
 		facilityId = &ref
 	}
-	if !srv.isTesting(r) {
-		key := fmt.Sprintf("admin-layer2-%d", facilityId)
-		cached, err := srv.buckets[AdminLayer2].Get(key)
-		if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
-			newCacheData, err := srv.getLayer2Data(r, log)
-			if err != nil {
-				return newInternalServerServiceError(err, "Error getting admin layer 2 data")
-			}
-			cacheBytes, err := json.Marshal(newCacheData)
-			if err != nil {
-				return newMarshallingBodyServiceError(err)
-			}
-			_, err = srv.buckets[AdminLayer2].Put(key, cacheBytes)
-			if err != nil {
-				return newInternalServerServiceError(err, "Error caching admin layer 2 data")
-			}
-			return writeJsonResponse(w, http.StatusOK, newCacheData)
-		}
-		var cachedData models.CachedDashboard[models.AdminLayer2Join]
-		err = json.Unmarshal(cached.Value(), &cachedData)
-		if err != nil {
-			return newInternalServerServiceError(err, "Error unmarshalling cached data")
-		}
-		return writeJsonResponse(w, http.StatusOK, cachedData)
-	} else {
+	key := fmt.Sprintf("admin-layer2-%d", facilityId)
+	cached, err := srv.buckets[AdminLayer2].Get(key)
+	if err != nil && errors.Is(err, nats.ErrKeyNotFound) || clearCache {
 		newCacheData, err := srv.getLayer2Data(r, log)
 		if err != nil {
-			return newInternalServerServiceError(err, "Error retrieving admin layer 2 data")
+			return newInternalServerServiceError(err, "Error getting admin layer 2 data")
+		}
+		cacheBytes, err := json.Marshal(newCacheData)
+		if err != nil {
+			return newMarshallingBodyServiceError(err)
+		}
+		_, err = srv.buckets[AdminLayer2].Put(key, cacheBytes)
+		if err != nil {
+			return newInternalServerServiceError(err, "Error caching admin layer 2 data")
 		}
 		return writeJsonResponse(w, http.StatusOK, newCacheData)
 	}
+	var cachedData models.CachedDashboard[models.AdminLayer2Join]
+	err = json.Unmarshal(cached.Value(), &cachedData)
+	if err != nil {
+		return newInternalServerServiceError(err, "Error unmarshalling cached data")
+	}
+	return writeJsonResponse(w, http.StatusOK, cachedData)
 }
 
 type DashboardMetrics struct {
@@ -253,8 +246,8 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 **/
 func (srv *Server) handleUserCatalog(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || !srv.canViewUserData(r, userId) {
-		return newInvalidIdServiceError(err, "user ID")
+	if err != nil {
+		return newInvalidIdServiceError(err, "user_id")
 	}
 	tags := r.URL.Query()["tags"]
 	var tagsSplit []string
@@ -265,7 +258,7 @@ func (srv *Server) handleUserCatalog(w http.ResponseWriter, r *http.Request, log
 	order := r.URL.Query().Get("order")
 	userCatalog, err := srv.Db.GetUserCatalog(userId, tagsSplit, search, order)
 	if err != nil {
-		log.add("userId", userId)
+		log.add("user_id", userId)
 		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
@@ -278,9 +271,6 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	log.add("user_id", userId)
-	if !srv.canViewUserData(r, userId) {
-		return newForbiddenServiceError(err, "You do not have permission to view this user's courses")
-	}
 	args := srv.getQueryContext(r)
 	args.UserID = uint(userId)
 	userCourses, err := srv.Db.GetUserCourses(&args)

@@ -9,11 +9,11 @@ import (
 )
 
 func (srv *Server) registerOidcRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/oidc/clients", srv.handleGetAllClients, true, axx},
-		{"POST /api/oidc/clients", srv.handleRegisterClient, true, axx},
-		{"GET /api/oidc/clients/{id}", srv.handleGetOidcClient, true, axx},
+		adminFeatureRoute("GET /api/oidc/clients", srv.handleGetAllClients, axx),
+		adminFeatureRoute("POST /api/oidc/clients", srv.handleRegisterClient, axx),
+		adminFeatureRoute("GET /api/oidc/clients/{id}", srv.handleGetOidcClient, axx),
 	}
 }
 
