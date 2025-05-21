@@ -69,12 +69,7 @@ func (db *DB) CreateOverrideEvent(ctx *models.QueryContext, overrideEvent *model
 			trans.Rollback()
 			return err
 		}
-		cancelledDate, err := overrideEvent.GetFormattedCancelledDate("1/02/2006")
-		if err != nil {
-			trans.Rollback()
-			return NewDBError(err, "unable to parse override date")
-		}
-		changeLogEntry := models.NewChangeLogEntry("program_classes", "event_cancelled", models.StringPtr(""), cancelledDate, overrideEvent.ClassID, ctx.UserID)
+		changeLogEntry := models.NewChangeLogEntry("program_classes", "event_cancelled", models.StringPtr(""), models.StringPtr(overrideEvent.OverrideRrule), overrideEvent.ClassID, ctx.UserID)
 		if err := trans.Create(&changeLogEntry).Error; err != nil {
 			trans.Rollback()
 			return newCreateDBError(err, "change_log_entries")
