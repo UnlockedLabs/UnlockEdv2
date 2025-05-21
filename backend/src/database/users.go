@@ -124,7 +124,7 @@ func (db *DB) GetEligibleResidentsForClass(args *models.QueryContext, classId in
 		return nil, newGetRecordsDBError(err, "users")
 	}
 	users := make([]models.User, 0, args.PerPage)
-	if err := tx.Order(adjustUserOrderBy(args.OrderClause("users"))).
+	if err := tx.Order(adjustUserOrderBy(args.OrderClause("users.created_at desc"))).
 		Offset(args.CalcOffset()).
 		Limit(args.PerPage).
 		Find(&users).
