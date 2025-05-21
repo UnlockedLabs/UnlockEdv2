@@ -166,7 +166,11 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		log.Errorf("error executing request to retrieve image from url %v, error is %v", courseImageUrl, err)
 		return nil
 	}
-	defer response.Body.Close()
+	defer func() {
+		if response.Body.Close() != nil {
+			logger().Errorf("error closing response body, error is %v", err)
+		}
+	}()
 	var (
 		imgPath  string
 		imgBytes []byte
@@ -189,7 +193,11 @@ func (srv *BrightspaceService) IntoCourse(bsCourse BrightspaceCourse) *models.Co
 		log.Errorf("error executing request to retrieve course offering from url %v, error is %v", courseOfferingUrl, err)
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing zip file reader, error is %v", err)
+		}
+	}()
 	var courseDescription string
 	if resp.StatusCode == http.StatusOK {
 		var courseOffering CourseOffering
@@ -262,7 +270,11 @@ func UploadBrightspaceImage(imgBytes []byte, bsCourseId string) (string, error) 
 		log.Errorf("error executing POST request to url %v and error is: %v", uploadEndpointUrl, err)
 		return "", err
 	}
-	defer response.Body.Close()
+	defer func() {
+		if response.Body.Close() != nil {
+			logger().Errorf("error closing response body, error is %v", err)
+		}
+	}()
 	if response.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("server returned non-OK status: %s", response.Status)
 	}
@@ -285,7 +297,11 @@ func (srv *BrightspaceService) getPluginId(pluginName string) (string, error) {
 	if err != nil {
 		return pluginId, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing response body, error is %v", err)
+		}
+	}()
 	pluginData := []DataSetPlugin{}
 	if err = json.NewDecoder(resp.Body).Decode(&pluginData); err != nil {
 		log.Errorf("error decoding to response from url %v, error is: %v", DataSetsEndpoint, err)
@@ -307,7 +323,11 @@ func readCSV[T any](values *T, csvFilePath string) {
 		log.Errorf("error opening file %v, error is: %v", csvFilePath, err)
 		return
 	}
-	defer coursesFile.Close()
+	defer func() {
+		if coursesFile.Close() != nil {
+			logger().Errorf("error closing response body, error is %v", err)
+		}
+	}()
 	if err := gocsv.UnmarshalFile(coursesFile, values); err != nil {
 		log.Errorf("error parsing csv file %v into values type file, error is: %v", csvFilePath, err)
 	}
@@ -319,7 +339,11 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 	if err != nil {
 		return destPath, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing response body, error is %v", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("unable to download resource, response returned by brightspace request url %v was %v", endpointUrl, resp.StatusCode)
 		return destPath, errors.New("unable to download plugin csv resource")
@@ -353,7 +377,9 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 			return destPath, err
 		}
 		defer func() {
-			zipFile.Close()
+			if zipFile.Close() != nil {
+				logger().Errorf("error closing zip file reader, error is %v", err)
+			}
 			cleanUpFiles(zipFilePath) //delete zipfile here
 		}()
 		for _, zippedFile := range zipFile.File {
@@ -373,13 +399,21 @@ func (srv *BrightspaceService) downloadAndUnzipFile(targetFileName string, endpo
 				log.Errorf("error openings %v, error is: %v", destPath, err)
 				return destPath, err
 			}
-			defer outFile.Close()
+			defer func() {
+				if outFile.Close() != nil {
+					logger().Errorf("error closing zip file reader, error is %v", err)
+				}
+			}()
 			rc, err := zippedFile.Open()
 			if err != nil {
 				log.Errorf("error opening zipped file csv file %v, error is: %v", zippedFile.Name, err)
 				return destPath, err
 			}
-			defer rc.Close()
+			defer func() {
+				if rc.Close() != nil {
+					logger().Errorf("error closing zip file reader, error is %v", err)
+				}
+			}()
 			_, err = io.Copy(outFile, rc)
 			if err != nil {
 				log.Errorf("error copying zipped file %v to destination file %v, error is: %v", zippedFile.Name, destPath, err)

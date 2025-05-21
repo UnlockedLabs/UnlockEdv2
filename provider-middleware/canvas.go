@@ -69,7 +69,11 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 		log.Printf("Failed to send request: %v", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Error("Failed to close response body")
+		}
+	}()
 	users := make([]map[string]interface{}, 0)
 	log.Printf("Request sent to canvas Users: %v", resp.Body)
 	err = json.NewDecoder(resp.Body).Decode(&users)
@@ -133,7 +137,11 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 	}
 	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportCourses"}
 	log.WithFields(fields).Info("importing courses from provider")
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Error("Failed to close response body")
+		}
+	}()
 	courses := make([]map[string]interface{}, 0)
 	err = json.NewDecoder(resp.Body).Decode(&courses)
 	if err != nil {
@@ -261,7 +269,11 @@ func (srv *CanvasService) getCountAssignmentsForCourse(courseId int) (int, error
 		log.Errorln("response from canvas assignments for course failed with code: ", resp.Status)
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Error("Failed to close response body")
+		}
+	}()
 	assignments := make(map[string]interface{})
 	err = json.NewDecoder(resp.Body).Decode(&assignments)
 	if err != nil {
@@ -333,7 +345,11 @@ func (srv *CanvasService) getUsersSubmissionsForCourse(courseId string, queryStr
 		log.WithFields(fields).Errorln("canvas responded with code: ", resp.Status)
 		return nil, errors.New("canvas responded with code: " + resp.Status)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Error("Failed to close response body")
+		}
+	}()
 	var submission []map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&submission)
 	if err != nil {
@@ -441,7 +457,11 @@ func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string
 		log.Printf("Failed to send request: %v", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Error("Failed to close response body")
+		}
+	}()
 	enrollments := make([]map[string]interface{}, 0)
 	err = json.NewDecoder(resp.Body).Decode(&enrollments)
 	if err != nil {

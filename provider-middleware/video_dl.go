@@ -170,7 +170,11 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 		logger().Errorf("error fetching thumbnail image from URL: %v", err)
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		logger().Errorf("failed to fetch thumbnail image: received %v response", resp.Status)
 		return "", fmt.Errorf("failed to fetch thumbnail image: %v", resp.Status)
@@ -214,7 +218,11 @@ func (yt *VideoService) downloadAndHostThumbnail(yt_id, url string) (string, err
 		logger().Errorf("error sending upload request: %v", err)
 		return "", err
 	}
-	defer uploadResp.Body.Close()
+	defer func() {
+		if uploadResp.Body.Close() != nil {
+			logger().Errorf("error closing upload response body: %v", err)
+		}
+	}()
 	if uploadResp.StatusCode != http.StatusOK {
 		logger().Errorf("failed to upload image: received %v response", uploadResp.Status)
 		return "", fmt.Errorf("failed to upload image: %v", uploadResp.Status)
@@ -448,13 +456,21 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 		logger().Errorf("error downloading yt-dlp: %v", err)
 		return err
 	}
-	defer downloadResult.Close()
+	defer func() {
+		if downloadResult.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	file, err := os.Create(fmt.Sprintf("/videos/%s.mp4", vidInfo.Info.ID))
 	if err != nil {
 		logger().Error(err)
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if file.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	_, err = io.Copy(file, downloadResult)
 	if err != nil {
 		logger().Errorf("error: %v copying downloaded video result", err)

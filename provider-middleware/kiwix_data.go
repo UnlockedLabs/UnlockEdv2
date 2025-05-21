@@ -110,7 +110,11 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 		logger().Errorf("error fetching thumbnail image from URL: %v", err)
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		logger().Errorf("failed to fetch thumbnail image: received %v response", resp.Status)
 		return "", fmt.Errorf("failed to fetch thumbnail image: %v", resp.Status)
@@ -168,7 +172,11 @@ func (ks *KiwixService) downloadAndHostThumbnailImg(lib, thumbnail string) (stri
 		logger().Errorf("error sending upload request: %v", err)
 		return "", err
 	}
-	defer uploadResp.Body.Close()
+	defer func() {
+		if uploadResp.Body.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	if uploadResp.StatusCode != http.StatusOK {
 		logger().Errorf("failed to upload image: received %v response", uploadResp.Status)
 		return "", fmt.Errorf("failed to upload image: %v", uploadResp.Status)
@@ -203,7 +211,11 @@ func (ks *KiwixService) thumbnailExists(lib string) bool {
 		logger().Errorf("error fetching thumbnail: %v", err)
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if resp.Body.Close() != nil {
+			logger().Errorf("error closing response body: %v", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		logger().Errorf("thumbnail does not exist: received %v response", resp.Status)
 		return false
