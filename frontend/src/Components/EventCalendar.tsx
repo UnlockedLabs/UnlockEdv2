@@ -74,7 +74,7 @@ export default function EventCalendar({
 
         const eventOverrides = classEvent?.overrides ?? []; //overrides
         const generated = eventDates.map((eventDate) => {
-            const override = getEventOverrideForEventDate(
+            const override = findCancellationForEventDate(
                 eventDate,
                 eventOverrides
             );
@@ -90,7 +90,7 @@ export default function EventCalendar({
         setEvents(generated);
     }, [recurrenceRule, durationStr, title, classEvent?.overrides]);
 
-    function getEventOverrideForEventDate(
+    function findCancellationForEventDate(
         eventDate: Date,
         eventOverrides: ProgramClassEventOverride[]
     ): ProgramClassEventOverride | undefined {
