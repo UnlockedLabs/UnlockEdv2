@@ -89,6 +89,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	all := r.URL.Query().Get("all") == "true"
 	tz := claims.TimeZone
 	return models.QueryContext{
+		Params:     r.URL.Query(),
 		Ctx:        r.Context(),
 		Page:       page,
 		PerPage:    perPage,

@@ -64,7 +64,7 @@ func newAdminRoute(method string, handler HttpFunc) routeDef {
 	}
 }
 
-func newValidatedRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
+func validatedRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
 	return routeDef{
 		routeMethod: method,
 		handler:     handler,
@@ -74,7 +74,7 @@ func newValidatedRoute(method string, handler HttpFunc, validate RouteResolver) 
 	}
 }
 
-func newValidatedAdminRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
+func validatedAdminRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
 	return routeDef{
 		routeMethod: method,
 		handler:     handler,
@@ -84,20 +84,40 @@ func newValidatedAdminRoute(method string, handler HttpFunc, validate RouteResol
 	}
 }
 
-func newFeatureRoute(method string, handler HttpFunc, adminOnly bool, features ...models.FeatureAccess) routeDef {
+func featureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
 	return routeDef{
 		routeMethod: method,
 		handler:     handler,
-		admin:       adminOnly,
+		admin:       false,
 		features:    features,
 	}
 }
 
-func newValidatedFeatureRoute(method string, handler HttpFunc, admin bool, features models.FeatureAccess, validate RouteResolver) routeDef {
+func adminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
 	return routeDef{
 		routeMethod: method,
 		handler:     handler,
-		admin:       admin,
+		admin:       true,
+		features:    features,
+		resolver:    nil,
+	}
+}
+
+func validatedFeatureRoute(method string, handler HttpFunc, feature models.FeatureAccess, resolver RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    []models.FeatureAccess{feature},
+		resolver:    resolver,
+	}
+}
+
+func adminValidatedFeatureRoute(method string, handler HttpFunc, features models.FeatureAccess, validate RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
 		features:    []models.FeatureAccess{features},
 		resolver:    validate,
 	}
@@ -161,7 +181,6 @@ func (srv *Server) RegisterRoutes() {
 		srv.registerFeatureFlagRoutes,
 		srv.registerOpenContentActivityRoutes,
 		srv.registerTagRoutes,
-		srv.registerAnalyticRoutes,
 	} {
 		srv.register(route)
 	}

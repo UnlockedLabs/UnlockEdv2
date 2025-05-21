@@ -11,14 +11,14 @@ import (
 
 func (srv *Server) registerProgramClassEnrollmentsRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolve := ResolveDirect("program_classes", "class_id")
+	resolve := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
-		newFeatureRoute("GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, true, axx),
-		newValidatedFeatureRoute("POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, true, axx, resolve),
-		newValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, true, axx, resolve),
-		newValidatedFeatureRoute("DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, true, axx, resolve),
-		newFeatureRoute("GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, true, axx),
-		newFeatureRoute("GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, false, axx),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/enrollments", srv.handleGetEnrollmentsForProgram, axx),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/enrollments", srv.handleEnrollUsersInClass, axx, resolve),
+		adminValidatedFeatureRoute("PATCH /api/program-classes/{class_id}/enrollments", srv.handleUpdateProgramClassEnrollments, axx, resolve),
+		adminValidatedFeatureRoute("DELETE /api/programs/{id}/classes/{class_id}/enrollments", srv.handleDeleteProgramClassEnrollments, axx, resolve),
+		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/{class_id}/enrollments/{enrollment_id}/attendance", srv.handleGetProgramClassEnrollmentsAttendance, axx, resolve),
+		validatedFeatureRoute("GET /api/users/{id}/program-completions", srv.handleGetUserProgramCompletions, axx, UserRoleResolver("id")),
 	}
 }
 
@@ -27,19 +27,8 @@ func (srv *Server) handleGetUserProgramCompletions(w http.ResponseWriter, r *htt
 	if err != nil {
 		return newInvalidIdServiceError(err, "User ID")
 	}
-	if !srv.canViewUserData(r, userId) {
-		return newUnauthorizedServiceError()
-	}
-	var classID *int
-	classId := r.URL.Query().Get("class_id")
-	if classId != "" {
-		classIdInt, err := strconv.Atoi(classId)
-		if err != nil {
-			return newInvalidIdServiceError(err, "Class ID")
-		}
-		classID = &classIdInt
-	}
 	args := srv.getQueryContext(r)
+	classID := args.MaybeID("class_id")
 	enrollemnt, err := srv.Db.GetProgramCompletionsForUser(&args, userId, classID)
 	if err != nil {
 		return newDatabaseServiceError(err)

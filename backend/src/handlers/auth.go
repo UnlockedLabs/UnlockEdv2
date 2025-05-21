@@ -96,12 +96,11 @@ func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.
 			http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 			return
 		}
-		if resolver != nil {
-			if !claims.canSwitchFacility() {
-				if !resolver(s.Db, r.WithContext(ctx)) {
-					http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
-					return
-				}
+		// resolver is for permissions of students or facility level administrators
+		if resolver != nil && !claims.canSwitchFacility() {
+			if !resolver(s.Db, r.WithContext(ctx)) {
+				http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
+				return
 			}
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -132,23 +131,6 @@ func userIsAdmin(r *http.Request) bool {
 
 func userIsSystemAdmin(r *http.Request) bool {
 	return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
-}
-
-func (srv *Server) canViewUserData(r *http.Request, id int) bool {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	if claims.canSwitchFacility() || claims.UserID == uint(id) {
-		// early return
-		return true
-	}
-	user, err := srv.Db.GetUserByID(uint(id))
-	if err != nil {
-		return false
-	}
-	// we know they are not a system or dept admin by now
-	if user.FacilityID != claims.FacilityID {
-		return false
-	}
-	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {

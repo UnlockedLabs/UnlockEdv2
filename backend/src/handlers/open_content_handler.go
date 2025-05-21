@@ -11,10 +11,10 @@ import (
 func (srv *Server) registerOpenContentRoutes() []routeDef {
 	axx := models.OpenContentAccess
 	return []routeDef{
-		newFeatureRoute("GET /api/open-content", srv.handleIndexOpenContent, false, axx),
-		newFeatureRoute("GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, false, axx),
-		newFeatureRoute("PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, false, axx),
-		newFeatureRoute("GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, false, axx),
+		featureRoute("GET /api/open-content", srv.handleIndexOpenContent, axx),
+		featureRoute("GET /api/open-content/favorites", srv.handleGetUserFavoriteOpenContent, axx),
+		featureRoute("PUT /api/open-content/{id}/bookmark", srv.handleBookmarkOpenContent, axx),
+		featureRoute("GET /api/open-content/favorite-groupings", srv.handleGetUserFavoriteOpenContentGroupings, axx),
 	}
 }
 

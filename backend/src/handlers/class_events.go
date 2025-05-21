@@ -9,14 +9,15 @@ import (
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolver := ResolveDirect("program_classes", "class_id")
+	resolver := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
-		newFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, true, axx),
-		newFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, true, axx),
-		newFeatureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, false, axx),
-		newFeatureRoute("GET /api/student-attendance", srv.handleGetStudentAttendanceData, false, axx),
-		newValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverride, true, axx, resolver),
-		newValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, true, axx, resolver),
+		featureRoute("GET /api/student-calendar", srv.handleGetStudentCalendar, axx),
+		featureRoute("GET /api/student-attendance", srv.handleGetStudentAttendanceData, axx),
+		/* admin */
+		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx, resolver),
+		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverride, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 	}
 }
 

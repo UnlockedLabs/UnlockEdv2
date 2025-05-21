@@ -13,19 +13,19 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() []routeDef {
+	resolver := UserRoleResolver("id")
 	return []routeDef{
+		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
+		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		/* admin */
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
-		newValidatedRoute("GET /api/users/{id}", srv.handleShowUser, UserRoleResolver("id")),
-		// users are automatically created in the same facility as the claims facility_id,
-		// so there is no need to further validate on creation.
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
-		newValidatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, UserRoleResolver("id")),
-		newValidatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, UserRoleResolver("id")),
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
 		newAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
 		newAdminRoute("POST /api/users/student-password", srv.handleResetStudentPassword),
-		newValidatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, UserRoleResolver("id")),
-		newValidatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, UserRoleResolver("id")),
+		validatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, resolver),
+		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, resolver),
+		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 	}
 }
 
@@ -86,10 +86,6 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
-	}
-	if !srv.canViewUserData(r, id) {
-		log.warn("Unauthorized access to user data")
-		return newUnauthorizedServiceError()
 	}
 	user, err := srv.Db.GetUserByID(uint(id))
 	if err != nil {
@@ -324,9 +320,6 @@ func (srv *Server) handleGetUserAccountHistory(w http.ResponseWriter, r *http.Re
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	args := srv.getQueryContext(r)
-	if !srv.canViewUserData(r, id) {
-		return newUnauthorizedServiceError()
-	}
 	history, err := srv.Db.GetUserAccountHistory(&args, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -412,10 +405,6 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
-	if !srv.canViewUserData(r, userId) {
-		log.warn("Unauthorized access to user data")
-		return newUnauthorizedServiceError()
-	}
 	if err != nil {
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}

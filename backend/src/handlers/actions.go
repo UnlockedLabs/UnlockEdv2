@@ -17,8 +17,8 @@ func (srv *Server) registerActionsRoutes() []routeDef {
 	// returns the users for mapping on the client
 	axx := models.ProviderAccess
 	return []routeDef{
-		newFeatureRoute("GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, true, axx),
-		newFeatureRoute("POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, true, axx),
+		adminFeatureRoute("GET /api/actions/provider-platforms/{id}/get-users", srv.handleGetUsers, axx),
+		adminFeatureRoute("POST /api/actions/provider-platforms/{id}/import-users", srv.handleImportUsers, axx),
 	}
 }
 

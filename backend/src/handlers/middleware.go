@@ -166,7 +166,7 @@ type RouteResolver func(*database.DB, *http.Request) bool
 
 // resolver where there is a direct relationship between the resource and the facility_id
 // arguments are "table_name", "path_parameter_name"
-func ResolveDirect(table string, param string) RouteResolver {
+func FacilityAdminResolver(table string, param string) RouteResolver {
 	return func(tx *database.DB, r *http.Request) bool {
 		id := r.PathValue(param)
 		var facID uint

@@ -18,12 +18,13 @@ import (
 func (srv *Server) registerLibraryRoutes() []routeDef {
 	axx := models.OpenContentAccess
 	return []routeDef{
-		newFeatureRoute("GET /api/libraries", srv.handleIndexLibraries, false, axx),
-		newFeatureRoute("GET /api/open-content/search", srv.handleSearchOpenContent, false, axx),
-		newFeatureRoute("GET /api/open-content/suggestions", srv.handleGetQuerySuggestions, false, axx),
-		newFeatureRoute("GET /api/libraries/{id}", srv.handleGetLibrary, false, axx),
-		newFeatureRoute("PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, true, axx),
-		newFeatureRoute("PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, false, axx),
+		featureRoute("GET /api/libraries", srv.handleIndexLibraries, axx),
+		featureRoute("GET /api/open-content/search", srv.handleSearchOpenContent, axx),
+		featureRoute("GET /api/open-content/suggestions", srv.handleGetQuerySuggestions, axx),
+		featureRoute("GET /api/libraries/{id}", srv.handleGetLibrary, axx),
+		featureRoute("PUT /api/libraries/{id}/favorite", srv.handleToggleFavoriteLibrary, axx),
+		/* admin */
+		adminFeatureRoute("PUT /api/libraries/{id}/toggle", srv.handleToggleLibraryVisibility, axx),
 	}
 }
 

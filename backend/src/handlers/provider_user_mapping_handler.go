@@ -10,10 +10,10 @@ import (
 func (srv *Server) registerProviderMappingRoutes() []routeDef {
 	axx := models.ProviderAccess
 	return []routeDef{
-		newFeatureRoute("GET /api/users/{id}/logins", srv.handleGetMappingsForUser, true, axx),
-		newFeatureRoute("POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, true, axx),
-		newFeatureRoute("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, true, axx),
-		newFeatureRoute("DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, true, axx),
+		adminFeatureRoute("GET /api/users/{id}/logins", srv.handleGetMappingsForUser, axx),
+		adminFeatureRoute("POST /api/users/{id}/logins", srv.handleCreateProviderUserMapping, axx),
+		adminFeatureRoute("POST /api/provider-platforms/{id}/user-accounts/{user_id}", srv.handleCreateProviderUserAccount, axx),
+		adminFeatureRoute("DELETE /api/users/{userId}/logins/{providerId}", srv.handleDeleteProviderUserMapping, axx),
 	}
 }
 

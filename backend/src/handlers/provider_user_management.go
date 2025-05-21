@@ -15,9 +15,9 @@ func (srv *Server) registerProviderUserRoutes() []routeDef {
 	// these are not 'actions' routes because they do not directly interact with the middleware
 	axx := models.ProviderAccess
 	return []routeDef{
-		newFeatureRoute("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, true, axx),
-		newFeatureRoute("POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, true, axx),
-		newFeatureRoute("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, true, axx),
+		adminValidatedFeatureRoute("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, axx, FacilityAdminResolver("users", "user_id")),
+		adminFeatureRoute("POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, axx),
+		adminFeatureRoute("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, axx),
 	}
 }
 

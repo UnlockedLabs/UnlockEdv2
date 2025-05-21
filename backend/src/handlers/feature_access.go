@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"errors"
 	"net/http"
@@ -9,7 +10,9 @@ import (
 func (srv *Server) registerFeatureFlagRoutes() []routeDef {
 	return []routeDef{
 		newAdminRoute("PUT /api/auth/features/{feature}", srv.handleToggleFeatureFlag),
-		newAdminRoute("POST /api/auth/demo-seed", srv.handleRunDemoSeed),
+		validatedAdminRoute("POST /api/auth/demo-seed", srv.handleRunDemoSeed, func(db *database.DB, r *http.Request) bool {
+			return userIsSystemAdmin(r)
+		}),
 	}
 }
 
@@ -35,9 +38,6 @@ func (srv *Server) handleToggleFeatureFlag(w http.ResponseWriter, r *http.Reques
 
 func (srv *Server) handleRunDemoSeed(w http.ResponseWriter, r *http.Request, log sLog) error {
 	log.info("running seeder for demo environment")
-	if !userIsSystemAdmin(r) {
-		return newUnauthorizedServiceError()
-	}
 	err := srv.Db.RunOrResetDemoSeed(srv.getFacilityID(r))
 	if err != nil {
 		return newInternalServerServiceError(err, "unable to run demo seed")

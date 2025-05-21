@@ -15,12 +15,13 @@ import (
 
 func (srv *Server) registerDashboardRoutes() []routeDef {
 	axx := models.ProviderAccess
+	resolver := UserRoleResolver("id")
 	return []routeDef{
 		newAdminRoute("GET /api/login-metrics", srv.handleLoginMetrics),
 		newAdminRoute("GET /api/users/{id}/admin-layer2", srv.handleAdminLayer2),
-		newFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, false, axx),
-		newFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, false, axx),
-		newRoute("GET /api/users/{id}/profile", srv.handleResidentProfile),
+		validatedFeatureRoute("GET /api/users/{id}/catalog", srv.handleUserCatalog, axx, resolver),
+		validatedFeatureRoute("GET /api/users/{id}/courses", srv.handleUserCourses, axx, resolver),
+		validatedRoute("GET /api/users/{id}/profile", srv.handleResidentProfile, resolver),
 	}
 }
 
@@ -253,8 +254,8 @@ func (srv *Server) handleLoginMetrics(w http.ResponseWriter, r *http.Request, lo
 **/
 func (srv *Server) handleUserCatalog(w http.ResponseWriter, r *http.Request, log sLog) error {
 	userId, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || !srv.canViewUserData(r, userId) {
-		return newInvalidIdServiceError(err, "user ID")
+	if err != nil {
+		return newInvalidIdServiceError(err, "user_id")
 	}
 	tags := r.URL.Query()["tags"]
 	var tagsSplit []string
@@ -265,7 +266,7 @@ func (srv *Server) handleUserCatalog(w http.ResponseWriter, r *http.Request, log
 	order := r.URL.Query().Get("order")
 	userCatalog, err := srv.Db.GetUserCatalog(userId, tagsSplit, search, order)
 	if err != nil {
-		log.add("userId", userId)
+		log.add("user_id", userId)
 		log.add("search", search)
 		return newDatabaseServiceError(err)
 	}
@@ -278,9 +279,6 @@ func (srv *Server) handleUserCourses(w http.ResponseWriter, r *http.Request, log
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	log.add("user_id", userId)
-	if !srv.canViewUserData(r, userId) {
-		return newForbiddenServiceError(err, "You do not have permission to view this user's courses")
-	}
 	args := srv.getQueryContext(r)
 	args.UserID = uint(userId)
 	userCourses, err := srv.Db.GetUserCourses(&args)

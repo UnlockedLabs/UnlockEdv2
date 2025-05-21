@@ -17,13 +17,13 @@ import (
 func (srv *Server) registerProviderPlatformRoutes() []routeDef {
 	axx := models.ProviderAccess
 	return []routeDef{
-		newFeatureRoute("GET /api/provider-platforms", srv.handleIndexProviders, true, axx),
-		newFeatureRoute("GET /api/provider-platforms/{id}", srv.handleShowProvider, true, axx),
-		newFeatureRoute("POST /api/provider-platforms", srv.handleCreateProvider, true, axx),
-		newFeatureRoute("GET /api/provider-platforms/callback", srv.handleOAuthProviderCallback, true, axx),
-		newFeatureRoute("GET /api/provider-platforms/{id}/refresh", srv.handleOAuthRefreshToken, true, axx),
-		newFeatureRoute("PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, true, axx),
-		newFeatureRoute("DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, true, axx),
+		adminFeatureRoute("GET /api/provider-platforms", srv.handleIndexProviders, axx),
+		adminFeatureRoute("GET /api/provider-platforms/{id}", srv.handleShowProvider, axx),
+		adminFeatureRoute("POST /api/provider-platforms", srv.handleCreateProvider, axx),
+		adminFeatureRoute("GET /api/provider-platforms/callback", srv.handleOAuthProviderCallback, axx),
+		adminFeatureRoute("GET /api/provider-platforms/{id}/refresh", srv.handleOAuthRefreshToken, axx),
+		adminFeatureRoute("PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, axx),
+		adminFeatureRoute("DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, axx),
 	}
 }
 

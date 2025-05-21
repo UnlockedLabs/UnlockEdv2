@@ -10,20 +10,21 @@ import (
 
 func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := models.ProgramAccess
-	resolver := ResolveDirect("program_classes", "class_id")
+	resolver := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
-		newFeatureRoute("GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx),
-		newValidatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx, resolver),
-		newFeatureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx),
-		newFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx),
-		newFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx),
-		newFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, true, axx),
-		newValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, true, axx, func(tx *database.DB, r *http.Request) bool {
+		featureRoute("GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, axx),
+		featureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, axx),
+		/* admin */
+		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx),
+		adminFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx),
+		adminFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx),
+		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
 			return tx.Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
 				Where("facility_id <> ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
 				First(&models.ProgramClass{}).Error != nil
 		}),
-		newValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, true, axx, resolver),
+		adminValidatedFeatureRoute("PATCH /api/programs/{id}/classes/{class_id}", srv.handleUpdateClass, axx, resolver),
 	}
 }
 

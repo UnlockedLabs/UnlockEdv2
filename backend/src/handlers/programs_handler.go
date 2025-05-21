@@ -14,16 +14,17 @@ import (
 func (srv *Server) registerProgramsRoutes() []routeDef {
 	axx := models.ProgramAccess
 	return []routeDef{
-		newFeatureRoute("GET /api/programs", srv.handleIndexPrograms, false, axx),
-		newFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, true, axx),
-		newFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, true, axx),
-		newFeatureRoute("GET /api/programs/{id}", srv.handleShowProgram, false, axx),
-		newFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, true, axx),
-		newFeatureRoute("POST /api/programs", srv.handleCreateProgram, true, axx),
-		newFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, true, axx),
-		newFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, true, axx),
-		newFeatureRoute("PATCH /api/programs/{id}", srv.handleUpdateProgram, true, axx),
-		newFeatureRoute("PUT /api/programs/{id}/save", srv.handleFavoriteProgram, false, axx),
+		featureRoute("GET /api/programs", srv.handleIndexPrograms, axx),
+		featureRoute("GET /api/programs/{id}", srv.handleShowProgram, axx),
+		featureRoute("PUT /api/programs/{id}/save", srv.handleFavoriteProgram, axx),
+		/* admin */
+		adminFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, axx),
+		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
+		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
+		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
+		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
+		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
+		adminFeatureRoute("PATCH /api/programs/{id}", srv.handleUpdateProgram, axx),
 	}
 }
 
