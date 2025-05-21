@@ -99,7 +99,8 @@ type ProgramClassEventOverride struct {
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
 
-func (pce *ProgramClassEventOverride) GetFormattedCancelledDate() (*string, error) {
+// format argument will take a string in the format of "2006-01-02", "1/02/2006", ect
+func (pce *ProgramClassEventOverride) GetFormattedCancelledDate(format string) (*string, error) {
 	if !pce.IsCancelled {
 		return StringPtr(""), nil
 	}
@@ -108,7 +109,7 @@ func (pce *ProgramClassEventOverride) GetFormattedCancelledDate() (*string, erro
 		return nil, err
 	}
 	cancelledDate := rRule.All()[0]
-	cancelledDateStr := cancelledDate.Format("1/02/2006")
+	cancelledDateStr := cancelledDate.Format(format)
 	return StringPtr(cancelledDateStr), nil
 }
 

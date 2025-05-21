@@ -11,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
+	"gorm.io/gorm"
 )
 
 /*
@@ -59,7 +60,16 @@ func (db *DB) CreateOverrideEvent(ctx *models.QueryContext, overrideEvent *model
 	}
 
 	if overrideEvent.IsCancelled { //only add log for cancelled event
-		cancelledDate, err := overrideEvent.GetFormattedCancelledDate()
+		attendanceEventDt, err := overrideEvent.GetFormattedCancelledDate("2006-01-02")
+		if err != nil {
+			trans.Rollback()
+			return NewDBError(err, "unable to parse override date")
+		}
+		if err := deleteEventAttedanceByDate(trans, overrideEvent.EventID, *attendanceEventDt); err != nil {
+			trans.Rollback()
+			return err
+		}
+		cancelledDate, err := overrideEvent.GetFormattedCancelledDate("1/02/2006")
 		if err != nil {
 			trans.Rollback()
 			return NewDBError(err, "unable to parse override date")
@@ -73,6 +83,13 @@ func (db *DB) CreateOverrideEvent(ctx *models.QueryContext, overrideEvent *model
 	//end transaction
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
+	}
+	return nil
+}
+
+func deleteEventAttedanceByDate(trans *gorm.DB, eventID uint, eventDate string) error {
+	if err := trans.Unscoped().Where("event_id = ? AND date = ?", eventID, eventDate).Delete(&models.ProgramClassEventAttendance{}).Error; err != nil {
+		return newDeleteDBError(err, "class_event_attendance")
 	}
 	return nil
 }
