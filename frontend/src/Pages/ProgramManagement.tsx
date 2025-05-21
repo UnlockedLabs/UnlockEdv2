@@ -2,7 +2,6 @@ import { isAdministrator, useAuth } from '@/useAuth';
 import { useMemo, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
-    Option,
     ServerResponseMany,
     FilterPastTime,
     ServerResponseOne,
@@ -12,10 +11,8 @@ import {
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
-import { useLoaderData } from 'react-router-dom';
 import Pagination from '@/Components/Pagination';
 import { useNavigate } from 'react-router-dom';
-import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
@@ -132,7 +129,6 @@ export default function ProgramManagement() {
     const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
     const [includeArchived, setIncludeArchived] = useState<boolean>(false);
 
-    const [categoryQueryString, setCategoryQueryString] = useState<string>('');
     const navigate = useNavigate();
 
     const { data: programsFacilitiesStats } = useSWR<
@@ -159,13 +155,9 @@ export default function ProgramManagement() {
         isLoading: programsLoading,
         mutate
     } = useSWR<ServerResponseMany<ProgramsOverviewTable>, Error>(
-        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&${categoryQueryString}&order=asc&order_by=name&include_archived=${includeArchived}`
+        `/api/programs/detailed-list?days=${dateRange}&page=${page}&per_page=${perPage}&search=${searchQuery[0]}&order=asc&order_by=name&include_archived=${includeArchived}`
     );
     const meta = programs?.meta;
-
-    const { categories } = useLoaderData() as {
-        categories: Option[];
-    };
 
     const tableDateRangeLabel = useMemo(() => {
         if (dateRange === FilterPastTime['All time']) return 'all time';
@@ -254,11 +246,6 @@ export default function ProgramManagement() {
                     <SearchBar
                         searchTerm={searchTerm}
                         changeCallback={handleSearch}
-                    />
-                    <CategoryDropdownFilter
-                        mutate={() => void mutate()}
-                        setCategoryQueryString={setCategoryQueryString}
-                        options={categories ?? []}
                     />
                     <div className="flex items-center">
                         <input
