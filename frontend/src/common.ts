@@ -784,6 +784,23 @@ export interface ResidentProgramOverview {
     attendance_percentage?: number;
 }
 
+// TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
+export interface ShortCalendarEvent {
+    title: string;
+    start: Date;
+    end: Date;
+}
+
+export interface FacilityProgramClassEvent extends ProgramClassEvent {
+	instructor_name: string
+	title: string 
+	is_cancelled: boolean
+	enrolled_users: string[]
+	start: Date
+    end: Date
+    frequency: string
+}
+
 export interface CalendarEvent {
     event_id: number;
     class_id: number;
