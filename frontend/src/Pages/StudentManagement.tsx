@@ -186,7 +186,7 @@ export default function StudentManagement() {
                             <tr className="grid grid-cols-6 px-4">
                                 <th className="justify-self-start">Name</th>
                                 <th>Username</th>
-                                <th>DOC ID</th>
+                                <th>Resident ID</th>
                                 <th>Last Updated</th>
                                 <th>Created At</th>
                                 <th className="justify-self-end pr-4">

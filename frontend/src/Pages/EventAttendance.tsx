@@ -325,7 +325,7 @@ export default function EventAttendance() {
                                         />
                                         <span>Last, First</span>
                                     </th>
-                                    <th>DOC ID</th>
+                                    <th>Resident ID</th>
                                     <th className="">Attendance</th>
                                     <th className="">Note</th>
                                 </tr>
