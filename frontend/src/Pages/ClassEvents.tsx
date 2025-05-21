@@ -13,6 +13,11 @@ import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
 
+function toLocalMidnight(dateOnly: string): Date {
+    const [y, m, d] = dateOnly.split('-').map(Number);
+    return new Date(y, m - 1, d);
+}
+
 export default function ClassEvents() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
@@ -72,7 +77,7 @@ export default function ClassEvents() {
     }
 
     function getStatus(event: ClassEventInstance): string {
-        const eventDate = new Date(event.date).setHours(0, 0, 0, 0);
+        const eventDate = toLocalMidnight(event.date).getTime();
         const today = new Date().setHours(0, 0, 0, 0);
         return eventDate > today
             ? 'Scheduled'
@@ -117,9 +122,12 @@ export default function ClassEvents() {
                                     className="card grid-cols-5 justify-items-center"
                                 >
                                     <td className="justify-self-start px-4">
-                                        {new Date(
+                                        {toLocalMidnight(
                                             event.date
-                                        ).toLocaleDateString()}
+                                        ).toLocaleDateString('en-US', {
+                                            month: '2-digit',
+                                            day: '2-digit'
+                                        })}
                                     </td>
                                     <td className="px-4">
                                         {formatClassTime(

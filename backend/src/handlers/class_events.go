@@ -94,6 +94,15 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	log.add("class id", classID)
 	month := r.URL.Query().Get("month")
 	year := r.URL.Query().Get("year")
+	justDates := r.URL.Query().Get("dates")
+	if justDates == "true" {
+		timezone := srv.getQueryContext(r).Timezone
+		dates, err := srv.Db.GetClassEventDatesForRecurrence(classID, timezone, month, year)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+		return writeJsonResponse(w, http.StatusOK, dates)
+	}
 
 	qryCtx := srv.getQueryContext(r)
 	instances, err := srv.Db.GetClassEventInstancesWithAttendanceForRecurrence(classID, &qryCtx, month, year)

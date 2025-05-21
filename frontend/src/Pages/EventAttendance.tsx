@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
@@ -8,12 +8,17 @@ import {
     EnrollmentAttendance,
     Attendance,
     ServerResponseMany,
-    FilterResidentNames
+    FilterResidentNames,
+    EventDate
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
 import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
+import Error from '@/Pages/Error';
+import { parseLocalDay } from '@/Components/helperFunctions/formatting';
+
+const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 
 interface LocalRowData {
     selected: boolean;
@@ -34,6 +39,59 @@ export default function EventAttendance() {
         class_id: string;
     }>();
     const navigate = useNavigate();
+    const [yyyy, mm] = date!.split('-');
+    const {
+        data: dates,
+        error: datesError,
+        isLoading: datesLoading
+    } = useSWR<{ message: string; data: EventDate[] }, Error>(
+        `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true`
+    );
+    const dateList = Array.isArray(dates?.data) ? dates.data : [];
+    const scheduled = dateList.some(
+        (d) => d.event_id === Number(event_id) && d.date === date
+    );
+
+    if (!date || !isoRE.test(date)) {
+        return <Navigate to="/404" replace />;
+    }
+
+    const day = parseLocalDay(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isFutureDay = day > today;
+
+    if (datesLoading) {
+        return <div>Loading schedule…</div>;
+    }
+    if (datesError) {
+        return <Error message="Error loading schedule" />;
+    }
+
+    if (!scheduled && !isFutureDay) {
+        return (
+            <div className="mt-10 text-center text-error">
+                No class session was scheduled for this date.
+            </div>
+        );
+    }
+
+    if (!scheduled && isFutureDay) {
+        return (
+            <div className="mt-10 text-center text-error">
+                No class session is scheduled for this date.
+            </div>
+        );
+    }
+
+    if (scheduled && isFutureDay) {
+        return (
+            <div className="mt-10 text-center text-error">
+                This session is scheduled for a future date. Attendance will be
+                available after it occurs.
+            </div>
+        );
+    }
     const {
         page: pageQuery,
         perPage,

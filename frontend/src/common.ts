@@ -1127,3 +1127,8 @@ export type ProgramAction =
     | 'set_inactive'
     | 'archive'
     | 'reactivate';
+
+export interface EventDate {
+    event_id: number;
+    date: string;
+}
