@@ -21,6 +21,7 @@ CREATE INDEX idx_change_log_table_name_parent_ref_id on public.change_log_entrie
 CREATE INDEX idx_change_log_table_name_parent_ref_id_field_name on public.change_log_entries (table_name, parent_ref_id, field_name);
 
 CREATE UNIQUE INDEX idx_unique_facility_program_active ON public.facilities_programs (program_id, facility_id) WHERE (deleted_at IS NULL);
+ALTER TABLE public.program_class_enrollments ADD COLUMN change_reason VARCHAR(255);
 -- +goose StatementEnd
 
 -- +goose Down                                   
@@ -28,4 +29,5 @@ CREATE UNIQUE INDEX idx_unique_facility_program_active ON public.facilities_prog
 ALTER TABLE cron_jobs DROP COLUMN IF EXISTS job_category;
 DROP TABLE IF EXISTS public.change_log_entries CASCADE;
 DROP INDEX IF EXISTS idx_unique_facility_program_active CASCADE;
+ALTER TABLE public.program_class_enrollments DROP COLUMN IF EXISTS change_reason;
 -- +goose StatementEnd
