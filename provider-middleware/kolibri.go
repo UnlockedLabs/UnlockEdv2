@@ -138,7 +138,7 @@ func (ks *KolibriService) ImportCourses(db *gorm.DB) error { //add more to this:
 	return nil
 }
 
-func updateTotalProgress(db *gorm.DB, providerPlatformID uint, course map[string]interface{}) {
+func updateTotalProgress(db *gorm.DB, providerPlatformID uint, course map[string]any) {
 	id := course["id"].(string)
 	totalResourceCount := course["total_resource_count"].(int64)
 	if db.Where("provider_platform_id = ? AND external_id = ? AND total_progress_milestones = ?", providerPlatformID, id, totalResourceCount).First(&models.Course{}).Error != nil {
@@ -149,15 +149,15 @@ func updateTotalProgress(db *gorm.DB, providerPlatformID uint, course map[string
 }
 
 type milestonePO struct {
-	course          map[string]interface{}
+	course          map[string]any
 	usersMap        map[string]uint
 	externalUserIds []string
 }
 
-func (ks *KolibriService) ImportMilestones(course map[string]interface{}, users []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
+func (ks *KolibriService) ImportMilestones(course map[string]any, users []map[string]any, db *gorm.DB, lastRun time.Time) error {
 	usersMap := make(map[string]uint)
 	for _, user := range users {
-		usersMap[user["external_user_id"].(string)] = uint(user["user_id"].(float64))
+		usersMap[user["external_user_id"].(string)] = uint(user["user_id"].(int64))
 	}
 	externalUserIds := []string{}
 	for externalId := range usersMap {
@@ -216,7 +216,7 @@ func importEnrollmentMilestones(ks *KolibriService, paramObj milestonePO, db *go
 		log.Errorln("error querying kolibri database for enrollment milestones")
 		return err
 	}
-	courseId := uint(course["course_id"].(float64))
+	courseId := uint(course["course_id"].(int64))
 	for _, enrollment := range enrollments {
 		userID := usersMap[enrollment["user_id"].(string)]
 		if db.Model(&models.UserEnrollment{}).First(&models.UserEnrollment{}, "user_id = ? AND course_id = ?", userID, courseId).RowsAffected == 0 {
@@ -230,7 +230,7 @@ func importEnrollmentMilestones(ks *KolibriService, paramObj milestonePO, db *go
 }
 
 func importAssignmentQuizGradeMilestones(ks *KolibriService, paramObj milestonePO, db *gorm.DB) error {
-	var aqgMilestones []map[string]interface{}
+	var aqgMilestones []map[string]any
 	sql := `select col.name, prog.id as milestone_ex_id, prog.user_id, col.id as course_id, prog.notification_object as submission_type, 
 				prog.notification_event as is_complete, quiz_num_correct, quiz_num_answered
 		from notifications_learnerprogressnotification prog  
@@ -249,7 +249,7 @@ func importAssignmentQuizGradeMilestones(ks *KolibriService, paramObj milestoneP
 		log.Errorln("error querying kolibri database for assignment submissions, quiz submissions, and graded milestones")
 		return err
 	}
-	courseId := uint(course["course_id"].(float64))
+	courseId := uint(course["course_id"].(int64))
 	for _, aqgMilestone := range aqgMilestones {
 		userId := usersMap[aqgMilestone["user_id"].(string)]
 		id := strconv.Itoa(int(aqgMilestone["milestone_ex_id"].(int32)))
@@ -296,8 +296,8 @@ type KolibriActivity struct {
 	Kind                string `json:"kind"`
 }
 
-func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interface{}, db *gorm.DB) error {
-	courseId := int(courseIdPair["course_id"].(float64))
+func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]any, db *gorm.DB) error {
+	courseId := int(courseIdPair["course_id"].(int64))
 	externalId := courseIdPair["external_course_id"].(string)
 	sql := `SELECT id, user_id, time_spent, completion_timestamp, content_id, progress, kind FROM logger_contentsummarylog WHERE channel_id = ?`
 	var activities []KolibriActivity
@@ -328,7 +328,7 @@ func (ks *KolibriService) ImportActivityForCourse(courseIdPair map[string]interf
 			kind = models.ContentInteraction
 		}
 		//checking if activity record was already inserted
-		var acts []map[string]interface{}
+		var acts []map[string]any
 		if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, activity.ID).First(&acts).Error == nil {
 			continue
 		}
