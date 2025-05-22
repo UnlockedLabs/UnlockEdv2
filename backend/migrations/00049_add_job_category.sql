@@ -22,6 +22,10 @@ CREATE INDEX idx_change_log_table_name_parent_ref_id_field_name on public.change
 
 CREATE UNIQUE INDEX idx_unique_facility_program_active ON public.facilities_programs (program_id, facility_id) WHERE (deleted_at IS NULL);
 ALTER TABLE public.program_class_enrollments ADD COLUMN change_reason VARCHAR(255);
+
+ALTER TABLE public.program_class_event_overrides ADD COLUMN reason VARCHAR(255);
+ALTER TABLE public.program_class_event_overrides RENAME COLUMN location TO room;
+ALTER TABLE public.program_class_event_overrides ADD CONSTRAINT unique_event_id_rrule UNIQUE (event_id, override_rrule);
 -- +goose StatementEnd
 
 -- +goose Down                                   
@@ -30,4 +34,8 @@ ALTER TABLE cron_jobs DROP COLUMN IF EXISTS job_category;
 DROP TABLE IF EXISTS public.change_log_entries CASCADE;
 DROP INDEX IF EXISTS idx_unique_facility_program_active CASCADE;
 ALTER TABLE public.program_class_enrollments DROP COLUMN IF EXISTS change_reason;
+
+ALTER TABLE public.program_class_event_overrides DROP COLUMN reason;
+ALTER TABLE public.program_class_event_overrides RENAME COLUMN room TO location;
+ALTER TABLE public.program_class_event_overrides DROP CONSTRAINT IF EXISTS unique_event_id_rrule;
 -- +goose StatementEnd
