@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-ALTER TABLE public.program_class_enrollments ADD COLUMN change_reason VARCHAR(250);
+ALTER TABLE public.program_class_enrollments ADD COLUMN change_reason VARCHAR(255);
 -- +goose StatementEnd
 
 -- +goose Down
