@@ -62,6 +62,9 @@ export default function EventAttendance() {
         setPage: setPageQuery,
         setPerPage
     } = useUrlPagination(1, 20);
+    const rawClsInfo = useLoaderData() as { class?: Class };
+    const clsInfo = rawClsInfo?.class;
+    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
     const { data, error, isLoading, mutate } = useSWR<
         ServerResponseMany<EnrollmentAttendance>,
         Error
@@ -84,6 +87,7 @@ export default function EventAttendance() {
     } = useSWR<{ message: string; data: EventDate[] }, Error>(
         `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true`
     );
+
     useEffect(() => {
         if (data?.data) {
             const mergedRows = data.data.map((item) => {
@@ -154,9 +158,6 @@ export default function EventAttendance() {
         });
         setPageQuery(1);
     };
-    const rawClsInfo = useLoaderData() as { class?: Class };
-    const clsInfo = rawClsInfo?.class;
-    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
 
     function handleNoteChange(user_id: number, newNote: string) {
         const currentRow = rows.find((r) => r.user_id === user_id);
