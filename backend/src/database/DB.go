@@ -129,7 +129,6 @@ func MigrateTesting(db *gorm.DB) {
 		&models.UserCourseActivityTotals{},
 		&models.ProgramClassesHistory{},
 		&models.UserAccountHistory{},
-		&models.FacilitiesPrograms{},
 	}
 	for _, table := range TableList {
 		logrus.Printf("Migrating %T table...", table)
