@@ -139,11 +139,11 @@ func MigrateTesting(db *gorm.DB) {
 
 func (db *DB) SeedDefaultData(isTesting bool) {
 	var count int64
-	if err := db.Model(models.User{}).Where("id = ?", fmt.Sprintf("%d", 1)).Count(&count).Error; err != nil {
+	if err := db.Model(models.User{}).Where("id = ?", 1).Count(&count).Error; err != nil {
 		logrus.Fatal("db transaction failed getting admin user")
 	}
 	if count == 0 {
-		if err := db.Model(models.Facility{}).Where("id = ?", fmt.Sprintf("%d", 1)).Count(&count).Error; err != nil {
+		if err := db.Model(models.Facility{}).Where("id = ?", 1).Count(&count).Error; err != nil {
 			logrus.Fatal("db transaction failed getting default facility")
 		}
 		if isTesting {
