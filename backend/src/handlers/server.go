@@ -22,7 +22,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -121,12 +120,10 @@ func (srv *Server) ListenAndServe(ctx context.Context) {
 	logrus.Println("Starting server on port: ", srv.port)
 	// Listen for context cancellation to trigger graceful shutdown
 	go func() {
-		select {
-		case <-ctx.Done():
-			log.Println("Context cancelled, shutting down server...")
-			if srv != nil {
-				srv.Shutdown()
-			}
+		<-ctx.Done()
+		logrus.Println("Context cancelled, shutting down server...")
+		if srv != nil {
+			srv.Shutdown()
 		}
 	}()
 	if err := http.ListenAndServe(":"+srv.port, handler); err != nil {

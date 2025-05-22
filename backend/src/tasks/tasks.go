@@ -52,7 +52,7 @@ func InitScheduling(dev bool, nats *nats.Conn, db *gorm.DB) *Scheduler {
 }
 
 func (s *Scheduler) Stop() error {
-	return s.Scheduler.StopJobs()
+	return s.StopJobs()
 }
 
 func (s *Scheduler) execute() {
