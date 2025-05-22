@@ -73,10 +73,9 @@ export default function AdminManagement() {
     } = useUrlPagination(1, 20);
 
     const { user } = useAuth();
-    const newAdminRole: UserRole = isSysAdmin(user!)
-        ? UserRole.DepartmentAdmin
-        : UserRole.FacilityAdmin;
-
+    const [newAdminRole, setNewAdminRole] = useState<UserRole>(
+        UserRole.FacilityAdmin
+    );
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<User>,
         Error
@@ -162,12 +161,46 @@ export default function AdminManagement() {
                         />
                     </div>
 
-                    <div className="tooltip tooltip-left" data-tip="Add Admin">
-                        <AddButton
-                            label={`${isSysAdmin(user!) ? 'Add Department Admin' : 'Add Facility Admin'}`}
-                            onClick={() => showModal(addUserModal)}
-                        />
-                    </div>
+                    {isSysAdmin(user!) ? (
+                        <div className="flex gap-2">
+                            <div
+                                className="w-64 tooltip tooltip-bottom"
+                                data-tip="Add Department-wide Admin"
+                            >
+                                <AddButton
+                                    label={`Add Department Admin`}
+                                    onClick={() => {
+                                        setNewAdminRole(
+                                            UserRole.DepartmentAdmin
+                                        );
+                                        showModal(addUserModal);
+                                    }}
+                                />
+                            </div>
+                            <div
+                                className="w-64 tooltip  tooltip-bottom"
+                                data-tip={`Add ${user!.facility_name} Admin`}
+                            >
+                                <AddButton
+                                    label={`Add Facility Admin`}
+                                    onClick={() => {
+                                        setNewAdminRole(UserRole.FacilityAdmin);
+                                        showModal(addUserModal);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div
+                            className="tooltip tooltip-left"
+                            data-tip="Add Admin"
+                        >
+                            <AddButton
+                                label={`Add Admin`}
+                                onClick={() => showModal(addUserModal)}
+                            />
+                        </div>
+                    )}
                 </div>
                 <div className="relative w-full" style={{ overflowX: 'clip' }}>
                     <table className="table-2 mb-4">
