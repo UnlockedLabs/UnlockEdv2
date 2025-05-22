@@ -168,6 +168,7 @@ type EventDates struct {
 type FacilityProgramClassEvent struct {
 	ProgramClassEvent
 	InstructorName string    `json:"instructor_name"`
+	ProgramName    string    `json:"program_name"`
 	ClassName      string    `json:"title"`
 	IsCancelled    bool      `json:"is_cancelled"`
 	EnrolledUsers  string    `json:"enrolled_users"`

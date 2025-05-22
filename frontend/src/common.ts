@@ -793,6 +793,7 @@ export interface ShortCalendarEvent {
 
 export interface FacilityProgramClassEvent extends ProgramClassEvent {
     instructor_name: string;
+    program_name: string;
     title: string;
     is_cancelled: boolean;
     enrolled_users: string;
