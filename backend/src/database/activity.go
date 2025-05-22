@@ -161,7 +161,7 @@ func (db *DB) GetLearningInsights(facilityID *uint) ([]models.LearningInsight, e
 `
 	sqlFunc := `ROUND(COALESCE(sub.completions, 0)::NUMERIC / COALESCE(sub.enrollments, 0) * 100, 2)`
 
-	if db.Dialector.Name() == "sqlite" {
+	if db.Name() == "sqlite" {
 		sqlFunc = `ROUND(CAST(COALESCE(sub.completions, 0) AS REAL) /
                CAST(NULLIF(sub.enrollments, 0) AS REAL) * 100, 2)`
 	}

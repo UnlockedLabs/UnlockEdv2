@@ -10,7 +10,6 @@ import (
 	"unicode"
 
 	"github.com/glebarez/sqlite"
-	_ "github.com/glebarez/sqlite"
 	"github.com/go-playground/validator/v10"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"

@@ -22,14 +22,22 @@ func (srv *Server) handleUploadHandler(w http.ResponseWriter, r *http.Request, l
 	}
 	log.add("filename", header.Filename)
 	log.add("size", header.Size)
-	defer file.Close()
+	defer func() {
+		if file.Close() != nil {
+			log.error("Failed to close file")
+		}
+	}()
 	path := filepath.Join(os.Getenv("IMG_FILEPATH"), header.Filename)
 	log.add("filename", header.Filename)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return newInternalServerServiceError(err, "Failed to open file")
 	}
-	defer f.Close()
+	defer func() {
+		if f.Close() != nil {
+			log.error("Failed to close file")
+		}
+	}()
 	if _, err = io.Copy(f, file); err != nil {
 		return newInternalServerServiceError(err, "Failed to save file")
 	}
