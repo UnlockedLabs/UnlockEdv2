@@ -194,6 +194,10 @@ func (sh *ServiceHandler) handleAcitivityForCourse(ctx context.Context, msg *nat
 	jobId := params["job_id"].(string)
 	providerPlatformId := int(params["provider_platform_id"].(float64))
 	courses, err := sh.lookupCoursesMapping(providerPlatformId)
+	if err != nil {
+		sh.cleanupJob(contxt, &providerPlatformId, jobId, false)
+		return
+	}
 	for _, course := range courses {
 		select {
 		case <-contxt.Done():
