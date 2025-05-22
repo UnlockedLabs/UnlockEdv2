@@ -176,7 +176,6 @@ func (srv *Server) handleUpdateProgram(w http.ResponseWriter, r *http.Request, l
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	var programForm ProgramForm
 	err := json.NewDecoder(r.Body).Decode(&programForm)
-	defer r.Body.Close()
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
