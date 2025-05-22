@@ -21,11 +21,13 @@ export default function Schedule() {
         );
     }
 
-    const formattedEvents = events.map((event) => ({
-        ...event,
-        start: new Date(event.start),
-        end: new Date(event.end)
-    }));
+    const formattedEvents = events
+        ? events.map((event) => ({
+              ...event,
+              start: new Date(event.start),
+              end: new Date(event.end)
+          }))
+        : [];
 
     function clearSelectedEvent() {
         const selectedElement = document.querySelector<HTMLElement>(
