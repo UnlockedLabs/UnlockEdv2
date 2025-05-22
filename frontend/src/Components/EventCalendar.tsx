@@ -24,6 +24,8 @@ export default function EventCalendar({
         }
         return {};
     };
+    const scrollTime = new Date();
+    scrollTime.setHours(6, 0, 0, 0);
     return (
         <div className="p-4">
             <Calendar
@@ -35,6 +37,7 @@ export default function EventCalendar({
                 defaultView={view}
                 onSelectEvent={handleDateClick}
                 eventPropGetter={eventPropGetter}
+                scrollToTime={scrollTime}
             />
         </div>
     );
