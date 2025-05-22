@@ -15,8 +15,10 @@ import {
 } from '@/common';
 import API from '@/api/api';
 import {
+    closeModal,
     FormInputTypes,
     FormModal,
+    showModal,
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
@@ -86,7 +88,11 @@ export default function ClassEnrollmentDetails() {
             user_id: enrollment.user_id,
             name_full: enrollment.name_full
         });
-        openConfirm();
+        if (requiresReason(value)) {
+            showModal(reasonModalRef);
+        } else {
+            showModal(confirmStateChangeModal);
+        }
     };
 
     const toggleSelection = (userId: number) => {
@@ -174,14 +180,6 @@ export default function ClassEnrollmentDetails() {
         Dropped = 'Incomplete: Dropped',
         'Failed To Complete' = 'Incomplete: Failed to Complete'
     }
-    const openConfirm = () => {
-        if (requiresReason(changeStatusValue?.status)) {
-            reasonModalRef.current?.showModal();
-        } else {
-            confirmStateChangeModal.current?.showModal();
-        }
-    };
-
     return (
         <div className="flex flex-col gap-8">
             <div className="flex flex-row justify-between items-center">
@@ -278,45 +276,47 @@ export default function ClassEnrollmentDetails() {
                 )}
             </div>
 
-            {requiresReason(changeStatusValue?.status) ? (
-                <FormModal
-                    ref={reasonModalRef}
-                    title="Confirm Enrollment Action"
-                    showCancel
-                    submitText="Confirm"
-                    defaultValues={{ reason: '' }}
-                    inputs={[
-                        {
-                            type: FormInputTypes.TextArea,
-                            label: `Please add the reason for changing ${changeStatusValue?.name_full}'s status to ${changeStatusValue?.status}`,
-                            interfaceRef: 'reason',
-                            required: true,
-                            length: 255,
-                            validate: (val: string) =>
-                                val.trim().length > 0 || 'Reason is required'
-                        }
-                    ]}
-                    onSubmit={async (formData: FieldValues) => {
-                        const reason = (
-                            formData as { reason: string }
-                        ).reason.trim();
-                        await handleSubmitEnrollmentChange(reason);
-                        reasonModalRef.current?.close();
-                    }}
-                />
-            ) : (
-                <TextOnlyModal
-                    ref={confirmStateChangeModal}
-                    type={TextModalType.Confirm}
-                    title="Confirm Enrollment Action"
-                    text={`Are you sure you want to permanently change the status to "${changeStatusValue?.status}" for ${changeStatusValue?.name_full ?? 'the selected users'}? This cannot be undone.`}
-                    onSubmit={() => void handleSubmitEnrollmentChange()}
-                    onClose={() => {
-                        confirmStateChangeModal.current?.close();
-                        setChangeStatusValue(undefined);
-                    }}
-                />
-            )}
+            <FormModal
+                ref={reasonModalRef}
+                title="Confirm Enrollment Action"
+                showCancel
+                submitText="Confirm"
+                defaultValues={{ reason: '' }}
+                inputs={[
+                    {
+                        type: FormInputTypes.TextArea,
+                        label: `Please add the reason for changing ${changeStatusValue?.name_full}'s status to ${changeStatusValue?.status}`,
+                        interfaceRef: 'change_reason',
+                        required: true,
+                        length: 255,
+                        validate: (val: string) =>
+                            val.trim().length > 0 || 'Reason is required'
+                    }
+                ]}
+                onSubmit={async (formData: FieldValues) => {
+                    const reason = (
+                        formData as { reason: string }
+                    ).reason.trim();
+                    await handleSubmitEnrollmentChange(reason);
+                    closeModal(reasonModalRef);
+                    setChangeStatusValue(undefined);
+                }}
+                onClose={() => {
+                    closeModal(reasonModalRef);
+                    setChangeStatusValue(undefined);
+                }}
+            />
+            <TextOnlyModal
+                ref={confirmStateChangeModal}
+                type={TextModalType.Confirm}
+                title="Confirm Enrollment Action"
+                text={`Are you sure you want to permanently change the status to "${changeStatusValue?.status}" for ${changeStatusValue?.name_full ?? 'the selected users'}? This cannot be undone.`}
+                onSubmit={() => void handleSubmitEnrollmentChange()}
+                onClose={() => {
+                    closeModal(confirmStateChangeModal);
+                    setChangeStatusValue(undefined);
+                }}
+            />
             <CompletionDetailsModal
                 enrollment={completionDetails}
                 modalRef={completionDetailsModal}

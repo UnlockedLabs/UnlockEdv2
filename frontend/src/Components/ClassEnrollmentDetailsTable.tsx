@@ -135,6 +135,7 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                             {isEditable(enrollment) ? (
                                 <DropdownControl
                                     enumType={inlineOptions}
+                                    value={enrollment.enrollment_status}
                                     customCallback={(val) =>
                                         handleChange(val, enrollment)
                                     }
