@@ -332,7 +332,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
         STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
 		Joins("JOIN program_classes c ON c.id = pcev.class_id").
 		Joins("JOIN programs p ON p.id = c.program_id").
-		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
+		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID).
 		Group("pcev.id, c.instructor_name, c.name, p.name")
@@ -345,7 +345,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		if err != nil {
 			return nil, err
 		}
-		occurrences := rRule.Between(dtRng.Start, dtRng.End, true)
+		occurrences := rRule.Between(dtRng.Start.In(dtRng.Tzone), dtRng.End.In(dtRng.Tzone), true)
 		duration, err := time.ParseDuration(event.Duration)
 		if err != nil {
 			return nil, err
