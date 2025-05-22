@@ -721,7 +721,7 @@ export interface ProgramOverview extends Program {
 export interface ProgramClassOutcome {
     month: string;
     completions: number;
-    dropouts: number;
+    drops: number;
 }
 
 export interface ProgramsFacilitiesStats {

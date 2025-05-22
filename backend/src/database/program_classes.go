@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
@@ -113,25 +114,47 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 
 type ProgramClassOutcome struct {
 	Month       string `json:"month"`
-	Dropouts    int    `json:"dropouts"`
+	Drops       int    `json:"drops"`
 	Completions int    `json:"completions"`
 }
 
 func (db *DB) GetProgramClassOutcome(id int, args *models.QueryContext) ([]ProgramClassOutcome, error) {
 	var outcome []ProgramClassOutcome
 
+	facilityID := args.FacilityID
+
+	// Generate series to create 6 months of data not including current month
+	monthsSubquery := `(SELECT TO_CHAR(
+		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month 
+		FROM generate_series(1, 6) AS gs(i))`
+
+	enrollmentsSubquery := `(SELECT * 
+		FROM program_class_enrollments 
+		WHERE class_id IN (
+			SELECT id FROM program_classes 
+			WHERE program_id = ? AND facility_id = ?
+		))`
+
 	query := db.WithContext(args.Ctx).
-		Table("(SELECT TO_CHAR(DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month FROM generate_series(0, 5) AS gs(i)) AS months").
+		Table(fmt.Sprintf("(%s) AS months", monthsSubquery)).
 		Select(`
-        months.month,
-        COALESCE(COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END), 0) AS completions,
-        COALESCE(COUNT(CASE WHEN pce.enrollment_status IN ('Incomplete: Dropped', 'Incomplete: Failed to Complete', 'Incomplete: Transferred', 'Incomplete: Withdrawn') THEN 1 END), 0) AS dropouts
-    `).
-		Joins(`LEFT JOIN program_class_enrollments pce ON TO_CHAR(DATE_TRUNC('month', pce.updated_at), 'YYYY-MM') = months.month AND pce.class_id = ?`, id).
+			months.month,
+			COALESCE(COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' THEN pce.class_id END), 0) AS completions,
+			COALESCE(COUNT(DISTINCT CASE WHEN pce.enrollment_status IN (
+				'Incomplete: Dropped',
+				'Incomplete: Failed to Complete',
+				'Incomplete: Transferred',
+				'Incomplete: Withdrawn'
+			) THEN pce.class_id END), 0) AS drops
+		`).
+		Joins(fmt.Sprintf(`
+			LEFT JOIN (%s) AS pce 
+			ON TO_CHAR(DATE_TRUNC('month', pce.updated_at), 'YYYY-MM') = months.month
+		`, enrollmentsSubquery), id, facilityID).
 		Group("months.month").
 		Order(args.OrderBy)
 
-	if err := query.Find(&outcome).Error; err != nil {
+	if err := query.Debug().Find(&outcome).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
 	return outcome, nil
