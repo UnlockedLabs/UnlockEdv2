@@ -54,6 +54,8 @@ export default function Schedule() {
                             <CloseX close={() => clearSelectedEvent()} />
                         </div>
                         <div className="space-y-2 overflow-y-scroll">
+                            <h3>Program Name</h3>
+                            <p>{selectedEvent.program_name}</p>
                             <h3>Class Name</h3>
                             <p>{selectedEvent.title}</p>
                             <h3>Instructor</h3>

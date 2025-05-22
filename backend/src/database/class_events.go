@@ -326,14 +326,16 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	// TOP DO: finish adding overrides as is_cancelled (so it renders in the frontend)
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
 		Select(`pcev.*,
+		p.name as program_name,
 		c.instructor_name,
 		c.name as class_name,
         STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
 		Joins("JOIN program_classes c ON c.id = pcev.class_id").
+		Joins("JOIN programs p ON p.id = c.program_id").
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID).
-		Group("pcev.id, c.instructor_name, c.name")
+		Group("pcev.id, c.instructor_name, c.name, p.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -358,6 +360,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent: event.ProgramClassEvent,
 				InstructorName:    event.InstructorName,
+				ProgramName:       event.ProgramName,
 				ClassName:         event.ClassName,
 				EnrolledUsers:     event.EnrolledUsers,
 				StartTime:         occurrence,
