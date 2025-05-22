@@ -355,10 +355,10 @@ export default function ProgramManagementForm() {
                     <div>
                         <div className="text-error">
                             <p className="text-error">
-                                You can't remove this facility because it still
+                                This facility cannot be removed because it still
                                 has active or scheduled classes in this program.
-                                Cancel or complete all classes before trying
-                                again.
+                                Please cancel or complete all classes before
+                                trying again.
                             </p>
                         </div>
                         <div className="mt-4 text-center">
