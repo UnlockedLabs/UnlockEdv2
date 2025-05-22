@@ -56,7 +56,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		}
 		attendances[i].EventID = uint(eventID)
 	}
-	if err := srv.Db.LogUserAttendance(&attendances); err != nil {
+	if err := srv.Db.LogUserAttendance(attendances); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Attendance updated")

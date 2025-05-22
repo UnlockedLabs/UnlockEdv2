@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"math"
 	"reflect"
 )
 
@@ -90,7 +91,7 @@ func (q QueryContext) IntoMeta() PaginationMeta {
 }
 
 func (q QueryContext) CalcOffset() int {
-	return (q.Page - 1) * q.PerPage
+	return int(math.Abs(float64((q.Page - 1) * q.PerPage)))
 }
 
 // fallbackPrefix is the table name or alias used in the relevant query,

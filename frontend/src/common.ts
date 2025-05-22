@@ -838,7 +838,7 @@ export interface EnrollmentAttendance {
     doc_id: string;
     name_first: string;
     name_last: string;
-    attendance_status: string;
+    attendance_status: Attendance;
     note: string;
 }
 

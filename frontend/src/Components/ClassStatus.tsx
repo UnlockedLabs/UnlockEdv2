@@ -20,20 +20,18 @@ import {
 } from '@/common';
 import { KeyedMutator } from 'swr';
 
-export function isArchived(program_class: Class) {
-    if (
+export function isArchived(program_class: Class): boolean {
+    return !(
         program_class.archived_at === null ||
         program_class.archived_at === '0001-01-01T00:00:00Z'
-    )
-        return false;
-    return true;
+    );
 }
 
-function isCompletedOrCancelled(program_class: Class) {
-    const isCmpOrCan =
+function isCompletedOrCancelled(program_class: Class): boolean {
+    return (
         program_class.status === SelectedClassStatus.Completed ||
-        program_class.status === SelectedClassStatus.Cancelled;
-    return isCmpOrCan;
+        program_class.status === SelectedClassStatus.Cancelled
+    );
 }
 
 function SelectedClassStatusPill({
