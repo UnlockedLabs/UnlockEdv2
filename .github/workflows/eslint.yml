@@ -1,10 +1,10 @@
-name: Run Oxlint + ESLint Typescript Linters
+name: Run ESLint and build frontend
 
-on: [pull_request, push]
+on: pull_request
 
 jobs:
-  oxlint:
-    name: Lint JS
+  frontend:
+    name: Lint and build JS
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
