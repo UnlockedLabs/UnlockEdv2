@@ -795,7 +795,7 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     instructor_name: string;
     title: string;
     is_cancelled: boolean;
-    enrolled_users: string[];
+    enrolled_users: string;
     start: Date;
     end: Date;
     frequency: string;

@@ -323,17 +323,17 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 
 func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
 	events := []models.FacilityProgramClassEvent{}
+	// TOP DO: finish adding overrides as is_cancelled (so it renders in the frontend)
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
 		Select(`pcev.*,
 		c.instructor_name,
 		c.name as class_name,
-		CASE WHEN c.status = 'Cancelled' THEN TRUE ELSE FALSE END as is_cancelled,
-		ARRAY_AGG(DISTINCT CONCAT(u.id, ':', u.name_first, ' ', u.name_last)) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
+        STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
 		Joins("JOIN program_classes c ON c.id = pcev.class_id").
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id AND e.enrollment_status = 'Enrolled'").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
 		Where("c.facility_id = ?", args.FacilityID).
-		Group("pcev.id, c.instructor_name, c.name, c.status")
+		Group("pcev.id, c.instructor_name, c.name")
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
@@ -359,7 +359,6 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				ProgramClassEvent: event.ProgramClassEvent,
 				InstructorName:    event.InstructorName,
 				ClassName:         event.ClassName,
-				IsCancelled:       event.IsCancelled,
 				EnrolledUsers:     event.EnrolledUsers,
 				StartTime:         occurrence,
 				EndTime:           occurrence.Add(duration),
