@@ -295,7 +295,7 @@ func (db *DB) GetNumberOfActiveUsersForTimePeriod(args *models.QueryContext, act
 	tx = db.WithContext(args.Ctx).Model(&models.User{})
 	if days == -1 {
 		tx = tx.Joins(join)
-		sysAdmin, err := db.GetSystemAdmin()
+		sysAdmin, err := db.GetSystemAdmin(args.Ctx)
 		if err != nil {
 			return 0, days, err
 		}

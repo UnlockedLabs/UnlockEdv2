@@ -3,6 +3,7 @@ package main
 import (
 	"UnlockEdv2/src/handlers"
 	"UnlockEdv2/src/models"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -48,7 +49,7 @@ func main() {
 
 func seedTestData(db *gorm.DB) {
 	// isTesting is false because this needs to seed real users w/ kratos
-	testServer := handlers.NewServer(false)
+	testServer := handlers.NewServer(false, context.Background())
 	facilities := []models.Facility{
 		{
 			Name:     "BCF",

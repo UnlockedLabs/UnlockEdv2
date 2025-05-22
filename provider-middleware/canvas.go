@@ -103,7 +103,7 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 			nameFirst = shortName
 			nameLast = name[0]
 		}
-		userId, _ := user["id"].(float64)
+		userId, _ := user["id"].(int64)
 		var count int64 = 0
 		err := db.Model(&models.ProviderUserMapping{}).Where("external_user_id = ?", fmt.Sprintf("%d", int(userId))).Where("provider_platform_id = ?", srv.ProviderPlatformID).Count(&count).Error
 		if err != nil {
@@ -142,14 +142,14 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 			logger().Error("Failed to close response body")
 		}
 	}()
-	courses := make([]map[string]interface{}, 0)
+	courses := make([]map[string]any, 0)
 	err = json.NewDecoder(resp.Body).Decode(&courses)
 	if err != nil {
 		log.Printf("Failed to decode response: %v", err)
 		return err
 	}
 	for _, course := range courses {
-		id := int(course["id"].(float64))
+		id := int(course["id"].(int64))
 		var count int64 = 0
 		log.Infof("importing course %d", id)
 		if db.Table("courses").Where("provider_platform_id = ?", srv.ProviderPlatformID).
@@ -462,7 +462,7 @@ func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string
 			logger().Error("Failed to close response body")
 		}
 	}()
-	enrollments := make([]map[string]interface{}, 0)
+	enrollments := make([]map[string]any, 0)
 	err = json.NewDecoder(resp.Body).Decode(&enrollments)
 	if err != nil {
 		return nil, err
@@ -471,7 +471,7 @@ func (srv *CanvasService) getEnrollmentsForCourse(courseId string) ([]map[string
 }
 
 func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db *gorm.DB) error {
-	courseId := int(coursePair["course_id"].(float64))
+	courseId := int(coursePair["course_id"].(int64))
 	externalId := coursePair["external_course_id"].(string)
 	enrollments, err := srv.getEnrollmentsForCourse(externalId)
 	if err != nil {
@@ -479,7 +479,7 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db 
 		return err
 	}
 	for _, enrollment := range enrollments {
-		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(float64)))
+		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(int64)))
 		var userID uint
 		err := db.Model(models.ProviderUserMapping{}).Select("user_id").First(&userID, "provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, userId).Error
 		if err != nil {

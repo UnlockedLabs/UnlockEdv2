@@ -230,7 +230,7 @@ func (srv *BrightspaceService) updateTotalProgress(db *gorm.DB, totalProgressMil
 func (srv *BrightspaceService) ImportMilestones(course map[string]interface{}, users []map[string]interface{}, db *gorm.DB, lastRun time.Time) error {
 	usersMap := make(map[string]uint)
 	for _, user := range users {
-		usersMap[user["external_user_id"].(string)] = uint(user["user_id"].(float64))
+		usersMap[user["external_user_id"].(string)] = uint(user["user_id"].(int64))
 	}
 	paramObj := milestonePO{
 		course:   course,
@@ -278,7 +278,7 @@ func importBSEnrollmentMilestones(srv *BrightspaceService, po milestonePO, db *g
 	log.WithFields(fields).Info("importing enrollment milestones from provider using csv file")
 	course := po.course
 	usersMap := po.usersMap
-	courseId := uint(course["course_id"].(float64))
+	courseId := uint(course["course_id"].(int64))
 	externalCourseId := course["external_course_id"].(string)
 	filteredBSEnrollments := findSlice(bsEnrollments, func(bsEnrollment BrightspaceEnrollment) bool {
 		return bsEnrollment.OrgUnitId == externalCourseId && usersMap[bsEnrollment.UserId] != 0
@@ -323,7 +323,7 @@ func importBSAssignmentSubmissionMilestones(srv *BrightspaceService, po mileston
 	log.WithFields(fields).Info("importing assignment submission/graded milestones from provider using csv file")
 	course := po.course
 	usersMap := po.usersMap
-	courseId := uint(course["course_id"].(float64))
+	courseId := uint(course["course_id"].(int64))
 	externalCourseId := course["external_course_id"].(string)
 	filteredBSAssignments := findSlice(bsAssignments, func(bsAssignment BrightspaceAssignmentSubmission) bool {
 		return bsAssignment.OrgUnitId == externalCourseId && usersMap[bsAssignment.UserId] != 0
@@ -393,7 +393,7 @@ func importBSQuizSubmissionMilestones(srv *BrightspaceService, po milestonePO, d
 	log.WithFields(fields).Info("importing quiz submission/graded milestones from provider using csv file")
 	course := po.course
 	usersMap := po.usersMap
-	courseId := uint(course["course_id"].(float64))
+	courseId := uint(course["course_id"].(int64))
 	externalCourseId := course["external_course_id"].(string)
 	filteredBSQuizes := findSlice(bsQuizes, func(bsQuiz BrightspaceQuizSubmission) bool {
 		return bsQuiz.OrgUnitId == externalCourseId && strings.ToUpper(bsQuiz.IsDeleted) == "FALSE" && usersMap[bsQuiz.UserId] != 0
@@ -469,7 +469,7 @@ func addQuizMilestoneIfNotExists(db *gorm.DB, userId, courseId uint, bsQuiz Brig
 	}
 }
 
-func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interface{}, db *gorm.DB) error {
+func (srv *BrightspaceService) ImportActivityForCourse(course map[string]any, db *gorm.DB) error {
 	if !srv.IsDownloaded {
 		cleanUpCsvFiles("activities")
 	}
@@ -497,14 +497,14 @@ func (srv *BrightspaceService) ImportActivityForCourse(course map[string]interfa
 		srv.CsvFileMap["contentprogress"] = userProgressCsvFile
 		srv.IsDownloaded = true
 	}
-	courseId := uint(course["course_id"].(float64))
+	courseId := uint(course["course_id"].(int64))
 	externalCourseId := course["external_course_id"].(string)
 	bsContentDtoMap := srv.getUsersActivity(db, externalCourseId, contentObjCsvFile, userProgressCsvFile)
 	fields := log.Fields{"provider": srv.ProviderPlatformID, "Function": "ImportActivityForCourse", "contentObjCsvFile": contentObjCsvFile, "userProgressCsvFile": userProgressCsvFile}
 	log.WithFields(fields).Info("importing activities from provider using csv file")
 	for userId, bsUserContentDtos := range bsContentDtoMap {
 		for _, bsDto := range bsUserContentDtos {
-			var acts []map[string]interface{}
+			var acts []map[string]any
 			if db.Raw("select external_id from activities where course_id = ? AND external_id = ?", courseId, bsDto.ExternalId).First(&acts).RowsAffected > 0 {
 				continue
 			}
