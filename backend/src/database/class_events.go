@@ -345,12 +345,6 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		if err != nil {
 			return nil, err
 		}
-		if dtRng.Start.IsZero() {
-			dtRng.Start = time.Now()
-		}
-		if dtRng.End.IsZero() {
-			dtRng.End = time.Now().AddDate(0, 1, 0)
-		}
 		occurrences := rRule.Between(dtRng.Start, dtRng.End, true)
 		duration, err := time.ParseDuration(event.Duration)
 		if err != nil {
