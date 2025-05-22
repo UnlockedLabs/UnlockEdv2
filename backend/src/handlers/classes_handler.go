@@ -17,7 +17,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		{"GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, true, axx},
 		{"POST /api/programs/{id}/classes", srv.handleCreateClass, true, axx},
 		{"PATCH /api/program-classes", srv.handleUpdateClasses, true, axx},
-		{"PATCH /api/program-classes/{id}", srv.handleUpdateClass, true, axx},
+		{"PATCH /api/program-classes/{class_id}", srv.handleUpdateClass, true, axx},
 	}
 }
 
@@ -88,13 +88,16 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 }
 
 func (srv *Server) handleUpdateClass(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	class := models.ProgramClass{}
 	if err := json.NewDecoder(r.Body).Decode(&class); err != nil {
 		return newJSONReqBodyServiceError(err)
+	}
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrolled, err := srv.Db.GetTotalEnrollmentsByClassID(id)
 	if err != nil {

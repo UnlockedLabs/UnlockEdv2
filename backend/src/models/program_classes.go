@@ -246,3 +246,7 @@ func formatValue(value any) string {
 func regexFixDates(data []byte) []byte {
 	return dateRegExp.ReplaceAll(data, []byte(`"${1}T00:00:00Z"`))
 }
+
+func (pc *ProgramClass) CanUpdateClass() bool {
+	return pc.Status == Completed || pc.Status == Cancelled || pc.ArchivedAt != nil
+}

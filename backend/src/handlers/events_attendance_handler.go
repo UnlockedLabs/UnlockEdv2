@@ -19,6 +19,17 @@ func (srv *Server) registerAttendanceRoutes() []routeDef {
 }
 
 func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classId, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class ID")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
+	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newBadRequestServiceError(err, "event ID")
@@ -45,7 +56,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 		}
 		attendances[i].EventID = uint(eventID)
 	}
-	if err := srv.Db.LogUserAttendance(&attendances); err != nil {
+	if err := srv.Db.LogUserAttendance(attendances); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, "Attendance updated")

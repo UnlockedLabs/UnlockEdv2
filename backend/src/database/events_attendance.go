@@ -36,13 +36,13 @@ func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, 
 	return attendance, nil
 }
 
-func (db *DB) LogUserAttendance(attendanceParams *[]models.ProgramClassEventAttendance) error {
+func (db *DB) LogUserAttendance(attendanceParams []models.ProgramClassEventAttendance) error {
 	tx := db.Begin()
 	if tx.Error != nil {
 		return NewDBError(tx.Error, "unable to start DB transaction")
 	}
 
-	for _, att := range *attendanceParams {
+	for _, att := range attendanceParams {
 		if err := tx.
 			Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "event_id"}, {Name: "user_id"}, {Name: "date"}},

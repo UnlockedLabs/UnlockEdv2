@@ -2,6 +2,7 @@ import {
     ClassLoaderData,
     EnrollmentStatus,
     FilterResidentNames,
+    SelectedClassStatus,
     ServerResponseMany,
     User
 } from '@/common';
@@ -78,6 +79,15 @@ export default function AddClassEnrollments() {
         );
     }
     const handleSubmit = async () => {
+        if (
+            classInfo?.status === SelectedClassStatus.Completed ||
+            classInfo?.status === SelectedClassStatus.Cancelled
+        ) {
+            setErrorMessage(
+                'Cannot add users to a class that is completed or cancelled.'
+            );
+            return;
+        }
         if (selectedUsers.length === 0) {
             setErrorMessage('Please select at least one user.');
             setTimeout(() => setErrorMessage(''), 8000);

@@ -1,5 +1,10 @@
 import { startTransition, useEffect, useState } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import {
+    useParams,
+    useNavigate,
+    Navigate,
+    useLoaderData
+} from 'react-router-dom';
 import useSWR from 'swr';
 import { useForm } from 'react-hook-form';
 import { TextInput } from '@/Components/inputs/TextInput';
@@ -9,7 +14,9 @@ import {
     Attendance,
     ServerResponseMany,
     FilterResidentNames,
-    EventDate
+    EventDate,
+    Class,
+    ToastState
 } from '@/common';
 import SearchBar from '@/Components/inputs/SearchBar';
 import API from '@/api/api';
@@ -17,8 +24,8 @@ import Pagination from '@/Components/Pagination';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Error from '@/Pages/Error';
 import { parseLocalDay } from '@/Components/helperFunctions/formatting';
-
-const isoRE = /^\d{4}-\d{2}-\d{2}$/;
+import { useToast } from '@/Context/ToastCtx';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 interface LocalRowData {
     selected: boolean;
@@ -26,20 +33,50 @@ interface LocalRowData {
     doc_id: string;
     name_last: string;
     name_first: string;
-    attendance_status: Attendance;
+    attendance_status?: Attendance;
     note: string;
 }
 
+const isoRE = /^\d{4}-\d{2}-\d{2}$/;
 type FormData = Record<string, string>;
 
 export default function EventAttendance() {
-    const { event_id, date, class_id } = useParams<{
+    const { class_id, event_id, date } = useParams<{
         event_id: string;
-        date: string;
         class_id: string;
+        date: string;
     }>();
+    const {
+        register,
+        handleSubmit,
+        getValues,
+        formState: { errors }
+    } = useForm<FormData>();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortQuery, setSortQuery] = useState(
+        FilterResidentNames['Resident Name (A-Z)']
+    );
+    const {
+        page: pageQuery,
+        perPage,
+        setPage: setPageQuery,
+        setPerPage
+    } = useUrlPagination(1, 20);
+    const { data, error, isLoading, mutate } = useSWR<
+        ServerResponseMany<EnrollmentAttendance>,
+        Error
+    >(
+        `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
+    );
     const navigate = useNavigate();
     const [yyyy, mm] = date!.split('-');
+    const meta = data?.meta;
+    const [rows, setRows] = useState<LocalRowData[]>([]);
+
+    const [modifiedRows, setModifiedRows] = useState<
+        Record<number, LocalRowData>
+    >({});
+    const { toaster } = useToast();
     const {
         data: dates,
         error: datesError,
@@ -47,11 +84,29 @@ export default function EventAttendance() {
     } = useSWR<{ message: string; data: EventDate[] }, Error>(
         `/api/program-classes/${class_id}/events?month=${mm}&year=${yyyy}&dates=true`
     );
+    useEffect(() => {
+        if (data?.data) {
+            const mergedRows = data.data.map((item) => {
+                return modifiedRows[item.user_id]
+                    ? { ...item, ...modifiedRows[item.user_id] }
+                    : {
+                          selected: false,
+                          user_id: item.user_id,
+                          doc_id: item.doc_id ?? '',
+                          name_last: item.name_last,
+                          name_first: item.name_first,
+                          attendance_status: item.attendance_status,
+                          note: item.note ?? ''
+                      };
+            });
+            setRows(mergedRows);
+        }
+    }, [data, modifiedRows]);
+
     const dateList = Array.isArray(dates?.data) ? dates.data : [];
     const scheduled = dateList.some(
         (d) => d.event_id === Number(event_id) && d.date === date
     );
-
     if (!date || !isoRE.test(date)) {
         return <Navigate to="/404" replace />;
     }
@@ -92,17 +147,6 @@ export default function EventAttendance() {
             </div>
         );
     }
-    const {
-        page: pageQuery,
-        perPage,
-        setPage: setPageQuery,
-        setPerPage
-    } = useUrlPagination(1, 20);
-
-    const [searchTerm, setSearchTerm] = useState('');
-    const [sortQuery, setSortQuery] = useState(
-        FilterResidentNames['Resident Name (A-Z)']
-    );
 
     const handleSearch = (search: string) => {
         startTransition(() => {
@@ -110,39 +154,9 @@ export default function EventAttendance() {
         });
         setPageQuery(1);
     };
-    const { data, error, isLoading, mutate } = useSWR<
-        ServerResponseMany<EnrollmentAttendance>,
-        Error
-    >(
-        `/api/program-classes/${class_id}/events/${event_id}/attendance?date=${date}&page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
-    );
-
-    const meta = data?.meta;
-    const [rows, setRows] = useState<LocalRowData[]>([]);
-
-    const [modifiedRows, setModifiedRows] = useState<
-        Record<number, LocalRowData>
-    >({});
-
-    useEffect(() => {
-        if (data?.data) {
-            const mergedRows = data.data.map((item) => {
-                return modifiedRows[item.user_id]
-                    ? { ...item, ...modifiedRows[item.user_id] }
-                    : {
-                          selected: false,
-                          user_id: item.user_id,
-                          doc_id: item.doc_id ?? '',
-                          name_last: item.name_last,
-                          name_first: item.name_first,
-                          attendance_status:
-                              item.attendance_status as Attendance,
-                          note: item.note ?? ''
-                      };
-            });
-            setRows(mergedRows);
-        }
-    }, [data, modifiedRows]);
+    const rawClsInfo = useLoaderData() as { class?: Class };
+    const clsInfo = rawClsInfo?.class;
+    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
 
     function handleNoteChange(user_id: number, newNote: string) {
         const currentRow = rows.find((r) => r.user_id === user_id);
@@ -156,22 +170,20 @@ export default function EventAttendance() {
             }
         }));
     }
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        formState: { errors }
-    } = useForm<FormData>();
 
     function handleToggleSelect(user_id: number) {
         const currentRow =
             modifiedRows[user_id] || rows.find((r) => r.user_id === user_id);
         const newSelected = !(currentRow?.selected ?? false);
+
         setModifiedRows((prev) => ({
             ...prev,
             [user_id]: {
                 ...currentRow,
-                selected: newSelected
+                selected: newSelected,
+                attendance_status: newSelected
+                    ? currentRow?.attendance_status
+                    : undefined
             }
         }));
     }
@@ -228,6 +240,7 @@ export default function EventAttendance() {
             );
         }
     }
+
     function handleMarkAllPresent() {
         setModifiedRows((prev) => {
             const newMods: Record<number, LocalRowData> = { ...prev };
@@ -243,13 +256,19 @@ export default function EventAttendance() {
             return newMods;
         });
     }
-
     async function onSubmit() {
+        if (blockEdits) {
+            toaster(
+                'Cannot update attendance for completed or cancelled classes',
+                ToastState.error
+            );
+            return;
+        }
         await submitAttendanceForRows(rows);
         void mutate();
         navigate(`/program-classes/${class_id}/attendance`);
     }
-
+    const tooltip = blockEdits ? 'tooltip tooltip-left' : '';
     const anyRowSelected = rows.some((row) => row.selected);
     return (
         <div className="p-4 space-y-4">
@@ -266,8 +285,13 @@ export default function EventAttendance() {
                 </div>
                 <button
                     onClick={() => void handleMarkAllPresent()}
-                    disabled={anyRowSelected}
-                    className={`button ${anyRowSelected ? `bg-gray-400 cursor-not-allowed` : ``}`}
+                    disabled={anyRowSelected || blockEdits}
+                    className={`button ${tooltip} ${anyRowSelected ? `bg-grey-4 cursor-not-allowed` : ``}`}
+                    data-tip={
+                        blockEdits
+                            ? `This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`
+                            : undefined
+                    }
                 >
                     Mark All Present
                 </button>
@@ -339,9 +363,12 @@ export default function EventAttendance() {
                                                 <input
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
+                                                    disabled={!row.selected}
                                                     checked={
                                                         row.attendance_status ===
-                                                        Attendance.Present
+                                                            Attendance.Present ||
+                                                        (!row.attendance_status && // default to present when selected row
+                                                            row.selected)
                                                     }
                                                     onChange={() =>
                                                         handleAttendanceChange(
@@ -357,6 +384,7 @@ export default function EventAttendance() {
                                                 <input
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
+                                                    disabled={!row.selected}
                                                     checked={
                                                         row.attendance_status ===
                                                         Attendance.Absent_Excused
@@ -375,6 +403,7 @@ export default function EventAttendance() {
                                                 <input
                                                     type="radio"
                                                     name={`attendance_${row.user_id}`}
+                                                    disabled={!row.selected}
                                                     checked={
                                                         row.attendance_status ===
                                                         Attendance.Absent_Unexcused
@@ -413,18 +442,28 @@ export default function EventAttendance() {
                             </tbody>
                         </table>
                     </div>
-                    <div className="flex justify-end pt-4">
+                    <div className="flex gap-4 justify-end pt-4 ">
+                        <button
+                            className="button bg-grey"
+                            onClick={() =>
+                                navigate(
+                                    `/program-classes/${class_id}/attendance`
+                                )
+                            }
+                        >
+                            Back
+                        </button>
                         <button
                             type="submit"
-                            className="button"
-                            disabled={!anyRowSelected}
+                            className={`button ${tooltip}`}
+                            disabled={!anyRowSelected || blockEdits}
+                            data-tip={`${blockEdits ? 'This class is completed and cannot be modified.' : ''}`}
                         >
                             Save Attendance
                         </button>
                     </div>
                 </form>
             )}
-
             {!isLoading && !error && meta && (
                 <div className="flex justify-center mt-4">
                     <Pagination

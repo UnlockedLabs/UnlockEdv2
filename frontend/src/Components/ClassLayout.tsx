@@ -18,11 +18,15 @@ import Pagination from './Pagination';
 import ClampedText from './ClampedText';
 import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
+import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 
 function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
 
     const programDisabled = classInfo?.program.archived_at !== null;
+    const blockEdits = isCompletedCancelledOrArchived(
+        classInfo ?? ({} as Class)
+    );
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
@@ -58,15 +62,22 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                     : 'No end date scheduled'}
             </p>
             <p className="body">Room: {classInfo?.events[0].room}</p>
-            <div className="flex flex-row gap-2 mt-6 justify-center">
+            <div
+                className={`flex flex-row gap-2 mt-6 justify-center ${blockEdits ? 'tooltip' : ''} `}
+                data-tip={
+                    blockEdits
+                        ? `This class is ${classInfo?.status.toLowerCase()} and cannot be modified.`
+                        : ''
+                }
+            >
                 <button
-                    className={`button ${programDisabled ? 'opacity-50 cursor-not-allowed ' : ''}`}
+                    className="button"
                     onClick={() => {
                         navigate(
                             `/programs/${classInfo?.program_id}/classes/${classInfo?.id}`
                         );
                     }}
-                    disabled={programDisabled}
+                    disabled={programDisabled || blockEdits}
                 >
                     <PencilSquareIcon className="w-4 my-auto" />
                     Edit Class Details

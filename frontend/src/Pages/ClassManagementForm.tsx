@@ -18,8 +18,10 @@ import {
     RRuleControl,
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 export default function ClassManagementForm() {
+    const classInfo = useLoaderData() as Class;
     const clsLoader = useLoaderData() as ClassLoaderData;
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
@@ -73,9 +75,25 @@ export default function ClassManagementForm() {
             ]
         };
 
-        const response = isNewClass
-            ? await API.post(`programs/${id}/classes`, formattedJson)
-            : await API.patch(`program-classes/${class_id}`, formattedJson);
+        const canEditClass = isCompletedCancelledOrArchived(
+            classInfo ?? ({} as Class)
+        );
+        let response;
+        if (isNewClass) {
+            response = await API.post(`programs/${id}/classes`, formattedJson);
+        } else if (canEditClass) {
+            response = await API.patch(
+                `program-classes/${class_id}`,
+                formattedJson
+            );
+        } else {
+            toaster(
+                'Cannot update classes that are complete or cancelled',
+                ToastState.error
+            );
+            return;
+        }
+
         if (!response.success) {
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')

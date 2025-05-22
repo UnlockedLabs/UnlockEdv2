@@ -12,6 +12,7 @@ import {
 import Pagination from '@/Components/Pagination';
 import { useForm } from 'react-hook-form';
 import { DateInput } from '@/Components/inputs/DateInput';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 function toLocalMidnight(dateOnly: string): Date {
     const [y, m, d] = dateOnly.split('-').map(Number);
@@ -49,6 +50,10 @@ export default function ClassEvents() {
 
     const this_program = program_class?.data;
     const enrolled = this_program?.enrolled;
+
+    const blockEdits = isCompletedCancelledOrArchived(
+        this_program ?? ({} as Class)
+    );
     const meta = data?.meta;
     const events = data?.data ?? [];
 
@@ -155,13 +160,15 @@ export default function ClassEvents() {
                                             </button>
                                         ) : (
                                             <button
+                                                disabled={blockEdits}
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,
                                                         event.date
                                                     )
                                                 }
-                                                className="button"
+                                                className={`button ${blockEdits ? 'tooltip tooltip-left' : ''}`}
+                                                data-tip={`${blockEdits ? `This class is ${this_program?.status.toLowerCase()} and cannot be modified.` : ''}`}
                                             >
                                                 Mark Attendance
                                             </button>

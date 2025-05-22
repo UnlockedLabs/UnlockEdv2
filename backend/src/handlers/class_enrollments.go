@@ -70,6 +70,13 @@ func (srv *Server) handleEnrollUsersInClass(w http.ResponseWriter, r *http.Reque
 		return newInvalidIdServiceError(err, "class ID")
 	}
 	log.add("class_id", classID)
+	class, err := srv.Db.GetClassByID(classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
+	}
 	enrollment := struct {
 		UserIDs []int `json:"user_ids"`
 	}{}
@@ -108,6 +115,13 @@ func (srv *Server) handleUpdateProgramClassEnrollments(w http.ResponseWriter, r 
 	classId, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class enrollment ID")
+	}
+	class, err := srv.Db.GetClassByID(classId)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if class.CanUpdateClass() {
+		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	enrollment := struct {
 		EnrollmentStatus string `json:"enrollment_status"`

@@ -5,6 +5,7 @@ import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import {
+    Class,
     ClassEnrollment,
     ClassLoaderData,
     EnrollmentStatus,
@@ -17,6 +18,7 @@ import { TextModalType, TextOnlyModal } from '@/Components/modals';
 import CompletionDetailsModal from '@/Components/modals/CompletionDetailsModal';
 import ClassEnrollmentDetailsTable from '@/Components/ClassEnrollmentDetailsTable';
 import { AddButton } from '@/Components/inputs';
+import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 
 interface StatusChange {
     name_full: string;
@@ -27,7 +29,9 @@ interface StatusChange {
 export default function ClassEnrollmentDetails() {
     const { class_id } = useParams<{ class_id: string }>();
     const navigate = useNavigate();
-    const { redirect } = useLoaderData() as ClassLoaderData;
+    const { redirect, class: clsInfo } = useLoaderData() as ClassLoaderData;
+    const blockEdits = isCompletedCancelledOrArchived(clsInfo ?? ({} as Class));
+
     const [searchTerm, setSearchTerm] = useState('');
     const [sortQuery, setSortQuery] = useState<string>(
         FilterResidentNames['Resident Name (A-Z)']
@@ -198,9 +202,17 @@ export default function ClassEnrollmentDetails() {
                         }}
                     />
                 </div>
-                <div className="flex gap-2">
+                <div
+                    className={`flex gap-2 ${blockEdits ? 'tooltip tooltip-left' : ''}`}
+                    data-tip={
+                        blockEdits
+                            ? `This class is ${clsInfo?.status.toLowerCase()} and cannot be modified.`
+                            : undefined
+                    }
+                >
                     {selectedResidents.length > 0 && (
                         <button
+                            disabled={blockEdits}
                             className="button"
                             onClick={handleOpenModalGraduate}
                         >
@@ -209,6 +221,7 @@ export default function ClassEnrollmentDetails() {
                     )}
                     <AddButton
                         label="Add Resident"
+                        disabled={blockEdits}
                         onClick={() =>
                             navigate(
                                 `/program-classes/${class_id}/enrollments/add`

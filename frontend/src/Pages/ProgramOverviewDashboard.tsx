@@ -26,6 +26,14 @@ import { canSwitchFacility, useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
 
+export function isCompletedCancelledOrArchived(program_class: Class): boolean {
+    return (
+        program_class.status === SelectedClassStatus.Completed ||
+        program_class.status === SelectedClassStatus.Cancelled ||
+        isArchived(program_class)
+    );
+}
+
 export default function ProgramOverviewDashboard() {
     const { id } = useParams<{ id: string }>();
     const user = useAuth();
