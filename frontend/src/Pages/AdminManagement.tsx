@@ -164,7 +164,7 @@ export default function AdminManagement() {
 
                     <div className="tooltip tooltip-left" data-tip="Add Admin">
                         <AddButton
-                            label="Add Admin"
+                            label={`${isSysAdmin(user!) ? 'Add Department Admin' : 'Add Facility Admin'}`}
                             onClick={() => showModal(addUserModal)}
                         />
                     </div>
