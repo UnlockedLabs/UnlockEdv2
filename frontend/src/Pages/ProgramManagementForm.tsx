@@ -361,7 +361,7 @@ export default function ProgramManagementForm() {
                                 trying again.
                             </p>
                         </div>
-                        <div className="mt-4 text-center">
+                        <div className="flex justify-end mt-4">
                             <CancelButton
                                 label="Close"
                                 onClick={() =>
