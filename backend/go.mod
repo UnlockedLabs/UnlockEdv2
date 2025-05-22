@@ -10,7 +10,6 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-co-op/gocron/v2 v2.16.1
 	github.com/go-playground/validator/v10 v10.22.0
-	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.37.0
@@ -20,7 +19,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/teambition/rrule-go v1.8.2
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 	golang.org/x/oauth2 v0.24.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
@@ -75,6 +73,7 @@ require (
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
