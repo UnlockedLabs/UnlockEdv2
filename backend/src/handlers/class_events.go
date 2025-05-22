@@ -24,11 +24,12 @@ func (srv *Server) handleGetAdminCalendar(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return newInvalidQueryParamServiceError(err, "start_dt")
 	}
-	calendar, err := srv.Db.GetCalendar(dtRng, nil)
+	args := srv.getQueryContext(r)
+	events, err := srv.Db.GetFacilityCalendar(&args, dtRng)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, calendar)
+	return writeJsonResponse(w, http.StatusOK, events)
 }
 
 func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Request, log sLog) error {
