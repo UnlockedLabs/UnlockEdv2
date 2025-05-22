@@ -10,6 +10,7 @@ import {
 import { useContext } from 'react';
 import { ThemeContext } from '@/Context/ThemeContext';
 import { ProgramClassOutcome } from '@/common';
+import moment from 'moment';
 
 interface ProgramOutcomesProps {
     data: ProgramClassOutcome[];
@@ -23,8 +24,8 @@ export default function ProgramOutcomes({ data }: ProgramOutcomesProps) {
     const xAxisLabelColor = theme === 'light' ? '#333' : '#ccc';
     const yAxisLabelColor = theme === 'light' ? '#333' : '#ccc';
     const formattedData = data.map((d) => {
-        const month = new Date(Date.parse(d.month));
-        const monthAbbrev = month.toLocaleString('default', { month: 'short' });
+        const month = moment(d.month, 'YYYY-MM');
+        const monthAbbrev = month.format('MMM');
         return { ...d, month: monthAbbrev };
     });
 
@@ -50,10 +51,10 @@ export default function ProgramOutcomes({ data }: ProgramOutcomesProps) {
                     name="Completions"
                 />
                 <Bar
-                    dataKey="dropouts"
+                    dataKey="drops"
                     stackId="a"
                     fill={dropoutsColor}
-                    name="Dropouts"
+                    name="Drops"
                 />
             </BarChart>
         </ResponsiveContainer>
