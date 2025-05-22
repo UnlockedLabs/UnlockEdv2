@@ -26,6 +26,7 @@ interface FormModalProps<T extends FieldValues> {
     defaultValues?: DefaultValues<T>;
     error?: FormError;
     onSubmit: SubmitHandler<T>;
+    onClose?: () => void;
     showCancel?: boolean;
     submitText?: string;
     /** Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs */
@@ -47,6 +48,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         showCancel = false,
         submitText,
         extValidationIsValid = () => {}, //eslint-disable-line
+        onClose,
         error,
         enableSubmit = true
     }: FormModalProps<T>,
@@ -85,7 +87,14 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
     }, []);
 
     return (
-        <dialog ref={ref} className="modal" onClose={() => reset()}>
+        <dialog
+            ref={ref}
+            className="modal"
+            onClose={() => {
+                reset();
+                onClose?.();
+            }}
+        >
             <div className="modal-box">
                 <CloseX close={() => void reset()} />
                 <div className="flex flex-col">
@@ -196,6 +205,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             (
                                                 ref as React.RefObject<HTMLDialogElement>
                                             )?.current?.close();
+                                            onClose?.();
                                         }}
                                     />
                                 </label>
