@@ -99,7 +99,8 @@ type ProgramClassEventOverride struct {
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
 
-func (pce *ProgramClassEventOverride) GetFormattedCancelledDate() (*string, error) {
+// format argument will take a string in the format of "2006-01-02", "1/02/2006", ect
+func (pce *ProgramClassEventOverride) GetFormattedCancelledDate(format string) (*string, error) {
 	if !pce.IsCancelled {
 		return StringPtr(""), nil
 	}
@@ -108,8 +109,32 @@ func (pce *ProgramClassEventOverride) GetFormattedCancelledDate() (*string, erro
 		return nil, err
 	}
 	cancelledDate := rRule.All()[0]
-	cancelledDateStr := cancelledDate.Format("1/02/2006")
+	cancelledDateStr := cancelledDate.Format(format)
 	return StringPtr(cancelledDateStr), nil
+}
+
+func (pce *ProgramClassEventOverride) GetRescheduleSummary(timezone string) (*string, error) {
+	timezoneLoc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return nil, err
+	}
+	rRule, err := rrule.StrToRRule(pce.OverrideRrule)
+	if err != nil {
+		return nil, err
+	}
+	startDate := rRule.All()[0].In(timezoneLoc) //reschedule's will always be count=1 so we can do this
+	duration, err := time.ParseDuration(pce.Duration)
+	if err != nil {
+		return nil, err
+	}
+	end := startDate.Add(duration)
+
+	date := startDate.Format("1/02/2006")
+	startTime := startDate.Format("3:04PM")
+	endTime := end.Format("3:04PM")
+
+	rescheduleSummary := date + " " + startTime + " - " + endTime + " (" + pce.Room + ")"
+	return &rescheduleSummary, nil
 }
 
 /** Attendance records for Events **/

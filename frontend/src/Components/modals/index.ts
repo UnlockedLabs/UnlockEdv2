@@ -8,7 +8,7 @@ import {
     UserRole
 } from '@/common';
 import { KeyedMutator } from 'swr';
-import { Validate } from 'react-hook-form';
+import { UseFormGetValues, Validate } from 'react-hook-form';
 import { AdminRoles } from '@/useAuth';
 
 export enum TextModalType {
@@ -35,6 +35,7 @@ export interface CRUDModalProps<T> {
 
 export enum FormInputTypes {
     Text,
+    Date,
     Dropdown,
     TextArea,
     MultiSelectDropdown,
@@ -55,6 +56,9 @@ export interface Input {
         | Record<string, Validate<any, any>>; // eslint-disable-line
     uniqueComponent?: JSX.Element;
     disabled?: boolean;
+    allowPastDate?: boolean;
+    monthOnly?: boolean;
+    getValues?: UseFormGetValues<any>; // eslint-disable-line
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onChangeSelection?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }

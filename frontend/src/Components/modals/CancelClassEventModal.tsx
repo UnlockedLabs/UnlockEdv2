@@ -47,10 +47,9 @@ export const CancelClassEventModal = forwardRef(function (
             is_cancelled: true,
             reason: reason
         };
-        const response = await API.put(
-            `events/${programClassEvent.id}`,
+        const response = await API.put(`events/${programClassEvent.id}`, [
             formattedJson
-        );
+        ]);
 
         checkResponse(
             response.success,

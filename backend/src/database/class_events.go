@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"cmp"
 	"fmt"
 	"slices"
 	"sort"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/teambition/rrule-go"
+	"gorm.io/gorm"
 )
 
 /*
@@ -47,32 +49,75 @@ func (db *DB) GetEventById(eventId int) (*models.ProgramClassEvent, error) {
 	return &event, nil
 }
 
-func (db *DB) CreateOverrideEvent(ctx *models.QueryContext, overrideEvent *models.ProgramClassEventOverride) error {
+func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*models.ProgramClassEventOverride) error {
 	trans := db.WithContext(ctx.Ctx).Begin() //only need to pass context here, it will be used/shared within the transaction
 	if trans.Error != nil {
 		return NewDBError(trans.Error, "unable to start the database transaction")
 	}
 
-	if err := trans.Create(&overrideEvent).Error; err != nil {
-		trans.Rollback()
-		return newCreateDBError(err, "program_class_event_overrides")
+	var (
+		changeLogEntry *models.ChangeLogEntry
+		eventDate      *string
+		err            error
+	)
+
+	changeLogEntry = models.NewChangeLogEntry("program_classes", "", nil, nil, 0, ctx.UserID)
+	for _, overrideEvent := range overrideEvents {
+		if err := trans.Create(overrideEvent).Error; err != nil {
+			trans.Rollback()
+			return newCreateDBError(err, "program_class_event_overrides")
+		}
+
+		if overrideEvent.IsCancelled && len(overrideEvents) < 2 { //only add log for cancelled event
+			eventDate, err = overrideEvent.GetFormattedCancelledDate("2006-01-02")
+			if err != nil {
+				trans.Rollback()
+				return NewDBError(err, "unable to parse override date")
+			}
+			changeLogEntry.FieldName = "event_cancelled"
+			changeLogEntry.OldValue = models.StringPtr("")
+			changeLogEntry.ParentRefID = overrideEvent.ClassID
+			changeLogEntry.NewValue = &overrideEvent.OverrideRrule
+		} else if !overrideEvent.IsCancelled && len(overrideEvents) > 1 {
+			eventSummary, err := overrideEvent.GetRescheduleSummary(ctx.Timezone)
+			if err != nil {
+				trans.Rollback()
+				return NewDBError(err, "unable to parse event summary")
+			}
+			changeLogEntry.FieldName = "event_rescheduled"
+			changeLogEntry.ParentRefID = overrideEvent.ClassID
+			changeLogEntry.NewValue = eventSummary
+		} else if overrideEvent.IsCancelled { //not logging the cancelled one from rescheduling action
+			eventDate, err = overrideEvent.GetFormattedCancelledDate("2006-01-02")
+			if err != nil {
+				trans.Rollback()
+				return NewDBError(err, "unable to parse override date")
+			}
+			changeLogEntry.OldValue = &overrideEvent.OverrideRrule
+		}
+		if overrideEvent.IsCancelled { //delete attendance
+			if err := deleteEventAttedanceByDate(trans, overrideEvent.EventID, *eventDate); err != nil {
+				trans.Rollback()
+				return err
+			}
+		}
 	}
 
-	if overrideEvent.IsCancelled { //only add log for cancelled event
-		cancelledDate, err := overrideEvent.GetFormattedCancelledDate()
-		if err != nil {
-			trans.Rollback()
-			return NewDBError(err, "unable to parse override date")
-		}
-		changeLogEntry := models.NewChangeLogEntry("program_classes", "event_cancelled", models.StringPtr(""), cancelledDate, overrideEvent.ClassID, ctx.UserID)
-		if err := trans.Create(&changeLogEntry).Error; err != nil {
-			trans.Rollback()
-			return newCreateDBError(err, "change_log_entries")
-		}
+	if err := trans.Create(&changeLogEntry).Error; err != nil {
+		trans.Rollback()
+		return newCreateDBError(err, "change_log_entries")
 	}
+
 	//end transaction
 	if err := trans.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
+	}
+	return nil
+}
+
+func deleteEventAttedanceByDate(trans *gorm.DB, eventID uint, eventDate string) error {
+	if err := trans.Unscoped().Where("event_id = ? AND date = ?", eventID, eventDate).Delete(&models.ProgramClassEventAttendance{}).Error; err != nil {
+		return newDeleteDBError(err, "class_event_attendance")
 	}
 	return nil
 }
@@ -545,25 +590,35 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		return nil, newGetRecordsDBError(err, "program_class_event_attendances")
 	}
 
+outer:
 	for _, occ := range occurrences {
 		occInLoc := occ.In(loc)
 		occDateStr := occInLoc.Format("2006-01-02")
 
+		skipDueToReschedule := false
 		isCancelled := false
-		for _, override := range event.Overrides { //for now just checking for cancellations
-			if !override.IsCancelled { //don't bother
-				continue
-			}
+		for _, override := range event.Overrides {
 			rRule, err := rrule.StrToRRule(override.OverrideRrule)
 			if err != nil {
-				logrus.Warnf("unable to parse cancelled override rule: %s", override.OverrideRrule)
+				logrus.Warnf("unable to parse override rule: %s", override.OverrideRrule)
 				continue
 			}
 			overrideInstance := rRule.All()[0]
+
 			if overrideInstance.Equal(occ) {
-				isCancelled = true
-				break
+				if override.IsCancelled && override.Reason == "rescheduled" {
+					skipDueToReschedule = true
+					continue outer
+				}
+				if override.IsCancelled {
+					isCancelled = true
+					break
+				}
 			}
+		}
+
+		if skipDueToReschedule {
+			continue
 		}
 
 		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
@@ -579,8 +634,41 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		}
 		instances = append(instances, instance)
 	}
-	slices.Reverse(instances)
 
+	for _, override := range event.Overrides { //adding the rescheduled ones to instances slice
+		if override.IsCancelled { //skip cancelled ones
+			continue
+		}
+		rRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil {
+			logrus.Warnf("unable to parse reschedule override rule: %s", override.OverrideRrule)
+			continue
+		}
+		overrideDate := rRule.All()[0]
+		overrideDateStr := overrideDate.In(loc).Format("2006-01-02")
+
+		duration, err = time.ParseDuration(event.Duration)
+		if err != nil {
+			logrus.Errorf("error parsing duration for event: %v", err)
+		}
+		overrideEnd := overrideDate.Add(duration)
+		overrideClassTime := overrideDate.In(loc).Format("15:04") + "-" + overrideEnd.In(loc).Format("15:04")
+
+		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
+			return att.Date == overrideDateStr
+		})
+		rescheduledInstance := models.ClassEventInstance{
+			EventID:           event.ID,
+			ClassTime:         overrideClassTime,
+			Date:              overrideDateStr,
+			AttendanceRecords: relevantAttendance,
+			IsCancelled:       false,
+		}
+		instances = append(instances, rescheduledInstance)
+	}
+	slices.SortFunc(instances, func(a, b models.ClassEventInstance) int {
+		return cmp.Compare(b.Date, a.Date)
+	})
 	qryCtx.Total = int64(len(instances))
 
 	offset := qryCtx.CalcOffset()
@@ -596,9 +684,9 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	return instances, nil
 }
 
-func (db *DB) GetCancelledOverrideEvents(qryCtx *models.QueryContext, eventId int) ([]models.ProgramClassEventOverride, error) {
+func (db *DB) GetOverrideEvents(qryCtx *models.QueryContext, eventId int) ([]models.ProgramClassEventOverride, error) {
 	overrides := make([]models.ProgramClassEventOverride, 0)
-	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id = ? and is_cancelled = true", eventId).Find(&overrides).Error; err != nil {
+	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id = ?", eventId).Find(&overrides).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_event_overrides")
 	}
 	return overrides, nil

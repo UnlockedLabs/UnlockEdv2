@@ -821,7 +821,7 @@ export interface ProgramClassEventOverride {
     event_id: number;
     override_rrule: string;
     duration: string;
-    location: string;
+    room: string;
     is_cancelled: boolean;
     reason: string;
 }

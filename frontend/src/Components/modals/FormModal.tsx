@@ -9,6 +9,7 @@ import {
     CancelButton,
     CheckboxInput,
     CloseX,
+    DateInput,
     DropdownInput,
     MultiSelectDropdownInput,
     SubmitButton,
@@ -149,6 +150,24 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                         />
                                     );
                                 }
+                                if (input.type === FormInputTypes.Date) {
+                                    return (
+                                        <DateInput
+                                            key={index}
+                                            label={input.label}
+                                            interfaceRef={input.interfaceRef}
+                                            required={input.required}
+                                            errors={errors}
+                                            register={register}
+                                            validate={input.validate}
+                                            getValues={input.getValues}
+                                            disabled={input.disabled}
+                                            allowPastDate={input.allowPastDate}
+                                            monthOnly={input.monthOnly}
+                                        />
+                                    );
+                                }
+
                                 if (
                                     input.type ===
                                         FormInputTypes.MultiSelectDropdown &&

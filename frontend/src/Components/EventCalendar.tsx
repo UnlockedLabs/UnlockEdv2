@@ -3,15 +3,12 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { RRule } from 'rrule';
-import {
-    Class,
-    ProgramClassEvent,
-    ProgramClassEventOverride,
-    ServerResponseOne
-} from '@/common';
+import { Class, ProgramClassEvent, ServerResponseOne } from '@/common';
 import { CancelClassEventModal } from './modals/CancelClassEventModal';
-import { showModal } from './modals';
+import { closeModal, showModal, TextModalType, TextOnlyModal } from './modals';
 import { KeyedMutator } from 'swr';
+import { CancelButton } from './inputs';
+import { RescheduleClassEventModal } from './modals/RescheduleClassEventModal';
 
 const localizer = momentLocalizer(moment);
 
@@ -20,9 +17,9 @@ export interface CalendarClassEvent {
     title: string;
     start: Date;
     end: Date;
-    isCancelled?: boolean;
+    isOverride?: boolean;
     reason?: string;
-    location?: string;
+    room?: string;
 }
 
 interface EventCalendarProps {
@@ -56,7 +53,9 @@ export default function EventCalendar({
     const [selectedEvent, setSelectedEvent] = useState<
         CalendarClassEvent | undefined
     >();
+    const showActionButtons = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
+    const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
     useEffect(() => {
         if (!recurrenceRule || !durationStr) {
             return;
@@ -73,34 +72,71 @@ export default function EventCalendar({
         );
 
         const eventOverrides = classEvent?.overrides ?? []; //overrides
-        const generated = eventDates.map((eventDate) => {
-            const override = getEventOverrideForEventDate(
-                eventDate,
-                eventOverrides
-            );
-            return {
-                title: override ? 'CANCELLED' : title,
-                start: eventDate,
-                end: new Date(eventDate.getTime() + durationMs),
-                isCancelled: override?.is_cancelled,
-                reason: override?.reason,
-                location: override?.location
-            };
-        });
-        setEvents(generated);
-    }, [recurrenceRule, durationStr, title, classEvent?.overrides]);
 
-    function getEventOverrideForEventDate(
-        eventDate: Date,
-        eventOverrides: ProgramClassEventOverride[]
-    ): ProgramClassEventOverride | undefined {
-        return eventOverrides.find((override) => {
-            if (!override.is_cancelled) return false;
-            const rule = RRule.fromString(override.override_rrule);
-            const overrideDate = rule.all()[0];
-            return overrideDate.toISOString() === eventDate.toISOString();
-        });
-    }
+        const overrideMap = new Map(
+            eventOverrides.map((o) => {
+                const overrideDate = RRule.fromString(
+                    o.override_rrule
+                ).all()[0];
+                //separated all overrides by date
+                return [overrideDate.toISOString(), o];
+            })
+        );
+
+        const baseEvents = eventDates
+            .map((date): CalendarClassEvent | null => {
+                const override = overrideMap.get(date.toISOString());
+                if (
+                    override?.is_cancelled &&
+                    override?.reason != 'rescheduled'
+                ) {
+                    //cancelled event
+                    return {
+                        title: 'CANCELLED',
+                        start: date,
+                        end: new Date(date.getTime() + durationMs),
+                        isOverride: true,
+                        reason: override.reason,
+                        room: override.room
+                    };
+                }
+                //don't display if cancelled due to rescheduling
+                if (
+                    override?.is_cancelled &&
+                    override?.reason === 'rescheduled'
+                ) {
+                    return null;
+                }
+
+                return {
+                    //my base events for now
+                    title,
+                    start: date,
+                    end: new Date(date.getTime() + durationMs),
+                    isOverride: false
+                };
+            }) //getting rid of the blanks
+            .filter(
+                (calEvent): calEvent is CalendarClassEvent => calEvent !== null
+            );
+
+        const rescheduledEvents = eventOverrides
+            .filter((override) => !override.is_cancelled)
+            .map((override) => {
+                const overrideRule = RRule.fromString(override.override_rrule);
+                const start = overrideRule.all()[0];
+                const overrideDuration = parseDurationToMs(override.duration);
+                //all rescheduled events
+                return {
+                    title,
+                    start,
+                    end: new Date(start.getTime() + overrideDuration),
+                    location: override.room,
+                    isOverride: true
+                };
+            });
+        setEvents([...baseEvents, ...rescheduledEvents]);
+    }, [recurrenceRule, durationStr, title, classEvent?.overrides]);
 
     function handleSelectEvent(event: CalendarClassEvent): void {
         if (classEvent) {
@@ -109,11 +145,11 @@ export default function EventCalendar({
             //if the event doesn't exist yet don't allow it to be cancelled.
             return;
         }
-        if (event.isCancelled) {
+        if (event.isOverride) {
             return;
         }
         setSelectedEvent(event);
-        showModal(cancelClassEventModal);
+        showModal(showActionButtons);
     }
 
     return (
@@ -125,6 +161,37 @@ export default function EventCalendar({
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: 600 }}
+            />
+            <TextOnlyModal
+                ref={showActionButtons}
+                type={TextModalType.Information}
+                title={'Event Actions'}
+                text={
+                    <div className="col-span-4 flex justify-center gap-4 mt-4">
+                        <CancelButton
+                            label="Cancel Event"
+                            onClick={() => {
+                                showModal(cancelClassEventModal);
+                                closeModal(showActionButtons);
+                            }}
+                        />
+                        <CancelButton
+                            label="Edit Event"
+                            onClick={() => {
+                                showModal(rescheduleClassEventModal);
+                                closeModal(showActionButtons);
+                            }}
+                        />
+                    </div>
+                }
+                onSubmit={() => {}} //eslint-disable-line
+                onClose={() => {}} //eslint-disable-line
+            ></TextOnlyModal>
+            <RescheduleClassEventModal
+                key={Date.now()}
+                mutate={mutate}
+                calendarEvent={selectedEvent}
+                ref={rescheduleClassEventModal}
             />
             <CancelClassEventModal
                 mutate={mutate}
