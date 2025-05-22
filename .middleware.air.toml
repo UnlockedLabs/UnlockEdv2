@@ -2,9 +2,9 @@ root = "."
 tmp_dir = "bin"
 
 [build]
-cmd = "go build -o ./bin/provider-middleware /app/provider-middleware/."
+cmd = "go build -o ./bin/provider-middleware provider-middleware/."
 bin = "./bin/provider-middleware"
-include_dir = ["./backend", "./provider-middleware"]
+include_dir = ["backend", "provider-middleware"]
 include_file = []
 exclude_dir = ["./config", "./backend/tasks"]
 exclude_regex = ["_test\\.go"]

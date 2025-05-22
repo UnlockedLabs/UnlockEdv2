@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -451,34 +452,26 @@ func (yt *VideoService) downloadVideo(ctx context.Context, vidInfo *goutubedl.Re
 	if yt.videoIsPresent(vidInfo.Info.ID) {
 		return nil
 	}
-	downloadResult, err := vidInfo.Download(ctx, "b")
+	cmd := exec.CommandContext(
+		ctx,
+		"yt-dlp",
+		"-f", "bv*+ba/b",
+		"-S ", "res:480,ext:mp4",
+		"--merge-output-format", "mp4",
+		"--remux-video", "mp4",
+		"--restrict-filenames",
+		"--no-call-home",
+		"--netrc",
+		"--output", "/videos/%(id)s.mp4",
+		"--print", "after_move:filepath",
+		vidInfo.RawURL,
+	)
+	cmd.Env = os.Environ()
+	err := cmd.Run()
 	if err != nil {
-		logger().Errorf("error downloading yt-dlp: %v", err)
-		return err
-	}
-	defer func() {
-		if downloadResult.Close() != nil {
-			logger().Errorf("error closing response body: %v", err)
-		}
-	}()
-	file, err := os.Create(fmt.Sprintf("/videos/%s.mp4", vidInfo.Info.ID))
-	if err != nil {
-		logger().Error(err)
-		return err
-	}
-	defer func() {
-		if file.Close() != nil {
-			logger().Errorf("error closing response body: %v", err)
-		}
-	}()
-	_, err = io.Copy(file, downloadResult)
-	if err != nil {
-		logger().Errorf("error: %v copying downloaded video result", err)
-		return err
-	}
-	err = file.Sync()
-	if err != nil {
-		logger().Errorf("Error syncing file: %v", err)
+		logger().Errorf("yt-dlp failed: %v", err)
+		video.Availability = models.VideoHasError
+		return yt.incrementFailedAttempt(ctx, video, err.Error())
 	}
 	video.Availability = models.VideoAvailable
 	jsonData, err := json.Marshal(video)
