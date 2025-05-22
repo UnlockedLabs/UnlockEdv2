@@ -198,6 +198,7 @@ export default function ProgramOverviewDashboard() {
                         <h1 className="mb-2">
                             {program?.name}
                             <span
+                                className="font-normal"
                                 onClick={(e) => {
                                     e?.stopPropagation();
                                     navigate(`/programs/detail/${program?.id}`);
@@ -209,7 +210,7 @@ export default function ProgramOverviewDashboard() {
                                     tooltipClassName="tooltip-left cursor-pointer"
                                     icon={PencilSquareIcon}
                                 />
-                                <span className="body text-teal-3 cursor-pointer">
+                                <span className="body text-teal-3 cursor-pointer relative -top-[2px]">
                                     Edit Program
                                 </span>
                             </span>
