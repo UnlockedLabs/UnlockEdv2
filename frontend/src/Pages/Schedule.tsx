@@ -1,6 +1,6 @@
 import { FacilityProgramClassEvent } from '@/common';
 import EventCalendar from '@/Components/EventCalendar';
-import { CancelButton } from '@/Components/inputs';
+import { CancelButton, CloseX } from '@/Components/inputs';
 import { useState } from 'react';
 import { useLoaderData } from 'react-router-dom';
 
@@ -8,6 +8,18 @@ export default function Schedule() {
     const events = useLoaderData() as FacilityProgramClassEvent[];
     const [selectedEvent, setSelectedEvent] =
         useState<FacilityProgramClassEvent | null>(null);
+
+    function parseEnrolledNames(enrolledResidents: string) {
+        if (enrolledResidents == '') return <p>No residents enrolled</p>;
+        return (
+            <div>
+                {enrolledResidents.split('|').map((resident, index) => {
+                    const residentName = resident.split(':')[1];
+                    return <p key={index}>{residentName}</p>;
+                })}
+            </div>
+        );
+    }
 
     const formattedEvents = events.map((event) => ({
         ...event,
@@ -36,9 +48,12 @@ export default function Schedule() {
             </div>
             <div className="w-1/4 card p-4">
                 {selectedEvent ? (
-                    <div className="flex flex-col justify-between gap-2 h-full">
-                        <div className="space-y-2">
+                    <div className="flex flex-col justify-between gap-2 h-[600px]">
+                        <div>
                             <h2 className="text-lg">Event Details</h2>
+                            <CloseX close={() => clearSelectedEvent()} />
+                        </div>
+                        <div className="space-y-2 overflow-y-scroll">
                             <h3>Class Name</h3>
                             <p>{selectedEvent.title}</p>
                             <h3>Instructor</h3>
@@ -59,6 +74,8 @@ export default function Schedule() {
                             </p>
                             <h3>Frequency</h3>
                             <p>{selectedEvent.frequency}</p>
+                            <h3>Enrolled Residents</h3>
+                            {parseEnrolledNames(selectedEvent.enrolled_users)}
                         </div>
                         <div className="space-y-2 flex flex-col w-full">
                             <button className="button">Edit Event</button>
@@ -66,7 +83,9 @@ export default function Schedule() {
                                 Edit Series
                             </button>
                             <CancelButton
-                                onClick={() => clearSelectedEvent()}
+                                onClick={() => {
+                                    console.log('cancelling event');
+                                }}
                             />
                         </div>
                     </div>

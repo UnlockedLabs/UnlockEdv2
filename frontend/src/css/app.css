@@ -282,19 +282,19 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
     @apply bg-teal-4 border border-teal-5;
 }
 
-.rbc-event.rbc-event-cancelled{
+.rbc-event.rbc-event-cancelled {
     @apply bg-transparent border-2 border-teal-3 text-header-text line-through;
 }
 
-.rbc-current-time-indicator{
-    @apply bg-primary-yellow
+.rbc-current-time-indicator {
+    @apply bg-primary-yellow;
 }
 
 html[data-theme='dark'] .rbc-event.rbc-selected {
     @apply text-black bg-teal-5;
 }
 
-.rbc-day-slot .rbc-time-slot, 
+.rbc-day-slot .rbc-time-slot,
 .rbc-row-bg,
 .rbc-day-bg {
     @apply border-0;

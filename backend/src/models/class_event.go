@@ -170,7 +170,7 @@ type FacilityProgramClassEvent struct {
 	InstructorName string    `json:"instructor_name"`
 	ClassName      string    `json:"title"`
 	IsCancelled    bool      `json:"is_cancelled"`
-	EnrolledUsers  []string  `json:"enrolled_users"`
+	EnrolledUsers  string    `json:"enrolled_users"`
 	StartTime      time.Time `json:"start"`
 	EndTime        time.Time `json:"end"`
 	Frequency      string    `json:"frequency"`
