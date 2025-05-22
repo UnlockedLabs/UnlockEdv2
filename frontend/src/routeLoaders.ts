@@ -252,7 +252,9 @@ export function resolveTitle<T>(
 }
 
 export const getFacilitySchedule: LoaderFunction = async () => {
-    const resp = await API.get<FacilityProgramClassEvent[]>(`admin-calendar`);
+    const startDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3); // start is 3 months ago
+    const endDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365); // 1 year from now
+    const resp = await API.get<FacilityProgramClassEvent[]>(`admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`);
     if (!resp.success) {
         return console.error(resp.message);
     }
