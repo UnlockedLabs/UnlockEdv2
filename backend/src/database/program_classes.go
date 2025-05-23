@@ -122,12 +122,12 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 	var outcome []ProgramClassOutcomes
 
 	facilityID := args.FacilityID
-	incompleteStatuses := []string{
-		"Incomplete: Dropped",
-		"Incomplete: Failed to Complete",
-		"Incomplete: Transferred",
-		"Incomplete: Withdrawn",
-	}
+	incompleteStatuses := []models.ProgramEnrollmentStatus{
+		models.EnrollmentCompleted,
+		models.EnrollmentIncompleteDropped,
+		models.EnrollmentIncompleteFailedToComplete,
+		models.EnrollmentIncompleteTransfered,}
+
 	// Generate series to create 6 months of data not including current month
 	monthsSubquery := `(SELECT TO_CHAR(
 		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month 
@@ -145,11 +145,11 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 		Select(`
 			months.month,
 			COALESCE(
-          COUNT(DISTINCT CASE WHEN pce.enrollment_status = ? THEN pce.class_id END),
+          COUNT(CASE WHEN pce.enrollment_status = ? THEN pce.class_id END),
           0
         ) AS completions,
         COALESCE(
-          COUNT(DISTINCT CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),
+          COUNT(CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),
           0
         ) AS drops
 		`, models.EnrollmentCompleted, incompleteStatuses).
