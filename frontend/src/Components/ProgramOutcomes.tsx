@@ -9,11 +9,11 @@ import {
 } from 'recharts';
 import { useContext } from 'react';
 import { ThemeContext } from '@/Context/ThemeContext';
-import { ProgramClassOutcome } from '@/common';
+import { ProgramClassOutcomes } from '@/common';
 import moment from 'moment';
 
 interface ProgramOutcomesProps {
-    data: ProgramClassOutcome[];
+    data: ProgramClassOutcomes[];
 }
 
 export default function ProgramOutcomes({ data }: ProgramOutcomesProps) {

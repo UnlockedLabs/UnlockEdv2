@@ -189,7 +189,7 @@ func (srv *Server) handleGetProgramClassOutcome(w http.ResponseWriter, r *http.R
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	args := srv.getQueryContext(r)
-	outcome, err := srv.Db.GetProgramClassOutcome(id, &args)
+	outcome, err := srv.Db.GetProgramClassOutcomes(id, &args)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}

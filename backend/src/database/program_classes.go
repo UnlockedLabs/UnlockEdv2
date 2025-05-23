@@ -112,14 +112,14 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	return classDetails, nil
 }
 
-type ProgramClassOutcome struct {
+type ProgramClassOutcomes struct {
 	Month       string `json:"month"`
 	Drops       int    `json:"drops"`
 	Completions int    `json:"completions"`
 }
 
-func (db *DB) GetProgramClassOutcome(id int, args *models.QueryContext) ([]ProgramClassOutcome, error) {
-	var outcome []ProgramClassOutcome
+func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]ProgramClassOutcomes, error) {
+	var outcome []ProgramClassOutcomes
 
 	facilityID := args.FacilityID
 

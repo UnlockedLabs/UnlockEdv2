@@ -718,7 +718,7 @@ export interface ProgramOverview extends Program {
     active_class_facility_ids: number[];
 }
 
-export interface ProgramClassOutcome {
+export interface ProgramClassOutcomes {
     month: string;
     completions: number;
     drops: number;
