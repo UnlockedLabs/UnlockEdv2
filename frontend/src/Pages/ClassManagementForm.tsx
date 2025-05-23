@@ -75,7 +75,10 @@ export default function ClassManagementForm() {
 
         const response = isNewClass
             ? await API.post(`programs/${id}/classes`, formattedJson)
-            : await API.patch(`program-classes/${class_id}`, formattedJson);
+            : await API.patch(
+                  `programs/${id}/classes/${class_id}`,
+                  formattedJson
+              );
         if (!response.success) {
             const toasterMsg =
                 class_id && response.message.includes('unenrolling')

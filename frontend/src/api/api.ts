@@ -24,15 +24,49 @@ class API {
             });
             clearTimeout(timeout);
 
-            const json = (await resp.json()) as ServerResponse<T>;
             const statusCode = resp.status;
+
+            if (statusCode === 204 || statusCode === 205) {
+                return {
+                    type: 'one',
+                    success: true,
+                    data: {} as T,
+                    message: '',
+                    status: statusCode
+                };
+            }
+
+            const contentType = resp.headers.get('Content-Type') ?? '';
+            let data: ServerResponse<T>;
+
+            const raw = await resp.text();
+
+            if (contentType.includes('application/json') && raw) {
+                try {
+                    data = JSON.parse(raw) as ServerResponse<T>;
+                } catch {
+                    data = {
+                        type: 'one',
+                        message: raw,
+                        data: {} as T,
+                        success: false
+                    };
+                }
+            } else {
+                data = {
+                    type: 'one',
+                    message: raw,
+                    data: {} as T,
+                    success: false
+                };
+            }
 
             if (!resp.ok) {
                 let message = 'An error occurred';
                 if (resp.status === 401 || resp.status === 403) {
                     message = 'Unauthorized';
-                } else if (json?.message) {
-                    message = json.message;
+                } else if (data?.message) {
+                    message = data.message;
                 }
 
                 const error = new Error(message) as Error & {
@@ -48,26 +82,26 @@ class API {
                 throw error;
             }
 
-            return {
-                ...API.getReturnData<T>(json),
-                status: statusCode
-            };
+            return API.getReturnData<T>(data, statusCode);
         } catch (err) {
             const error = err as Error & {
                 response?: ServerResponse<null>;
             };
+            const errCode = error.response?.status;
 
             return {
                 type: 'one',
                 success: false,
                 message: error.message || 'An error occurred',
-                data: {} as T
+                data: {} as T,
+                status: errCode ?? 0
             };
         }
     }
 
     private static getReturnData<T>(
-        respData: ServerResponse<T>
+        respData: ServerResponse<T>,
+        status?: number
     ): ServerResponse<T> {
         if (Array.isArray(respData.data)) {
             const manyResp = respData as ServerResponseMany<T>;
@@ -81,14 +115,16 @@ class API {
                     current_page: 1,
                     last_page: 1,
                     per_page: manyResp.data.length
-                }
+                },
+                status: status
             };
         } else {
             return {
                 type: 'one',
                 success: true,
                 data: respData.data,
-                message: respData.message ?? 'Request successful'
+                message: respData.message ?? 'Request successful',
+                status: status
             };
         }
     }

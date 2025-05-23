@@ -47,7 +47,7 @@ export default function Error({
     const clickHandler = navigateTo
         ? () => navigate(navigateTo)
         : back
-          ? () => navigate(-1)
+          ? () => navigate(-2)
           : onClick;
 
     return (
