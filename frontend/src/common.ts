@@ -716,7 +716,7 @@ export interface ProgramOverview extends Program {
     completion_rate: number;
 }
 
-export interface ProgramClassOutcome {
+export interface ProgramClassOutcomes {
     month: string;
     completions: number;
     drops: number;
