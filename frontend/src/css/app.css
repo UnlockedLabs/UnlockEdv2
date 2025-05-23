@@ -282,6 +282,10 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
     @apply bg-teal-4 border border-teal-5;
 }
 
+.rbc-show-more {
+    @apply bg-transparent text-body-text hover:text-teal-3;
+}
+
 .rbc-event.rbc-event-cancelled {
     @apply bg-transparent border-2 border-teal-3 text-header-text line-through;
 }
@@ -289,6 +293,7 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
 .rbc-current-time-indicator {
     @apply bg-primary-yellow;
 }
+
 
 html[data-theme='dark'] .rbc-event.rbc-selected {
     @apply text-black bg-teal-5;
@@ -298,6 +303,10 @@ html[data-theme='dark'] .rbc-event.rbc-selected {
 .rbc-row-bg,
 .rbc-day-bg {
     @apply border-0;
+}
+
+.rbc-row-content {
+    @apply z-0
 }
 
 .rbc-timeslot-group {
