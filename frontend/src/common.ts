@@ -714,6 +714,7 @@ export interface ProgramOverview extends Program {
     completions: number;
     total_enrollments: number;
     completion_rate: number;
+    active_class_facility_ids: number[];
 }
 
 export interface ProgramsFacilitiesStats {
@@ -1096,6 +1097,7 @@ export interface ActivityHistoryResponse {
     program_classes_history?: ProgramClassesHistory;
     field_name: string;
     new_value: string;
+    old_value: string;
 }
 
 export interface ProgramClassesHistory {

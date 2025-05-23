@@ -125,6 +125,7 @@ type ActivityHistoryResponse struct {
 	CreatedAt               *time.Time            `json:"created_at"`
 	FieldName               *string               `json:"field_name"`
 	NewValue                *string               `json:"new_value"`
+	OldValue                *string               `json:"old_value"`
 	UserID                  *uint                 `json:"user_id"`
 	UserUsername            *string               `json:"user_username"`
 	AdminUsername           *string               `json:"admin_username"`

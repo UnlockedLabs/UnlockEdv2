@@ -121,10 +121,25 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
     return libraryOptions;
 };
 
-export const getProgramData: LoaderFunction = async () => {
-    const tagsResp = await API.get(`tags`);
+export const getProgramData: LoaderFunction = async ({ params }) => {
+    const { program_id } = params;
+    const [tagsResp] = await Promise.all([API.get(`tags`)]);
     const categories = tagsResp.data as Option[];
-    return json({ categories: categories });
+    let program: ProgramOverview | undefined;
+    let redirect: string | undefined;
+    if (program_id) {
+        const resp = await API.get(`programs/${program_id}`);
+        if (resp.success) {
+            program = resp.data as ProgramOverview;
+        } else {
+            redirect = '/404';
+        }
+    }
+    return json({
+        categories: categories,
+        program: program,
+        redirect: redirect
+    });
 };
 
 export const getProviderPlatforms: LoaderFunction = async () => {
