@@ -95,8 +95,8 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 	return writePaginatedResponse(w, http.StatusOK, combined, args.IntoMeta())
 }
 
-func isDateCancelled(overrides []models.ProgramClassEventOverride, attendanceDate string) bool {
-	attDate, err := time.Parse("2006-01-02", attendanceDate) ///making sure the date is good
+func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate string) bool {
+	attDate, err := time.Parse("2006-01-02", eventDate) ///making sure the date is good
 	if err != nil {
 		return false
 	}
