@@ -291,7 +291,7 @@ export default function ClassLayout() {
                                             Resident Name
                                         </th>
                                         <th className="text-center body text-grey-4 font-medium w-[40%]">
-                                            ID
+                                            Resident ID
                                         </th>
                                         <th className="text-left body text-grey-4 font-medium w-[30%]">
                                             Flag
