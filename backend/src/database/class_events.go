@@ -322,8 +322,8 @@ func (db *DB) getCalendarFromEvents(events []models.ProgramClassEvent, rng *mode
 }
 
 func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateRange) ([]models.FacilityProgramClassEvent, error) {
-	events := []models.FacilityProgramClassEvent{}
-	// TOP DO: finish adding overrides as is_cancelled (so it renders in the frontend)
+	events := make([]models.FacilityProgramClassEvent, 10)
+	// TO DO: finish adding overrides as is_cancelled (so it renders in the frontend)
 	tx := db.WithContext(args.Ctx).Table("program_class_events pcev").
 		Select(`pcev.*,
 		p.name as program_name,
@@ -339,7 +339,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
-	var facilityEvents []models.FacilityProgramClassEvent
+	facilityEvents := make([]models.FacilityProgramClassEvent, 10)
 	for _, event := range events {
 		rRule, err := event.GetRRule()
 		if err != nil {
@@ -351,14 +351,15 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 			return nil, err
 		}
 		for _, occurrence := range occurrences {
+			endTime := occurrence.Add(duration)
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent: event.ProgramClassEvent,
 				InstructorName:    event.InstructorName,
 				ProgramName:       event.ProgramName,
 				ClassName:         event.ClassName,
 				EnrolledUsers:     event.EnrolledUsers,
-				StartTime:         occurrence,
-				EndTime:           occurrence.Add(duration),
+				StartTime:         &occurrence,
+				EndTime:           &endTime,
 				Frequency:         rRule.OrigOptions.Freq.String(),
 			}
 			facilityEvents = append(facilityEvents, facilityEvent)
