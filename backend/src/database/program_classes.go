@@ -122,7 +122,12 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 	var outcome []ProgramClassOutcomes
 
 	facilityID := args.FacilityID
-
+	incompleteStatuses := []string{
+		"Incomplete: Dropped",
+		"Incomplete: Failed to Complete",
+		"Incomplete: Transferred",
+		"Incomplete: Withdrawn",
+	}
 	// Generate series to create 6 months of data not including current month
 	monthsSubquery := `(SELECT TO_CHAR(
 		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month 
@@ -139,22 +144,22 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 		Table(fmt.Sprintf("(%s) AS months", monthsSubquery)).
 		Select(`
 			months.month,
-			COALESCE(COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Completed' THEN pce.class_id END), 0) AS completions,
-			COALESCE(COUNT(DISTINCT CASE WHEN pce.enrollment_status IN (
-				'Incomplete: Dropped',
-				'Incomplete: Failed to Complete',
-				'Incomplete: Transferred',
-				'Incomplete: Withdrawn'
-			) THEN pce.class_id END), 0) AS drops
-		`).
+			COALESCE(
+          COUNT(DISTINCT CASE WHEN pce.enrollment_status = ? THEN pce.class_id END),
+          0
+        ) AS completions,
+        COALESCE(
+          COUNT(DISTINCT CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),
+          0
+        ) AS drops
+		`, models.EnrollmentCompleted, incompleteStatuses).
 		Joins(fmt.Sprintf(`
 			LEFT JOIN (%s) AS pce 
 			ON TO_CHAR(DATE_TRUNC('month', pce.updated_at), 'YYYY-MM') = months.month
 		`, enrollmentsSubquery), id, facilityID).
 		Group("months.month").
 		Order(args.OrderBy)
-
-	if err := query.Debug().Find(&outcome).Error; err != nil {
+	if err := query.Find(&outcome).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
 	return outcome, nil
