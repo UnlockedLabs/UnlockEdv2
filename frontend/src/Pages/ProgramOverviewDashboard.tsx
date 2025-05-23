@@ -9,7 +9,8 @@ import {
     Class,
     SelectedClassStatus,
     ServerResponseMany,
-    ProgramOverview
+    ProgramOverview,
+    ProgramClassOutcomes
 } from '@/common';
 import ClampedText from '@/Components/ClampedText';
 import ProgramOutcomes from '@/Components/ProgramOutcomes';
@@ -81,6 +82,13 @@ export default function ProgramOverviewDashboard() {
         current_page: 1,
         last_page: 1
     };
+
+    const { data: outcomeData } = useSWR<
+        ServerResponseMany<ProgramClassOutcomes>,
+        Error
+    >(`/api/programs/${id}/classes/outcomes?order_by=month`, {});
+    const outcomes = outcomeData?.data ?? [];
+
     const checkResponse = useCheckResponse({
         mutate: mutateClasses,
         refModal: archiveClassesRef
@@ -454,7 +462,7 @@ export default function ProgramOverviewDashboard() {
                         <h3 className="text-lg font-bold text-teal-4 text-center mb-2">
                             PROGRAM OUTCOMES
                         </h3>
-                        <ProgramOutcomes />
+                        <ProgramOutcomes data={outcomes} />
                     </div>
                 </div>
             </div>
