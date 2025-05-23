@@ -295,8 +295,8 @@ export default function ClassEnrollmentDetails() {
                 ]}
                 onSubmit={async (formData: FieldValues) => {
                     const reason = (
-                        formData as { reason: string }
-                    ).reason.trim();
+                        formData as { change_reason: string }
+                    ).change_reason.trim();
                     await handleSubmitEnrollmentChange(reason);
                     closeModal(reasonModalRef);
                     setChangeStatusValue(undefined);
