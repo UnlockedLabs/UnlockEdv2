@@ -20,7 +20,7 @@ export default function TransferSummaryPanel({
                         </td>
                     </tr>
                     <tr>
-                        <td className="font-bold text-right">ID:</td>
+                        <td className="font-bold text-right">Resident ID:</td>
                         <td>{resident?.user.doc_id}</td>
                     </tr>
                     <tr>
