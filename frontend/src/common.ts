@@ -345,6 +345,7 @@ export interface PaginationMeta {
 export interface ServerResponseBase {
     success: boolean;
     message: string;
+    status?: number;
 }
 
 export interface ServerResponseOne<T> extends ServerResponseBase {

@@ -25,6 +25,7 @@ class API {
             clearTimeout(timeout);
 
             const json = (await resp.json()) as ServerResponse<T>;
+            const statusCode = resp.status;
 
             if (!resp.ok) {
                 let message = 'An error occurred';
@@ -41,16 +42,21 @@ class API {
                     type: 'one',
                     success: false,
                     data: null,
-                    message
+                    message,
+                    status: statusCode
                 };
                 throw error;
             }
 
-            return API.getReturnData<T>(json);
+            return {
+                ...API.getReturnData<T>(json),
+                status: statusCode
+            };
         } catch (err) {
             const error = err as Error & {
                 response?: ServerResponse<null>;
             };
+
             return {
                 type: 'one',
                 success: false,
