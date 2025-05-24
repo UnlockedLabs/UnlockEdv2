@@ -30,7 +30,7 @@ interface FormModalProps<T extends FieldValues> {
     showCancel?: boolean;
     submitText?: string;
     /** Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs */
-    extValidationIsValid?: () => void;
+    extValidationIsValid?: () => boolean;
     enableSubmit?: boolean;
 }
 
@@ -47,7 +47,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         defaultValues,
         showCancel = false,
         submitText,
-        extValidationIsValid = () => {}, //eslint-disable-line
+        extValidationIsValid = () => true,
         error,
         enableSubmit = true
     }: FormModalProps<T>,
@@ -97,8 +97,8 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         key={inputs.length}
                         onSubmit={(e) => {
                             e.preventDefault();
-                            extValidationIsValid();
-                            void handleSubmit(onSubmitHandler)(e);
+                            if (extValidationIsValid())
+                                void handleSubmit(onSubmitHandler)(e);
                         }}
                     >
                         {inputs.map(

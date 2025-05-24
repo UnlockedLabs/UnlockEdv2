@@ -47,7 +47,7 @@ export const RescheduleClassEventModal = forwardRef(function (
     });
 
     const rescheduleClassEvent: SubmitHandler<FieldValues> = async (data) => {
-        if (!calendarEvent?.classEvent || !validateTimes(data)) {
+        if (!calendarEvent?.classEvent) {
             return;
         }
         const cancelledDate =
@@ -263,9 +263,12 @@ export const RescheduleClassEventModal = forwardRef(function (
                 inputs={rescheduleClassEventInputs}
                 showCancel={true}
                 onSubmit={(data) => {
-                    setDataToSubmit(data);
-                    showModal(rescheduleConfirmationRef);
-                    closeModal(ref);
+                    if (validateTimes(data)) {
+                        //one last check
+                        setDataToSubmit(data);
+                        showModal(rescheduleConfirmationRef);
+                        closeModal(ref);
+                    }
                 }}
                 extValidationIsValid={validateTimes}
             />
