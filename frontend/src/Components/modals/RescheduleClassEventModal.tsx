@@ -47,9 +47,11 @@ export const RescheduleClassEventModal = forwardRef(function (
     });
 
     const rescheduleClassEvent: SubmitHandler<FieldValues> = async (data) => {
-        if (!calendarEvent?.classEvent || !validateTimes(data)) return;
+        if (!calendarEvent?.classEvent || !validateTimes(data)) {
+            return;
+        }
         const cancelledDate =
-            calendarEvent.start
+            fromZonedTime(calendarEvent.start, user.timezone)
                 .toISOString()
                 .replace(/[-:]/g, '')
                 .slice(0, 15) + 'Z';

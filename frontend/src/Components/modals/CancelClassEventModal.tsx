@@ -6,6 +6,8 @@ import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { CalendarClassEvent } from '../EventCalendar';
 import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
+import { useAuth } from '@/useAuth';
+import { fromZonedTime } from 'date-fns-tz';
 
 export const CancelClassEventModal = forwardRef(function (
     {
@@ -17,6 +19,10 @@ export const CancelClassEventModal = forwardRef(function (
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const checkResponse = useCheckResponse({
         mutate: mutate,
         refModal: ref
@@ -26,7 +32,7 @@ export const CancelClassEventModal = forwardRef(function (
     const cancelClassEvent: SubmitHandler<FieldValues> = async (data) => {
         if (!calendarEvent?.classEvent) return;
         const iso =
-            calendarEvent.start
+            fromZonedTime(calendarEvent.start, user?.timezone)
                 .toISOString()
                 .replace(/[-:]/g, '')
                 .slice(0, 15) + 'Z';

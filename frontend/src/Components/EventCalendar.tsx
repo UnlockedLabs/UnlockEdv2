@@ -9,6 +9,8 @@ import { closeModal, showModal, TextModalType, TextOnlyModal } from './modals';
 import { KeyedMutator } from 'swr';
 import { CancelButton } from './inputs';
 import { RescheduleClassEventModal } from './modals/RescheduleClassEventModal';
+import { useAuth } from '@/useAuth';
+import { toZonedTime } from 'date-fns-tz';
 
 const localizer = momentLocalizer(moment);
 
@@ -49,6 +51,10 @@ export default function EventCalendar({
     classEvent,
     mutate
 }: EventCalendarProps) {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const [events, setEvents] = useState<CalendarClassEvent[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<
         CalendarClassEvent | undefined
@@ -93,8 +99,11 @@ export default function EventCalendar({
                     //cancelled event
                     return {
                         title: 'CANCELLED',
-                        start: date,
-                        end: new Date(date.getTime() + durationMs),
+                        start: toZonedTime(date, user?.timezone),
+                        end: toZonedTime(
+                            new Date(date.getTime() + durationMs),
+                            user?.timezone
+                        ),
                         isOverride: true,
                         reason: override.reason,
                         room: override.room
@@ -111,8 +120,11 @@ export default function EventCalendar({
                 return {
                     //my base events for now
                     title,
-                    start: date,
-                    end: new Date(date.getTime() + durationMs),
+                    start: toZonedTime(date, user?.timezone),
+                    end: toZonedTime(
+                        new Date(date.getTime() + durationMs),
+                        user?.timezone
+                    ),
                     isOverride: false
                 };
             }) //getting rid of the blanks
@@ -129,8 +141,11 @@ export default function EventCalendar({
                 //all rescheduled events
                 return {
                     title,
-                    start,
-                    end: new Date(start.getTime() + overrideDuration),
+                    start: toZonedTime(start, user?.timezone),
+                    end: toZonedTime(
+                        new Date(start.getTime() + overrideDuration),
+                        user?.timezone
+                    ),
                     location: override.room,
                     isOverride: true
                 };
