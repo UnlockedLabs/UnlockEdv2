@@ -23,15 +23,14 @@ class API {
                 signal: controller.signal
             });
             clearTimeout(timeout);
-            //            Use this here to handle a 204 status code as a success in the case of a delete with no content response
-            // if (resp.status === 204) {
-            //     return {
-            //         type: 'one',
-            //         success: true,
-            //         message: 'Request successful',
-            //         data: {} as T
-            //     };
-            // }
+            if (resp.status === 204) {
+                return {
+                    type: 'one',
+                    success: true,
+                    message: 'Request successful',
+                    data: {} as T
+                };
+            }
             const json = (await resp.json()) as ServerResponse<T>;
 
             if (!resp.ok) {
