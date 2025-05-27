@@ -56,6 +56,7 @@ export interface Input {
     uniqueComponent?: JSX.Element;
     disabled?: boolean;
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onChangeSelection?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 export interface InputWithOptions<T> extends Input {

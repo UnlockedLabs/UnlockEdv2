@@ -8,6 +8,7 @@ interface DropdownProps {
     register: UseFormRegister<any>; // eslint-disable-line
     enumType: Record<string, string>;
     disabled?: boolean;
+    onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 export function DropdownInput({
@@ -17,7 +18,8 @@ export function DropdownInput({
     errors,
     register,
     enumType,
-    disabled = false
+    disabled = false,
+    onChange
 }: DropdownProps) {
     return (
         <label className="form-control w-full">
@@ -33,6 +35,14 @@ export function DropdownInput({
                     }
                 })}
                 disabled={disabled}
+                onChange={(e) => {
+                    if (onChange) {
+                        void register(interfaceRef).onChange(e);
+                        if (typeof onChange === 'function') {
+                            onChange(e);
+                        }
+                    }
+                }}
             >
                 {Object.entries(enumType).map(([key, value]) => (
                     <option key={key} value={value}>

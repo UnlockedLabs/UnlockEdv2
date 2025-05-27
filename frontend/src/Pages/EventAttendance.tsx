@@ -299,7 +299,14 @@ export default function EventAttendance() {
             </div>
 
             {isLoading && <div>Loading...</div>}
-            {error && <div className="error">Error loading data</div>}
+
+            {error && error.message === 'Conflict' ? (
+                <div className="text-error">
+                    Unable to mark attendance for a cancelled event
+                </div>
+            ) : (
+                error && <div className="text-error">Error loading data</div>
+            )}
             {!isLoading && !error && rows.length > 0 && (
                 <form
                     onSubmit={(e) => {

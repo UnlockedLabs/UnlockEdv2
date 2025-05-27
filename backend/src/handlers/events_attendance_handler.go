@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/teambition/rrule-go"
 )
 
 func (srv *Server) registerAttendanceRoutes() []routeDef {
@@ -96,11 +98,39 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 	log.add("date", date)
 
 	args := srv.getQueryContext(r)
+
+	overrides, err := srv.Db.GetCancelledOverrideEvents(&args, eventID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if isDateCancelled(overrides, date) { //check overrides for cancelled date
+		return writePaginatedResponse(w, http.StatusConflict, []models.EnrollmentAttendance{}, args.IntoMeta())
+	}
+
 	combined, err := srv.Db.GetEnrollmentsWithAttendanceForEvent(&args, classID, eventID, date)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
 	return writePaginatedResponse(w, http.StatusOK, combined, args.IntoMeta())
+}
+
+func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate string) bool {
+	attDate, err := time.Parse("2006-01-02", eventDate) ///making sure the date is good
+	if err != nil {
+		return false
+	}
+	for _, override := range overrides {
+		rRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil {
+			continue
+		}
+		overrideEvent := rRule.All()[0]
+		overrideFmtDate := overrideEvent.Format("2006-01-02")
+		if overrideFmtDate == attDate.Format("2006-01-02") {
+			return true
+		}
+	}
+	return false
 }
 
 func (srv *Server) handleGetAttendanceRateForEvent(w http.ResponseWriter, r *http.Request, log sLog) error {

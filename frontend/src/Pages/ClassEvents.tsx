@@ -84,11 +84,13 @@ export default function ClassEvents() {
     function getStatus(event: ClassEventInstance): string {
         const eventDate = toLocalMidnight(event.date).getTime();
         const today = new Date().setHours(0, 0, 0, 0);
-        return eventDate > today
-            ? 'Scheduled'
-            : event.attendance_records?.length === enrolled
-              ? 'Marked'
-              : 'Not Marked';
+        return event.is_cancelled
+            ? 'Cancelled'
+            : eventDate > today
+              ? 'Scheduled'
+              : event.attendance_records?.length === enrolled
+                ? 'Marked'
+                : 'Not Marked';
     }
 
     return (
@@ -160,7 +162,10 @@ export default function ClassEvents() {
                                             </button>
                                         ) : (
                                             <button
-                                                disabled={blockEdits}
+                                                disabled={
+                                                    blockEdits ||
+                                                    event.is_cancelled
+                                                }
                                                 onClick={() =>
                                                     handleViewEditMarkAttendance(
                                                         event.event_id,

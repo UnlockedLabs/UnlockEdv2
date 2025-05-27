@@ -4,6 +4,8 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -282,23 +284,47 @@ func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return err
 	}
+	pageMeta, createdByDetails, err := srv.getCreatedByForHistory(id, "programs", args.IntoMeta(), &args, len(historyEvents))
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	historyEvents = append(historyEvents, createdByDetails)
+	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
+}
 
-	pageMeta := args.IntoMeta()
-	if args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && len(historyEvents) < args.PerPage) { //add get program created by here
-		var (
-			createdByDetails models.ActivityHistoryResponse
-		)
-		createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, &args)
-		if err != nil {
-			return newDatabaseServiceError(err)
+func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta models.PaginationMeta, args *models.QueryContext, numOfHistoryEvents int) (models.PaginationMeta, models.ActivityHistoryResponse, error) {
+	var (
+		createdByDetails models.ActivityHistoryResponse
+		err              error
+	)
+	if int(args.Total) == args.PerPage {
+		pageMeta.LastPage++
+		pageMeta.Total++
+	}
+	if args.Total == 0 || (int64(args.Page) == int64(pageMeta.LastPage) && numOfHistoryEvents < args.PerPage) { //add get class created by here
+		switch tableName {
+		case "programs":
+			createdByDetails, err = srv.Db.GetProgramCreatedAtAndBy(id, args)
+			if err != nil {
+				return pageMeta, createdByDetails, newDatabaseServiceError(err)
+			}
+			prog := "program"
+			createdByDetails.FieldName = &prog
+		case "program_classes":
+			createdByDetails, err = srv.Db.GetClassCreatedAtAndBy(id, args)
+			if err != nil {
+				return pageMeta, createdByDetails, newDatabaseServiceError(err)
+			}
+			class := "class"
+			createdByDetails.FieldName = &class
+		default:
+			return pageMeta, createdByDetails, newBadRequestServiceError(errors.New("table name not recognized"), fmt.Sprintf("table name %s not recognized", tableName))
 		}
-		createdByDetails.FieldName = models.StringPtr("program")
 		createdByDetails.Action = models.ProgClassHistory
-		historyEvents = append(historyEvents, createdByDetails)
 		//count this record only if there are history events
 		if args.Total > 0 {
 			pageMeta.Total++
 		}
 	}
-	return writePaginatedResponse(w, http.StatusOK, historyEvents, pageMeta)
+	return pageMeta, createdByDetails, nil
 }

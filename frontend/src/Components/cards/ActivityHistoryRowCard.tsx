@@ -1,13 +1,31 @@
 import { ActivityHistoryResponse } from '@/common';
+import { useAuth } from '@/useAuth';
+import { RRule } from 'rrule';
 
 function ActivityHistoryRowCard({
     activity
 }: {
     activity: ActivityHistoryResponse;
 }) {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     function formatValue(value: string): string {
         return value.replace(/_/g, ' ');
     }
+
+    function parseCancelledRRule(rRule: string): string {
+        const rule = RRule.fromString(rRule);
+        const overrideDate = rule.all()[0];
+        return overrideDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            timeZone: user?.timezone
+        });
+    }
+
     const getProgramClassesHistoryEventText = () => {
         let text;
         switch (activity.field_name) {
@@ -49,6 +67,9 @@ function ActivityHistoryRowCard({
                 break;
             case 'program_type':
                 text = `Program type ${!activity.new_value ? formatValue(activity.old_value) + ' removed ' : 'set to ' + formatValue(activity.new_value)} by ${activity.admin_username}`;
+                break;
+            case 'event_cancelled':
+                text = `Event on ${parseCancelledRRule(activity.new_value)} cancelled by ${activity.admin_username}`;
                 break;
         }
         return text;
