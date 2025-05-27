@@ -180,8 +180,8 @@ func (db *DB) UpdateProgramClassEnrollments(classId int, userIds []int, status s
 	return nil
 }
 
-func (db *DB) UpdateProgramClasses(classIDs []int, classMap map[string]any) error {
-	tx := db.Begin()
+func (db *DB) UpdateProgramClasses(ctx context.Context, classIDs []int, classMap map[string]any) error {
+	tx := db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return newUpdateDBError(tx.Error, "begin transaction")
 	}
@@ -204,8 +204,30 @@ func (db *DB) UpdateProgramClasses(classIDs []int, classMap map[string]any) erro
 		tx.Rollback()
 		return newUpdateDBError(err, "program classes")
 	}
+
+	var (
+		allChanges []models.ChangeLogEntry
+		logEntry   models.ChangeLogEntry
+	)
+	for _, classID := range classIDs {
+		for fieldName, value := range classMap {
+			if fieldName == "update_user_id" {
+				continue
+			}
+			logEntry = *models.NewChangeLogEntry("program_classes", fieldName, nil, models.StringPtr(value.(string)), uint(classID), classMap["update_user_id"].(uint))
+			allChanges = append(allChanges, logEntry)
+		}
+	}
+
+	if len(allChanges) > 0 {
+		if err := tx.Create(&allChanges).Error; err != nil {
+			tx.Rollback()
+			return newCreateDBError(err, "change_log_entries")
+		}
+	}
+
 	if err := tx.Commit().Error; err != nil {
-		return newUpdateDBError(err, "commit transaction")
+		return newUpdateDBError(err, "unable to commit database transaction")
 	}
 	return nil
 }

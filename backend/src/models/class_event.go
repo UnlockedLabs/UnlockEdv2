@@ -99,14 +99,30 @@ type ProgramClassEventOverride struct {
 	EventID       uint   `json:"event_id" gorm:"not null"`
 	Duration      string `json:"duration" gorm:"not null"`
 	OverrideRrule string `json:"override_rrule" gorm:"not null"`
+	ClassID       uint   `json:"class_id" gorm:"->" `
 	IsCancelled   bool   `json:"is_cancelled"`
 	Room          string `json:"room"`
+	Reason        string `json:"reason"`
 
 	/* Foreign keys */
 	Event *ProgramClassEvent `json:"event" gorm:"foreignKey:EventID;references:ID"`
 }
 
 func (ProgramClassEventOverride) TableName() string { return "program_class_event_overrides" }
+
+// format argument will take a string in the format of "2006-01-02", "1/02/2006", ect
+func (pce *ProgramClassEventOverride) GetFormattedCancelledDate(format string) (*string, error) {
+	if !pce.IsCancelled {
+		return StringPtr(""), nil
+	}
+	rRule, err := rrule.StrToRRule(pce.OverrideRrule)
+	if err != nil {
+		return nil, err
+	}
+	cancelledDate := rRule.All()[0]
+	cancelledDateStr := cancelledDate.Format(format)
+	return StringPtr(cancelledDateStr), nil
+}
 
 /** Attendance records for Events **/
 type ProgramClassEventAttendance struct {
@@ -129,6 +145,7 @@ type ClassEventInstance struct {
 	ClassTime         string                        `json:"class_time"` // e.g. "12:00-14:00"
 	Date              string                        `json:"date"`
 	AttendanceRecords []ProgramClassEventAttendance `json:"attendance_records"`
+	IsCancelled       bool                          `json:"is_cancelled"`
 }
 
 type EnrollmentAttendance struct {

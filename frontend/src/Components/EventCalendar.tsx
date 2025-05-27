@@ -29,6 +29,7 @@ export default function EventCalendar({
     return (
         <div className="p-4">
             <Calendar
+                onSelectEvent={handleSelectEvent}
                 localizer={localizer}
                 events={events as FacilityProgramClassEvent[]}
                 startAccessor="start"
@@ -38,6 +39,11 @@ export default function EventCalendar({
                 onSelectEvent={handleDateClick}
                 eventPropGetter={eventPropGetter}
                 scrollToTime={scrollTime}
+            />
+            <CancelClassEventModal
+                mutate={mutate}
+                calendarEvent={selectedEvent}
+                ref={cancelClassEventModal}
             />
         </div>
     );

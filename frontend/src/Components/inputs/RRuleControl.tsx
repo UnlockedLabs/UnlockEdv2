@@ -76,6 +76,12 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             MONTHLY: RRule.MONTHLY,
             YEARLY: RRule.YEARLY
         };
+        const FREQ_LABELS = {
+            [RRule.DAILY]: 'DAILY',
+            [RRule.WEEKLY]: 'WEEKLY',
+            [RRule.MONTHLY]: 'MONTHLY',
+            [RRule.YEARLY]: 'YEARLY'
+        };
         const createRule = () => {
             let returnValue;
             if (isFormValidated() && canCreateRule()) {
@@ -209,12 +215,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 }
 
                 const frequency =
-                    Object.keys(RRule.FREQUENCIES).find(
-                        (key) =>
-                            RRule.FREQUENCIES[
-                                key as keyof typeof RRule.FREQUENCIES
-                            ] === rule.options.freq
-                    ) ?? 'WEEKLY';
+                    FREQ_LABELS[
+                        rule.options.freq as keyof typeof FREQ_LABELS
+                    ] || 'WEEKLY';
                 const weekDays =
                     (rule.options.byweekday as number[] | undefined)?.map(
                         (n) => weekdays[n].value

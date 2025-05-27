@@ -25,12 +25,12 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import useSWR from 'swr';
 import { parseDurationToMs } from '@/Components/helperFunctions/formatting';
 import { RRule } from 'rrule';
 import moment from 'moment';
 
 export default function ClassManagementForm() {
-    const classInfo = useLoaderData() as Class;
     const clsLoader = useLoaderData() as ClassLoaderData;
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
@@ -64,13 +64,14 @@ export default function ClassManagementForm() {
         if (rruleString?.rule === '') {
             return;
         }
+        const creditHours = Number(data.credit_hours);
         const formattedJson = {
             ...data,
             ...(class_id && { id: Number(class_id) }),
             start_dt: new Date(data.start_dt),
             end_dt: data.end_dt ? new Date(data.end_dt) : null,
             capacity: Number(data.capacity),
-            credit_hours: Number(data.credit_hours),
+            credit_hours: creditHours > 0 ? creditHours : null,
             events: [
                 {
                     ...(class_id && { id: Number(data?.events[0].id) }),
@@ -83,7 +84,7 @@ export default function ClassManagementForm() {
         };
 
         const canEditClass = isCompletedCancelledOrArchived(
-            classInfo ?? ({} as Class)
+            clsLoader.class ?? ({} as Class)
         );
         let response;
         if (isNewClass) {
@@ -133,13 +134,6 @@ export default function ClassManagementForm() {
         setCanOpenCalendar(!!nameValue && rruleIsValid);
     }, [nameValue, rruleIsValid]);
 
-    useEffect(() => {
-        if (isNewClass) return;
-        if (clsLoader.class) {
-            setEditFormValues(clsLoader.class);
-        }
-    }, [id, class_id, reset]);
-
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
         reset({
@@ -153,6 +147,17 @@ export default function ClassManagementForm() {
     }
 
     const isNewClass = class_id === 'new' || !class_id;
+    //FIXME temporarily putting this here for event cancellation (cancellation will be on a different screen), will take this out later
+    const { data: classData, mutate: mutateClass } = useSWR<
+        ServerResponseOne<Class>,
+        Error
+    >(isNewClass ? null : `/api/program-classes/${class_id}`);
+
+    useEffect(() => {
+        if (!isNewClass && classData?.data) {
+            setEditFormValues(classData.data);
+        }
+    }, [classData]);
 
     function openCalendar() {
         const createdRule = rruleFormRef.current?.createRule();
