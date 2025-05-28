@@ -6,6 +6,7 @@ import {
     LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { isSysAdmin, useAuth } from '@/useAuth';
+import { toTimezoneString } from './helperFunctions/formatting';
 
 export default function FacilityCard({
     facility,
@@ -20,7 +21,7 @@ export default function FacilityCard({
     return (
         <tr className="bg-base-teal card p-4 w-full grid-cols-3 justify-items-center">
             <td className="justify-self-start">{facility.name}</td>
-            <td className="">{facility.timezone}</td>
+            <td className="">{toTimezoneString(facility.timezone)}</td>
             <td className="flex flex-row gap-3 justify-self-end cursor-pointer">
                 {user && !isSysAdmin(user) ? (
                     <ULIComponent
