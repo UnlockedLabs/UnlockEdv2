@@ -16,8 +16,9 @@ import StudentLayer0 from '@/Pages/StudentLayer0';
 import ResetPassword from '@/Pages/Auth/ResetPassword';
 import Welcome from '@/Pages/Welcome';
 import Login from '@/Pages/Auth/Login';
-import { getProviderPlatforms } from '@/routeLoaders';
+import { getFacilitySchedule, getProviderPlatforms } from '@/routeLoaders';
 import ResidentProfile from '@/Pages/ResidentProfile';
+import Schedule from '@/Pages/Schedule';
 
 const deptAdminRoutes = DeclareAuthenticatedRoutes(
     [
@@ -102,6 +103,14 @@ const adminRoutes = DeclareAuthenticatedRoutes(
             handle: {
                 title: 'Resident Profile',
                 path: ['residents']
+            }
+        },
+        {
+            path: 'schedule',
+            loader: getFacilitySchedule,
+            element: <Schedule />,
+            handle: {
+                title: 'Facility Schedule'
             }
         }
     ],

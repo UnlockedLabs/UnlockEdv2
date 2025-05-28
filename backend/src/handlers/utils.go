@@ -109,13 +109,24 @@ func getDateRange(r *http.Request) (*models.DateRange, error) {
 	if err != nil {
 		tz = time.UTC
 	}
-	start, err := time.Parse("02-01-2006", r.URL.Query().Get("start_dt"))
+
+	parseDate := func(dateStr string) (time.Time, error) {
+		formats := []string{"02-01-2006", "2006-01-02", "2006-01-02T15:04:05Z07:00"}
+		for _, format := range formats {
+			if t, err := time.Parse(format, dateStr); err == nil {
+				return t, nil
+			}
+		}
+		return time.Time{}, errors.New("invalid date format")
+	}
+
+	start, err := parseDate(r.URL.Query().Get("start_dt"))
 	if err != nil {
 		// if start is not provided, use two weeks ago
 		start = time.Now().Add(-14 * 24 * time.Hour)
 	}
 	start = start.In(tz)
-	end, err := time.Parse("02-01-2006", r.URL.Query().Get("end_dt"))
+	end, err := parseDate(r.URL.Query().Get("end_dt"))
 	if err != nil {
 		// if end is not provided, use two weeks from now
 		end = time.Now().Add(14 * 24 * time.Hour)
