@@ -19,7 +19,7 @@ export function parseLocalDay(isoDate: string): Date {
     return new Date(year, month - 1, day);
 }
 
-export function toTimezoneString(timezoneValue: string) {
+export function toTimezoneString(timezoneValue: string): string {
     return (
         Object.keys(Timezones).find(
             (key) => Timezones[key as keyof typeof Timezones] === timezoneValue // eslint-disable-line
