@@ -25,7 +25,6 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
-import useSWR from 'swr';
 import { parseDurationToMs } from '@/Components/helperFunctions/formatting';
 import { RRule } from 'rrule';
 import moment from 'moment';
@@ -134,6 +133,13 @@ export default function ClassManagementForm() {
         setCanOpenCalendar(!!nameValue && rruleIsValid);
     }, [nameValue, rruleIsValid]);
 
+    useEffect(() => {
+        if (isNewClass) return;
+        if (clsLoader.class) {
+            setEditFormValues(clsLoader.class);
+        }
+    }, [id, class_id, reset]);
+
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
         reset({
@@ -147,17 +153,6 @@ export default function ClassManagementForm() {
     }
 
     const isNewClass = class_id === 'new' || !class_id;
-    //FIXME temporarily putting this here for event cancellation (cancellation will be on a different screen), will take this out later
-    const { data: classData, mutate: mutateClass } = useSWR<
-        ServerResponseOne<Class>,
-        Error
-    >(isNewClass ? null : `/api/program-classes/${class_id}`);
-
-    useEffect(() => {
-        if (!isNewClass && classData?.data) {
-            setEditFormValues(classData.data);
-        }
-    }, [classData]);
 
     function openCalendar() {
         const createdRule = rruleFormRef.current?.createRule();

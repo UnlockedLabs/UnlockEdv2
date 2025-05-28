@@ -381,6 +381,22 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 	if err := tx.Scan(&events).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_events")
 	}
+
+	eventIDs := make([]uint, 0, len(events))
+	for _, event := range events { //gathering all for next query
+		eventIDs = append(eventIDs, event.ID)
+	}
+
+	overrideEvents, err := db.GetProgramClassEventOverrides(args, eventIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	overrideEventMap := make(map[uint][]models.ProgramClassEventOverride)
+	for _, overrideEvent := range overrideEvents { //easy organization
+		overrideEventMap[overrideEvent.EventID] = append(overrideEventMap[overrideEvent.EventID], overrideEvent)
+	}
+
 	facilityEvents := make([]models.FacilityProgramClassEvent, 0, 10)
 	for _, event := range events {
 		rRule, err := event.GetRRule()
@@ -392,7 +408,11 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		if err != nil {
 			return nil, err
 		}
+
+		overrides := overrideEventMap[event.ID]
+		var isCancelled bool
 		for _, occurrence := range occurrences {
+			isCancelled = isOccurrenceCancelled(occurrence, overrides)
 			endTime := occurrence.Add(duration)
 			facilityEvent := models.FacilityProgramClassEvent{
 				ProgramClassEvent: event.ProgramClassEvent,
@@ -403,11 +423,35 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 				StartTime:         &occurrence,
 				EndTime:           &endTime,
 				Frequency:         rRule.OrigOptions.Freq.String(),
+				IsCancelled:       isCancelled,
 			}
 			facilityEvents = append(facilityEvents, facilityEvent)
 		}
 	}
 	return facilityEvents, nil
+}
+
+func isOccurrenceCancelled(occurrence time.Time, overrides []models.ProgramClassEventOverride) bool {
+	isCancelled := false
+	for _, override := range overrides {
+		if !override.IsCancelled { //skip
+			continue
+		}
+		rRule, err := rrule.StrToRRule(override.OverrideRrule)
+		if err != nil {
+			logrus.Warnf("unable to parse cancelled override rule: %s", override.OverrideRrule)
+			continue
+		}
+		if len(rRule.All()) == 0 {
+			logrus.Warnf("cancelled override rule does not contain a date instance, rule is: %s", override.OverrideRrule)
+			continue
+		}
+		if rRule.All()[0].Equal(occurrence) {
+			isCancelled = true
+			break
+		}
+	}
+	return isCancelled
 }
 
 func (db *DB) GetCalendar(dtRng *models.DateRange, userId *uint) (*models.Calendar, error) {
@@ -608,27 +652,7 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 		occInLoc := occ.In(loc)
 		occDateStr := occInLoc.Format("2006-01-02")
 
-		isCancelled := false
-		for _, override := range event.Overrides { //for now just checking for cancellations
-			if !override.IsCancelled { //don't bother
-				continue
-			}
-			rRule, err := rrule.StrToRRule(override.OverrideRrule)
-			if err != nil {
-				logrus.Warnf("unable to parse cancelled override rule: %s", override.OverrideRrule)
-				continue
-			}
-			if len(rRule.All()) < 1 {
-				logrus.Warnf("cancelled override rule does not contain a date instance, rule is: %s", override.OverrideRrule)
-				continue
-			}
-			overrideInstance := rRule.All()[0]
-			if overrideInstance.Equal(occ) {
-				isCancelled = true
-				break
-			}
-		}
-
+		isCancelled := isOccurrenceCancelled(occ, event.Overrides)
 		relevantAttendance := src.FilterMap(attendances, func(att models.ProgramClassEventAttendance) bool {
 			return att.Date == occDateStr
 		})
@@ -697,4 +721,12 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 		}
 	}
 	return out, nil
+}
+
+func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventIDs []uint) ([]models.ProgramClassEventOverride, error) {
+	overrides := make([]models.ProgramClassEventOverride, 0)
+	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id IN (?)", eventIDs).Find(&overrides).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_event_overrides")
+	}
+	return overrides, nil
 }
