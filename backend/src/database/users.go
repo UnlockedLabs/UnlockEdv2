@@ -10,6 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func calcOffset(page, perPage int) int {
@@ -597,4 +598,55 @@ func adjustUserOrderBy(arg string) string {
 		return arg + ", name_first"
 	}
 	return arg
+}
+
+func (db *DB) UpdateFailedLogin(userID uint) error {
+	now := time.Now()
+	return db.Transaction(func(tx *gorm.DB) error {
+		var rec models.FailedLoginAttempts
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&rec, "user_id = ?", userID).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			rec = models.FailedLoginAttempts{
+				UserID:         userID,
+				FirstAttemptAt: &now,
+				AttemptCount:   1,
+			}
+			return tx.Create(&rec).Error
+		} else if err != nil {
+			return err
+		}
+
+		if now.Sub(*rec.FirstAttemptAt) > models.WindowDuration {
+			rec.AttemptCount = 1
+			rec.FirstAttemptAt = &now
+			rec.LockedUntil = nil
+		} else {
+			rec.AttemptCount++
+			rec.LastAttemptAt = now
+			if rec.AttemptCount >= models.MaxFailures {
+				lockExpiry := now.Add(models.LockDuration)
+				rec.LockedUntil = &lockExpiry
+			}
+		}
+		return tx.Save(&rec).Error
+	})
+}
+
+func (db *DB) IsAccountLocked(userID uint) (bool, time.Duration, int, error) {
+	var rec models.FailedLoginAttempts
+	err := db.First(&rec, "user_id = ?", userID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, 0, 0, nil
+	} else if err != nil {
+		return false, 0, 0, err
+	}
+	if rec.LockedUntil != nil && rec.LockedUntil.After(time.Now()) {
+		return true, time.Until(*rec.LockedUntil), rec.AttemptCount, nil
+	}
+	return false, 0, rec.AttemptCount, nil
+}
+
+func (db *DB) ResetFailedLoginAttempts(userID uint) error {
+	return db.Delete(&models.FailedLoginAttempts{}, "user_id = ?", userID).Error
 }

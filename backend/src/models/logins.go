@@ -35,6 +35,24 @@ type UserSessionTracking struct {
 
 func (UserSessionTracking) TableName() string { return "user_session_tracking" }
 
+const (
+	MaxFailures    = 5
+	WindowDuration = 15 * time.Minute
+	LockDuration   = 15 * time.Minute
+)
+
+type FailedLoginAttempts struct {
+	UserID         uint       `json:"user_id" gorm:"primaryKey"`
+	FirstAttemptAt *time.Time `json:"first_attempt_at" gorm:""`
+	LastAttemptAt  time.Time  `json:"last_attempt_at" gorm:""`
+	AttemptCount   int        `json:"attempt_count" gorm:"default:0"`
+	LockedUntil    *time.Time `json:"locked_until" gorm:""`
+
+	User *User `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete CASCADE"`
+}
+
+func (FailedLoginAttempts) TableName() string { return "failed_login_attempts" }
+
 type SessionEngagement struct {
 	UserId       int64   `json:"user_id"`
 	TimeInterval string  `json:"time_interval"`
