@@ -180,6 +180,7 @@ func (srv *Server) handleGetProgramClassOutcomes(w http.ResponseWriter, r *http.
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, outcome)
+}
 
 func (srv *Server) getPagedHistoryEvents(id int, tableName string, args *models.QueryContext, log sLog) (models.PaginationMeta, []models.ActivityHistoryResponse, error) {
 	var (
