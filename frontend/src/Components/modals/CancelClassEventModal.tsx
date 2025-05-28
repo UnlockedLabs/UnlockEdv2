@@ -1,9 +1,12 @@
 import { forwardRef, useEffect, useState } from 'react';
 import { FormInputTypes, FormModal, Input } from '.';
-import { CancelEventReason, Class, ServerResponseOne } from '@/common';
+import {
+    CancelEventReason,
+    FacilityProgramClassEvent,
+    ServerResponseMany
+} from '@/common';
 import API from '@/api/api';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
-import { CalendarClassEvent } from '../EventCalendar';
 import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 
@@ -12,8 +15,8 @@ export const CancelClassEventModal = forwardRef(function (
         calendarEvent,
         mutate
     }: {
-        calendarEvent?: CalendarClassEvent;
-        mutate: KeyedMutator<ServerResponseOne<Class>>;
+        calendarEvent?: FacilityProgramClassEvent;
+        mutate: KeyedMutator<ServerResponseMany<FacilityProgramClassEvent>>;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -24,31 +27,29 @@ export const CancelClassEventModal = forwardRef(function (
     const [reason, setReason] = useState<string>('');
 
     const cancelClassEvent: SubmitHandler<FieldValues> = async (data) => {
-        if (!calendarEvent?.classEvent) return;
-        const iso =
+        if (!calendarEvent?.recurrence_rule) return;
+        const overrideDate =
             calendarEvent.start
                 .toISOString()
                 .replace(/[-:]/g, '')
                 .slice(0, 15) + 'Z';
 
-        const overrideRule = `DTSTART:${iso}\nRRULE:FREQ=DAILY;COUNT=1`;
-        const programClassEvent = calendarEvent.classEvent;
-
+        const overrideRule = `DTSTART:${overrideDate}\nRRULE:FREQ=DAILY;COUNT=1`;
         let reason = data.reason as string;
         if (reason === 'Other (add note)') {
             reason = data.note as string;
         }
         const formattedJson = {
-            event_id: programClassEvent?.id,
-            class_id: programClassEvent?.class_id,
+            event_id: calendarEvent.id,
+            class_id: calendarEvent.class_id,
             override_rrule: overrideRule,
-            duration: programClassEvent?.duration,
-            location: programClassEvent?.room,
+            duration: calendarEvent.duration,
+            location: calendarEvent.room,
             is_cancelled: true,
             reason: reason
         };
         const response = await API.put(
-            `events/${programClassEvent.id}`,
+            `events/${calendarEvent.id}`,
             formattedJson
         );
 

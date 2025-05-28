@@ -1,11 +1,25 @@
-import { FacilityProgramClassEvent } from '@/common';
+import { FacilityProgramClassEvent, ServerResponseMany } from '@/common';
 import EventCalendar from '@/Components/EventCalendar';
 import { CancelButton, CloseX } from '@/Components/inputs';
-import { useState } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { showModal } from '@/Components/modals';
+import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal';
+import { useMemo, useRef, useState } from 'react';
+import useSWR from 'swr';
 
 export default function Schedule() {
-    const events = useLoaderData() as FacilityProgramClassEvent[];
+    const cancelClassEventModal = useRef<HTMLDialogElement>(null);
+    const { startDate, endDate } = useMemo(() => {
+        const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
+        const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
+        return { startDate: start, endDate: end };
+    }, []);
+    const { data: eventsResp, mutate: mutateEvents } = useSWR<
+        ServerResponseMany<FacilityProgramClassEvent>,
+        Error
+    >(
+        `/api/admin-calendar?start_dt=${startDate.toISOString()}&end_dt=${endDate.toISOString()}`
+    );
+    const events = eventsResp?.data;
     const [selectedEvent, setSelectedEvent] =
         useState<FacilityProgramClassEvent | null>(null);
 
@@ -88,7 +102,12 @@ export default function Schedule() {
                             </button>
                             <CancelButton
                                 onClick={() => {
-                                    console.log('cancelling event');
+                                    if (!selectedEvent) return;
+                                    if (selectedEvent.is_cancelled) {
+                                        //do nothing
+                                        return;
+                                    }
+                                    showModal(cancelClassEventModal);
                                 }}
                             />
                         </div>
@@ -100,6 +119,15 @@ export default function Schedule() {
                     </p>
                 )}
             </div>
+            {selectedEvent ? (
+                <CancelClassEventModal
+                    mutate={mutateEvents}
+                    calendarEvent={selectedEvent}
+                    ref={cancelClassEventModal}
+                />
+            ) : (
+                ''
+            )}
         </div>
     );
 }
