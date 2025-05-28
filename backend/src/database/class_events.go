@@ -618,6 +618,10 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 				logrus.Warnf("unable to parse cancelled override rule: %s", override.OverrideRrule)
 				continue
 			}
+			if len(rRule.All()) < 1 {
+				logrus.Warnf("cancelled override rule does not contain a date instance, rule is: %s", override.OverrideRrule)
+				continue
+			}
 			overrideInstance := rRule.All()[0]
 			if overrideInstance.Equal(occ) {
 				isCancelled = true
