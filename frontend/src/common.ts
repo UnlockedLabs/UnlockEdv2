@@ -714,6 +714,7 @@ export interface ProgramOverview extends Program {
     completions: number;
     total_enrollments: number;
     completion_rate: number;
+    active_class_facility_ids: number[];
 }
 
 export interface ProgramClassOutcomes {
@@ -787,6 +788,24 @@ export interface ResidentProgramOverview {
     present_attendance?: number;
     absent_attendance?: number;
     attendance_percentage?: number;
+}
+
+// TO DO: NOTE THESE WILL BE REPLACED IN A FUTURE TICKET. LEAVING IT AS IS FOR NOW
+export interface ShortCalendarEvent {
+    title: string;
+    start: Date;
+    end: Date;
+}
+
+export interface FacilityProgramClassEvent extends ProgramClassEvent {
+    instructor_name: string;
+    program_name: string;
+    title: string;
+    is_cancelled: boolean;
+    enrolled_users: string;
+    start: Date;
+    end: Date;
+    frequency: string;
 }
 
 export interface CalendarEvent {
@@ -1102,6 +1121,7 @@ export interface ActivityHistoryResponse {
     program_classes_history?: ProgramClassesHistory;
     field_name: string;
     new_value: string;
+    old_value: string;
 }
 
 export interface ProgramClassesHistory {

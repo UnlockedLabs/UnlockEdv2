@@ -3,10 +3,13 @@ package database
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type EnrollmentAndCompletionMetrics struct {
@@ -18,9 +21,20 @@ type EnrollmentAndCompletionMetrics struct {
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
-	if err := db.Preload("Facilities").Preload("ProgramTypes").Preload("ProgramCreditTypes").First(content, id).Error; err != nil {
+	if err := db.Preload("ProgramTypes").Preload("ProgramCreditTypes").First(content, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "programs")
 	}
+
+	var facilities []models.Facility
+	if err := db.Table("facilities").
+		Joins("join facilities_programs on facilities.id = facilities_programs.facility_id").
+		Where(`facilities_programs.program_id = ?
+			and facilities_programs.deleted_at is null
+			and facilities.deleted_at is null`, id).Find(&facilities).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facilities")
+	}
+	content.Facilities = facilities
+
 	return content, nil
 }
 
@@ -48,6 +62,16 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (Enrollment
 		Scan(&metrics).Error
 
 	return metrics, err
+}
+
+func (db *DB) GetActiveClassFacilityIDs(ctx context.Context, id int) ([]int, error) {
+	activeClassFacilityIDs := make([]int, 0)
+	if err := db.WithContext(ctx).Model(&models.ProgramClass{}).Select("DISTINCT facility_id").
+		Where("program_id = ? and status in ('Active', 'Scheduled')", id).
+		Scan(&activeClassFacilityIDs).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_classes")
+	}
+	return activeClassFacilityIDs, nil
 }
 
 func (db *DB) GetPrograms(args *models.QueryContext) ([]models.Program, error) {
@@ -93,36 +117,225 @@ func (db *DB) CreateProgram(content *models.Program) error {
 	return nil
 }
 
-func (db *DB) UpdateProgram(content *models.Program) (*models.Program, error) {
-	if err := db.Save(content).Error; err != nil {
+func (db *DB) UpdateProgram(ctx context.Context, program *models.Program, facilityIds []int) (*models.Program, error) {
+	var allChanges []models.ChangeLogEntry
+	updatePrg, err := db.GetProgramByID(int(program.ID))
+	if err != nil {
+		return nil, err
+	}
+	//begin the transaction
+	trans := db.WithContext(ctx).Begin() //only need to pass context here, it will be used/shared within the transaction
+	if trans.Error != nil {
+		return nil, NewDBError(trans.Error, "unable to start the database transaction")
+	}
+	ignoredFieldNames := []string{"create_user_id", "update_user_id", "program_types", "credit_types", "facilities", "archived_at"}
+	programLogEntries := models.GenerateChangeLogEntries(updatePrg, program, "programs", updatePrg.ID, program.UpdateUserID, ignoredFieldNames)
+	allChanges = append(allChanges, programLogEntries...)
+	models.UpdateStruct(&updatePrg, &program)
+	facLogEntries, err := updateFacilitiesPrograms(trans, updatePrg, facilityIds)
+	if err != nil {
+		trans.Rollback()
+		return nil, err
+	}
+	allChanges = append(allChanges, facLogEntries...)
+	prgTypeLogEntries, err := updateProgramTypes(trans, updatePrg, program.ProgramTypes)
+	if err != nil {
+		trans.Rollback()
+		return nil, err
+	}
+	allChanges = append(allChanges, prgTypeLogEntries...)
+	creditTypeLogEntries, err := updateProgramCreditTypes(trans, updatePrg, program.ProgramCreditTypes)
+	if err != nil {
+		trans.Rollback()
+		return nil, err
+	}
+	allChanges = append(allChanges, creditTypeLogEntries...)
+	if err := trans.Omit("Facilities", "CreatedAt").Select("IsActive", "Name", "Description", "FundingType", "UpdateUserID").Updates(&updatePrg).Error; err != nil {
 		return nil, newUpdateDBError(err, "programs")
 	}
-	return content, nil
+
+	if len(allChanges) > 0 {
+		if err := trans.Create(&allChanges).Error; err != nil {
+			trans.Rollback()
+			return nil, newCreateDBError(err, "change_log_entries")
+		}
+	}
+	//end transaction
+	if err := trans.Commit().Error; err != nil {
+		return nil, NewDBError(err, "unable to commit the database transaction")
+	}
+	return updatePrg, nil
 }
 
-func (db *DB) UpdateProgramStatus(programUpdate map[string]any, id uint) ([]string, bool, error) {
-	var facilities []string
+func updateFacilitiesPrograms(trans *gorm.DB, updateProgram *models.Program, facilityIds []int) ([]models.ChangeLogEntry, error) {
+	var (
+		currentFacPrgs []models.FacilitiesPrograms
+		logEntries     []models.ChangeLogEntry
+		facilityID     uint
+	)
+	if err := trans.Where("program_id = ?", updateProgram.ID).Find(&currentFacPrgs).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "facilities_programs")
+	}
+
+	currentFacPrgsMap := make(map[uint]struct{}, len(currentFacPrgs)) //added light weight map used for lookup
+	for _, fp := range currentFacPrgs {
+		currentFacPrgsMap[fp.FacilityID] = struct{}{}
+	}
+
+	updateFacPrgsMap := make(map[uint]struct{}, len(facilityIds)) //added light weight map used for lookup
+	for _, facId := range facilityIds {
+		facilityID = uint(facId)
+		updateFacPrgsMap[facilityID] = struct{}{}
+		if _, ok := currentFacPrgsMap[facilityID]; !ok {
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "facility_id", nil, models.StringPtr(strconv.Itoa(int(facilityID))), updateProgram.ID, updateProgram.UpdateUserID))
+			if err := trans.Create(&models.FacilitiesPrograms{
+				ProgramID:  updateProgram.ID,
+				FacilityID: facilityID,
+			}).Error; err != nil {
+				return nil, newCreateDBError(err, "facilities_programs")
+			}
+		}
+	}
+
+	for facId := range currentFacPrgsMap {
+		if _, ok := updateFacPrgsMap[facId]; !ok { //delete entry
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "facility_id", models.StringPtr(strconv.Itoa(int(facId))), nil, updateProgram.ID, updateProgram.UpdateUserID))
+			if err := trans.Where("program_id = ? and facility_id = ?", updateProgram.ID, facId).Delete(&models.FacilitiesPrograms{}).Error; err != nil {
+				return nil, newDeleteDBError(err, "facilities_programs")
+			}
+		}
+	}
+
+	return logEntries, nil
+}
+
+func updateProgramTypes(trans *gorm.DB, updateProgram *models.Program, programTypes []models.ProgramType) ([]models.ChangeLogEntry, error) {
+	var (
+		currentPrgTypes []models.ProgramType
+		logEntries      []models.ChangeLogEntry
+		progType        models.ProgType
+	)
+	if err := trans.Where("program_id = ?", updateProgram.ID).Find(&currentPrgTypes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_types")
+	}
+
+	currentPrgTypesMap := make(map[models.ProgType]struct{}, len(currentPrgTypes)) //added light weight map used for lookup
+	for _, pt := range currentPrgTypes {
+		currentPrgTypesMap[pt.ProgramType] = struct{}{}
+	}
+
+	updatePrgTypesMap := make(map[models.ProgType]struct{}, len(programTypes)) //added light weight map used for lookup
+	for _, pt := range programTypes {
+		progType = pt.ProgramType
+		updatePrgTypesMap[progType] = struct{}{}
+		if _, ok := currentPrgTypesMap[progType]; !ok { //type doesn't exist create it
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "program_type", nil, models.StringPtr(string(progType)), updateProgram.ID, updateProgram.UpdateUserID))
+			if err := trans.Create(&models.ProgramType{
+				ProgramID:   updateProgram.ID,
+				ProgramType: progType,
+			}).Error; err != nil {
+				return nil, newCreateDBError(err, "program_types")
+			}
+		}
+	}
+
+	for prgType := range currentPrgTypesMap {
+		if _, ok := updatePrgTypesMap[prgType]; !ok {
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "program_type", models.StringPtr(string(prgType)), nil, updateProgram.ID, updateProgram.UpdateUserID))
+			if err := trans.Where("program_id = ? and program_type = ?", updateProgram.ID, prgType).Delete(&models.ProgramType{}).Error; err != nil {
+				return nil, newDeleteDBError(err, "program_types")
+			}
+		}
+	}
+	return logEntries, nil
+}
+
+func updateProgramCreditTypes(trans *gorm.DB, updateProgram *models.Program, programCreditTypes []models.ProgramCreditType) ([]models.ChangeLogEntry, error) {
+	var (
+		currentPrgCreditTypes []models.ProgramCreditType
+		logEntries            []models.ChangeLogEntry
+		progCreditType        models.CreditType
+	)
+	if err := trans.Where("program_id = ?", updateProgram.ID).Find(&currentPrgCreditTypes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_credit_types")
+	}
+
+	currentPrgCreditTypesMap := make(map[models.CreditType]struct{}, len(currentPrgCreditTypes)) //added a light weight map used for lookup
+	for _, ct := range currentPrgCreditTypes {
+		currentPrgCreditTypesMap[ct.CreditType] = struct{}{}
+	}
+
+	updatePrgCreditTypesMap := make(map[models.CreditType]struct{}, len(programCreditTypes)) //added a light weight map used for lookup
+	for _, pt := range programCreditTypes {
+		progCreditType = pt.CreditType
+		updatePrgCreditTypesMap[progCreditType] = struct{}{}
+		if _, ok := currentPrgCreditTypesMap[progCreditType]; !ok { //type doesn't exist create it
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "credit_type", nil, models.StringPtr(string(progCreditType)), updateProgram.ID, updateProgram.UpdateUserID))
+			if err := trans.Create(&models.ProgramCreditType{
+				ProgramID:  updateProgram.ID,
+				CreditType: progCreditType,
+			}).Error; err != nil {
+				return nil, newCreateDBError(err, "program_credit_types")
+			}
+		}
+	}
+
+	for creditType := range currentPrgCreditTypesMap {
+		if _, ok := updatePrgCreditTypesMap[creditType]; !ok { //type was removed delete it
+			logEntries = append(logEntries, *models.NewChangeLogEntry("programs", "credit_type", models.StringPtr(string(creditType)), nil, updateProgram.ID, updateProgram.UpdateUserID))
+			if err := trans.Where("program_id = ? and credit_type = ?", updateProgram.ID, creditType).Delete(&models.ProgramCreditType{}).Error; err != nil {
+				return nil, newDeleteDBError(err, "program_credit_types")
+			}
+		}
+	}
+	return logEntries, nil
+}
+
+func (db *DB) UpdateProgramStatus(ctx context.Context, programUpdate map[string]any, id uint) ([]string, bool, error) {
+	var (
+		facilities []string
+		logEntry   *models.ChangeLogEntry
+	)
+	updatePrg, err := db.GetProgramByID(int(id))
+	if err != nil {
+		return nil, false, err
+	}
 	if programUpdate["archived_at"] != nil {
-		err := db.Model(&models.ProgramClass{}).
+		err := db.WithContext(ctx).Model(&models.ProgramClass{}).
 			Joins("JOIN facilities ON facilities.id = program_classes.facility_id").
 			Where("program_classes.program_id = ? AND program_classes.status IN ? AND program_classes.archived_at IS NULL", id,
 				[]models.ClassStatus{models.Active, models.Scheduled}).
 			Distinct().
 			Pluck("facilities.name", &facilities).Error
+
 		if err != nil {
 			return nil, false, newGetRecordsDBError(err, "program_classes / facilities")
 		}
 		if len(facilities) > 0 {
 			return facilities, false, nil
 		}
+		logEntry = models.NewChangeLogEntry("programs", "archived_at", nil, models.StringPtr(programUpdate["archived_at"].(string)), updatePrg.ID, programUpdate["update_user_id"].(uint))
+	} else { //is possible that the old value is the same as the new value here when reactivating
+		oldValue := strconv.FormatBool(updatePrg.IsActive)
+		newValue := strconv.FormatBool(programUpdate["is_active"].(bool))
+		logEntry = models.NewChangeLogEntry("programs", "is_active", models.StringPtr(oldValue), models.StringPtr(newValue), updatePrg.ID, programUpdate["update_user_id"].(uint))
 	}
-
-	if err := db.Model(&models.Program{}).
+	trans := db.WithContext(ctx).Begin() //create transaction
+	if trans.Error != nil {
+		return nil, false, NewDBError(trans.Error, "unable to start the database transaction")
+	}
+	if err := trans.Model(&models.Program{}).
 		Where("id = ?", id).
 		Updates(programUpdate).Error; err != nil {
 		return nil, false, newUpdateDBError(err, "program status")
 	}
-
+	if err := trans.Create(&logEntry).Error; err != nil {
+		trans.Rollback()
+		return nil, false, newCreateDBError(err, "change_log_entries")
+	}
+	if err := trans.Commit().Error; err != nil { //commit transaction
+		return nil, false, NewDBError(err, "unable to commit the database transaction")
+	}
 	return facilities, true, nil
 }
 

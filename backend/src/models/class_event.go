@@ -164,3 +164,15 @@ type EventDates struct {
 	EventID uint   `json:"event_id"`
 	Date    string `json:"date"`
 }
+
+type FacilityProgramClassEvent struct {
+	ProgramClassEvent
+	InstructorName string     `json:"instructor_name"`
+	ProgramName    string     `json:"program_name"`
+	ClassName      string     `json:"title"`
+	IsCancelled    bool       `json:"is_cancelled"`
+	EnrolledUsers  string     `json:"enrolled_users"`
+	StartTime      *time.Time `json:"start"`
+	EndTime        *time.Time `json:"end"`
+	Frequency      string     `json:"frequency"`
+}

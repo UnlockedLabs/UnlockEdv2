@@ -55,7 +55,7 @@ const ClassEnrollmentDetailsTable: React.FC<EnrollmentTableProps> = ({
                 )}
             </th>
             <th className="pr-4">Name</th>
-            <th>DOC ID</th>
+            <th>Resident ID</th>
             <th>Enrolled Date</th>
             <th>Completion</th>
             <th>Enrollment Status</th>

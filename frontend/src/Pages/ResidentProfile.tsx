@@ -155,7 +155,7 @@ const ResidentProfile = () => {
                                 value={metrics.user.username}
                             />
                             <UserProfileInfoRow
-                                column="DOC ID"
+                                column="Resident ID"
                                 value={metrics.user.doc_id ?? 'N/a'}
                             />
                             <UserProfileInfoRow

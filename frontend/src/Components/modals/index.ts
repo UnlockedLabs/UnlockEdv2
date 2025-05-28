@@ -247,7 +247,7 @@ export const getUserInputs = (
     if (!AdminRoles.includes(userRole)) {
         inputs.push({
             type: FormInputTypes.Text,
-            label: 'Department of Corrections ID',
+            label: 'Resident ID',
             interfaceRef: 'doc_id',
             required: true,
             length: 25

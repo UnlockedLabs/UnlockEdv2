@@ -8,7 +8,13 @@ import {
     CancelButton,
     CloseX
 } from '@/Components/inputs';
-import { ProgClassStatus, Class, ToastState, ClassLoaderData } from '@/common';
+import {
+    ProgClassStatus,
+    Class,
+    ToastState,
+    ClassLoaderData,
+    ShortCalendarEvent
+} from '@/common';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useState, useRef, useEffect } from 'react';
 import API from '@/api/api';
@@ -19,15 +25,16 @@ import {
     RRuleFormHandle
 } from '@/Components/inputs/RRuleControl';
 import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
+import { parseDurationToMs } from '@/Components/helperFunctions/formatting';
+import { RRule } from 'rrule';
+import moment from 'moment';
 
 export default function ClassManagementForm() {
     const classInfo = useLoaderData() as Class;
     const clsLoader = useLoaderData() as ClassLoaderData;
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
-    const [calendarRule, setCalendarRule] = useState('');
-    const [calendarDuration, setCalendarDuration] = useState('');
-    const [calendarEventTitle, setCalendarEventTitle] = useState('');
+    const [events, setEvents] = useState<ShortCalendarEvent[]>([]);
     const { id, class_id } = useParams<{ id: string; class_id?: string }>();
     const navigate = useNavigate();
     const [showCalendar, setShowCalendar] = useState(false);
@@ -147,6 +154,33 @@ export default function ClassManagementForm() {
 
     const isNewClass = class_id === 'new' || !class_id;
 
+    function openCalendar() {
+        const createdRule = rruleFormRef.current?.createRule();
+        if (!createdRule)
+            return toaster('Unable to open calendar', ToastState.error);
+        const title = getValues('name');
+        const duration = createdRule.duration;
+        const calendarRule = createdRule.rule;
+
+        const durationMs = parseDurationToMs(duration);
+        const cleanRule = calendarRule.replace(
+            /DTSTART;TZID=Local:/,
+            'DTSTART:'
+        );
+        const rule = RRule.fromString(cleanRule);
+        const occurrences = rule.between(
+            new Date(),
+            moment().add(1, 'year').toDate()
+        );
+        const generated = occurrences.map((occurrence) => ({
+            title,
+            start: occurrence,
+            end: new Date(occurrence.getTime() + durationMs)
+        }));
+        setEvents(generated);
+        setShowCalendar(true);
+    }
+
     return (
         <div className="p-4 px-5">
             <form
@@ -218,17 +252,7 @@ export default function ClassManagementForm() {
                             <div className="flex justify-end mb-4">
                                 <input
                                     type="button"
-                                    onClick={() => {
-                                        const rule =
-                                            rruleFormRef.current?.createRule();
-                                        const title = getValues('name');
-                                        if (rule?.rule && title) {
-                                            setCalendarRule(rule.rule);
-                                            setCalendarDuration(rule.duration);
-                                            setCalendarEventTitle(title);
-                                            setShowCalendar(true);
-                                        }
-                                    }}
+                                    onClick={() => openCalendar()}
                                     disabled={!canOpenCalendar}
                                     className="button"
                                     value="View Calendar"
@@ -273,11 +297,7 @@ export default function ClassManagementForm() {
                 <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
                     <div className="card w-[90vw] max-w-[1024px] max-h-[90vh] overflow-auto p-6 relative">
                         <CloseX close={() => setShowCalendar(false)} />
-                        <EventCalendar
-                            recurrenceRule={calendarRule}
-                            durationStr={calendarDuration}
-                            title={calendarEventTitle}
-                        />
+                        <EventCalendar events={events} />
                     </div>
                 </div>
             )}

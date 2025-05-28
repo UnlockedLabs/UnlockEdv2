@@ -6,15 +6,19 @@
     h1 {
         @apply text-2xl text-header-text font-lexend font-semibold;
     }
+
     h2 {
         @apply text-base text-header-text font-lexend font-semibold;
     }
+
     h3 {
         @apply text-base text-header-text font-lexend font-semibold;
     }
+
     p {
         @apply text-body-text font-inter font-medium;
     }
+
     body {
         @apply text-body-text font-inter font-medium;
     }
@@ -24,74 +28,97 @@
     .body {
         @apply text-sm;
     }
+
     .body-small {
         @apply text-xs;
     }
+
     .card {
         @apply shadow-md rounded-lg border border-black border-opacity-[10%] bg-base-teal;
     }
+
     .card-row-padding {
         @apply px-6 py-4;
     }
+
     .card-h-padding {
         @apply mt-4 ml-4;
     }
+
     .catalog-pill {
         @apply text-xs px-3 py-1 rounded-2xl flex-grow-0 mx-2;
     }
+
     .table-2 {
         @apply w-full;
     }
+
     .table-2 thead tr {
         @apply grid grid-flow-col auto-cols-max justify-between border border-x-0 border-t-0 mt-2;
     }
+
     .table-2 th {
         @apply body text-grey-4 font-medium;
     }
+
     .table-2 tbody {
         @apply flex flex-col gap-4 mt-4;
     }
+
     .table-2 tbody tr {
         @apply grid grid-flow-col auto-cols-max justify-between mr-3;
     }
+
     .table-2 td {
         @apply body-small my-auto;
     }
+
     .button-core {
-        @apply flex flex-row gap-3 rounded-lg items-center cursor-pointer;
+        @apply flex flex-row gap-3 rounded-lg items-center cursor-pointer justify-center;
     }
+
     .button {
         @apply bg-teal-3 body text-white py-3 px-3 button-core hover:bg-teal-4 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
     }
+
     .button-sm {
         @apply button body-small py-1 px-2 grow-0 hover:bg-teal-4 disabled:bg-grey-1 disabled:text-grey-2;
     }
+
     .button-outline {
         @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 button-core hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
     }
+
     .button-red {
         @apply button bg-red-3 hover:bg-red-4;
     }
+
     .button-grey {
         @apply button bg-grey-2 text-body-text hover:bg-grey-3;
     }
+
     .button-grey-sm {
         @apply button-sm bg-grey-2 text-body-text hover:bg-grey-3 disabled:hover:bg-grey-1;
     }
+
     .button-grey-sm-active {
         @apply button-sm bg-grey-3 text-body-text hover:bg-grey-3;
     }
+
     .button-outline-pale-yellow {
         @apply button-outline border-dark-yellow bg-pale-yellow hover:bg-[#FFECB0] disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
     }
+
     .button-outline-sm {
         @apply button-outline py-1 px-2 grow-0;
     }
+
     .button-circle {
         @apply bg-transparent body flex items-center justify-center rounded-full cursor-pointer hover:bg-grey-2 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
         height: 2rem;
         width: 2rem;
     }
+
     .button-circle-grey {
         @apply bg-grey-2 body flex items-center justify-center rounded-full cursor-pointer hover:bg-grey-3 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
         height: 2rem;
@@ -103,27 +130,34 @@
     .font-lexend {
         font-family: 'Lexend', sans-serif;
     }
+
     .font-inter {
         font-family: 'Inter', sans-serif;
     }
+
     /* for Chrome, Safari and Opera */
     .scrollbar::-webkit-scrollbar {
         scrollbar-width: thin;
         scrollbar-color: var(--grey-2) transparent;
     }
+
     /* for IE, Edge and Firefox */
     .scrollbar {
         scrollbar-width: thin;
         scrollbar-color: var(--grey-2) transparent;
     }
+
     /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
         display: none;
     }
+
     /* Hide scrollbar for IE, Edge and Firefox */
     .no-scrollbar {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
     }
 }
 
@@ -162,6 +196,7 @@
     justify-content: space-between;
     background-color: var(--grey-2);
 }
+
 .react-calendar__navigation__arrow {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -197,9 +232,11 @@
     position: relative;
     z-index: 10;
 }
+
 .remove-input-txt-border input[type='text']:focus {
     box-shadow: none;
 }
+
 /* added the below css for coloring the calendar icon in dark mode */
 html[data-theme='dark'] input[type='date']::-webkit-calendar-picker-indicator,
 html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
@@ -208,43 +245,90 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
     filter: brightness(0) invert(1);
     opacity: 1;
 }
+
 .rbc-calendar {
     @apply text-body-text font-lexend;
 }
+
 .rbc-toolbar {
     @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 border-b border-grey-2;
 }
+
 .rbc-toolbar-label {
     @apply text-lg font-semibold text-header-text;
 }
+
+.rbc-btn-group {
+    @apply flex flex-row;
+}
+
 .rbc-btn-group > button {
-    @apply btn btn-sm btn-secondary;
+    @apply button-sm;
 }
+
+.rbc-btn-group > button.rbc-active {
+    @apply text-black;
+}
+
+.rbc-today {
+    @apply bg-teal-1;
+}
+
 .rbc-event {
-    @apply bg-primary text-white rounded-md px-2 py-1 text-sm font-medium;
+    @apply bg-teal-3 border border-teal-4 text-white rounded-md body-small flex;
 }
-.rbc-time-header,
-.rbc-time-content {
-    @apply border-grey-1;
+
+.rbc-event.rbc-selected {
+    @apply bg-teal-4 border border-teal-5;
 }
-.rbc-time-slot {
-    @apply border-t border-grey-2;
+
+.rbc-show-more {
+    @apply bg-transparent text-body-text hover:text-teal-3;
 }
+
+.rbc-event.rbc-event-cancelled {
+    @apply bg-transparent border-2 border-teal-3 text-header-text line-through;
+}
+
+.rbc-current-time-indicator {
+    @apply bg-primary-yellow;
+}
+
+
+html[data-theme='dark'] .rbc-event.rbc-selected {
+    @apply text-black bg-teal-5;
+}
+
+.rbc-day-slot .rbc-time-slot,
+.rbc-row-bg,
+.rbc-day-bg {
+    @apply border-0;
+}
+
+.rbc-row-content {
+    @apply z-0
+}
+
+.rbc-timeslot-group {
+    @apply border-t border-grey-1 border-opacity-50;
+}
+
 .rbc-time-view {
     @apply text-sm;
 }
+
 .rbc-header {
     @apply text-grey-4 font-medium;
 }
+
 .rbc-off-range-bg {
     @apply bg-grey-1;
 }
-html[data-theme='dark'] .rbc-day-bg {
-    background-color: var(--teal-1);
-}
+
 html[data-theme='dark'] .rbc-off-range-bg {
-    background-color: var(--inner-background);
+    background-color: #091816;
 }
+
 html[data-theme='dark'] .rbc-today {
-    background-color: var(--teal-3);
+    background-color: var(--teal-1);
 }

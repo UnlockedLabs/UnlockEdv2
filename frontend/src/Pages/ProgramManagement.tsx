@@ -281,7 +281,7 @@ export default function ProgramManagement() {
                             )}
                             <th>Total Enrollments</th>
                             <th>Active Enrollments</th>
-                            <th># of Classes</th>
+                            <th>Total Classes</th>
                             <th>Avg. Completion Rate</th>
                             <th>Avg. Attendance Rate</th>
                             <th>Category</th>

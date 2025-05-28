@@ -23,7 +23,14 @@ class API {
                 signal: controller.signal
             });
             clearTimeout(timeout);
-
+            if (resp.status === 204) {
+                return {
+                    type: 'one',
+                    success: true,
+                    message: 'Request successful',
+                    data: {} as T
+                };
+            }
             const json = (await resp.json()) as ServerResponse<T>;
 
             if (!resp.ok) {
