@@ -147,22 +147,12 @@ export default function ClassManagementForm() {
     }
 
     const isNewClass = class_id === 'new' || !class_id;
-    const filteredEnumType: Record<string, string> = Object.entries(
-        ProgClassStatus
-    )
-        .filter(([, value]) => {
-            if (isNewClass) {
-                return ['Active', 'Scheduled'].includes(value);
-            }
-            return true;
-        })
-        .reduce(
-            (acc, [key, value]) => {
-                acc[key] = value;
-                return acc;
-            },
-            {} as Record<string, string>
-        );
+    const filteredEnumType: Partial<typeof ProgClassStatus> = isNewClass
+        ? {
+              SCHEDULED: ProgClassStatus.SCHEDULED,
+              ACTIVE: ProgClassStatus.ACTIVE
+          }
+        : { ...ProgClassStatus };
 
     return (
         <div className="p-4 px-5">
