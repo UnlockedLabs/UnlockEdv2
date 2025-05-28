@@ -96,7 +96,7 @@ export default function ProgramOverviewDashboard() {
     const { data: outcomeData } = useSWR<
         ServerResponseMany<ProgramClassOutcomes>,
         Error
-    >(`/api/programs/${id}/classes/outcomes?order_by=month`, {});
+    >(`/api/programs/${program_id}/classes/outcomes?order_by=month`, {});
     const outcomes = outcomeData?.data ?? [];
 
     const checkResponse = useCheckResponse({
