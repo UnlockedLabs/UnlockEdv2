@@ -119,17 +119,16 @@ type ProgramClassOutcomes struct {
 }
 
 func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]ProgramClassOutcomes, error) {
-	var outcome []ProgramClassOutcomes
+	var outcomes []ProgramClassOutcomes
 
 	facilityID := args.FacilityID
 	incompleteStatuses := []models.ProgramEnrollmentStatus{
-		models.EnrollmentCompleted,
 		models.EnrollmentIncompleteDropped,
 		models.EnrollmentIncompleteFailedToComplete,
 		models.EnrollmentIncompleteTransfered,}
 
-	// Generate series to create 6 months of data not including current month
-	monthsSubquery := `(SELECT TO_CHAR(
+	// Create a set that includes the last 6 months, excluding the current month, of program outcomes
+	const lastSixMonthsSubquery = `(SELECT TO_CHAR(
 		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month 
 		FROM generate_series(1, 6) AS gs(i))`
 
@@ -141,17 +140,12 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 		))`
 
 	query := db.WithContext(args.Ctx).
-		Table(fmt.Sprintf("(%s) AS months", monthsSubquery)).
+		Table(fmt.Sprintf("(%s) AS months", lastSixMonthsSubquery)).
 		Select(`
 			months.month,
 			COALESCE(
-          COUNT(CASE WHEN pce.enrollment_status = ? THEN pce.class_id END),
-          0
-        ) AS completions,
-        COALESCE(
-          COUNT(CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),
-          0
-        ) AS drops
+          COUNT(CASE WHEN pce.enrollment_status = ? THEN pce.class_id END), 0) AS completions,
+        	COALESCE(COUNT(CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),0) AS drops
 		`, models.EnrollmentCompleted, incompleteStatuses).
 		Joins(fmt.Sprintf(`
 			LEFT JOIN (%s) AS pce 
@@ -159,10 +153,10 @@ func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]Prog
 		`, enrollmentsSubquery), id, facilityID).
 		Group("months.month").
 		Order(args.OrderBy)
-	if err := query.Find(&outcome).Error; err != nil {
+	if err := query.Find(&outcomes).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_enrollments")
 	}
-	return outcome, nil
+	return outcomes, nil
 }
 
 func (db *DB) GetProgramClassesHistory(id int, tableName string, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
