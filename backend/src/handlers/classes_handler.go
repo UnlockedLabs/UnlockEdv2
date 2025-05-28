@@ -11,7 +11,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := []models.FeatureAccess{models.ProgramAccess}
 	return []routeDef{
 		{"GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, false, axx},
-		{"GET /api/programs/{id}/classes/outcomes", srv.handleGetProgramClassOutcome, true, axx},
+		{"GET /api/programs/{id}/classes/outcomes", srv.handleGetProgramClassOutcomes, true, axx},
 		{"GET /api/program-classes/{class_id}", srv.handleGetClass, false, axx},
 		{"GET /api/program-classes", srv.handleIndexClassesForFacility, false, axx},
 		{"GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, true, axx},
@@ -165,7 +165,7 @@ func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *ht
 	return writePaginatedResponse(w, http.StatusOK, flags, args.IntoMeta())
 }
 
-func (srv *Server) handleGetProgramClassOutcome(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleGetProgramClassOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
