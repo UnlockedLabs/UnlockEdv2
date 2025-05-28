@@ -119,6 +119,9 @@ func (pce *ProgramClassEventOverride) GetFormattedCancelledDate(format string) (
 	if err != nil {
 		return nil, err
 	}
+	if len(rRule.All()) < 1 {
+		return nil, errors.New("cancelled override rule does not contain a date instance")
+	}
 	cancelledDate := rRule.All()[0]
 	cancelledDateStr := cancelledDate.Format(format)
 	return StringPtr(cancelledDateStr), nil

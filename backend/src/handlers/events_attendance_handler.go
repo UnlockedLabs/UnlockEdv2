@@ -115,7 +115,8 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 }
 
 func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate string) bool {
-	attDate, err := time.Parse("2006-01-02", eventDate) ///making sure the date is good
+	formatPattern := "2006-01-02"
+	attDate, err := time.Parse(formatPattern, eventDate) ///making sure the date is good
 	if err != nil {
 		return false
 	}
@@ -124,9 +125,12 @@ func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate str
 		if err != nil {
 			continue
 		}
+		if len(rRule.All()) < 1 {
+			continue
+		}
 		overrideEvent := rRule.All()[0]
-		overrideFmtDate := overrideEvent.Format("2006-01-02")
-		if overrideFmtDate == attDate.Format("2006-01-02") {
+		overrideFmtDate := overrideEvent.Format(formatPattern)
+		if overrideFmtDate == attDate.Format(formatPattern) {
 			return true
 		}
 	}
