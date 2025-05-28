@@ -168,7 +168,6 @@ func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *ht
 	return writePaginatedResponse(w, http.StatusOK, flags, args.IntoMeta())
 }
 
-
 func (srv *Server) handleGetProgramClassOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
