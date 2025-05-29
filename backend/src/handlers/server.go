@@ -414,10 +414,6 @@ type TestClaims string
 
 const TestingClaimsKey TestClaims = "test_claims"
 
-func (srv *Server) isTesting(r *http.Request) bool {
-	return r.Context().Value(TestingClaimsKey) != nil
-}
-
 func (srv *Server) createContentActivityAndNotifyWS(urlString string, activity *models.OpenContentActivity) {
 	srv.Db.CreateContentActivity(urlString, activity)
 	if activity.ID > 0 {
