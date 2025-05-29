@@ -136,6 +136,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             validate={input.validate}
                                             disabled={input.disabled}
                                             onChange={input.onChange}
+                                            placeholder={input.placeholder}
                                         />
                                     );
                                 }
@@ -167,6 +168,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             register={register}
                                             validate={input.validate}
                                             disabled={input.disabled}
+                                            placeholder={input.placeholder}
                                         />
                                     );
                                 }

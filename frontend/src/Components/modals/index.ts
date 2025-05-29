@@ -62,6 +62,7 @@ export interface Input {
     getValues?: UseFormGetValues<any>; // eslint-disable-line
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onChangeSelection?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+    placeholder?: string;
 }
 
 export interface InputWithOptions<T> extends Input {
@@ -333,3 +334,15 @@ export const videoInputs: Input[] = [
 ];
 
 export { AddVideoModal } from './AddVideoModal';
+
+export const requestContentInputs: Input[] = [
+    {
+        type: FormInputTypes.TextArea,
+        label: 'What content would you like to see added to UnlockEd?',
+        interfaceRef: 'content',
+        required: true,
+        placeholder: 'e.g., "GED math resources, Mental health videos,..."'
+    }
+];
+
+export { RequestContentModal } from './RequestContentModal';
