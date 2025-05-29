@@ -18,6 +18,7 @@ interface TextProps {
     disabled?: boolean;
     defaultValue?: string;
     onChange?: React.ChangeEventHandler<HTMLInputElement>;
+    placeholder?: string;
 }
 export function TextInput({
     label,
@@ -33,7 +34,8 @@ export function TextInput({
     validate,
     disabled = false,
     defaultValue,
-    onChange
+    onChange,
+    placeholder
 }: TextProps) {
     const options = {
         required: {
@@ -71,6 +73,7 @@ export function TextInput({
                     if (rhfOnChange) void rhfOnChange(e);
                     if (onChange) void onChange(e);
                 }}
+                placeholder={placeholder}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message as string}

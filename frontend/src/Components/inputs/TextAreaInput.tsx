@@ -11,6 +11,7 @@ interface TextAreaProps {
         | Validate<any, any> // eslint-disable-line @typescript-eslint/no-explicit-any
         | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     disabled?: boolean;
+    placeholder?: string;
 }
 
 export function TextAreaInput({
@@ -21,7 +22,8 @@ export function TextAreaInput({
     errors,
     register,
     validate,
-    disabled = false
+    disabled = false,
+    placeholder
 }: TextAreaProps) {
     const options = {
         required: {
@@ -45,6 +47,7 @@ export function TextAreaInput({
                 className="textarea textarea-bordered w-full"
                 {...register(interfaceRef, options)}
                 disabled={disabled}
+                placeholder={placeholder}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message as string}

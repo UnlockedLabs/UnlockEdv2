@@ -16,11 +16,12 @@ import Pagination from './Pagination';
 import { useLoaderData, useLocation } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import CategoryDropdownFilter from './CategoryDropdownFilter';
-import { useTourContext } from '@/Context/TourContext';
+import { initialTourState, useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
 import ToggleView from '@/Components/ToggleView';
 import { useSessionViewType } from '@/Hooks/sessionView';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
+import { RequestContentModal } from './modals';
 
 export default function LibaryLayout({
     studentView
@@ -36,6 +37,7 @@ export default function LibaryLayout({
     const [searchModalLibrary, setSearchModalLibrary] =
         useState<Library | null>(null);
     const modalRef = useRef<HTMLDialogElement>(null);
+    const requestContentModal = useRef<HTMLDialogElement>(null);
     //execute when the the searchModalLibrary changes
     useEffect(() => {
         if (searchModalLibrary && modalRef.current) {
@@ -108,6 +110,8 @@ export default function LibaryLayout({
                     target: '#knowledge-center-enter-library'
                 });
             }
+        } else {
+            setTourState(initialTourState);
         }
     }, []);
 
@@ -146,11 +150,17 @@ export default function LibaryLayout({
                         useInternalSearchBar={true}
                     />
                 )}
-                <div className="ml-auto">
+                <div className="ml-auto flex flex-row gap-4">
                     <ToggleView
                         activeView={activeView}
                         setActiveView={setActiveView}
                     />
+                    <button
+                        className="button"
+                        onClick={() => requestContentModal.current?.showModal()}
+                    >
+                        Request Changes
+                    </button>
                 </div>
             </div>
 
@@ -200,6 +210,7 @@ export default function LibaryLayout({
                         />
                     );
                 })}
+                <RequestContentModal ref={requestContentModal} />
             </div>
             {!librariesLoading && !librariesError && librariesMeta && (
                 <div className="flex justify-center">
