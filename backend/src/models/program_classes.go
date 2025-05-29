@@ -2,6 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
+	"regexp"
+	"strconv"
+	"regexp"
 	"time"
 )
 
@@ -27,9 +32,7 @@ type ProgramClass struct {
 	Name           string      `json:"name" gorm:"size:255" validate:"required,max=255"`
 	InstructorName string      `json:"instructor_name" gorm:"size:255" validate:"required,max=255"`
 	Description    string      `json:"description" gorm:"not null" validate:"required,max=255"`
-	ArchivedAt     *time.Time  `json:"archived_at"`
-	StartDt        time.Time   `gorm:"type:date" json:"start_dt"`
-	EndDt          *time.Time  `gorm:"type:date" json:"end_dt"`
+	ArchivedAt     *time.Time  `json:"archived_at"` StartDt        time.Time   `gorm:"type:date" json:"start_dt"` EndDt          *time.Time  `gorm:"type:date" json:"end_dt"`
 	Status         ClassStatus `json:"status" gorm:"type:class_status" validate:"required"`
 	CreditHours    *int64      `json:"credit_hours"`
 	Enrolled       int64       `json:"enrolled" gorm:"-"`
