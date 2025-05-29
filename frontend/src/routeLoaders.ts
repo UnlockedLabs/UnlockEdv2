@@ -132,7 +132,7 @@ export const getProgramData: LoaderFunction = async ({ params }) => {
         if (resp.success) {
             program = resp.data as ProgramOverview;
         } else {
-            redirect = '/404';
+            redirectOnError(resp);
         }
     }
     return json({
@@ -153,7 +153,7 @@ export const getProviderPlatforms: LoaderFunction = async () => {
 
 export const getProgramTitle: LoaderFunction = async ({
     params
-}): Promise<ClassLoaderData> => {
+}): Promise<ClassLoaderData | Response> => {
     const { id, class_id } = params;
     let cls: Class | undefined;
     let programName = 'Class Details';
@@ -162,7 +162,7 @@ export const getProgramTitle: LoaderFunction = async ({
         if (resp.success) {
             programName = 'Program: ' + (resp.data as Program).name;
         } else {
-            return { title: programName, redirect: '/404' };
+            return redirectOnError(resp);
         }
     }
     // one of the routes this is assigned to, uses either /:program_id || /new
@@ -175,7 +175,7 @@ export const getProgramTitle: LoaderFunction = async ({
         if (classResp.success) {
             cls = classResp.data;
         } else {
-            return { title: programName, redirect: '/404' };
+            return redirectOnError(classResp);
         }
     }
     return {
@@ -186,7 +186,7 @@ export const getProgramTitle: LoaderFunction = async ({
 
 export const getClassTitle: LoaderFunction = async ({
     params
-}): Promise<ClassLoaderData> => {
+}): Promise<ClassLoaderData | Response> => {
     const { class_id } = params;
     const className = 'Class Management';
     const classResp = (await API.get(
@@ -198,7 +198,7 @@ export const getClassTitle: LoaderFunction = async ({
             class: classResp.data
         };
     } else {
-        return { title: className, redirect: '/404' };
+        return redirectOnError(classResp);
     }
 };
 
