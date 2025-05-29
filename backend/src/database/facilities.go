@@ -56,3 +56,9 @@ func (db *DB) DeleteFacility(id int) error {
 	}
 	return nil
 }
+
+func (db *DB) GetResourceFacilityID(tableName any, resourceID uint) (uint, error) {
+	var facilityID uint
+	err := db.Model(&tableName).Select("facility_id").Where("id = ?", resourceID).Scan(&facilityID).Error
+	return facilityID, err
+}

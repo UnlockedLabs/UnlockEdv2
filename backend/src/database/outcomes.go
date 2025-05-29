@@ -21,5 +21,5 @@ func (db *DB) GetOutcomesForUser(args *models.QueryContext, outcomeType models.O
 	if err := query.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "outcomes")
 	}
-	return outcomes, query.Order(args.OrderClause("outcomes")).Offset(args.CalcOffset()).Limit(args.PerPage).Find(&outcomes).Error
+	return outcomes, query.Order(args.OrderClause("outcomes.created_at DESC")).Offset(args.CalcOffset()).Limit(args.PerPage).Find(&outcomes).Error
 }

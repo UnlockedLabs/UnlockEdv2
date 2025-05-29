@@ -29,7 +29,7 @@ func (db *DB) GetAttendees(queryParams *models.QueryContext, params url.Values, 
 	if err := tx.Count(&queryParams.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
-	err := tx.Order(queryParams.OrderClause("program_class_event_attendance")).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
+	err := tx.Order(queryParams.OrderClause("program_class_event_attendance.created_at DESC")).Limit(queryParams.PerPage).Offset(queryParams.CalcOffset()).Find(&attendance).Error
 	if err != nil {
 		return nil, newGetRecordsDBError(err, "class_event_attendance")
 	}
@@ -110,7 +110,7 @@ func (db *DB) GetEnrollmentsWithAttendanceForEvent(qryCtx *models.QueryContext, 
 			a.note AS note`
 	finalQuery := selectClause + baseQuery
 	if slices.Contains([]string{"name_first", "name_last"}, qryCtx.OrderBy) {
-		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause("e"))
+		finalQuery += " ORDER BY " + adjustUserOrderBy(qryCtx.OrderClause("e.created_at DESC"))
 	} else {
 		finalQuery += " ORDER BY e.id ASC"
 	}

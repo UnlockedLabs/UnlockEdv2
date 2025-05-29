@@ -260,7 +260,7 @@ func (db *DB) GetProgramClassEnrollmentsForProgram(args *models.QueryContext, cl
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
 	if err := tx.Limit(args.PerPage).
-		Offset(args.CalcOffset()).Order(adjustUserOrderBy(args.OrderClause("pse"))).
+		Offset(args.CalcOffset()).Order(adjustUserOrderBy(args.OrderClause("pse.created_at desc"))).
 		Find(&content).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
