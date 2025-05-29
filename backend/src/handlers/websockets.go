@@ -13,7 +13,7 @@ import (
 )
 
 func (srv *Server) registerWebsocketRoute() {
-	srv.Mux.Handle("/api/ws/listen", srv.authMiddleware(srv.handleError(srv.handleWebsocketConnection)))
+	srv.Mux.Handle("/api/ws/listen", srv.authMiddleware(srv.handleError(srv.handleWebsocketConnection), nil))
 }
 
 const (

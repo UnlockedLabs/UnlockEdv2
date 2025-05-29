@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"UnlockEdv2/src/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -15,14 +14,15 @@ import (
 )
 
 func (srv *Server) registerOryRoutes() []routeDef {
-	return []routeDef{{"DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities, true, models.Feature()}}
+	return []routeDef{newAdminRoute("DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities)}
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if !srv.isTesting(r) { //if not testing then reach out
-		if err := srv.deleteAllKratosIdentities(r.Context()); err != nil {
-			return newInternalServerServiceError(err, "error communicating with Ory Kratos")
-		}
+	if !userIsSystemAdmin(r) {
+		return newUnauthorizedServiceError()
+	}
+	if err := srv.deleteAllKratosIdentities(r.Context()); err != nil {
+		return newInternalServerServiceError(err, "error communicating with Ory Kratos")
 	}
 	return writeJsonResponse(w, http.StatusNoContent, "identities deleted successfully")
 }

@@ -13,18 +13,19 @@ import (
 )
 
 func (srv *Server) registerUserRoutes() []routeDef {
-	axx := models.Feature()
+	resolver := UserRoleResolver("id")
 	return []routeDef{
-		{"GET /api/users", srv.handleIndexUsers, true, axx},
-		{"GET /api/users/{id}", srv.handleShowUser, false, axx},
-		{"POST /api/users", srv.handleCreateUser, true, axx},
-		{"DELETE /api/users/{id}", srv.handleDeleteUser, true, axx},
-		{"PATCH /api/users/{id}", srv.handleUpdateUser, true, axx},
-		{"GET /api/users/resident-verify", srv.handleResidentVerification, true, axx},
-		{"PATCH /api/users/resident-transfer", srv.handleResidentTransfer, true, axx},
-		{"POST /api/users/student-password", srv.handleResetStudentPassword, true, axx},
-		{"GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, true, axx},
-		{"GET /api/users/{id}/programs", srv.handleGetUserPrograms, false, axx},
+		validatedRoute("GET /api/users/{id}", srv.handleShowUser, resolver),
+		validatedRoute("GET /api/users/{id}/programs", srv.handleGetUserPrograms, resolver),
+		/* admin */
+		newAdminRoute("GET /api/users", srv.handleIndexUsers),
+		newAdminRoute("POST /api/users", srv.handleCreateUser),
+		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
+		newAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
+		newAdminRoute("POST /api/users/student-password", srv.handleResetStudentPassword),
+		validatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, resolver),
+		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, resolver),
+		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 	}
 }
 
@@ -86,10 +87,6 @@ func (srv *Server) handleShowUser(w http.ResponseWriter, r *http.Request, log sL
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
 	}
-	if !srv.canViewUserData(r, id) {
-		log.warn("Unauthorized access to user data")
-		return newUnauthorizedServiceError()
-	}
 	user, err := srv.Db.GetUserByID(uint(id))
 	if err != nil {
 		log.add("userId", id)
@@ -113,7 +110,6 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		return newJSONReqBodyServiceError(err)
 	}
 
-	defer checkErrClose(r.Body.Close(), log)
 	if reqForm.User.FacilityID == 0 {
 		reqForm.User.FacilityID = srv.getFacilityID(r)
 	}
@@ -165,21 +161,19 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 		}
 	}
 	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
-	if !srv.isTesting(r) {
-		if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
-			log.infof("Error creating user in kratos: %v", err)
-		}
-		kolibri, err := srv.Db.FindKolibriInstance()
-		if err != nil {
-			log.error("error getting kolibri instance")
-			// still return 201 because user has been created in kratos,
-			// kolibri might not be set up/available
-			return writeJsonResponse(w, http.StatusCreated, response)
-		}
-		if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
-			log.add("user_id", reqForm.User.ID)
-			log.error("error creating user in kolibri")
-		}
+	if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
+		log.infof("Error creating user in kratos: %v", err)
+	}
+	kolibri, err := srv.Db.FindKolibriInstance()
+	if err != nil {
+		log.error("error getting kolibri instance")
+		// still return 201 because user has been created in kratos,
+		// kolibri might not be set up/available
+		return writeJsonResponse(w, http.StatusCreated, response)
+	}
+	if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
+		log.add("user_id", reqForm.User.ID)
+		log.error("error creating user in kolibri")
 	}
 	return writeJsonResponse(w, http.StatusCreated, response)
 }
@@ -198,11 +192,9 @@ func (srv *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request, log 
 		return newDatabaseServiceError(err)
 	}
 	log.add("deleted_username", user.Username)
-	if !srv.isTesting(r) {
-		if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
-			log.add("deleted_kratos_id", user.KratosID)
-			return newInternalServerServiceError(err, "error deleting user in kratos")
-		}
+	if err := srv.deleteIdentityInKratos(r.Context(), &user.KratosID); err != nil {
+		log.add("deleted_kratos_id", user.KratosID)
+		return newInternalServerServiceError(err, "error deleting user in kratos")
 	}
 	if err := srv.Db.DeleteUser(id); err != nil {
 		return newDatabaseServiceError(err)
@@ -224,7 +216,6 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newBadRequestServiceError(err, "invalid form data submited")
 	}
-	defer checkErrClose(r.Body.Close(), log)
 	toUpdate, err := srv.Db.GetUserByID(uint(id))
 	log.add("userId", id)
 	if err != nil {
@@ -258,7 +249,6 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	defer checkErrClose(r.Body.Close(), log)
 	response := make(map[string]string)
 	user, err := srv.Db.GetUserByID(uint(temp.UserID))
 	log.add("student.user_id", temp.UserID)
@@ -271,7 +261,7 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	newPass := user.CreateTempPassword()
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"
-	if user.KratosID == "" && !srv.isTesting(r) {
+	if user.KratosID == "" {
 		err := srv.HandleCreateUserKratos(user.Username, newPass)
 		if err != nil {
 			return newInternalServerServiceError(err, "Error creating user in kratos")
@@ -279,11 +269,9 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	} else {
 		claims := claimsFromUser(user)
 		claims.PasswordReset = true
-		if !srv.isTesting(r) {
-			if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
-				log.add("claims.user_id", claims.UserID)
-				return newInternalServerServiceError(err, err.Error())
-			}
+		if err := srv.handleUpdatePasswordKratos(claims, newPass, true); err != nil {
+			log.add("claims.user_id", claims.UserID)
+			return newInternalServerServiceError(err, err.Error())
 		}
 	}
 	resetPassword := models.NewUserAccountHistory(temp.UserID, models.ResetPassword, &claims.UserID, nil, nil)
@@ -323,9 +311,6 @@ func (srv *Server) handleGetUserAccountHistory(w http.ResponseWriter, r *http.Re
 		return newInvalidIdServiceError(err, "user ID")
 	}
 	args := srv.getQueryContext(r)
-	if !srv.canViewUserData(r, id) {
-		return newUnauthorizedServiceError()
-	}
 	history, err := srv.Db.GetUserAccountHistory(&args, uint(id))
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -374,7 +359,6 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 		TransFacilityID int `json:"trans_facility_id"`
 		CurrFacilityID  int `json:"curr_facility_id"`
 	}
-	defer checkErrClose(r.Body.Close(), log)
 	if err := json.NewDecoder(r.Body).Decode(&transRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
@@ -411,10 +395,6 @@ func (srv *Server) handleResidentTransfer(w http.ResponseWriter, r *http.Request
 func (srv *Server) handleGetUserPrograms(w http.ResponseWriter, r *http.Request, log sLog) error {
 	id := r.PathValue("id")
 	userId, err := strconv.Atoi(id)
-	if !srv.canViewUserData(r, userId) {
-		log.warn("Unauthorized access to user data")
-		return newUnauthorizedServiceError()
-	}
 	if err != nil {
 		return newInvalidIdServiceError(err, "error converting user_id")
 	}

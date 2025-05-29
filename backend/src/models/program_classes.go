@@ -109,6 +109,6 @@ type ProgramClassesHistory struct {
 
 func (ProgramClassesHistory) TableName() string { return "program_classes_history" }
 
-func (pc *ProgramClass) CanUpdateClass() bool {
+func (pc *ProgramClass) CannotUpdateClass() bool {
 	return pc.Status == Completed || pc.Status == Cancelled || pc.ArchivedAt != nil
 }

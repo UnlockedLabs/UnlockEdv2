@@ -15,15 +15,15 @@ import (
 )
 
 func (srv *Server) registerProviderPlatformRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/provider-platforms", srv.handleIndexProviders, true, axx},
-		{"GET /api/provider-platforms/{id}", srv.handleShowProvider, true, axx},
-		{"POST /api/provider-platforms", srv.handleCreateProvider, true, axx},
-		{"GET /api/provider-platforms/callback", srv.handleOAuthProviderCallback, true, axx},
-		{"GET /api/provider-platforms/{id}/refresh", srv.handleOAuthRefreshToken, true, axx},
-		{"PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, true, axx},
-		{"DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, true, axx},
+		adminFeatureRoute("GET /api/provider-platforms", srv.handleIndexProviders, axx),
+		adminFeatureRoute("GET /api/provider-platforms/{id}", srv.handleShowProvider, axx),
+		adminFeatureRoute("POST /api/provider-platforms", srv.handleCreateProvider, axx),
+		adminFeatureRoute("GET /api/provider-platforms/callback", srv.handleOAuthProviderCallback, axx),
+		adminFeatureRoute("GET /api/provider-platforms/{id}/refresh", srv.handleOAuthRefreshToken, axx),
+		adminFeatureRoute("PATCH /api/provider-platforms/{id}", srv.handleUpdateProvider, axx),
+		adminFeatureRoute("DELETE /api/provider-platforms/{id}", srv.handleDeleteProvider, axx),
 	}
 }
 
@@ -145,7 +145,6 @@ func (srv *Server) handleOAuthProviderCallback(w http.ResponseWriter, r *http.Re
 		http.Redirect(w, r, errorRedirectUrl, http.StatusTemporaryRedirect)
 		return nil
 	}
-	defer checkErrClose(resp.Body.Close(), log)
 	provider.AccessKey = config.ClientSecret + ";" + token.RefreshToken
 	var action string
 	if provider.ID > 0 {

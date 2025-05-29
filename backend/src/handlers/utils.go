@@ -89,6 +89,7 @@ func (srv *Server) getQueryContext(r *http.Request) models.QueryContext {
 	all := r.URL.Query().Get("all") == "true"
 	tz := claims.TimeZone
 	return models.QueryContext{
+		Params:     r.URL.Query(),
 		Ctx:        r.Context(),
 		Page:       page,
 		PerPage:    perPage,
@@ -140,4 +141,81 @@ func getDateRange(r *http.Request) (*models.DateRange, error) {
 		End:   end,
 		Tzone: tz,
 	}, nil
+}
+
+func newRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    []models.FeatureAccess{},
+	}
+}
+
+func newAdminRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{},
+	}
+}
+
+func validatedRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    []models.FeatureAccess{},
+		resolver:    validate,
+	}
+}
+
+func validatedAdminRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{},
+		resolver:    validate,
+	}
+}
+
+func featureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    features,
+	}
+}
+
+func adminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    features,
+		resolver:    nil,
+	}
+}
+
+func validatedFeatureRoute(method string, handler HttpFunc, feature models.FeatureAccess, resolver RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       false,
+		features:    []models.FeatureAccess{feature},
+		resolver:    resolver,
+	}
+}
+
+func adminValidatedFeatureRoute(method string, handler HttpFunc, features models.FeatureAccess, validate RouteResolver) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{features},
+		resolver:    validate,
+	}
 }

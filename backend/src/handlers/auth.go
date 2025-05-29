@@ -44,9 +44,9 @@ func (c *Claims) canSwitchFacility() bool {
 
 func (srv *Server) registerAuthRoutes() []routeDef {
 	return []routeDef{
-		{"POST /api/reset-password", srv.handleResetPassword, false, models.Feature()},
+		newRoute("POST /api/reset-password", srv.handleResetPassword),
+		newRoute("GET /api/auth", srv.handleCheckAuth),
 		/* only use auth middleware, user activity bloats the database + results */
-		{"GET /api/auth", srv.handleCheckAuth, false, models.Feature()},
 	}
 }
 
@@ -79,7 +79,7 @@ func claimsFromUser(user *models.User) *Claims {
 	}
 }
 
-func (s *Server) authMiddleware(next http.Handler) http.Handler {
+func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "authMiddleware"}
 		claims, hasCookie, err := s.validateOrySession(r)
@@ -96,6 +96,13 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		if claims.PasswordReset && !isAuthRoute(r) {
 			http.Redirect(w, r.WithContext(ctx), "/reset-password", http.StatusOK)
 			return
+		}
+		// resolver is for permissions of students or facility level administrators
+		if resolver != nil {
+			if !resolver(s.Db, r.WithContext(ctx)) {
+				http.Error(w, "User is not allowed to view this resource", http.StatusUnauthorized)
+				return
+			}
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -125,23 +132,6 @@ func userIsAdmin(r *http.Request) bool {
 
 func userIsSystemAdmin(r *http.Request) bool {
 	return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
-}
-
-func (srv *Server) canViewUserData(r *http.Request, id int) bool {
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-	if claims.canSwitchFacility() || claims.UserID == uint(id) {
-		// early return
-		return true
-	}
-	user, err := srv.Db.GetUserByID(uint(id))
-	if err != nil {
-		return false
-	}
-	// we know they are not a system or dept admin by now
-	if user.FacilityID != claims.FacilityID {
-		return false
-	}
-	return slices.Contains(models.AdminRoles, claims.Role)
 }
 
 func (srv *Server) adminMiddleware(next http.Handler) http.Handler {
@@ -258,6 +248,10 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 				if !ok {
 					facilityId = float64(user.FacilityID)
 				}
+				if uint(facilityId) != user.FacilityID && !slices.Contains([]models.UserRole{models.DepartmentAdmin, models.SystemAdmin}, user.Role) {
+					return nil, hasCookie, errors.New("user is not allowed to switch facilities")
+				}
+
 				passReset, ok := traits["password_reset"].(bool)
 				if !ok {
 					passReset = true
@@ -269,7 +263,10 @@ func (srv *Server) validateOrySession(r *http.Request) (*Claims, bool, error) {
 						Name     string `json:"name"`
 						Timezone string `json:"timezone"`
 					}
-					if err := srv.Db.Model(&models.Facility{}).Select("name, timezone").Where("id = ?", facilityId).Find(&nameTz).Error; err != nil {
+					if err := srv.Db.Model(&models.Facility{}).
+						Select("name, timezone").
+						Where("id = ?", facilityId).
+						Find(&nameTz).Error; err != nil {
 						return nil, hasCookie, err
 					}
 					facilityName = nameTz.Name
@@ -336,12 +333,10 @@ func (srv *Server) handleResetPassword(w http.ResponseWriter, r *http.Request, l
 			return newDatabaseServiceError(err)
 		}
 	}
-	if !srv.isTesting(r) {
-		claims := claimsFromUser(user)
-		if err := srv.handleUpdatePasswordKratos(claims, form.Password, false); err != nil {
-			tx.Rollback()
-			return newInternalServerServiceError(err, "error updating password in kratos")
-		}
+	claims = claimsFromUser(user)
+	if err := srv.handleUpdatePasswordKratos(claims, form.Password, false); err != nil {
+		tx.Rollback()
+		return newInternalServerServiceError(err, "error updating password in kratos")
 	}
 	if err := tx.Commit().Error; err != nil {
 		return newInternalServerServiceError(err, "Transaction commit failed")

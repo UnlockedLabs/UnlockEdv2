@@ -7,10 +7,11 @@ import (
 )
 
 func (srv *Server) registerCoursesRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/courses", srv.handleIndexCourses, true, axx},
-		{"GET /api/courses/{id}", srv.handleShowCourse, false, axx},
+		featureRoute("GET /api/courses/{id}", srv.handleShowCourse, axx),
+		/* admin */
+		adminFeatureRoute("GET /api/courses", srv.handleIndexCourses, axx),
 	}
 }
 

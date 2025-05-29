@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -10,10 +11,12 @@ import (
 )
 
 func (srv *Server) registerActivityRoutes() []routeDef {
-	axx := models.Feature(models.ProviderAccess)
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"GET /api/users/{id}/daily-activity", srv.handleGetDailyActivityByUserID, false, axx},
-		{"GET /api/courses/{id}/activity", srv.handleGetCourseActivity, true, axx},
+		newRoute("POST /api/analytics/faq-click", srv.handleUserFAQClick),
+		validatedFeatureRoute("GET /api/users/{id}/daily-activity", srv.handleGetDailyActivityByUserID, axx, UserRoleResolver("id")),
+		/* admin */
+		adminFeatureRoute("GET /api/courses/{id}/activity", srv.handleGetCourseActivity, axx),
 	}
 }
 
@@ -26,11 +29,6 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "user ID")
-	}
-	if !srv.canViewUserData(r, userID) {
-		log.add("requesting_user", srv.getUserID(r))
-		log.error("non admin requesting to view other student activities")
-		return newForbiddenServiceError(errors.New("non admin requesting to view other student activities"), "You do not have permission to view this user's activities")
 	}
 	startDate, err := time.Parse("2006-01-02", strings.Split(r.URL.Query().Get("start_date"), "T")[0])
 	if err != nil {
@@ -45,7 +43,7 @@ func (srv *Server) handleGetDailyActivityByUserID(w http.ResponseWriter, r *http
 		log.error("error getting daily activity by user ID")
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
 		"activities": activities,
 	})
 }
@@ -61,8 +59,28 @@ func (srv *Server) handleGetCourseActivity(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, map[string]interface{}{
+	return writeJsonResponse(w, http.StatusOK, map[string]any{
 		"count":      count,
 		"activities": activities,
 	})
+}
+
+func (srv *Server) handleUserFAQClick(w http.ResponseWriter, r *http.Request, log sLog) error {
+	var body map[string]any
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+	question, ok := body["question"].(string)
+	if !ok || question == "" {
+		return newBadRequestServiceError(errors.New("no question found in body"), "Bad Request")
+	}
+	args := srv.getQueryContext(r)
+	err = srv.Db.IncrementUserFAQClick(&args, question)
+	if err != nil {
+		log.add("question", question)
+		log.add("user_id", args.UserID)
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, "Question logged successfully")
 }

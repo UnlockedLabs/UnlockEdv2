@@ -13,11 +13,11 @@ import (
 
 func (srv *Server) registerProviderUserRoutes() []routeDef {
 	// these are not 'actions' routes because they do not directly interact with the middleware
-	axx := []models.FeatureAccess{models.ProviderAccess}
+	axx := models.ProviderAccess
 	return []routeDef{
-		{"POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, true, axx},
-		{"POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, true, axx},
-		{"POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, true, axx},
+		adminValidatedFeatureRoute("POST /api/provider-platforms/{id}/map-user/{user_id}", srv.handleMapProviderUser, axx, FacilityAdminResolver("users", "user_id")),
+		adminFeatureRoute("POST /api/provider-platforms/{id}/users/import", srv.handleImportProviderUsers, axx),
+		adminFeatureRoute("POST /api/provider-platforms/{id}/create-user/{user_id}", srv.handleCreateProviderUserAccount, axx),
 	}
 }
 
@@ -135,20 +135,18 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 		}
 		tempPw := newUser.CreateTempPassword()
 		userResponse.TempPassword = tempPw
-		if !srv.isTesting(r) { //if not testing then reach out
-			if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
-				if err = srv.Db.DeleteUser(int(newUser.ID)); err != nil {
-					log.error("Error deleting user after failed provider user mapping import-provider-users")
-				}
-				log.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
-				userResponse.Error = "error creating authentication for user in kratos, please try again"
-				toReturn = append(toReturn, userResponse)
-				continue
+		if err := srv.HandleCreateUserKratos(newUser.Username, tempPw); err != nil {
+			if err = srv.Db.DeleteUser(int(newUser.ID)); err != nil {
+				log.error("Error deleting user after failed provider user mapping import-provider-users")
 			}
-			if kolibri, err := srv.Db.FindKolibriInstance(); err == nil {
-				if err = srv.CreateUserInKolibri(&newUser, kolibri); err != nil {
-					log.error("Error creating kolibri user")
-				}
+			log.warnf("Error creating user in kratos: %v, deleting the user for atomicity", err)
+			userResponse.Error = "error creating authentication for user in kratos, please try again"
+			toReturn = append(toReturn, userResponse)
+			continue
+		}
+		if kolibri, err := srv.Db.FindKolibriInstance(); err == nil {
+			if err = srv.CreateUserInKolibri(&newUser, kolibri); err != nil {
+				log.error("Error creating kolibri user")
 			}
 		}
 		mapping := models.ProviderUserMapping{
@@ -165,7 +163,7 @@ func (srv *Server) handleImportProviderUsers(w http.ResponseWriter, r *http.Requ
 			toReturn = append(toReturn, userResponse)
 			continue
 		}
-		if provider.OidcID != 0 && !srv.isTesting(r) {
+		if provider.OidcID != 0 {
 			if err = srv.registerProviderLogin(provider, &newUser); err != nil {
 				log.error("error creating provider login, user has been deleted")
 				userResponse.Error = "user was created in database, but there was an error creating provider login, please try again"
@@ -210,10 +208,8 @@ func (srv *Server) handleCreateProviderUserAccount(w http.ResponseWriter, r *htt
 		return newDatabaseServiceError(err)
 	}
 	// if we aren't in a testing environment, register the user with Canvas or Kolibri
-	if !srv.isTesting(r) {
-		if err = srv.createAndRegisterProviderUserAccount(provider, user); err != nil {
-			return newInternalServerServiceError(err, err.Error())
-		}
+	if err = srv.createAndRegisterProviderUserAccount(provider, user); err != nil {
+		return newInternalServerServiceError(err, err.Error())
 	}
 	return writeJsonResponse(w, http.StatusCreated, "User created successfully")
 }
