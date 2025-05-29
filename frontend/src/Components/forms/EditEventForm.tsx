@@ -72,7 +72,10 @@ function EditEventForm({ event, onClose }: ClassEventProps) {
     const handleSubmit = async (apply: string) => {
         const diffed = diffForm(form, event);
         diffed.override_type = apply;
-        const response = await API.put(`events/${event.event_id}`, diffed);
+        const response = await API.put(
+            `program_classes/${event.class_id}/events/${event.event_id}`,
+            diffed
+        );
         if (response.success) {
             onClose();
         }

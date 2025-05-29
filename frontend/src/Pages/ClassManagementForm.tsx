@@ -90,7 +90,7 @@ export default function ClassManagementForm() {
             response = await API.post(`programs/${id}/classes`, formattedJson);
         } else if (canEditClass) {
             response = await API.patch(
-                `program-classes/${class_id}`,
+                `programs/${id}/classes/${class_id}`,
                 formattedJson
             );
         } else {

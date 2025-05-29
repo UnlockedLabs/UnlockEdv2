@@ -88,6 +88,7 @@ export default function ProgramManagementForm() {
         label: fac.name
     }));
     const facilityOptionsSelectAll = [selectAllOption, ...facilityOptions];
+    const canSwitch = user && canSwitchFacility(user);
     const onSubmit: SubmitHandler<ProgramInputs> = async (
         data: ProgramInputs
     ) => {
@@ -107,9 +108,9 @@ export default function ProgramManagementForm() {
             funding_type: data.funding_type
                 ? data.funding_type.value
                 : FundingType.OTHER,
-            ...(data.facilities && {
-                facilities: data.facilities.map((fac) => Number(fac.value))
-            })
+            facilities: canSwitch
+                ? data.facilities.map((fac) => Number(fac.value))
+                : [user!.facility_id]
         };
 
         const response = program_id
