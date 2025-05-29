@@ -102,9 +102,10 @@ export default function Schedule() {
                             </button>
                             <CancelButton
                                 onClick={() => {
-                                    if (!selectedEvent) return;
-                                    if (selectedEvent.is_cancelled) {
-                                        //do nothing
+                                    if (
+                                        !selectedEvent ||
+                                        selectedEvent.is_cancelled
+                                    ) {
                                         return;
                                     }
                                     showModal(cancelClassEventModal);
@@ -119,14 +120,12 @@ export default function Schedule() {
                     </p>
                 )}
             </div>
-            {selectedEvent ? (
+            {selectedEvent && (
                 <CancelClassEventModal
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={cancelClassEventModal}
                 />
-            ) : (
-                ''
             )}
         </div>
     );
