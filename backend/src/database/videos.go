@@ -98,7 +98,7 @@ func (db *DB) GetAllVideos(args *models.QueryContext, onlyVisible bool) ([]Video
 		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = videos.id AND f.open_content_provider_id = videos.open_content_provider_id").
 			Group("videos.id, fvs.visibility_status").Order("COUNT(f.id) DESC")
 	default:
-		tx = tx.Order(args.OrderClause("f"))
+		tx = tx.Order(args.OrderClause("videos.created_at desc"))
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "videos")

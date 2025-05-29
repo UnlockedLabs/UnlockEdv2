@@ -27,15 +27,14 @@ func (db *DB) GetHelpfulLinks(args *models.QueryContext, onlyVisible bool) ([]He
 	tx = tx.Where("helpful_links.facility_id = ?", args.FacilityID)
 
 	if args.Search != "" {
-		args.Search = "%" + strings.ToLower(args.Search) + "%"
-		tx = tx.Where("LOWER(title) LIKE ?", args.Search)
+		tx.Where("LOWER(title) LIKE ?", args.SearchQuery())
 	}
 	switch strings.ToLower(args.OrderBy) {
 	case "most_popular":
 		tx = tx.Joins("LEFT JOIN open_content_favorites f ON f.content_id = helpful_links.id AND f.open_content_provider_id = helpful_links.open_content_provider_id").
 			Group("helpful_links.id").Order("COUNT(f.id) DESC")
 	default:
-		tx = tx.Order(args.OrderClause("f"))
+		tx = tx.Order(args.OrderClause("helpful_links.created_at desc"))
 	}
 
 	if err := tx.Count(&args.Total).Error; err != nil {
