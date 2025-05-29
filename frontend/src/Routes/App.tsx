@@ -66,6 +66,10 @@ export const globalRoutes = {
             element: <Error type="not-found" />
         },
         {
+            path: '/unauthorized',
+            element: <Error type="unauthorized" back />
+        },
+        {
             path: '/reset-password',
             element: <ResetPassword />,
             errorElement: <Error />,

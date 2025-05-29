@@ -94,7 +94,7 @@ export default function VideoContent() {
                                 'Title (Z-A)': 'title DESC',
                                 'Date Added ↓': 'created_at DESC',
                                 'Date Added ↑': 'created_at ASC',
-                                Favorited: 'favorited'
+                                Favorited: 'is_favorited'
                             }}
                         />
                     </>

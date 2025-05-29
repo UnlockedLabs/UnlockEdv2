@@ -136,6 +136,7 @@ func (srv *Server) ListenAndServe(ctx context.Context) {
 		log.Fatal(err)
 	}
 }
+
 func (srv *Server) Shutdown() {
 	srv.wsClient.Close(srv.Db)
 	if err := srv.scheduler.Stop(); err != nil {

@@ -204,7 +204,7 @@ export const getClassTitle: LoaderFunction = async ({
 
 export const getClassMgmtData: LoaderFunction = async ({
     params
-}): Promise<ClassLoaderData> => {
+}): Promise<ClassLoaderData | Response> => {
     const { class_id } = params;
     let cls: Class | undefined;
     let attendanceRate: number | undefined;
@@ -222,7 +222,7 @@ export const getClassMgmtData: LoaderFunction = async ({
             attendanceRate = resp2.success ? resp2.data.attendance_rate : 0;
         }
     } else {
-        return { title: className, redirect: '/404' };
+        return redirectOnError(classResp);
     }
     return {
         title: className,
@@ -231,11 +231,11 @@ export const getClassMgmtData: LoaderFunction = async ({
 };
 
 export const getProgram: LoaderFunction = async ({ params }) => {
-    const resp = (await API.get(
-        `programs/${params.id}`
-    )) as ServerResponseOne<ProgramOverview>;
+    const resp = (await API.get(`programs/${params.id}`)) as ServerResponseOne<
+        ProgramOverview | Response
+    >;
     if (!resp.success) {
-        return redirect('/404');
+        return redirectOnError(resp);
     }
     return json(resp.data);
 };
@@ -248,4 +248,14 @@ export function resolveTitle<T>(
     return typeof handle.title === 'function'
         ? handle.title(data)
         : handle.title;
+}
+
+function redirectOnError<T>(resp: ServerResponse<T>) {
+    if (resp.status === 401 || resp.status === 403) {
+        return redirect('/unauthorized');
+    }
+    if (resp.status === 404) {
+        return redirect('/404');
+    }
+    return redirect('/error');
 }
