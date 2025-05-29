@@ -8,7 +8,7 @@ import (
 
 func (srv *Server) registerOutcomesRoutes() []routeDef {
 	return []routeDef{
-		{"GET /api/users/{id}/outcomes", srv.handleGetOutcomes, false, models.Feature(models.ProviderAccess)},
+		featureRoute("GET /api/users/{id}/outcomes", srv.handleGetOutcomes, models.ProviderAccess),
 	}
 }
 

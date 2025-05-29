@@ -11,12 +11,13 @@ import (
 )
 
 func (srv *Server) registerAttendanceRoutes() []routeDef {
-	axx := models.Feature(models.ProgramAccess)
+	axx := models.ProgramAccess
+	resolver := FacilityAdminResolver("program_classes", "class_id")
 	return []routeDef{
-		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, true, axx},
-		{"GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, true, axx},
-		{"POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, true, axx},
-		{"DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, true, axx},
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleGetEventAttendance, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events/{event_id}/attendance-rate", srv.handleGetAttendanceRateForEvent, axx, resolver),
+		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events/{event_id}/attendance", srv.handleAddAttendanceForEvent, axx, resolver),
+		adminValidatedFeatureRoute("DELETE /api/program-classes/{class_id}/events/{event_id}/attendance/{user_id}", srv.handleDeleteAttendee, axx, resolver),
 	}
 }
 
@@ -29,7 +30,7 @@ func (srv *Server) handleAddAttendanceForEvent(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if class.CanUpdateClass() {
+	if class.CannotUpdateClass() {
 		return newBadRequestServiceError(err, "cannot perform action on class that is completed cancelled or archived")
 	}
 	eventID, err := strconv.Atoi(r.PathValue("event_id"))
