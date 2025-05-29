@@ -52,7 +52,6 @@ type routeDef struct {
 func (srv *Server) register(routes func() []routeDef) {
 	for _, route := range routes() {
 		h := route.handler
-
 		if route.admin {
 			srv.Mux.Handle(route.routeMethod,
 				srv.applyAdminMiddleware(h, route.resolver, route.features...),
@@ -163,6 +162,7 @@ func newServer(ctx context.Context) *Server {
 	}
 	dev := os.Getenv("APP_ENV") == "dev"
 	server := Server{
+		port:      port,
 		Db:        database.InitDB(false),
 		Mux:       http.NewServeMux(),
 		OryClient: ory.NewAPIClient(oryConfig()),
