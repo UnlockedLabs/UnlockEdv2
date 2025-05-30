@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
 	"errors"
@@ -21,10 +22,14 @@ func (srv *Server) registerUserRoutes() []routeDef {
 		newAdminRoute("GET /api/users", srv.handleIndexUsers),
 		newAdminRoute("POST /api/users", srv.handleCreateUser),
 		newAdminRoute("GET /api/users/resident-verify", srv.handleResidentVerification),
-		newAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
-		newAdminRoute("POST /api/users/student-password", srv.handleResetStudentPassword),
-		validatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, resolver),
-		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, resolver),
+		newDeptAdminRoute("PATCH /api/users/resident-transfer", srv.handleResidentTransfer),
+		validatedAdminRoute("POST /api/users/{id}/student-password", srv.handleResetStudentPassword, func(tx *database.DB, r *http.Request) bool {
+			var role string
+			return tx.WithContext(r.Context()).Model(&models.User{}).Select("role").Where("id = ?", r.PathValue("id")).First(&role).Error == nil &&
+				canResetUserPassword(r.Context().Value(ClaimsKey).(*Claims), models.UserRole(role))
+		}),
+		validatedAdminRoute("DELETE /api/users/{id}", srv.handleDeleteUser, FacilityAdminResolver("users", "id")),
+		validatedAdminRoute("PATCH /api/users/{id}", srv.handleUpdateUser, FacilityAdminResolver("users", "id")),
 		validatedAdminRoute("GET /api/users/{id}/account-history", srv.handleGetUserAccountHistory, resolver),
 	}
 }
@@ -109,18 +114,20 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-
 	if reqForm.User.FacilityID == 0 {
-		reqForm.User.FacilityID = srv.getFacilityID(r)
+		reqForm.User.FacilityID = claims.FacilityID
 	}
 	invalidUser := validateUser(&reqForm.User)
 	if invalidUser != "" {
 		return newBadRequestServiceError(errors.New("invalid username"), invalidUser)
 	}
 	log.add("created_username", reqForm.User.Username)
-	userNameExists := srv.Db.UsernameExists(reqForm.User.Username)
+	userNameExists, docExists := srv.Db.UserIdentityExists(reqForm.User.Username, reqForm.User.DocID)
 	if userNameExists {
 		return newBadRequestServiceError(err, "userexists")
+	}
+	if docExists {
+		return newBadRequestServiceError(err, "docexists")
 	}
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
 		return unicode.IsLetter(char) || unicode.IsDigit(char)
@@ -160,7 +167,7 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			return newCreateRequestServiceError(err)
 		}
 	}
-	// if we aren't in a testing environment, register the user as an Identity with Kratos + Kolibri
+	// register the user as an Identity with Kratos + Kolibri
 	if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
 		log.infof("Error creating user in kratos: %v", err)
 	}
@@ -243,20 +250,12 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 
 func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
-	temp := struct {
-		UserID uint `json:"user_id"`
-	}{}
-	if err := json.NewDecoder(r.Body).Decode(&temp); err != nil {
-		return newJSONReqBodyServiceError(err)
-	}
+	id, err := strconv.Atoi(r.PathValue("id"))
 	response := make(map[string]string)
-	user, err := srv.Db.GetUserByID(uint(temp.UserID))
-	log.add("student.user_id", temp.UserID)
+	user, err := srv.Db.GetUserByID(uint(id))
+	log.add("student.user_id", user.ID)
 	if err != nil {
 		return newDatabaseServiceError(err)
-	}
-	if !canResetUserPassword(claims, user) {
-		return newUnauthorizedServiceError()
 	}
 	newPass := user.CreateTempPassword()
 	response["temp_password"] = newPass
@@ -274,19 +273,19 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 			return newInternalServerServiceError(err, err.Error())
 		}
 	}
-	resetPassword := models.NewUserAccountHistory(temp.UserID, models.ResetPassword, &claims.UserID, nil, nil)
+	resetPassword := models.NewUserAccountHistory(user.ID, models.ResetPassword, &claims.UserID, nil, nil)
 	if err := srv.Db.InsertUserAccountHistoryAction(r.Context(), resetPassword); err != nil {
 		return newCreateRequestServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusOK, response)
 }
 
-func canResetUserPassword(currentUser *Claims, toUpdate *models.User) bool {
-	switch toUpdate.Role {
+func canResetUserPassword(currentUser *Claims, toUpdate models.UserRole) bool {
+	switch toUpdate {
 	case models.DepartmentAdmin: // department admin can only reset password of users in their department
 		return currentUser.canSwitchFacility()
 	case models.SystemAdmin: // system admin can only reset password of other system admins
-		return currentUser.Role == toUpdate.Role
+		return currentUser.Role == toUpdate
 	default: // user is garaunteed to be admin already at this point, can reset facility + student passwords
 		return currentUser.isAdmin()
 	}

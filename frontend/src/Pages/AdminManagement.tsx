@@ -121,12 +121,10 @@ export default function AdminManagement() {
 
     const getTempPassword = async () => {
         if (targetUser === null) return;
-        const response = (await API.post<
-            ResetPasswordResponse,
-            { user_id: number }
-        >('users/student-password', {
-            user_id: targetUser.target.id
-        })) as ServerResponseOne<ResetPasswordResponse>;
+        const response = (await API.post<ResetPasswordResponse, object>(
+            `users/${targetUser.target.id}/student-password`,
+            {}
+        )) as ServerResponseOne<ResetPasswordResponse>;
         if (!response.success) {
             toaster('Failed to reset password', ToastState.error);
             return;

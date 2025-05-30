@@ -196,14 +196,26 @@ func (db *DB) GetUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
-func (db *DB) UsernameExists(username string) bool {
-	userExists := false
-	email := username + "@unlocked.v2"
-	if err := db.Raw("SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = ? OR email = ?)", strings.ToLower(username), email).
-		Scan(&userExists).Error; err != nil {
-		log.Error("Error checking if username exists: ", err)
+func (db *DB) UserIdentityExists(username string, doc string) (bool, bool) {
+	var usernameExists bool
+	var docIDExists bool
+	if err := db.Model(&models.User{}).
+		Select("1").
+		Where("LOWER(username) = ? OR email = ?", strings.ToLower(username), username+"@unlocked.v2").
+		Limit(1).
+		Find(&usernameExists).Error; err != nil {
+		log.Error("Error checking username: ", err)
 	}
-	return userExists
+	if doc != "" {
+		if err := db.Model(&models.User{}).
+			Select("1").
+			Where("doc_id = ?", doc).
+			Limit(1).
+			Find(&docIDExists).Error; err != nil {
+			log.Error("Error checking doc_id: ", err)
+		}
+	}
+	return usernameExists, docIDExists
 }
 
 func (db *DB) UpdateUser(user *models.User) error {

@@ -11,10 +11,10 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 	return []routeDef{
 		newAdminRoute("GET /api/facilities", srv.handleIndexFacilities),
 		newAdminRoute("GET /api/facilities/{id}", srv.handleShowFacility),
-		newAdminRoute("POST /api/facilities", srv.handleCreateFacility),
-		newAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
-		newAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
-		newAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
+		newSystemAdminRoute("POST /api/facilities", srv.handleCreateFacility),
+		newSystemAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
+		newSystemAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
+		newSystemAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 	}
 }
 
