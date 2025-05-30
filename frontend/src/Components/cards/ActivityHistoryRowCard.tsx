@@ -16,14 +16,20 @@ function ActivityHistoryRowCard({
     }
 
     function parseCancelledRRule(rRule: string): string {
-        const rule = RRule.fromString(rRule);
-        const overrideDate = rule.all()[0];
-        return overrideDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            timeZone: user?.timezone
-        });
+        let rule;
+        try {
+            rule = RRule.fromString(rRule);
+            const overrideDate = rule.all()[0];
+            return overrideDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                timeZone: user?.timezone
+            });
+        } catch (error) {
+            console.error('error parsing rrule, error is: ', error);
+        }
+        return rRule; //return rRule back if errors
     }
 
     const getProgramClassesHistoryEventText = () => {
@@ -70,6 +76,9 @@ function ActivityHistoryRowCard({
                 break;
             case 'event_cancelled':
                 text = `Event on ${parseCancelledRRule(activity.new_value)} cancelled by ${activity.admin_username}`;
+                break;
+            case 'event_rescheduled':
+                text = `Event on ${parseCancelledRRule(activity.old_value)} moved to ${activity.new_value} by ${activity.admin_username}`;
                 break;
         }
         return text;

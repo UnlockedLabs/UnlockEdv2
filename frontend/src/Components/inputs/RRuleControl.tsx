@@ -10,6 +10,7 @@ import {
 import { useLoaderData } from 'react-router';
 import { ClassLoaderData } from '@/common';
 import { useAuth } from '@/useAuth';
+import { formatDuration, timeToMinutes } from '../helperFunctions';
 export interface RRuleFormHandle {
     createRule: () => { rule: string; duration: string };
     validate: () => boolean;
@@ -101,16 +102,12 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 if (endOption === 'until') {
                     options.until = new Date(getValues(endDateRef)); // eslint-disable-line
                 }
-                const totalStartMin = timeToMinutes(startTime);
-                const totalEndMin = timeToMinutes(endTime);
-                const totalMin = totalEndMin - totalStartMin;
-                const hours = Math.floor(totalMin / 60);
-                const minutes = totalMin % 60;
 
+                const duration = formatDuration(startTime, endTime);
                 const rule = new RRule(options);
                 returnValue = {
                     rule: rule.toString(),
-                    duration: `${hours}h${minutes}m0s`
+                    duration: duration
                 };
             } else {
                 returnValue = {
@@ -165,11 +162,6 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 !(frequency === 'WEEKLY' && byWeekDays.length == 0)
             );
         };
-
-        function timeToMinutes(timeStr: string): number {
-            const [hour, minute] = timeStr.split(':').map(Number);
-            return hour * 60 + minute;
-        }
 
         useImperativeHandle(ref, () => ({
             createRule: createRule,
