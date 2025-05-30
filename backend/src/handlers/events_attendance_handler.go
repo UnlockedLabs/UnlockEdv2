@@ -100,7 +100,7 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 
 	args := srv.getQueryContext(r)
 
-	overrides, err := srv.Db.GetOverrideEvents(&args, eventID)
+	overrides, err := srv.Db.GetProgramClassEventOverrides(&args, []uint{uint(eventID)}...)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
