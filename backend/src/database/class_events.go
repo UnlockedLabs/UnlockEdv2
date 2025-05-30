@@ -419,7 +419,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		eventIDs = append(eventIDs, event.ID)
 	}
 
-	overrideEvents, err := db.GetProgramClassEventOverrides(args, eventIDs)
+	overrideEvents, err := db.GetProgramClassEventOverrides(args, eventIDs...)
 	if err != nil {
 		return nil, err
 	}
@@ -848,17 +848,9 @@ func (db *DB) GetClassEventDatesForRecurrence(classID int, timezone string, mont
 	return out, nil
 }
 
-func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventIDs []uint) ([]models.ProgramClassEventOverride, error) {
+func (db *DB) GetProgramClassEventOverrides(qryCtx *models.QueryContext, eventIDs ...uint) ([]models.ProgramClassEventOverride, error) {
 	overrides := make([]models.ProgramClassEventOverride, 0)
 	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id IN (?)", eventIDs).Find(&overrides).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "program_class_event_overrides")
-	}
-	return overrides, nil
-}
-
-func (db *DB) GetOverrideEvents(qryCtx *models.QueryContext, eventId int) ([]models.ProgramClassEventOverride, error) {
-	overrides := make([]models.ProgramClassEventOverride, 0)
-	if err := db.WithContext(qryCtx.Ctx).Model(&models.ProgramClassEventOverride{}).Where("event_id = ?", eventId).Find(&overrides).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_event_overrides")
 	}
 	return overrides, nil
