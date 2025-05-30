@@ -26,21 +26,22 @@ import (
 )
 
 type Server struct {
-	port      string
-	Db        *database.DB
-	Mux       *http.ServeMux
-	OryClient *ory.APIClient
-	Client    *http.Client
-	nats      *nats.Conn
-	dev       bool
-	buckets   map[string]nats.KeyValue
-	features  []models.FeatureAccess
-	s3        *s3.Client
-	presigner *s3.PresignClient
-	s3Bucket  string
-	wsClient  *ClientManager
-	scheduler *tasks.Scheduler
-	sesClient *sesv2.Client
+	sesClient   *sesv2.Client
+	port        string
+	Db          *database.DB
+	Mux         *http.ServeMux
+	OryClient   *ory.APIClient
+	Client      *http.Client
+	nats        *nats.Conn
+	dev         bool
+	buckets     map[string]nats.KeyValue
+	features    []models.FeatureAccess
+	testingMode bool
+	s3          *s3.Client
+	presigner   *s3.PresignClient
+	s3Bucket    string
+	wsClient    *ClientManager
+	scheduler   *tasks.Scheduler
 }
 
 type routeDef struct {
@@ -209,11 +210,12 @@ func newTestingServer() *Server {
 	db := database.InitDB(true)
 	features := models.AllFeatures
 	return &Server{
-		Db:        db,
-		Mux:       http.NewServeMux(),
-		OryClient: nil,
-		Client:    nil,
-		features:  features,
+		Db:          db,
+		Mux:         http.NewServeMux(),
+		OryClient:   nil,
+		Client:      nil,
+		features:    features,
+		testingMode: true,
 	}
 }
 
@@ -412,10 +414,6 @@ func (srv *Server) getFacilityID(r *http.Request) uint {
 func (srv *Server) getUserID(r *http.Request) uint {
 	return r.Context().Value(ClaimsKey).(*Claims).UserID
 }
-
-type TestClaims string
-
-const TestingClaimsKey TestClaims = "test_claims"
 
 func (srv *Server) createContentActivityAndNotifyWS(urlString string, activity *models.OpenContentActivity) {
 	srv.Db.CreateContentActivity(urlString, activity)

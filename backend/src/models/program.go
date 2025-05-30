@@ -40,11 +40,12 @@ type Program struct {
 	CreateUserID uint        `json:"create_user_id"`
 	UpdateUserID uint        `json:"update_user_id"`
 
-	ProgramTypes       []ProgramType       `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	ProgramCreditTypes []ProgramCreditType `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	Facilities         []Facility          `json:"facilities" gorm:"many2many:facilities_programs;"`
-	Favorites          []ProgramFavorite   `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
-	Classes            []ProgramClass      `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
+	ProgramTypes       []ProgramType        `json:"program_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	ProgramCreditTypes []ProgramCreditType  `json:"credit_types" gorm:"foreignKey:ProgramID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Facilities         []Facility           `json:"facilities" gorm:"-"`                         //preserve original json key
+	FacilitiesPrograms []FacilitiesPrograms `json:"-" gorm:"foreignKey:ProgramID;references:ID"` //gorm had issues with many2many
+	Favorites          []ProgramFavorite    `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
+	Classes            []ProgramClass       `json:"-" gorm:"foreignKey:ProgramID;references:ID"`
 }
 
 func (Program) TableName() string { return "programs" }

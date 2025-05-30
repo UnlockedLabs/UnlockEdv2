@@ -21,19 +21,15 @@ type EnrollmentAndCompletionMetrics struct {
 
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
-	if err := db.Preload("ProgramTypes").Preload("ProgramCreditTypes").First(content, id).Error; err != nil {
+	if err := db.Preload("ProgramTypes").Preload("ProgramCreditTypes").Preload("FacilitiesPrograms.Facility").First(content, id).Error; err != nil {
 		return nil, newNotFoundDBError(err, "programs")
 	}
 
-	var facilities []models.Facility
-	if err := db.Table("facilities").
-		Joins("join facilities_programs on facilities.id = facilities_programs.facility_id").
-		Where(`facilities_programs.program_id = ?
-			and facilities_programs.deleted_at is null
-			and facilities.deleted_at is null`, id).Find(&facilities).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "facilities")
+	for _, fp := range content.FacilitiesPrograms {
+		if fp.Facility != nil {
+			content.Facilities = append(content.Facilities, *fp.Facility)
+		}
 	}
-	content.Facilities = facilities
 
 	return content, nil
 }
