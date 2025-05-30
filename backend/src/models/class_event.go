@@ -127,6 +127,30 @@ func (pce *ProgramClassEventOverride) GetFormattedCancelledDate(format string) (
 	return StringPtr(cancelledDateStr), nil
 }
 
+func (pce *ProgramClassEventOverride) GetRescheduleSummary(timezone string) (*string, error) {
+	timezoneLoc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return nil, err
+	}
+	rRule, err := rrule.StrToRRule(pce.OverrideRrule)
+	if err != nil {
+		return nil, err
+	}
+	startDate := rRule.All()[0].In(timezoneLoc) //reschedule's will always be count=1 so we can do this
+	duration, err := time.ParseDuration(pce.Duration)
+	if err != nil {
+		return nil, err
+	}
+	end := startDate.Add(duration)
+
+	date := startDate.Format("1/02/2006")
+	startTime := startDate.Format("3:04PM")
+	endTime := end.Format("3:04PM")
+
+	rescheduleSummary := date + " " + startTime + " - " + endTime + " (" + pce.Room + ")"
+	return &rescheduleSummary, nil
+}
+
 /** Attendance records for Events **/
 type ProgramClassEventAttendance struct {
 	DatabaseFields
@@ -191,6 +215,7 @@ type FacilityProgramClassEvent struct {
 	ProgramName    string     `json:"program_name"`
 	ClassName      string     `json:"title"`
 	IsCancelled    bool       `json:"is_cancelled"`
+	IsOverride     bool       `json:"is_override"`
 	EnrolledUsers  string     `json:"enrolled_users"`
 	StartTime      *time.Time `json:"start"`
 	EndTime        *time.Time `json:"end"`

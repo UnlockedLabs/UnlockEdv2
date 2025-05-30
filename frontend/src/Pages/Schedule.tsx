@@ -3,11 +3,19 @@ import EventCalendar from '@/Components/EventCalendar';
 import { CancelButton, CloseX } from '@/Components/inputs';
 import { showModal } from '@/Components/modals';
 import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal';
+import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEventModal';
+import { useAuth } from '@/useAuth';
+import { toZonedTime } from 'date-fns-tz';
 import { useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 
 export default function Schedule() {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
+    const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
     const { startDate, endDate } = useMemo(() => {
         const start = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30 * 3);
         const end = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
@@ -36,11 +44,13 @@ export default function Schedule() {
     }
 
     const formattedEvents = events
-        ? events.map((event) => ({
-              ...event,
-              start: new Date(event.start),
-              end: new Date(event.end)
-          }))
+        ? events.map((event) => {
+              return {
+                  ...event,
+                  start: toZonedTime(event.start, user?.timezone),
+                  end: toZonedTime(new Date(event.end), user?.timezone)
+              };
+          })
         : [];
 
     function clearSelectedEvent() {
@@ -96,7 +106,20 @@ export default function Schedule() {
                             {parseEnrolledNames(selectedEvent.enrolled_users)}
                         </div>
                         <div className="space-y-2 flex flex-col w-full">
-                            <button className="button">Edit Event</button>
+                            <button
+                                className="button"
+                                onClick={() => {
+                                    if (
+                                        !selectedEvent ||
+                                        selectedEvent.is_override
+                                    ) {
+                                        return;
+                                    }
+                                    showModal(rescheduleClassEventModal);
+                                }}
+                            >
+                                Edit Event
+                            </button>
                             <button className="button-outline">
                                 Edit Series
                             </button>
@@ -104,7 +127,7 @@ export default function Schedule() {
                                 onClick={() => {
                                     if (
                                         !selectedEvent ||
-                                        selectedEvent.is_cancelled
+                                        selectedEvent.is_override
                                     ) {
                                         return;
                                     }
@@ -125,6 +148,13 @@ export default function Schedule() {
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={cancelClassEventModal}
+                />
+            )}
+            {selectedEvent && (
+                <RescheduleClassEventModal
+                    mutate={mutateEvents}
+                    calendarEvent={selectedEvent}
+                    ref={rescheduleClassEventModal}
                 />
             )}
         </div>

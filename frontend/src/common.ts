@@ -797,6 +797,7 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     program_name: string;
     title: string;
     is_cancelled: boolean;
+    is_override: boolean;
     enrolled_users: string;
     start: Date;
     end: Date;
@@ -839,7 +840,7 @@ export interface ProgramClassEventOverride {
     event_id: number;
     override_rrule: string;
     duration: string;
-    location: string;
+    room: string;
     is_cancelled: boolean;
     reason: string;
 }

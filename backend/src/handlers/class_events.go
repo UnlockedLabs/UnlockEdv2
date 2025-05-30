@@ -16,7 +16,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		/* admin */
 		adminFeatureRoute("GET /api/admin-calendar", srv.handleGetAdminCalendar, axx),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx, resolver),
-		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverride, axx, resolver),
+		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
 	}
 }
@@ -47,21 +47,23 @@ func (srv *Server) handleGetStudentCalendar(w http.ResponseWriter, r *http.Reque
 	return writeJsonResponse(w, http.StatusOK, calendar)
 }
 
-func (srv *Server) handleEventOverride(w http.ResponseWriter, r *http.Request, log sLog) error {
+func (srv *Server) handleEventOverrides(w http.ResponseWriter, r *http.Request, log sLog) error {
 	eventId, err := strconv.Atoi(r.PathValue("event_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "event_id")
 	}
-	override := &models.ProgramClassEventOverride{}
-	if err := json.NewDecoder(r.Body).Decode(override); err != nil {
+	var overrides []*models.ProgramClassEventOverride
+	if err := json.NewDecoder(r.Body).Decode(&overrides); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-	override.EventID = uint(eventId)
+	for i, j := 0, len(overrides); i < j; i++ {
+		overrides[i].EventID = uint(eventId)
+	}
 	ctx := srv.getQueryContext(r)
-	if err := srv.Db.CreateOverrideEvent(&ctx, override); err != nil {
+	if err := srv.Db.CreateOverrideEvents(&ctx, overrides); err != nil {
 		return newDatabaseServiceError(err)
 	}
-	return writeJsonResponse(w, http.StatusOK, "Override created successfully")
+	return writeJsonResponse(w, http.StatusOK, "Override(s) created successfully")
 }
 
 func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log sLog) error {

@@ -119,30 +119,70 @@ export default function ClassLayout() {
     }, [clsInfo?.status]);
 
     function getNextOccurrenceDateAsStr(): string {
-        const rRule = clsInfo?.events[0].recurrence_rule;
-        let dateStr = '';
-        if (rRule) {
-            const cleanRule = rRule.replace(/DTSTART;TZID=Local:/, 'DTSTART:');
-            const rule = RRule.fromString(cleanRule);
-            const now = new Date();
+        const rRuleStr = clsInfo?.events[0].recurrence_rule;
+        const overrides = clsInfo?.events[0].overrides ?? [];
+        const now = new Date();
+
+        //need to separate for simpler logic flow here
+        const cancelledDates = new Set<string>();
+        const activeOverrideDates = new Set<string>();
+        const activeOverrideDateTimes: Date[] = [];
+
+        for (const override of overrides) {
+            //separate overrides
+            const rule = RRule.fromString(override.override_rrule);
             const date = rule.after(now, true);
-            if (date) {
-                const options: Intl.DateTimeFormatOptions = {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZone: user?.timezone
-                };
-                dateStr = new Intl.DateTimeFormat('en-US', options)
-                    .format(date)
-                    .replace(',', '')
-                    .replace(',', ' @');
+            if (!date) continue;
+            const dateStr = date.toISOString().slice(0, 10);
+
+            if (override.is_cancelled) {
+                cancelledDates.add(dateStr);
+            } else {
+                activeOverrideDates.add(dateStr);
+                activeOverrideDateTimes.push(date);
             }
         }
-        return dateStr;
+        if (rRuleStr) {
+            const cleanRule = rRuleStr.replace(
+                /DTSTART;TZID=Local:/,
+                'DTSTART:'
+            );
+            const rule = RRule.fromString(cleanRule);
+            const baseOccurrences = rule.between(
+                now,
+                new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
+                true
+            );
+
+            for (const date of baseOccurrences) {
+                //im loopin' through base occurrences and searching for active override first
+                const dateStr = date.toISOString().slice(0, 10);
+                if (activeOverrideDates.has(dateStr)) {
+                    const activeOverride = activeOverrideDateTimes
+                        .filter((d) => d > now)
+                        .sort((a, b) => a.getTime() - b.getTime())[0];
+                    return formatDate(activeOverride);
+                } else if (cancelledDates.has(dateStr)) continue; //cancelled so skip to next date
+                return formatDate(date);
+            }
+        }
+        return 'No upcoming class found';
+    }
+
+    function formatDate(date: Date): string {
+        const options: Intl.DateTimeFormatOptions = {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: user?.timezone
+        };
+        return new Intl.DateTimeFormat('en-US', options)
+            .format(date)
+            .replace(',', '')
+            .replace(',', ' @');
     }
 
     function getEnrollmentCount(): string {
