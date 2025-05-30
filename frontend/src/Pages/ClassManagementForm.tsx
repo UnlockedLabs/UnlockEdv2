@@ -129,6 +129,7 @@ export default function ClassManagementForm() {
             navigate(`/program-classes/${class_id}/dashboard`);
         }
     };
+
     useEffect(() => {
         setCanOpenCalendar(!!nameValue && rruleIsValid);
     }, [nameValue, rruleIsValid]);
@@ -153,6 +154,12 @@ export default function ClassManagementForm() {
     }
 
     const isNewClass = class_id === 'new' || !class_id;
+    const filteredEnumType: Partial<typeof ProgClassStatus> = isNewClass
+        ? {
+              SCHEDULED: ProgClassStatus.SCHEDULED,
+              ACTIVE: ProgClassStatus.ACTIVE
+          }
+        : { ...ProgClassStatus };
 
     function openCalendar() {
         const createdRule = rruleFormRef.current?.createRule();
@@ -272,7 +279,7 @@ export default function ClassManagementForm() {
                         <DropdownInput
                             label="Status"
                             register={register}
-                            enumType={ProgClassStatus}
+                            enumType={filteredEnumType}
                             interfaceRef="status"
                             required
                             errors={errors}
