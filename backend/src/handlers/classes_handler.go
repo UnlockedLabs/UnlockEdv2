@@ -15,12 +15,19 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 		featureRoute("GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, axx),
 		featureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, axx),
 		/* admin */
+		adminValidatedFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx, func(tx *database.DB, r *http.Request) bool {
+			var count int64
+			return tx.WithContext(r.Context()).
+				Table("programs"). //offered in the facility AND that it's active AND that it's not archived
+				Where("id = ? AND is_active = true AND archived_at IS NULL AND id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)",
+					r.PathValue("program_id"), r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+				Count(&count).Error == nil && count > 0
+		}),
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
-		adminFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx),
-		adminFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx),
-		adminFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
-			return tx.Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
+			return tx.WithContext(r.Context()).Table("program_classes").Select("facility_id").Where("id IN (?)", r.URL.Query()["id"]).
 				Where("facility_id <> ?", r.Context().Value(ClaimsKey).(*Claims).FacilityID).
 				First(&models.ProgramClass{}).Error != nil
 		}),

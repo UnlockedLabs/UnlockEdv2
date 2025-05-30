@@ -51,7 +51,8 @@ export const AddUserModal = forwardRef(function (
             const msg = response.message.trim();
             const error_msgs = {
                 userexists: 'Username already exists',
-                alphanum: 'Username must contain only letters and numbers'
+                alphanum: 'Username must contain only letters and numbers',
+                docexists: 'Resident ID already exists in the system'
             };
             switch (msg) {
                 case 'userexists': {
@@ -60,6 +61,16 @@ export const AddUserModal = forwardRef(function (
                         error: {
                             type: 'custom',
                             message: error_msgs.userexists
+                        }
+                    });
+                    throw new Error(error_msgs.userexists);
+                }
+                case 'docexists': {
+                    setFormError({
+                        name: 'doc_id',
+                        error: {
+                            type: 'custom',
+                            message: error_msgs.docexists
                         }
                     });
                     throw new Error(error_msgs.userexists);

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"errors"
 	"net/http"
@@ -161,6 +162,29 @@ func newAdminRoute(method string, handler HttpFunc) routeDef {
 	}
 }
 
+func newDeptAdminRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{},
+		resolver: func(tx *database.DB, r *http.Request) bool {
+			return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
+		},
+	}
+}
+func newSystemAdminRoute(method string, handler HttpFunc) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    []models.FeatureAccess{},
+		resolver: func(tx *database.DB, r *http.Request) bool {
+			return r.Context().Value(ClaimsKey).(*Claims).Role == models.SystemAdmin
+		},
+	}
+}
+
 func validatedRoute(method string, handler HttpFunc, validate RouteResolver) routeDef {
 	return routeDef{
 		routeMethod: method,
@@ -190,6 +214,17 @@ func featureRoute(method string, handler HttpFunc, features ...models.FeatureAcc
 	}
 }
 
+func deptAdminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
+	return routeDef{
+		routeMethod: method,
+		handler:     handler,
+		admin:       true,
+		features:    features,
+		resolver: func(tx *database.DB, r *http.Request) bool {
+			return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
+		},
+	}
+}
 func adminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
 	return routeDef{
 		routeMethod: method,

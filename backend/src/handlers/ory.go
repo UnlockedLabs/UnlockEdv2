@@ -14,13 +14,10 @@ import (
 )
 
 func (srv *Server) registerOryRoutes() []routeDef {
-	return []routeDef{newAdminRoute("DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities)}
+	return []routeDef{newSystemAdminRoute("DELETE /api/identities/sync", srv.handleDeleteAllKratosIdentities)}
 }
 
 func (srv *Server) handleDeleteAllKratosIdentities(w http.ResponseWriter, r *http.Request, log sLog) error {
-	if !userIsSystemAdmin(r) {
-		return newUnauthorizedServiceError()
-	}
 	if err := srv.deleteAllKratosIdentities(r.Context()); err != nil {
 		return newInternalServerServiceError(err, "error communicating with Ory Kratos")
 	}
