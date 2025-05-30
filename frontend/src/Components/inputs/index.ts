@@ -15,3 +15,4 @@ export { NumberInput } from './NumberInput';
 export { DurationInput } from './DurationInput';
 export { DateInput } from './DateInput';
 export { AddButton } from './AddButton';
+export { TimeInput } from './TimeInput';
