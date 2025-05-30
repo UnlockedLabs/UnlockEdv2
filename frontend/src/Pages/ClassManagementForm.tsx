@@ -82,13 +82,13 @@ export default function ClassManagementForm() {
             ]
         };
 
-        const canEditClass = isCompletedCancelledOrArchived(
+        const blockEdits = isCompletedCancelledOrArchived(
             clsLoader.class ?? ({} as Class)
         );
         let response;
         if (isNewClass) {
             response = await API.post(`programs/${id}/classes`, formattedJson);
-        } else if (canEditClass) {
+        } else if (!blockEdits) {
             response = await API.patch(
                 `programs/${id}/classes/${class_id}`,
                 formattedJson

@@ -100,7 +100,7 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 
 	args := srv.getQueryContext(r)
 
-	overrides, err := srv.Db.GetCancelledOverrideEvents(&args, eventID)
+	overrides, err := srv.Db.GetOverrideEvents(&args, eventID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -117,23 +117,48 @@ func (srv *Server) handleGetEventAttendance(w http.ResponseWriter, r *http.Reque
 
 func isDateCancelled(overrides []models.ProgramClassEventOverride, eventDate string) bool {
 	formatPattern := "2006-01-02"
-	attDate, err := time.Parse(formatPattern, eventDate) ///making sure the date is good
+	evtDate, err := time.Parse(formatPattern, eventDate) ///making sure the date is good
 	if err != nil {
 		return false
 	}
+
+	var isRescheduled bool
 	for _, override := range overrides {
 		rRule, err := rrule.StrToRRule(override.OverrideRrule)
 		if err != nil {
 			continue
 		}
-		if len(rRule.All()) < 1 {
+		if len(rRule.All()) == 0 {
 			continue
 		}
-		overrideEvent := rRule.All()[0]
-		overrideFmtDate := overrideEvent.Format(formatPattern)
-		if overrideFmtDate == attDate.Format(formatPattern) {
-			return true
+		overrideDate := rRule.All()[0].Format(formatPattern)
+
+		if overrideDate == evtDate.Format(formatPattern) {
+			if override.IsCancelled {
+				if override.Reason == "rescheduled" {
+					isRescheduled = true
+					break
+				}
+				return true // a true cancellation
+			}
 		}
+	}
+
+	if isRescheduled { //check for reschedules on same date
+		for _, override := range overrides {
+			rRule, err := rrule.StrToRRule(override.OverrideRrule)
+			if err != nil {
+				continue
+			}
+			if len(rRule.All()) == 0 {
+				continue
+			}
+			overrideDate := rRule.All()[0].Format(formatPattern)
+			if overrideDate == evtDate.Format(formatPattern) && !override.IsCancelled { //is it rescheduled on the same date??
+				return false
+			}
+		}
+		return true
 	}
 	return false
 }

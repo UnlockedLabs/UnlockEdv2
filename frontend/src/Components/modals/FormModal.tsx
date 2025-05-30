@@ -3,17 +3,20 @@ import {
     FieldError,
     FieldValues,
     SubmitHandler,
-    useForm
+    useForm,
+    UseFormGetValues
 } from 'react-hook-form';
 import {
     CancelButton,
     CheckboxInput,
     CloseX,
+    DateInput,
     DropdownInput,
     MultiSelectDropdownInput,
     SubmitButton,
     TextAreaInput,
-    TextInput
+    TextInput,
+    TimeInput
 } from '../inputs';
 import { forwardRef, useEffect } from 'react';
 import { FormInputTypes, Input, InputWithOptions } from '.';
@@ -30,8 +33,9 @@ interface FormModalProps<T extends FieldValues> {
     showCancel?: boolean;
     submitText?: string;
     /** Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs */
-    extValidationIsValid?: () => void;
+    extValidationIsValid?: () => boolean;
     enableSubmit?: boolean;
+    setFormDataRef?: (utils: { getValues: UseFormGetValues<T> }) => void;
 }
 
 export interface FormError {
@@ -47,10 +51,11 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         defaultValues,
         showCancel = false,
         submitText,
-        extValidationIsValid = () => {}, //eslint-disable-line
+        extValidationIsValid = () => true,
         onClose,
         error,
-        enableSubmit = true
+        enableSubmit = true,
+        setFormDataRef
     }: FormModalProps<T>,
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
@@ -59,8 +64,15 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
         reset,
         handleSubmit,
         setError,
+        getValues,
         formState: { errors }
     } = useForm<T>({ defaultValues: defaultValues });
+    useEffect(() => {
+        //used for setting form data reference if needed for validation
+        if (setFormDataRef) {
+            setFormDataRef({ getValues });
+        }
+    }, [setFormDataRef]);
     const { setTourState } = useTourContext();
 
     useEffect(() => {
@@ -105,8 +117,8 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                         key={inputs.length}
                         onSubmit={(e) => {
                             e.preventDefault();
-                            extValidationIsValid();
-                            void handleSubmit(onSubmitHandler)(e);
+                            if (extValidationIsValid())
+                                void handleSubmit(onSubmitHandler)(e);
                         }}
                     >
                         {inputs.map(
@@ -158,6 +170,39 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                         />
                                     );
                                 }
+                                if (input.type === FormInputTypes.Date) {
+                                    return (
+                                        <DateInput
+                                            key={index}
+                                            label={input.label}
+                                            interfaceRef={input.interfaceRef}
+                                            required={input.required}
+                                            errors={errors}
+                                            register={register}
+                                            validate={input.validate}
+                                            getValues={input.getValues}
+                                            disabled={input.disabled}
+                                            allowPastDate={input.allowPastDate}
+                                            monthOnly={input.monthOnly}
+                                        />
+                                    );
+                                }
+                                if (input.type === FormInputTypes.Time) {
+                                    return (
+                                        <TimeInput
+                                            key={index}
+                                            label={input.label}
+                                            interfaceRef={input.interfaceRef}
+                                            required={input.required}
+                                            errors={errors}
+                                            register={register}
+                                            validate={input.validate}
+                                            getValues={input.getValues}
+                                            disabled={input.disabled}
+                                        />
+                                    );
+                                }
+
                                 if (
                                     input.type ===
                                         FormInputTypes.MultiSelectDropdown &&

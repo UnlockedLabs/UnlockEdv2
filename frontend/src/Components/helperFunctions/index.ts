@@ -1,1 +1,6 @@
-export { formatPercent, transformStringToArray } from './formatting';
+export {
+    formatPercent,
+    transformStringToArray,
+    formatDuration,
+    timeToMinutes
+} from './formatting';

@@ -19,7 +19,6 @@ export function parseLocalDay(isoDate: string): Date {
     return new Date(year, month - 1, day);
 }
 
-
 export function toTimezoneString(timezoneValue: string): string {
     return (
         Object.keys(Timezones).find(
@@ -38,4 +37,16 @@ export function parseDurationToMs(duration: string): number {
     const minutes = parseInt(groups[2] || '0', 10);
     const seconds = parseInt(groups[3] || '0', 10);
     return hours * 3600000 + minutes * 60000 + seconds * 1000;
+}
+
+export function formatDuration(startTime: string, endTime: string): string {
+    const totalMin = timeToMinutes(endTime) - timeToMinutes(startTime);
+    const hours = Math.floor(totalMin / 60);
+    const minutes = totalMin % 60;
+    return `${hours}h${minutes}m0s`;
+}
+
+export function timeToMinutes(timeStr: string): number {
+    const [hour, minute] = timeStr.split(':').map(Number);
+    return hour * 60 + minute;
 }
