@@ -20,6 +20,11 @@ import (
 
 type DB struct{ *gorm.DB }
 
+var (
+	defaultOpenContentProviders = [2]models.OpenContentProvider{{Title: models.Kiwix, Url: models.KiwixLibraryUrl, CurrentlyEnabled: true, ThumbnailUrl: models.KiwixThumbnailURL, Description: models.Kiwix},
+		{Title: models.Youtube, Url: models.YoutubeApi, CurrentlyEnabled: true, ThumbnailUrl: models.YoutubeThumbnail, Description: models.YoutubeDescription}}
+)
+
 func NewDB(db *gorm.DB) *DB {
 	return &DB{db}
 }
@@ -85,9 +90,7 @@ func InitDB(isTesting bool) *DB {
 	}
 	DB := &DB{gormDb}
 	DB.SeedDefaultData(isTesting)
-	if isTesting {
-		DB.SeedTestData()
-	}
+
 	return DB
 }
 
@@ -130,17 +133,14 @@ func MigrateTesting(db *gorm.DB) {
 		&models.ProgramClassesHistory{},
 		&models.UserAccountHistory{},
 	}
+	logrus.Println("Running up migrations...")
 	for _, table := range TableList {
 		logrus.Printf("Migrating %T table...", table)
 		if err := db.AutoMigrate(table); err != nil {
 			logrus.Fatal("Failed to migrate table: ", err)
 		}
 	}
-	if !db.Migrator().HasColumn(&models.FacilitiesPrograms{}, "deleted_at") {
-		if err := db.Migrator().AddColumn(&models.FacilitiesPrograms{}, "DeletedAt"); err != nil {
-			logrus.Fatal("Failed to add deleted_at column: ", err)
-		}
-	}
+
 }
 
 func (db *DB) SeedDefaultData(isTesting bool) {

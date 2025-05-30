@@ -132,7 +132,6 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 	reqForm.User.Username = stripNonAlphaChars(reqForm.User.Username, func(char rune) bool {
 		return unicode.IsLetter(char) || unicode.IsDigit(char)
 	})
-
 	err = srv.Db.CreateUser(&reqForm.User)
 	if err != nil {
 		return newDatabaseServiceError(err)
@@ -167,20 +166,22 @@ func (srv *Server) handleCreateUser(w http.ResponseWriter, r *http.Request, log 
 			return newCreateRequestServiceError(err)
 		}
 	}
-	// register the user as an Identity with Kratos + Kolibri
-	if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
-		log.infof("Error creating user in kratos: %v", err)
-	}
-	kolibri, err := srv.Db.FindKolibriInstance()
-	if err != nil {
-		log.error("error getting kolibri instance")
-		// still return 201 because user has been created in kratos,
-		// kolibri might not be set up/available
-		return writeJsonResponse(w, http.StatusCreated, response)
-	}
-	if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
-		log.add("user_id", reqForm.User.ID)
-		log.error("error creating user in kolibri")
+	if !srv.testingMode {
+		// register the user as an Identity with Kratos + Kolibri
+		if err := srv.HandleCreateUserKratos(reqForm.User.Username, tempPw); err != nil {
+			log.infof("Error creating user in kratos: %v", err)
+		}
+		kolibri, err := srv.Db.FindKolibriInstance()
+		if err != nil {
+			log.error("error getting kolibri instance")
+			// still return 201 because user has been created in kratos,
+			// kolibri might not be set up/available
+			return writeJsonResponse(w, http.StatusCreated, response)
+		}
+		if err := srv.CreateUserInKolibri(&reqForm.User, kolibri); err != nil {
+			log.add("user_id", reqForm.User.ID)
+			log.error("error creating user in kolibri")
+		}
 	}
 	return writeJsonResponse(w, http.StatusCreated, response)
 }
