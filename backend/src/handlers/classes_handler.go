@@ -24,6 +24,7 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 				Count(&count).Error == nil && count > 0
 		}),
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
