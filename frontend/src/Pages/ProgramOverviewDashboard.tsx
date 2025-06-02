@@ -1,4 +1,4 @@
-import { useLoaderData, useParams } from 'react-router-dom';
+import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
 import {
@@ -44,6 +44,7 @@ export default function ProgramOverviewDashboard() {
     const { program_id } = useParams<{ program_id: string }>();
     const user = useAuth();
     const userFacilityId = user.user?.facility_id;
+    const revalidator = useRevalidator();
     const { program, redirect } = useLoaderData() as {
         program: ProgramOverview;
         redirect: string;
@@ -122,6 +123,7 @@ export default function ProgramOverviewDashboard() {
 
         setUnableToArchiveClasses(unableToArchive);
         setAbleToArchiveClasses(ableToArchive);
+        revalidator.revalidate();
     }, [selectedClasses, classes]);
 
     if (classes === undefined) return <br />;
@@ -177,7 +179,9 @@ export default function ProgramOverviewDashboard() {
             'Unable to update class',
             'Class updated successfully'
         );
-        if (resp.success) setSelectedClasses([]);
+        if (resp.success) {
+            setSelectedClasses([]);
+        }
     }
     function handleCloseArchive() {
         archiveClassesRef.current?.close();
