@@ -251,6 +251,9 @@ func (srv *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request, log 
 func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Request, log sLog) error {
 	claims := r.Context().Value(ClaimsKey).(*Claims)
 	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "user ID")
+	}
 	response := make(map[string]string)
 	user, err := srv.Db.GetUserByID(uint(id))
 	log.add("student.user_id", user.ID)
