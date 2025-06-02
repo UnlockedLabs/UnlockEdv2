@@ -100,7 +100,11 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
 	if attempts > 0 {
-		s.Db.ResetFailedLoginAttempts(user.ID)
+		err = s.Db.ResetFailedLoginAttempts(user.ID)
+		if err != nil {
+			log.error("error resetting failed login attempts", err)
+			return newDatabaseServiceError(err)
+		}
 	}
 	totalLogins, err := s.Db.IncrementUserLogin(user)
 	if err != nil {
