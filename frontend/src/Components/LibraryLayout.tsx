@@ -159,7 +159,7 @@ export default function LibaryLayout({
                         className="button"
                         onClick={() => requestContentModal.current?.showModal()}
                     >
-                        Request Changes
+                        Request Content
                     </button>
                 </div>
             </div>

@@ -17,6 +17,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/nats-io/nats.go"
 	ory "github.com/ory/kratos-client-go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,6 +40,7 @@ type Server struct {
 	s3Bucket  string
 	wsClient  *ClientManager
 	scheduler *tasks.Scheduler
+	sesClient *sesv2.Client
 }
 
 type routeDef struct {
@@ -190,12 +192,13 @@ func newServer(ctx context.Context) *Server {
 }
 
 func (srv *Server) initAwsConfig(ctx context.Context) {
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	srv.sesClient = sesv2.NewFromConfig(cfg)
 	bucket := os.Getenv("S3_BUCKET_NAME")
 	if bucket != "" {
-		cfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
 		srv.s3 = s3.NewFromConfig(cfg)
 		srv.presigner = s3.NewPresignClient(srv.s3)
 		srv.s3Bucket = bucket
