@@ -214,19 +214,6 @@ func featureRoute(method string, handler HttpFunc, features ...models.FeatureAcc
 	}
 }
 
-// commented this out due to it not being used, could be used in the future?
-//
-//	func deptAdminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
-//		return routeDef{
-//			routeMethod: method,
-//			handler:     handler,
-//			admin:       true,
-//			features:    features,
-//			resolver: func(tx *database.DB, r *http.Request) bool {
-//				return r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility()
-//			},
-//		}
-//	}
 func adminFeatureRoute(method string, handler HttpFunc, features ...models.FeatureAccess) routeDef {
 	return routeDef{
 		routeMethod: method,
