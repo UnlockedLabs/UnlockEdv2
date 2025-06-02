@@ -28,6 +28,9 @@ export default function LoginForm() {
     const processing = navigation.state === 'submitting';
     const [user, setUser] = useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = useState(false);
+    const [lockedOutValue, setLockedOutValue] = useState<string | undefined>(
+        undefined
+    );
     const {
         register,
         handleSubmit,
@@ -54,6 +57,8 @@ export default function LoginForm() {
                 window.location.href = resp.data.redirect_to;
             }
             return;
+        } else if (resp.status && resp.status === 429) {
+            setLockedOutValue(resp.message);
         }
         setErrorMessage(true);
     };
@@ -118,7 +123,7 @@ export default function LoginForm() {
             {errorMessage && (
                 <div className="block">
                     <InputError
-                        message={'incorrect username or password'}
+                        message={`${lockedOutValue ? lockedOutValue : 'incorrect username or password'}`}
                         className="pt-2"
                     />
                 </div>

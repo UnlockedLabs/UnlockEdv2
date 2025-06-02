@@ -45,7 +45,8 @@ class API {
                         type: 'one',
                         message: raw,
                         data: {} as T,
-                        success: false
+                        success: false,
+                        status: resp.status
                     };
                 }
             } else {
@@ -53,7 +54,8 @@ class API {
                     type: 'one',
                     message: raw,
                     data: {} as T,
-                    success: false
+                    success: false,
+                    status: resp.status
                 };
             }
             if (!resp.ok) {

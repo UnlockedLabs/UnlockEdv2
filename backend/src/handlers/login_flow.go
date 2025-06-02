@@ -61,19 +61,10 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 		return newDatabaseServiceError(err)
 	}
 	if isLockedOut {
-		w.Header().Set("Content-Type", "application/json")
+		log.infof("User %d locked out", user.ID)
 		w.Header().Set("Retry-After", strconv.Itoa(int(howLong.Minutes())))
-		w.WriteHeader(http.StatusTooManyRequests)
-		payload := struct {
-			Message    string `json:"message"`
-			RetryAfter int    `json:"retry_after_minutes"`
-		}{
-			Message:    fmt.Sprintf("Account locked. Try again in %d minutes.", int(howLong.Minutes())),
-			RetryAfter: int(howLong.Minutes()),
-		}
-		if err := json.NewEncoder(w).Encode(payload); err != nil {
-			return newResponseServiceError(err)
-		}
+		msg := fmt.Sprintf("Account locked. Try again in %d minutes.", int(howLong.Minutes()))
+		s.errorResponse(w, int(http.StatusTooManyRequests), msg)
 		return nil
 	}
 	log.add("form", form)

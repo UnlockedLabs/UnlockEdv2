@@ -260,6 +260,17 @@ func (srv *Server) handleResetStudentPassword(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
+	isLockedOut, _, _, err := srv.Db.IsAccountLocked(user.ID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if isLockedOut {
+		log.infof("Resetting failed login attempts for user %d due to password reset", user.ID)
+		err = srv.Db.ResetFailedLoginAttempts(user.ID)
+		if err != nil {
+			return newDatabaseServiceError(err)
+		}
+	}
 	newPass := user.CreateTempPassword()
 	response["temp_password"] = newPass
 	response["message"] = "Temporary password assigned"

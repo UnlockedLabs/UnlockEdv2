@@ -635,15 +635,25 @@ func (db *DB) UpdateFailedLogin(userID uint) error {
 
 func (db *DB) IsAccountLocked(userID uint) (bool, time.Duration, int, error) {
 	var rec models.FailedLoginAttempts
+	now := time.Now()
 	err := db.First(&rec, "user_id = ?", userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, 0, 0, nil
 	} else if err != nil {
 		return false, 0, 0, err
 	}
+
+	if now.Sub(*rec.FirstAttemptAt) >= models.WindowDuration {
+		err := db.ResetFailedLoginAttempts(userID)
+		if err != nil {
+			return false, 0, 0, err
+		}
+	}
+
 	if rec.LockedUntil != nil && rec.LockedUntil.After(time.Now()) {
 		return true, time.Until(*rec.LockedUntil), rec.AttemptCount, nil
 	}
+
 	return false, 0, rec.AttemptCount, nil
 }
 
