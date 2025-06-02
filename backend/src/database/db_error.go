@@ -34,7 +34,7 @@ func NewDBError(err error, msg string) DBError {
 	}
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		dbError.Status = http.StatusNotFound
+		dbError.Status = http.StatusBadRequest
 	case errors.Is(err, gorm.ErrPrimaryKeyRequired):
 		dbError.Status = http.StatusUnprocessableEntity
 	case errors.Is(err, gorm.ErrForeignKeyViolated):
