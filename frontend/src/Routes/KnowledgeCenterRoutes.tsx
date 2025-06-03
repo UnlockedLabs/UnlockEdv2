@@ -35,13 +35,13 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
             {
                 path: 'knowledge-center-management',
                 element: <OpenContentManagement />,
+                loader: getLibraryLayoutData,
                 handle: {
                     title: 'Knowledge Center Management'
                 },
                 children: [
                     {
                         path: 'libraries',
-                        loader: getLibraryLayoutData,
                         element: <LibraryLayout />,
                         errorElement: <Error />,
                         handle: {
@@ -50,7 +50,6 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
                     },
                     {
                         path: 'videos',
-                        loader: getLibraryLayoutData,
                         element: <VideoManagement />,
                         handle: {
                             title: 'Videos Management'
@@ -83,13 +82,13 @@ export const KnowledgeCenterRoutes: RouteObject = DeclareAuthenticatedRoutes(
         {
             path: 'knowledge-center',
             element: <OpenContent />,
+            loader: getLibraryLayoutData,
             handle: {
                 title: 'Knowledge Center'
             },
             children: [
                 {
                     path: 'libraries',
-                    loader: getLibraryLayoutData,
                     element: <LibraryLayout />,
                     errorElement: <Error />,
                     handle: {
@@ -98,7 +97,6 @@ export const KnowledgeCenterRoutes: RouteObject = DeclareAuthenticatedRoutes(
                 },
                 {
                     path: 'videos',
-                    loader: getLibraryLayoutData,
                     element: <VideoContent />,
                     errorElement: <Error />,
                     handle: {

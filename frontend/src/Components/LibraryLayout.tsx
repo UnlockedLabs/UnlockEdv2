@@ -1,27 +1,14 @@
-import {
-    LibraryAdminVisibility,
-    Library,
-    ServerResponseMany,
-    UserRole,
-    Option,
-    ViewType
-} from '@/common';
-import DropdownControl from '@/Components/inputs/DropdownControl';
-import SearchBar from '@/Components/inputs/SearchBar';
+import { Library, ServerResponseMany, UserRole, ViewType } from '@/common';
 import LibraryCard from '@/Components/LibraryCard';
 import { isAdministrator, useAuth } from '@/useAuth';
 import { useEffect, useState, useRef } from 'react';
 import useSWR from 'swr';
 import Pagination from './Pagination';
-import { useLoaderData, useLocation } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
-import CategoryDropdownFilter from './CategoryDropdownFilter';
 import { initialTourState, useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
-import ToggleView from '@/Components/ToggleView';
-import { useSessionViewType } from '@/Hooks/sessionView';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
-import { RequestContentModal } from './modals';
 
 export default function LibaryLayout({
     studentView
@@ -33,37 +20,34 @@ export default function LibaryLayout({
     if (!user) {
         return null;
     }
-    const [activeView, setActiveView] = useSessionViewType('libraryView');
+    const {
+        activeView,
+        searchTerm,
+        filterVisibilityAdmin,
+        categoryQueryString
+    } = useOutletContext<{
+        activeView: ViewType;
+        searchTerm: string;
+        filterVisibilityAdmin: string;
+        categoryQueryString: string;
+    }>();
     const [searchModalLibrary, setSearchModalLibrary] =
         useState<Library | null>(null);
     const modalRef = useRef<HTMLDialogElement>(null);
-    const requestContentModal = useRef<HTMLDialogElement>(null);
     //execute when the the searchModalLibrary changes
     useEffect(() => {
         if (searchModalLibrary && modalRef.current) {
-            modalRef.current.style.visibility = 'visible';
             modalRef.current.showModal();
         }
     }, [searchModalLibrary]);
 
-    const openSearchModal = (library: Library) => {
-        setSearchModalLibrary(library); //fire off useEffect
-    };
     const closeSearchModal = () => {
         if (modalRef.current) {
-            modalRef.current.style.visibility = 'hidden';
             modalRef.current.close();
         }
         setSearchModalLibrary(null);
     };
-    const { categories } = useLoaderData() as {
-        categories: Option[];
-    };
-    const [categoryQueryString, setCategoryQueryString] = useState<string>('');
-    const [searchTerm, setSearchTerm] = useState<string>('');
-    const [filterVisibilityAdmin, setFilterVisibilityAdmin] = useState<string>(
-        LibraryAdminVisibility['All Libraries']
-    );
+
     let role = user.role;
     if (studentView) {
         role = UserRole.Student;
@@ -117,53 +101,6 @@ export default function LibaryLayout({
 
     return (
         <>
-            <div className="flex flex-row gap-4">
-                <div
-                    onClick={() => setSearchModalLibrary({} as Library)}
-                    id="knowledge-center-search"
-                >
-                    <SearchBar
-                        searchPlaceholder="Search..."
-                        searchTerm={searchTerm}
-                        changeCallback={setSearchTerm}
-                        autoFocus={false}
-                    />
-                </div>
-                {isAdministrator(user) && !adminWithStudentView() && (
-                    <DropdownControl
-                        enumType={LibraryAdminVisibility}
-                        setState={setFilterVisibilityAdmin}
-                    />
-                )}
-                <div id="knowledge-center-filters">
-                    <CategoryDropdownFilter
-                        mutate={() => void mutateLibraries()}
-                        setCategoryQueryString={setCategoryQueryString}
-                        options={categories}
-                    />
-                </div>
-                {searchModalLibrary && (
-                    <LibrarySearchResultsModal
-                        ref={modalRef}
-                        searchPlaceholder={`Search`}
-                        onModalClose={closeSearchModal}
-                        useInternalSearchBar={true}
-                    />
-                )}
-                <div className="ml-auto flex flex-row gap-4">
-                    <ToggleView
-                        activeView={activeView}
-                        setActiveView={setActiveView}
-                    />
-                    <button
-                        className="button"
-                        onClick={() => requestContentModal.current?.showModal()}
-                    >
-                        Request Content
-                    </button>
-                </div>
-            </div>
-
             <div
                 className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
             >
@@ -190,7 +127,7 @@ export default function LibaryLayout({
                                             : role
                                     }
                                     onSearchClick={() =>
-                                        openSearchModal(library)
+                                        setSearchModalLibrary(library)
                                     }
                                     view={activeView}
                                 />
@@ -205,12 +142,11 @@ export default function LibaryLayout({
                             role={
                                 adminWithStudentView() ? UserRole.Student : role
                             }
-                            onSearchClick={() => openSearchModal(library)}
+                            onSearchClick={() => setSearchModalLibrary(library)}
                             view={activeView}
                         />
                     );
                 })}
-                <RequestContentModal ref={requestContentModal} />
             </div>
             {!librariesLoading && !librariesError && librariesMeta && (
                 <div className="flex justify-center">
@@ -221,6 +157,12 @@ export default function LibaryLayout({
                     />
                 </div>
             )}
+            <LibrarySearchResultsModal
+                ref={modalRef}
+                searchPlaceholder={`Search`}
+                onModalClose={closeSearchModal}
+                useInternalSearchBar={true}
+            />
         </>
     );
 }
