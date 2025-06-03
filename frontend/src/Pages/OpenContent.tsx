@@ -3,7 +3,7 @@ import {
     OpenContentTabs,
     Tab,
     Option,
-    FilterLibrariesVidsandHelpfulLinksResident
+    FilterOpenContent
 } from '@/common';
 import { usePageTitle } from '@/Context/AuthLayoutPageTitleContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -31,60 +31,63 @@ export default function OpenContent() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const route = useLocation();
+
+    // Determine if we're in management (admin) mode
+    const isAdmin = isAdministrator(user);
+    const isManagement = route.pathname.startsWith(
+        '/knowledge-center-management'
+    );
+    const basePath = isManagement
+        ? '/knowledge-center-management'
+        : '/knowledge-center';
+
+    // Tab handling
+    const tabOptions = useMemo(
+        () => [
+            { name: OpenContentTabs.KIWIX, value: 'libraries' },
+            { name: OpenContentTabs.VIDEOS, value: 'videos' },
+            { name: OpenContentTabs.LINKS, value: 'helpful-links' },
+            ...(!isManagement
+                ? [{ name: OpenContentTabs.FAVORITES, value: 'favorites' }]
+                : [])
+        ],
+        [isManagement]
+    );
     const currentTabValue = route.pathname.split('/')[2] ?? 'libraries';
-    const tabOptions: Tab[] = [
-        { name: OpenContentTabs.KIWIX, value: 'libraries' },
-        { name: OpenContentTabs.VIDEOS, value: 'videos' },
-        { name: OpenContentTabs.LINKS, value: 'helpful-links' },
-        { name: OpenContentTabs.FAVORITES, value: 'favorites' }
-    ];
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]
     );
-    const { tourState, setTourState } = useTourContext();
-    const requestContentModal = useRef<HTMLDialogElement>(null);
-    const [activeView, setActiveView] = useSessionViewType('libraryView');
-    //search
-    const searchModalRef = useRef<HTMLDialogElement>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    // filters
-    const { categories } = useLoaderData() as {
-        categories: Option[];
-    };
-    const [filterVisibilityAdmin, setFilterVisibilityAdmin] = useState<string>(
-        LibraryAdminVisibility['All Libraries']
-    );
-    const [categoryQueryString, setCategoryQueryString] = useState<string>('');
-    const [sortQuery, setSortQuery] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
-    );
-
-    const adminWithStudentView = (): boolean => {
-        return !route.pathname.includes('management') && isAdministrator(user);
-    };
-
+    useEffect(() => {
+        setActiveTab(
+            tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]
+        );
+    }, [route.pathname, tabOptions]);
     useEffect(() => {
         setAuthLayoutPageTitle(activeTab.value as string);
-    }, [activeTab]);
-
+    }, [activeTab, setAuthLayoutPageTitle]);
     const handlePageChange = (tab: Tab) => {
-        navigate(`/knowledge-center/${String(tab.value).toLowerCase()}`);
+        navigate(`${basePath}/${String(tab.value).toLowerCase()}`);
         setActiveTab(tab);
     };
-    const handleReturnToAdminView = () => {
-        if (currentTabValue === 'favorites') {
-            navigate('/knowledge-center-management/libraries');
-        } else if (
-            currentTabValue === 'libraries' ||
-            currentTabValue === 'videos' ||
-            currentTabValue === 'helpful-links'
-        ) {
-            navigate('/knowledge-center-management/' + currentTabValue);
+
+    // Button handling (switch between admin and student views)
+    const handleSwitchView = () => {
+        if (!isAdmin) return;
+        if (isManagement) {
+            navigate(`/knowledge-center/${activeTab.value}`);
+        } else {
+            if (activeTab.value === 'favorites') {
+                navigate('/knowledge-center-management/libraries');
+            } else {
+                navigate(`/knowledge-center-management/${activeTab.value}`);
+            }
         }
     };
 
+    // Tour logic (only in student view)
+    const { tourState, setTourState } = useTourContext();
     useEffect(() => {
-        if (tourState.tourActive) {
+        if (!isManagement && tourState?.tourActive) {
             if (tourState.target === '#library-viewer-sub-page') {
                 setTourState({
                     stepIndex:
@@ -98,54 +101,17 @@ export default function OpenContent() {
                     target: '#knowledge-center-landing'
                 });
             }
-        } else {
+        } else if (tourState.target !== initialTourState.target) {
             setTourState(initialTourState);
         }
-    }, []);
+    }, [isManagement, tourState, setTourState]);
 
-    const DropdownFilter = useMemo(
-        function () {
-            if (currentTabValue === 'libraries') {
-                return (
-                    <>
-                        {isAdministrator(user) && !adminWithStudentView() && (
-                            <DropdownControl
-                                enumType={LibraryAdminVisibility}
-                                setState={setFilterVisibilityAdmin}
-                            />
-                        )}
-                        <div id="knowledge-center-filters">
-                            <CategoryDropdownFilter
-                                mutate={() =>
-                                    console.log(
-                                        'updating category dropdown filter'
-                                    )
-                                }
-                                setCategoryQueryString={setCategoryQueryString}
-                                options={categories}
-                            />
-                        </div>
-                    </>
-                );
-            } else {
-                return (
-                    <DropdownControl
-                        setState={setSortQuery}
-                        enumType={FilterLibrariesVidsandHelpfulLinksResident}
-                    />
-                );
-            }
-        },
-        [
-            currentTabValue,
-            user,
-            setFilterVisibilityAdmin,
-            setCategoryQueryString,
-            setSortQuery,
-            categories
-        ]
-    );
+    const requestContentModal = useRef<HTMLDialogElement>(null);
+    const [activeView, setActiveView] = useSessionViewType('libraryView');
 
+    // Search handling
+    const searchModalRef = useRef<HTMLDialogElement>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     function Search() {
         if (currentTabValue === 'libraries' || currentTabValue === 'videos') {
             return (
@@ -180,6 +146,60 @@ export default function OpenContent() {
         }
     }
 
+    // Filter dropdown handling
+    const { categories } = useLoaderData() as {
+        categories: Option[];
+    };
+    const [filterVisibilityAdmin, setFilterVisibilityAdmin] = useState<string>(
+        LibraryAdminVisibility['All Libraries']
+    );
+    const [categoryQueryString, setCategoryQueryString] = useState<string>('');
+    const [sortQuery, setSortQuery] = useState<string>(
+        FilterOpenContent['Title (A to Z)']
+    );
+    const DropdownFilter = useMemo(
+        function () {
+            if (currentTabValue === 'libraries') {
+                return (
+                    <>
+                        <div id="knowledge-center-filters">
+                            <CategoryDropdownFilter
+                                mutate={() =>
+                                    console.log(
+                                        'updating category dropdown filter'
+                                    )
+                                }
+                                setCategoryQueryString={setCategoryQueryString}
+                                options={categories}
+                            />
+                        </div>
+                        {isAdmin && isManagement && (
+                            <DropdownControl
+                                enumType={LibraryAdminVisibility}
+                                setState={setFilterVisibilityAdmin}
+                            />
+                        )}
+                    </>
+                );
+            } else {
+                return (
+                    <DropdownControl
+                        setState={setSortQuery}
+                        enumType={FilterOpenContent}
+                    />
+                );
+            }
+        },
+        [
+            currentTabValue,
+            user,
+            setFilterVisibilityAdmin,
+            setCategoryQueryString,
+            setSortQuery,
+            categories
+        ]
+    );
+
     return (
         <div className="px-5 pb-4" id="knowledge-center-landing">
             <div className="flex flex-row gap-4 pb-4">
@@ -190,12 +210,14 @@ export default function OpenContent() {
                         activeView={activeView}
                         setActiveView={setActiveView}
                     />
-                    {user && isAdministrator(user) ? (
+                    {user && isAdmin ? (
                         <button
                             className="button-outline"
-                            onClick={() => handleReturnToAdminView()}
+                            onClick={handleSwitchView}
                         >
-                            Return to Admin View
+                            {isManagement
+                                ? 'Preview Student View'
+                                : 'Return to Admin View'}
                         </button>
                     ) : (
                         <button
@@ -218,7 +240,7 @@ export default function OpenContent() {
                     }}
                 />
             </div>
-            <div className="flex flex-col gap-8 py-8">
+            <div className="flex flex-col gap-4 py-4">
                 <Outlet
                     context={{
                         activeView,

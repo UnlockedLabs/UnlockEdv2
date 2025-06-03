@@ -1,6 +1,5 @@
 import {
     HelpfulLink,
-    FilterLibrariesVidsandHelpfulLinksResident,
     ModalType,
     ServerResponseOne,
     ToastState,
@@ -8,17 +7,13 @@ import {
     UserRole,
     ViewType
 } from '@/common';
-import ToggleView from '@/Components/ToggleView';
 import HelpfulLinkCard from '@/Components/cards/HelpfulLinkCard';
-import SearchBar from '@/Components/inputs/SearchBar';
 import Pagination from '@/Components/Pagination';
 import React, { useRef, useState } from 'react';
 import { useToast } from '@/Context/ToastCtx';
-import { useDebounceValue } from 'usehooks-ts';
 import useSWR from 'swr';
 import API from '@/api/api';
 import { useAuth } from '@/useAuth';
-import DropdownControl from '@/Components/inputs/DropdownControl';
 import {
     AddHelpfulLinkModal,
     closeModal,
@@ -28,9 +23,9 @@ import {
     TextOnlyModal
 } from '@/Components/modals';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
-import { useSessionViewType } from '@/Hooks/sessionView';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { AddButton } from '@/Components/inputs';
+import { useOutletContext } from 'react-router-dom';
 
 export default function HelpfulLinksManagement() {
     const { user } = useAuth();
@@ -38,14 +33,11 @@ export default function HelpfulLinksManagement() {
     const editLinkModal = useRef<HTMLDialogElement>(null);
     const deleteLinkModal = useRef<HTMLDialogElement>(null);
     const [currentLink, setCurrentLink] = useState<HelpfulLink | null>(null);
-    const [searchTerm, setSearchTerm] = useState<string>('');
-    const searchQuery = useDebounceValue(searchTerm, 500);
-    const [activeView, setActiveView] = useSessionViewType(
-        'helpfulLinkManagementView'
-    );
-    const [sortQuery, setSortQuery] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksResident['Title (A to Z)']
-    );
+    const { activeView, searchTerm, sortQuery } = useOutletContext<{
+        activeView: ViewType;
+        searchTerm: string;
+        sortQuery: string;
+    }>();
     const {
         page: pageQuery,
         perPage,
@@ -57,7 +49,7 @@ export default function HelpfulLinksManagement() {
         ServerResponseOne<HelpfulLinkAndSort>,
         Error
     >(
-        `/api/helpful-links?search=${searchQuery[0]}&page=${pageQuery}&per_page=${perPage}${sortQuery}`
+        `/api/helpful-links?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}${sortQuery}`
     );
     const checkResponseForDelete = useCheckResponse({
         mutate: mutate,
@@ -99,41 +91,19 @@ export default function HelpfulLinksManagement() {
         }
     }
 
-    const handleChange = (newSearch: string) => {
-        setSearchTerm(newSearch);
-        setPageQuery(1);
-    };
-
     return (
         <>
-            <div className="flex flex-row justify-between items-center">
-                <div className="flex flex-row gap-2 items-center">
-                    <SearchBar
-                        searchTerm={searchTerm}
-                        changeCallback={handleChange}
-                    />
-                    <DropdownControl
-                        setState={setSortQuery}
-                        enumType={FilterLibrariesVidsandHelpfulLinksResident}
-                    />
-                </div>
-                <div className="flex flex-row items-center gap-4">
-                    <ToggleView
-                        activeView={activeView}
-                        setActiveView={setActiveView}
-                    />
-                    <AddButton
-                        label="Add Link"
-                        onClick={() => {
-                            showModal(addLinkModal);
-                        }}
-                    />
-                </div>
+            <div className="flex flex-row justify-end items-center">
+                <AddButton
+                    label="Add Link"
+                    onClick={() => {
+                        showModal(addLinkModal);
+                    }}
+                />
             </div>
             <div
-                className={`mt-8 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
             >
-                {/* map through the helpful links */}
                 {helpfulLinks.map((link: HelpfulLink, index: number) => {
                     return (
                         <HelpfulLinkCard

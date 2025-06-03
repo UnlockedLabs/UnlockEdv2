@@ -102,7 +102,7 @@ export default function LibaryLayout({
     return (
         <>
             <div
-                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
             >
                 {libraries?.data.map((library, index) => {
                     if (index === 0) {

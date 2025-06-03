@@ -8,7 +8,6 @@ import {
 } from '@/routeLoaders';
 import LibraryLayout from '../Components/LibraryLayout';
 import HelpfulLinks from '../Pages/HelpfulLinks';
-import OpenContentManagement from '@/Pages/OpenContentManagement';
 import Error from '@/Pages/Error';
 import VideoManagement from '@/Pages/VideoManagement';
 import HelpfulLinksManagement from '@/Pages/HelpfulLinksManagement';
@@ -34,7 +33,7 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
             },
             {
                 path: 'knowledge-center-management',
-                element: <OpenContentManagement />,
+                element: <OpenContent />,
                 loader: getLibraryLayoutData,
                 handle: {
                     title: 'Knowledge Center Management'
