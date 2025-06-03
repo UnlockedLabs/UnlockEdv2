@@ -1,22 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import {
     ToastState,
     Video,
     ServerResponseMany,
     UserRole,
-    FilterLibrariesVidsandHelpfulLinksAdmin,
     MAX_DOWNLOAD_ATTEMPTS,
     getVideoErrorMessage,
     ViewType
 } from '../common';
-import DropdownControl from '@/Components/inputs/DropdownControl';
 import Pagination from '@/Components/Pagination';
 import API from '@/api/api';
 import VideoCard from '@/Components/VideoCard';
 import { useAuth } from '@/useAuth';
 import { useToast } from '@/Context/ToastCtx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
     AddVideoModal,
     closeModal,
@@ -24,17 +22,13 @@ import {
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
-import { AddButton, LibrarySearchBar } from '@/Components/inputs';
-import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
-import ToggleView from '@/Components/ToggleView';
-import { useSessionViewType } from '@/Hooks/sessionView';
+import { AddButton } from '@/Components/inputs';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 
 export default function VideoManagement() {
     const { user } = useAuth();
     const addVideoModal = useRef<HTMLDialogElement>(null);
     const [targetVideo, setTargetVideo] = useState<Video | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
     const videoErrorModal = useRef<HTMLDialogElement>(null);
     const [polling, setPolling] = useState<boolean>(false);
     const {
@@ -43,42 +37,18 @@ export default function VideoManagement() {
         setPage: setPageQuery,
         setPerPage
     } = useUrlPagination(1, 20);
-    const [sortQuery, setSortQuery] = useState<string>(
-        FilterLibrariesVidsandHelpfulLinksAdmin['Title (A to Z)']
-    );
-    const modalRef = useRef<HTMLDialogElement>(null);
-    const [activeView, setActiveView] = useSessionViewType(
-        'videoManagementView'
-    );
-    const [searchModalOpen, setSearchModalOpen] = useState<boolean | null>(
-        false
-    );
-
-    //execute when the the searchModalOpen changes (choppyness otherwise)
-    useEffect(() => {
-        if (modalRef.current) {
-            modalRef.current.style.visibility = 'visible';
-            modalRef.current.showModal();
-        }
-    }, [searchModalOpen]);
-    const openSearchModal = () => {
-        setSearchModalOpen(null); //fire off useEffect
-    };
-    const closeSearchModal = () => {
-        if (modalRef.current) {
-            modalRef.current.style.visibility = 'hidden';
-            modalRef.current.close();
-        }
-        setSearchModalOpen(null);
-    };
     const navigate = useNavigate();
     const { toaster } = useToast();
+
+    const { activeView, sortQuery } = useOutletContext<{
+        activeView: ViewType;
+        searchTerm: string;
+        sortQuery: string;
+    }>();
     const { data, mutate, error, isLoading } = useSWR<
         ServerResponseMany<Video>,
         Error
-    >(
-        `/api/videos?page=${pageQuery}&per_page=${perPage}&order_by=${sortQuery}`
-    );
+    >(`/api/videos?page=${pageQuery}&per_page=${perPage}&${sortQuery}`);
 
     const videoData = data?.data ?? [];
     const meta = data?.meta;
@@ -126,36 +96,14 @@ export default function VideoManagement() {
 
     return (
         <>
-            <div className="flex justify-between items-center">
-                <div className="flex flex-row gap-4 items-center">
-                    <div onClick={() => setSearchModalOpen(true)}>
-                        <LibrarySearchBar
-                            onSearchClick={openSearchModal}
-                            searchPlaceholder="Search..."
-                            searchTerm={searchTerm}
-                            changeCallback={setSearchTerm}
-                            isSearchValid={searchTerm.trim() !== ''}
-                        />
-                    </div>
-                    <DropdownControl
-                        setState={setSortQuery}
-                        enumType={FilterLibrariesVidsandHelpfulLinksAdmin}
-                    />
-                </div>
-
-                <div className="flex flex-row gap-4 items-center">
-                    <ToggleView
-                        activeView={activeView}
-                        setActiveView={setActiveView}
-                    />
-                    <AddButton
-                        label="Add Videos"
-                        onClick={() => showModal(addVideoModal)}
-                    />
-                </div>
+            <div className="flex justify-end items-center">
+                <AddButton
+                    label="Add Videos"
+                    onClick={() => showModal(addVideoModal)}
+                />
             </div>
             <div
-                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
             >
                 {videoData.map((video) => (
                     <VideoCard
@@ -211,14 +159,6 @@ export default function VideoManagement() {
                     setTargetVideo(null);
                 }}
             ></TextOnlyModal>
-            {searchModalOpen && (
-                <LibrarySearchResultsModal
-                    ref={modalRef}
-                    searchPlaceholder={`Search`}
-                    onModalClose={closeSearchModal}
-                    useInternalSearchBar={true}
-                />
-            )}
         </>
     );
 }

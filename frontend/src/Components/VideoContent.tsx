@@ -49,11 +49,8 @@ export default function VideoContent() {
 
     return (
         <>
-            <div className="flex flex-row gap-4">
-                {videoData && videoData.length > 0 && <></>}
-            </div>
             <div
-                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
             >
                 {videoData.map((video) => (
                     <VideoCard

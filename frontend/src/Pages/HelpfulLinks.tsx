@@ -52,7 +52,7 @@ export default function HelpfulLinks() {
     return (
         <>
             <div
-                className={`mt-4 ${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
+                className={`${activeView === ViewType.Grid ? 'grid grid-cols-4 gap-6' : 'space-y-4'}`}
             >
                 {helpfulLinks?.data?.helpful_links.map((link: HelpfulLink) => (
                     <HelpfulLinkCard

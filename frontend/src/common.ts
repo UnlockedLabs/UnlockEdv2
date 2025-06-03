@@ -984,15 +984,7 @@ export enum LibraryAdminVisibility {
     'Featured' = 'featured'
 }
 
-export enum FilterLibrariesVidsandHelpfulLinksAdmin {
-    'Title (A to Z)' = 'title ASC',
-    'Title (Z to A)' = 'title DESC',
-    'Date Added (Newest First)' = 'created_at DESC',
-    'Date Added  (Oldest First)' = 'created_at ASC',
-    'Most Popular' = 'most_popular'
-}
-
-export enum FilterLibrariesVidsandHelpfulLinksResident {
+export enum FilterOpenContent {
     'Title (A to Z)' = '&order_by=title&order=ASC',
     'Title (Z to A)' = '&order_by=title&order=DESC',
     'Date Added (Newest First)' = '&order_by=created_at&order=DESC',
