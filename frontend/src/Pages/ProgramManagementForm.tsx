@@ -208,7 +208,7 @@ export default function ProgramManagementForm() {
     }
 
     return (
-        <div className="container mx-auto p-4 py-8 space-y-6 remove-input-txt-border">
+        <div className="p-4 px-5">
             {/* program info */}
             <form
                 onSubmit={(e) => {
@@ -216,7 +216,7 @@ export default function ProgramManagementForm() {
                     void handleSubmit(onSubmit)(e);
                 }}
             >
-                <div className="card p-6 rounded-lg shadow-md space-y-6 ">
+                <div className="card p-6 rounded-lg shadow-md space-y-6 mb-3">
                     <h2 className="text-xl font-semibold">
                         Program Information
                     </h2>
