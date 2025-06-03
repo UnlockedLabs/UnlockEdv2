@@ -65,6 +65,10 @@ spec:
               value:          # s3 bucket for the region
             - name: AWS_REGION
               value:          # AWS region
+            - name: TO_EMAIL
+              value: support+requests@unlockedlabs.org
+            - name: FROM_EMAIL
+              value: support+requests@unlockedlabs.org
           image:             # OCI container image location in registry
           name: unlockedv2
           ports:
