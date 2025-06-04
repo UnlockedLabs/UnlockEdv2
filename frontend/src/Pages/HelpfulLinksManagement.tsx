@@ -33,9 +33,9 @@ export default function HelpfulLinksManagement() {
     const editLinkModal = useRef<HTMLDialogElement>(null);
     const deleteLinkModal = useRef<HTMLDialogElement>(null);
     const [currentLink, setCurrentLink] = useState<HelpfulLink | null>(null);
-    const { activeView, searchTerm, sortQuery } = useOutletContext<{
+    const { activeView, searchQuery, sortQuery } = useOutletContext<{
         activeView: ViewType;
-        searchTerm: string;
+        searchQuery: string;
         sortQuery: string;
     }>();
     const {
@@ -49,7 +49,7 @@ export default function HelpfulLinksManagement() {
         ServerResponseOne<HelpfulLinkAndSort>,
         Error
     >(
-        `/api/helpful-links?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}${sortQuery}`
+        `/api/helpful-links?search=${searchQuery}&page=${pageQuery}&per_page=${perPage}${sortQuery}`
     );
     const checkResponseForDelete = useCheckResponse({
         mutate: mutate,

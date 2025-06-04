@@ -25,6 +25,7 @@ import ToggleView from '@/Components/ToggleView';
 import { RequestContentModal } from '@/Components/modals';
 import { useSessionViewType } from '@/Hooks/sessionView';
 import { LibrarySearchBar } from '@/Components/inputs';
+import { useDebounceValue } from 'usehooks-ts';
 
 export default function OpenContent() {
     const { setPageTitle: setAuthLayoutPageTitle } = usePageTitle();
@@ -61,6 +62,9 @@ export default function OpenContent() {
         setActiveTab(
             tabOptions.find((t) => t.value === currentTabValue) ?? tabOptions[0]
         );
+        setFilterVisibilityAdmin(LibraryAdminVisibility['All Libraries']);
+        setSortQuery(FilterOpenContent['Title (A to Z)']);
+        setSearchTerm('');
     }, [route.pathname, tabOptions]);
     useEffect(() => {
         setAuthLayoutPageTitle(activeTab.value as string);
@@ -112,6 +116,7 @@ export default function OpenContent() {
     // Search handling
     const searchModalRef = useRef<HTMLDialogElement>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchQuery] = useDebounceValue(searchTerm, 500);
     function Search() {
         if (currentTabValue === 'libraries' || currentTabValue === 'videos') {
             return (
@@ -164,11 +169,7 @@ export default function OpenContent() {
                     <>
                         <div id="knowledge-center-filters">
                             <CategoryDropdownFilter
-                                mutate={() =>
-                                    console.log(
-                                        'updating category dropdown filter'
-                                    )
-                                }
+                                mutate={() => {}} // eslint-disable-line
                                 setCategoryQueryString={setCategoryQueryString}
                                 options={categories}
                             />
@@ -193,7 +194,6 @@ export default function OpenContent() {
         [
             currentTabValue,
             user,
-            setFilterVisibilityAdmin,
             setCategoryQueryString,
             setSortQuery,
             categories
@@ -244,7 +244,7 @@ export default function OpenContent() {
                 <Outlet
                     context={{
                         activeView,
-                        searchTerm,
+                        searchQuery,
                         filterVisibilityAdmin,
                         categoryQueryString,
                         sortQuery

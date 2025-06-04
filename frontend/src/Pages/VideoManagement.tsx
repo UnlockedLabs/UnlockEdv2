@@ -42,7 +42,6 @@ export default function VideoManagement() {
 
     const { activeView, sortQuery } = useOutletContext<{
         activeView: ViewType;
-        searchTerm: string;
         sortQuery: string;
     }>();
     const { data, mutate, error, isLoading } = useSWR<
