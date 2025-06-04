@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
 // sLog is a wrapper around the log.Fields map and is implemented by the handleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging more efficient.
@@ -292,7 +291,7 @@ func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML st
 
 	_, err := srv.sesClient.SendEmail(ctx, input)
 	if err != nil {
-		log.Printf("error sending email: %v\n", err)
+		logrus.Printf("error sending email: %v\n", err)
 		return fmt.Errorf("failed to send email via SES: %v", err)
 	}
 	return nil
