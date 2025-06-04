@@ -22,7 +22,11 @@ import DropdownControl from '@/Components/inputs/DropdownControl';
 import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import ToggleView from '@/Components/ToggleView';
-import { RequestContentModal } from '@/Components/modals';
+import {
+    RequestContentModal,
+    TextModalType,
+    TextOnlyModal
+} from '@/Components/modals';
 import { useSessionViewType } from '@/Hooks/sessionView';
 import { LibrarySearchBar } from '@/Components/inputs';
 import { useDebounceValue } from 'usehooks-ts';
@@ -111,7 +115,13 @@ export default function OpenContent() {
     }, [isManagement, tourState, setTourState]);
 
     const requestContentModal = useRef<HTMLDialogElement>(null);
+    const thankYouModalRef = useRef<HTMLDialogElement>(null);
     const [activeView, setActiveView] = useSessionViewType('libraryView');
+
+    function successRequestContent() {
+        requestContentModal.current?.close();
+        thankYouModalRef.current?.showModal();
+    }
 
     // Search handling
     const searchModalRef = useRef<HTMLDialogElement>(null);
@@ -250,12 +260,25 @@ export default function OpenContent() {
                         sortQuery
                     }}
                 />
-                <RequestContentModal ref={requestContentModal} />
+                <RequestContentModal
+                    ref={requestContentModal}
+                    successRequestContent={successRequestContent}
+                />
                 <LibrarySearchResultsModal
                     ref={searchModalRef}
                     searchPlaceholder={`Search`}
                     onModalClose={() => searchModalRef.current?.close()}
                     useInternalSearchBar={true}
+                />
+                <TextOnlyModal
+                    ref={thankYouModalRef}
+                    type={TextModalType.Information}
+                    title={'Thank you'}
+                    text={
+                        'Thank you. We review all requests when considering new content.'
+                    }
+                    onSubmit={() => {}} //eslint-disable-line
+                    onClose={() => {}} //eslint-disable-line
                 />
             </div>
         </div>
