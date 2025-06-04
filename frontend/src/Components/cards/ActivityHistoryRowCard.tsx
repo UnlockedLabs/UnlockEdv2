@@ -15,12 +15,14 @@ function ActivityHistoryRowCard({
         return value.replace(/_/g, ' ');
     }
 
-    function parseCancelledRRule(rRule: string): string {
+    function parseRRule(rRule: string, startDtOnly?: boolean): string {
         let rule;
         try {
             rule = RRule.fromString(rRule);
-            const overrideDate = rule.all()[0];
-            return overrideDate.toLocaleDateString('en-US', {
+            const eventDate = startDtOnly
+                ? rule.options.dtstart
+                : rule.all()[0];
+            return eventDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'numeric',
                 day: 'numeric',
@@ -75,10 +77,13 @@ function ActivityHistoryRowCard({
                 text = `Program type ${!activity.new_value ? formatValue(activity.old_value) + ' removed ' : 'set to ' + formatValue(activity.new_value)} by ${activity.admin_username}`;
                 break;
             case 'event_cancelled':
-                text = `Event on ${parseCancelledRRule(activity.new_value)} cancelled by ${activity.admin_username}`;
+                text = `Event on ${parseRRule(activity.new_value)} cancelled by ${activity.admin_username}`;
                 break;
             case 'event_rescheduled':
-                text = `Event on ${parseCancelledRRule(activity.old_value)} moved to ${activity.new_value} by ${activity.admin_username}`;
+                text = `Event on ${parseRRule(activity.old_value)} moved to ${activity.new_value} by ${activity.admin_username}`;
+                break;
+            case 'event_rescheduled_series':
+                text = `All future sessions rescheduled starting ${parseRRule(activity.new_value, true)} by ${activity.admin_username}`;
                 break;
         }
         return text;

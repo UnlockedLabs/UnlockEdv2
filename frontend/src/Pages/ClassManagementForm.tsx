@@ -271,10 +271,16 @@ export default function ClassManagementForm() {
                             getValues={getValues}
                             endDateRef="end_dt"
                             startDateRef="start_dt"
-                            errors={errors}
+                            formErrors={errors}
                             register={register}
                             onChange={setRruleIsValid}
                             disabled={!isNewClass}
+                            initialDuration={
+                                clsLoader.class?.events[0].duration
+                            }
+                            initialRule={
+                                clsLoader.class?.events[0].recurrence_rule
+                            }
                         />
                         <DropdownInput
                             label="Status"

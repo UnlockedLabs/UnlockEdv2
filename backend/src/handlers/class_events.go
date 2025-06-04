@@ -18,6 +18,7 @@ func (srv *Server) registerClassEventsRoutes() []routeDef {
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/events", srv.handleGetProgramClassEvents, axx, resolver),
 		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events/{event_id}", srv.handleEventOverrides, axx, resolver),
 		adminValidatedFeatureRoute("POST /api/program-classes/{class_id}/events", srv.handleCreateEvent, axx, resolver),
+		adminValidatedFeatureRoute("PUT /api/program-classes/{class_id}/events", srv.handleRescheduleEventSeries, axx, resolver),
 	}
 }
 
@@ -80,6 +81,28 @@ func (srv *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 	return writeJsonResponse(w, http.StatusCreated, "Event created successfully")
+}
+
+func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Request, log sLog) error {
+	classID, err := strconv.Atoi(r.PathValue("class_id"))
+	if err != nil {
+		return newInvalidIdServiceError(err, "class_id")
+	}
+	var events []models.ProgramClassEvent
+	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+		return newJSONReqBodyServiceError(err)
+	}
+
+	for i, j := 0, len(events); i < j; i++ {
+		events[i].ClassID = uint(classID)
+	}
+
+	ctx := srv.getQueryContext(r)
+	err = srv.Db.CreateRescheduleEventSeries(&ctx, events)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	return writeJsonResponse(w, http.StatusCreated, "Event rescheduled successfully")
 }
 
 func (srv *Server) handleGetStudentAttendanceData(w http.ResponseWriter, r *http.Request, log sLog) error {
