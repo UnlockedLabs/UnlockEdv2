@@ -346,6 +346,7 @@ export interface ServerResponseBase {
     success: boolean;
     message: string;
     status?: number;
+    headers?: Record<string, string>;
 }
 
 export interface ServerResponseOne<T> extends ServerResponseBase {

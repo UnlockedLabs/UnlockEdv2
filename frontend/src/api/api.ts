@@ -33,6 +33,10 @@ class API {
                 };
             }
             const contentType = resp.headers.get('Content-Type') ?? '';
+            const responseHeaders: Record<string, string> = {};
+            resp.headers.forEach((val, key) => {
+                responseHeaders[key] = val;
+            });
             let data: ServerResponse<T>;
 
             const raw = await resp.text();
@@ -46,7 +50,8 @@ class API {
                         message: raw,
                         data: {} as T,
                         success: false,
-                        status: resp.status
+                        status: resp.status,
+                        headers: responseHeaders
                     };
                 }
             } else {
@@ -55,7 +60,8 @@ class API {
                     message: raw,
                     data: {} as T,
                     success: false,
-                    status: resp.status
+                    status: resp.status,
+                    headers: responseHeaders
                 };
             }
             if (!resp.ok) {
@@ -74,7 +80,8 @@ class API {
                     success: false,
                     data: null,
                     message,
-                    status: resp.status
+                    status: resp.status,
+                    headers: responseHeaders
                 };
                 throw error;
             }
@@ -90,7 +97,8 @@ class API {
                 success: false,
                 message: error.message || 'An error occurred',
                 data: {} as T,
-                status: errCode ?? 0
+                status: errCode ?? 0,
+                headers: error.response?.headers ?? {}
             };
         }
     }

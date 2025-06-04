@@ -62,7 +62,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	}
 	if isLockedOut {
 		log.infof("User %d locked out", user.ID)
-		w.Header().Set("Retry-After", strconv.Itoa(int(howLong.Minutes())))
+		w.Header().Set("Retry-After", strconv.Itoa(int(howLong.Seconds())))
 		msg := fmt.Sprintf("Account locked. Try again in %d minutes.", int(howLong.Minutes()))
 		s.errorResponse(w, int(http.StatusTooManyRequests), msg)
 		return nil
