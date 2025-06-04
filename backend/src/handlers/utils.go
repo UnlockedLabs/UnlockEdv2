@@ -3,13 +3,20 @@ package handlers
 import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // sLog is a wrapper around the log.Fields map and is implemented by the handleError method, this struct is not intended to be accessed directly and was created to make adding key/values and logging more efficient.
@@ -255,4 +262,38 @@ func adminValidatedFeatureRoute(method string, handler HttpFunc, features models
 		features:    []models.FeatureAccess{features},
 		resolver:    validate,
 	}
+}
+
+func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML string) error {
+	input := &sesv2.SendEmailInput{
+		Content: &types.EmailContent{
+			Simple: &types.Message{
+				Subject: &types.Content{
+					Data:    aws.String(subject),
+					Charset: aws.String("UTF-8"),
+				},
+				Body: &types.Body{
+					Text: &types.Content{
+						Data:    aws.String(bodyText),
+						Charset: aws.String("UTF-8"),
+					},
+					Html: &types.Content{
+						Data:    aws.String(bodyHTML),
+						Charset: aws.String("UTF-8"),
+					},
+				},
+			},
+		},
+		Destination: &types.Destination{
+			ToAddresses: []string{os.Getenv("TO_EMAIL")},
+		},
+		FromEmailAddress: aws.String(os.Getenv("FROM_EMAIL")),
+	}
+
+	_, err := srv.sesClient.SendEmail(ctx, input)
+	if err != nil {
+		log.Printf("error sending email: %v\n", err)
+		return fmt.Errorf("failed to send email via SES: %v", err)
+	}
+	return nil
 }
