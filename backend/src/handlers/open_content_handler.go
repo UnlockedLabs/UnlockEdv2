@@ -100,7 +100,6 @@ func (srv *Server) handleRequestOpenContent(w http.ResponseWriter, r *http.Reque
 	facilityName := claims.FacilityName
 	subject := "Content Request - " + username + " - " + facilityName
 	bodyHTML := getBodyHTML(username, facilityName, req.Content)
-	fmt.Printf("body html is %s", bodyHTML)
 	srv.sendEmail(context, subject, "Content requests recieved for UnlockEd", bodyHTML)
 	return writeJsonResponse(w, http.StatusOK, "content requests sent")
 }

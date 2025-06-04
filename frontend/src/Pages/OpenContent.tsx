@@ -23,6 +23,7 @@ import CategoryDropdownFilter from '@/Components/CategoryDropdownFilter';
 import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import ToggleView from '@/Components/ToggleView';
 import {
+    closeModal,
     RequestContentModal,
     TextModalType,
     TextOnlyModal
@@ -119,7 +120,7 @@ export default function OpenContent() {
     const [activeView, setActiveView] = useSessionViewType('libraryView');
 
     function successRequestContent() {
-        requestContentModal.current?.close();
+        closeModal(requestContentModal);
         thankYouModalRef.current?.showModal();
     }
 
@@ -267,7 +268,7 @@ export default function OpenContent() {
                 <LibrarySearchResultsModal
                     ref={searchModalRef}
                     searchPlaceholder={`Search`}
-                    onModalClose={() => searchModalRef.current?.close()}
+                    onModalClose={() => closeModal(searchModalRef)}
                     useInternalSearchBar={true}
                 />
                 <TextOnlyModal
@@ -278,7 +279,7 @@ export default function OpenContent() {
                         'Thank you. We review all requests when considering new content.'
                     }
                     onSubmit={() => {}} //eslint-disable-line
-                    onClose={() => {}} //eslint-disable-line
+                    onClose={() => closeModal(thankYouModalRef)}
                 />
             </div>
         </div>
