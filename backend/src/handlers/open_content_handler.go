@@ -2,19 +2,12 @@ package handlers
 
 import (
 	"UnlockEdv2/src/models"
-	"context"
 	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sesv2"
-	"github.com/aws/aws-sdk-go-v2/service/sesv2/types"
-	log "github.com/sirupsen/logrus"
 )
 
 func (srv *Server) registerOpenContentRoutes() []routeDef {
@@ -100,42 +93,11 @@ func (srv *Server) handleRequestOpenContent(w http.ResponseWriter, r *http.Reque
 	facilityName := claims.FacilityName
 	subject := "Content Request - " + username + " - " + facilityName
 	bodyHTML := getBodyHTML(username, facilityName, req.Content)
-	srv.sendEmail(context, subject, "Content requests recieved for UnlockEd", bodyHTML)
-	return writeJsonResponse(w, http.StatusOK, "content requests sent")
-}
-
-func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML string) error {
-	input := &sesv2.SendEmailInput{
-		Content: &types.EmailContent{
-			Simple: &types.Message{
-				Subject: &types.Content{
-					Data:    aws.String(subject),
-					Charset: aws.String("UTF-8"),
-				},
-				Body: &types.Body{
-					Text: &types.Content{
-						Data:    aws.String(bodyText),
-						Charset: aws.String("UTF-8"),
-					},
-					Html: &types.Content{
-						Data:    aws.String(bodyHTML),
-						Charset: aws.String("UTF-8"),
-					},
-				},
-			},
-		},
-		Destination: &types.Destination{
-			ToAddresses: []string{os.Getenv("TO_EMAIL")},
-		},
-		FromEmailAddress: aws.String(os.Getenv("FROM_EMAIL")),
-	}
-
-	_, err := srv.sesClient.SendEmail(ctx, input)
+	err := srv.sendEmail(context, subject, "Content requests recieved for UnlockEd", bodyHTML)
 	if err != nil {
-		log.Printf("error sending email: %v\n", err)
-		return fmt.Errorf("failed to send email via SES: %v", err)
+		return newBadRequestServiceError(err, "error sending email")
 	}
-	return nil
+	return writeJsonResponse(w, http.StatusOK, "content requests sent")
 }
 
 func getBodyHTML(username, facility, bodyText string) string {
