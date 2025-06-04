@@ -1,11 +1,7 @@
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import {
-    ArchiveBoxIcon,
-    PencilSquareIcon,
-    PuzzlePieceIcon
-} from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -342,93 +338,108 @@ export default function ProgramOverviewDashboard() {
 
             {/* classes table */}
             <div className="card p-4">
-                <table className="table w-full table-fixed  mb-4">
+                <table className="table-2 table-fixed mb-4">
+                    {/* colgroup allows us to manually set column widths of table-2 as long as style of table is set to display: table*/}
+                    <colgroup>
+                        <col style={{ minWidth: '2%', maxWidth: '2%' }} />{' '}
+                        {/*Checkbox */}
+                        <col /> {/* Class Name */}
+                        <col /> {/* Instructor Name */}
+                        <col /> {/* Start Date */}
+                        <col /> {/* End Date */}
+                        <col /> {/* Enrollments */}
+                        <col
+                            style={{ minWidth: '12%', maxWidth: '12%' }}
+                        />{' '}
+                        {/* Status */}
+                    </colgroup>
                     <thead className="bg-background">
-                        <tr>
-                            <th className="w-[150px]">
+                        <tr style={{ display: 'table-row' }}>
+                            <th className="px-4 py-2 text-left">
                                 <input
                                     type="checkbox"
-                                    className="checkbox checkbox-sm"
+                                    className="cursor-pointer checkbox checkbox-sm"
                                     checked={allSelected}
                                     onChange={(e) =>
                                         handleToggleAll(e.target.checked)
                                     }
                                 />
                             </th>
-                            <th className="w-full">Class Name</th>
-                            <th className="w-full">Instructor Name</th>
-                            <th className="w-full">Start Date</th>
-                            <th className="w-full">End Date</th>
-                            <th className="w-[200px]">Enrollments</th>
-                            <th className="w-[150px]">Status</th>
+                            <th className="px-4 py-2 text-center">
+                                Class Name
+                            </th>
+                            <th className="px-4 py-2 text-center">
+                                Instructor Name
+                            </th>
+                            <th className="px-4 py-2 text-center">
+                                Start Date
+                            </th>
+                            <th className="px-4 py-2 text-center">End Date</th>
+                            <th className="px-4 py-2 text-center">
+                                Enrollments
+                            </th>
+                            <th className="px-4 py-2 text-center">Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {filteredClasses.map((program_class) => {
-                            const isSelected = selectedClasses.includes(
-                                program_class.id
-                            );
+
+                    <tbody style={{ display: 'table-row-group' }}>
+                        {filteredClasses.map((pc) => {
+                            const isSelected = selectedClasses.includes(pc.id);
                             return (
                                 <tr
-                                    key={program_class.id}
-                                    onClick={() => {
-                                        if (!isArchived(program_class))
-                                            handleToggleRow(program_class.id);
-                                    }}
+                                    key={pc.id}
+                                    style={{ display: 'table-row' }}
                                     className={
-                                        isArchived(program_class)
-                                            ? 'bg-grey-1 cursor-not-allowed'
-                                            : `cursor-pointer ${
-                                                  isSelected
-                                                      ? 'bg-background '
-                                                      : ''
-                                              }`
+                                        'justify-between' + isArchived(pc)
+                                            ? 'bg-grey-1'
+                                            : `${isSelected ? 'bg-background' : ''}`
                                     }
                                 >
-                                    <td onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center gap-2">
-                                            {isArchived(program_class) ? (
-                                                <div></div>
-                                            ) : (
-                                                <input
-                                                    type="checkbox"
-                                                    className="checkbox checkbox-sm"
-                                                    checked={isSelected}
-                                                    onChange={() =>
-                                                        handleToggleRow(
-                                                            program_class.id
-                                                        )
-                                                    }
-                                                />
-                                            )}
-                                            <ULIComponent
-                                                dataTip={'Class Overview'}
-                                                icon={PuzzlePieceIcon}
-                                                iconClassName={
-                                                    '!w-6 !h-6 cursor-pointer hover:text-primary hover:scale-110 transition-all'
-                                                }
-                                                onClick={() => {
-                                                    navigate(
-                                                        `/program-classes/${program_class.id}/dashboard`
-                                                    );
-                                                }}
-                                            />
-                                        </div>
+                                    <td
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="px-4 py-2 text-left"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className={`cursor-pointer checkbox checkbox-sm ${
+                                                isArchived(pc)
+                                                    ? 'invisible'
+                                                    : ''
+                                            }`}
+                                            checked={isSelected}
+                                            disabled={isArchived(pc)}
+                                            onChange={() =>
+                                                handleToggleRow(pc.id)
+                                            }
+                                        />
                                     </td>
-                                    <td>
-                                        <ClampedText as="div" lines={1}>
-                                            {program_class.name}
-                                        </ClampedText>
-                                    </td>
-                                    <td>
-                                        <ClampedText as="div" lines={1}>
-                                            {program_class.instructor_name}
+
+                                    <td
+                                        className="px-4 py-2 text-center cursor-pointer"
+                                        onClick={() =>
+                                            navigate(
+                                                `/program-classes/${pc.id}/dashboard`
+                                            )
+                                        }
+                                    >
+                                        <ClampedText
+                                            as="div"
+                                            lines={1}
+                                            className="hover:underline"
+                                        >
+                                            {pc.name}
                                         </ClampedText>
                                     </td>
 
-                                    <td>
+                                    <td className="px-4 py-2 text-center">
+                                        <ClampedText as="div" lines={1}>
+                                            {pc.instructor_name}
+                                        </ClampedText>
+                                    </td>
+
+                                    <td className="px-4 py-2 text-center">
                                         {new Date(
-                                            program_class.start_dt
+                                            pc.start_dt
                                         ).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
@@ -436,10 +447,11 @@ export default function ProgramOverviewDashboard() {
                                             timeZone: 'UTC'
                                         })}
                                     </td>
-                                    <td>
-                                        {program_class.end_dt
+
+                                    <td className="px-4 py-2 text-center">
+                                        {pc.end_dt
                                             ? new Date(
-                                                  program_class.end_dt
+                                                  pc.end_dt
                                               ).toLocaleDateString('en-US', {
                                                   year: 'numeric',
                                                   month: 'short',
@@ -448,24 +460,26 @@ export default function ProgramOverviewDashboard() {
                                               })
                                             : ''}
                                     </td>
-                                    <td>
+
+                                    <td className="px-4 py-2">
                                         <ProgressBar
                                             showPercentage={false}
                                             percent={parseFloat(
                                                 (
-                                                    (program_class.enrolled /
-                                                        program_class.capacity) *
+                                                    (pc.enrolled /
+                                                        pc.capacity) *
                                                     100
                                                 ).toFixed(1)
                                             )}
-                                            numerator={program_class.enrolled}
-                                            denominator={program_class.capacity}
+                                            numerator={pc.enrolled}
+                                            denominator={pc.capacity}
                                         />
                                     </td>
-                                    <td>
+
+                                    <td className="px-4 py-2">
                                         <ClassStatus
-                                            status={program_class.status}
-                                            program_class={program_class}
+                                            status={pc.status}
+                                            program_class={pc}
                                             mutateClasses={mutateClasses}
                                         />
                                     </td>
