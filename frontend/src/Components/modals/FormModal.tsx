@@ -4,7 +4,8 @@ import {
     FieldValues,
     SubmitHandler,
     useForm,
-    UseFormGetValues
+    UseFormGetValues,
+    UseFormRegister
 } from 'react-hook-form';
 import {
     CancelButton,
@@ -35,7 +36,10 @@ interface FormModalProps<T extends FieldValues> {
     /** Optional attribute is used for any external validation logic you may need to execute, particularly for Unique type Inputs */
     extValidationIsValid?: () => boolean;
     enableSubmit?: boolean;
-    setFormDataRef?: (utils: { getValues: UseFormGetValues<T> }) => void;
+    setFormDataRef?: (utils: {
+        getValues: UseFormGetValues<T>;
+        register: UseFormRegister<T>;
+    }) => void;
 }
 
 export interface FormError {
@@ -70,9 +74,9 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
     useEffect(() => {
         //used for setting form data reference if needed for validation
         if (setFormDataRef) {
-            setFormDataRef({ getValues });
+            setFormDataRef({ getValues, register });
         }
-    }, [setFormDataRef]);
+    }, [setFormDataRef, getValues, register]);
     const { setTourState } = useTourContext();
 
     useEffect(() => {

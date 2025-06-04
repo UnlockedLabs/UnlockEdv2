@@ -20,6 +20,7 @@ interface DateProps {
         | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     disabled?: boolean;
     monthOnly?: boolean;
+    onChange?: () => void;
 }
 
 export function DateInput({
@@ -33,7 +34,8 @@ export function DateInput({
     isFocused = false,
     validate,
     disabled = false,
-    monthOnly = false
+    monthOnly = false,
+    onChange
 }: DateProps) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -97,6 +99,11 @@ export function DateInput({
                 {...register(interfaceRef, options)}
                 autoFocus={isFocused}
                 disabled={disabled}
+                onChange={() => {
+                    if (onChange) {
+                        onChange();
+                    }
+                }}
             />
             <div className="text-error text-sm">
                 {errors[interfaceRef]?.message as string}

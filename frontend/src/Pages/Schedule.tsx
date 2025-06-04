@@ -4,6 +4,7 @@ import { CancelButton, CloseX } from '@/Components/inputs';
 import { showModal } from '@/Components/modals';
 import { CancelClassEventModal } from '@/Components/modals/CancelClassEventModal';
 import { RescheduleClassEventModal } from '@/Components/modals/RescheduleClassEventModal';
+import { RescheduleClassEventSeriesModal } from '@/Components/modals/RescheduleClassEventSeriesModal';
 import { useAuth } from '@/useAuth';
 import { toZonedTime } from 'date-fns-tz';
 import { useMemo, useRef, useState } from 'react';
@@ -14,6 +15,7 @@ export default function Schedule() {
     if (!user) {
         return null;
     }
+    const rescheduleClassEventSeriesModal = useRef<HTMLDialogElement>(null);
     const cancelClassEventModal = useRef<HTMLDialogElement>(null);
     const rescheduleClassEventModal = useRef<HTMLDialogElement>(null);
     const { startDate, endDate } = useMemo(() => {
@@ -120,7 +122,18 @@ export default function Schedule() {
                             >
                                 Edit Event
                             </button>
-                            <button className="button-outline">
+                            <button
+                                className="button-outline"
+                                onClick={() => {
+                                    if (
+                                        !selectedEvent ||
+                                        selectedEvent.is_override
+                                    ) {
+                                        return;
+                                    }
+                                    showModal(rescheduleClassEventSeriesModal);
+                                }}
+                            >
                                 Edit Series
                             </button>
                             <CancelButton
@@ -148,6 +161,13 @@ export default function Schedule() {
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={cancelClassEventModal}
+                />
+            )}
+            {selectedEvent && (
+                <RescheduleClassEventSeriesModal
+                    mutate={mutateEvents}
+                    calendarEvent={selectedEvent}
+                    ref={rescheduleClassEventSeriesModal}
                 />
             )}
             {selectedEvent && (
