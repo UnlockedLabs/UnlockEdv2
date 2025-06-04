@@ -22,12 +22,12 @@ export default function LibaryLayout({
     }
     const {
         activeView,
-        searchTerm,
+        searchQuery,
         filterVisibilityAdmin,
         categoryQueryString
     } = useOutletContext<{
         activeView: ViewType;
-        searchTerm: string;
+        searchQuery: string;
         filterVisibilityAdmin: string;
         categoryQueryString: string;
     }>();
@@ -70,13 +70,13 @@ export default function LibaryLayout({
         error: librariesError,
         isLoading: librariesLoading
     } = useSWR<ServerResponseMany<Library>, Error>(
-        `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=title&order=asc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchTerm}&${categoryQueryString}`
+        `/api/libraries?page=${pageQuery}&per_page=${perPage}&order_by=title&order=asc&visibility=${isAdministrator(user) && !adminWithStudentView() ? filterVisibilityAdmin : 'visible'}&search=${searchQuery}&${categoryQueryString}`
     );
     const librariesMeta = libraries?.meta;
 
     useEffect(() => {
         setPageQuery(1, { replace: true });
-    }, [filterVisibilityAdmin, searchTerm, categoryQueryString]);
+    }, [filterVisibilityAdmin, searchQuery, categoryQueryString]);
 
     function updateLibrary() {
         void mutateLibraries();

@@ -15,9 +15,9 @@ import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 export default function VideoContent() {
     const { user } = useAuth();
     const route = useLocation();
-    const { activeView, searchTerm, sortQuery } = useOutletContext<{
+    const { activeView, searchQuery, sortQuery } = useOutletContext<{
         activeView: ViewType;
-        searchTerm: string;
+        searchQuery: string;
         sortQuery: string;
     }>();
     const {
@@ -35,7 +35,7 @@ export default function VideoContent() {
         ServerResponseMany<Video>,
         Error
     >(
-        `/api/videos?search=${searchTerm}&page=${pageQuery}&per_page=${perPage}&${sortQuery}&visibility=${adminWithStudentView() ? UserRole.Student : user?.role}`
+        `/api/videos?search=${searchQuery}&page=${pageQuery}&per_page=${perPage}&${sortQuery}&visibility=${adminWithStudentView() ? UserRole.Student : user?.role}`
     );
 
     const videoData =

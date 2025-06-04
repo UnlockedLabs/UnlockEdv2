@@ -13,9 +13,9 @@ import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import { useOutletContext } from 'react-router-dom';
 
 export default function HelpfulLinks() {
-    const { activeView, searchTerm, sortQuery } = useOutletContext<{
+    const { activeView, searchQuery, sortQuery } = useOutletContext<{
         activeView: ViewType;
-        searchTerm: string;
+        searchQuery: string;
         sortQuery: string;
     }>();
     const {
@@ -31,7 +31,7 @@ export default function HelpfulLinks() {
         isLoading,
         error
     } = useSWR<ServerResponseOne<HelpfulLinkAndSort>, Error>(
-        `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchTerm}${sortQuery}`
+        `/api/helpful-links?page=${pageQuery}&per_page=${perPage}&search=${searchQuery}${sortQuery}`
     );
     function updateFavorites() {
         void mutateHelpfulFavs();
@@ -47,7 +47,7 @@ export default function HelpfulLinks() {
 
     useEffect(() => {
         setPageQuery(1);
-    }, [searchTerm]);
+    }, [searchQuery]);
 
     return (
         <>

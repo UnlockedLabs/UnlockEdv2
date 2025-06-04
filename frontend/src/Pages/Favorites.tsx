@@ -8,9 +8,9 @@ import { useOutletContext } from 'react-router-dom';
 
 export default function FavoritesPage() {
     const { user } = useAuth();
-    const { activeView, searchTerm, sortQuery } = useOutletContext<{
+    const { activeView, searchQuery, sortQuery } = useOutletContext<{
         activeView: ViewType;
-        searchTerm: string;
+        searchQuery: string;
         sortQuery: string;
     }>();
     const {
@@ -25,7 +25,7 @@ export default function FavoritesPage() {
         Error
     >(
         user
-            ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchTerm}&order_by=${sortQuery}`
+            ? `/api/open-content/favorites?page=${pageQuery}&per_page=${perPage}&search=${searchQuery}&order_by=${sortQuery}`
             : null,
         { shouldRetryOnError: false }
     );
