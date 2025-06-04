@@ -7,13 +7,17 @@ import {
     FieldErrors,
     UseFormGetValues
 } from 'react-hook-form';
-import { useLoaderData } from 'react-router';
-import { ClassLoaderData } from '@/common';
 import { useAuth } from '@/useAuth';
-import { formatDuration, timeToMinutes } from '../helperFunctions';
+import {
+    formatDuration,
+    isEndDtBeforeStartDt,
+    isPastDate,
+    timeToMinutes
+} from '../helperFunctions';
 export interface RRuleFormHandle {
     createRule: () => { rule: string; duration: string };
     validate: () => boolean;
+    resetForm: () => void;
 }
 
 const weekdays = [
@@ -31,9 +35,11 @@ interface RRuleControlProp {
     onChange?: (isValid: boolean) => void;
     startDateRef: string;
     endDateRef: string;
-    errors: FieldErrors<any>; // eslint-disable-line
+    formErrors?: FieldErrors<any>; // eslint-disable-line
     register: UseFormRegister<any>; // eslint-disable-line
     getValues: UseFormGetValues<any>; // eslint-disable-line
+    initialRule?: string;
+    initialDuration?: string;
 }
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
     function RRuleControl(
@@ -43,8 +49,10 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             startDateRef,
             endDateRef,
             getValues,
-            errors,
-            register
+            formErrors,
+            register,
+            initialRule,
+            initialDuration
         },
         ref
     ) {
@@ -52,11 +60,12 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         if (!user) {
             return null;
         }
-        const clsLoader = useLoaderData() as ClassLoaderData;
         const [timeErrors, setTimeErrors] = useState({
             startTime: '',
             endTime: '',
-            weekDays: ''
+            weekDays: '',
+            endDate: '',
+            startDate: ''
         });
         const [frequency, setFrequency] = useState('WEEKLY');
         const [interval, setInterval] = useState(1);
@@ -115,13 +124,18 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     duration: ''
                 };
             }
-
             return returnValue;
         };
 
         function isFormValidated(): boolean {
             let isValid = true;
-            const errors = { startTime: '', endTime: '', weekDays: '' };
+            const errors = {
+                startTime: '',
+                endTime: '',
+                weekDays: '',
+                startDate: '',
+                endDate: ''
+            };
             setTimeErrors(errors);
             if (!startTime) {
                 errors.startTime = 'Start time is required';
@@ -131,7 +145,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 errors.endTime = 'End time is required';
                 isValid = false;
             }
-
+            if (!formErrors) {
+                checkDateInputs(errors);
+            }
             if (startTime && endTime) {
                 const startTotalMin = timeToMinutes(startTime);
                 const endTotalMin = timeToMinutes(endTime);
@@ -145,6 +161,34 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 isValid = false;
             }
             return isValid;
+        }
+
+        function checkDateInputs(errors: {
+            startTime: string;
+            endTime: string;
+            weekDays: string;
+            startDate: string;
+            endDate: string;
+        }) {
+            let startDate = getValues(startDateRef) as string;
+            startDate = startDate ? startDate.trim() : '';
+            if (startDate === '') errors.startDate = 'Start Date is required.';
+            if (startDate != '' && isPastDate(startDate))
+                errors.startDate = 'Start Date cannot be in the past.';
+
+            if (endOption === 'until') {
+                let endDate = getValues(endDateRef) as string;
+                endDate = endDate ? endDate.trim() : '';
+                if (endDate === '') errors.endDate = 'End Date is required.';
+
+                const startVal = getValues('start_dt'); // eslint-disable-line
+                if (
+                    startDate != '' &&
+                    endDate != '' &&
+                    isEndDtBeforeStartDt(endDate, startDate)
+                )
+                    errors.endDate = 'End Date cannot be before Start Date.';
+            }
         }
 
         const canCreateRule = () => {
@@ -165,7 +209,8 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
 
         useImperativeHandle(ref, () => ({
             createRule: createRule,
-            validate: isFormValidated
+            validate: isFormValidated,
+            resetForm: resetForm
         }));
 
         useEffect(() => {
@@ -173,12 +218,8 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
         }, [startTime, endTime, interval, frequency, byWeekDays, endOption]);
 
         useEffect(() => {
-            let recurrenceRule;
-            let duration;
-            if (clsLoader.class) {
-                recurrenceRule = clsLoader.class.events?.[0]?.recurrence_rule;
-                duration = clsLoader.class.events?.[0]?.duration;
-            }
+            const recurrenceRule = initialRule;
+            const duration = initialDuration;
             if (!recurrenceRule || !duration) return;
             try {
                 const cleanRule = recurrenceRule.replace(
@@ -229,21 +270,43 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             const errors = {
                 startTime: '',
                 endTime: '',
-                weekDays: ''
+                weekDays: '',
+                startDate: '',
+                endDate: ''
             };
             setTimeErrors(errors);
         }
-
+        const resetForm = () => {
+            setFrequency('WEEKLY');
+            setInterval(1);
+            setByWeekDays([]);
+            setStartTime('');
+            setEndTime('');
+            setEndOption('never');
+            resetErrors();
+        };
         return (
-            <div className="space-y-6">
-                <DateInput
-                    label="Start Date"
-                    register={register}
-                    interfaceRef={startDateRef}
-                    required
-                    errors={errors}
-                    disabled={disabled}
-                />
+            <div className="space-y-5">
+                <div className="-mb-4">
+                    <DateInput
+                        label="Start Date"
+                        register={register}
+                        interfaceRef={startDateRef}
+                        required
+                        errors={formErrors ? formErrors : {}}
+                        disabled={disabled}
+                        {...(!formErrors && {
+                            onChange: () => {
+                                resetErrors();
+                            }
+                        })}
+                    />
+                </div>
+                {timeErrors.startDate && !formErrors && (
+                    <div className="text-error text-sm h-0">
+                        {timeErrors.startDate}
+                    </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className="label label-text">Start Time</label>
@@ -317,7 +380,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 {frequency === 'WEEKLY' && (
                     <div>
                         <label className="label label-text">Repeat On</label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-0">
                             {weekdays.map(({ label, value }) => (
                                 <button
                                     key={label}
@@ -357,15 +420,27 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 </div>
                 {endOption === 'until' && (
                     <>
-                        <DateInput
-                            label="End Date"
-                            register={register}
-                            interfaceRef={endDateRef}
-                            getValues={getValues}
-                            errors={errors}
-                            required={endOption === 'until'}
-                            disabled={disabled}
-                        />
+                        <div>
+                            <DateInput
+                                label="End Date"
+                                register={register}
+                                interfaceRef={endDateRef}
+                                getValues={getValues}
+                                errors={formErrors ? formErrors : {}}
+                                required={endOption === 'until'}
+                                disabled={disabled}
+                                {...(!formErrors && {
+                                    onChange: () => {
+                                        resetErrors();
+                                    }
+                                })}
+                            />
+                            {timeErrors.endDate && !formErrors && (
+                                <div className="text-error text-sm ">
+                                    {timeErrors.endDate}
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
             </div>

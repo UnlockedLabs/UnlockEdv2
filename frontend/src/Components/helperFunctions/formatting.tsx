@@ -50,3 +50,22 @@ export function timeToMinutes(timeStr: string): number {
     const [hour, minute] = timeStr.split(':').map(Number);
     return hour * 60 + minute;
 }
+
+export function isEndDtBeforeStartDt(
+    endDate: string,
+    startDate: string
+): boolean {
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
+    return end < start;
+}
+
+export function isPastDate(inputDate: string): boolean {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const [year, month, day] = inputDate.split('-').map(Number);
+    const theDate = new Date(year, month - 1, day);
+    return theDate < now;
+}
