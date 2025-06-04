@@ -41,8 +41,8 @@ export const KnowledgeCenterAdminRoutes: RouteObject =
                 children: [
                     {
                         path: 'libraries',
-                        element: <LibraryLayout />,
                         loader: getLibraryLayoutData,
+                        element: <LibraryLayout />,
                         errorElement: <Error />,
                         handle: {
                             title: 'Libraries Management'
@@ -89,8 +89,8 @@ export const KnowledgeCenterRoutes: RouteObject = DeclareAuthenticatedRoutes(
             children: [
                 {
                     path: 'libraries',
-                    element: <LibraryLayout />,
                     loader: getLibraryLayoutData,
+                    element: <LibraryLayout />,
                     errorElement: <Error />,
                     handle: {
                         title: 'Libraries'
