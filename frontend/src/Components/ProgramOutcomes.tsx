@@ -9,27 +9,30 @@ import {
 } from 'recharts';
 import { useContext } from 'react';
 import { ThemeContext } from '@/Context/ThemeContext';
+import { ProgramClassOutcomes } from '@/common';
+import moment from 'moment';
 
-export default function ProgramOutcomes() {
+interface ProgramOutcomesProps {
+    data: ProgramClassOutcomes[];
+}
+
+export default function ProgramOutcomes({ data }: ProgramOutcomesProps) {
     const { theme } = useContext(ThemeContext);
 
     const completionsColor = theme === 'light' ? '#18ABA0' : '#61BAB2';
     const dropoutsColor = theme === 'light' ? '#9CA3AF' : '#6B7280';
     const xAxisLabelColor = theme === 'light' ? '#333' : '#ccc';
     const yAxisLabelColor = theme === 'light' ? '#333' : '#ccc';
+    const formattedData = data.map((d) => {
+        const month = moment(d.month, 'YYYY-MM');
+        const monthAbbrev = month.format('MMM');
+        return { ...d, month: monthAbbrev };
+    });
 
-    const stackedData = [
-        { month: 'Mar', dropouts: 20, completions: 40 },
-        { month: 'Apr', dropouts: 9, completions: 30 },
-        { month: 'May', dropouts: 8, completions: 35 },
-        { month: 'Jun', dropouts: 10, completions: 20 },
-        { month: 'Jul', dropouts: 28, completions: 40 },
-        { month: 'Aug', dropouts: 14, completions: 15 }
-    ];
     return (
         <ResponsiveContainer width="100%" height="100%">
             <BarChart
-                data={stackedData}
+                data={formattedData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
                 <CartesianGrid strokeDasharray="3 3" />
@@ -48,10 +51,10 @@ export default function ProgramOutcomes() {
                     name="Completions"
                 />
                 <Bar
-                    dataKey="dropouts"
+                    dataKey="drops"
                     stackId="a"
                     fill={dropoutsColor}
-                    name="Dropouts"
+                    name="Drops"
                 />
             </BarChart>
         </ResponsiveContainer>

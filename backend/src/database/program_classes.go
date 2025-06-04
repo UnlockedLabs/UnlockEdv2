@@ -2,6 +2,7 @@ package database
 
 import (
 	"UnlockEdv2/src/models"
+	"fmt"
 
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
@@ -109,6 +110,53 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 		return nil, newGetRecordsDBError(err, "programs")
 	}
 	return classDetails, nil
+}
+
+type ProgramClassOutcomes struct {
+	Month       string `json:"month"`
+	Drops       int    `json:"drops"`
+	Completions int    `json:"completions"`
+}
+
+func (db *DB) GetProgramClassOutcomes(id int, args *models.QueryContext) ([]ProgramClassOutcomes, error) {
+	var outcomes []ProgramClassOutcomes
+
+	facilityID := args.FacilityID
+	incompleteStatuses := []models.ProgramEnrollmentStatus{
+		models.EnrollmentIncompleteDropped,
+		models.EnrollmentIncompleteFailedToComplete,
+		models.EnrollmentIncompleteTransfered}
+
+	// Create a set that includes the last 6 months, excluding the current month, of program outcomes
+	const lastSixMonthsSubquery = `(SELECT TO_CHAR(
+		DATE_TRUNC('month', NOW()) - INTERVAL '1 month' * gs.i, 'YYYY-MM') AS month 
+		FROM generate_series(1, 6) AS gs(i))`
+
+	enrollmentsSubquery := `(SELECT * 
+		FROM program_class_enrollments 
+		WHERE class_id IN (
+			SELECT id FROM program_classes 
+			WHERE program_id = ? AND facility_id = ?
+		))`
+
+	query := db.WithContext(args.Ctx).
+		Table(fmt.Sprintf("(%s) AS months", lastSixMonthsSubquery)).
+		Select(`
+			months.month,
+			COALESCE(
+          COUNT(CASE WHEN pce.enrollment_status = ? THEN pce.class_id END), 0) AS completions,
+        	COALESCE(COUNT(CASE WHEN pce.enrollment_status IN (?) THEN pce.class_id END),0) AS drops
+		`, models.EnrollmentCompleted, incompleteStatuses).
+		Joins(fmt.Sprintf(`
+			LEFT JOIN (%s) AS pce 
+			ON TO_CHAR(DATE_TRUNC('month', pce.updated_at), 'YYYY-MM') = months.month
+		`, enrollmentsSubquery), id, facilityID).
+		Group("months.month").
+		Order(args.OrderBy)
+	if err := query.Find(&outcomes).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	return outcomes, nil
 }
 
 func (db *DB) GetProgramClassesHistory(id int, tableName string, args *models.QueryContext) ([]models.ProgramClassesHistory, error) {
