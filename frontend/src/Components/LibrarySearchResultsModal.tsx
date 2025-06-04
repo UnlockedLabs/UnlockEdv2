@@ -235,6 +235,7 @@ const LibrarySearchResultsModal = forwardRef<
     }, [ref, handleSearch]);
     const handleCloseModal = () => {
         setDefaultOption();
+        setSearchTerm('');
         onModalClose();
         setSearchResults(EmptyResult);
         setSuggestions([]);
