@@ -157,12 +157,15 @@ export default function LibaryLayout({
                     />
                 </div>
             )}
-            <LibrarySearchResultsModal
-                ref={modalRef}
-                searchPlaceholder={`Search`}
-                onModalClose={closeSearchModal}
-                useInternalSearchBar={true}
-            />
+            {searchModalLibrary && (
+                <LibrarySearchResultsModal
+                    ref={modalRef}
+                    searchPlaceholder={`Search`}
+                    onModalClose={closeSearchModal}
+                    useInternalSearchBar={true}
+                    libraryId={searchModalLibrary?.id}
+                />
+            )}
         </>
     );
 }

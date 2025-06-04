@@ -35,7 +35,9 @@ const LibrarySearchResultsModal = forwardRef<
         libraryOptions: Option[];
     }) || { libraryOptions: [] };
     const navigate = useNavigate();
-    const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
+    const [selectedOptions, setSelectedOptions] = useState<number[]>(
+        libraryId ? [libraryId] : []
+    );
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [placeholder, setPlaceholder] = useState<string>(searchPlaceholder);
     const [isSearchValid, setIsSearchValid] = useState<boolean>(false);
@@ -167,12 +169,6 @@ const LibrarySearchResultsModal = forwardRef<
             scrollContainerRef.current.scrollTop = 0;
         }
     };
-    const setDefaultOption = () => {
-        const selected = libraryOptions
-            .filter((op) => op.key === Number(libraryId))
-            .map((option) => option.key);
-        setSelectedOptions(selected);
-    };
     const handleSetPage = (page: number) => {
         scrollToTop();
         void handleSearch(page, Number(searchResults.items_per_page));
@@ -208,9 +204,6 @@ const LibrarySearchResultsModal = forwardRef<
         'en-US'
     )} of ${searchResults.total_results}`;
     useEffect(() => {
-        setDefaultOption();
-    }, []);
-    useEffect(() => {
         // Used for externally hooking an event call to execute search.
         const executeSearchListener = (event: CustomEvent<SearchEventPO>) => {
             const { searchTerm, page, perPage } = event.detail;
@@ -234,7 +227,6 @@ const LibrarySearchResultsModal = forwardRef<
         }
     }, [ref, handleSearch]);
     const handleCloseModal = () => {
-        setDefaultOption();
         setSearchTerm('');
         onModalClose();
         setSearchResults(EmptyResult);
