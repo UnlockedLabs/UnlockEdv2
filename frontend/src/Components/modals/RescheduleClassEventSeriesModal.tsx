@@ -22,6 +22,7 @@ import { useAuth } from '@/useAuth';
 import { RRule } from 'rrule';
 import { fromZonedTime } from 'date-fns-tz';
 import { RRuleControl, RRuleFormHandle } from '../inputs/RRuleControl';
+import { addDays } from 'date-fns';
 
 export const RescheduleClassEventSeriesModal = forwardRef(function (
     {
@@ -68,7 +69,8 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
 
         const currentRRule = RRule.fromString(calendarEvent.recurrence_rule);
         const startDate = data.start_dt as string;
-        const untilDate = fromZonedTime(`${startDate}T00:00:00`, user.timezone);
+        const untilRuleDate = addDays(new Date(`${startDate}T00:00:00`), -1);
+        const untilDate = fromZonedTime(untilRuleDate, user.timezone);
         const updatedOptions = {
             ...currentRRule.origOptions,
             until: untilDate
