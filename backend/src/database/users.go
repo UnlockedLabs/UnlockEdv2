@@ -64,15 +64,15 @@ func (db *DB) GetUsersByIDs(userIDs []uint, args *models.QueryContext) ([]models
 	return users, nil
 }
 
-func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transferFacilityId int) ([]string, error) {
-	var programNames []string
+func (db *DB) GetTransferProgramConflicts(ctx context.Context, id uint, transferFacilityId int) ([]models.ResidentTransferProgramConflicts, error) {
+	var programNames []models.ResidentTransferProgramConflicts
 	query := `with transfer_facility_programs as (
 			select name from programs p
 			inner join facilities_programs fp on fp.program_id = p.id
 					and fp.facility_id = ?
 			where p.is_active = true
 		)
-		select pc.name from program_class_enrollments pce
+		select pc.name as class_name, p.name as program_name from program_class_enrollments pce
 		inner join users u on u.id = pce.user_id
 			and u.id = ?
 		inner join program_classes pc on pc.id = pce.class_id

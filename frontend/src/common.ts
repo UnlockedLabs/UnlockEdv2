@@ -50,9 +50,14 @@ export enum FilterResidentNames {
     'Resident Name (Z-A)' = 'name_last desc'
 }
 
+export interface TransferResidentProgamConflicts {
+    program_name: string;
+    class_name: string;
+}
+
 export interface ValidResident {
     user: User;
-    program_names: string[];
+    program_names: TransferResidentProgamConflicts[];
     trans_facility_id: number;
     transfer_to?: string;
     transfer_from?: string;
