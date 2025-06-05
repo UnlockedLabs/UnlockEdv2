@@ -338,24 +338,10 @@ export default function ProgramOverviewDashboard() {
 
             {/* classes table */}
             <div className="card p-4">
-                <table className="table-2 table-fixed mb-4">
-                    {/* colgroup allows us to manually set column widths of table-2 as long as style of table is set to display: table*/}
-                    <colgroup>
-                        <col style={{ minWidth: '2%', maxWidth: '2%' }} />{' '}
-                        {/*Checkbox */}
-                        <col /> {/* Class Name */}
-                        <col /> {/* Instructor Name */}
-                        <col /> {/* Start Date */}
-                        <col /> {/* End Date */}
-                        <col /> {/* Enrollments */}
-                        <col
-                            style={{ minWidth: '12%', maxWidth: '12%' }}
-                        />{' '}
-                        {/* Status */}
-                    </colgroup>
-                    <thead className="bg-background">
-                        <tr style={{ display: 'table-row' }}>
-                            <th className="px-4 py-2 text-left">
+                <table className="table-2 table-fixed w-full mb-4">
+                    <thead className="table-header-group bg-background">
+                        <tr className="!table-row w-full">
+                            <th className="max-w-[2%] w-[2%] px-4 py-2">
                                 <input
                                     type="checkbox"
                                     className="cursor-pointer checkbox checkbox-sm"
@@ -365,39 +351,32 @@ export default function ProgramOverviewDashboard() {
                                     }
                                 />
                             </th>
-                            <th className="px-4 py-2 text-center">
+                            <th className="w-[22%] !max-w-[22%] px-4 py-2">
                                 Class Name
                             </th>
-                            <th className="px-4 py-2 text-center">
+                            <th className="w-[20%] !max-w-[20%]">
                                 Instructor Name
                             </th>
-                            <th className="px-4 py-2 text-center">
-                                Start Date
-                            </th>
-                            <th className="px-4 py-2 text-center">End Date</th>
-                            <th className="px-4 py-2 text-center">
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th className="w-[16%] !max-w-[16%]">
                                 Enrollments
                             </th>
-                            <th className="px-4 py-2 text-center">Status</th>
+                            <th className="w-[16%] !max-w-[16%]">Status</th>
                         </tr>
                     </thead>
 
-                    <tbody style={{ display: 'table-row-group' }}>
+                    <tbody className="!table-row-group w-full">
                         {filteredClasses.map((pc) => {
                             const isSelected = selectedClasses.includes(pc.id);
                             return (
                                 <tr
                                     key={pc.id}
-                                    style={{ display: 'table-row' }}
-                                    className={
-                                        'justify-between' + isArchived(pc)
-                                            ? 'bg-grey-1'
-                                            : `${isSelected ? 'bg-background' : ''}`
-                                    }
+                                    className={`!table-row w-full ${isArchived(pc) ? 'bg-grey-1' : ''} ${isSelected ? 'bg-background' : ''}`}
                                 >
                                     <td
                                         onClick={(e) => e.stopPropagation()}
-                                        className="px-4 py-2 text-left"
+                                        className="!w-[2%] !max-w-[2%] px-4 py-2"
                                     >
                                         <input
                                             type="checkbox"
@@ -414,24 +393,25 @@ export default function ProgramOverviewDashboard() {
                                         />
                                     </td>
 
-                                    <td
-                                        className="px-4 py-2 text-center cursor-pointer"
-                                        onClick={() =>
-                                            navigate(
-                                                `/program-classes/${pc.id}/dashboard`
-                                            )
-                                        }
-                                    >
-                                        <ClampedText
-                                            as="div"
-                                            lines={1}
-                                            className="hover:underline"
+                                    <td className="w-[22%] !max-w-[22%] px-4 py-2 text-center cursor-pointer">
+                                        <div
+                                            onClick={() =>
+                                                navigate(
+                                                    `/program-classes/${pc.id}/dashboard`
+                                                )
+                                            }
                                         >
-                                            {pc.name}
-                                        </ClampedText>
+                                            <ClampedText
+                                                as="div"
+                                                lines={1}
+                                                className="hover:underline"
+                                            >
+                                                {pc.name}
+                                            </ClampedText>
+                                        </div>
                                     </td>
 
-                                    <td className="px-4 py-2 text-center">
+                                    <td className="w-[20%] !max-w-[20%] px-4 py-2 text-center">
                                         <ClampedText as="div" lines={1}>
                                             {pc.instructor_name}
                                         </ClampedText>
@@ -461,7 +441,7 @@ export default function ProgramOverviewDashboard() {
                                             : ''}
                                     </td>
 
-                                    <td className="px-4 py-2">
+                                    <td className="w-[15%] !max-w-[15%] px-4 py-2 text-center">
                                         <ProgressBar
                                             showPercentage={false}
                                             percent={parseFloat(
@@ -476,7 +456,7 @@ export default function ProgramOverviewDashboard() {
                                         />
                                     </td>
 
-                                    <td className="px-4 py-2">
+                                    <td className="w-[15%] !max-w-[15%] px-4 py-2 text-center">
                                         <ClassStatus
                                             status={pc.status}
                                             program_class={pc}
