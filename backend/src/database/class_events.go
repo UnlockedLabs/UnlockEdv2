@@ -436,7 +436,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		c.instructor_name,
 		c.name as class_name,
         STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
-		Joins("JOIN program_classes c ON c.id = pcev.class_id").
+		Joins("JOIN program_classes c ON c.id = pcev.class_id and c.archived_at IS NULL").
 		Joins("JOIN programs p ON p.id = c.program_id").
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").
