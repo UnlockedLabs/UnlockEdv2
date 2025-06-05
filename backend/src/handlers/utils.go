@@ -264,21 +264,22 @@ func adminValidatedFeatureRoute(method string, handler HttpFunc, features models
 }
 
 func (srv *Server) sendEmail(ctx context.Context, subject, bodyText, bodyHTML string) error {
+	charset := aws.String("UTF-8")
 	input := &sesv2.SendEmailInput{
 		Content: &types.EmailContent{
 			Simple: &types.Message{
 				Subject: &types.Content{
 					Data:    aws.String(subject),
-					Charset: aws.String("UTF-8"),
+					Charset: charset,
 				},
 				Body: &types.Body{
 					Text: &types.Content{
 						Data:    aws.String(bodyText),
-						Charset: aws.String("UTF-8"),
+						Charset: charset,
 					},
 					Html: &types.Content{
 						Data:    aws.String(bodyHTML),
-						Charset: aws.String("UTF-8"),
+						Charset: charset,
 					},
 				},
 			},
