@@ -208,7 +208,7 @@ export default function ProgramManagementForm() {
     }
 
     return (
-        <div className="p-4 px-5">
+        <div className="p-4 py-8 space-y-6 remove-input-txt-border">
             {/* program info */}
             <form
                 onSubmit={(e) => {
