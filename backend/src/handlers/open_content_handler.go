@@ -87,8 +87,8 @@ func (srv *Server) handleRequestOpenContent(w http.ResponseWriter, r *http.Reque
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return newBadRequestServiceError(err, "error reading content requests")
 	}
-	context := srv.getQueryContext(r).Ctx
-	claims := r.Context().Value(ClaimsKey).(*Claims)
+	context := r.Context()
+	claims := context.Value(ClaimsKey).(*Claims)
 	username := claims.Username
 	facilityName := claims.FacilityName
 	subject := "Content Request - " + username + " - " + facilityName
@@ -105,23 +105,13 @@ func getBodyHTML(username, facility, bodyText string) string {
 	return fmt.Sprintf(`<div style="font-family: Arial, sans-serif; font-size: 16px;">
         <p>Content Request from %s at %s</p>
         <p>We have received the following information:</p>
-		<table>
-			<thead>
-				<tr>
-					<th>Username</th>
-					<th>Facility Name</th>
-					<th>Content Request</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr>
-					<td>%s</td>
-					<td>%s</td>
-					<td>%s</td>
-				</tr>
-			</tbody>
-		</table>
-		<p>Pasteable response:</p>
+		<h3>Username</h3>
+		<p>%s</p>
+		<h3>Facility Name</h3>
+		<p>%s</p>
+		<h3>Content Request</h3>
+		<p>%s</p>
+		<p>Pasteable string for quick import into csv file:</p>
 		<p>%s</p>
     </div>`, html.EscapeString(username), html.EscapeString(facility), html.EscapeString(username), html.EscapeString(facility), html.EscapeString(bodyText), pasteableString)
 }

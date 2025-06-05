@@ -25,6 +25,7 @@ import ToggleView from '@/Components/ToggleView';
 import {
     closeModal,
     RequestContentModal,
+    showModal,
     TextModalType,
     TextOnlyModal
 } from '@/Components/modals';
@@ -121,7 +122,7 @@ export default function OpenContent() {
 
     function successRequestContent() {
         closeModal(requestContentModal);
-        thankYouModalRef.current?.showModal();
+        showModal(thankYouModalRef);
     }
 
     // Search handling
@@ -133,14 +134,12 @@ export default function OpenContent() {
             return (
                 <div
                     onClick={() => {
-                        searchModalRef.current?.showModal();
+                        showModal(searchModalRef);
                     }}
                     id="knowledge-center-search"
                 >
                     <LibrarySearchBar
-                        onSearchClick={() =>
-                            searchModalRef.current?.showModal()
-                        }
+                        onSearchClick={() => showModal(searchModalRef)}
                         searchPlaceholder="Search..."
                         searchTerm={searchTerm}
                         changeCallback={setSearchTerm}
@@ -233,9 +232,7 @@ export default function OpenContent() {
                     ) : (
                         <button
                             className="button"
-                            onClick={() =>
-                                requestContentModal.current?.showModal()
-                            }
+                            onClick={() => showModal(requestContentModal)}
                         >
                             Request Content
                         </button>

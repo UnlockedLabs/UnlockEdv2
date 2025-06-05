@@ -9,7 +9,7 @@ import LibrarySearchResultsModal from '@/Components/LibrarySearchResultsModal';
 import { initialTourState, useTourContext } from '@/Context/TourContext';
 import { targetToStepIndexMap } from './UnlockEdTour';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
-import { closeModal } from './modals';
+import { closeModal, showModal } from './modals';
 
 export default function LibaryLayout({
     studentView
@@ -38,7 +38,7 @@ export default function LibaryLayout({
     //execute when the the searchModalLibrary changes
     useEffect(() => {
         if (searchModalLibrary && modalRef.current) {
-            modalRef.current.showModal();
+            showModal(modalRef);
         }
     }, [searchModalLibrary]);
 
