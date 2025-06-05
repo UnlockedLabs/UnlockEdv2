@@ -343,9 +343,9 @@ func (srv *Server) handleResidentVerification(w http.ResponseWriter, r *http.Req
 		return writeJsonResponse(w, http.StatusNotFound, "Resident not found")
 	}
 	transferNotes := struct {
-		User            models.User `json:"user"`
-		ProgramNames    []string    `json:"program_names"`
-		TransFacilityID int         `json:"trans_facility_id"`
+		User            models.User                               `json:"user"`
+		ProgramNames    []models.ResidentTransferProgramConflicts `json:"program_names"`
+		TransFacilityID int                                       `json:"trans_facility_id"`
 	}{
 		User:            *user,
 		ProgramNames:    programNames,

@@ -40,33 +40,42 @@ export default function TransferSummaryPanel({
             </p>
             <ul className="body list-disc list-outside pl-5">
                 <li>
-                    Resident account will be removed from the current facility.
+                    The resident will be removed from {resident?.transfer_from}.
                 </li>
                 <li>
-                    Resident will no longer be enrolled in any active classes or
+                    The resident will be unenrolled from all active classes and
                     programs.
                 </li>
                 {resident?.program_names &&
                     resident?.program_names.length != 0 && (
                         <>
                             <li>
-                                Resident is enrolled in the following classes
-                                not offered at the new facility:
+                                The following programs are not available at the
+                                new facility:
                                 <ul className="list-disc list-outside pl-5">
-                                    {resident?.program_names.map((name) => (
-                                        <li key={name}>{name}</li>
-                                    ))}
+                                    {resident?.program_names.map(
+                                        (conflict, idx) => (
+                                            <li
+                                                key={idx}
+                                            >{`${conflict.class_name} (${conflict.program_name})`}</li>
+                                        )
+                                    )}
                                 </ul>
                             </li>
                         </>
                     )}
-                <li>Resident account will be added to the new facility.</li>
+                <li>
+                    The resident's account will be added to{' '}
+                    {resident?.transfer_to}.
+                </li>
                 <li>
                     Staff must re-enroll resident in available programs at new
                     facility.
                 </li>
-                <li>Account history will remain on the resident profile.</li>
-                <li>Resident favorites and history will be saved.</li>
+                <li>
+                    The resident's account history and favorites will be
+                    preserved.
+                </li>
             </ul>
             <div className="body py-4 inline-flex items-center gap-1">
                 <ULIComponent icon={ExclamationTriangleIcon} /> This action
