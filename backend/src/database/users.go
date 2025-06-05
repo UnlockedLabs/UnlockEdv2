@@ -633,28 +633,41 @@ func (db *DB) UpdateFailedLogin(userID uint) error {
 	})
 }
 
-func (db *DB) IsAccountLocked(userID uint) (bool, time.Duration, int, error) {
+type FailedLoginStatus struct {
+	IsLocked     bool
+	LockDuration time.Duration
+	AttemptCount int
+}
+
+func (db *DB) IsAccountLocked(userID uint) (FailedLoginStatus, error) {
 	var rec models.FailedLoginAttempts
+	var status FailedLoginStatus
 	now := time.Now()
 	err := db.First(&rec, "user_id = ?", userID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, 0, 0, nil
+		status.IsLocked = false
+		status.LockDuration = 0
+		status.AttemptCount = 0
+		return status, nil
 	} else if err != nil {
-		return false, 0, 0, err
+		return status, err
 	}
-
 	if now.Sub(*rec.FirstAttemptAt) >= models.WindowDuration {
 		err := db.ResetFailedLoginAttempts(userID)
 		if err != nil {
-			return false, 0, 0, err
+			return status, err
 		}
 	}
-
 	if rec.LockedUntil != nil && rec.LockedUntil.After(time.Now()) {
-		return true, time.Until(*rec.LockedUntil), rec.AttemptCount, nil
+		status.IsLocked = true
+		status.LockDuration = time.Until(*rec.LockedUntil)
+		status.AttemptCount = rec.AttemptCount
+		return status, nil
 	}
-
-	return false, 0, rec.AttemptCount, nil
+	status.IsLocked = false
+	status.LockDuration = 0
+	status.AttemptCount = rec.AttemptCount
+	return status, nil
 }
 
 func (db *DB) ResetFailedLoginAttempts(userID uint) error {

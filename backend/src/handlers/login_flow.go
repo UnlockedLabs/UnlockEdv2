@@ -56,14 +56,14 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return newUnauthorizedServiceError()
 	}
-	isLockedOut, howLong, attempts, err := s.Db.IsAccountLocked(user.ID)
+	lockedStatus, err := s.Db.IsAccountLocked(user.ID)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
-	if isLockedOut {
+	if lockedStatus.IsLocked {
 		log.infof("User %d locked out", user.ID)
-		w.Header().Set("Retry-After", strconv.Itoa(int(howLong.Seconds())))
-		msg := fmt.Sprintf("Account locked. Try again in %d minutes.", int(howLong.Minutes()))
+		w.Header().Set("Retry-After", strconv.Itoa(int(lockedStatus.LockDuration.Seconds())))
+		msg := fmt.Sprintf("Account locked. Try again in %d minutes.", int(lockedStatus.LockDuration.Minutes()))
 		s.errorResponse(w, int(http.StatusTooManyRequests), msg)
 		return nil
 	}
@@ -99,7 +99,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 		}
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
 	}
-	if attempts > 0 {
+	if lockedStatus.AttemptCount > 0 {
 		err = s.Db.ResetFailedLoginAttempts(user.ID)
 		if err != nil {
 			log.error("error resetting failed login attempts", err)
