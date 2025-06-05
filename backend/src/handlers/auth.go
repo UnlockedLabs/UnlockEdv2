@@ -82,6 +82,16 @@ func claimsFromUser(user *models.User) *Claims {
 func (s *Server) authMiddleware(next http.Handler, resolver RouteResolver) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := log.Fields{"handler": "authMiddleware"}
+		if s.testingMode {
+			if testClaimsJSON := r.Header.Get("X-Test-Claims"); testClaimsJSON != "" {
+				var testClaims Claims
+				if err := json.Unmarshal([]byte(testClaimsJSON), &testClaims); err == nil {
+					ctx := context.WithValue(r.Context(), ClaimsKey, &testClaims)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
+		}
 		claims, hasCookie, err := s.validateOrySession(r)
 		if err != nil {
 			if hasCookie {
