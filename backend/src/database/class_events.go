@@ -49,32 +49,32 @@ func (db *DB) GetEventById(eventId int) (*models.ProgramClassEvent, error) {
 }
 
 func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, events []models.ProgramClassEvent) error {
-	trans := db.WithContext(ctx.Ctx).Begin()
-	if trans.Error != nil {
-		return NewDBError(trans.Error, "unable to start the database transaction")
+	tx := db.WithContext(ctx.Ctx).Begin()
+	if tx.Error != nil {
+		return NewDBError(tx.Error, "unable to start the database transaction")
 	}
 
 	var changeLogEntry *models.ChangeLogEntry
 	for _, event := range events {
 		if event.ID == 0 {
 			changeLogEntry = models.NewChangeLogEntry("program_classes", "event_rescheduled_series", models.StringPtr(""), &event.RecurrenceRule, event.ClassID, ctx.UserID)
-			if err := trans.Create(&event).Error; err != nil {
-				trans.Rollback()
+			if err := tx.Create(&event).Error; err != nil {
+				tx.Rollback()
 				return newCreateDBError(err, "program_class_events")
 			}
 		} else {
-			if err := trans.Model(&models.ProgramClassEvent{}).Where("id = ?", event.ID).Update("recurrence_rule", event.RecurrenceRule).Error; err != nil {
-				trans.Rollback()
+			if err := tx.Model(&models.ProgramClassEvent{}).Where("id = ?", event.ID).Update("recurrence_rule", event.RecurrenceRule).Error; err != nil {
+				tx.Rollback()
 				return newUpdateDBError(err, "program_class_events")
 			}
 		}
 	}
 
-	if err := trans.Create(&changeLogEntry).Error; err != nil {
-		trans.Rollback()
+	if err := tx.Create(&changeLogEntry).Error; err != nil {
+		tx.Rollback()
 		return newCreateDBError(err, "change_log_entries")
 	}
-	if err := trans.Commit().Error; err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return NewDBError(err, "unable to commit the database transaction")
 	}
 	return nil
