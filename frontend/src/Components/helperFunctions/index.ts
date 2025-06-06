@@ -4,5 +4,6 @@ export {
     formatDuration,
     timeToMinutes,
     isEndDtBeforeStartDt,
-    isPastDate
+    isPastDate,
+    parseRRule
 } from './formatting';
