@@ -83,7 +83,10 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
         };
         const response = await API.put(
             `program-classes/${calendarEvent.class_id}/events`,
-            [rescheduledEventSeries, closeOriginalEventSeries]
+            {
+                event_series: rescheduledEventSeries,
+                closed_event_series: closeOriginalEventSeries
+            }
         );
 
         checkResponse(
