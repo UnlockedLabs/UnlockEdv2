@@ -1,4 +1,5 @@
 import { Timezones } from '@/common';
+import { RRule } from 'rrule';
 
 export function formatPercent(value?: number | string): string {
     if (typeof value === 'string') return value;
@@ -68,4 +69,25 @@ export function isPastDate(inputDate: string): boolean {
     const [year, month, day] = inputDate.split('-').map(Number);
     const theDate = new Date(year, month - 1, day);
     return theDate < now;
+}
+
+export function parseRRule(
+    rRule: string,
+    timezone: string,
+    startDtOnly?: boolean
+): string {
+    let rule;
+    try {
+        rule = RRule.fromString(rRule);
+        const eventDate = startDtOnly ? rule.options.dtstart : rule.all()[0];
+        return eventDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            timeZone: timezone
+        });
+    } catch (error) {
+        console.error('error parsing rrule, error is: ', error);
+    }
+    return rRule; //return rRule back if errors
 }
