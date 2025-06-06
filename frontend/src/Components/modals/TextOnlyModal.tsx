@@ -34,7 +34,13 @@ export const TextOnlyModal = forwardRef(function TextModal(
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
     return (
-        <dialog ref={ref} className="modal">
+        <dialog
+            ref={ref}
+            className="modal"
+            onKeyDown={(event) => {
+                if (event.key === 'Escape') onClose();
+            }}
+        >
             <div className={`modal-box ` + (width ? width : '')}>
                 <CloseX close={onClose} />
                 <div className="flex flex-col gap-6">
