@@ -1,6 +1,6 @@
 import { TextOnlyModal } from './TextOnlyModal';
 import { closeModal, TextModalType } from '.';
-import { forwardRef } from 'react';
+import { forwardRef, useEffect } from 'react';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { KeyedMutator } from 'swr';
@@ -57,10 +57,20 @@ const ModifyClassModal = forwardRef(function (
         setSelectedStatus: React.Dispatch<
             React.SetStateAction<SelectedClassStatus>
         >;
-        onClose?: () => void;
+        onClose: () => void;
     },
     ref: React.ForwardedRef<HTMLDialogElement>
 ) {
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [onClose]);
     const checkResponse = useCheckResponse({
         mutate: mutate,
         refModal: ref
