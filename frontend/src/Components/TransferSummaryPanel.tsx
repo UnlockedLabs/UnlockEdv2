@@ -77,9 +77,12 @@ export default function TransferSummaryPanel({
                     preserved.
                 </li>
             </ul>
-            <div className="body py-4 inline-flex items-center gap-1">
-                <ULIComponent icon={ExclamationTriangleIcon} /> This action
-                cannot be undone.
+            <div className="body py-4 inline-flex items-center gap-1 text-error">
+                <ULIComponent
+                    iconClassName="text-error"
+                    icon={ExclamationTriangleIcon}
+                />{' '}
+                This action cannot be undone.
             </div>
         </>
     );
