@@ -69,8 +69,8 @@ export default function TransferSummaryPanel({
                     {resident?.transfer_to}.
                 </li>
                 <li>
-                    Staff must re-enroll resident in available programs at new
-                    facility.
+                    Staff must re-enroll resident in available programs at{' '}
+                    {resident?.transfer_to}.
                 </li>
                 <li>
                     The resident's account history and favorites will be
