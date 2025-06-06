@@ -20,7 +20,7 @@ import { KeyedMutator } from 'swr';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useAuth } from '@/useAuth';
 import { RRule } from 'rrule';
-import { fromZonedTime } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { RRuleControl, RRuleFormHandle } from '../inputs/RRuleControl';
 import { addDays } from 'date-fns';
 
@@ -126,6 +126,26 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                               register={formDataRef.register}
                               startDateRef="start_dt"
                               endDateRef="end_dt"
+                              initialDuration={calendarEvent?.duration}
+                              initialRule={calendarEvent?.recurrence_rule}
+                              startDateVal={
+                                  calendarEvent?.start &&
+                                  toZonedTime(
+                                      calendarEvent?.start,
+                                      user?.timezone
+                                  )
+                                      .toISOString()
+                                      .split('T')[0]
+                              }
+                              endDateVal={
+                                  calendarEvent?.end &&
+                                  toZonedTime(
+                                      calendarEvent?.end,
+                                      user?.timezone
+                                  )
+                                      .toISOString()
+                                      .split('T')[0]
+                              }
                           />
                       )
                   }

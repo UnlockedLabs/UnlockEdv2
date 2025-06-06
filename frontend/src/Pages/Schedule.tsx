@@ -165,6 +165,7 @@ export default function Schedule() {
             )}
             {selectedEvent && (
                 <RescheduleClassEventSeriesModal
+                    key={Date.now()}
                     mutate={mutateEvents}
                     calendarEvent={selectedEvent}
                     ref={rescheduleClassEventSeriesModal}

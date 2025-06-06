@@ -28,8 +28,14 @@ import { isCompletedCancelledOrArchived } from './ProgramOverviewDashboard';
 import { parseDurationToMs } from '@/Components/helperFunctions/formatting';
 import { RRule } from 'rrule';
 import moment from 'moment';
+import { toZonedTime } from 'date-fns-tz';
+import { useAuth } from '@/useAuth';
 
 export default function ClassManagementForm() {
+    const { user } = useAuth();
+    if (!user) {
+        return null;
+    }
     const clsLoader = useLoaderData() as ClassLoaderData;
     const [rruleIsValid, setRruleIsValid] = useState(false);
     const rruleFormRef = useRef<RRuleFormHandle>(null);
@@ -143,13 +149,22 @@ export default function ClassManagementForm() {
 
     function setEditFormValues(editCls: Class) {
         const { credit_hours, ...values } = editCls;
+        //this is temporary fix for end date (create ticket to fix after discussion)
+        const rule = RRule.fromString(editCls.events[0].recurrence_rule);
+        let ruleEndDate = '';
+        if (!editCls.end_dt && rule.options.until && user) {
+            ruleEndDate = toZonedTime(rule.options.until, user.timezone)
+                .toISOString()
+                .split('T')[0];
+        }
+
         reset({
             ...values,
             ...(credit_hours > 0 ? { credit_hours } : {}),
             start_dt: new Date(editCls.start_dt).toISOString().split('T')[0],
             end_dt: editCls.end_dt
                 ? new Date(editCls.end_dt).toISOString().split('T')[0]
-                : editCls.end_dt
+                : ruleEndDate
         });
     }
 
