@@ -43,6 +43,8 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 			schedule = EveryDaytimeHour
 		}
 		cj.Schedule = schedule
+	case string(ProgOverviewJob):
+		cj.Schedule = EveryDaytimeHour
 	default:
 		cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
 	}
@@ -86,12 +88,14 @@ const (
 	ProviderPlatformJob  = 1
 	OpenContentJob       = 2
 	ProgramManagementJob = 3
+	ProgramOverviewJob   = 4
 
 	GetMilestonesJob JobType = "get_milestones"
 	GetCoursesJob    JobType = "get_courses"
 	GetActivityJob   JobType = "get_activity"
 
 	DailyProgHistoryJob    JobType   = "daily_prog_history"
+	ProgOverviewJob        JobType   = "programs_overview"
 	ScrapeKiwixJob         JobType   = "scrape_kiwix"
 	RetryVideoDownloadsJob JobType   = "retry_video_downloads"
 	RetryManualDownloadJob JobType   = "retry_manual_download"
@@ -105,7 +109,7 @@ const (
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
-var AllProgramManagementJobs = []JobType{DailyProgHistoryJob}
+var AllProgramManagementJobs = []JobType{DailyProgHistoryJob, ProgOverviewJob}
 
 func (jt JobType) IsVideoJob() bool {
 	switch jt {

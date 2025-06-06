@@ -4,7 +4,6 @@ import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -397,77 +396,38 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 
 func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
-	var tableName string
-	var totalActiveFacilitiesQuery string
-	var totalActiveFacilitiesSubQuery string
-	var facilitySubQueryFilter string
-	if adminRole == models.FacilityAdmin {
-		tableName = "daily_program_facility_history"
-		facilitySubQueryFilter = fmt.Sprintf("AND facility_id = %d", args.FacilityID)
-	} else {
-		tableName = "daily_program_facilities_history"
-		totalActiveFacilitiesQuery = "mr.total_active_facilities,"
-		totalActiveFacilitiesSubQuery = "total_active_facilities,"
+
+	viewName := "programs_overview_all_time"
+	switch {
+	case timeFilter >= 90:
+		viewName = "programs_overview_90d"
+	case timeFilter >= 30:
+		viewName = "programs_overview_30d"
 	}
-	tx := db.WithContext(args.Ctx).Model(&models.Program{}).
-		Select(fmt.Sprintf(`
-			programs.id AS program_id,
-			programs.name AS program_name,
-			programs.archived_at AS archived_at,
-			%s
-			mr.total_enrollments AS total_enrollments,
-			mr.total_active_enrollments AS total_active_enrollments,
-			mr.total_classes AS total_classes,
-			(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 AS completion_rate,
-			(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 AS attendance_rate,
-			STRING_AGG(DISTINCT pt.program_type::text, ',') AS program_types,
-			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
-			programs.funding_type AS funding_type,
-			BOOL_OR(programs.is_active) AS status
-		`, totalActiveFacilitiesQuery))
-	if timeFilter > 0 {
-		joinCondition := fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id AND dpfh.date >= ?`, tableName)
-		tx = tx.Joins(joinCondition, time.Now().AddDate(0, 0, -timeFilter))
-	} else {
-		tx = tx.Joins(fmt.Sprintf(`LEFT JOIN %s AS dpfh ON dpfh.program_id = programs.id`, tableName))
-	}
-	tx = tx.Joins(fmt.Sprintf(`
-			LEFT JOIN (
-				SELECT 
-					program_id,
-					%s
-					total_enrollments,
-					total_active_enrollments,
-					total_classes
-				FROM %s
-				WHERE date = (SELECT MAX(date) FROM %s)
-				%s
-			) AS mr ON mr.program_id = programs.id
-		`, totalActiveFacilitiesSubQuery, tableName, tableName, facilitySubQueryFilter))
-	tx = tx.Joins("JOIN program_types pt ON pt.program_id = programs.id").
-		Joins("JOIN program_credit_types pct ON pct.program_id = programs.id").
-		Group(totalActiveFacilitiesQuery + "programs.id, programs.name, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type")
-	if adminRole == models.FacilityAdmin {
-		tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", args.FacilityID)
-	}
+
+	tx := db.WithContext(args.Ctx).Table(viewName)
+
 	if !includeArchived {
-		tx = tx.Where("programs.archived_at IS NULL")
+		tx = tx.Where("archived_at IS NULL")
+	}
+	if args.Search != "" {
+		search := args.SearchQuery()
+		tx = tx.Where("LOWER(program_name) LIKE ? OR LOWER(description) LIKE ?", search, search)
 	}
 	if len(args.Tags) > 0 {
-		tx = tx.Where("pt.program_id IN (?)", args.Tags)
-	}
-	tx = tx.Order(args.OrderClause("programs.created_at desc"))
-	if args.Search != "" {
-		tx = tx.Where("LOWER(name) LIKE ? OR LOWER(description) LIKE ? ", args.SearchQuery(), args.SearchQuery())
+		for _, tag := range args.Tags {
+			tx = tx.Where("program_types ILIKE ?", "%"+tag+"%")
+		}
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
-		return nil, newGetRecordsDBError(err, "programs table")
+		return nil, newGetRecordsDBError(err, viewName)
 	}
-	if err := tx.Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
-		return programsTable, newGetRecordsDBError(err, "programs table")
-	}
-	return programsTable, nil
 
+	if err := tx.Order(args.OrderClause("program_name ASC")).Limit(args.PerPage).Offset(args.CalcOffset()).Scan(&programsTable).Error; err != nil {
+		return nil, newGetRecordsDBError(err, viewName)
+	}
+
+	return programsTable, nil
 }
 
 func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (models.ActivityHistoryResponse, error) {

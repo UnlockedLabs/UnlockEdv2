@@ -6,33 +6,32 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
-func InsertDailyProgHistory(ctx context.Context, db *gorm.DB) error {
-	if err := InsertDailyProgramsFacilitiesHistory(ctx, db); err != nil {
+func (sh *ServiceHandler) InsertDailyProgHistory(ctx context.Context) error {
+	if err := sh.InsertDailyProgramsFacilitiesHistory(ctx); err != nil {
 		log.Errorln("error inserting daily programs facilities history")
 		return err
 	}
-	if err := InsertDailyProgramFacilitiesHistory(ctx, db); err != nil {
+	if err := sh.InsertDailyProgramFacilitiesHistory(ctx); err != nil {
 		log.Errorln("error inserting daily program facilities history")
 		return err
 	}
-	if err := InsertDailyProgramFacilityHistory(ctx, db); err != nil {
+	if err := sh.InsertDailyProgramFacilityHistory(ctx); err != nil {
 		log.Errorln("error inserting daily program facility history")
 		return err
 	}
 	return nil
 }
 
-func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) error {
+func (sh *ServiceHandler) InsertDailyProgramsFacilitiesHistory(ctx context.Context) error {
 	var history models.DailyProgramsFacilitiesHistory
 	var programStats struct {
 		TotalPrograms         int64 `json:"total_programs"`
 		TotalActivePrograms   int64 `json:"total_active_programs"`
 		TotalArchivedPrograms int64 `json:"total_archived_programs"`
 	}
-	if err := db.WithContext(ctx).Model(&models.Program{}).
+	if err := sh.db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			COUNT(*) AS total_programs,
 			SUM(CASE WHEN is_active = true AND archived_at IS NULL THEN 1 ELSE 0 END) AS total_active_programs,
@@ -50,7 +49,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 		TotalEnrollments int64 `json:"total_enrollments"`
 		TotalCompletions int64 `json:"total_completions"`
 	}
-	if err := db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
+	if err := sh.db.WithContext(ctx).Model(&models.ProgramClassEnrollment{}).
 		Select(`
 			COUNT(*) AS total_enrollments,
 			SUM(CASE WHEN enrollment_status = 'Completed' THEN 1 ELSE 0 END) AS total_completions
@@ -63,7 +62,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	history.TotalCompletions = enrollmentStats.TotalCompletions
 
 	var totalProgramOfferings int64
-	if err := db.WithContext(ctx).Model(&models.FacilitiesPrograms{}).
+	if err := sh.db.WithContext(ctx).Model(&models.FacilitiesPrograms{}).
 		Select("COUNT(*) AS total_program_offerings").
 		Joins("JOIN programs ON programs.id = facilities_programs.program_id AND programs.is_active = true AND programs.archived_at IS NULL").
 		Scan(&totalProgramOfferings).Error; err != nil {
@@ -73,7 +72,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	history.TotalProgramOfferings = totalProgramOfferings
 
 	var totalFacilities int64
-	if err := db.WithContext(ctx).Model(&models.Facility{}).
+	if err := sh.db.WithContext(ctx).Model(&models.Facility{}).
 		Select("COUNT(*) AS total_facilities").
 		Scan(&totalFacilities).Error; err != nil {
 		log.Errorln("error getting total facilities")
@@ -85,7 +84,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 		TotalAttendancesMarked int64 `json:"total_attendances_marked"`
 		TotalStudentsPresent   int64 `json:"total_students_present"`
 	}
-	if err := db.WithContext(ctx).Model(&models.ProgramClassEventAttendance{}).
+	if err := sh.db.WithContext(ctx).Model(&models.ProgramClassEventAttendance{}).
 		Select(`
 		COUNT(CASE WHEN attendance_status IS NOT NULL AND attendance_status != '' THEN 1 END) AS total_attendances_marked,
 		COALESCE(SUM(CASE WHEN attendance_status = 'present' THEN 1 ELSE 0 END), 0) AS total_students_present
@@ -100,7 +99,7 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	history.Date = time.Now()
 
 	log.Infof("History struct before insert: %+v", history)
-	if err := db.Create(&history).Error; err != nil {
+	if err := sh.db.WithContext(ctx).Create(&history).Error; err != nil {
 		log.Errorln("error creating daily program history")
 		return err
 	}
@@ -108,9 +107,9 @@ func InsertDailyProgramsFacilitiesHistory(ctx context.Context, db *gorm.DB) erro
 	return nil
 }
 
-func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error {
-	programs := make([]models.DailyProgramFacilitiesHistory, 10)
-	tx := db.Model(&models.Program{}).
+func (sh *ServiceHandler) InsertDailyProgramFacilitiesHistory(ctx context.Context) error {
+	programs := make([]models.DailyProgramFacilitiesHistory, 0, 10)
+	tx := sh.db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
 			COUNT(DISTINCT CASE WHEN programs.is_active AND programs.archived_at IS NULL THEN fp.facility_id END) AS total_active_facilities,
@@ -139,7 +138,7 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 	}
 
 	if len(programs) > 0 {
-		if err := db.Create(&programs).Error; err != nil {
+		if err := sh.db.WithContext(ctx).Create(&programs).Error; err != nil {
 			log.Errorln("error creating daily program facilities history")
 			return err
 		}
@@ -148,9 +147,9 @@ func InsertDailyProgramFacilitiesHistory(ctx context.Context, db *gorm.DB) error
 	return nil
 }
 
-func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
+func (sh *ServiceHandler) InsertDailyProgramFacilityHistory(ctx context.Context) error {
 	histories := make([]models.DailyProgramFacilityHistory, 25)
-	tx := db.Model(&models.Program{}).
+	tx := sh.db.WithContext(ctx).Model(&models.Program{}).
 		Select(`
 			programs.id AS program_id,
 			fp.facility_id AS facility_id,
@@ -179,11 +178,24 @@ func InsertDailyProgramFacilityHistory(ctx context.Context, db *gorm.DB) error {
 	}
 
 	if len(histories) > 0 {
-		if err := db.Create(&histories).Error; err != nil {
+		if err := sh.db.WithContext(ctx).Create(&histories).Error; err != nil {
 			log.Errorln("error creating daily program facility history")
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (sh *ServiceHandler) refreshProgramOverviewViews(ctx context.Context) error {
+	views := []string{"all_time", "30d", "90d"}
+	for _, view := range views {
+		viewName := "programs_overview_" + view
+		err := sh.db.WithContext(ctx).Exec("REFRESH MATERIALIZED VIEW IF EXISTS " + viewName).Error
+		if err != nil {
+			logger().Errorf("failed to refresh materialized view %s: %v", viewName, err)
+			return err
+		}
+	}
 	return nil
 }

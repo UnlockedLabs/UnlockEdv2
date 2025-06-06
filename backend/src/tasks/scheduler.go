@@ -52,20 +52,22 @@ func (s *Scheduler) generateTasks() ([]models.RunnableTask, error) {
 }
 
 func (s *Scheduler) generateProgramHistoryTasks() ([]models.RunnableTask, error) {
-	tasksToRun := make([]models.RunnableTask, 0, 1)
-	job, err := s.createIfNotExists(models.DailyProgHistoryJob)
-	if err != nil {
-		log.Errorf("failed to create job: %v", err)
-		return nil, err
+	tasksToRun := make([]models.RunnableTask, 0, len(models.AllProgramManagementJobs))
+	for _, jobType := range models.AllProgramManagementJobs {
+		job, err := s.createIfNotExists(jobType)
+		if err != nil {
+			log.Errorf("failed to create job: %v", err)
+			return nil, err
+		}
+		newTask := models.RunnableTask{JobID: job.ID, Status: models.StatusPending}
+		err = s.intoTask(job, nil, &newTask)
+		if err != nil {
+			log.Errorf("failed to create task: %v", err)
+			return nil, err
+		}
+		tasksToRun = append(tasksToRun, newTask)
 	}
-	newTask := models.RunnableTask{JobID: job.ID, Status: models.StatusPending}
-	err = s.intoTask(job, nil, &newTask)
-	if err != nil {
-		log.Errorf("failed to create task: %v", err)
-		return nil, err
-	}
-	tasksToRun = append(tasksToRun, newTask)
-	log.Infof("Generated %d total tasks", len(tasksToRun))
+	log.Infof("Generated %d program management tasks", len(tasksToRun))
 	return tasksToRun, nil
 }
 
@@ -117,7 +119,7 @@ func (s *Scheduler) generateProviderTasks() ([]models.RunnableTask, error) {
 		return nil, err
 	}
 	log.Infof("Found %d active providers", len(providers))
-	tasksToRun := make([]models.RunnableTask, 0)
+	tasksToRun := make([]models.RunnableTask, 0, len(providers)*3)
 	for _, provider := range providers {
 		provJobs := provider.GetDefaultCronJobs()
 		for _, jobType := range provJobs {
