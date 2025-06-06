@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (srv *Server) registerClassEventsRoutes() []routeDef {
@@ -88,17 +89,39 @@ func (srv *Server) handleRescheduleEventSeries(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return newInvalidIdServiceError(err, "class_id")
 	}
-	var events []models.ProgramClassEvent
-	if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+	var eventSeriesRequest struct {
+		EventSeries       models.ProgramClassEvent `json:"event_series"`
+		ClosedEventSeries models.ProgramClassEvent `json:"closed_event_series"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&eventSeriesRequest); err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
-
-	for i, j := 0, len(events); i < j; i++ {
-		events[i].ClassID = uint(classID)
+	args := srv.getQueryContext(r)
+	args.All = true
+	allEvents, err := srv.Db.GetClassEvents(&args, classID)
+	if err != nil {
+		return newDatabaseServiceError(err)
 	}
-
-	ctx := srv.getQueryContext(r)
-	err = srv.Db.CreateRescheduleEventSeries(&ctx, events)
+	eventSeriesRequest.EventSeries.ClassID = uint(classID)
+	eventSeriesRequest.ClosedEventSeries.ClassID = uint(classID)
+	events := []models.ProgramClassEvent{
+		eventSeriesRequest.EventSeries,
+		eventSeriesRequest.ClosedEventSeries,
+	}
+	var maxEvent *models.ProgramClassEvent
+	for i := range allEvents {
+		if maxEvent == nil || allEvents[i].ID > maxEvent.ID {
+			maxEvent = &allEvents[i]
+		}
+	}
+	if maxEvent != nil && maxEvent.ID != eventSeriesRequest.ClosedEventSeries.ID { //making sure of only one active rrule
+		untilDate := getUntilDateFromRule(eventSeriesRequest.ClosedEventSeries.RecurrenceRule)
+		if untilDate != "" {
+			maxEvent.RecurrenceRule = replaceOrAddUntilDate(maxEvent.RecurrenceRule, untilDate)
+			events = append(events, *maxEvent)
+		}
+	}
+	err = srv.Db.CreateRescheduleEventSeries(&args, events)
 	if err != nil {
 		return newDatabaseServiceError(err)
 	}
@@ -139,4 +162,29 @@ func (srv *Server) handleGetProgramClassEvents(w http.ResponseWriter, r *http.Re
 	}
 
 	return writePaginatedResponse(w, http.StatusOK, instances, qryCtx.IntoMeta())
+}
+
+func getUntilDateFromRule(rRule string) string {
+	for _, rRulePart := range strings.Split(rRule, ";") {
+		if strings.HasPrefix(rRulePart, "UNTIL=") {
+			return strings.TrimPrefix(rRulePart, "UNTIL=")
+		}
+	}
+	return ""
+}
+
+func replaceOrAddUntilDate(rRule, untilDate string) string {
+	rRuleParts := strings.Split(rRule, ";")
+	untilExists := false
+	for i, part := range rRuleParts {
+		if strings.HasPrefix(part, "UNTIL=") {
+			rRuleParts[i] = "UNTIL=" + untilDate
+			untilExists = true
+			break
+		}
+	}
+	if !untilExists {
+		rRuleParts = append(rRuleParts, "UNTIL="+untilDate)
+	}
+	return strings.Join(rRuleParts, ";")
 }

@@ -19,14 +19,19 @@ Everything stored in database will ALWAYS be in UTC
 and converted when returning to the client
 */
 
-func (db *DB) GetClassEvents(page, perPage, classId int) (int64, []models.ProgramClassEvent, error) {
-	content := []models.ProgramClassEvent{}
-	total := int64(0)
-	if err := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Find(&content).Count(&total).
-		Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "program_class_events")
+func (db *DB) GetClassEvents(args *models.QueryContext, classId int) ([]models.ProgramClassEvent, error) {
+	events := []models.ProgramClassEvent{}
+	tx := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id = ?", classId)
+	if !args.All {
+		if err := tx.Count(&args.Total).Error; err != nil {
+			return nil, newGetRecordsDBError(err, "program_class_events")
+		}
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
-	return total, content, nil
+	if err := tx.Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	return events, nil
 }
 
 func (db *DB) CreateNewEvent(classId int, form *models.ProgramClassEvent) (*models.ProgramClassEvent, error) {
