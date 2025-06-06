@@ -40,6 +40,8 @@ interface RRuleControlProp {
     getValues: UseFormGetValues<any>; // eslint-disable-line
     initialRule?: string;
     initialDuration?: string;
+    startDateVal?: string;
+    endDateVal?: string;
 }
 export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
     function RRuleControl(
@@ -52,7 +54,9 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             formErrors,
             register,
             initialRule,
-            initialDuration
+            initialDuration,
+            startDateVal,
+            endDateVal
         },
         ref
     ) {
@@ -261,6 +265,28 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 setEndTime(endTime);
                 setInterval(rule.options.interval ?? 1);
                 setEndOption(rule.options.until ? 'until' : 'never');
+
+                if (!formErrors) {
+                    //need to set start and end date
+                    const inputStart = document.querySelector<HTMLInputElement>(
+                        `input[name="${startDateRef}"]`
+                    );
+                    if (inputStart && startDateVal)
+                        inputStart.value = startDateVal;
+
+                    if (rule.options.until) {
+                        setTimeout(() => {
+                            //due to render time
+                            const inputEnd =
+                                document.querySelector<HTMLInputElement>(
+                                    `input[name="${endDateRef}"]`
+                                );
+                            if (inputEnd && endDateVal) {
+                                inputEnd.value = endDateVal;
+                            }
+                        }, 50);
+                    }
+                }
             } catch (err) {
                 console.error('Failed to parse recurrenceRule', err);
             }
