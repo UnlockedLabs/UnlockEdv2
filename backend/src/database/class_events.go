@@ -19,14 +19,19 @@ Everything stored in database will ALWAYS be in UTC
 and converted when returning to the client
 */
 
-func (db *DB) GetClassEvents(page, perPage, classId int) (int64, []models.ProgramClassEvent, error) {
-	content := []models.ProgramClassEvent{}
-	total := int64(0)
-	if err := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Find(&content).Count(&total).
-		Limit(perPage).Offset(calcOffset(page, perPage)).Error; err != nil {
-		return 0, nil, newGetRecordsDBError(err, "program_class_events")
+func (db *DB) GetClassEvents(args *models.QueryContext, classId int) ([]models.ProgramClassEvent, error) {
+	events := []models.ProgramClassEvent{}
+	tx := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id = ?", classId)
+	if !args.All {
+		if err := tx.Count(&args.Total).Error; err != nil {
+			return nil, newGetRecordsDBError(err, "program_class_events")
+		}
+		tx = tx.Limit(args.PerPage).Offset(args.CalcOffset())
 	}
-	return total, content, nil
+	if err := tx.Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	return events, nil
 }
 
 func (db *DB) CreateNewEvent(classId int, form *models.ProgramClassEvent) (*models.ProgramClassEvent, error) {
@@ -46,6 +51,38 @@ func (db *DB) GetEventById(eventId int) (*models.ProgramClassEvent, error) {
 		return nil, newGetRecordsDBError(err, "program_class_event")
 	}
 	return &event, nil
+}
+
+func (db *DB) CreateRescheduleEventSeries(ctx *models.QueryContext, events []models.ProgramClassEvent) error {
+	tx := db.WithContext(ctx.Ctx).Begin()
+	if tx.Error != nil {
+		return NewDBError(tx.Error, "unable to start the database transaction")
+	}
+
+	var changeLogEntry *models.ChangeLogEntry
+	for _, event := range events {
+		if event.ID == 0 {
+			changeLogEntry = models.NewChangeLogEntry("program_classes", "event_rescheduled_series", models.StringPtr(""), &event.RecurrenceRule, event.ClassID, ctx.UserID)
+			if err := tx.Create(&event).Error; err != nil {
+				tx.Rollback()
+				return newCreateDBError(err, "program_class_events")
+			}
+		} else {
+			if err := tx.Model(&models.ProgramClassEvent{}).Where("id = ?", event.ID).Update("recurrence_rule", event.RecurrenceRule).Error; err != nil {
+				tx.Rollback()
+				return newUpdateDBError(err, "program_class_events")
+			}
+		}
+	}
+
+	if err := tx.Create(&changeLogEntry).Error; err != nil {
+		tx.Rollback()
+		return newCreateDBError(err, "change_log_entries")
+	}
+	if err := tx.Commit().Error; err != nil {
+		return NewDBError(err, "unable to commit the database transaction")
+	}
+	return nil
 }
 
 func (db *DB) CreateOverrideEvents(ctx *models.QueryContext, overrideEvents []*models.ProgramClassEventOverride) error {
@@ -404,7 +441,7 @@ func (db *DB) GetFacilityCalendar(args *models.QueryContext, dtRng *models.DateR
 		c.instructor_name,
 		c.name as class_name,
         STRING_AGG(CONCAT(u.id, ':', u.name_last, ', ', u.name_first), '|' ORDER BY u.name_last) FILTER (WHERE e.enrollment_status = 'Enrolled') AS enrolled_users`).
-		Joins("JOIN program_classes c ON c.id = pcev.class_id").
+		Joins("JOIN program_classes c ON c.id = pcev.class_id and c.archived_at IS NULL").
 		Joins("JOIN programs p ON p.id = c.program_id").
 		Joins("LEFT JOIN program_class_enrollments e ON e.class_id = c.id").
 		Joins("LEFT JOIN users u ON e.user_id = u.id").

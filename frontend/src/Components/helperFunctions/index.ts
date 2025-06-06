@@ -2,5 +2,8 @@ export {
     formatPercent,
     transformStringToArray,
     formatDuration,
-    timeToMinutes
+    timeToMinutes,
+    isEndDtBeforeStartDt,
+    isPastDate,
+    parseRRule
 } from './formatting';

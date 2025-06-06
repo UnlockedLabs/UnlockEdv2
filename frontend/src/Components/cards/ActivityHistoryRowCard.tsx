@@ -1,6 +1,6 @@
 import { ActivityHistoryResponse } from '@/common';
 import { useAuth } from '@/useAuth';
-import { RRule } from 'rrule';
+import { parseRRule } from '../helperFunctions';
 
 function ActivityHistoryRowCard({
     activity
@@ -13,23 +13,6 @@ function ActivityHistoryRowCard({
     }
     function formatValue(value: string): string {
         return value.replace(/_/g, ' ');
-    }
-
-    function parseCancelledRRule(rRule: string): string {
-        let rule;
-        try {
-            rule = RRule.fromString(rRule);
-            const overrideDate = rule.all()[0];
-            return overrideDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                timeZone: user?.timezone
-            });
-        } catch (error) {
-            console.error('error parsing rrule, error is: ', error);
-        }
-        return rRule; //return rRule back if errors
     }
 
     const getProgramClassesHistoryEventText = () => {
@@ -75,10 +58,13 @@ function ActivityHistoryRowCard({
                 text = `Program type ${!activity.new_value ? formatValue(activity.old_value) + ' removed ' : 'set to ' + formatValue(activity.new_value)} by ${activity.admin_username}`;
                 break;
             case 'event_cancelled':
-                text = `Event on ${parseCancelledRRule(activity.new_value)} cancelled by ${activity.admin_username}`;
+                text = `Event on ${parseRRule(activity.new_value, user.timezone)} cancelled by ${activity.admin_username}`;
                 break;
             case 'event_rescheduled':
-                text = `Event on ${parseCancelledRRule(activity.old_value)} moved to ${activity.new_value} by ${activity.admin_username}`;
+                text = `Event on ${parseRRule(activity.old_value, user.timezone)} moved to ${activity.new_value} by ${activity.admin_username}`;
+                break;
+            case 'event_rescheduled_series':
+                text = `All future sessions rescheduled starting ${parseRRule(activity.new_value, user.timezone, true)} by ${activity.admin_username}`;
                 break;
         }
         return text;

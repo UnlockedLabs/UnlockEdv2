@@ -4,6 +4,7 @@ import {
     Class,
     ClassLoaderData,
     EnrollmentStatus,
+    ProgramClassEvent,
     ServerResponseMany,
     ServerResponseOne
 } from '@/common';
@@ -27,6 +28,22 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const blockEdits = isCompletedCancelledOrArchived(
         classInfo ?? ({} as Class)
     );
+
+    function getClassEndDate(events: ProgramClassEvent[]): Date | null {
+        if (!events || events.length === 0) return null;
+        const latestEvent = events.reduce(
+            (maxEvent, event) => (event.id > maxEvent.id ? event : maxEvent),
+            events[0]
+        );
+        const ruleString = latestEvent.recurrence_rule;
+        try {
+            const rule = RRule.fromString(ruleString);
+            return rule.options.until ?? null;
+        } catch (error) {
+            console.error('error parsing the rrule, error is: ', error);
+            return null;
+        }
+    }
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
@@ -52,14 +69,19 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
                       )
                     : ''}{' '}
                 &ndash;{' '}
-                {classInfo?.end_dt
-                    ? new Date(classInfo.end_dt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          timeZone: 'UTC'
-                      })
-                    : 'No end date scheduled'}
+                {(() => {
+                    const classEndDate = getClassEndDate(
+                        classInfo?.events ?? []
+                    );
+                    return classEndDate
+                        ? classEndDate.toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              timeZone: 'UTC'
+                          })
+                        : 'No end date scheduled';
+                })()}
             </p>
             <p className="body">Room: {classInfo?.events[0].room}</p>
             <div
@@ -119,54 +141,63 @@ export default function ClassLayout() {
     }, [clsInfo?.status]);
 
     function getNextOccurrenceDateAsStr(): string {
-        const rRuleStr = clsInfo?.events[0].recurrence_rule;
-        const overrides = clsInfo?.events[0].overrides ?? [];
         const now = new Date();
+        const allOccurrences: Date[] = [];
 
-        //need to separate for simpler logic flow here
-        const cancelledDates = new Set<string>();
-        const activeOverrideDates = new Set<string>();
-        const activeOverrideDateTimes: Date[] = [];
+        for (const event of clsInfo?.events ?? []) {
+            const overrides = event.overrides ?? [];
+            const cancelledDates = new Set<string>();
+            const activeOverrideDates = new Set<string>();
+            const activeOverrideDateTimes: Date[] = [];
 
-        for (const override of overrides) {
-            //separate overrides
-            const rule = RRule.fromString(override.override_rrule);
-            const date = rule.after(now, true);
-            if (!date) continue;
-            const dateStr = date.toISOString().slice(0, 10);
+            for (const override of overrides) {
+                const rule = RRule.fromString(override.override_rrule);
+                const date = rule.after(now, true);
+                if (!date) continue;
 
-            if (override.is_cancelled) {
-                cancelledDates.add(dateStr);
-            } else {
-                activeOverrideDates.add(dateStr);
-                activeOverrideDateTimes.push(date);
+                const dateStr = date.toISOString().slice(0, 10); //substring it
+                if (override.is_cancelled) {
+                    cancelledDates.add(dateStr);
+                } else {
+                    activeOverrideDates.add(dateStr);
+                    activeOverrideDateTimes.push(date);
+                }
+            }
+
+            if (event.recurrence_rule) {
+                const cleanRule = event.recurrence_rule.replace(
+                    /DTSTART;TZID=Local:/,
+                    'DTSTART:'
+                );
+                const rule = RRule.fromString(cleanRule);
+                const baseOccurrences = rule.between(
+                    now,
+                    new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
+                    true
+                );
+
+                for (const date of baseOccurrences) {
+                    const dateStr = date.toISOString().slice(0, 10);
+                    if (activeOverrideDates.has(dateStr)) {
+                        continue;
+                    }
+                    if (!cancelledDates.has(dateStr)) {
+                        allOccurrences.push(date);
+                    }
+                }
+            }
+            for (const overrideDate of activeOverrideDateTimes) {
+                if (overrideDate > now) {
+                    allOccurrences.push(overrideDate);
+                }
             }
         }
-        if (rRuleStr) {
-            const cleanRule = rRuleStr.replace(
-                /DTSTART;TZID=Local:/,
-                'DTSTART:'
-            );
-            const rule = RRule.fromString(cleanRule);
-            const baseOccurrences = rule.between(
-                now,
-                new Date(now.getTime() + 1000 * 60 * 60 * 24 * 365),
-                true
-            );
-
-            for (const date of baseOccurrences) {
-                //im loopin' through base occurrences and searching for active override first
-                const dateStr = date.toISOString().slice(0, 10);
-                if (activeOverrideDates.has(dateStr)) {
-                    const activeOverride = activeOverrideDateTimes
-                        .filter((d) => d > now)
-                        .sort((a, b) => a.getTime() - b.getTime())[0];
-                    return formatDate(activeOverride);
-                } else if (cancelledDates.has(dateStr)) continue; //cancelled so skip to next date
-                return formatDate(date);
-            }
-        }
-        return 'No upcoming class found';
+        const nextOccurrence = allOccurrences
+            .filter((d) => d > now)
+            .sort((a, b) => a.getTime() - b.getTime())[0];
+        return nextOccurrence
+            ? formatDate(nextOccurrence)
+            : 'No upcoming class found';
     }
 
     function formatDate(date: Date): string {

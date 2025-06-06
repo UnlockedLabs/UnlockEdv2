@@ -1,4 +1,5 @@
 import { Timezones } from '@/common';
+import { RRule } from 'rrule';
 
 export function formatPercent(value?: number | string): string {
     if (typeof value === 'string') return value;
@@ -49,4 +50,44 @@ export function formatDuration(startTime: string, endTime: string): string {
 export function timeToMinutes(timeStr: string): number {
     const [hour, minute] = timeStr.split(':').map(Number);
     return hour * 60 + minute;
+}
+
+export function isEndDtBeforeStartDt(
+    endDate: string,
+    startDate: string
+): boolean {
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
+    return end < start;
+}
+
+export function isPastDate(inputDate: string): boolean {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const [year, month, day] = inputDate.split('-').map(Number);
+    const theDate = new Date(year, month - 1, day);
+    return theDate < now;
+}
+
+export function parseRRule(
+    rRule: string,
+    timezone: string,
+    startDtOnly?: boolean
+): string {
+    let rule;
+    try {
+        rule = RRule.fromString(rRule);
+        const eventDate = startDtOnly ? rule.options.dtstart : rule.all()[0];
+        return eventDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            timeZone: timezone
+        });
+    } catch (error) {
+        console.error('error parsing rrule, error is: ', error);
+    }
+    return rRule; //return rRule back if errors
 }
