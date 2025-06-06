@@ -1,11 +1,7 @@
 import { useLoaderData, useParams, useRevalidator } from 'react-router-dom';
 import { startTransition, useEffect, useRef, useState } from 'react';
 import StatsCard from '@/Components/StatsCard';
-import {
-    ArchiveBoxIcon,
-    PencilSquareIcon,
-    PuzzlePieceIcon
-} from '@heroicons/react/24/outline';
+import { ArchiveBoxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
 import SearchBar from '@/Components/inputs/SearchBar';
 import DropdownControl from '@/Components/inputs/DropdownControl';
@@ -342,93 +338,88 @@ export default function ProgramOverviewDashboard() {
 
             {/* classes table */}
             <div className="card p-4">
-                <table className="table w-full table-fixed  mb-4">
-                    <thead className="bg-background">
-                        <tr>
-                            <th className="w-[150px]">
+                <table className="table-2 table-fixed w-full mb-4">
+                    <thead className="table-header-group bg-background">
+                        <tr className="!table-row w-full">
+                            <th className="max-w-[2%] w-[2%] px-4 py-2">
                                 <input
                                     type="checkbox"
-                                    className="checkbox checkbox-sm"
+                                    className="cursor-pointer checkbox checkbox-sm"
                                     checked={allSelected}
                                     onChange={(e) =>
                                         handleToggleAll(e.target.checked)
                                     }
                                 />
                             </th>
-                            <th className="w-full">Class Name</th>
-                            <th className="w-full">Instructor Name</th>
-                            <th className="w-full">Start Date</th>
-                            <th className="w-full">End Date</th>
-                            <th className="w-[200px]">Enrollments</th>
-                            <th className="w-[150px]">Status</th>
+                            <th className="w-[22%] !max-w-[22%] px-4 py-2">
+                                Class Name
+                            </th>
+                            <th className="w-[20%] !max-w-[20%]">
+                                Instructor Name
+                            </th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th className="w-[16%] !max-w-[16%]">
+                                Enrollments
+                            </th>
+                            <th className="w-[16%] !max-w-[16%]">Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {filteredClasses.map((program_class) => {
-                            const isSelected = selectedClasses.includes(
-                                program_class.id
-                            );
+
+                    <tbody className="!table-row-group w-full">
+                        {filteredClasses.map((pc) => {
+                            const isSelected = selectedClasses.includes(pc.id);
                             return (
                                 <tr
-                                    key={program_class.id}
-                                    onClick={() => {
-                                        if (!isArchived(program_class))
-                                            handleToggleRow(program_class.id);
-                                    }}
-                                    className={
-                                        isArchived(program_class)
-                                            ? 'bg-grey-1 cursor-not-allowed'
-                                            : `cursor-pointer ${
-                                                  isSelected
-                                                      ? 'bg-background '
-                                                      : ''
-                                              }`
-                                    }
+                                    key={pc.id}
+                                    className={`!table-row w-full ${isArchived(pc) ? 'bg-grey-1' : ''} ${isSelected ? 'bg-background' : ''}`}
                                 >
-                                    <td onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center gap-2">
-                                            {isArchived(program_class) ? (
-                                                <div></div>
-                                            ) : (
-                                                <input
-                                                    type="checkbox"
-                                                    className="checkbox checkbox-sm"
-                                                    checked={isSelected}
-                                                    onChange={() =>
-                                                        handleToggleRow(
-                                                            program_class.id
-                                                        )
-                                                    }
-                                                />
-                                            )}
-                                            <ULIComponent
-                                                dataTip={'Class Overview'}
-                                                icon={PuzzlePieceIcon}
-                                                iconClassName={
-                                                    '!w-6 !h-6 cursor-pointer hover:text-primary hover:scale-110 transition-all'
-                                                }
-                                                onClick={() => {
-                                                    navigate(
-                                                        `/program-classes/${program_class.id}/dashboard`
-                                                    );
-                                                }}
-                                            />
+                                    <td
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="!w-[2%] !max-w-[2%] px-4 py-2"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className={`cursor-pointer checkbox checkbox-sm ${
+                                                isArchived(pc)
+                                                    ? 'invisible'
+                                                    : ''
+                                            }`}
+                                            checked={isSelected}
+                                            disabled={isArchived(pc)}
+                                            onChange={() =>
+                                                handleToggleRow(pc.id)
+                                            }
+                                        />
+                                    </td>
+
+                                    <td className="w-[22%] !max-w-[22%] px-4 py-2 text-center cursor-pointer">
+                                        <div
+                                            onClick={() =>
+                                                navigate(
+                                                    `/program-classes/${pc.id}/dashboard`
+                                                )
+                                            }
+                                        >
+                                            <ClampedText
+                                                as="div"
+                                                lines={1}
+                                                className="hover:underline"
+                                            >
+                                                {pc.name}
+                                            </ClampedText>
                                         </div>
                                     </td>
-                                    <td>
+
+                                    <td className="w-[20%] !max-w-[20%] px-4 py-2 text-center">
                                         <ClampedText as="div" lines={1}>
-                                            {program_class.name}
-                                        </ClampedText>
-                                    </td>
-                                    <td>
-                                        <ClampedText as="div" lines={1}>
-                                            {program_class.instructor_name}
+                                            {pc.instructor_name}
                                         </ClampedText>
                                     </td>
 
-                                    <td>
+                                    <td className="px-4 py-2 text-center">
                                         {new Date(
-                                            program_class.start_dt
+                                            pc.start_dt
                                         ).toLocaleDateString('en-US', {
                                             year: 'numeric',
                                             month: 'short',
@@ -436,10 +427,11 @@ export default function ProgramOverviewDashboard() {
                                             timeZone: 'UTC'
                                         })}
                                     </td>
-                                    <td>
-                                        {program_class.end_dt
+
+                                    <td className="px-4 py-2 text-center">
+                                        {pc.end_dt
                                             ? new Date(
-                                                  program_class.end_dt
+                                                  pc.end_dt
                                               ).toLocaleDateString('en-US', {
                                                   year: 'numeric',
                                                   month: 'short',
@@ -448,24 +440,26 @@ export default function ProgramOverviewDashboard() {
                                               })
                                             : ''}
                                     </td>
-                                    <td>
+
+                                    <td className="w-[15%] !max-w-[15%] px-4 py-2 text-center">
                                         <ProgressBar
                                             showPercentage={false}
                                             percent={parseFloat(
                                                 (
-                                                    (program_class.enrolled /
-                                                        program_class.capacity) *
+                                                    (pc.enrolled /
+                                                        pc.capacity) *
                                                     100
                                                 ).toFixed(1)
                                             )}
-                                            numerator={program_class.enrolled}
-                                            denominator={program_class.capacity}
+                                            numerator={pc.enrolled}
+                                            denominator={pc.capacity}
                                         />
                                     </td>
-                                    <td>
+
+                                    <td className="w-[15%] !max-w-[15%] px-4 py-2 text-center">
                                         <ClassStatus
-                                            status={program_class.status}
-                                            program_class={program_class}
+                                            status={pc.status}
+                                            program_class={pc}
                                             mutateClasses={mutateClasses}
                                         />
                                     </td>
