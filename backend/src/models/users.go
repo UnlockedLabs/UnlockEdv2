@@ -161,3 +161,8 @@ type ResidentProgramClassInfo struct {
 	CreditTypes          string                  `json:"credit_types"`
 	UpdatedAt            string                  `json:"updated_at"`
 }
+
+type ResidentTransferProgramConflicts struct {
+	ProgramName string `json:"program_name"`
+	ClassName   string `json:"class_name"`
+}
