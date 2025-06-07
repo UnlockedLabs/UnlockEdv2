@@ -20,6 +20,7 @@ interface DateProps {
         | Record<string, Validate<any, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     disabled?: boolean;
     monthOnly?: boolean;
+    defaultValue?: string;
     onChange?: () => void;
 }
 
@@ -35,6 +36,7 @@ export function DateInput({
     validate,
     disabled = false,
     monthOnly = false,
+    defaultValue = '',
     onChange
 }: DateProps) {
     const now = new Date();
@@ -95,6 +97,7 @@ export function DateInput({
             </div>
             <input
                 type={inputType}
+                defaultValue={defaultValue}
                 className={`input input-bordered w-full`}
                 {...register(interfaceRef, options)}
                 autoFocus={isFocused}
