@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { canSwitchFacility, useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
+import { getClassEndDate } from '@/Components/ClassLayout';
 
 export function isCompletedCancelledOrArchived(program_class: Class): boolean {
     return (
@@ -421,18 +422,24 @@ export default function ProgramOverviewDashboard() {
                                             timeZone: 'UTC'
                                         })}
                                     </td>
-
                                     <td className="px-4 py-2">
-                                        {pc.end_dt
-                                            ? new Date(
-                                                  pc.end_dt
-                                              ).toLocaleDateString('en-US', {
-                                                  year: 'numeric',
-                                                  month: 'short',
-                                                  day: 'numeric',
-                                                  timeZone: 'UTC'
-                                              })
-                                            : ''}
+                                        {(() => {
+                                            const classEndDate =
+                                                getClassEndDate(
+                                                    pc?.events ?? []
+                                                );
+                                            return classEndDate
+                                                ? classEndDate.toLocaleDateString(
+                                                      'en-US',
+                                                      {
+                                                          year: 'numeric',
+                                                          month: 'long',
+                                                          day: 'numeric',
+                                                          timeZone: 'UTC'
+                                                      }
+                                                  )
+                                                : 'No end date scheduled';
+                                        })()}
                                     </td>
 
                                     <td className="px-4 py-2">
