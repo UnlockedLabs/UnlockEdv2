@@ -116,6 +116,19 @@ func (db *DB) CreateProgram(content *models.Program) error {
 	return nil
 }
 
+func (db *DB) RefreshProgramOverviewViews(ctx context.Context) error {
+	views := []string{"all_time", "30d", "90d"}
+	for _, view := range views {
+		viewName := "programs_overview_" + view
+		err := db.WithContext(ctx).Exec("REFRESH MATERIALIZED VIEW " + viewName).Error
+		if err != nil {
+			logrus.Errorf("failed to refresh materialized view %s: %v", viewName, err)
+			return err
+		}
+	}
+	return nil
+}
+
 func (db *DB) UpdateProgram(ctx context.Context, program *models.Program, facilityIds []int) (*models.Program, error) {
 	var allChanges []models.ChangeLogEntry
 	updatePrg, err := db.GetProgramByID(int(program.ID))
@@ -162,6 +175,10 @@ func (db *DB) UpdateProgram(ctx context.Context, program *models.Program, facili
 	//end transaction
 	if err := trans.Commit().Error; err != nil {
 		return nil, NewDBError(err, "unable to commit the database transaction")
+	}
+	if err := db.RefreshProgramOverviewViews(ctx); err != nil { //refresh the materialized views
+		// not fatal error
+		logrus.Errorf("failed to refresh program overview views after updating program status: %v", err)
 	}
 	return updatePrg, nil
 }
@@ -335,12 +352,20 @@ func (db *DB) UpdateProgramStatus(ctx context.Context, programUpdate map[string]
 	if err := trans.Commit().Error; err != nil { //commit transaction
 		return nil, false, NewDBError(err, "unable to commit the database transaction")
 	}
+	if err := db.RefreshProgramOverviewViews(ctx); err != nil { //refresh the materialized views
+		// not fatal error
+		logrus.Errorf("failed to refresh program overview views after updating program status: %v", err)
+	}
 	return facilities, true, nil
 }
 
-func (db *DB) DeleteProgram(id int) error {
-	if err := db.Delete(&models.Program{}, id).Error; err != nil {
+func (db *DB) DeleteProgram(ctx context.Context, id int) error {
+	if err := db.WithContext(ctx).Delete(&models.Program{}, id).Error; err != nil {
 		return newDeleteDBError(err, "programs")
+	}
+	if err := db.RefreshProgramOverviewViews(ctx); err != nil { //refresh the materialized views
+		// not fatal error
+		logrus.Errorf("failed to refresh program overview views after updating program status: %v", err)
 	}
 	return nil
 }
