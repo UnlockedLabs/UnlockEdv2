@@ -29,13 +29,9 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 	if len(cj.ID) == 0 {
 		cj.ID = uuid.NewString()
 	}
-	if slices.Contains(AllContentProviderJobs, JobType(cj.Name)) {
-		cj.Category = OpenContentJob
-	} else if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
-		cj.Category = ProviderPlatformJob
-	} else if slices.Contains(AllProgramManagementJobs, JobType(cj.Name)) {
-		cj.Category = ProgramManagementJob
-	}
+	jobType := JobType(cj.Name)
+	cj.Category = jobType.GetCategory()
+
 	switch cj.Name {
 	case string(RetryVideoDownloadsJob):
 		schedule := os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
@@ -88,7 +84,6 @@ const (
 	ProviderPlatformJob  = 1
 	OpenContentJob       = 2
 	ProgramManagementJob = 3
-	ProgramOverviewJob   = 4
 
 	GetMilestonesJob JobType = "get_milestones"
 	GetCoursesJob    JobType = "get_courses"
@@ -117,6 +112,21 @@ func (jt JobType) IsVideoJob() bool {
 		return true
 	}
 	return false
+}
+
+func (jt JobType) GetCategory() int {
+	switch jt {
+	case RetryVideoDownloadsJob, SyncVideoMetadataJob, AddVideosJob:
+		return OpenContentJob
+	case GetMilestonesJob, GetCoursesJob, GetActivityJob:
+		return ProviderPlatformJob
+	case DailyProgHistoryJob, ProgOverviewJob:
+		return ProgramManagementJob
+	case ScrapeKiwixJob:
+		return OpenContentJob
+	default:
+		return 0 // Unknown category
+	}
 }
 
 func (jt JobType) IsLibraryJob() bool {

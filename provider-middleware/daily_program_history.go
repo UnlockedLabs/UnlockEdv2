@@ -191,7 +191,7 @@ func (sh *ServiceHandler) refreshProgramOverviewViews(ctx context.Context) error
 	views := []string{"all_time", "30d", "90d"}
 	for _, view := range views {
 		viewName := "programs_overview_" + view
-		err := sh.db.WithContext(ctx).Exec("REFRESH MATERIALIZED VIEW IF EXISTS " + viewName).Error
+		err := sh.db.WithContext(ctx).Exec("REFRESH MATERIALIZED VIEW " + viewName).Error
 		if err != nil {
 			logger().Errorf("failed to refresh materialized view %s: %v", viewName, err)
 			return err
