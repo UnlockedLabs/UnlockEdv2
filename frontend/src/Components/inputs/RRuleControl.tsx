@@ -265,28 +265,6 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                 setEndTime(endTime);
                 setInterval(rule.options.interval ?? 1);
                 setEndOption(rule.options.until ? 'until' : 'never');
-
-                if (!formErrors) {
-                    //need to set start and end date
-                    const inputStart = document.querySelector<HTMLInputElement>(
-                        `input[name="${startDateRef}"]`
-                    );
-                    if (inputStart && startDateVal)
-                        inputStart.value = startDateVal;
-
-                    if (rule.options.until) {
-                        setTimeout(() => {
-                            //due to render time
-                            const inputEnd =
-                                document.querySelector<HTMLInputElement>(
-                                    `input[name="${endDateRef}"]`
-                                );
-                            if (inputEnd && endDateVal) {
-                                inputEnd.value = endDateVal;
-                            }
-                        }, 50);
-                    }
-                }
             } catch (err) {
                 console.error('Failed to parse recurrenceRule', err);
             }
@@ -315,6 +293,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
             <div className="space-y-5">
                 <div className="-mb-4">
                     <DateInput
+                        defaultValue={startDateVal}
                         label="Start Date"
                         register={register}
                         interfaceRef={startDateRef}
@@ -448,6 +427,7 @@ export const RRuleControl = forwardRef<RRuleFormHandle, RRuleControlProp>(
                     <>
                         <div>
                             <DateInput
+                                defaultValue={endDateVal}
                                 label="End Date"
                                 register={register}
                                 interfaceRef={endDateRef}
