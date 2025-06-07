@@ -195,6 +195,120 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 			}
 		}
 	}
+	if err := initProgramMaterializedViews(db.DB); err != nil {
+		logrus.Fatalf("Failed to initialize program materialized views: %v", err)
+	}
+}
+
+func initProgramMaterializedViews(db *gorm.DB) error {
+	const sqlTemplate = `CREATE MATERIALIZED VIEW programs_overview_%s AS
+WITH recent_metrics AS (
+  SELECT
+    program_id,
+    total_enrollments,
+    total_active_enrollments,
+    total_classes,
+    total_active_facilities
+  FROM daily_program_facilities_history
+  WHERE date = (SELECT MAX(date) FROM daily_program_facilities_history)
+),
+program_attendance AS (
+  SELECT
+    program_id,
+    SUM(total_completions) AS total_completions,
+    SUM(total_enrollments) AS sum_enrollments,
+    SUM(total_students_present) AS total_students_present,
+    SUM(total_attendances_marked) AS sum_attendances
+  FROM daily_program_facilities_history
+  %s
+  GROUP BY program_id
+),
+program_type_agg AS (
+  SELECT
+    program_id,
+    STRING_AGG(DISTINCT program_type::text, ',') AS program_types
+  FROM program_types
+  GROUP BY program_id
+),
+credit_type_agg AS (
+  SELECT
+    program_id,
+    STRING_AGG(DISTINCT credit_type::text, ',') AS credit_types
+  FROM program_credit_types
+  GROUP BY program_id
+)
+SELECT
+  p.id AS program_id,
+  p.name AS program_name,
+  p.description,
+  p.archived_at,
+  rm.total_enrollments,
+  rm.total_active_enrollments,
+  rm.total_classes,
+  rm.total_active_facilities,
+  (pa.total_completions * 1.0 / NULLIF(pa.sum_enrollments, 0)) * 100 AS completion_rate,
+  (pa.total_students_present * 1.0 / NULLIF(pa.sum_attendances, 0)) * 100 AS attendance_rate,
+  p.funding_type,
+  BOOL_OR(p.is_active) AS status,
+  pt.program_types,
+  ct.credit_types
+FROM programs p
+LEFT JOIN recent_metrics rm ON rm.program_id = p.id
+LEFT JOIN program_attendance pa ON pa.program_id = p.id
+LEFT JOIN program_type_agg pt ON pt.program_id = p.id
+LEFT JOIN credit_type_agg ct ON ct.program_id = p.id
+GROUP BY p.id, p.name, p.archived_at, p.funding_type,
+         rm.total_enrollments, rm.total_active_enrollments, rm.total_classes, rm.total_active_facilities,
+         pa.total_completions, pa.sum_enrollments, pa.total_students_present, pa.sum_attendances,
+         pt.program_types, ct.credit_types;`
+
+	timeWindows := map[string]string{
+		"30d":      "WHERE date >= CURRENT_DATE - INTERVAL '30 days'",
+		"90d":      "WHERE date >= CURRENT_DATE - INTERVAL '90 days'",
+		"all_time": "", // no WHERE clause
+	}
+
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_programs_overview_%s_archived_at ON programs_overview_%s(archived_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_programs_overview_%s_name_lower ON programs_overview_%s(LOWER(program_name))`,
+		`CREATE INDEX IF NOT EXISTS idx_programs_overview_%s_description ON programs_overview_%s(LOWER(description))`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_programs_overview_%s_unique ON programs_overview_%s(program_id)`,
+	}
+
+	for name, whereClause := range timeWindows {
+		viewName := fmt.Sprintf("programs_overview_%s", name)
+
+		var exists bool
+		checkView := `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_matviews
+				WHERE matviewname = ?
+			)
+		`
+		if err := db.Raw(checkView, viewName).Scan(&exists).Error; err != nil {
+			return fmt.Errorf("checking view existence for %s: %w", viewName, err)
+		}
+		if exists {
+			// refresh the views if they exist
+			if err := db.Raw(`REFRESH MATERIALIZED VIEW %s`).Error; err != nil {
+				return fmt.Errorf("refreshing materialized view %s: %w", viewName, err)
+			}
+		} else {
+			logrus.Infof("Creating materialized view: %s", viewName)
+			viewSQL := fmt.Sprintf(sqlTemplate, name, whereClause)
+			if err := db.Exec(viewSQL).Error; err != nil {
+				return fmt.Errorf("creating view %s: %w", viewName, err)
+			}
+		}
+
+		for _, idx := range indexes {
+			stmt := fmt.Sprintf(idx, name, name)
+			if err := db.Exec(stmt).Error; err != nil {
+				return fmt.Errorf("creating index for %s: %w", viewName, err)
+			}
+		}
+	}
+	return nil
 }
 
 const (

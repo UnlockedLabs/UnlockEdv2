@@ -112,3 +112,15 @@ func (sh *ServiceHandler) cleanupJob(ctx context.Context, provId *int, jobId str
 		return
 	}
 }
+
+func extractJobID(msg *nats.Msg) (string, error) {
+	var body map[string]any
+	if err := json.Unmarshal(msg.Data, &body); err != nil {
+		return "", fmt.Errorf("failed to unmarshal message: %v", err)
+	}
+	jobId, ok := body["job_id"].(string)
+	if !ok {
+		return "", fmt.Errorf("failed to parse job_id: %v", body["job_id"])
+	}
+	return jobId, nil
+}

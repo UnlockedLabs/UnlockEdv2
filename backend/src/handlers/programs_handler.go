@@ -248,7 +248,7 @@ func (srv *Server) handleDeleteProgram(w http.ResponseWriter, r *http.Request, l
 		return newInvalidIdServiceError(err, "program ID")
 	}
 	log.add("program_id", id)
-	if err = srv.Db.DeleteProgram(id); err != nil {
+	if err = srv.Db.DeleteProgram(r.Context(), id); err != nil {
 		return newDatabaseServiceError(err)
 	}
 	log.info("Program deleted")

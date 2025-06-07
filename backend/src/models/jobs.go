@@ -29,13 +29,9 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 	if len(cj.ID) == 0 {
 		cj.ID = uuid.NewString()
 	}
-	if slices.Contains(AllContentProviderJobs, JobType(cj.Name)) {
-		cj.Category = OpenContentJob
-	} else if slices.Contains(AllDefaultProviderJobs, JobType(cj.Name)) {
-		cj.Category = ProviderPlatformJob
-	} else if slices.Contains(AllProgramManagementJobs, JobType(cj.Name)) {
-		cj.Category = ProgramManagementJob
-	}
+	jobType := JobType(cj.Name)
+	cj.Category = jobType.GetCategory()
+
 	switch cj.Name {
 	case string(RetryVideoDownloadsJob):
 		schedule := os.Getenv("RETRY_VIDEO_CRON_SCHEDULE")
@@ -43,6 +39,8 @@ func (cj *CronJob) BeforeCreate(tx *gorm.DB) error {
 			schedule = EveryDaytimeHour
 		}
 		cj.Schedule = schedule
+	case string(ProgOverviewJob):
+		cj.Schedule = EveryDaytimeHour
 	default:
 		cj.Schedule = os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
 	}
@@ -92,6 +90,7 @@ const (
 	GetActivityJob   JobType = "get_activity"
 
 	DailyProgHistoryJob    JobType   = "daily_prog_history"
+	ProgOverviewJob        JobType   = "programs_overview"
 	ScrapeKiwixJob         JobType   = "scrape_kiwix"
 	RetryVideoDownloadsJob JobType   = "retry_video_downloads"
 	RetryManualDownloadJob JobType   = "retry_manual_download"
@@ -105,7 +104,7 @@ const (
 
 var AllDefaultProviderJobs = []JobType{GetCoursesJob, GetMilestonesJob, GetActivityJob}
 var AllContentProviderJobs = []JobType{ScrapeKiwixJob, RetryVideoDownloadsJob, SyncVideoMetadataJob}
-var AllProgramManagementJobs = []JobType{DailyProgHistoryJob}
+var AllProgramManagementJobs = []JobType{DailyProgHistoryJob, ProgOverviewJob}
 
 func (jt JobType) IsVideoJob() bool {
 	switch jt {
@@ -113,6 +112,21 @@ func (jt JobType) IsVideoJob() bool {
 		return true
 	}
 	return false
+}
+
+func (jt JobType) GetCategory() int {
+	switch jt {
+	case RetryVideoDownloadsJob, SyncVideoMetadataJob, AddVideosJob:
+		return OpenContentJob
+	case GetMilestonesJob, GetCoursesJob, GetActivityJob:
+		return ProviderPlatformJob
+	case DailyProgHistoryJob, ProgOverviewJob:
+		return ProgramManagementJob
+	case ScrapeKiwixJob:
+		return OpenContentJob
+	default:
+		return 0 // Unknown category
+	}
 }
 
 func (jt JobType) IsLibraryJob() bool {
