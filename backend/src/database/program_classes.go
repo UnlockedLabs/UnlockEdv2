@@ -109,6 +109,23 @@ func (db *DB) GetProgramClassDetailsByID(id int, args *models.QueryContext) ([]m
 	if err := query.Limit(args.PerPage).Offset(args.CalcOffset()).Order(args.OrderClause("ps.created_at desc")).Find(&classDetails).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "programs")
 	}
+
+	classIDs := make([]uint, 0, len(classDetails))
+	for _, detail := range classDetails { //gathering all for next query
+		classIDs = append(classIDs, detail.ID)
+	}
+	events := []models.ProgramClassEvent{}
+	if err := db.Model(&models.ProgramClassEvent{}).Preload("Overrides").Where("class_id IN (?)", classIDs).Find(&events).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_events")
+	}
+	eventMap := make(map[uint][]models.ProgramClassEvent)
+	for _, event := range events {
+		eventMap[event.ClassID] = append(eventMap[event.ClassID], event)
+	}
+	for i, j := 0, len(classDetails); i < j; i++ {
+		classDetails[i].Events = eventMap[classDetails[i].ID]
+	}
+
 	return classDetails, nil
 }
 

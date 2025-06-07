@@ -21,6 +21,22 @@ import { useAuth } from '@/useAuth';
 import StatsCard from './StatsCard';
 import { isCompletedCancelledOrArchived } from '@/Pages/ProgramOverviewDashboard';
 
+export function getClassEndDate(events: ProgramClassEvent[]): Date | null {
+    if (!events || events.length === 0) return null;
+    const latestEvent = events.reduce(
+        (maxEvent, event) => (event.id > maxEvent.id ? event : maxEvent),
+        events[0]
+    );
+    const ruleString = latestEvent.recurrence_rule;
+    try {
+        const rule = RRule.fromString(ruleString);
+        return rule.options.until ?? null;
+    } catch (error) {
+        console.error('error parsing the rrule, error is: ', error);
+        return null;
+    }
+}
+
 function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
     const navigate = useNavigate();
 
@@ -29,21 +45,6 @@ function ClassInfoCard({ classInfo }: { classInfo?: Class }) {
         classInfo ?? ({} as Class)
     );
 
-    function getClassEndDate(events: ProgramClassEvent[]): Date | null {
-        if (!events || events.length === 0) return null;
-        const latestEvent = events.reduce(
-            (maxEvent, event) => (event.id > maxEvent.id ? event : maxEvent),
-            events[0]
-        );
-        const ruleString = latestEvent.recurrence_rule;
-        try {
-            const rule = RRule.fromString(ruleString);
-            return rule.options.until ?? null;
-        } catch (error) {
-            console.error('error parsing the rrule, error is: ', error);
-            return null;
-        }
-    }
     return (
         <div className="card card-row-padding flex flex-col h-full">
             <h1>Class Info</h1>
