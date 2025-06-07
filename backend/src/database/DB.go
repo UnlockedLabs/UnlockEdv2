@@ -288,7 +288,12 @@ GROUP BY p.id, p.name, p.archived_at, p.funding_type,
 		if err := db.Raw(checkView, viewName).Scan(&exists).Error; err != nil {
 			return fmt.Errorf("checking view existence for %s: %w", viewName, err)
 		}
-		if !exists {
+		if exists {
+			// refresh the views if they exist
+			if err := db.Raw(`REFRESH MATERIALIZED VIEW %s`).Error; err != nil {
+				return fmt.Errorf("refreshing materialized view %s: %w", viewName, err)
+			}
+		} else {
 			logrus.Infof("Creating materialized view: %s", viewName)
 			viewSQL := fmt.Sprintf(sqlTemplate, name, whereClause)
 			if err := db.Exec(viewSQL).Error; err != nil {
