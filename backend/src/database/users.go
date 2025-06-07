@@ -3,6 +3,7 @@ package database
 import (
 	"UnlockEdv2/src/models"
 	"context"
+	"database/sql"
 	"errors"
 	"strconv"
 	"strings"
@@ -351,7 +352,7 @@ func (db *DB) NewUsersInTimePeriod(args *models.QueryContext, days int, facility
 }
 
 func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *uint) (int64, error) {
-	var total int64
+	var total sql.NullInt64
 	tx := db.WithContext(args.Ctx).Model(&models.LoginActivity{}).Select("SUM(COALESCE(total_logins, 0))")
 	if days != -1 {
 		daysAgo := time.Now().AddDate(0, 0, -days)
@@ -363,7 +364,10 @@ func (db *DB) GetTotalLogins(args *models.QueryContext, days int, facilityId *ui
 	if err := tx.Scan(&total).Error; err != nil {
 		return 0, newGetRecordsDBError(err, "login_activity")
 	}
-	return total, nil
+	if !total.Valid {
+		return 0, nil
+	}
+	return total.Int64, nil
 }
 
 func (db *DB) GetTotalUsers(args *models.QueryContext, facilityId *uint) (int64, error) {
