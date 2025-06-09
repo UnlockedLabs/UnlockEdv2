@@ -144,20 +144,11 @@ func MigrateTesting(db *gorm.DB) {
 }
 
 func (db *DB) SeedDefaultData(isTesting bool) {
-	var count int64
-	if err := db.Model(models.User{}).Where("id = ?", 1).Count(&count).Error; err != nil {
-		logrus.Fatal("db transaction failed getting admin user")
-	}
-	if count == 0 {
-		if err := db.Model(models.Facility{}).Where("id = ?", 1).Count(&count).Error; err != nil {
-			logrus.Fatal("db transaction failed getting default facility")
-		}
-		if isTesting {
-			roles := []models.Role{{Name: "admin"}, {Name: "student"}, {Name: "system_admin"}}
-			for _, role := range roles {
-				if err := db.Create(&role).Error; err != nil {
-					logrus.Fatalf("Failed to create role: %v", err)
-				}
+	if isTesting {
+		roles := []models.Role{{Name: "facility_admin"}, {Name: "department_admin"}, {Name: "student"}, {Name: "system_admin"}}
+		for _, role := range roles {
+			if err := db.Create(&role).Error; err != nil {
+				logrus.Fatalf("Failed to create role: %v", err)
 			}
 		}
 		defaultFacility := models.Facility{
@@ -176,23 +167,20 @@ func (db *DB) SeedDefaultData(isTesting bool) {
 			Role:       models.SystemAdmin,
 			FacilityID: 1,
 		}
-		logrus.Printf("Creating user: %v", user)
-		logrus.Println("Make sure to sync the Kratos instance if you are freshly migrating")
 		if err := db.Create(&user).Error; err != nil {
 			logrus.Fatalf("Failed to create user: %v", err)
 		}
-
-		links := []models.HelpfulLink{}
-		if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
-			logrus.Fatalf("Failed to unmarshal default left menu links: %v", err)
-		}
-		if err := db.Create(&links).Error; err != nil {
-			logrus.Fatalf("Failed to create left menu links: %v", err)
-		}
-		for idx := range defaultOpenContentProviders {
-			if err := db.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
-				logrus.Fatalf("Failed to create default open content providers: %v", err)
-			}
+	}
+	links := []models.HelpfulLink{}
+	if err := json.Unmarshal([]byte(defaultLeftMenuLinks), &links); err != nil {
+		logrus.Fatalf("Failed to unmarshal default left menu links: %v", err)
+	}
+	if err := db.Create(&links).Error; err != nil {
+		logrus.Fatalf("Failed to create left menu links: %v", err)
+	}
+	for idx := range defaultOpenContentProviders {
+		if err := db.Create(&defaultOpenContentProviders[idx]).Error; err != nil {
+			logrus.Fatalf("Failed to create default open content providers: %v", err)
 		}
 	}
 }

@@ -15,7 +15,7 @@ jobs:
     if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
     runs-on: ubuntu-latest
     outputs:
-      changes: ${{ steps.check-changes.outputs.changes }}
+      changes: ${{ steps.format-changes.outputs.changes }}
 
     steps:
       - name: Checkout code
@@ -23,21 +23,33 @@ jobs:
         with:
           fetch-depth: 3
 
-      - id: check-changes
+      - name: Get all files that have changed in this PR
+        id: changed-files
+        uses: tj-actions/changed-files@v46
+        with:
+          separator: ","
+          files_yaml: |
+            backend:
+              - 'backend/src/**/*.go'
+            migrations:
+              - 'backend/migrations/*.sql'
+            middleware:
+              - 'provider-middleware/*.go'
+            frontend:
+              - 'frontend/**/*'
+
+      - name: Format change groups
+        id: format-changes
         run: |
-          BASE="${{ github.event.before }}"
-          echo "$BASE"
-          git fetch origin "$BASE"
-          paths=("frontend/" "backend/" "provider-middleware/" "backend/tasks")
-          changes=""
-          for path in "${paths[@]}"; do
-            count=$(git diff --name-only HEAD.."$BASE" | grep "^${path}" | wc -l)
-            changes+="${path}:${count},"
-          done
-          changes="${changes%,}"
-          echo "changes=${changes}" >> $GITHUB_OUTPUT
+          changes=()
+          [[ "${{ steps.changed-files.outputs.backend_any_changed }}" == "true" ]] && changes+=("backend:1")
+          [[ "${{ steps.changed-files.outputs.migrations_any_changed }}" == "true" ]] && changes+=("migrations:1")
+          [[ "${{ steps.changed-files.outputs.middleware_any_changed }}" == "true" ]] && changes+=("provider-middleware:1")
+          [[ "${{ steps.changed-files.outputs.frontend_any_changed }}" == "true" ]] && changes+=("frontend:1")
+          echo "changes=${changes[*]}" >> "$GITHUB_OUTPUT"
 
       - name: Check duplicate migration files
+        if: steps.changed-files.outputs.migrations_any_changed == 'true'
         run: |
           DUPLICATE_MIGRATIONS=$(ls -1 backend/migrations | grep '.*\.sql' | cut -c1-5 | sort | uniq -d)
           if [ -z "$DUPLICATE_MIGRATIONS" ]; then
@@ -49,7 +61,7 @@ jobs:
           fi
 
   build-and-push:
-    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+    if: github.repository == 'UnlockedLabs/UnlockEdv2'
     needs: setup-env
     runs-on: ubuntu-latest
     outputs:
@@ -96,25 +108,24 @@ jobs:
             count=$(echo "$entry" | cut -d':' -f2)
             if [[ $count -ne 0 ]]; then
               case $path in
-                "frontend/")
+                "frontend")
                   echo "Building frontend image"
                   docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/frontend:${IMAGE_VERSION} --push frontend/.
                   deployments+=("frontend")
                   ;;
-                "backend/")
+                "backend")
                   echo "Building backend image"
                   docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/unlockedv2:${IMAGE_VERSION} --push -f backend/Dockerfile .
                   deployments+=("server")
                   ;;
-                "provider-middleware/")
+                "provider-middleware")
                   echo "Building middleware image"
                   docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/provider_middleware:${IMAGE_VERSION} --push -f provider-middleware/Dockerfile .
                   deployments+=("provider-service")
                   ;;
-                "backend/tasks")
-                  echo "Building scheduler image"
-                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/cron_tasks:${IMAGE_VERSION} --push -f backend/tasks/Dockerfile .
-                  deployments+=("cron-tasks")
+                "migrations")
+                  echo "Building migrator image"
+                  docker buildx build --platform linux/amd64 -t=${{ steps.login-ecr.outputs.registry }}/migrator:${IMAGE_VERSION} --push -f backend/migrations/migrate.Dockerfile .
                   ;;
               esac
             fi
@@ -122,7 +133,7 @@ jobs:
           echo "deployments=${deployments[*]}" >> $GITHUB_OUTPUT
 
   restart-deployments:
-    if: github.repository == 'UnlockedLabs/UnlockEdv2' || github.repository == 'PThorpe92/UnlockEdv2'
+    if: github.repository == 'UnlockedLabs/UnlockEdv2'
     needs: build-and-push
     runs-on: ubuntu-latest
     env:
