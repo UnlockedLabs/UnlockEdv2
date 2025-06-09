@@ -218,7 +218,7 @@ export default function ProgramOverviewDashboard() {
                                     tooltipClassName="tooltip-left cursor-pointer"
                                     icon={PencilSquareIcon}
                                 />
-                                <span className="body text-teal-3 cursor-pointer relative -top-[2px]">
+                                <span className="body text-teal-3 cursor-pointer relative -top-[2px] hover:underline">
                                     Edit Program
                                 </span>
                             </span>
@@ -339,9 +339,9 @@ export default function ProgramOverviewDashboard() {
             {/* classes table */}
             <div className="card p-4">
                 <table className="table-2 table-fixed w-full mb-4">
-                    <thead className="table-header-group bg-background">
-                        <tr className="!table-row w-full">
-                            <th className="max-w-[2%] w-[2%] px-4 py-2">
+                    <thead className="table-header-group bg-background text-center">
+                        <tr className="!table-row">
+                            <th className="w-[40px] py-2">
                                 <input
                                     type="checkbox"
                                     className="cursor-pointer checkbox checkbox-sm"
@@ -351,32 +351,26 @@ export default function ProgramOverviewDashboard() {
                                     }
                                 />
                             </th>
-                            <th className="w-[22%] !max-w-[22%] px-4 py-2">
-                                Class Name
-                            </th>
-                            <th className="w-[20%] !max-w-[20%]">
-                                Instructor Name
-                            </th>
+                            <th>Class Name</th>
+                            <th>Instructor Name</th>
                             <th>Start Date</th>
                             <th>End Date</th>
-                            <th className="w-[16%] !max-w-[16%]">
-                                Enrollments
-                            </th>
-                            <th className="w-[16%] !max-w-[16%]">Status</th>
+                            <th className="w-[200px]">Enrollments</th>
+                            <th className="w-[150px]">Status</th>
                         </tr>
                     </thead>
 
-                    <tbody className="!table-row-group w-full">
+                    <tbody className="!table-row-group text-center">
                         {filteredClasses.map((pc) => {
                             const isSelected = selectedClasses.includes(pc.id);
                             return (
                                 <tr
                                     key={pc.id}
-                                    className={`!table-row w-full ${isArchived(pc) ? 'bg-grey-1' : ''} ${isSelected ? 'bg-background' : ''}`}
+                                    className={`!table-row ${isArchived(pc) ? 'bg-grey-1' : ''} ${isSelected ? 'bg-background' : ''}`}
                                 >
                                     <td
                                         onClick={(e) => e.stopPropagation()}
-                                        className="!w-[2%] !max-w-[2%] px-4 py-2"
+                                        className="w-[40px] py-2"
                                     >
                                         <input
                                             type="checkbox"
@@ -393,7 +387,7 @@ export default function ProgramOverviewDashboard() {
                                         />
                                     </td>
 
-                                    <td className="w-[22%] !max-w-[22%] px-4 py-2 text-center cursor-pointer">
+                                    <td className="px-4 py-2 cursor-pointer">
                                         <div
                                             onClick={() =>
                                                 navigate(
@@ -411,13 +405,13 @@ export default function ProgramOverviewDashboard() {
                                         </div>
                                     </td>
 
-                                    <td className="w-[20%] !max-w-[20%] px-4 py-2 text-center">
+                                    <td>
                                         <ClampedText as="div" lines={1}>
                                             {pc.instructor_name}
                                         </ClampedText>
                                     </td>
 
-                                    <td className="px-4 py-2 text-center">
+                                    <td className="px-4 py-2">
                                         {new Date(
                                             pc.start_dt
                                         ).toLocaleDateString('en-US', {
@@ -428,7 +422,7 @@ export default function ProgramOverviewDashboard() {
                                         })}
                                     </td>
 
-                                    <td className="px-4 py-2 text-center">
+                                    <td className="px-4 py-2">
                                         {pc.end_dt
                                             ? new Date(
                                                   pc.end_dt
@@ -441,7 +435,7 @@ export default function ProgramOverviewDashboard() {
                                             : ''}
                                     </td>
 
-                                    <td className="w-[15%] !max-w-[15%] px-4 py-2 text-center">
+                                    <td className="px-4 py-2">
                                         <ProgressBar
                                             showPercentage={false}
                                             percent={parseFloat(
@@ -456,7 +450,7 @@ export default function ProgramOverviewDashboard() {
                                         />
                                     </td>
 
-                                    <td className="w-[15%] !max-w-[15%] px-4 py-2 text-center">
+                                    <td className="px-4 py-2">
                                         <ClassStatus
                                             status={pc.status}
                                             program_class={pc}
