@@ -57,7 +57,7 @@ export default function TransferSummaryPanel({
                                         (conflict, idx) => (
                                             <li
                                                 key={idx}
-                                            >{`${conflict.class_name} (${conflict.program_name})`}</li>
+                                            >{`${conflict.class_name} (Program: ${conflict.program_name})`}</li>
                                         )
                                     )}
                                 </ul>
