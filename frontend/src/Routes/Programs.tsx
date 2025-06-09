@@ -37,6 +37,22 @@ export const ProgramRoutes = DeclareAuthenticatedRoutes(
     [FeatureAccess.ProgramAccess]
 );
 
+export const DeptAdminProgramRoutes = DeclareAuthenticatedRoutes(
+    [
+        {
+            path: 'programs/detail/:program_id?',
+            loader: getProgramData,
+            element: <ProgramManagementForm />,
+            handle: {
+                title: 'Program Details',
+                path: ['programs', 'detail']
+            }
+        }
+    ],
+    [UserRole.DepartmentAdmin, UserRole.SystemAdmin],
+    [FeatureAccess.ProgramAccess]
+);
+
 export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
     [
         {
@@ -47,15 +63,6 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
             handle: {
                 title: 'Programs Management',
                 path: ['programs']
-            }
-        },
-        {
-            path: 'programs/detail/:program_id?',
-            loader: getProgramData,
-            element: <ProgramManagementForm />,
-            handle: {
-                title: 'Program Details',
-                path: ['programs', 'detail']
             }
         },
         {

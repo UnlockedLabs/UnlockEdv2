@@ -205,23 +205,27 @@ export default function ProgramOverviewDashboard() {
                     <div className="card card-row-padding col-span-3">
                         <h1 className="mb-2">
                             {program?.name}
-                            <span
-                                className="font-normal"
-                                onClick={(e) => {
-                                    e?.stopPropagation();
-                                    navigate(`/programs/detail/${program?.id}`);
-                                }}
-                            >
-                                <ULIComponent
-                                    dataTip={'Edit Program'}
-                                    iconClassName="ml-2 mr-1"
-                                    tooltipClassName="tooltip-left cursor-pointer"
-                                    icon={PencilSquareIcon}
-                                />
-                                <span className="body text-teal-3 cursor-pointer relative -top-[2px] hover:underline">
-                                    Edit Program
+                            {canSwitchFacility(user.user!) && (
+                                <span
+                                    className="font-normal"
+                                    onClick={(e) => {
+                                        e?.stopPropagation();
+                                        navigate(
+                                            `/programs/detail/${program?.id}`
+                                        );
+                                    }}
+                                >
+                                    <ULIComponent
+                                        dataTip={'Edit Program'}
+                                        iconClassName="ml-2 mr-1"
+                                        tooltipClassName="tooltip-left cursor-pointer"
+                                        icon={PencilSquareIcon}
+                                    />
+                                    <span className="body text-teal-3 cursor-pointer relative -top-[2px] hover:underline">
+                                        Edit Program
+                                    </span>
                                 </span>
-                            </span>
+                            )}
                         </h1>
                         <p className="mb-4 body body-small">
                             {program?.description}

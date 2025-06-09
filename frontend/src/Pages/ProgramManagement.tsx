@@ -1,4 +1,4 @@
-import { isAdministrator, useAuth } from '@/useAuth';
+import { canSwitchFacility, isAdministrator, useAuth } from '@/useAuth';
 import { useMemo, useState } from 'react';
 import SearchBar from '@/Components/inputs/SearchBar';
 import {
@@ -261,12 +261,14 @@ export default function ProgramManagement() {
                     </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                    <AddButton
-                        label="Add Program"
-                        onClick={() => {
-                            navigate('detail');
-                        }}
-                    />
+                    {canSwitchFacility(user!) && (
+                        <AddButton
+                            label="Add Program"
+                            onClick={() => {
+                                navigate('detail');
+                            }}
+                        />
+                    )}
                 </div>
             </div>
             <div className="card px-6 pb-6 space-y-4">

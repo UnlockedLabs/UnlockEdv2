@@ -88,7 +88,6 @@ export default function ProgramManagementForm() {
         label: fac.name
     }));
     const facilityOptionsSelectAll = [selectAllOption, ...facilityOptions];
-    const canSwitch = user && canSwitchFacility(user);
     const onSubmit: SubmitHandler<ProgramInputs> = async (
         data: ProgramInputs
     ) => {
@@ -108,9 +107,7 @@ export default function ProgramManagementForm() {
             funding_type: data.funding_type
                 ? data.funding_type.value
                 : FundingType.OTHER,
-            facilities: canSwitch
-                ? data.facilities.map((fac) => Number(fac.value))
-                : [user!.facility_id]
+            facilities: data.facilities.map((fac) => Number(fac.value))
         };
 
         const response = program_id
@@ -298,7 +295,7 @@ export default function ProgramManagementForm() {
                             <ULIComponent
                                 icon={InformationCircleIcon}
                                 dataTip={
-                                    'Available programs appear in the admin view of selected facilities and can be scheduled. Inactive programs remain hidden until activated.'
+                                    " Set to 'Available' to let facility admins schedule classes. 'Inactive' programs stay hidden."
                                 }
                                 iconClassName="tooltip absolute  mt-[2px] ml-[2px]"
                             />

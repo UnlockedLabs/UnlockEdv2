@@ -24,7 +24,14 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 				Count(&count).Error == nil && count > 0
 		}),
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, resolver),
+		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, func(tx *database.DB, r *http.Request) bool {
+			var count int64
+			return tx.WithContext(r.Context()).
+				Table("programs").
+				Where("id = ? AND id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)",
+					r.PathValue("id"), r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+				Count(&count).Error == nil && count > 0
+		}),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
