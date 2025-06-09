@@ -51,7 +51,11 @@ func runCreateClassTest(t *testing.T, env *TestEnv, facility *models.Facility, f
 	class := newClass(program, facility)
 
 	resp := NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
+		WithTestClaims(&handlers.Claims{
+			Role:       models.FacilityAdmin,
+			UserID:     facilityAdmin.ID,
+			FacilityID: facility.ID,
+		}).
 		Do().
 		ExpectStatus(http.StatusCreated)
 
@@ -71,12 +75,19 @@ func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *mod
 	program, err := env.CreateTestProgram("Inactive Program", models.FundingType(models.FederalGrants), []models.ProgramType{}, []models.ProgramCreditType{}, false)
 	require.NoError(t, err)
 
+	err = env.SetFacilitiesToProgram(program.ID, []uint{facility.ID})
+	require.NoError(t, err)
+
+	program, err = env.DB.GetProgramByID(int(program.ID))
+	require.NoError(t, err)
+
 	class := newClass(program, facility)
 
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
-		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID}).
+		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
-		ExpectStatus(http.StatusConflict)
+		ExpectStatus(http.StatusBadRequest)
+
 }
 
 // creates a boilerplate class

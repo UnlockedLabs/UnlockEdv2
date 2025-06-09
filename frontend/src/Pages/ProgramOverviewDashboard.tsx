@@ -23,7 +23,7 @@ import { XMarkIcon } from '@heroicons/react/24/solid';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
 import { useNavigate } from 'react-router-dom';
-import { canSwitchFacility, useAuth } from '@/useAuth';
+import { useAuth } from '@/useAuth';
 import ActivityHistoryCard from '@/Components/ActivityHistoryCard';
 import { AddButton } from '@/Components/inputs';
 import { getClassEndDate } from '@/Components/ClassLayout';
@@ -194,11 +194,34 @@ export default function ProgramOverviewDashboard() {
     }
 
     const canAddClass =
-        (canSwitchFacility(user.user!) ||
-            program.facilities.some((f) => f.id === userFacilityId)) &&
+        program.facilities.some((f) => f.id === userFacilityId) &&
         program.is_active &&
         program.archived_at == null;
 
+    function getTooltip(): string | undefined {
+        const tooltipMap = {
+            inactiveProgram:
+                'This program is inactive and cannot accept new classes.',
+            archivedProgram:
+                'This program has been archived and cannot be modified.',
+            notOfferedAtFacility:
+                'This program isn’t available at the selected facility.'
+        };
+        const key = (() => {
+            if (!program) return '';
+            if (!program.facilities) return '';
+            if (!program.facilities.some((f) => f.id === userFacilityId))
+                return 'notOfferedAtFacility';
+            if (program.archived_at !== null) return 'archivedProgram';
+            if (!program.is_active) return 'inactiveProgram';
+            return '';
+        })();
+
+        if (key === '') {
+            return undefined;
+        }
+        return tooltipMap[key];
+    }
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
@@ -332,6 +355,7 @@ export default function ProgramOverviewDashboard() {
                         </button>
                     ) : (
                         <AddButton
+                            dataTip={getTooltip()}
                             disabled={!canAddClass}
                             label="Add Class"
                             onClick={() =>
