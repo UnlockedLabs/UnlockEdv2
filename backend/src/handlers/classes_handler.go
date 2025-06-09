@@ -14,14 +14,17 @@ func (srv *Server) registerClassesRoutes() []routeDef {
 	resolver := FacilityAdminResolver("program_classes", "class_id")
 	validateFacility := func(check string) RouteResolver {
 		return func(tx *database.DB, r *http.Request) bool {
-			if r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility() {
-				return true
+			claims := r.Context().Value(ClaimsKey).(*Claims)
+			if claims.canSwitchFacility() {
+				if check == "" {
+					return true
+				}
 			}
 			var count int64
 			return tx.WithContext(r.Context()).
 				Table("programs").
 				Where(fmt.Sprintf("id = ? AND %s id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)", check),
-					r.PathValue("program_id"), r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+					r.PathValue("program_id"), claims.FacilityID).
 				Count(&count).Error == nil && count > 0
 		}
 	}
@@ -83,13 +86,6 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	id, err := strconv.Atoi(r.PathValue("program_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
-	}
-	program, err := srv.Db.GetProgramByID(id)
-	if err != nil {
-		return writeJsonResponse(w, http.StatusInternalServerError, "Error retrieving program")
-	}
-	if !program.IsActive || program.ArchivedAt != nil {
-		return writeJsonResponse(w, http.StatusConflict, "Program is inactive or archived unable to create class")
 	}
 	var class models.ProgramClass
 	err = json.NewDecoder(r.Body).Decode(&class)
