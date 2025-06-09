@@ -416,8 +416,8 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 			mr.total_classes AS total_classes,
 			(SUM(total_completions) * 1.0 / NULLIF(SUM(dpfh.total_enrollments), 0)) * 100 AS completion_rate,
 			(SUM(total_students_present) * 1.0 / NULLIF(SUM(dpfh.total_attendances_marked), 0)) * 100 AS attendance_rate,
-			STRING_AGG(DISTINCT pt.program_type::text, ',') AS program_types,
-			STRING_AGG(DISTINCT pct.credit_type::text, ',') AS credit_types,
+			pt.program_types AS program_types,
+			pct.credit_types AS credit_types,
 			programs.funding_type AS funding_type,
 			BOOL_OR(programs.is_active) AS status
 		`, totalActiveFacilitiesQuery))
@@ -440,9 +440,20 @@ func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int
 				%s
 			) AS mr ON mr.program_id = programs.id
 		`, totalActiveFacilitiesSubQuery, tableName, tableName, facilitySubQueryFilter))
-	tx = tx.Joins("JOIN program_types pt ON pt.program_id = programs.id").
-		Joins("JOIN program_credit_types pct ON pct.program_id = programs.id").
-		Group(totalActiveFacilitiesQuery + "programs.id, programs.name, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type")
+
+	tx = tx.Joins(`LEFT JOIN (
+				SELECT program_id, STRING_AGG(DISTINCT program_type::text, ',') AS program_types
+				FROM program_types
+				GROUP BY program_id
+			  ) AS pt ON pt.program_id = programs.id
+			`).Joins(`
+			  LEFT JOIN (
+				SELECT program_id, STRING_AGG(DISTINCT credit_type::text, ',') AS credit_types
+				FROM program_credit_types
+				GROUP BY program_id
+			  ) AS pct ON pct.program_id = programs.id
+			`).Group(totalActiveFacilitiesQuery + "programs.id, programs.name, mr.total_enrollments, mr.total_active_enrollments, mr.total_classes, programs.funding_type, pt.program_types, pct.credit_types")
+
 	if adminRole == models.FacilityAdmin {
 		tx = tx.Joins("JOIN facilities_programs fp ON fp.program_id = programs.id").Where("fp.facility_id = ?", args.FacilityID)
 	}
