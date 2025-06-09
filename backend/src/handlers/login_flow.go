@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -54,6 +56,17 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	if err != nil {
 		return newUnauthorizedServiceError()
 	}
+	lockedStatus, err := s.Db.IsAccountLocked(user.ID)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	if lockedStatus.IsLocked {
+		log.infof("User %d locked out", user.ID)
+		w.Header().Set("Retry-After", strconv.Itoa(int(lockedStatus.LockDuration.Seconds())))
+		msg := fmt.Sprintf("Account locked. Try again in %d minutes.", int(lockedStatus.LockDuration.Minutes()))
+		s.errorResponse(w, int(http.StatusTooManyRequests), msg)
+		return nil
+	}
 	log.add("form", form)
 	// create json body to send to kratos for processing login
 	jsonBody, err := buildKratosLoginForm(form)
@@ -78,7 +91,20 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request, log sLog) e
 	setLoginCookies(resp, w)
 	redirect, err := getKratosRedirect(resp)
 	if err != nil {
+		err := s.Db.UpdateFailedLogin(user.ID)
+		log.infof("Failed login attempt for %d at %s", user.ID, time.Now())
+		if err != nil {
+			log.error("error updating failed login attempts", err)
+			return newDatabaseServiceError(err)
+		}
 		return NewServiceError(err, resp.StatusCode, "Invalid login")
+	}
+	if lockedStatus.AttemptCount > 0 {
+		err = s.Db.ResetFailedLoginAttempts(user.ID)
+		if err != nil {
+			log.error("error resetting failed login attempts", err)
+			return newDatabaseServiceError(err)
+		}
 	}
 	totalLogins, err := s.Db.IncrementUserLogin(user)
 	if err != nil {

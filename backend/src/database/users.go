@@ -11,6 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func calcOffset(page, perPage int) int {
@@ -601,4 +602,78 @@ func adjustUserOrderBy(arg string) string {
 		return arg + ", name_first"
 	}
 	return arg
+}
+
+func (db *DB) UpdateFailedLogin(userID uint) error {
+	now := time.Now()
+	return db.Transaction(func(tx *gorm.DB) error {
+		var rec models.FailedLoginAttempts
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&rec, "user_id = ?", userID).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			rec = models.FailedLoginAttempts{
+				UserID:         userID,
+				FirstAttemptAt: &now,
+				AttemptCount:   1,
+			}
+			return tx.Create(&rec).Error
+		} else if err != nil {
+			return err
+		}
+
+		if now.Sub(*rec.FirstAttemptAt) > models.WindowDuration {
+			rec.AttemptCount = 1
+			rec.FirstAttemptAt = &now
+			rec.LockedUntil = nil
+		} else {
+			rec.AttemptCount++
+			rec.LastAttemptAt = now
+			if rec.AttemptCount >= models.MaxFailures {
+				lockExpiry := now.Add(models.LockDuration)
+				rec.LockedUntil = &lockExpiry
+			}
+		}
+		return tx.Save(&rec).Error
+	})
+}
+
+type FailedLoginStatus struct {
+	IsLocked     bool
+	LockDuration time.Duration
+	AttemptCount int
+}
+
+func (db *DB) IsAccountLocked(userID uint) (FailedLoginStatus, error) {
+	var rec models.FailedLoginAttempts
+	var status FailedLoginStatus
+	now := time.Now()
+	err := db.First(&rec, "user_id = ?", userID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		status.IsLocked = false
+		status.LockDuration = 0
+		status.AttemptCount = 0
+		return status, nil
+	} else if err != nil {
+		return status, err
+	}
+	if now.Sub(*rec.FirstAttemptAt) >= models.WindowDuration {
+		err := db.ResetFailedLoginAttempts(userID)
+		if err != nil {
+			return status, err
+		}
+	}
+	if rec.LockedUntil != nil && rec.LockedUntil.After(time.Now()) {
+		status.IsLocked = true
+		status.LockDuration = time.Until(*rec.LockedUntil)
+		status.AttemptCount = rec.AttemptCount
+		return status, nil
+	}
+	status.IsLocked = false
+	status.LockDuration = 0
+	status.AttemptCount = rec.AttemptCount
+	return status, nil
+}
+
+func (db *DB) ResetFailedLoginAttempts(userID uint) error {
+	return db.Delete(&models.FailedLoginAttempts{}, "user_id = ?", userID).Error
 }
