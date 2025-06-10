@@ -272,7 +272,12 @@ export default function ProgramOverviewDashboard() {
                             number={
                                 program?.active_enrollments.toString() ?? '0'
                             }
-                            label="residents"
+                            label={
+                                program.active_enrollments &&
+                                program.active_enrollments == 1
+                                    ? 'Enrollment'
+                                    : 'Enrollments'
+                            }
                         />
                         <StatsCard
                             title="Overall Completion"
