@@ -14,7 +14,7 @@ func (srv *Server) registerFacilitiesRoutes() []routeDef {
 		newSystemAdminRoute("POST /api/facilities", srv.handleCreateFacility),
 		newSystemAdminRoute("DELETE /api/facilities/{id}", srv.handleDeleteFacility),
 		newSystemAdminRoute("PATCH /api/facilities/{id}", srv.handleUpdateFacility),
-		newSystemAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
+		newDeptAdminRoute("PUT /api/admin/facility-context/{id}", srv.handleChangeAdminFacility),
 	}
 }
 
