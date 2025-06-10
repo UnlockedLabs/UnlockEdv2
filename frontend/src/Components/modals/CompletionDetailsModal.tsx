@@ -71,7 +71,7 @@ export default function CompletionDetailsModal({
                             </p>
                             <p>
                                 <span className="font-semibold">
-                                    Start Date:
+                                    Resident Started Class:
                                 </span>{' '}
                                 {new Date(
                                     completionDetails.program_class_start_dt

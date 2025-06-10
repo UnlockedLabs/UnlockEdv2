@@ -82,16 +82,17 @@ const (
 
 type ProgramCompletion struct {
 	DatabaseFields
-	UserID              uint      `json:"user_id" gorm:"not null"`
-	ProgramClassID      uint      `json:"program_class_id" gorm:"not null"`
-	FacilityName        string    `json:"facility_name" gorm:"not null"`
-	CreditType          string    `json:"credit_type" gorm:"not null"`
-	AdminEmail          string    `json:"admin_email" gorm:"not null"`
-	ProgramOwner        string    `json:"program_owner" gorm:"not null"`
-	ProgramName         string    `json:"program_name" gorm:"not null"`
-	ProgramID           uint      `json:"program_id" gorm:"not null"`
-	ProgramClassName    string    `json:"program_class_name"`
-	ProgramClassStartDt time.Time `json:"program_class_start_dt"`
+	UserID                   uint      `json:"user_id" gorm:"not null"`
+	ProgramClassID           uint      `json:"program_class_id" gorm:"not null"`
+	FacilityName             string    `json:"facility_name" gorm:"not null"`
+	CreditType               string    `json:"credit_type" gorm:"not null"`
+	AdminEmail               string    `json:"admin_email" gorm:"not null"`
+	ProgramOwner             string    `json:"program_owner" gorm:"not null"`
+	ProgramName              string    `json:"program_name" gorm:"not null"`
+	ProgramID                uint      `json:"program_id" gorm:"not null"`
+	ProgramClassName         string    `json:"program_class_name"`
+	ProgramClassStartDt      time.Time `json:"program_class_start_dt"`
+	ProgramClassEnrollmentDt time.Time `json:"program_class_enrollment_dt" gorm:"-"`
 
 	User *User `json:"user" gorm:"foreignKey:UserID;references:ID"`
 }
