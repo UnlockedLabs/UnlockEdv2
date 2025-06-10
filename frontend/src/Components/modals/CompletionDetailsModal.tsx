@@ -13,10 +13,27 @@ export default function CompletionDetailsModal({
 }) {
     const getStartedDate = () => {
         if (!completionDetails) return '';
-        const classStart = new Date(completionDetails.program_class_start_dt);
-        const enrollDt = new Date(completionDetails.enrolled_on_dt);
-        const started = classStart > enrollDt ? classStart : enrollDt;
-        return started.toLocaleDateString();
+
+        const toDateOnly = (iso: string) => {
+            const d = new Date(iso);
+            return new Date(
+                d.getUTCFullYear(),
+                d.getUTCMonth(),
+                d.getUTCDate()
+            );
+        };
+
+        const classStartDateOnly = toDateOnly(
+            completionDetails.program_class_start_dt
+        );
+        const enrollDateOnly = toDateOnly(completionDetails.enrolled_on_dt);
+
+        const startedDateOnly =
+            classStartDateOnly > enrollDateOnly
+                ? classStartDateOnly
+                : enrollDateOnly;
+
+        return startedDateOnly.toLocaleDateString();
     };
     return (
         <TextOnlyModal
