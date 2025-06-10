@@ -4,6 +4,7 @@ import (
 	"UnlockEdv2/src/database"
 	"UnlockEdv2/src/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -11,27 +12,26 @@ import (
 func (srv *Server) registerClassesRoutes() []routeDef {
 	axx := models.ProgramAccess
 	resolver := FacilityAdminResolver("program_classes", "class_id")
+	validateFacility := func(check string) RouteResolver {
+		return func(tx *database.DB, r *http.Request) bool {
+			if r.Context().Value(ClaimsKey).(*Claims).canSwitchFacility() {
+				return true
+			}
+			var count int64
+			return tx.WithContext(r.Context()).
+				Table("programs").
+				Where(fmt.Sprintf("id = ? AND %s id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)", check),
+					r.PathValue("program_id"), r.Context().Value(ClaimsKey).(*Claims).FacilityID).
+				Count(&count).Error == nil && count > 0
+		}
+	}
 	return []routeDef{
 		featureRoute("GET /api/programs/{id}/classes", srv.handleGetClassesForProgram, axx),
 		featureRoute("GET /api/program-classes", srv.handleIndexClassesForFacility, axx),
 		/* admin */
-		adminValidatedFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx, func(tx *database.DB, r *http.Request) bool {
-			var count int64
-			return tx.WithContext(r.Context()).
-				Table("programs"). //offered in the facility AND that it's active AND that it's not archived
-				Where("id = ? AND is_active = true AND archived_at IS NULL AND id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)",
-					r.PathValue("program_id"), r.Context().Value(ClaimsKey).(*Claims).FacilityID).
-				Count(&count).Error == nil && count > 0
-		}),
+		adminValidatedFeatureRoute("POST /api/programs/{program_id}/classes", srv.handleCreateClass, axx, validateFacility("is_active = true AND archived_at IS NULL AND")),
 		validatedFeatureRoute("GET /api/program-classes/{class_id}", srv.handleGetClass, axx, resolver),
-		adminValidatedFeatureRoute("GET /api/programs/{id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, func(tx *database.DB, r *http.Request) bool {
-			var count int64
-			return tx.WithContext(r.Context()).
-				Table("programs").
-				Where("id = ? AND id IN (SELECT program_id FROM facilities_programs WHERE facility_id = ?)",
-					r.PathValue("id"), r.Context().Value(ClaimsKey).(*Claims).FacilityID).
-				Count(&count).Error == nil && count > 0
-		}),
+		adminValidatedFeatureRoute("GET /api/programs/{program_id}/classes/outcomes", srv.handleGetProgramClassOutcomes, axx, validateFacility("")),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/attendance-flags", srv.handleGetAttendanceFlagsForClass, axx, resolver),
 		adminValidatedFeatureRoute("GET /api/program-classes/{class_id}/history", srv.handleGetClassHistory, axx, resolver),
 		adminValidatedFeatureRoute("PATCH /api/program-classes", srv.handleUpdateClasses, axx, func(tx *database.DB, r *http.Request) bool {
