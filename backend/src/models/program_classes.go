@@ -94,8 +94,7 @@ type ProgramCompletion struct {
 	ProgramClassStartDt time.Time `json:"program_class_start_dt"`
 	EnrolledOnDt        time.Time `json:"enrolled_on_dt" `
 
-	User                   *User                   `json:"user" gorm:"foreignKey:UserID;references:ID"`
-	ProgramClassEnrollment *ProgramClassEnrollment `json:"program_class_enrollments" gorm:"foreignKey:ProgramClassID;references:ID"`
+	User *User `json:"user" gorm:"foreignKey:UserID;references:ID"`
 }
 
 func (ProgramCompletion) TableName() string { return "program_completions" }
