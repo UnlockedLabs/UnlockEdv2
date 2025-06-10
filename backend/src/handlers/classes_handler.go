@@ -192,7 +192,7 @@ func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *ht
 }
 
 func (srv *Server) handleGetProgramClassOutcomes(w http.ResponseWriter, r *http.Request, log sLog) error {
-	id, err := strconv.Atoi(r.PathValue("id"))
+	id, err := strconv.Atoi(r.PathValue("program_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}

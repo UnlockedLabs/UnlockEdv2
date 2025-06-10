@@ -295,7 +295,7 @@ export default function ProgramManagementForm() {
                             <ULIComponent
                                 icon={InformationCircleIcon}
                                 dataTip={
-                                    " Set to 'Available' to let facility admins schedule classes. 'Inactive' programs stay hidden."
+                                    "Set to 'Available' to let facility admins schedule classes. 'Inactive' programs stay hidden."
                                 }
                                 iconClassName="tooltip absolute  mt-[2px] ml-[2px]"
                             />
