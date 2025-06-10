@@ -119,6 +119,17 @@ export default function ClassEnrollmentDetails() {
     };
 
     const handleOpenModalGraduate = () => {
+        if (selectedResidents.length === 0) return;
+        setChangeStatusValue({
+            status: EnrollmentStatus.Completed,
+            user_id: selectedResidents[0],
+            name_full:
+                selectedResidents.length > 1
+                    ? `${selectedResidents.length} Residents`
+                    : enrollments.find(
+                          (e) => e.user_id === selectedResidents[0]
+                      )?.name_full ?? ''
+        });
         if (selectedResidents.length > 0 && confirmStateChangeModal.current) {
             confirmStateChangeModal.current.showModal();
         }
@@ -137,21 +148,22 @@ export default function ClassEnrollmentDetails() {
     };
 
     const handleSubmitEnrollmentChange = async (reasonText?: string) => {
+        if (!changeStatusValue) return;
+        const { status, user_id } = changeStatusValue;
         await API.patch(`program-classes/${class_id}/enrollments`, {
             // If one or more users are selected with the check-boxes, then they are going to be
             // 'Graduated'. If selectedResidents is empty, that means the Dropdown is being used
             // to change an individual status inline.
-            enrollment_status: changeStatusValue?.status ?? 'Completed',
+            enrollment_status: changeStatusValue?.status ?? 'completed',
             user_ids:
-                selectedResidents.length === 0
-                    ? [changeStatusValue?.user_id]
-                    : selectedResidents,
-            ...(requiresReason(changeStatusValue!.status) && {
+                selectedResidents.length > 0 ? selectedResidents : [user_id],
+            ...(requiresReason(status) && {
                 change_reason: reasonText?.trim()
             })
         });
 
         setSelectedResidents([]);
+        setChangeStatusValue(undefined);
         await mutate();
     };
 
