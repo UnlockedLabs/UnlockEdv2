@@ -11,6 +11,13 @@ export default function CompletionDetailsModal({
     modalRef: React.RefObject<HTMLDialogElement>;
     onClose: () => void;
 }) {
+    const getStartedDate = () => {
+        if (!completionDetails) return '';
+        const classStart = new Date(completionDetails.program_class_start_dt);
+        const enrollDt = new Date(completionDetails.enrolled_on_dt);
+        const started = classStart > enrollDt ? classStart : enrollDt;
+        return started.toLocaleDateString();
+    };
     return (
         <TextOnlyModal
             ref={modalRef}
@@ -73,9 +80,7 @@ export default function CompletionDetailsModal({
                                 <span className="font-semibold">
                                     Resident Started Class:
                                 </span>{' '}
-                                {new Date(
-                                    completionDetails.program_class_start_dt
-                                ).toLocaleDateString()}
+                                {getStartedDate()}
                             </p>
                             <p>
                                 <span className="font-semibold">

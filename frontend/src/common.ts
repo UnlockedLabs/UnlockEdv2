@@ -959,6 +959,7 @@ export interface ProgramCompletion {
     created_at: string;
     updated_at: string;
     deleted_at: string;
+    enrolled_on_dt: string;
     user?: User;
 }
 
