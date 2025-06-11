@@ -23,6 +23,7 @@ import { RRule } from 'rrule';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { RRuleControl, RRuleFormHandle } from '../inputs/RRuleControl';
 import { addDays } from 'date-fns';
+import { parseRRuleUntiDate } from '../helperFunctions';
 
 export const RescheduleClassEventSeriesModal = forwardRef(function (
     {
@@ -138,13 +139,11 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                                       .split('T')[0]
                               }
                               endDateVal={
-                                  calendarEvent?.end &&
-                                  toZonedTime(
-                                      calendarEvent?.end,
+                                  calendarEvent &&
+                                  parseRRuleUntiDate(
+                                      calendarEvent.recurrence_rule,
                                       user?.timezone
                                   )
-                                      .toISOString()
-                                      .split('T')[0]
                               }
                           />
                       )
@@ -155,7 +154,8 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
             type: FormInputTypes.Text,
             label: 'Room',
             interfaceRef: 'room',
-            required: true
+            required: true,
+            defaultValue: calendarEvent?.room
         }
     ];
 
@@ -170,7 +170,6 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
     function clearFormAndCloseModal() {
         setDataToSubmit(null);
         setRruleObj(null);
-        rruleFormRef?.current?.resetForm();
         closeModal(rescheduleSeriesConfirmationRef);
     }
     return (
@@ -191,7 +190,6 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                         closeModal(ref);
                     }
                 }}
-                onClose={() => rruleFormRef?.current?.resetForm()}
             />
             <TextOnlyModal
                 ref={rescheduleSeriesConfirmationRef}
@@ -206,6 +204,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                     if (dataToSubmit) {
                         void rescheduleClassEventSeries(dataToSubmit);
                         clearFormAndCloseModal();
+                        rruleFormRef?.current?.resetForm();
                     }
                 }}
                 onClose={() => {

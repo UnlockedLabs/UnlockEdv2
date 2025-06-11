@@ -141,6 +141,7 @@ export const FormModal = forwardRef(function FormModal<T extends FieldValues>(
                                             disabled={input.disabled}
                                             onChange={input.onChange}
                                             placeholder={input.placeholder}
+                                            defaultValue={input.defaultValue}
                                         />
                                     );
                                 }

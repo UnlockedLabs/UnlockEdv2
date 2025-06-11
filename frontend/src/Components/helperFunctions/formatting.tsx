@@ -1,4 +1,5 @@
 import { Timezones } from '@/common';
+import { toZonedTime } from 'date-fns-tz';
 import { RRule } from 'rrule';
 
 export function formatPercent(value?: number | string): string {
@@ -89,5 +90,19 @@ export function parseRRule(
     } catch (error) {
         console.error('error parsing rrule, error is: ', error);
     }
-    return rRule; //return rRule back if errors
+    return rRule;
+}
+
+export function parseRRuleUntiDate(rRule: string, timezone: string): string {
+    try {
+        const rule = RRule.fromString(rRule);
+        if (rule.options.until) {
+            return toZonedTime(rule.options.until, timezone)
+                .toISOString()
+                .split('T')[0];
+        }
+    } catch (error) {
+        console.error('error parsing the rrule, error is: ', error);
+    }
+    return '';
 }

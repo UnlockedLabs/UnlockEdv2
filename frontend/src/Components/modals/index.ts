@@ -63,6 +63,7 @@ export interface Input {
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onChangeSelection?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
     placeholder?: string;
+    defaultValue?: string;
 }
 
 export interface InputWithOptions<T> extends Input {
