@@ -45,15 +45,6 @@ func (srv *Server) handleIndexPrograms(w http.ResponseWriter, r *http.Request, l
 	return writePaginatedResponse(w, http.StatusOK, programs, args.IntoMeta())
 }
 
-type ProgramOverviewResponse struct {
-	models.Program
-	ActiveEnrollments      int     `json:"active_enrollments"`
-	Completions            int     `json:"completions"`
-	TotalEnrollments       int     `json:"total_enrollments"`
-	CompletionRate         float64 `json:"completion_rate"`
-	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids"`
-}
-
 func (srv *Server) handleIndexProgramsFacilitiesStats(w http.ResponseWriter, r *http.Request, log sLog) error {
 	args := srv.getQueryContext(r)
 	adminRole := r.Context().Value(ClaimsKey).(*Claims).Role
@@ -103,7 +94,7 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		return newDatabaseServiceError(err)
 	}
 
-	metrics, err := srv.Db.FetchEnrollmentMetrics(id, facility_id)
+	overview, err := srv.Db.FetchEnrollmentMetrics(id, facility_id)
 	if err != nil {
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
@@ -114,17 +105,9 @@ func (srv *Server) handleShowProgram(w http.ResponseWriter, r *http.Request, log
 		log.add("program_id", id)
 		return newDatabaseServiceError(err)
 	}
-
-	resultSet := ProgramOverviewResponse{
-		Program:                *program,
-		ActiveEnrollments:      metrics.ActiveEnrollments,
-		Completions:            metrics.Completions,
-		TotalEnrollments:       metrics.TotalEnrollments,
-		CompletionRate:         metrics.CompletionRate,
-		ActiveClassFacilityIDs: activeClassFacilityIDs,
-	}
-
-	return writeJsonResponse(w, http.StatusOK, resultSet)
+	overview.Program = *program
+	overview.ActiveClassFacilityIDs = activeClassFacilityIDs
+	return writeJsonResponse(w, http.StatusOK, overview)
 }
 
 type ProgramForm struct {
