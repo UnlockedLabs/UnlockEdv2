@@ -201,8 +201,8 @@ export default function ProgramOverviewDashboard() {
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-4 gap-4 items-stretch">
-                    <div className="card card-row-padding col-span-2">
+                <div className="grid grid-cols-5 gap-4 items-stretch">
+                    <div className="card card-row-padding col-span-3">
                         <h1 className="mb-2">
                             {program?.name}
                             <span
