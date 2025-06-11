@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { KeyedMutator } from 'swr';
 import { showModal } from './modals';
 import API from '@/api/api';
@@ -86,16 +86,15 @@ export default function ProgramStatus({
     ]);
     const availableActions = programActions.get(effectiveStatus) ?? [];
 
-    function openSelectionModal(action: ProgramAction) {
+    function openSelectionModal(
+        e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+        action: ProgramAction
+    ) {
         setSelectedAction(action);
         setDropdownOpen(false);
+        setTimeout(() => showModal(modifyProgramRef), 0);
+        e.stopPropagation();
     }
-
-    useEffect(() => {
-        if (selectedAction) {
-            showModal(modifyProgramRef);
-        }
-    }, [selectedAction]);
 
     interface UpdateStatusResponse {
         updated: boolean;
@@ -158,7 +157,7 @@ export default function ProgramStatus({
                                     className="flex items-center space-x-2 px-2 py-1 hover:bg-grey-2 rounded cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        openSelectionModal(action);
+                                        openSelectionModal(e, action);
                                     }}
                                 >
                                     <span className="text-sm">
