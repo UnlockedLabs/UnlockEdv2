@@ -27,7 +27,7 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (models.ProgramOverviewResponse, error) {
+func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (*models.ProgramOverviewResponse, error) {
 	var metrics models.ProgramOverviewResponse
 
 	const query = `
@@ -44,14 +44,15 @@ func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (models.Pro
 		END AS completion_rate
 	`
 
-	err := db.Table("program_class_enrollments pce").
+	if err := db.Table("program_class_enrollments pce").
 		Select(query).
 		Joins("JOIN program_classes pc ON pce.class_id = pc.id").
 		Where("pc.program_id = ?", programID).
 		Where("pc.facility_id = ?", facilityId).
-		Scan(&metrics).Error
-
-	return metrics, err
+		Scan(&metrics).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "program_class_enrollments")
+	}
+	return &metrics, nil
 }
 
 func (db *DB) GetActiveClassFacilityIDs(ctx context.Context, id int) ([]int, error) {
