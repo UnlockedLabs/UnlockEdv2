@@ -438,7 +438,7 @@ export default function ProgramOverviewDashboard() {
                                                           timeZone: 'UTC'
                                                       }
                                                   )
-                                                : 'No end date scheduled';
+                                                : 'No end date';
                                         })()}
                                     </td>
 

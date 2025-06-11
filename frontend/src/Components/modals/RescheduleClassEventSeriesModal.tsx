@@ -92,8 +92,8 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
 
         checkResponse(
             response.success,
-            'Failed to create rescheduled event series',
-            'Successfully created resecheduled event series'
+            'The event series could not be updated',
+            'The events in this series have been updated'
         );
     };
 
