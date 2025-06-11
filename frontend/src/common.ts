@@ -717,6 +717,7 @@ export interface Program {
 }
 
 export interface ProgramOverview extends Program {
+    active_residents: number;
     active_enrollments: number;
     completions: number;
     total_enrollments: number;

@@ -12,13 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type EnrollmentAndCompletionMetrics struct {
-	ActiveEnrollments int     `json:"active_enrollments"`
-	Completions       int     `json:"completions"`
-	TotalEnrollments  int     `json:"total_enrollments"`
-	CompletionRate    float64 `json:"completion_rate"`
-}
-
 func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	content := &models.Program{}
 	if err := db.Preload("ProgramTypes").Preload("ProgramCreditTypes").Preload("FacilitiesPrograms.Facility").First(content, id).Error; err != nil {
@@ -34,13 +27,14 @@ func (db *DB) GetProgramByID(id int) (*models.Program, error) {
 	return content, nil
 }
 
-func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (EnrollmentAndCompletionMetrics, error) {
-	var metrics EnrollmentAndCompletionMetrics
+func (db *DB) FetchEnrollmentMetrics(programID int, facilityId uint) (models.ProgramOverviewResponse, error) {
+	var metrics models.ProgramOverviewResponse
 
 	const query = `
 		COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) AS active_enrollments,
 		COUNT(CASE WHEN pce.enrollment_status = 'Completed' THEN 1 END) AS completions,
 		COUNT(*) AS total_enrollments,
+		COUNT(DISTINCT CASE WHEN pce.enrollment_status = 'Enrolled' THEN pce.user_id END) as active_residents,
 		CASE 
 			WHEN COUNT(*) = 0 THEN 0
 			WHEN COUNT(CASE WHEN pce.enrollment_status = 'Enrolled' THEN 1 END) = 0

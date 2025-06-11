@@ -159,3 +159,13 @@ type ProgramsOverviewTable struct {
 	FundingType            string   `json:"funding_type"`
 	Status                 bool     `json:"status"`
 }
+
+type ProgramOverviewResponse struct {
+	Program
+	ActiveResidents        int     `json:"active_residents"`
+	ActiveEnrollments      int     `json:"active_enrollments"`
+	Completions            int     `json:"completions"`
+	TotalEnrollments       int     `json:"total_enrollments"`
+	CompletionRate         float64 `json:"completion_rate"`
+	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids"`
+}

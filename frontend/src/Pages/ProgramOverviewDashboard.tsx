@@ -203,7 +203,7 @@ export default function ProgramOverviewDashboard() {
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
                 <div className="grid grid-cols-4 gap-4 items-stretch">
-                    <div className="card card-row-padding col-span-3">
+                    <div className="card card-row-padding col-span-2">
                         <h1 className="mb-2">
                             {program?.name}
                             {canSwitchFacility(user.user!) && (
@@ -271,7 +271,7 @@ export default function ProgramOverviewDashboard() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2 col-span-2">
                         <StatsCard
                             title="Active Enrollments"
                             number={
@@ -285,10 +285,19 @@ export default function ProgramOverviewDashboard() {
                             }
                         />
                         <StatsCard
-                            title="Overall Completion"
-                            number={program?.completion_rate.toString() ?? '0'}
-                            label="%"
+                            title="Active Residents"
+                            number={program?.active_residents.toString() ?? '0'}
+                            label="residents"
                         />
+                        <div className="col-span-2">
+                            <StatsCard
+                                title="Overall Completion"
+                                number={
+                                    program?.completion_rate.toString() ?? '0'
+                                }
+                                label="%"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
