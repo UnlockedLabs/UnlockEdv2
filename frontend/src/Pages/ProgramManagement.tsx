@@ -24,6 +24,7 @@ import {
 import { AddButton } from '@/Components/inputs';
 import ProgramStatus from '@/Components/ProgramStatus';
 import { useNavigate } from 'react-router-dom';
+import API from '@/api/api';
 
 export function ProgramRow({
     program,
@@ -200,6 +201,31 @@ export default function ProgramManagement() {
         return `Last updated ${formattedDate} at ${formattedTime}.`;
     }
 
+    function downloadCSV() {
+        API.downloadFile('programs/csv')
+            .then(({ blob, headers }) => {
+                const disposition = headers.get('Content-Disposition') ?? '';
+                const match = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(
+                    disposition
+                );
+
+                const filename =
+                    match?.[1]?.replace(/['"]/g, '') ?? 'programs_data.csv';
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch((error) => {
+                console.error('Error downloading CSV:', error);
+            });
+    }
+
     return (
         <div className="px-5 py-4 flex flex-col gap-4 overflow-x-hidden">
             <div className="flex flex-row justify-end">
@@ -208,6 +234,7 @@ export default function ProgramManagement() {
                     setState={setDateRange}
                 />
             </div>
+
             <div className={`grid ${statsCols} gap-4`}>
                 <StatsCard
                     title={'Total Programs'}
@@ -288,6 +315,12 @@ export default function ProgramManagement() {
                             }}
                         />
                     )}
+                    <AddButton
+                        label="Export Program Data"
+                        onClick={() => {
+                            downloadCSV();
+                        }}
+                    />
                 </div>
             </div>
             <div className="card px-6 pb-6 space-y-4">

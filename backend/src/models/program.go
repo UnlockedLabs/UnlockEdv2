@@ -172,3 +172,15 @@ type ProgramOverviewResponse struct {
 	CompletionRate         float64 `json:"completion_rate"`
 	ActiveClassFacilityIDs []int   `json:"active_class_facility_ids" gorm:"-"`
 }
+
+type ProgramCSVData struct {
+	UnlockEdID           uint                    `json:"unlock_ed_id" gorm:"column:unlock_ed_id"`
+	ResidentID           uint                    `json:"resident_id" gorm:"column:resident_id"`
+	FacilityName         string                  `json:"facility_name" gorm:"column:facility_name"`
+	ProgramName          string                  `json:"program_name" gorm:"column:program_name"`
+	ClassName            string                  `json:"class_name" gorm:"column:class_name"`
+	EnrollmentDate       time.Time               `json:"enrollment_date" gorm:"column:enrollment_date"`
+	EndDate              time.Time               `json:"end_date" gorm:"column:end_date"`
+	EndStatus            ProgramEnrollmentStatus `json:"end_status" gorm:"column:end_status"`
+	AttendancePercentage float64                 `json:"attendance_percentage" gorm:"column:attendance_percentage"`
+}
