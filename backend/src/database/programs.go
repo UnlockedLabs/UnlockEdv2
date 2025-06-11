@@ -483,3 +483,41 @@ func (db *DB) GetProgramCreatedAtAndBy(id int, args *models.QueryContext) (model
 	}
 	return programDetails, nil
 }
+
+func (db *DB) ExportProgramsToCSV(args *models.QueryContext, allFacilities bool) ([]models.ProgramCSVData, error) {
+	var programCSVData []models.ProgramCSVData
+
+	tx := db.WithContext(args.Ctx).Table("programs p").
+		Joins("JOIN program_classes pc ON pc.program_id = p.id").
+		Joins("JOIN program_class_enrollments pe ON pe.class_id = pc.id").
+		Joins("JOIN users u on u.id = pe.user_id").
+		Joins("JOIN facilities f ON f.id = u.facility_id").
+		Joins("LEFT JOIN program_completions c on c.program_class_id = pc.id and c.user_id = u.id").
+		Joins("LEFT JOIN program_class_events pce on pce.class_id = pc.id").
+		Joins("LEFT JOIN program_class_event_attendance pca ON pca.event_id  = pce.id AND pca.user_id = u.id").
+		Select(`
+            u.id as unlock_ed_id,
+            u.doc_id AS resident_id,
+            f.name AS facility_name,
+            p.name AS program_name,
+            pc.name AS class_name,
+            pe.created_at as enrollment_date,
+            CASE
+                WHEN c.id IS NOT NULL THEN c.created_at
+                WHEN pe.enrollment_status NOT IN (?, ?, ?) THEN pe.updated_at
+                ELSE NULL
+            END as end_date,
+            pe.enrollment_status AS end_status,
+            COALESCE(SUM(CASE WHEN pca.attendance_status  = 'Present' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(pca.id), 0), 0) AS attendance_percentage
+        `, models.Enrolled, models.EnrollmentCancelled, models.EnrollmentCompleted).
+		Where("pe.updated_at IS NOT NULL AND pe.enrollment_status != ?", models.Enrolled).
+		Group("u.id, u.doc_id, f.name, p.name, pc.name, pe.created_at, pe.enrollment_status, pe.updated_at, c.id, c.created_at")
+	if !allFacilities {
+		tx = tx.Where("f.id = ?", args.FacilityID)
+	}
+
+	if err := tx.Scan(&programCSVData).Error; err != nil {
+		return nil, newGetRecordsDBError(err, "programs CSV data")
+	}
+	return programCSVData, nil
+}
