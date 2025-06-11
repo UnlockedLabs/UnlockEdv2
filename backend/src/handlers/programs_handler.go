@@ -3,11 +3,13 @@ package handlers
 import (
 	"UnlockEdv2/src"
 	"UnlockEdv2/src/models"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {
@@ -24,6 +26,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}/status", srv.handleUpdateProgramStatus, axx),
 		adminFeatureRoute("PATCH /api/programs/{id}", srv.handleUpdateProgram, axx),
+		adminFeatureRoute("GET /api/programs/csv", srv.handleExportProgramCSV, axx),
 	}
 }
 
@@ -318,4 +321,34 @@ func (srv *Server) getCreatedByForHistory(id int, tableName string, pageMeta mod
 		}
 	}
 	return pageMeta, createdByDetails, nil
+}
+
+func (srv *Server) handleExportProgramCSV(w http.ResponseWriter, r *http.Request, log sLog) error {
+	queryCtx := srv.getQueryContext(r)
+	claims := r.Context().Value(ClaimsKey).(*Claims)
+	var allFacilities bool
+	if claims.canSwitchFacility() {
+		allFacilities = true
+	} else {
+		allFacilities = false
+	}
+	csvData, err := srv.Db.ExportProgramsToCSV(&queryCtx, allFacilities)
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+	toCSV, err := srv.ProgramDataToCSVFormat(csvData)
+	if err != nil {
+		return newInternalServerServiceError(err, "Failed to convert program data to CSV format")
+	}
+	date := time.Now().Format("2006-01-02")
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"Program-Data-%s.csv\"", date))
+	w.WriteHeader(http.StatusOK)
+	writer := csv.NewWriter(w)
+
+	writeErr := writer.WriteAll(toCSV)
+	if writeErr != nil {
+		return newInternalServerServiceError(writeErr, "Failed to write CSV data")
+	}
+	return nil
 }
