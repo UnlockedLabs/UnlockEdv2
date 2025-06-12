@@ -92,7 +92,7 @@ type ProgramCompletion struct {
 	ProgramID           uint      `json:"program_id" gorm:"not null"`
 	ProgramClassName    string    `json:"program_class_name"`
 	ProgramClassStartDt time.Time `json:"program_class_start_dt"`
-	EnrolledOnDt        time.Time `json:"enrolled_on_dt" `
+	EnrolledOnDt        time.Time `json:"enrolled_on_dt"`
 
 	User *User `json:"user" gorm:"foreignKey:UserID;references:ID"`
 }
