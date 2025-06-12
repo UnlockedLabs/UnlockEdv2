@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-ALTER TABLE public.program_completions ADD COLUMN IF NOT EXISTS enrolled_on_dt TIMESTAMP WITHOUT TIME ZONE NULL;
+ALTER TABLE public.program_completions ADD COLUMN IF NOT EXISTS enrolled_on_dt TIMESTAMP WITH TIME ZONE NULL;
 -- +goose StatementEnd
 
 -- +goose Down
