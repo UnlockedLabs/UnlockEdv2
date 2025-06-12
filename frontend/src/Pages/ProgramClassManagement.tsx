@@ -10,9 +10,9 @@ export default function ProgramClassManagement() {
     const tab = route.pathname.split('/')[3] ?? 'dashboard';
     const tabOptions: Tab[] = [
         { name: ClassMgmtTabs.CLASS, value: 'dashboard' },
+        { name: ClassMgmtTabs.SCHEDULE, value: 'schedule' },
         { name: ClassMgmtTabs.ENROLLMENT, value: 'enrollments' },
-        { name: ClassMgmtTabs.ATTENDANCE, value: 'attendance' },
-        { name: ClassMgmtTabs.SCHEDULE, value: 'schedule' }
+        { name: ClassMgmtTabs.ATTENDANCE, value: 'attendance' }
     ];
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === tab) ?? tabOptions[0]
