@@ -111,3 +111,21 @@ export function parseRRuleUntilDate(rRule: string, timezone: string): string {
     }
     return '';
 }
+
+export function textMonthLocalDate(date: string | Date) {
+    if (typeof date === 'string') {
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            timeZone: 'UTC'
+        });
+    } else {
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            timeZone: 'UTC'
+        });
+    }
+}

@@ -698,7 +698,7 @@ func generateEventInstances(event models.ProgramClassEvent, startDate, endDate t
 // GetClassEventInstancesWithAttendanceForRecurrence returns all occurrences for events
 // for a given class based on each event's recurrence rule (from DTSTART until UNTIL)
 // along with their associated attendance records.
-func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext, month, year string) ([]models.ClassEventInstance, error) {
+func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qryCtx *models.QueryContext, month, year string, userId *int) ([]models.ClassEventInstance, error) {
 	loc, err := time.LoadLocation(qryCtx.Timezone)
 	if err != nil {
 		logrus.Error("failed to load timezone")
@@ -722,8 +722,24 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	var startTime, untilTime time.Time
 
 	if month == "" || year == "" {
-		startTime = time.Now().Add(time.Hour * 24 * -14)
-		untilTime = startTime.AddDate(0, 1, 0)
+		if userId != nil {
+			var enrollment models.ProgramClassEnrollment
+			err := db.WithContext(qryCtx.Ctx).
+				Model(&models.ProgramClassEnrollment{}).
+				Where("class_id = ? AND user_id = ?", classId, *userId).
+				First(&enrollment).Error
+			if err != nil {
+				return nil, newGetRecordsDBError(err, "program_class_enrollments")
+			}
+			startTime = rRule.GetDTStart()
+			untilTime = time.Now().AddDate(0, 0, 1).Truncate(24 * time.Hour)
+			if enrollment.EnrollmentStatus != "Enrolled" {
+				untilTime = enrollment.UpdatedAt.AddDate(0, 0, 1).Truncate(24 * time.Hour)
+			}
+		} else {
+			startTime = time.Now().Add(time.Hour * 24 * -14)
+			untilTime = startTime.AddDate(0, 1, 0)
+		}
 	} else {
 		yearInt, err := strconv.Atoi(year)
 		if err != nil {
@@ -758,9 +774,13 @@ func (db *DB) GetClassEventInstancesWithAttendanceForRecurrence(classId int, qry
 	classTime := startTimeStr + "-" + endTimeStr
 	var attendances []models.ProgramClassEventAttendance
 
-	if err := db.WithContext(qryCtx.Ctx).
+	tx := db.WithContext(qryCtx.Ctx).
 		Model(&models.ProgramClassEventAttendance{}).
-		Where("event_id = ? AND date BETWEEN SYMMETRIC ? AND ?", event.ID, occDateStr, lastOccDateStr).
+		Where("event_id = ? AND date BETWEEN SYMMETRIC ? AND ?", event.ID, occDateStr, lastOccDateStr)
+	if userId != nil {
+		tx = tx.Where("user_id = ?", *userId)
+	}
+	if err := tx.
 		Order("date DESC").
 		Find(&attendances).Error; err != nil {
 		return nil, newGetRecordsDBError(err, "program_class_event_attendances")

@@ -4,14 +4,19 @@ import {
     ProgClassStatus,
     EnrollmentStatus
 } from '@/common';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import Pagination from './Pagination';
+import { textMonthLocalDate } from './helperFunctions/formatting';
+import { showModal, ResidentAttendanceModal } from './modals';
 
 export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(20);
+    const residentAttendanceModal = useRef(null);
+    const [selectedClass, setSelectedClass] =
+        useState<ResidentProgramOverview | null>(null);
     const navigate = useNavigate();
     const {
         data: programsResp,
@@ -61,19 +66,60 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
     const handleNavigate = (class_id: number) => {
         navigate(`/program-classes/${class_id}`);
     };
+
+    function ProgramSectionDividerRow({ type }: { type: string }) {
+        return (
+            <tr className={`body bg-teal-1 !mr-0`}>
+                <td colSpan={6} className="font-bold py-2">
+                    {type}
+                </td>
+            </tr>
+        );
+    }
+
+    function ResidentProgramRow({ pc }: { pc: ResidentProgramOverview }) {
+        const clickableElement = `cursor-pointer hover:bg-base-100 p-2`;
+        return (
+            <tr
+                key={`${pc.class_id}-${pc.start_date}`}
+                className={`grid grid-cols-6 justify-items-center !mr-0`}
+            >
+                <td className="justify-self-start">{pc.program_name}</td>
+                <td
+                    className={clickableElement}
+                    onClick={() => handleNavigate(pc.class_id)}
+                >
+                    {pc.class_name}
+                </td>
+                <td>{pc.enrollment_status}</td>
+                <td>{textMonthLocalDate(pc.start_date)}</td>
+                <td>{pc.end_date ? textMonthLocalDate(pc.end_date) : ''}</td>
+                <td
+                    className={`justify-self-end ${clickableElement} px-7`}
+                    onClick={() => {
+                        setSelectedClass(pc);
+                        showModal(residentAttendanceModal);
+                    }}
+                >
+                    {pc.attendance_percentage}
+                </td>
+            </tr>
+        );
+    }
+
     return (
-        <div className="card-row-padding">
+        <div>
             <h2>Resident Programs</h2>
             {!programsResp || (isLoading && <div>Loading...</div>)}
             {programsError ? (
                 <p className="body text-error">
-                    Error retrieving Programs for selected Resident
+                    Error retrieving programs for selected resident
                 </p>
             ) : (
-                <div className="relative w-full" style={{ overflowX: 'clip' }}>
+                <div className="relative w-full overflow-x-clip">
                     <table className="table-2 mb-4">
-                        <thead className="">
-                            <tr className=" grid grid-cols-6 px-4">
+                        <thead>
+                            <tr className="grid grid-cols-6 px-4">
                                 <th className="justify-self-start">
                                     Program Name
                                 </th>
@@ -86,60 +132,13 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="!gap-0">
+                        <tbody className="!gap-0 !mt-[0.5px]">
                             {/** Active **/}
                             {activePrograms && activePrograms.length > 0 && (
                                 <>
-                                    <tr className="text-sm font-semibold bg-teal-1">
-                                        <td
-                                            colSpan={6}
-                                            className="font-bold py-2"
-                                        >
-                                            Active Enrollments
-                                        </td>
-                                    </tr>
+                                    <ProgramSectionDividerRow type="Active Enrollments" />
                                     {activePrograms.map((pc) => (
-                                        <tr
-                                            key={`${pc.class_id}-${pc.start_date}`}
-                                            className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
-                                            onClick={() =>
-                                                handleNavigate(pc.class_id)
-                                            }
-                                        >
-                                            <td className="justify-self-start">
-                                                {pc.program_name}
-                                            </td>
-                                            <td>{pc.class_name}</td>
-                                            <td>{pc.enrollment_status}</td>
-                                            <td>
-                                                {new Date(
-                                                    pc.start_date
-                                                ).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    timeZone: 'UTC'
-                                                })}
-                                            </td>
-                                            <td>
-                                                {pc.end_date
-                                                    ? new Date(
-                                                          pc.end_date
-                                                      ).toLocaleDateString(
-                                                          'en-US',
-                                                          {
-                                                              year: 'numeric',
-                                                              month: 'short',
-                                                              day: 'numeric',
-                                                              timeZone: 'UTC'
-                                                          }
-                                                      )
-                                                    : ''}
-                                            </td>
-                                            <td className="justify-self-end px-7">
-                                                {pc.attendance_percentage}
-                                            </td>
-                                        </tr>
+                                        <ResidentProgramRow pc={pc} />
                                     ))}
                                 </>
                             )}
@@ -148,60 +147,9 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             {scheduledPrograms &&
                                 scheduledPrograms.length > 0 && (
                                     <>
-                                        <tr className="text-sm font-semibold bg-teal-1">
-                                            <td
-                                                colSpan={6}
-                                                className="font-bold py-2"
-                                            >
-                                                Scheduled Enrollments
-                                            </td>
-                                        </tr>
+                                        <ProgramSectionDividerRow type="Scheduled Enrollments" />
                                         {scheduledPrograms.map((pc) => (
-                                            <tr
-                                                key={`${pc.class_id}-${pc.start_date}`}
-                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
-                                                onClick={() =>
-                                                    handleNavigate(pc.class_id)
-                                                }
-                                            >
-                                                <td className="justify-self-start">
-                                                    {pc.program_name}
-                                                </td>
-                                                <td>{pc.class_name}</td>
-                                                <td>{pc.enrollment_status}</td>
-                                                <td>
-                                                    {new Date(
-                                                        pc.start_date
-                                                    ).toLocaleDateString(
-                                                        'en-US',
-                                                        {
-                                                            year: 'numeric',
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            timeZone: 'UTC'
-                                                        }
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {pc.end_date
-                                                        ? new Date(
-                                                              pc.end_date
-                                                          ).toLocaleDateString(
-                                                              'en-US',
-                                                              {
-                                                                  year: 'numeric',
-                                                                  month: 'short',
-                                                                  day: 'numeric',
-                                                                  timeZone:
-                                                                      'UTC'
-                                                              }
-                                                          )
-                                                        : ''}
-                                                </td>
-                                                <td className="justify-self-end px-7">
-                                                    {pc.attendance_percentage}
-                                                </td>
-                                            </tr>
+                                            <ResidentProgramRow pc={pc} />
                                         ))}
                                     </>
                                 )}
@@ -210,120 +158,18 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                             {completedPrograms &&
                                 completedPrograms.length > 0 && (
                                     <>
-                                        <tr className="text-sm font-semibold bg-teal-1">
-                                            <td
-                                                colSpan={6}
-                                                className="font-bold py-2"
-                                            >
-                                                Completed Enrollments
-                                            </td>
-                                        </tr>
+                                        <ProgramSectionDividerRow type="Completed Enrollments" />
                                         {completedPrograms.map((pc) => (
-                                            <tr
-                                                key={`${pc.class_id}-${pc.start_date}`}
-                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
-                                                onClick={() =>
-                                                    handleNavigate(pc.class_id)
-                                                }
-                                            >
-                                                <td className="justify-self-start">
-                                                    {pc.program_name}
-                                                </td>
-                                                <td>{pc.class_name}</td>
-                                                <td>{pc.enrollment_status}</td>
-                                                <td>
-                                                    {new Date(
-                                                        pc.start_date
-                                                    ).toLocaleDateString(
-                                                        'en-US',
-                                                        {
-                                                            year: 'numeric',
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            timeZone: 'UTC'
-                                                        }
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {pc.end_date
-                                                        ? new Date(
-                                                              pc.end_date
-                                                          ).toLocaleDateString(
-                                                              'en-US',
-                                                              {
-                                                                  year: 'numeric',
-                                                                  month: 'short',
-                                                                  day: 'numeric',
-                                                                  timeZone:
-                                                                      'UTC'
-                                                              }
-                                                          )
-                                                        : ''}
-                                                </td>
-                                                <td className="justify-self-end px-7">
-                                                    {pc.attendance_percentage}
-                                                </td>
-                                            </tr>
+                                            <ResidentProgramRow pc={pc} />
                                         ))}
                                     </>
                                 )}
                             {didNotCompletePrograms &&
                                 didNotCompletePrograms.length > 0 && (
                                     <>
-                                        <tr className="text-sm font-semibold bg-teal-1">
-                                            <td
-                                                colSpan={6}
-                                                className="font-bold py-2"
-                                            >
-                                                Did Not Complete
-                                            </td>
-                                        </tr>
+                                        <ProgramSectionDividerRow type="Did Not Complete" />
                                         {didNotCompletePrograms.map((pc) => (
-                                            <tr
-                                                key={`${pc.class_id}-${pc.start_date}`}
-                                                className="grid grid-cols-6 cursor-pointer hover:bg-base-100 justify-items-center py-2"
-                                                onClick={() =>
-                                                    handleNavigate(pc.class_id)
-                                                }
-                                            >
-                                                <td className="justify-self-start">
-                                                    {pc.program_name}
-                                                </td>
-                                                <td>{pc.class_name}</td>
-                                                <td>{pc.enrollment_status}</td>
-                                                <td>
-                                                    {new Date(
-                                                        pc.start_date
-                                                    ).toLocaleDateString(
-                                                        'en-US',
-                                                        {
-                                                            year: 'numeric',
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            timeZone: 'UTC'
-                                                        }
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {pc.end_date
-                                                        ? new Date(
-                                                              pc.end_date
-                                                          ).toLocaleDateString(
-                                                              'en-US',
-                                                              {
-                                                                  year: 'numeric',
-                                                                  month: 'short',
-                                                                  day: 'numeric',
-                                                                  timeZone:
-                                                                      'UTC'
-                                                              }
-                                                          )
-                                                        : ''}
-                                                </td>
-                                                <td className="justify-self-end px-7">
-                                                    {pc.attendance_percentage}
-                                                </td>
-                                            </tr>
+                                            <ResidentProgramRow pc={pc} />
                                         ))}
                                     </>
                                 )}
@@ -341,6 +187,10 @@ export default function ResidentPrograms({ user_id }: { user_id: string }) {
                     )}
                 </div>
             )}
+            <ResidentAttendanceModal
+                ref={residentAttendanceModal}
+                selectedClass={selectedClass}
+            />
         </div>
     );
 }

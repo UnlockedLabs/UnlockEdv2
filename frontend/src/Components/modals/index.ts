@@ -347,3 +347,5 @@ export const requestContentInputs: Input[] = [
 ];
 
 export { RequestContentModal } from './RequestContentModal';
+
+export { ResidentAttendanceModal } from './ResidentAttendanceModal';
