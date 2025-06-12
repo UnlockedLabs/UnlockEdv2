@@ -20,6 +20,7 @@ import ClassLayout from '@/Components/ClassLayout';
 import Error from '@/Pages/Error';
 import { Navigate } from 'react-router-dom';
 import ResidentOverview from '@/Pages/ResidentOverview';
+import Schedule from '@/Pages/Schedule';
 
 export const ProgramRoutes = DeclareAuthenticatedRoutes(
     [
@@ -106,6 +107,14 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
                     loader: getClassTitle,
                     element: <ClassEvents />,
                     errorElement: <Error />,
+                    handle: {
+                        title: (data: TitleHandler) => data.title
+                    }
+                },
+                {
+                    path: ':class_id/schedule',
+                    loader: getClassTitle,
+                    element: <Schedule />,
                     handle: {
                         title: (data: TitleHandler) => data.title
                     }

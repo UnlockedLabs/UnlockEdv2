@@ -188,13 +188,12 @@ export const getClassTitle: LoaderFunction = async ({
     params
 }): Promise<ClassLoaderData | Response> => {
     const { class_id } = params;
-    const className = 'Class Management';
     const classResp = (await API.get(
         `program-classes/${class_id}`
     )) as ServerResponseOne<Class>;
     if (classResp.success) {
         return {
-            title: className,
+            title: classResp.data.name,
             class: classResp.data
         };
     } else {

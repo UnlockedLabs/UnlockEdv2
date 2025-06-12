@@ -11,7 +11,8 @@ export default function ProgramClassManagement() {
     const tabOptions: Tab[] = [
         { name: ClassMgmtTabs.CLASS, value: 'dashboard' },
         { name: ClassMgmtTabs.ENROLLMENT, value: 'enrollments' },
-        { name: ClassMgmtTabs.ATTENDANCE, value: 'attendance' }
+        { name: ClassMgmtTabs.ATTENDANCE, value: 'attendance' },
+        { name: ClassMgmtTabs.SCHEDULE, value: 'schedule' }
     ];
     const [activeTab, setActiveTab] = useState<Tab>(
         tabOptions.find((t) => t.value === tab) ?? tabOptions[0]

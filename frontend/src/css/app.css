@@ -290,10 +290,13 @@ html[data-theme='dark'] input[type='time']::-webkit-calendar-picker-indicator {
     @apply bg-transparent border-2 border-teal-3 text-header-text line-through;
 }
 
+.rbc-event.rbc-event-lighter {
+    @apply bg-teal-1 border border-teal-2 text-teal-4 rounded-md body-small flex;
+}
+
 .rbc-current-time-indicator {
     @apply bg-primary-yellow;
 }
-
 
 html[data-theme='dark'] .rbc-event.rbc-selected {
     @apply text-black bg-teal-5;
@@ -306,7 +309,7 @@ html[data-theme='dark'] .rbc-event.rbc-selected {
 }
 
 .rbc-row-content {
-    @apply z-0
+    @apply z-0;
 }
 
 .rbc-timeslot-group {
