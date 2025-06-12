@@ -153,37 +153,38 @@ export default function Schedule() {
                             </div>
                             <div className="space-y-2 flex flex-col w-full">
                                 <button
-                                    className="button"
+                                    disabled={!canUpdateEvent()}
+                                    className={`button${!canUpdateEvent() ? ' tooltip' : ''}`}
                                     onClick={() => {
-                                        if (!canUpdateEvent()) {
-                                            return;
-                                        }
                                         showModal(rescheduleClassEventModal);
                                     }}
+                                    data-tip={`This event is from another class and cannot be edited on the ${selectedEvent.title} schedule.`}
                                 >
                                     Edit Event
                                 </button>
                                 <button
-                                    className="button-outline"
+                                    disabled={!canUpdateEvent()}
+                                    className={`button-outline${!canUpdateEvent() ? ' tooltip' : ''}`}
                                     onClick={() => {
-                                        if (!canUpdateEvent()) {
-                                            return;
-                                        }
                                         showModal(
                                             rescheduleClassEventSeriesModal
                                         );
                                     }}
+                                    data-tip={`This event is from another class and cannot be edited on the ${selectedEvent.title} schedule.`}
                                 >
                                     Edit Series
                                 </button>
-                                <CancelButton
-                                    onClick={() => {
-                                        if (!canUpdateEvent()) {
-                                            return;
-                                        }
-                                        showModal(cancelClassEventModal);
-                                    }}
-                                />
+                                <div
+                                    className={`flex flex-col w-full${!canUpdateEvent() ? ' tooltip' : ''}`}
+                                    data-tip={`This event is from another class and cannot be edited on the ${selectedEvent.title} schedule.`}
+                                >
+                                    <CancelButton
+                                        disabled={!canUpdateEvent()}
+                                        onClick={() => {
+                                            showModal(cancelClassEventModal);
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     ) : (

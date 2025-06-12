@@ -86,7 +86,7 @@
     }
 
     .button-outline {
-        @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 button-core hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:cursor-auto;
+        @apply border border-teal-3 bg-transparent body text-body-text py-3 px-3 button-core hover:bg-teal-1 disabled:bg-grey-2 disabled:text-grey-3 disabled:border-grey-2 disabled:cursor-auto;
     }
 
     .button-red {
@@ -94,7 +94,7 @@
     }
 
     .button-grey {
-        @apply button bg-grey-2 text-body-text hover:bg-grey-3;
+        @apply button bg-grey-2 text-body-text hover:bg-grey-3 disabled:hover:bg-grey-2;
     }
 
     .button-grey-sm {
