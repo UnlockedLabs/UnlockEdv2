@@ -6,5 +6,5 @@ export {
     isEndDtBeforeStartDt,
     isPastDate,
     parseRRule,
-    parseRRuleUntiDate
+    parseRRuleUntilDate
 } from './formatting';

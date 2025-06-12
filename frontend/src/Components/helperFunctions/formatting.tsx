@@ -88,12 +88,17 @@ export function parseRRule(
             timeZone: timezone
         });
     } catch (error) {
-        console.error('error parsing rrule, error is: ', error);
+        console.error(
+            'error parsing rrule, rRule is: ',
+            rRule,
+            '; error is: ',
+            error
+        );
     }
-    return rRule;
+    return '';
 }
 
-export function parseRRuleUntiDate(rRule: string, timezone: string): string {
+export function parseRRuleUntilDate(rRule: string, timezone: string): string {
     try {
         const rule = RRule.fromString(rRule);
         if (rule.options.until) {
