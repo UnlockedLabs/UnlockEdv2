@@ -8,23 +8,16 @@ import (
 
 func (db *DB) GetProgramCompletionsForUser(args *models.QueryContext, userId int, classId *int) ([]models.ProgramCompletion, error) {
 	content := make([]models.ProgramCompletion, 0)
-	tx := db.WithContext(args.Ctx).Model(&models.ProgramCompletion{}).Preload("User").Where("program_completions.user_id = ?", userId)
+	tx := db.WithContext(args.Ctx).Model(&models.ProgramCompletion{}).Preload("User").Where("user_id = ?", userId)
 	if classId != nil {
 		tx = tx.Where("program_class_id = ?", *classId)
 	}
 	if err := tx.Count(&args.Total).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
-	if err := tx.
-		Joins(`LEFT JOIN program_class_enrollments pce
-            ON pce.user_id = program_completions.user_id
-           AND pce.class_id = program_completions.program_class_id`).
-		Select(`program_completions.*,
-                pce.created_at AS enrolled_on_dt`).
-		Scan(&content).Error; err != nil {
+	if err := tx.Find(&content).Error; err != nil {
 		return nil, newNotFoundDBError(err, "program class enrollments")
 	}
-
 	return content, nil
 }
 
@@ -152,6 +145,7 @@ func (db *DB) GraduateEnrollments(ctx context.Context, adminEmail string, userId
 			CreditType:          creditType,
 			ProgramClassName:    enrollment.Class.Name,
 			UserID:              uint(userIds[i]),
+			EnrolledOnDt:        enrollment.CreatedAt,
 		})
 	}
 
