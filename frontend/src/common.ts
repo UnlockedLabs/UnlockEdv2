@@ -724,6 +724,11 @@ export interface ProgramOverview extends Program {
     active_class_facility_ids: number[];
 }
 
+export interface DailyProgramsLastRunDateAndTime {
+    last_ran_dt: string;
+    last_ran_tm: string;
+}
+
 export interface ProgramClassOutcomes {
     month: string;
     completions: number;
