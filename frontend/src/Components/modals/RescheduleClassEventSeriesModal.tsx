@@ -23,7 +23,7 @@ import { RRule } from 'rrule';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { RRuleControl, RRuleFormHandle } from '../inputs/RRuleControl';
 import { addDays } from 'date-fns';
-import { parseRRuleUntiDate } from '../helperFunctions';
+import { parseRRuleUntilDate } from '../helperFunctions';
 
 export const RescheduleClassEventSeriesModal = forwardRef(function (
     {
@@ -140,7 +140,7 @@ export const RescheduleClassEventSeriesModal = forwardRef(function (
                               }
                               endDateVal={
                                   calendarEvent &&
-                                  parseRRuleUntiDate(
+                                  parseRRuleUntilDate(
                                       calendarEvent.recurrence_rule,
                                       user?.timezone
                                   )
