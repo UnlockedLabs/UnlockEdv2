@@ -7,7 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+
+	"github.com/go-co-op/gocron/v2"
 )
 
 func (srv *Server) registerProgramsRoutes() []routeDef {
@@ -19,6 +22,7 @@ func (srv *Server) registerProgramsRoutes() []routeDef {
 		/* admin */
 		adminFeatureRoute("GET /api/programs/detailed-list", srv.handleIndexProgramsOverviewTable, axx),
 		adminFeatureRoute("GET /api/programs/stats", srv.handleIndexProgramsFacilitiesStats, axx),
+		adminFeatureRoute("GET /api/programs/stats/lastRun", srv.handleGetProgramOverviewLastUpdatedAt, axx),
 		adminFeatureRoute("GET /api/programs/{id}/history", srv.handleGetProgramHistory, axx),
 		adminFeatureRoute("POST /api/programs", srv.handleCreateProgram, axx),
 		adminFeatureRoute("DELETE /api/programs/{id}", srv.handleDeleteProgram, axx),
@@ -256,6 +260,31 @@ func (srv *Server) handleFavoriteProgram(w http.ResponseWriter, r *http.Request,
 		return nil
 	}
 	return writeJsonResponse(w, http.StatusOK, "Favorite updated successfully")
+}
+
+func (srv *Server) handleGetProgramOverviewLastUpdatedAt(w http.ResponseWriter, r *http.Request, log sLog) error {
+	lastUpatedAt, err := srv.Db.GetProgramOverviewLastUpdatedAt(r.Context())
+	if err != nil {
+		return newDatabaseServiceError(err)
+	}
+
+	cronExpression := os.Getenv("MIDDLEWARE_CRON_SCHEDULE")
+	if cronExpression != "" { //parsing the cron expression used by program overview
+		scheduler, err := gocron.NewScheduler()
+		if err != nil {
+			return newBadRequestServiceError(err, "unable to create cron scheduler used for parsing cron schedule")
+		}
+		job, err := scheduler.NewJob(gocron.CronJob(cronExpression, false), gocron.NewTask(func() {}))
+		if err != nil {
+			return newBadRequestServiceError(err, "unable to create new generic job using the cron schedule: "+cronExpression)
+		}
+		next, err := job.NextRun()
+		if err != nil {
+			return newBadRequestServiceError(err, "unble to get the next run of job")
+		}
+		lastUpatedAt.LastRanTime = next.Format("3:04 PM")
+	}
+	return writeJsonResponse(w, http.StatusOK, lastUpatedAt)
 }
 
 func (srv *Server) handleGetProgramHistory(w http.ResponseWriter, r *http.Request, log sLog) error {

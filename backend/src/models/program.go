@@ -102,6 +102,11 @@ func (DailyProgramsFacilitiesHistory) TableName() string {
 	return "daily_programs_facilities_history"
 }
 
+type DailyProgramsLastRunDateAndTime struct {
+	LastRanDT   string `json:"last_ran_dt"`
+	LastRanTime string `json:"last_ran_tm" gorm:"-"`
+}
+
 type DailyProgramFacilitiesHistory struct {
 	Date                   time.Time `json:"date" gorm:"not null"`
 	ProgramID              uint      `json:"program_id" gorm:"not null"`

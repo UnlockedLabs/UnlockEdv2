@@ -7,12 +7,13 @@ import {
     ServerResponseOne,
     ProgramsOverviewTable,
     ProgramsFacilitiesStats,
-    UserRole
+    UserRole,
+    DailyProgramsLastRunDateAndTime
 } from '@/common';
 import useSWR, { KeyedMutator } from 'swr';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from '@/Components/Pagination';
-import { useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import { useUrlPagination } from '@/Hooks/paginationUrlSync';
 import DropdownControl from '@/Components/inputs/DropdownControl';
 import StatsCard from '@/Components/StatsCard';
@@ -121,6 +122,10 @@ export default function ProgramManagement() {
     if (!isAdministrator(user)) {
         return;
     }
+    const { daily_run } = useLoaderData() as {
+        daily_run: DailyProgramsLastRunDateAndTime;
+    };
+
     const [searchTerm, setSearchTerm] = useState('');
     const searchQuery = useDebounceValue(searchTerm, 500);
     const [dateRange, setDateRange] = useState<FilterPastTime>(
@@ -327,6 +332,15 @@ export default function ProgramManagement() {
                 </table>
                 <p className="flex justify-center body italic">
                     {`Program data in table reflects the selected date range: ${tableDateRangeLabel}`}
+                    <br />
+                    {daily_run.last_ran_dt &&
+                        `Last updated 
+                        ${new Intl.DateTimeFormat('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            timeZone: 'UTC'
+                        }).format(new Date(daily_run.last_ran_dt))}
+                        at ${daily_run.last_ran_tm}.`}
                 </p>
                 {meta && (
                     <div className="flex justify-center">

@@ -1,6 +1,7 @@
 import {
     getClassMgmtData,
     getClassTitle,
+    getDailyProgramsLastDtAndTm,
     getProgramData,
     getProgramTitle
 } from '@/routeLoaders';
@@ -59,7 +60,7 @@ export const AdminProgramRoutes = DeclareAuthenticatedRoutes(
         {
             path: 'programs',
             id: 'programs-facilities',
-            loader: getProgramData,
+            loader: getDailyProgramsLastDtAndTm,
             element: <Programs />,
             handle: {
                 title: 'Programs Management',

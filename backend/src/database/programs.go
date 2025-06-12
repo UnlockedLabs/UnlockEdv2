@@ -386,6 +386,14 @@ func (db *DB) GetProgramsFacilityStats(args *models.QueryContext, timeFilter int
 	return programsFacilityStats, nil
 }
 
+func (db *DB) GetProgramOverviewLastUpdatedAt(ctx context.Context) (*models.DailyProgramsLastRunDateAndTime, error) {
+	var lastRun models.DailyProgramsLastRunDateAndTime
+	if err := db.WithContext(ctx).Raw("select max(date) as last_ran_dt from daily_programs_facilities_history").Scan(&lastRun).Error; err != nil {
+		return nil, newNotFoundDBError(err, "daily_programs_facilities_history")
+	}
+	return &lastRun, nil
+}
+
 func (db *DB) GetProgramsOverviewTable(args *models.QueryContext, timeFilter int, includeArchived bool, adminRole models.UserRole) ([]models.ProgramsOverviewTable, error) {
 	var programsTable []models.ProgramsOverviewTable
 	var tableName string
