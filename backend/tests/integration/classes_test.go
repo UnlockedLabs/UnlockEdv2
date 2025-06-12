@@ -86,8 +86,7 @@ func runCreateClassInactiveProgramTest(t *testing.T, env *TestEnv, facility *mod
 	NewRequest[*models.ProgramClass](env.Client, t, http.MethodPost, fmt.Sprintf("/api/programs/%d/classes", program.ID), class).
 		WithTestClaims(&handlers.Claims{Role: models.FacilityAdmin, UserID: facilityAdmin.ID, FacilityID: facility.ID}).
 		Do().
-		ExpectStatus(http.StatusBadRequest)
-
+		ExpectStatus(http.StatusUnauthorized)
 }
 
 // creates a boilerplate class

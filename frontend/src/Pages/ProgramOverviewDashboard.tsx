@@ -193,13 +193,32 @@ export default function ProgramOverviewDashboard() {
             .join(', ');
     }
 
-    const canAddClass =
-        program.facilities.some((f) => f.id === userFacilityId) &&
-        program.is_active &&
-        program.archived_at == null;
+    type ProgramStatus =
+        | 'active'
+        | 'inactiveProgram'
+        | 'archivedProgram'
+        | 'notOfferedAtFacility';
+
+    function getProgramStatus(
+        program: ProgramOverview,
+        userFacilityId: number | undefined
+    ): ProgramStatus {
+        if (!userFacilityId) return 'notOfferedAtFacility';
+        if (!program) return 'inactiveProgram';
+        if (!program.facilities) return 'notOfferedAtFacility';
+        if (!program.facilities.some((f) => f.id === userFacilityId))
+            return 'notOfferedAtFacility';
+        if (program.archived_at !== null) return 'archivedProgram';
+        if (!program.is_active) return 'inactiveProgram';
+        return 'active';
+    }
+
+    const status = getProgramStatus(program, userFacilityId);
+    // const canAddClass = status === 'active';
 
     function getTooltip(): string | undefined {
-        const tooltipMap = {
+        const tooltipMap: Record<ProgramStatus, string | undefined> = {
+            active: undefined,
             inactiveProgram:
                 'This program is inactive and cannot accept new classes.',
             archivedProgram:
@@ -207,21 +226,9 @@ export default function ProgramOverviewDashboard() {
             notOfferedAtFacility:
                 'This program isn’t available at the selected facility.'
         };
-        const key = (() => {
-            if (!program) return '';
-            if (!program.facilities) return '';
-            if (!program.facilities.some((f) => f.id === userFacilityId))
-                return 'notOfferedAtFacility';
-            if (program.archived_at !== null) return 'archivedProgram';
-            if (!program.is_active) return 'inactiveProgram';
-            return '';
-        })();
-
-        if (key === '') {
-            return undefined;
-        }
-        return tooltipMap[key];
+        return tooltipMap[status];
     }
+
     return (
         <div className="p-4 px-5">
             <div className="flex flex-col gap-4">
@@ -356,7 +363,7 @@ export default function ProgramOverviewDashboard() {
                     ) : (
                         <AddButton
                             dataTip={getTooltip()}
-                            disabled={!canAddClass}
+                            // disabled={!canAddClass}
                             label="Add Class"
                             onClick={() =>
                                 navigate(`/programs/${program_id}/classes/new`)

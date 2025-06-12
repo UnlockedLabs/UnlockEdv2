@@ -77,20 +77,12 @@ func (srv *Server) handleCreateClass(w http.ResponseWriter, r *http.Request, log
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
-	program, err := srv.Db.GetProgramByID(id)
-	if err != nil {
-		return writeJsonResponse(w, http.StatusInternalServerError, "Error retrieving program")
-	}
-	claims := r.Context().Value(ClaimsKey).(*Claims)
-
-	if err := program.ValidateProgramEligibilityForClassCreation(claims.FacilityID); err != nil {
-		return writeJsonResponse(w, http.StatusBadRequest, err.Error())
-	}
 	var class models.ProgramClass
 	err = json.NewDecoder(r.Body).Decode(&class)
 	if err != nil {
 		return newJSONReqBodyServiceError(err)
 	}
+	claims := r.Context().Value(ClaimsKey).(*Claims)
 	class.FacilityID = claims.FacilityID
 	class.CreateUserID = claims.UserID
 	class.ProgramID = uint(id)
